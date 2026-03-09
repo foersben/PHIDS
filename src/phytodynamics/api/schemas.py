@@ -112,6 +112,9 @@ class SubstanceComponentSchema(BaseModel):
     precursor_signal_id: int = Field(
         default=-1, description="Signal substance_id required before toxin activation (-1 = none)."
     )
+    energy_cost_per_tick: float = Field(
+        default=0.0, ge=0.0, description="Energy cost drained from the owner plant per active tick."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +123,12 @@ class SubstanceComponentSchema(BaseModel):
 
 
 class TriggerConditionSchema(BaseModel):
-    """Trigger condition for substance synthesis (Interaction Matrix entry)."""
+    """Trigger condition for substance synthesis (Interaction Matrix entry).
+
+    Maps a (plant species, predator species) pair to the substance that should
+    be synthesised when the trigger conditions are met, together with all
+    behavioural properties of the resulting substance.
+    """
 
     predator_species_id: PredatorId
     min_predator_population: int = Field(
@@ -128,6 +136,25 @@ class TriggerConditionSchema(BaseModel):
     )
     substance_id: SubstanceId = Field(..., description="Substance to synthesise.")
     synthesis_duration: int = Field(..., gt=0, description="Ticks to synthesise T(s_x).")
+    is_toxin: bool = Field(default=False, description="True for toxins, False for signals.")
+    lethal: bool = Field(default=False, description="Lethal toxin flag.")
+    lethality_rate: float = Field(
+        default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i)."
+    )
+    repellent: bool = Field(default=False, description="Repellent toxin flag.")
+    repellent_walk_ticks: int = Field(
+        default=0, ge=0, description="Random-walk duration k on repel trigger."
+    )
+    aftereffect_ticks: int = Field(
+        default=0, ge=0, description="Aftereffect duration T_k (signals linger after emission ceases)."
+    )
+    precursor_signal_id: int = Field(
+        default=-1,
+        description="Signal substance_id required before toxin activation (-1 = none).",
+    )
+    energy_cost_per_tick: float = Field(
+        default=0.0, ge=0.0, description="Energy drained from the plant per tick while active."
+    )
 
 
 # ---------------------------------------------------------------------------

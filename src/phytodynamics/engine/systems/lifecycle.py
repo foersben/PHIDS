@@ -1,8 +1,9 @@
-"""Lifecycle system: plant growth, reproduction, and death.
+"""Lifecycle system: plant growth, reproduction, mycorrhizal networking and death.
 
 This module implements per-tick plant updates including growth according
-to species parameters, reproduction attempts, and culling of dead plants.
-It should run before interaction and signaling phases.
+to species parameters, reproduction attempts, establishment of symbiotic
+root connections, and culling of dead plants.  It should run before
+interaction and signaling phases.
 """
 
 from __future__ import annotations
@@ -102,19 +103,78 @@ def _attempt_reproduction(
     return [new_plant]
 
 
+def _establish_mycorrhizal_connections(
+    world: ECSWorld,
+    env: GridEnvironment,
+    connection_cost: float,
+    inter_species: bool,
+) -> None:
+    """Establish bidirectional root connections between adjacent plants.
+
+    Plants located at Manhattan distance 1 may form symbiotic root
+    connections.  Each new connection costs ``connection_cost`` energy
+    deducted from both participants.  Inter-species links are only created
+    when ``inter_species`` is True.
+
+    Args:
+        world: ECSWorld registry.
+        env: GridEnvironment (used to update plant energy buffers).
+        connection_cost: Energy cost per connection establishment.
+        inter_species: Allow connections between different species.
+    """
+    plants: list[PlantComponent] = [
+        e.get_component(PlantComponent) for e in world.query(PlantComponent)
+    ]
+    # Index plants by position for fast neighbour lookup
+    pos_index: dict[tuple[int, int], list[PlantComponent]] = {}
+    for p in plants:
+        pos_index.setdefault((p.x, p.y), []).append(p)
+
+    for plant in plants:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = plant.x + dx, plant.y + dy
+            if not (0 <= nx < env.width and 0 <= ny < env.height):
+                continue
+            for neighbour in pos_index.get((nx, ny), []):
+                if neighbour.entity_id == plant.entity_id:
+                    continue
+                # Already connected
+                if neighbour.entity_id in plant.mycorrhizal_connections:
+                    continue
+                # Species restriction
+                if not inter_species and neighbour.species_id != plant.species_id:
+                    continue
+                # Both plants must afford the connection cost
+                if plant.energy < connection_cost or neighbour.energy < connection_cost:
+                    continue
+                # Establish bidirectional link and pay cost
+                plant.mycorrhizal_connections.add(neighbour.entity_id)
+                neighbour.mycorrhizal_connections.add(plant.entity_id)
+                plant.energy -= connection_cost
+                neighbour.energy -= connection_cost
+                env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+                env.set_plant_energy(
+                    neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy
+                )
+
+
 def run_lifecycle(
     world: ECSWorld,
     env: GridEnvironment,
     tick: int,
     flora_species_params: dict[int, object],
+    mycorrhizal_connection_cost: float = 1.0,
+    mycorrhizal_inter_species: bool = False,
 ) -> None:
-    """Execute one lifecycle tick: grow plants, attempt reproduction, and cull.
+    """Execute one lifecycle tick: grow, connect, reproduce, and cull.
 
     Args:
         world: The ECS world registry.
         env: The GridEnvironment instance.
         tick: Current simulation tick index.
         flora_species_params: Mapping of species_id to species parameters.
+        mycorrhizal_connection_cost: Energy cost per new root connection.
+        mycorrhizal_inter_species: Allow inter-species root connections.
     """
     dead: list[int] = []
 
@@ -130,11 +190,21 @@ def run_lifecycle(
         # Update biotope energy
         env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
 
+        # Prune dead mycorrhizal links
+        plant.mycorrhizal_connections = {
+            eid for eid in plant.mycorrhizal_connections if world.has_entity(eid)
+        }
+
         # Survival check
         if plant.energy < plant.survival_threshold:
             env.clear_plant_energy(plant.x, plant.y, plant.species_id)
             world.unregister_position(entity.entity_id, plant.x, plant.y)
             dead.append(entity.entity_id)
+
+    # Establish new mycorrhizal root connections between adjacent plants
+    _establish_mycorrhizal_connections(
+        world, env, mycorrhizal_connection_cost, mycorrhizal_inter_species
+    )
 
     world.collect_garbage(dead)
     env.rebuild_energy_layer()

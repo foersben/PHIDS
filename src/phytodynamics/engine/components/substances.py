@@ -27,6 +27,7 @@ class SubstanceComponent:
         repellent: Whether the toxin repels swarms.
         repellent_walk_ticks: Duration of repelled random-walk in ticks.
         precursor_signal_id: Required precursor signal id (-1 = none).
+        energy_cost_per_tick: Energy drained from the owner plant per active tick.
     """
 
     entity_id: int
@@ -41,3 +42,4 @@ class SubstanceComponent:
     repellent: bool = False
     repellent_walk_ticks: int = 0
     precursor_signal_id: int = -1
+    energy_cost_per_tick: float = 0.0

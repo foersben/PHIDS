@@ -243,9 +243,16 @@ class SimulationLoop:
                     apply_camouflage(self.env.flow_field, plant.x, plant.y, plant.camouflage_factor)
 
             # --------------------------------------------------------
-            # Phase 2: Lifecycle (grow, reproduce, cull)
+            # Phase 2: Lifecycle (grow, connect, reproduce, cull)
             # --------------------------------------------------------
-            run_lifecycle(self.world, self.env, self.tick, self._flora_params)
+            run_lifecycle(
+                self.world,
+                self.env,
+                self.tick,
+                self._flora_params,
+                mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
+                mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
+            )
 
             # --------------------------------------------------------
             # Phase 3: Interaction (movement, feeding, starvation, mitosis)

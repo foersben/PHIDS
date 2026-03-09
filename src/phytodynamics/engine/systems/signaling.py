@@ -176,13 +176,21 @@ def run_signaling(
                     break
 
             if existing_sub is None:
-                # Spawn new substance entity
+                # Spawn new substance entity with full properties from trigger
                 new_entity = world.create_entity()
                 existing_sub = SubstanceComponent(
                     entity_id=new_entity.entity_id,
                     substance_id=trig.substance_id,
                     owner_plant_id=plant.entity_id,
+                    is_toxin=trig.is_toxin,
                     synthesis_remaining=trig.synthesis_duration,
+                    lethal=trig.lethal,
+                    lethality_rate=trig.lethality_rate,
+                    repellent=trig.repellent,
+                    repellent_walk_ticks=trig.repellent_walk_ticks,
+                    aftereffect_ticks=trig.aftereffect_ticks,
+                    precursor_signal_id=trig.precursor_signal_id,
+                    energy_cost_per_tick=trig.energy_cost_per_tick,
                 )
                 world.add_component(new_entity.entity_id, existing_sub)
 
@@ -219,6 +227,11 @@ def run_signaling(
             continue
 
         plant = owner_entity.get_component(PlantComponent)
+
+        # --- Energy maintenance cost (Section 4: continuous depletion) ---
+        if sub.energy_cost_per_tick > 0.0:
+            plant.energy -= sub.energy_cost_per_tick
+            env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
 
         if sub.is_toxin:
             if sub.substance_id < env.num_toxins:
