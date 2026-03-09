@@ -15,6 +15,7 @@ from phytodynamics.engine.components.substances import SubstanceComponent
 from phytodynamics.engine.components.swarm import SwarmComponent
 from phytodynamics.engine.core.biotope import GridEnvironment
 from phytodynamics.engine.core.ecs import ECSWorld
+from phytodynamics.shared.constants import SUBSTANCE_EMIT_RATE
 
 
 def _check_precursor_active(
@@ -205,7 +206,8 @@ def run_signaling(
             if sub.substance_id < env.num_toxins:
                 env.toxin_layers[sub.substance_id, plant.x, plant.y] = min(
                     1.0,
-                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + 0.1,
+                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
+                    + SUBSTANCE_EMIT_RATE,
                 )
             # Apply toxin effects to nearby swarms
             _apply_toxin_to_swarms(sub, env, world)
@@ -213,13 +215,14 @@ def run_signaling(
             if sub.substance_id < env.num_signals:
                 env.signal_layers[sub.substance_id, plant.x, plant.y] = min(
                     1.0,
-                    float(env.signal_layers[sub.substance_id, plant.x, plant.y]) + 0.1,
+                    float(env.signal_layers[sub.substance_id, plant.x, plant.y])
+                    + SUBSTANCE_EMIT_RATE,
                 )
             # Relay via mycorrhizal network
             _relay_signal_via_mycorrhizal(
                 plant,
                 sub.substance_id,
-                0.1,
+                SUBSTANCE_EMIT_RATE,
                 env,
                 world,
                 mycorrhizal_inter_species,
@@ -258,7 +261,8 @@ def run_signaling(
                     if sub.substance_id < env.num_toxins:
                         env.toxin_layers[sub.substance_id, plant.x, plant.y] = max(
                             0.0,
-                            float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) - 0.1,
+                            float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
+                            - SUBSTANCE_EMIT_RATE,
                         )
 
     # ------------------------------------------------------------------

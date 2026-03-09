@@ -15,6 +15,7 @@ from phytodynamics.engine.components.plant import PlantComponent
 from phytodynamics.engine.components.swarm import SwarmComponent
 from phytodynamics.engine.core.biotope import GridEnvironment
 from phytodynamics.engine.core.ecs import ECSWorld
+from phytodynamics.shared.constants import TOXIN_CASUALTY_FACTOR
 
 
 def _best_neighbour(
@@ -217,7 +218,7 @@ def run_interaction(
                 # Each toxin layer can cause casualties; handled by signaling system
                 # which writes the lethality_rate into toxin_layers scaled values.
                 # Here we apply a generic casualty proportional to concentration.
-                casualties = int(toxin_val * swarm.population * 0.1)
+                casualties = int(toxin_val * swarm.population * TOXIN_CASUALTY_FACTOR)
                 swarm.population = max(0, swarm.population - casualties)
 
         # ----------------------------------------------------------------

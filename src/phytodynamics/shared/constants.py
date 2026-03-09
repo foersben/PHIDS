@@ -24,3 +24,9 @@ SIGNAL_EPSILON: float = 1e-4  # values below this are zeroed after convolution
 # Misc numeric sentinels
 # ---------------------------------------------------------------------------
 EMPTY_CELL: int = -1
+
+# ---------------------------------------------------------------------------
+# Substance emission / dissipation rates
+# ---------------------------------------------------------------------------
+SUBSTANCE_EMIT_RATE: float = 0.1   # concentration added per tick when active
+TOXIN_CASUALTY_FACTOR: float = 0.1  # generic casualty multiplier (toxin_val * pop * factor)
