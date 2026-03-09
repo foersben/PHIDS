@@ -1,4 +1,8 @@
-"""Pydantic schemata for ECS components, configuration payloads, and REST API models."""
+"""Pydantic schemas for ECS components, configuration payloads, and REST API models.
+
+This module defines payload and response models used by the REST API as well
+as schemata representing ECS components and species parameters.
+"""
 
 from __future__ import annotations
 

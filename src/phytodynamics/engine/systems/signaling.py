@@ -1,11 +1,9 @@
-"""Signaling system: substance synthesis, activation, mycorrhizal relay, and toxin effects.
+"""Signaling system: substance synthesis, activation and toxin effects.
 
-Manages the full lifecycle of VOC signals and defensive toxins:
-* Trigger condition evaluation via spatial hash.
-* Synthesis countdown and substance activation.
-* Airborne diffusion delegation to GridEnvironment.
-* Mycorrhizal (root-network) signal relay.
-* Toxin lethality and repellent application.
+This module manages the lifecycle of VOC signals and defensive toxins,
+including trigger evaluation via the spatial hash, synthesis countdowns,
+delegation of airborne diffusion to :class:`GridEnvironment`, mycorrhizal
+signal relays and application of toxin effects to swarms.
 """
 
 from __future__ import annotations
@@ -23,7 +21,16 @@ def _check_precursor_active(
     precursor_signal_id: int,
     world: ECSWorld,
 ) -> bool:
-    """Return True if the required precursor signal is active for the owning plant."""
+    """Return True if the required precursor signal is active for the owner.
+
+    Args:
+        owner_plant_id: Plant entity id that owns the substance.
+        precursor_signal_id: Required precursor signal id or -1 for none.
+        world: ECSWorld instance to query for active substances.
+
+    Returns:
+        bool: True if the precursor is active or not required.
+    """
     if precursor_signal_id < 0:
         return True
     for entity in world.query(SubstanceComponent):
@@ -43,7 +50,13 @@ def _apply_toxin_to_swarms(
     env: GridEnvironment,
     world: ECSWorld,
 ) -> None:
-    """Apply lethal and repellent toxin effects to swarms at cells with toxin concentration."""
+    """Apply lethal and repellent toxin effects to swarms at affected cells.
+
+    Args:
+        sub: Substance component representing the toxin.
+        env: GridEnvironment providing toxin concentrations.
+        world: ECSWorld to iterate swarms.
+    """
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
         toxin_val = float(env.toxin_layers[sub.substance_id, swarm.x, swarm.y])
@@ -70,10 +83,21 @@ def _relay_signal_via_mycorrhizal(
     signal_velocity: int,
     tick: int,
 ) -> None:
-    """Propagate a signal through root network connections.
+    """Propagate a signal through root-network connections.
 
-    The signal is deposited directly into the signal_layers of connected
-    plant cells, bypassing airborne diffusion.
+    The signal is deposited directly into connected plant cells' signal
+    layers, bypassing airborne diffusion. Inter-species relay can be
+    disabled via ``mycorrhizal_inter_species``.
+
+    Args:
+        source_plant: Originating plant component.
+        signal_id: Signal layer index.
+        amount: Amount to deposit at each neighbour.
+        env: GridEnvironment instance.
+        world: ECSWorld instance.
+        mycorrhizal_inter_species: Allow inter-species relay when True.
+        signal_velocity: Attenuation factor applied per hop.
+        tick: Current simulation tick (unused here but provided for parity).
     """
     for neighbour_id in source_plant.mycorrhizal_connections:
         if not world.has_entity(neighbour_id):
@@ -99,22 +123,16 @@ def run_signaling(
     signal_velocity: int,
     tick: int,
 ) -> None:
-    """Execute one signaling tick.
+    """Execute one signaling tick, handling synthesis, emission and diffusion.
 
-    Parameters
-    ----------
-    world:
-        ECS world registry.
-    env:
-        Grid environment holding signal/toxin layers.
-    trigger_conditions:
-        Mapping of flora species_id -> list[TriggerConditionSchema].
-    mycorrhizal_inter_species:
-        Whether inter-species mycorrhizal signaling is permitted.
-    signal_velocity:
-        Ticks per hop for root-network signal relay.
-    tick:
-        Current simulation tick.
+    Args:
+        world: ECS world registry.
+        env: Grid environment holding signal/toxin layers.
+        trigger_conditions: Mapping of flora species_id to trigger schemas.
+        mycorrhizal_inter_species: Whether inter-species mycorrhizal signaling
+            is permitted.
+        signal_velocity: Ticks per hop for root-network relays.
+        tick: Current simulation tick.
     """
     from phytodynamics.api.schemas import TriggerConditionSchema  # avoid circular at module level
 

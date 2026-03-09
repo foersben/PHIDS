@@ -1,5 +1,8 @@
-"""Termination condition evaluators Z1–Z7."""
+"""Termination condition evaluators (Z1–Z7).
 
+Provide checks for simulation termination conditions such as maximum ticks,
+species extinction and aggregate population/energy thresholds.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -11,7 +14,12 @@ from phytodynamics.engine.core.ecs import ECSWorld
 
 @dataclass(slots=True)
 class TerminationResult:
-    """Returned by :func:`check_termination` when the simulation should stop."""
+    """Result returned by :func:`check_termination`.
+
+    Attributes:
+        terminated: True when a termination condition has been met.
+        reason: Human-readable explanation for termination.
+    """
 
     terminated: bool
     reason: str
@@ -28,33 +36,21 @@ def check_termination(
     z6_max_flora_energy: float = -1.0,
     z7_max_predator_population: int = -1,
 ) -> TerminationResult:
-    """Evaluate all termination conditions and return the first triggered one.
+    """Evaluate termination conditions and return the first triggered one.
 
-    Parameters
-    ----------
-    world:
-        ECS world registry.
-    tick:
-        Current simulation tick.
-    max_ticks:
-        Z1 – halt at this tick count.
-    z2_flora_species:
-        Species id whose extinction triggers Z2 (-1 = disabled).
-    z3_check_all_flora:
-        If True, check Z3 (all flora extinct).
-    z4_predator_species:
-        Species id whose extinction triggers Z4 (-1 = disabled).
-    z5_check_all_predators:
-        If True, check Z5 (all predators extinct).
-    z6_max_flora_energy:
-        Z6 threshold for aggregate flora energy (-1 = disabled).
-    z7_max_predator_population:
-        Z7 threshold for aggregate predator population (-1 = disabled).
+    Args:
+        world: ECS world registry.
+        tick: Current simulation tick.
+        max_ticks: Z1 – maximum allowed ticks (halt when reached).
+        z2_flora_species: Species id that triggers Z2 on extinction (-1 disables).
+        z3_check_all_flora: If True, halt when all flora are extinct (Z3).
+        z4_predator_species: Species id that triggers Z4 on extinction (-1 disables).
+        z5_check_all_predators: If True, halt when all predators are extinct (Z5).
+        z6_max_flora_energy: Aggregate flora energy threshold for Z6 (-1 disables).
+        z7_max_predator_population: Aggregate predator population threshold for Z7 (-1 disables).
 
-    Returns
-    -------
-    TerminationResult
-        ``terminated=False`` when the simulation should continue.
+    Returns:
+        TerminationResult: Object indicating whether termination occurred and why.
     """
     # Z1 – maximum tick count
     if tick >= max_ticks:

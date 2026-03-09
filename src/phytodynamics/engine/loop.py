@@ -1,4 +1,10 @@
-"""Simulation loop: double-buffered tick orchestration with termination condition checks."""
+"""Simulation loop orchestration with deterministic ticks.
+
+This module implements the main simulation driver which advances the
+grid environment and ECS world through ordered systems. It captures
+per-tick snapshots for replay and telemetry and enforces deterministic
+update ordering using an asyncio lock.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +21,7 @@ from phytodynamics.engine.core.flow_field import apply_camouflage, compute_flow_
 from phytodynamics.engine.systems.interaction import run_interaction
 from phytodynamics.engine.systems.lifecycle import run_lifecycle
 from phytodynamics.engine.systems.signaling import run_signaling
+from phytodynamics.io.replay import ReplayBuffer
 from phytodynamics.telemetry.analytics import TelemetryRecorder
 from phytodynamics.telemetry.conditions import TerminationResult, check_termination
 
@@ -22,20 +29,23 @@ logger = logging.getLogger(__name__)
 
 
 class SimulationLoop:
-    """Orchestrates double-buffered, deterministic simulation ticks.
+    """Orchestrate deterministic, double-buffered simulation ticks.
 
-    Double-buffering is achieved by maintaining a read-copy of the grid
-    state (biotope + ECS snapshot intention) and writing results to the live
-    objects within each tick, which are then considered the new read state for
-    the next tick.  Concurrent access is guarded by ``asyncio.Lock``.
+    Double-buffering is achieved by keeping a read-copy of the grid state
+    while writing results to live objects; these writes become the read
+    state for the next tick. Concurrent access is protected by
+    ``asyncio.Lock``.
 
-    Parameters
-    ----------
-    config:
-        Validated :class:`~phytodynamics.api.schemas.SimulationConfig`.
+    Args:
+        config: Validated :class:`~phytodynamics.api.schemas.SimulationConfig`.
     """
 
     def __init__(self, config: SimulationConfig) -> None:
+        """Initialise the SimulationLoop with the provided configuration.
+
+        Args:
+            config: Validated SimulationConfig instance from the API payload.
+        """
         self.config = config
         self.tick: int = 0
         self.running: bool = False
@@ -58,6 +68,8 @@ class SimulationLoop:
 
         # Telemetry
         self.telemetry = TelemetryRecorder()
+        # Deterministic replay state frames (msgpack serialisation per tick)
+        self.replay = ReplayBuffer()
 
         # Pre-compute species parameter lookups
         self._flora_params: dict[int, Any] = {
@@ -76,7 +88,12 @@ class SimulationLoop:
     # ------------------------------------------------------------------
 
     def _spawn_initial_entities(self) -> None:
-        """Place initial plants and swarms from the configuration."""
+        """Place initial plants and swarms from the configuration.
+
+        The method creates entity instances, attaches components, registers
+        spatial positions in the :class:`ECSWorld`, and populates the
+        environment's plant energy buffers.
+        """
         for placement in self.config.initial_plants:
             params = self._flora_params.get(placement.species_id)
             if params is None:
@@ -125,18 +142,43 @@ class SimulationLoop:
         self.env.rebuild_energy_layer()
 
     def _get_predator_energy_min(self, species_id: int) -> float:
+        """Return the configured minimum energy for a predator species.
+
+        Args:
+            species_id: Predator species identifier to look up.
+
+        Returns:
+            float: Configured minimum energy if found, otherwise a sensible
+            default of 1.0.
+        """
         for sp in self.config.predator_species:
             if sp.species_id == species_id:
                 return sp.energy_min
         return 1.0
 
     def _get_predator_velocity(self, species_id: int) -> int:
+        """Return the configured movement period (velocity) for a predator.
+
+        Args:
+            species_id: Predator species identifier to look up.
+
+        Returns:
+            int: Movement period in ticks; defaults to 1 when not found.
+        """
         for sp in self.config.predator_species:
             if sp.species_id == species_id:
                 return sp.velocity
         return 1
 
     def _get_predator_consumption_rate(self, species_id: int) -> float:
+        """Return the per-tick consumption rate for a predator species.
+
+        Args:
+            species_id: Predator species identifier to look up.
+
+        Returns:
+            float: Consumption rate if present, otherwise 1.0 by default.
+        """
         for sp in self.config.predator_species:
             if sp.species_id == species_id:
                 return sp.consumption_rate
@@ -147,16 +189,22 @@ class SimulationLoop:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
-        """Mark simulation as running."""
+        """Mark the simulation as running.
+
+        Sets running state to True and clears the paused flag.
+        """
         self.running = True
         self.paused = False
 
     def pause(self) -> None:
-        """Toggle paused state."""
+        """Toggle the paused state.
+
+        Flips the ``paused`` boolean.
+        """
         self.paused = not self.paused
 
     def stop(self) -> None:
-        """Halt the simulation."""
+        """Halt the simulation by clearing the running flag."""
         self.running = False
 
     # ------------------------------------------------------------------
@@ -164,12 +212,15 @@ class SimulationLoop:
     # ------------------------------------------------------------------
 
     async def step(self) -> TerminationResult:
-        """Execute one deterministic simulation tick (async-safe via lock).
+        """Execute one deterministic simulation tick.
 
-        Returns
-        -------
-        TerminationResult
-            Termination state after the tick.
+        The method performs the ordered phases of the simulation (flow-field
+        update, lifecycle, interaction, signaling, telemetry) while holding
+        an asyncio lock to ensure async-safety. After processing it
+        evaluates termination conditions.
+
+        Returns:
+            TerminationResult: Termination state after the tick.
         """
         async with self._lock:
             if self.terminated:
@@ -217,6 +268,7 @@ class SimulationLoop:
             # Phase 5: Telemetry
             # --------------------------------------------------------
             self.telemetry.record(self.world, self.tick)
+            self.replay.append(self.get_state_snapshot())
 
             # --------------------------------------------------------
             # Phase 6: Termination check (double-buffer swap happens here
@@ -243,7 +295,10 @@ class SimulationLoop:
             return result
 
     async def run(self) -> None:
-        """Run the simulation to completion at the configured tick rate."""
+        """Run the simulation loop until termination at configured tick rate.
+
+        The loop respects ``paused`` and sleeps to maintain ``tick_rate_hz``.
+        """
         import time
 
         tick_interval = 1.0 / self.config.tick_rate_hz
@@ -267,7 +322,12 @@ class SimulationLoop:
     # ------------------------------------------------------------------
 
     def update_wind(self, vx: float, vy: float) -> None:
-        """Dynamically update uniform wind vector."""
+        """Update the environment uniform wind vector.
+
+        Args:
+            vx: Wind X component.
+            vy: Wind Y component.
+        """
         self.env.set_uniform_wind(vx, vy)
 
     # ------------------------------------------------------------------
@@ -275,7 +335,12 @@ class SimulationLoop:
     # ------------------------------------------------------------------
 
     def get_state_snapshot(self) -> dict[str, Any]:
-        """Return a serialisable snapshot of the current grid state."""
+        """Return a serialisable snapshot of the current grid state.
+
+        Returns:
+            dict[str, Any]: Snapshot containing tick, termination state and
+            environment dictionary (from :meth:`GridEnvironment.to_dict`).
+        """
         return {
             "tick": self.tick,
             "terminated": self.terminated,

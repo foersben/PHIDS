@@ -1,6 +1,8 @@
 """Lifecycle system: plant growth, reproduction, and death.
 
-Executed once per simulation tick before interaction and signaling.
+This module implements per-tick plant updates including growth according
+to species parameters, reproduction attempts, and culling of dead plants.
+It should run before interaction and signaling phases.
 """
 
 from __future__ import annotations
@@ -14,9 +16,11 @@ from phytodynamics.engine.core.ecs import ECSWorld
 
 
 def _grow(plant: PlantComponent, tick: int) -> None:
-    """Apply the growth formula E_i,j(t+1) = E_i,j(0) * (1 + r/100 * t).
+    """Apply the growth formula and clamp to max energy.
 
-    Energy is clamped to max_energy.
+    Args:
+        plant: PlantComponent to update.
+        tick: Current simulation tick used in the growth formula.
     """
     new_energy = plant.base_energy * (1.0 + plant.growth_rate / 100.0 * tick)
     plant.energy = min(new_energy, plant.max_energy)
@@ -29,7 +33,18 @@ def _attempt_reproduction(
     env: GridEnvironment,
     flora_species_params: dict[int, object],
 ) -> list[PlantComponent]:
-    """Try to reproduce at interval T_i.  Returns list of new PlantComponents."""
+    """Attempt reproduction for a plant when interval and energy permit.
+
+    Args:
+        plant: Parent plant component.
+        tick: Current simulation tick.
+        world: ECSWorld to allocate new entities.
+        env: GridEnvironment to update plant energy layers.
+        flora_species_params: Mapping of species_id to species parameters.
+
+    Returns:
+        list[PlantComponent]: Newly created plant components (empty if none).
+    """
     from phytodynamics.api.schemas import FloraSpeciesParams  # local import avoids circulars
 
     if (tick - plant.last_reproduction_tick) < plant.reproduction_interval:
@@ -93,18 +108,13 @@ def run_lifecycle(
     tick: int,
     flora_species_params: dict[int, object],
 ) -> None:
-    """Execute one lifecycle tick: grow all plants, reproduce, and cull dead ones.
+    """Execute one lifecycle tick: grow plants, attempt reproduction, and cull.
 
-    Parameters
-    ----------
-    world:
-        The ECS world registry.
-    env:
-        The grid environment.
-    tick:
-        Current simulation tick index.
-    flora_species_params:
-        Mapping of species_id -> FloraSpeciesParams (from SimulationConfig).
+    Args:
+        world: The ECS world registry.
+        env: The GridEnvironment instance.
+        tick: Current simulation tick index.
+        flora_species_params: Mapping of species_id to species parameters.
     """
     dead: list[int] = []
 

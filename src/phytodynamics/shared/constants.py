@@ -1,4 +1,8 @@
-"""Shared constants for PHIDS – Rule of 16 and grid bounds."""
+"""Shared constants for PHIDS.
+
+This module defines compile-time limits (Rule of 16), grid bounds and
+other numeric sentinel values used across the codebase.
+"""
 
 from __future__ import annotations
 

@@ -1,5 +1,8 @@
-"""Herbivore Swarm ECS component (data-only dataclass)."""
+"""Herbivore Swarm ECS component dataclass.
 
+Defines :class:`SwarmComponent` storing runtime state for a herbivore
+swarm entity used by interaction and telemetry subsystems.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,36 +12,21 @@ from dataclasses import dataclass
 class SwarmComponent:
     """Holds runtime state for a single herbivore swarm entity.
 
-    Attributes
-    ----------
-    entity_id:
-        ECS entity identifier.
-    species_id:
-        Predator species index.
-    x, y:
-        Current grid coordinates.
-    population:
-        Current swarm head-count n(t).
-    initial_population:
-        Head-count at spawn n(0); used to detect mitosis threshold.
-    energy:
-        Current energy reserve.
-    energy_min:
-        Minimum energy per individual E_min(e_h).
-    velocity:
-        Movement period v_h – ticks between spatial translations.
-    consumption_rate:
-        Per-tick consumption scalar η(C_i).
-    starvation_ticks:
-        Consecutive ticks without adequate caloric intake.
-    repelled:
-        True when a repellent toxin is active.
-    repelled_ticks_remaining:
-        Remaining ticks in random-walk / inverted gradient mode.
-    target_plant_id:
-        ECS entity id of the currently targeted plant (-1 = none).
-    move_cooldown:
-        Ticks remaining until next movement is permitted.
+    Attributes:
+        entity_id: ECS entity identifier.
+        species_id: Predator species index.
+        x, y: Current grid coordinates.
+        population: Current swarm head-count.
+        initial_population: Head-count at spawn; used for mitosis checks.
+        energy: Current energy reserve.
+        energy_min: Minimum energy per individual.
+        velocity: Movement period in ticks between moves.
+        consumption_rate: Per-tick consumption scalar.
+        starvation_ticks: Consecutive ticks without feeding.
+        repelled: Whether the swarm is currently repelled by toxin.
+        repelled_ticks_remaining: Remaining ticks of repelled behavior.
+        target_plant_id: Entity id of the targeted plant (-1 = none).
+        move_cooldown: Ticks remaining until the next movement.
     """
 
     entity_id: int

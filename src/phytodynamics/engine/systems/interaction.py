@@ -1,7 +1,9 @@
-"""Interaction system: swarm movement, feeding, starvation, mitosis, toxin effects.
+"""Interaction system: swarm movement, feeding, mitosis and toxin effects.
 
-Implements O(1) spatial-hash lookups for predator/flora co-occupancy,
-flow-field navigation, diet matrix enforcement, and ECS garbage collection.
+This module implements swarm behaviour including movement (gradient
+navigation or random walk), feeding using the diet compatibility matrix,
+starvation attrition, mitosis and application of toxin effects. Spatial
+hash lookups provide O(1) co-occupancy checks.
 """
 
 from __future__ import annotations
@@ -26,23 +28,18 @@ def _best_neighbour(
     height: int,
     invert: bool = False,
 ) -> tuple[int, int]:
-    """Return the 4-connected neighbour (or current cell) with the highest gradient.
+    """Return the best 4-connected neighbour (or current cell).
 
-    Parameters
-    ----------
-    x, y:
-        Current cell.
-    flow_field:
-        Scalar attraction field.
-    width, height:
-        Grid dimensions.
-    invert:
-        When True (repelled state), choose the *lowest* gradient (flee).
+    Args:
+        x: Current X coordinate.
+        y: Current Y coordinate.
+        flow_field: Scalar attraction field.
+        width: Grid width.
+        height: Grid height.
+        invert: When True, choose the lowest gradient (flee behaviour).
 
-    Returns
-    -------
-    tuple[int, int]
-        Best (nx, ny) to move to.
+    Returns:
+        tuple[int, int]: Best (nx, ny) cell to move to.
     """
     candidates: list[tuple[int, int]] = [(x, y)]
     if x > 0:
@@ -65,7 +62,17 @@ def _random_walk_step(
     width: int,
     height: int,
 ) -> tuple[int, int]:
-    """Return a random valid adjacent cell."""
+    """Return a random valid adjacent cell.
+
+    Args:
+        x: Current X coordinate.
+        y: Current Y coordinate.
+        width: Grid width.
+        height: Grid height.
+
+    Returns:
+        tuple[int, int]: Randomly chosen adjacent cell (or same cell).
+    """
     candidates: list[tuple[int, int]] = [(x, y)]
     if x > 0:
         candidates.append((x - 1, y))
@@ -82,16 +89,17 @@ def _perform_mitosis(
     swarm: SwarmComponent,
     world: ECSWorld,
 ) -> SwarmComponent:
-    """Split an oversized swarm into two equal halves.
+    """Split an oversized swarm into two equal halves and spawn offspring.
 
-    The original swarm retains floor(n/2) individuals.  A new entity is
-    created with the same attributes and floor(n/2) individuals, placed
-    on the same cell.
+    The original swarm retains ``floor(n/2)`` individuals; a new entity is
+    created with the same attributes and the other half is assigned to it.
 
-    Returns
-    -------
-    SwarmComponent
-        The newly spawned offspring swarm component.
+    Args:
+        swarm: Parent swarm component to split.
+        world: ECSWorld used to allocate the new entity.
+
+    Returns:
+        SwarmComponent: The newly spawned offspring swarm component.
     """
     half = swarm.population // 2
     swarm.population = half
@@ -123,26 +131,15 @@ def run_interaction(
 ) -> None:
     """Execute one interaction tick for all swarm entities.
 
-    Steps per swarm
-    ---------------
-    1. Decrement move_cooldown; skip movement if > 0.
-    2. Navigate via flow-field (or random walk if repelled).
-    3. Feed on co-located plants that pass the diet matrix.
-    4. Apply lethal toxin casualties.
-    5. Starvation attrition.
-    6. Mitosis check.
-    7. Mark starved-to-zero or otherwise dead swarms for GC.
+    The routine performs movement, feeding using the diet matrix, toxin
+    damage, starvation attrition, and mitosis, then collects dead swarms
+    and rebuilds the plant energy layer.
 
-    Parameters
-    ----------
-    world:
-        ECS world registry.
-    env:
-        Grid environment (flow_field, toxin_layers).
-    diet_matrix:
-        Boolean list[predator_id][flora_species_id] = edible.
-    tick:
-        Current simulation tick (unused directly but reserved for future use).
+    Args:
+        world: ECSWorld registry.
+        env: GridEnvironment instance (provides flow_field and toxin layers).
+        diet_matrix: Compatibility matrix indexed by predator_id then flora_id.
+        tick: Current simulation tick (reserved for future use).
     """
     dead_swarms: list[int] = []
     new_swarms: list[SwarmComponent] = []

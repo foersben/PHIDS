@@ -1,0 +1,25 @@
+site_name: PHIDS
+site_description: Plant-Herbivore Interaction & Defense Simulator
+repo_name: foersben/phids
+repo_url: https://github.com/foersben/phids
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+
+nav:
+  - Overview: docs/index.md
+  - Architecture: docs/architecture.md
+  - Technical Requirements: docs/technical_requirements.md
+  - Requirements Coverage: docs/requirements_coverage.md
+  - API Reference: docs/reference.md

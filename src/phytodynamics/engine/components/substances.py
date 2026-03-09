@@ -1,5 +1,8 @@
-"""Substance (signal / toxin) ECS component (data-only dataclass)."""
+"""Substance ECS component dataclass.
 
+Defines :class:`SubstanceComponent` for volatile signals and toxins emitted
+by plants in response to herbivore presence.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,36 +12,21 @@ from dataclasses import dataclass
 class SubstanceComponent:
     """Holds runtime state for a single substance entity.
 
-    A substance is either a volatile signal (VOC) or a toxin produced
-    by a plant in response to herbivore attack.
+    A substance represents either a volatile signal (VOC) or a toxin.
 
-    Attributes
-    ----------
-    entity_id:
-        ECS entity identifier.
-    substance_id:
-        Layer index into signal_layers or toxin_layers.
-    owner_plant_id:
-        ECS entity id of the producing plant.
-    is_toxin:
-        True for toxins; False for signals.
-    synthesis_remaining:
-        Ticks of synthesis still required before the substance becomes active.
-    active:
-        Whether the substance is currently active / being emitted.
-    aftereffect_ticks:
-        Remaining ticks of aftereffect T_k after the trigger condition is gone.
-    lethal:
-        True if this toxin has a lethal effect.
-    lethality_rate:
-        Individuals eliminated per tick β(s_x, C_i).
-    repellent:
-        True if this toxin has a repellent effect.
-    repellent_walk_ticks:
-        Ticks of random-walk k triggered on a repel event.
-    precursor_signal_id:
-        substance_id of the signal that must be active before this toxin can
-        be synthesised (-1 means no precursor required).
+    Attributes:
+        entity_id: ECS entity identifier.
+        substance_id: Layer index into signal or toxin layers.
+        owner_plant_id: Entity id of the producing plant.
+        is_toxin: True for toxins, False for signals.
+        synthesis_remaining: Ticks remaining before activation.
+        active: Whether the substance is currently active.
+        aftereffect_ticks: Remaining aftereffect duration after trigger removal.
+        lethal: Whether the toxin is lethal.
+        lethality_rate: Individuals eliminated per tick when lethal.
+        repellent: Whether the toxin repels swarms.
+        repellent_walk_ticks: Duration of repelled random-walk in ticks.
+        precursor_signal_id: Required precursor signal id (-1 = none).
     """
 
     entity_id: int

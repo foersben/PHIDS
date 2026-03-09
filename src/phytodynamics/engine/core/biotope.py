@@ -1,7 +1,8 @@
-"""GridEnvironment: NumPy-backed biotope with SciPy 2-D convolution diffusion.
+"""GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion.
 
-All cellular automata layers are pre-allocated according to the Rule of 16.
-Double-buffering (read/write pair) is enforced to prevent race conditions.
+All cellular automata layers are pre-allocated according to the Rule of 16
+and use explicit read/write double-buffering to avoid race conditions when
+performing per-tick writes.
 """
 
 from __future__ import annotations
@@ -28,7 +29,15 @@ _SIGMA: float = 0.8
 def _make_gaussian_kernel(
     size: int = _KERNEL_SIZE, sigma: float = _SIGMA
 ) -> npt.NDArray[np.float64]:
-    """Return a normalised 2-D Gaussian kernel for VOC diffusion."""
+    """Return a normalised 2-D Gaussian kernel for VOC diffusion.
+    
+    Args:
+        size: Kernel size (must be odd).
+        sigma: Standard deviation of the Gaussian.
+        
+    Returns:
+        npt.NDArray[np.float64]: 2-D array of shape (size, size) representing the kernel.
+    """
     ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)
     xx, yy = np.meshgrid(ax, ax)
     kernel: npt.NDArray[np.float64] = np.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))
@@ -44,18 +53,15 @@ DIFFUSION_KERNEL: npt.NDArray[np.float64] = _make_gaussian_kernel()
 
 
 class GridEnvironment:
-    """Manages all vectorised biotope layers for the PHIDS simulation.
+    """Manage vectorised biotope layers and diffusion helpers.
 
-    Parameters
-    ----------
-    width:
-        Grid width W (1 ≤ W ≤ GRID_W_MAX).
-    height:
-        Grid height H (1 ≤ H ≤ GRID_H_MAX).
-    num_signals:
-        Number of signal substance layers (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
-    num_toxins:
-        Number of toxin substance layers (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
+    Args:
+        width: Grid width W (1 ≤ W ≤ GRID_W_MAX).
+        height: Grid height H (1 ≤ H ≤ GRID_H_MAX).
+        num_signals: Number of signal substance layers
+            (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
+        num_toxins: Number of toxin substance layers
+            (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
     """
 
     def __init__(
@@ -65,6 +71,14 @@ class GridEnvironment:
         num_signals: int = 4,
         num_toxins: int = 4,
     ) -> None:
+        """Initialise grid layers and double-buffered storage.
+
+        Args:
+            width: Grid width in cells.
+            height: Grid height in cells.
+            num_signals: Number of airborne signal layers.
+            num_toxins: Number of toxin layers.
+        """
         if not (1 <= width <= GRID_W_MAX):
             raise ValueError(f"width {width} out of range [1, {GRID_W_MAX}].")
         if not (1 <= height <= GRID_H_MAX):
@@ -82,13 +96,17 @@ class GridEnvironment:
         shape: tuple[int, int] = (width, height)
 
         # ------------------------------------------------------------------
-        # Plant energy layer – read buffer
+        # Plant energy layers (read/write buffers)
         # ------------------------------------------------------------------
         self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # Per-species energy layers (Rule of 16 pre-allocation)
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
+        )
+        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(
+            self.plant_energy_by_species
         )
 
         # ------------------------------------------------------------------
@@ -124,12 +142,24 @@ class GridEnvironment:
     # ------------------------------------------------------------------
 
     def set_uniform_wind(self, vx: float, vy: float) -> None:
-        """Fill wind layers with a spatially uniform vector (vx, vy)."""
+        """Fill wind layers with a spatially uniform vector.
+
+        Args:
+            vx: X component of the wind.
+            vy: Y component of the wind.
+        """
         self.wind_vector_x[:] = vx
         self.wind_vector_y[:] = vy
 
     def update_wind_at(self, x: int, y: int, vx: float, vy: float) -> None:
-        """Update the wind vector at a single grid cell."""
+        """Update the wind vector at a single grid cell.
+
+        Args:
+            x: X coordinate.
+            y: Y coordinate.
+            vx: X component of the wind.
+            vy: Y component of the wind.
+        """
         self.wind_vector_x[x, y] = vx
         self.wind_vector_y[x, y] = vy
 
@@ -140,9 +170,9 @@ class GridEnvironment:
     def diffuse_signals(self) -> None:
         """Compute one diffusion tick for all signal layers.
 
-        Uses SciPy 2-D convolution with the pre-computed Gaussian kernel,
-        then applies a wind shift and enforces the SIGNAL_EPSILON sparsity
-        threshold to prevent subnormal float accumulation.
+        This applies a 2-D convolution with a pre-computed Gaussian kernel,
+        advects the result by the mean wind vector using integer pixel
+        rolls, and applies a sparsity threshold to zero small values.
         """
         # Compute mean wind shift (integer pixel shift for np.roll)
         mean_vx: int = int(round(float(self.wind_vector_x.mean())))
@@ -170,9 +200,8 @@ class GridEnvironment:
     def diffuse_toxins(self) -> None:
         """Compute one diffusion tick for all toxin layers.
 
-        Toxins diffuse identically to signals but dissipate completely
-        when their triggering condition ceases (handled externally by the
-        signaling system).  Here we apply convolution and epsilon threshold.
+        Toxins diffuse using the same kernel as signals. Small values are
+        zeroed using the same epsilon threshold.
         """
         mean_vx: int = int(round(float(self.wind_vector_x.mean())))
         mean_vy: int = int(round(float(self.wind_vector_y.mean())))
@@ -198,23 +227,56 @@ class GridEnvironment:
     # ------------------------------------------------------------------
 
     def rebuild_energy_layer(self) -> None:
-        """Recompute aggregate plant_energy_layer from per-species slices."""
-        self.plant_energy_layer[:] = self.plant_energy_by_species.sum(axis=0)
+        """Recompute aggregate plant energy layer and swap buffers.
+
+        Aggregates per-species write buffers into the global write buffer,
+        then swaps read/write buffers so that subsequent reads observe the
+        newly-written values.
+        """
+        self._plant_energy_layer_write[:] = self._plant_energy_by_species_write.sum(axis=0)
+        self.plant_energy_by_species, self._plant_energy_by_species_write = (
+            self._plant_energy_by_species_write,
+            self.plant_energy_by_species,
+        )
+        self.plant_energy_layer, self._plant_energy_layer_write = (
+            self._plant_energy_layer_write,
+            self.plant_energy_layer,
+        )
+        self._plant_energy_by_species_write[:] = self.plant_energy_by_species
+        self._plant_energy_layer_write[:] = self.plant_energy_layer
 
     def set_plant_energy(self, x: int, y: int, species_id: int, value: float) -> None:
-        """Set the energy contribution of a specific species at (x, y)."""
-        self.plant_energy_by_species[species_id, x, y] = max(0.0, value)
+        """Set a species-specific energy contribution in the write buffer.
+
+        Args:
+            x: X coordinate.
+            y: Y coordinate.
+            species_id: Species index.
+            value: Energy contribution (clamped to >= 0).
+        """
+        self._plant_energy_by_species_write[species_id, x, y] = max(0.0, value)
 
     def clear_plant_energy(self, x: int, y: int, species_id: int) -> None:
-        """Remove a plant's energy contribution (on death)."""
-        self.plant_energy_by_species[species_id, x, y] = 0.0
+        """Clear a species-specific energy contribution in the write buffer.
+
+        Args:
+            x: X coordinate.
+            y: Y coordinate.
+            species_id: Species index.
+        """
+        self._plant_energy_by_species_write[species_id, x, y] = 0.0
 
     # ------------------------------------------------------------------
     # State snapshot (for serialisation / streaming)
     # ------------------------------------------------------------------
 
     def to_dict(self) -> dict[str, object]:
-        """Return a lightweight dict snapshot suitable for msgpack serialisation."""
+        """Return a lightweight snapshot dict suitable for msgpack serialisation.
+
+        Returns:
+            dict: Mapping containing numpy arrays converted to nested lists.
+        """
+
         return {
             "plant_energy_layer": self.plant_energy_layer.tolist(),
             "signal_layers": self.signal_layers.tolist(),

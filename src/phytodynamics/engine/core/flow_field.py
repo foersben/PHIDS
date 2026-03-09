@@ -1,9 +1,8 @@
 """Flow-field gradient generation accelerated with Numba @njit.
 
-A global attraction gradient is computed iteratively:
-* Flora cells project positive attraction proportional to their energy.
-* Toxin cells emit negative gradients (repellent).
-The resulting scalar field is stored in GridEnvironment.flow_field.
+The global attraction gradient is computed by combining plant attraction
+and toxin repulsion, then propagating values to neighbours. The scalar
+field is intended to populate :class:`GridEnvironment.flow_field`.
 """
 
 from __future__ import annotations
@@ -20,23 +19,16 @@ def _compute_flow_field(
     width: int,
     height: int,
 ) -> npt.NDArray[np.float64]:
-    """Build the attraction gradient field using iterative propagation.
+    """Compute the attraction gradient using an iterative propagation.
 
-    Parameters
-    ----------
-    plant_energy:
-        2-D array ``(W, H)`` of aggregated plant energy per cell.
-    toxin_sum:
-        2-D array ``(W, H)`` of aggregated toxin concentration per cell.
-    width:
-        Grid width W.
-    height:
-        Grid height H.
+    Args:
+        plant_energy: 2-D array ``(W, H)`` of aggregated plant energy per cell.
+        toxin_sum: 2-D array ``(W, H)`` of aggregated toxin concentration per cell.
+        width: Grid width W.
+        height: Grid height H.
 
-    Returns
-    -------
-    npt.NDArray[np.float64]
-        Scalar attraction field of shape ``(W, H)``.
+    Returns:
+        npt.NDArray[np.float64]: Scalar attraction field of shape ``(W, H)``.
     """
     gradient = np.zeros((width, height), dtype=np.float64)
 
@@ -71,23 +63,16 @@ def compute_flow_field(
     width: int,
     height: int,
 ) -> npt.NDArray[np.float64]:
-    """Public wrapper: sum toxin layers then delegate to njit kernel.
+    """Public wrapper: sum toxin layers and delegate to the Numba kernel.
 
-    Parameters
-    ----------
-    plant_energy:
-        Shape ``(W, H)`` aggregate plant energy.
-    toxin_layers:
-        Shape ``(num_toxins, W, H)`` toxin concentration layers.
-    width:
-        Grid width.
-    height:
-        Grid height.
+    Args:
+        plant_energy: Shape ``(W, H)`` aggregate plant energy.
+        toxin_layers: Shape ``(num_toxins, W, H)`` toxin concentration layers.
+        width: Grid width.
+        height: Grid height.
 
-    Returns
-    -------
-    npt.NDArray[np.float64]
-        Flow-field gradient of shape ``(W, H)``.
+    Returns:
+        npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
     """
     toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
     return _compute_flow_field(plant_energy, toxin_sum, width, height)
@@ -101,16 +86,10 @@ def apply_camouflage(
 ) -> None:
     """Attenuate the flow-field gradient at cell (x, y) in-place.
 
-    Constitutive camouflage reduces the local attraction value so that
-    distant predators find the camouflaged plant harder to detect.
-
-    Parameters
-    ----------
-    flow_field:
-        Mutable gradient array ``(W, H)``.
-    x, y:
-        Cell coordinates.
-    factor:
-        Multiplier in [0, 1]; 0 = invisible, 1 = no attenuation.
+    Args:
+        flow_field: Mutable gradient array ``(W, H)``.
+        x: X coordinate.
+        y: Y coordinate.
+        factor: Multiplier in [0, 1]; 0 = invisible, 1 = no attenuation.
     """
     flow_field[x, y] *= factor

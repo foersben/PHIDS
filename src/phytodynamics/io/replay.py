@@ -1,7 +1,8 @@
-"""Replay I/O: msgpack binary serialisation of per-tick state buffers.
+"""Replay I/O for deterministic simulations.
 
-Each tick state is serialised to a compact binary frame using msgpack,
-enabling deterministic re-simulation and comprehensive event logging.
+This module provides compact binary serialisation of per-tick state
+snapshots using :mod:`msgpack`. Each tick is stored as a discrete frame to
+support deterministic re-simulation and on-disk replay files.
 """
 
 from __future__ import annotations
@@ -13,34 +14,26 @@ import msgpack  # type: ignore[import-untyped]
 
 
 def serialise_state(state: dict[str, Any]) -> bytes:
-    """Serialise a state snapshot dict to a msgpack binary frame.
+    """Serialise a state snapshot to a msgpack frame.
 
-    Parameters
-    ----------
-    state:
-        Tick state dict (e.g., from
-        :meth:`~phytodynamics.engine.loop.SimulationLoop.get_state_snapshot`).
+    Args:
+        state: Tick state mapping (for example, the output of
+            ``SimulationLoop.get_state_snapshot()``).
 
-    Returns
-    -------
-    bytes
-        Compact msgpack-encoded binary representation.
+    Returns:
+        bytes: msgpack-encoded frame.
     """
     return msgpack.packb(state, use_bin_type=True)  # type: ignore[no-any-return]
 
 
 def deserialise_state(data: bytes) -> dict[str, Any]:
-    """Decode a msgpack binary frame back to a state snapshot dict.
+    """Deserialize a msgpack frame into a state mapping.
 
-    Parameters
-    ----------
-    data:
-        msgpack-encoded bytes produced by :func:`serialise_state`.
+    Args:
+        data: msgpack-encoded bytes produced by :func:`serialise_state`.
 
-    Returns
-    -------
-    dict[str, Any]
-        Decoded state mapping.
+    Returns:
+        dict[str, Any]: Decoded state mapping.
     """
     result: dict[str, Any] = msgpack.unpackb(data, raw=False)
     return result
@@ -54,23 +47,44 @@ class ReplayBuffer:
     """
 
     def __init__(self) -> None:
+        """Create an empty replay buffer.
+
+        The buffer stores msgpack-serialised frames in an append-only list.
+        """
         self._frames: list[bytes] = []
 
     def append(self, state: dict[str, Any]) -> None:
-        """Serialise and append one tick state to the buffer."""
+        """Serialize and append a tick state to the buffer.
+
+        Args:
+            state: Tick state mapping to serialize and store.
+        """
         self._frames.append(serialise_state(state))
 
     def __len__(self) -> int:
+        """Return number of stored frames."""
         return len(self._frames)
 
     def get_frame(self, tick: int) -> dict[str, Any]:
-        """Return the deserialised state for a given tick index."""
+        """Return the deserialised state for the specified tick index.
+
+        Args:
+            tick: Index of the frame to retrieve (0-based).
+
+        Returns:
+            dict[str, Any]: Decoded state mapping for the requested tick.
+        """
         return deserialise_state(self._frames[tick])
 
     def save(self, path: str | Path) -> None:
         """Write all frames to a binary replay file.
 
-        File format: [4-byte little-endian frame length][frame bytes] repeated.
+        The file format is an append of records where each record begins with a
+        4-byte little-endian unsigned integer describing the following frame
+        length, immediately followed by the frame bytes.
+
+        Args:
+            path: Destination file path.
         """
         with Path(path).open("wb") as fp:
             for frame in self._frames:
@@ -82,15 +96,11 @@ class ReplayBuffer:
     def load(cls, path: str | Path) -> ReplayBuffer:
         """Load a replay file produced by :meth:`save`.
 
-        Parameters
-        ----------
-        path:
-            Path to the binary replay file.
+        Args:
+            path: Path to the binary replay file.
 
-        Returns
-        -------
-        ReplayBuffer
-            Populated buffer ready for re-simulation.
+        Returns:
+            ReplayBuffer: Populated buffer ready for re-simulation.
         """
         buf = cls()
         with Path(path).open("rb") as fp:

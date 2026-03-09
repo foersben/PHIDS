@@ -1,30 +1,8 @@
-"""FastAPI application: REST endpoints and WebSocket streaming for PHIDS.
+"""FastAPI application exposing REST endpoints and WebSocket streaming.
 
-Endpoints
----------
-POST /api/scenario/load
-    Accept a SimulationConfig JSON payload and initialise the simulation loop.
-
-POST /api/simulation/start
-    Begin (or resume) simulation execution.
-
-POST /api/simulation/pause
-    Toggle pause state.
-
-GET  /api/simulation/status
-    Return current simulation state.
-
-PUT  /api/simulation/wind
-    Dynamically update the wind vector.
-
-GET  /api/telemetry/export/csv
-    Download the Lotka-Volterra telemetry as a CSV file.
-
-GET  /api/telemetry/export/json
-    Download the Lotka-Volterra telemetry as a JSON file.
-
-WS   /ws/simulation/stream
-    Stream the two-dimensional grid state at each tick.
+The application provides endpoints for loading scenarios, controlling the
+simulation lifecycle, updating environmental parameters and exporting
+telemetry. A WebSocket endpoint streams per-tick grid snapshots.
 """
 
 from __future__ import annotations
@@ -32,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import zlib
 from typing import Any
 
 import msgpack  # type: ignore[import-untyped]
@@ -82,15 +61,11 @@ def _get_loop() -> SimulationLoop:
 async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
     """Initialise the simulation loop with the provided configuration.
 
-    Parameters
-    ----------
-    config:
-        Complete :class:`~phytodynamics.api.schemas.SimulationConfig` payload.
+    Args:
+        config: Validated :class:`~phytodynamics.api.schemas.SimulationConfig`.
 
-    Returns
-    -------
-    dict
-        Confirmation message with grid dimensions.
+    Returns:
+        dict: Confirmation message including grid dimensions.
     """
     global _sim_loop, _sim_task  # noqa: PLW0603
 
@@ -113,7 +88,11 @@ async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
 
 @app.post("/api/simulation/start", summary="Start or resume simulation")
 async def start_simulation() -> dict[str, str]:
-    """Begin background execution of the simulation loop."""
+    """Begin background execution of the simulation loop.
+
+    Returns:
+        dict: Message confirming the simulation was started.
+    """
     global _sim_task  # noqa: PLW0603
     loop = _get_loop()
 
@@ -134,7 +113,11 @@ async def start_simulation() -> dict[str, str]:
 
 @app.post("/api/simulation/pause", summary="Pause or resume simulation")
 async def pause_simulation() -> dict[str, str]:
-    """Toggle pause state of the running simulation."""
+    """Toggle pause state of the running simulation.
+
+    Returns:
+        dict: Message indicating current paused/resumed state.
+    """
     loop = _get_loop()
     loop.pause()
     state = "paused" if loop.paused else "resumed"
@@ -147,7 +130,11 @@ async def pause_simulation() -> dict[str, str]:
     summary="Get simulation status",
 )
 async def simulation_status() -> SimulationStatusResponse:
-    """Return the current tick, running/paused/terminated flags."""
+    """Return the current tick and simulation state flags.
+
+    Returns:
+        SimulationStatusResponse: Pydantic response model with status.
+    """
     loop = _get_loop()
     return SimulationStatusResponse(
         tick=loop.tick,
@@ -162,11 +149,11 @@ async def simulation_status() -> SimulationStatusResponse:
 async def update_wind(payload: WindUpdatePayload) -> dict[str, Any]:
     """Dynamically update the simulation wind vector.
 
-    Parameters
-    ----------
-    payload:
-        :class:`~phytodynamics.api.schemas.WindUpdatePayload` with ``wind_x``
-        and ``wind_y`` fields.
+    Args:
+        payload: :class:`~phytodynamics.api.schemas.WindUpdatePayload`.
+
+    Returns:
+        dict: Confirmation and the applied wind vector.
     """
     loop = _get_loop()
     loop.update_wind(payload.wind_x, payload.wind_y)
@@ -175,7 +162,11 @@ async def update_wind(payload: WindUpdatePayload) -> dict[str, Any]:
 
 @app.get("/api/telemetry/export/csv", summary="Export telemetry as CSV")
 async def export_telemetry_csv() -> Response:
-    """Stream Lotka-Volterra analytics as a downloadable CSV file."""
+    """Stream Lotka-Volterra analytics as a downloadable CSV file.
+
+    Returns:
+        Response: FastAPI response containing CSV bytes and headers.
+    """
     loop = _get_loop()
     data = export_bytes_csv(loop.telemetry.dataframe)
     return Response(
@@ -187,7 +178,11 @@ async def export_telemetry_csv() -> Response:
 
 @app.get("/api/telemetry/export/json", summary="Export telemetry as JSON")
 async def export_telemetry_json() -> Response:
-    """Stream Lotka-Volterra analytics as a downloadable newline-delimited JSON file."""
+    """Stream Lotka-Volterra analytics as a downloadable NDJSON file.
+
+    Returns:
+        Response: FastAPI response containing NDJSON bytes and headers.
+    """
     loop = _get_loop()
     data = export_bytes_json(loop.telemetry.dataframe)
     return Response(
@@ -206,9 +201,9 @@ async def export_telemetry_json() -> Response:
 async def simulation_stream(websocket: WebSocket) -> None:
     """Stream grid state snapshots over WebSocket at each simulation tick.
 
-    The state is serialised with msgpack for compact binary transport.
-    If the simulation has not been loaded yet, the socket is closed with
-    code 1008 (Policy Violation).
+    The state is serialised with :mod:`msgpack` and compressed with
+    :mod:`zlib` for compact binary transport. If no scenario is loaded the
+    connection is closed with code 1008 (Policy Violation).
     """
     await websocket.accept()
 
@@ -224,12 +219,14 @@ async def simulation_stream(websocket: WebSocket) -> None:
             if loop.terminated:
                 # Send final state and close
                 snapshot = loop.get_state_snapshot()
-                await websocket.send_bytes(msgpack.packb(snapshot, use_bin_type=True))
+                packed = msgpack.packb(snapshot, use_bin_type=True)
+                await websocket.send_bytes(zlib.compress(packed))
                 break
 
             if loop.tick != last_tick:
                 snapshot = loop.get_state_snapshot()
-                await websocket.send_bytes(msgpack.packb(snapshot, use_bin_type=True))
+                packed = msgpack.packb(snapshot, use_bin_type=True)
+                await websocket.send_bytes(zlib.compress(packed))
                 last_tick = loop.tick
 
             await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
