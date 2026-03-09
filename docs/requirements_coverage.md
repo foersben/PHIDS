@@ -1,0 +1,62 @@
+# Technical Requirements Coverage
+
+This document maps each item from `docs/technical_requirements.md` to the
+implemented project artifacts.
+
+## 1. Core Technology Stack
+
+- Environment management (uv): project workflows are uv-first in
+  `README.md` and `.github/workflows/ci.yml`.
+- Vectorized data structures (numpy): continuous spatial matrices are
+  NumPy arrays in `src/phytodynamics/engine/core/biotope.py`.
+- Mathematical operations (scipy): diffusion uses
+  `scipy.signal.convolve2d` in `src/phytodynamics/engine/core/biotope.py`.
+- JIT compilation (numba): global flow field is generated in
+  `src/phytodynamics/engine/core/flow_field.py` with `@njit`.
+- API/network layer: FastAPI endpoints and WebSocket streaming are in
+  `src/phytodynamics/api/main.py`.
+- Telemetry aggregation (polars): metrics recorder is in
+  `src/phytodynamics/telemetry/analytics.py`.
+- Data validation (pydantic): schemas are in `src/phytodynamics/api/schemas.py`.
+- Binary serialization (msgpack): replay serialization and per-tick state
+  buffering are in `src/phytodynamics/io/replay.py` and
+  `src/phytodynamics/engine/loop.py`.
+- Architectural diagramming (mermaid.js): diagrams are in `docs/architecture.md`.
+
+## 2. Development Workflow and CI/CD
+
+- GitHub Actions CI/CD: quality workflow is in `.github/workflows/ci.yml`.
+- pre-commit: hooks are configured in `.pre-commit-config.yaml` and enforced in CI.
+- ruff + mypy: configured in `pyproject.toml`, executed in CI.
+- pytest + pytest-cov + pytest-benchmark: configured in `pyproject.toml`,
+  benchmark tests are in `tests/test_flow_field_benchmark.py` and
+  `tests/test_spatial_hash_benchmark.py`.
+- mkdocs + material + mkdocstrings: configured in `mkdocs.yml` with docs pages
+  under `docs/`.
+
+## 3. Architectural and Execution Constraints
+
+- Double-buffering: read/write buffers are enforced for diffusive signal and toxin
+  layers in `src/phytodynamics/engine/core/biotope.py`.
+- Rule of 16: hard caps and pre-allocation constants are in
+  `src/phytodynamics/shared/constants.py` and used across schemas/environment code.
+- ECS garbage collection: dead entities are purged via
+  `ECSWorld.collect_garbage` in `src/phytodynamics/engine/core/ecs.py` and
+  invoked by lifecycle/interaction/signaling systems.
+
+## 4. Computational Optimization Directives
+
+- O(1) spatial queries: grid-cell roster hash map in
+  `src/phytodynamics/engine/core/ecs.py`.
+- Subnormal mitigation: epsilon truncation after convolution in
+  `src/phytodynamics/engine/core/biotope.py`.
+- Unified pathfinding gradient: single global flow field in
+  `src/phytodynamics/engine/core/flow_field.py` used by interaction logic.
+
+## 5. Interface and Telemetry Specifications
+
+- Required REST/WS routes: implemented in `src/phytodynamics/api/main.py`.
+- Compressed state streaming: WebSocket frames are msgpack + zlib compressed
+  in `src/phytodynamics/api/main.py`.
+- Telemetry export utilities: CSV/JSON export in
+  `src/phytodynamics/telemetry/export.py`.
