@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from phytodynamics.engine.core.ecs import ECSWorld
+from phids.engine.core.ecs import ECSWorld
 
 
 class Marker:

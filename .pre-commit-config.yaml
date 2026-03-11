@@ -13,7 +13,6 @@ repos:
         additional_dependencies:
           - pydantic>=2.7
           - numpy>=1.26
-          - types-msgpack>=1.0
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -25,7 +24,7 @@ repos:
       - id: check-merge-conflict
 
   - repo: https://github.com/PyCQA/pydocstyle
-    rev: v6.3.0
+    rev: 6.3.0
     hooks:
       - id: pydocstyle
         args: ["--convention=google"]

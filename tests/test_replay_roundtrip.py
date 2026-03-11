@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from phytodynamics.io.replay import deserialise_state, serialise_state
+from phids.io.replay import deserialise_state, serialise_state
 
 
 def test_replay_roundtrip_msgpack() -> None:

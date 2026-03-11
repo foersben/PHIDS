@@ -3,18 +3,21 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from phytodynamics.api.schemas import (
+from phids.api.schemas import (
+    AllOfConditionSchema,
     DietCompatibilityMatrix,
+    EnemyPresenceConditionSchema,
     FloraSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
     PredatorSpeciesParams,
     SimulationConfig,
+    SubstanceActiveConditionSchema,
     TriggerConditionSchema,
 )
-from phytodynamics.engine.components.plant import PlantComponent
-from phytodynamics.engine.core.biotope import GridEnvironment
-from phytodynamics.engine.core.ecs import ECSWorld
+from phids.engine.components.plant import PlantComponent
+from phids.engine.core.biotope import GridEnvironment
+from phids.engine.core.ecs import ECSWorld
 
 
 def _flora(species_id: int = 0) -> FloraSpeciesParams:
@@ -55,7 +58,12 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
         repellent=True,
         repellent_walk_ticks=5,
         aftereffect_ticks=7,
-        precursor_signal_id=1,
+        activation_condition=AllOfConditionSchema(
+            conditions=[
+                SubstanceActiveConditionSchema(substance_id=1),
+                EnemyPresenceConditionSchema(predator_species_id=2, min_predator_population=4),
+            ]
+        ),
         energy_cost_per_tick=0.6,
     )
 
@@ -65,6 +73,8 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
     assert trig.lethality_rate == 0.25
     assert trig.aftereffect_ticks == 7
     assert trig.energy_cost_per_tick == 0.6
+    assert trig.activation_condition is not None
+    assert trig.activation_condition.kind == "all_of"
 
 
 def test_diet_matrix_enforces_rule_of_16() -> None:
@@ -89,8 +99,32 @@ def test_simulation_config_rejects_unknown_species_placements() -> None:
             flora_species=flora,
             predator_species=predator,
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
-            initial_swarms=[InitialSwarmPlacement(species_id=1, x=0, y=0, population=2, energy=4.0)],
+            initial_swarms=[
+                InitialSwarmPlacement(species_id=1, x=0, y=0, population=2, energy=4.0)
+            ],
         )
+
+
+def test_simulation_config_validates_mycorrhizal_growth_interval_bounds() -> None:
+    flora = [_flora(0)]
+    predator = [_predator(0)]
+
+    with pytest.raises(ValidationError):
+        SimulationConfig(
+            flora_species=flora,
+            predator_species=predator,
+            diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
+            mycorrhizal_growth_interval_ticks=0,
+        )
+
+    config = SimulationConfig(
+        flora_species=flora,
+        predator_species=predator,
+        diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
+        mycorrhizal_growth_interval_ticks=12,
+    )
+
+    assert config.mycorrhizal_growth_interval_ticks == 12
 
 
 def test_grid_environment_invariants_and_double_buffer_swap() -> None:

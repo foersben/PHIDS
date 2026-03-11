@@ -1,0 +1,226 @@
+{
+  "grid_width": 40,
+  "grid_height": 30,
+  "max_ticks": 2100,
+  "tick_rate_hz": 6.0,
+  "num_signals": 5,
+  "num_toxins": 5,
+  "wind_x": 0.05,
+  "wind_y": -0.08,
+  "mycorrhizal_inter_species": true,
+  "mycorrhizal_connection_cost": 0.22,
+  "mycorrhizal_growth_interval_ticks": 4,
+  "mycorrhizal_signal_velocity": 3,
+  "z2_flora_species_extinction": -1,
+  "z4_predator_species_extinction": -1,
+  "z6_max_total_flora_energy": -1.0,
+  "z7_max_total_predator_population": -1,
+  "flora_species": [
+    {
+      "species_id": 0,
+      "name": "Beech Sapling",
+      "base_energy": 12.8,
+      "max_energy": 114.0,
+      "growth_rate": 4.5,
+      "survival_threshold": 1.8,
+      "reproduction_interval": 10,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 3.2,
+      "seed_energy_cost": 4.8,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 0,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 5,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 0,
+            "min_predator_population": 4
+          },
+          "energy_cost_per_tick": 0.4
+        }
+      ]
+    },
+    {
+      "species_id": 1,
+      "name": "Blueberry",
+      "base_energy": 10.4,
+      "max_energy": 86.0,
+      "growth_rate": 5.2,
+      "survival_threshold": 1.4,
+      "reproduction_interval": 8,
+      "seed_min_dist": 0.8,
+      "seed_max_dist": 2.4,
+      "seed_energy_cost": 3.6,
+      "camouflage": true,
+      "camouflage_factor": 0.5,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 2,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": true,
+          "repellent_walk_ticks": 5,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 1,
+                "min_predator_population": 3
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.8
+        }
+      ]
+    },
+    {
+      "species_id": 2,
+      "name": "Wood Sorrel",
+      "base_energy": 11.4,
+      "max_energy": 78.0,
+      "growth_rate": 5.8,
+      "survival_threshold": 1.1,
+      "reproduction_interval": 7,
+      "seed_min_dist": 0.8,
+      "seed_max_dist": 2.0,
+      "seed_energy_cost": 2.9,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 3,
+          "substance_id": 1,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 4,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 5
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.35
+        }
+      ]
+    },
+    {
+      "species_id": 3,
+      "name": "Bracken",
+      "base_energy": 9.4,
+      "max_energy": 82.0,
+      "growth_rate": 4.1,
+      "survival_threshold": 1.6,
+      "reproduction_interval": 9,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 2.8,
+      "seed_energy_cost": 3.8,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 4,
+          "substance_id": 3,
+          "synthesis_duration": 3,
+          "is_toxin": true,
+          "lethal": true,
+          "lethality_rate": 0.55,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "all_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "substance_active",
+                "substance_id": 1
+              }
+            ]
+          },
+          "energy_cost_per_tick": 1.0
+        }
+      ]
+    }
+  ],
+  "predator_species": [
+    {
+      "species_id": 0,
+      "name": "Slug Cluster",
+      "energy_min": 2.4,
+      "velocity": 1,
+      "consumption_rate": 3.9,
+      "reproduction_energy_divisor": 0.9
+    },
+    {
+      "species_id": 1,
+      "name": "Weevil Brood",
+      "energy_min": 2.8,
+      "velocity": 2,
+      "consumption_rate": 4.2,
+      "reproduction_energy_divisor": 0.95
+    }
+  ],
+  "diet_matrix": {
+    "rows": [
+      [false, true, true, true],
+      [true, false, true, true]
+    ]
+  },
+  "initial_plants": [
+    {"species_id": 0, "x": 10, "y": 12, "energy": 48.0},
+    {"species_id": 1, "x": 11, "y": 12, "energy": 42.0},
+    {"species_id": 2, "x": 12, "y": 12, "energy": 40.0},
+    {"species_id": 3, "x": 13, "y": 12, "energy": 38.0},
+    {"species_id": 0, "x": 10, "y": 16, "energy": 47.0},
+    {"species_id": 1, "x": 11, "y": 16, "energy": 41.0},
+    {"species_id": 2, "x": 12, "y": 16, "energy": 39.0},
+    {"species_id": 3, "x": 13, "y": 16, "energy": 37.0},
+    {"species_id": 0, "x": 24, "y": 14, "energy": 46.0},
+    {"species_id": 1, "x": 25, "y": 14, "energy": 40.0},
+    {"species_id": 2, "x": 26, "y": 14, "energy": 38.0},
+    {"species_id": 3, "x": 27, "y": 14, "energy": 36.0}
+  ],
+  "initial_swarms": [
+    {"species_id": 0, "x": 12, "y": 12, "population": 4, "energy": 16.0},
+    {"species_id": 0, "x": 25, "y": 14, "population": 3, "energy": 14.0},
+    {"species_id": 1, "x": 13, "y": 16, "population": 3, "energy": 15.0},
+    {"species_id": 1, "x": 27, "y": 14, "population": 4, "energy": 17.0}
+  ]
+}

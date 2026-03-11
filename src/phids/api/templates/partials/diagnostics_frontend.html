@@ -1,0 +1,53 @@
+<div class="space-y-4">
+  <div>
+    <h3 class="text-sm font-semibold text-slate-700">Frontend diagnostics</h3>
+    <p class="text-[11px] text-slate-500 mt-1">Canvas/WebSocket/client-side state reported by the current dashboard controller.</p>
+  </div>
+  <div id="frontend-diagnostics-panel" class="space-y-3 text-xs"></div>
+</div>
+<script>
+(function () {
+  const host = document.getElementById('frontend-diagnostics-panel');
+  if (!host) return;
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function render() {
+    const state = window.__phidsFrontendDiagnostics || {};
+    const notes = Array.isArray(state.notes) ? state.notes : [];
+    const wsClass = state.wsState === 'streaming' || state.wsState === 'open'
+      ? 'bg-emerald-100 text-emerald-700'
+      : state.wsState === 'error'
+        ? 'bg-red-100 text-red-700'
+        : 'bg-slate-100 text-slate-600';
+    host.innerHTML = `
+      <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-semibold text-slate-700">Live client state</div>
+          <div class="rounded-full px-2 py-0.5 text-[10px] font-medium ${wsClass}">${escapeHtml(state.wsState || 'idle')}</div>
+        </div>
+        <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
+          <dt>active view</dt><dd class="text-right">${escapeHtml(state.activeView || 'unknown')}</dd>
+          <dt>render mode</dt><dd class="text-right">${escapeHtml(state.renderMode || 'unknown')}</dd>
+          <dt>last tick</dt><dd class="text-right">${escapeHtml(state.lastUiTick ?? '—')}</dd>
+          <dt>last tooltip</dt><dd class="text-right">${escapeHtml(state.lastTooltipCell || '—')}</dd>
+          <dt>last frame</dt><dd class="text-right">${escapeHtml(state.lastDashboardMessageAt || '—')}</dd>
+        </dl>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+        <div class="font-semibold text-slate-700">Frontend notes</div>
+        ${notes.length ? `<ul class="space-y-2 text-[11px] text-slate-600">${notes.map(note => `<li class="rounded-lg bg-slate-50 px-2 py-2 border border-slate-100 leading-5">${escapeHtml(note)}</li>`).join('')}</ul>` : '<div class="text-slate-500 text-[11px]">No notes yet.</div>'}
+      </div>`;
+  }
+
+  window.addEventListener('phids:frontend-diagnostics', render);
+  render();
+})();
+</script>

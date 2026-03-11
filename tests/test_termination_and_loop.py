@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
-from phytodynamics.api.schemas import (
+from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     InitialPlantPlacement,
@@ -10,11 +11,11 @@ from phytodynamics.api.schemas import (
     PredatorSpeciesParams,
     SimulationConfig,
 )
-from phytodynamics.engine.components.plant import PlantComponent
-from phytodynamics.engine.components.swarm import SwarmComponent
-from phytodynamics.engine.core.ecs import ECSWorld
-from phytodynamics.engine.loop import SimulationLoop
-from phytodynamics.telemetry.conditions import check_termination
+from phids.engine.components.plant import PlantComponent
+from phids.engine.components.swarm import SwarmComponent
+from phids.engine.core.ecs import ECSWorld
+from phids.engine.loop import SimulationLoop
+from phids.telemetry.conditions import check_termination
 
 
 def _base_config(max_ticks: int = 20) -> SimulationConfig:
@@ -148,12 +149,15 @@ def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
     assert loop.telemetry.dataframe.height >= 1
 
 
-def test_simulation_loop_terminates_when_z1_reached() -> None:
-    loop = SimulationLoop(_base_config(max_ticks=0))
+def test_simulation_loop_terminates_when_z1_reached(caplog) -> None:
+    loop = SimulationLoop(_base_config(max_ticks=1))
+    loop.tick = loop.config.max_ticks
 
-    result = asyncio.run(loop.step())
+    with caplog.at_level(logging.INFO, logger="phids.engine.loop"):
+        result = asyncio.run(loop.step())
 
     assert result.terminated is True
     assert loop.terminated is True
     assert loop.running is False
     assert loop.termination_reason is not None
+    assert "Simulation terminated at tick" in caplog.text

@@ -1,0 +1,246 @@
+{
+  "grid_width": 64,
+  "grid_height": 18,
+  "max_ticks": 1600,
+  "tick_rate_hz": 9.0,
+  "num_signals": 5,
+  "num_toxins": 5,
+  "wind_x": 1.05,
+  "wind_y": 0.15,
+  "mycorrhizal_inter_species": false,
+  "mycorrhizal_connection_cost": 0.5,
+  "mycorrhizal_growth_interval_ticks": 8,
+  "mycorrhizal_signal_velocity": 1,
+  "z2_flora_species_extinction": -1,
+  "z4_predator_species_extinction": -1,
+  "z6_max_total_flora_energy": -1.0,
+  "z7_max_total_predator_population": -1,
+  "flora_species": [
+    {
+      "species_id": 0,
+      "name": "Apple Tree",
+      "base_energy": 15.5,
+      "max_energy": 132.0,
+      "growth_rate": 4.5,
+      "survival_threshold": 2.1,
+      "reproduction_interval": 12,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 4.0,
+      "seed_energy_cost": 6.0,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 0,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 4,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 0,
+            "min_predator_population": 4
+          },
+          "energy_cost_per_tick": 0.45
+        },
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 3,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": true,
+          "repellent_walk_ticks": 4,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "all_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "any_of",
+                "conditions": [
+                  {
+                    "kind": "enemy_presence",
+                    "predator_species_id": 1,
+                    "min_predator_population": 3
+                  },
+                  {
+                    "kind": "enemy_presence",
+                    "predator_species_id": 2,
+                    "min_predator_population": 3
+                  }
+                ]
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.95
+        }
+      ]
+    },
+    {
+      "species_id": 1,
+      "name": "Pear Tree",
+      "base_energy": 14.5,
+      "max_energy": 122.0,
+      "growth_rate": 4.7,
+      "survival_threshold": 2.0,
+      "reproduction_interval": 11,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 3.5,
+      "seed_energy_cost": 5.4,
+      "camouflage": true,
+      "camouflage_factor": 0.55,
+      "triggers": [
+        {
+          "predator_species_id": 2,
+          "min_predator_population": 3,
+          "substance_id": 1,
+          "synthesis_duration": 2,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 3,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 5
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.55
+        },
+        {
+          "predator_species_id": 2,
+          "min_predator_population": 3,
+          "substance_id": 4,
+          "synthesis_duration": 3,
+          "is_toxin": true,
+          "lethal": true,
+          "lethality_rate": 0.75,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "all_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 1
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 1,
+                "min_predator_population": 3
+              }
+            ]
+          },
+          "energy_cost_per_tick": 1.1
+        }
+      ]
+    },
+    {
+      "species_id": 2,
+      "name": "Marigold Strip",
+      "base_energy": 10.5,
+      "max_energy": 84.0,
+      "growth_rate": 5.6,
+      "survival_threshold": 1.3,
+      "reproduction_interval": 7,
+      "seed_min_dist": 0.8,
+      "seed_max_dist": 2.4,
+      "seed_energy_cost": 3.0,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 3,
+          "substance_id": 2,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 5,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 1,
+            "min_predator_population": 3
+          },
+          "energy_cost_per_tick": 0.35
+        }
+      ]
+    }
+  ],
+  "predator_species": [
+    {
+      "species_id": 0,
+      "name": "Codling Moth",
+      "energy_min": 4.0,
+      "velocity": 2,
+      "consumption_rate": 6.5,
+      "reproduction_energy_divisor": 1.0
+    },
+    {
+      "species_id": 1,
+      "name": "Scale Insect",
+      "energy_min": 2.2,
+      "velocity": 1,
+      "consumption_rate": 4.8,
+      "reproduction_energy_divisor": 0.85
+    },
+    {
+      "species_id": 2,
+      "name": "Fruit Fly",
+      "energy_min": 2.6,
+      "velocity": 1,
+      "consumption_rate": 5.2,
+      "reproduction_energy_divisor": 0.9
+    }
+  ],
+  "diet_matrix": {
+    "rows": [
+      [true, true, false],
+      [true, false, true],
+      [false, true, true]
+    ]
+  },
+  "initial_plants": [
+    {"species_id": 0, "x": 8, "y": 5, "energy": 71.0},
+    {"species_id": 0, "x": 12, "y": 5, "energy": 69.0},
+    {"species_id": 0, "x": 16, "y": 6, "energy": 72.0},
+    {"species_id": 1, "x": 36, "y": 10, "energy": 66.0},
+    {"species_id": 1, "x": 40, "y": 11, "energy": 64.0},
+    {"species_id": 1, "x": 44, "y": 10, "energy": 67.0},
+    {"species_id": 2, "x": 20, "y": 8, "energy": 42.0},
+    {"species_id": 2, "x": 24, "y": 8, "energy": 40.0},
+    {"species_id": 2, "x": 48, "y": 12, "energy": 41.0},
+    {"species_id": 2, "x": 52, "y": 12, "energy": 39.0}
+  ],
+  "initial_swarms": [
+    {"species_id": 0, "x": 16, "y": 6, "population": 4, "energy": 22.0},
+    {"species_id": 1, "x": 24, "y": 8, "population": 3, "energy": 15.0},
+    {"species_id": 2, "x": 44, "y": 10, "population": 3, "energy": 16.0},
+    {"species_id": 2, "x": 52, "y": 12, "population": 2, "energy": 13.0}
+  ]
+}

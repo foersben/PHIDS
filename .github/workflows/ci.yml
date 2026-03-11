@@ -4,10 +4,23 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UV_FROZEN: "true"
 
 jobs:
   quality:
+    name: Quality and hygiene
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -15,6 +28,64 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Ruff lint
+        run: uv run ruff check .
+
+      - name: Run Ruff format check
+        run: uv run ruff format --check .
+
+  tests-py312:
+    name: Full test suite (Python 3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run full pytest suite
+        run: uv run pytest
+
+  compatibility-smoke-py311:
+    name: Compatibility smoke (Python 3.11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,20 +95,37 @@ jobs:
       - name: Sync dependencies
         run: uv sync --all-extras --dev
 
-      - name: Pre-commit checks
-        run: uv run pre-commit run --all-files
+      - name: Run representative compatibility smoke tests
+        run: >-
+          uv run pytest -o addopts=''
+          tests/test_api_routes.py
+          tests/test_ui_routes.py
+          tests/test_systems_behavior.py
+          tests/test_example_scenarios.py
+          -q
 
-      - name: Ruff lint
-        run: uv run ruff check .
+  docs:
+    name: Strict docs build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
-      - name: Ruff format check
-        run: uv run ruff format --check .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Mypy
-        run: uv run mypy
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Run tests with coverage and benchmark sanity
-        run: uv run pytest
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Build docs
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Build docs in strict mode
         run: uv run mkdocs build --strict

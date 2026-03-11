@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from phytodynamics.engine.core.flow_field import compute_flow_field
+from phids.engine.core.flow_field import compute_flow_field
 
 
 def test_flow_field_generation_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]

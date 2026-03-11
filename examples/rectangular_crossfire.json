@@ -1,0 +1,202 @@
+{
+  "grid_width": 48,
+  "grid_height": 20,
+  "max_ticks": 1700,
+  "tick_rate_hz": 7.0,
+  "num_signals": 4,
+  "num_toxins": 4,
+  "wind_x": 0.25,
+  "wind_y": 0.0,
+  "mycorrhizal_inter_species": false,
+  "mycorrhizal_connection_cost": 0.6,
+  "mycorrhizal_growth_interval_ticks": 8,
+  "mycorrhizal_signal_velocity": 1,
+  "z2_flora_species_extinction": -1,
+  "z4_predator_species_extinction": -1,
+  "z6_max_total_flora_energy": -1.0,
+  "z7_max_total_predator_population": -1,
+  "flora_species": [
+    {
+      "species_id": 0,
+      "name": "Hawthorn",
+      "base_energy": 12.0,
+      "max_energy": 102.0,
+      "growth_rate": 4.8,
+      "survival_threshold": 1.7,
+      "reproduction_interval": 9,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 3.0,
+      "seed_energy_cost": 4.5,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 0,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 4,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 0,
+            "min_predator_population": 4
+          },
+          "energy_cost_per_tick": 0.35
+        }
+      ]
+    },
+    {
+      "species_id": 1,
+      "name": "Bramble",
+      "base_energy": 10.5,
+      "max_energy": 90.0,
+      "growth_rate": 5.1,
+      "survival_threshold": 1.5,
+      "reproduction_interval": 8,
+      "seed_min_dist": 0.8,
+      "seed_max_dist": 2.6,
+      "seed_energy_cost": 3.8,
+      "camouflage": true,
+      "camouflage_factor": 0.45,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 5,
+          "substance_id": 2,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": true,
+          "repellent_walk_ticks": 5,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 1,
+                "min_predator_population": 3
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.85
+        }
+      ]
+    },
+    {
+      "species_id": 2,
+      "name": "Plantain",
+      "base_energy": 12.8,
+      "max_energy": 96.0,
+      "growth_rate": 5.9,
+      "survival_threshold": 1.2,
+      "reproduction_interval": 7,
+      "seed_min_dist": 0.8,
+      "seed_max_dist": 2.2,
+      "seed_energy_cost": 3.1,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 4,
+          "substance_id": 1,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 4,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 1,
+            "min_predator_population": 4
+          },
+          "energy_cost_per_tick": 0.3
+        },
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 4,
+          "substance_id": 3,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": true,
+          "lethality_rate": 0.45,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "all_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 1
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 2
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.9
+        }
+      ]
+    }
+  ],
+  "predator_species": [
+    {
+      "species_id": 0,
+      "name": "Hare Cluster",
+      "energy_min": 4.5,
+      "velocity": 2,
+      "consumption_rate": 5.9,
+      "reproduction_energy_divisor": 1.1
+    },
+    {
+      "species_id": 1,
+      "name": "Snail Patch",
+      "energy_min": 2.3,
+      "velocity": 1,
+      "consumption_rate": 3.7,
+      "reproduction_energy_divisor": 0.9
+    }
+  ],
+  "diet_matrix": {
+    "rows": [
+      [true, true, true],
+      [false, true, true]
+    ]
+  },
+  "initial_plants": [
+    {"species_id": 0, "x": 6, "y": 7, "energy": 46.0},
+    {"species_id": 0, "x": 8, "y": 8, "energy": 47.0},
+    {"species_id": 0, "x": 10, "y": 7, "energy": 45.0},
+    {"species_id": 1, "x": 18, "y": 9, "energy": 42.0},
+    {"species_id": 1, "x": 20, "y": 10, "energy": 43.0},
+    {"species_id": 1, "x": 22, "y": 9, "energy": 41.0},
+    {"species_id": 2, "x": 30, "y": 11, "energy": 48.0},
+    {"species_id": 2, "x": 32, "y": 12, "energy": 49.0},
+    {"species_id": 2, "x": 34, "y": 11, "energy": 47.0},
+    {"species_id": 1, "x": 38, "y": 10, "energy": 40.0},
+    {"species_id": 0, "x": 40, "y": 9, "energy": 44.0},
+    {"species_id": 2, "x": 42, "y": 11, "energy": 46.0}
+  ],
+  "initial_swarms": [
+    {"species_id": 0, "x": 8, "y": 8, "population": 4, "energy": 24.0},
+    {"species_id": 0, "x": 21, "y": 9, "population": 3, "energy": 21.0},
+    {"species_id": 1, "x": 32, "y": 12, "population": 4, "energy": 14.0},
+    {"species_id": 1, "x": 42, "y": 11, "population": 3, "energy": 12.0}
+  ]
+}

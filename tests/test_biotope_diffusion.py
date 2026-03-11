@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from phytodynamics.engine.core.biotope import GridEnvironment
+from phids.engine.core.biotope import GridEnvironment
 
 
 def test_signal_diffusion_applies_threshold() -> None:

@@ -1,0 +1,209 @@
+{
+  "grid_width": 36,
+  "grid_height": 28,
+  "max_ticks": 2000,
+  "tick_rate_hz": 6.0,
+  "num_signals": 5,
+  "num_toxins": 5,
+  "wind_x": 0.08,
+  "wind_y": -0.12,
+  "mycorrhizal_inter_species": true,
+  "mycorrhizal_connection_cost": 0.25,
+  "mycorrhizal_growth_interval_ticks": 3,
+  "mycorrhizal_signal_velocity": 3,
+  "z2_flora_species_extinction": -1,
+  "z4_predator_species_extinction": -1,
+  "z6_max_total_flora_energy": -1.0,
+  "z7_max_total_predator_population": -1,
+  "flora_species": [
+    {
+      "species_id": 0,
+      "name": "Aspen Sapling",
+      "base_energy": 13.0,
+      "max_energy": 118.0,
+      "growth_rate": 4.8,
+      "survival_threshold": 1.9,
+      "reproduction_interval": 10,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 3.2,
+      "seed_energy_cost": 5.0,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 0,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 5,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 0,
+            "min_predator_population": 4
+          },
+          "energy_cost_per_tick": 0.45
+        }
+      ]
+    },
+    {
+      "species_id": 1,
+      "name": "Hazel Shrub",
+      "base_energy": 11.0,
+      "max_energy": 96.0,
+      "growth_rate": 5.0,
+      "survival_threshold": 1.6,
+      "reproduction_interval": 8,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 2.6,
+      "seed_energy_cost": 4.2,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 3,
+          "substance_id": 1,
+          "synthesis_duration": 2,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 4,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 5
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.55
+        }
+      ]
+    },
+    {
+      "species_id": 2,
+      "name": "Bracken Fern",
+      "base_energy": 9.5,
+      "max_energy": 82.0,
+      "growth_rate": 4.4,
+      "survival_threshold": 1.7,
+      "reproduction_interval": 9,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 2.8,
+      "seed_energy_cost": 4.0,
+      "camouflage": true,
+      "camouflage_factor": 0.5,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 3,
+          "substance_id": 2,
+          "synthesis_duration": 2,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 4,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "substance_active",
+                "substance_id": 1
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.45
+        },
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 4,
+          "substance_id": 3,
+          "synthesis_duration": 3,
+          "is_toxin": true,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": true,
+          "repellent_walk_ticks": 6,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "all_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "substance_active",
+                "substance_id": 1
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.95
+        }
+      ]
+    }
+  ],
+  "predator_species": [
+    {
+      "species_id": 0,
+      "name": "Browsing Caterpillars",
+      "energy_min": 4.0,
+      "velocity": 2,
+      "consumption_rate": 5.8,
+      "reproduction_energy_divisor": 1.05
+    },
+    {
+      "species_id": 1,
+      "name": "Leaf Beetles",
+      "energy_min": 2.6,
+      "velocity": 2,
+      "consumption_rate": 4.4,
+      "reproduction_energy_divisor": 0.95
+    }
+  ],
+  "diet_matrix": {
+    "rows": [
+      [true, true, false],
+      [false, true, true]
+    ]
+  },
+  "initial_plants": [
+    {"species_id": 0, "x": 9, "y": 10, "energy": 50.0},
+    {"species_id": 0, "x": 10, "y": 10, "energy": 49.0},
+    {"species_id": 0, "x": 11, "y": 10, "energy": 48.0},
+    {"species_id": 1, "x": 12, "y": 10, "energy": 44.0},
+    {"species_id": 1, "x": 13, "y": 10, "energy": 45.0},
+    {"species_id": 1, "x": 14, "y": 10, "energy": 44.0},
+    {"species_id": 2, "x": 15, "y": 10, "energy": 40.0},
+    {"species_id": 2, "x": 16, "y": 10, "energy": 41.0},
+    {"species_id": 2, "x": 17, "y": 10, "energy": 39.0},
+    {"species_id": 0, "x": 10, "y": 14, "energy": 46.0},
+    {"species_id": 1, "x": 11, "y": 14, "energy": 43.0},
+    {"species_id": 2, "x": 12, "y": 14, "energy": 39.0}
+  ],
+  "initial_swarms": [
+    {"species_id": 0, "x": 10, "y": 10, "population": 4, "energy": 24.0},
+    {"species_id": 0, "x": 11, "y": 14, "population": 3, "energy": 20.0},
+    {"species_id": 1, "x": 13, "y": 10, "population": 3, "energy": 16.0},
+    {"species_id": 1, "x": 16, "y": 10, "population": 2, "energy": 13.0}
+  ]
+}

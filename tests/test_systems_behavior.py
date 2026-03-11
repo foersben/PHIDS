@@ -4,15 +4,22 @@ import random
 
 import pytest
 
-from phytodynamics.api.schemas import FloraSpeciesParams, TriggerConditionSchema
-from phytodynamics.engine.components.plant import PlantComponent
-from phytodynamics.engine.components.swarm import SwarmComponent
-from phytodynamics.engine.components.substances import SubstanceComponent
-from phytodynamics.engine.core.biotope import GridEnvironment
-from phytodynamics.engine.core.ecs import ECSWorld
-from phytodynamics.engine.systems.interaction import run_interaction
-from phytodynamics.engine.systems.lifecycle import run_lifecycle
-from phytodynamics.engine.systems.signaling import run_signaling
+from phids.api.schemas import (
+    AllOfConditionSchema,
+    AnyOfConditionSchema,
+    EnemyPresenceConditionSchema,
+    FloraSpeciesParams,
+    SubstanceActiveConditionSchema,
+    TriggerConditionSchema,
+)
+from phids.engine.components.plant import PlantComponent
+from phids.engine.components.swarm import SwarmComponent
+from phids.engine.components.substances import SubstanceComponent
+from phids.engine.core.biotope import GridEnvironment
+from phids.engine.core.ecs import ECSWorld
+from phids.engine.systems.interaction import run_interaction
+from phids.engine.systems.lifecycle import run_lifecycle
+from phids.engine.systems.signaling import run_signaling
 
 
 def _flora_params(species_id: int = 0) -> FloraSpeciesParams:
@@ -86,6 +93,7 @@ def test_lifecycle_establishes_mycorrhizal_connections_with_cost() -> None:
         tick=1,
         flora_species_params=params,
         mycorrhizal_connection_cost=1.5,
+        mycorrhizal_growth_interval_ticks=1,
         mycorrhizal_inter_species=False,
     )
 
@@ -112,11 +120,79 @@ def test_lifecycle_respects_interspecies_connection_switch() -> None:
         tick=1,
         flora_species_params=params,
         mycorrhizal_connection_cost=1.0,
+        mycorrhizal_growth_interval_ticks=1,
         mycorrhizal_inter_species=False,
     )
 
     plant1 = world.get_entity(p1).get_component(PlantComponent)
     assert p2 not in plant1.mycorrhizal_connections
+
+
+def test_lifecycle_mycorrhiza_grows_one_link_per_interval() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=6, height=4, num_signals=1, num_toxins=1)
+
+    p1 = _add_plant(world, 1, 1, species_id=0, energy=12.0)
+    p2 = _add_plant(world, 2, 1, species_id=0, energy=12.0)
+    p3 = _add_plant(world, 3, 1, species_id=0, energy=12.0)
+
+    for entity_id in (p1, p2, p3):
+        plant = world.get_entity(entity_id).get_component(PlantComponent)
+        plant.reproduction_interval = 999
+        plant.seed_energy_cost = 999.0
+
+    params = {0: _flora_params(0)}
+    growth_interval = 4
+
+    for tick in range(growth_interval - 1):
+        run_lifecycle(
+            world,
+            env,
+            tick=tick,
+            flora_species_params=params,
+            mycorrhizal_connection_cost=1.0,
+            mycorrhizal_growth_interval_ticks=growth_interval,
+            mycorrhizal_inter_species=False,
+        )
+
+    plant1 = world.get_entity(p1).get_component(PlantComponent)
+    plant2 = world.get_entity(p2).get_component(PlantComponent)
+    plant3 = world.get_entity(p3).get_component(PlantComponent)
+    assert plant1.mycorrhizal_connections == set()
+    assert plant2.mycorrhizal_connections == set()
+    assert plant3.mycorrhizal_connections == set()
+
+    run_lifecycle(
+        world,
+        env,
+        tick=growth_interval - 1,
+        flora_species_params=params,
+        mycorrhizal_connection_cost=1.0,
+        mycorrhizal_growth_interval_ticks=growth_interval,
+        mycorrhizal_inter_species=False,
+    )
+
+    plant1 = world.get_entity(p1).get_component(PlantComponent)
+    plant2 = world.get_entity(p2).get_component(PlantComponent)
+    plant3 = world.get_entity(p3).get_component(PlantComponent)
+    assert plant1.mycorrhizal_connections == {p2}
+    assert plant2.mycorrhizal_connections == {p1}
+    assert plant3.mycorrhizal_connections == set()
+
+    run_lifecycle(
+        world,
+        env,
+        tick=(growth_interval * 2) - 1,
+        flora_species_params=params,
+        mycorrhizal_connection_cost=1.0,
+        mycorrhizal_growth_interval_ticks=growth_interval,
+        mycorrhizal_inter_species=False,
+    )
+
+    plant2 = world.get_entity(p2).get_component(PlantComponent)
+    plant3 = world.get_entity(p3).get_component(PlantComponent)
+    assert plant2.mycorrhizal_connections == {p1, p3}
+    assert plant3.mycorrhizal_connections == {p2}
 
 
 def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
@@ -135,9 +211,6 @@ def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
     assert plant.energy == pytest.approx(initial_energy)
     assert swarm.starvation_ticks >= 1
 
-
-def test_interaction_mitosis_splits_population() -> None:
-    world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
     sid = _add_swarm(world, 1, 1, species_id=0, pop=10)
@@ -150,6 +223,38 @@ def test_interaction_mitosis_splits_population() -> None:
     swarms = [e.get_component(SwarmComponent) for e in world.query(SwarmComponent)]
     assert len(swarms) >= 2
     assert sum(s.population for s in swarms) >= 10
+
+
+def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
+
+    sid = _add_swarm(world, 1, 1, species_id=0, pop=9)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.initial_population = 5
+    swarm.energy = 1.0
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    swarms = [e.get_component(SwarmComponent) for e in world.query(SwarmComponent)]
+    assert len(swarms) == 2
+    assert sum(s.population for s in swarms) == 10
+
+
+def test_interaction_mitosis_conserves_odd_population() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
+
+    sid = _add_swarm(world, 1, 1, species_id=0, pop=11)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.initial_population = 5
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    swarms = [e.get_component(SwarmComponent) for e in world.query(SwarmComponent)]
+    assert len(swarms) == 2
+    assert sum(s.population for s in swarms) == 11
+    assert sorted(s.population for s in swarms) == [5, 6]
 
 
 def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
@@ -170,7 +275,6 @@ def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
         repellent=True,
         repellent_walk_ticks=3,
         aftereffect_ticks=2,
-        precursor_signal_id=-1,
         energy_cost_per_tick=1.0,
     )
 
@@ -196,6 +300,149 @@ def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
     assert plant.energy < 12.0
 
 
+def test_signaling_aggregates_co_located_swarm_population_for_trigger_threshold() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    _add_swarm(world, 2, 2, species_id=0, pop=3)
+    _add_swarm(world, 2, 2, species_id=0, pop=3)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+    )
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
+    )
+
+    subs = [e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent)]
+    assert len(subs) == 1
+    assert subs[0].active is True
+
+
+def test_signaling_toxin_deactivates_when_trigger_species_is_gone() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    triggering_swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+    _add_swarm(world, 2, 2, species_id=1, pop=10)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        aftereffect_ticks=0,
+    )
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
+    )
+
+    world.unregister_position(triggering_swarm_id, 2, 2)
+    world.collect_garbage([triggering_swarm_id])
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=1,
+    )
+
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+    assert float(env.toxin_layers[1].max()) == 0.0
+
+
+def test_signaling_signal_lingers_for_aftereffect_then_deactivates() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=False,
+        aftereffect_ticks=2,
+    )
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
+    )
+
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is True
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 2)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is True
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 3)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+
+
+def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=False,
+        aftereffect_ticks=0,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 2)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+
+
 def test_signaling_precursor_gate_blocks_activation() -> None:
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
@@ -207,9 +454,9 @@ def test_signaling_precursor_gate_blocks_activation() -> None:
         predator_species_id=0,
         min_predator_population=1,
         substance_id=1,
-        synthesis_duration=0,
+        synthesis_duration=1,
         is_toxin=True,
-        precursor_signal_id=0,
+        activation_condition=SubstanceActiveConditionSchema(substance_id=0),
     )
 
     run_signaling(
@@ -223,6 +470,74 @@ def test_signaling_precursor_gate_blocks_activation() -> None:
 
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
+
+
+def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_predicates() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    _add_swarm(world, 2, 2, species_id=0, pop=6)
+    _add_swarm(world, 2, 2, species_id=1, pop=3)
+
+    signal_trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=0,
+        synthesis_duration=1,
+        is_toxin=False,
+    )
+    toxin_trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        activation_condition=AllOfConditionSchema(
+            conditions=[
+                SubstanceActiveConditionSchema(substance_id=0),
+                EnemyPresenceConditionSchema(predator_species_id=1, min_predator_population=2),
+            ]
+        ),
+    )
+
+    run_signaling(world, env, {0: [signal_trigger, toxin_trigger]}, False, 1, 0)
+
+    substances = sorted(
+        (entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent)),
+        key=lambda substance: substance.substance_id,
+    )
+    assert len(substances) == 2
+    assert substances[0].active is True
+    assert substances[1].active is True
+
+
+def test_signaling_any_of_gate_allows_alternative_enemy_or_substance_paths() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    _add_swarm(world, 2, 2, species_id=0, pop=6)
+    _add_swarm(world, 2, 2, species_id=1, pop=2)
+
+    toxin_trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        activation_condition=AnyOfConditionSchema(
+            conditions=[
+                SubstanceActiveConditionSchema(substance_id=0),
+                EnemyPresenceConditionSchema(predator_species_id=1, min_predator_population=2),
+            ]
+        ),
+    )
+
+    run_signaling(world, env, {0: [toxin_trigger]}, False, 1, 0)
+
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is True
 
 
 def test_repelled_swarm_performs_random_walk(monkeypatch: pytest.MonkeyPatch) -> None:

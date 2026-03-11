@@ -1,0 +1,181 @@
+{
+  "grid_width": 52,
+  "grid_height": 24,
+  "max_ticks": 1900,
+  "tick_rate_hz": 7.0,
+  "num_signals": 4,
+  "num_toxins": 4,
+  "wind_x": 0.35,
+  "wind_y": 0.04,
+  "mycorrhizal_inter_species": false,
+  "mycorrhizal_connection_cost": 0.8,
+  "mycorrhizal_growth_interval_ticks": 8,
+  "mycorrhizal_signal_velocity": 1,
+  "z2_flora_species_extinction": -1,
+  "z4_predator_species_extinction": -1,
+  "z6_max_total_flora_energy": -1.0,
+  "z7_max_total_predator_population": -1,
+  "flora_species": [
+    {
+      "species_id": 0,
+      "name": "Bunchgrass",
+      "base_energy": 11.5,
+      "max_energy": 84.0,
+      "growth_rate": 5.7,
+      "survival_threshold": 1.0,
+      "reproduction_interval": 6,
+      "seed_min_dist": 0.8,
+      "seed_max_dist": 2.4,
+      "seed_energy_cost": 2.8,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 6,
+          "substance_id": 0,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 3,
+          "activation_condition": {
+            "kind": "enemy_presence",
+            "predator_species_id": 0,
+            "min_predator_population": 6
+          },
+          "energy_cost_per_tick": 0.3
+        }
+      ]
+    },
+    {
+      "species_id": 1,
+      "name": "Sagebrush",
+      "base_energy": 9.2,
+      "max_energy": 88.0,
+      "growth_rate": 3.7,
+      "survival_threshold": 1.7,
+      "reproduction_interval": 11,
+      "seed_min_dist": 1.2,
+      "seed_max_dist": 3.5,
+      "seed_energy_cost": 4.7,
+      "camouflage": true,
+      "camouflage_factor": 0.5,
+      "triggers": [
+        {
+          "predator_species_id": 1,
+          "min_predator_population": 3,
+          "substance_id": 2,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": true,
+          "repellent_walk_ticks": 6,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 7
+              }
+            ]
+          },
+          "energy_cost_per_tick": 0.9
+        }
+      ]
+    },
+    {
+      "species_id": 2,
+      "name": "Rabbitbrush",
+      "base_energy": 10.2,
+      "max_energy": 86.0,
+      "growth_rate": 4.4,
+      "survival_threshold": 1.5,
+      "reproduction_interval": 9,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 3.0,
+      "seed_energy_cost": 3.9,
+      "camouflage": false,
+      "camouflage_factor": 1.0,
+      "triggers": [
+        {
+          "predator_species_id": 0,
+          "min_predator_population": 5,
+          "substance_id": 3,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": true,
+          "lethality_rate": 0.5,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "all_of",
+            "conditions": [
+              {
+                "kind": "substance_active",
+                "substance_id": 0
+              },
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 1,
+                "min_predator_population": 2
+              }
+            ]
+          },
+          "energy_cost_per_tick": 1.0
+        }
+      ]
+    }
+  ],
+  "predator_species": [
+    {
+      "species_id": 0,
+      "name": "Grasshopper Swarm",
+      "energy_min": 2.8,
+      "velocity": 1,
+      "consumption_rate": 5.4,
+      "reproduction_energy_divisor": 0.9
+    },
+    {
+      "species_id": 1,
+      "name": "Jackrabbit",
+      "energy_min": 4.6,
+      "velocity": 2,
+      "consumption_rate": 5.6,
+      "reproduction_energy_divisor": 1.15
+    }
+  ],
+  "diet_matrix": {
+    "rows": [
+      [true, false, true],
+      [true, true, false]
+    ]
+  },
+  "initial_plants": [
+    {"species_id": 0, "x": 9, "y": 8, "energy": 40.0},
+    {"species_id": 0, "x": 11, "y": 8, "energy": 42.0},
+    {"species_id": 0, "x": 13, "y": 9, "energy": 41.0},
+    {"species_id": 0, "x": 15, "y": 8, "energy": 39.0},
+    {"species_id": 1, "x": 24, "y": 12, "energy": 37.0},
+    {"species_id": 1, "x": 26, "y": 13, "energy": 38.0},
+    {"species_id": 1, "x": 28, "y": 12, "energy": 36.0},
+    {"species_id": 2, "x": 38, "y": 15, "energy": 39.0},
+    {"species_id": 2, "x": 40, "y": 16, "energy": 40.0},
+    {"species_id": 2, "x": 42, "y": 15, "energy": 38.0}
+  ],
+  "initial_swarms": [
+    {"species_id": 0, "x": 13, "y": 9, "population": 6, "energy": 19.0},
+    {"species_id": 0, "x": 40, "y": 16, "population": 4, "energy": 16.0},
+    {"species_id": 1, "x": 26, "y": 13, "population": 3, "energy": 18.0}
+  ]
+}

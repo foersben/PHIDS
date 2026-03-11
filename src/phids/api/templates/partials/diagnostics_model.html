@@ -1,0 +1,99 @@
+<div class="space-y-4">
+  <div>
+    <h3 class="text-sm font-semibold text-slate-700">Model diagnostics</h3>
+    <p class="text-[11px] text-slate-500 mt-1">Live simulation summary, draft configuration counts, fresh telemetry, and starvation warnings refreshed continuously.</p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 text-xs">
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div class="text-slate-500">Draft flora</div>
+      <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.flora_species|length }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div class="text-slate-500">Draft predators</div>
+      <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.predator_species|length }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div class="text-slate-500">Placed plants</div>
+      <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.initial_plants|length }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div class="text-slate-500">Placed swarms</div>
+      <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.initial_swarms|length }}</div>
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs">
+    <div class="flex items-center justify-between gap-3">
+      <span class="font-semibold text-slate-700">Live simulation</span>
+      {% if live_summary %}
+      <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+        tick {{ live_summary.tick }}
+      </span>
+      {% else %}
+      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">idle</span>
+      {% endif %}
+    </div>
+    {% if live_summary %}
+    <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
+      <dt>status</dt><dd class="text-right">{% if live_summary.terminated %}terminated{% elif live_summary.running and not live_summary.paused %}running{% elif live_summary.paused %}paused{% else %}loaded{% endif %}</dd>
+      <dt>plants</dt><dd class="text-right">{{ live_summary.plants }}</dd>
+      <dt>swarms</dt><dd class="text-right">{{ live_summary.swarms }}</dd>
+      <dt>active substances</dt><dd class="text-right">{{ live_summary.active_substances }}</dd>
+      {% if live_summary.termination_reason %}
+      <dt>reason</dt><dd class="text-right">{{ live_summary.termination_reason }}</dd>
+      {% endif %}
+    </dl>
+    {% else %}
+    <div class="text-slate-500">No live simulation loaded yet.</div>
+    {% endif %}
+  </div>
+
+  <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs">
+    <div class="flex items-center justify-between gap-3">
+      <div class="font-semibold text-slate-700">Latest telemetry</div>
+      {% if latest_metrics %}
+      <div class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">tick {{ latest_metrics.tick }}</div>
+      {% endif %}
+    </div>
+    {% if latest_metrics %}
+    <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
+      <dt>flora energy</dt><dd class="text-right">{{ '%.2f'|format(latest_metrics.total_flora_energy) }}</dd>
+      <dt>flora population</dt><dd class="text-right">{{ latest_metrics.flora_population }}</dd>
+      <dt>predator clusters</dt><dd class="text-right">{{ latest_metrics.predator_clusters }}</dd>
+      <dt>predator population</dt><dd class="text-right">{{ latest_metrics.predator_population }}</dd>
+    </dl>
+    <div class="grid grid-cols-2 gap-2 pt-1">
+      <div class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-2">
+        <div class="text-[10px] uppercase tracking-wide text-emerald-600">flora energy density</div>
+        <div class="mt-1 font-mono text-slate-700">{{ '%.2f'|format((latest_metrics.total_flora_energy / [1, latest_metrics.flora_population]|max)) }}</div>
+      </div>
+      <div class="rounded-lg bg-rose-50 border border-rose-100 px-2 py-2">
+        <div class="text-[10px] uppercase tracking-wide text-rose-600">avg swarm size</div>
+        <div class="mt-1 font-mono text-slate-700">{{ '%.2f'|format((latest_metrics.predator_population / [1, latest_metrics.predator_clusters]|max)) }}</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-slate-500">Telemetry will appear after the first tick.</div>
+    {% endif %}
+  </div>
+
+  <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs">
+    <div class="font-semibold text-slate-700">Starvation watch</div>
+    {% if starving_swarms %}
+    <ul class="space-y-2">
+      {% for swarm in starving_swarms %}
+      <li class="rounded-lg bg-amber-50 border border-amber-100 px-2 py-2 text-[11px] text-slate-700">
+        <div class="flex justify-between gap-3">
+          <span class="font-medium">{{ swarm.name }}</span>
+          <span class="rounded-full bg-white px-2 py-0.5 border border-amber-200">pop {{ swarm.population }}</span>
+        </div>
+        <div class="mt-1 text-slate-500">starving {{ swarm.starvation_ticks }} tick(s) @ ({{ swarm.x }}, {{ swarm.y }}){% if swarm.repelled %} · repelled{% endif %}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="text-slate-500">No starving swarms detected right now.</div>
+    {% endif %}
+  </div>
+</div>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from phytodynamics.engine.core.ecs import ECSWorld
+from phids.engine.core.ecs import ECSWorld
 
 
 def test_spatial_hash_query_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
