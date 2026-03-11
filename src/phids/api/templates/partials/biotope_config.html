@@ -1,0 +1,141 @@
+<div id="biotope-config-view" class="max-w-2xl">
+  <h2 class="text-xl font-semibold text-slate-800 mb-6">🌍 Biotope Configuration</h2>
+  <div class="bg-white rounded-xl shadow-sm border p-6">
+    <form hx-post="/api/config/biotope" hx-target="#biotope-config-view" hx-swap="outerHTML"
+      hx-trigger="change" class="grid grid-cols-2 gap-6">
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Number of horizontal cells in the simulation grid. Larger grids allow more space for spreading populations but increase computation time. Max 80.">
+          Grid Width <span class="text-slate-400 font-normal">(cells)</span>
+        </label>
+        <input type="number" name="grid_width" min="10" max="80"
+          value="{{ draft.grid_width }}"
+          title="Horizontal extent of the biotope in cells. Each cell can hold one plant and one swarm simultaneously. Range: 10–80."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Number of vertical cells in the simulation grid. Range: 10–80.">
+          Grid Height <span class="text-slate-400 font-normal">(cells)</span>
+        </label>
+        <input type="number" name="grid_height" min="10" max="80"
+          value="{{ draft.grid_height }}"
+          title="Vertical extent of the biotope in cells. Range: 10–80."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Hard upper limit on simulation duration. Simulation stops automatically after this many ticks even if populations are still alive.">
+          Max Ticks
+        </label>
+        <input type="number" name="max_ticks" min="1"
+          value="{{ draft.max_ticks }}"
+          title="Termination condition Z1: simulation ends after this many ticks. Typical values: 500 for quick tests, 2000–5000 for equilibrium studies."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="How many simulation ticks are processed per real-world second. Higher = faster simulation but more CPU. Lower = easier to observe.">
+          Tick Rate <span class="text-slate-400 font-normal">(Hz)</span>
+        </label>
+        <input type="number" name="tick_rate_hz" min="0.1" step="0.1"
+          value="{{ draft.tick_rate_hz }}"
+          title="Target ticks per second. 1 Hz = real-time-ish observation. 10–20 Hz = standard speed. 50+ Hz = fast forward. The WebSocket streams at this rate."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Uniform wind X-component (positive = rightward). Shifts VOC signal and toxin clouds each tick via numpy.roll after convolution diffusion.">
+          Wind X <span class="text-slate-400 font-normal">(cells/tick)</span>
+        </label>
+        <input type="number" name="wind_x" step="0.1"
+          value="{{ draft.wind_x }}"
+          title="Positive values shift airborne signals/toxins rightward each tick. Fractional values are rounded to nearest integer pixel shift. 0 = no advection."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Uniform wind Y-component (positive = downward). Combined with Wind X to produce diagonal advection of chemical layers.">
+          Wind Y <span class="text-slate-400 font-normal">(cells/tick)</span>
+        </label>
+        <input type="number" name="wind_y" step="0.1"
+          value="{{ draft.wind_y }}"
+          title="Positive values shift airborne signals/toxins downward each tick. Combined with Wind X for diagonal drift."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Number of independent airborne signal substance layers (VOCs). Must be ≥ the highest signal substance_id used in trigger rules.">
+          Signal Layers
+        </label>
+        <input type="number" name="num_signals" min="1" max="16"
+          value="{{ draft.num_signals }}"
+          title="Pre-allocated airborne signal layers (Rule of 16: max 16). Each signal substance occupies one layer. If you define 3 signal substances, set this to at least 3."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Number of independent toxin substance layers. Must be ≥ the highest toxin substance_id used in trigger rules.">
+          Toxin Layers
+        </label>
+        <input type="number" name="num_toxins" min="1" max="16"
+          value="{{ draft.num_toxins }}"
+          title="Pre-allocated toxin layers (Rule of 16: max 16). Each toxin substance occupies one layer. Toxins diffuse like signals but apply lethal/repellent effects to swarms."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div class="col-span-2 flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+        <input type="checkbox" name="mycorrhizal_inter_species" id="myco_inter"
+          {% if draft.mycorrhizal_inter_species %}checked{% endif %}
+          title="When enabled, plants of DIFFERENT species can share root network connections and relay chemical signals to each other."
+          class="h-4 w-4 mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+        <label for="myco_inter" class="text-sm text-slate-700">
+          <strong>Allow inter-species mycorrhizal connections</strong><br>
+          <span class="text-xs text-slate-500">
+            Plants form root networks to relay VOC signals underground.
+            When unchecked, only same-species root links are formed.
+            When checked, different species can warn each other via mycorrhiza.
+          </span>
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Energy cost paid once by each plant when a new root network connection is established with a neighbour.">
+          Root Link Cost <span class="text-slate-400 font-normal">(energy/link)</span>
+        </label>
+        <input type="number" name="mycorrhizal_connection_cost" min="0" step="0.1"
+          value="{{ draft.mycorrhizal_connection_cost }}"
+          title="Energy paid once by both plants when a new mycorrhizal link forms. High values limit how many connections plants can afford to establish. 0 = free link creation."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Ticks between root-growth attempts. PHIDS forms at most one new mycorrhizal link per interval, so larger values make network growth much slower.">
+          Root Growth Interval <span class="text-slate-400 font-normal">(ticks/link)</span>
+        </label>
+        <input type="number" name="mycorrhizal_growth_interval_ticks" min="1" max="256" step="1"
+          value="{{ draft.mycorrhizal_growth_interval_ticks }}"
+          title="Manual throttle for underground network expansion. 1 = try to add one new root link every tick. 8 = the slow default. Larger values make mycorrhiza grow very slowly."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="How many root-network hops a signal travels per tick. Higher velocity = faster alarm propagation through the root network.">
+          Signal Velocity <span class="text-slate-400 font-normal">(hops/tick)</span>
+        </label>
+        <input type="number" name="mycorrhizal_signal_velocity" min="1" step="1"
+          value="{{ draft.mycorrhizal_signal_velocity }}"
+          title="Number of mycorrhizal hops a VOC signal travels per tick. 1 = signal only reaches direct root neighbours. Higher values let signals spread quickly across the network."
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+    </form>
+    <p class="mt-4 text-xs text-slate-400">Changes apply automatically on field change/blur.</p>
+  </div>
+</div>
+

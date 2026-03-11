@@ -1,0 +1,382 @@
+<div id="placement-editor-view" class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-semibold text-slate-800">🗺️ Placement Editor</h2>
+    <div class="flex gap-2">
+      <button hx-post="/api/config/placements/clear" hx-target="#placement-list"
+        hx-swap="innerHTML" hx-confirm="Clear all placements?"
+        class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium transition-colors">
+        🗑️ Clear All
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+    <!-- Left: Canvas grid -->
+    <div class="xl:col-span-2 bg-white rounded-xl shadow-sm border p-4">
+      <p class="text-xs text-slate-500 mb-2">
+        Click on the grid to place entities. Select tool and species below.
+      </p>
+      <div class="relative inline-block">
+        <canvas id="placement-canvas" width="800" height="800"
+          style="width:100%;max-width:800px;image-rendering:pixelated;background:#0f172a;cursor:crosshair;"
+          class="rounded border border-slate-300"></canvas>
+      </div>
+
+      <!-- Tool selector -->
+      <div class="mt-4 flex flex-wrap gap-4 items-end">
+
+        <!-- Mode -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Tool</label>
+          <select id="placement-tool"
+            class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <option value="plant" selected>🌿 Place Plant</option>
+            <option value="swarm">🐛 Place Swarm</option>
+            <option value="erase">🧹 Erase</option>
+          </select>
+        </div>
+
+        <!-- Plant species selector (visible when tool=plant) -->
+        <div id="plant-tool-opts">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Flora Species</label>
+          <select id="plant-species-sel"
+            class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            {% for fp in flora_species %}
+            <option value="{{ fp.species_id }}">{{ fp.name }} (id={{ fp.species_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="plant-energy-opt">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Energy</label>
+          <input type="number" id="plant-energy-input" value="10" min="0.1" step="0.5"
+            class="w-20 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <!-- Swarm species selector (visible when tool=swarm) -->
+        <div id="swarm-tool-opts" class="hidden">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Predator Species</label>
+          <select id="swarm-species-sel"
+            class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            {% for pp in predator_species %}
+            <option value="{{ pp.species_id }}">{{ pp.name }} (id={{ pp.species_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="swarm-pop-opt" class="hidden">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Population</label>
+          <input type="number" id="swarm-pop-input" value="10" min="1" step="1"
+            class="w-20 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div id="swarm-energy-opt" class="hidden">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Energy</label>
+          <input type="number" id="swarm-energy-input" value="50" min="0.1" step="1"
+            class="w-20 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Placement list -->
+    <div class="bg-white rounded-xl shadow-sm border p-4 overflow-auto max-h-[75vh]">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3">Placed Entities</h3>
+      <div id="placement-list">
+        {% include "partials/placement_list.html" %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Placement canvas interaction (vanilla JS) -->
+<script>
+(function () {
+  if (window.__phidsPlacementController && typeof window.__phidsPlacementController.destroy === 'function') {
+    window.__phidsPlacementController.destroy();
+  }
+
+  const canvas = document.getElementById('placement-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const canvasHost = canvas.parentElement;
+
+  // Grid dimensions from the draft
+  let gridW = {{ draft.grid_width }};
+  let gridH = {{ draft.grid_height }};
+
+  // Color palette for species (up to 16 each)
+  const floraColors = [
+    '#22c55e','#16a34a','#15803d','#86efac','#4ade80','#a3e635','#84cc16','#65a30d',
+    '#34d399','#10b981','#059669','#6ee7b7','#2dd4bf','#14b8a6','#0d9488','#0f766e'
+  ];
+  const swarmColors = [
+    '#ef4444','#dc2626','#b91c1c','#f87171','#fb923c','#f97316','#ea580c','#c2410c',
+    '#e11d48','#be123c','#f43f5e','#fb7185','#a855f7','#9333ea','#7c3aed','#6d28d9'
+  ];
+
+  let placementData = null;
+  let destroyed = false;
+  let canvasLayout = {
+    cellSize: 20,
+    drawWidth: 800,
+    drawHeight: 800,
+  };
+
+  function isActiveCanvas() {
+    return !destroyed && canvas.isConnected;
+  }
+
+  function computeLayout() {
+    const maxWidth = Math.max(160, Math.min(800, Math.floor(canvasHost?.clientWidth || 800)));
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 900;
+    const maxHeight = Math.max(160, Math.min(800, Math.floor(viewportHeight * 0.68)));
+    const cellSize = Math.max(1, Math.floor(Math.min(maxWidth / gridW, maxHeight / gridH)));
+    return {
+      cellSize,
+      drawWidth: cellSize * gridW,
+      drawHeight: cellSize * gridH,
+    };
+  }
+
+  function syncCanvasSize() {
+    const nextLayout = computeLayout();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = nextLayout.drawWidth * dpr;
+    canvas.height = nextLayout.drawHeight * dpr;
+    canvas.style.width = `${nextLayout.drawWidth}px`;
+    canvas.style.height = `${nextLayout.drawHeight}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvasLayout = nextLayout;
+    return nextLayout;
+  }
+
+  function swarmMarkerOffset(index, total, span) {
+    const cols = Math.max(1, Math.ceil(Math.sqrt(total)));
+    const rows = Math.max(1, Math.ceil(total / cols));
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    return {
+      dx: (col - (cols - 1) / 2) * span,
+      dy: (row - (rows - 1) / 2) * span,
+    };
+  }
+
+  function drawSwarmMarkers(swarms) {
+    if (!Array.isArray(swarms) || swarms.length === 0) return;
+    const { cellSize } = canvasLayout;
+    const grouped = new Map();
+    for (const swarm of swarms) {
+      const key = `${swarm.x},${swarm.y}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(swarm);
+    }
+
+    for (const group of grouped.values()) {
+      const total = group.length;
+      const radius = Math.max(1.5, Math.min(cellSize * 0.2, cellSize / 2 - 2));
+      const padding = Math.max(2, cellSize * 0.16);
+      const span = Math.max(0, cellSize * 0.34);
+
+      group.forEach((swarm, index) => {
+        const color = swarmColors[swarm.species_id % swarmColors.length];
+        const cellLeft = swarm.x * cellSize;
+        const cellTop = swarm.y * cellSize;
+        const baseCx = cellLeft + cellSize - padding - radius;
+        const baseCy = cellTop + padding + radius;
+        const offset = swarmMarkerOffset(index, total, span);
+        const minCx = cellLeft + radius + 1;
+        const maxCx = cellLeft + cellSize - radius - 1;
+        const minCy = cellTop + radius + 1;
+        const maxCy = cellTop + cellSize - radius - 1;
+        const cx = Math.max(minCx, Math.min(maxCx, baseCx + offset.dx));
+        const cy = Math.max(minCy, Math.min(maxCy, baseCy + offset.dy));
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.lineWidth = Math.max(1, Math.min(2, cellSize * 0.08));
+        ctx.strokeStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        if (cellSize >= 20) {
+          ctx.fillStyle = '#fff';
+          ctx.font = `bold ${Math.max(7, Math.min(10, cellSize * 0.32))}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(swarm.population), cx, cy);
+        }
+      });
+    }
+  }
+
+  function destroy() {
+    destroyed = true;
+    window.removeEventListener('resize', handleResize);
+    document.body.removeEventListener('htmx:afterSwap', handleAfterSwap);
+    canvas.removeEventListener('click', handleCanvasClick);
+    if (window.__phidsPlacementController === controller) {
+      delete window.__phidsPlacementController;
+    }
+  }
+
+  const controller = { destroy };
+  window.__phidsPlacementController = controller;
+
+  async function loadData() {
+    if (!isActiveCanvas()) return;
+    try {
+      const resp = await fetch('/api/config/placements/data');
+      placementData = await resp.json();
+      gridW = placementData.grid_width;
+      gridH = placementData.grid_height;
+      draw();
+    } catch (e) { console.error('placement data fetch error', e); }
+  }
+
+  function draw() {
+    if (!placementData) return;
+    const { cellSize, drawWidth, drawHeight } = syncCanvasSize();
+
+    // Background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, drawWidth, drawHeight);
+
+    // Grid lines
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= gridW; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * cellSize, 0);
+      ctx.lineTo(x * cellSize, drawHeight);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= gridH; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * cellSize);
+      ctx.lineTo(drawWidth, y * cellSize);
+      ctx.stroke();
+    }
+
+    // Draw plants
+    for (const p of placementData.plants) {
+      ctx.fillStyle = floraColors[p.species_id % floraColors.length];
+      ctx.fillRect(p.x * cellSize + 1, p.y * cellSize + 1, cellSize - 2, cellSize - 2);
+      // Label
+      if (cellSize >= 12) {
+        ctx.fillStyle = '#fff';
+        ctx.font = Math.max(8, Math.min(11, cellSize * 0.42)) + 'px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P', p.x * cellSize + cellSize / 2, p.y * cellSize + cellSize / 2);
+      }
+    }
+
+    drawSwarmMarkers(placementData.swarms);
+  }
+
+  // Click handler
+  async function handleCanvasClick(evt) {
+    const rect = canvas.getBoundingClientRect();
+    const relX = (evt.clientX - rect.left) / rect.width;
+    const relY = (evt.clientY - rect.top) / rect.height;
+    const gx = Math.max(0, Math.min(gridW - 1, Math.floor(relX * gridW)));
+    const gy = Math.max(0, Math.min(gridH - 1, Math.floor(relY * gridH)));
+
+    if (gx < 0 || gx >= gridW || gy < 0 || gy >= gridH) return;
+
+    const tool = document.getElementById('placement-tool').value;
+
+    if (tool === 'plant') {
+      const sid = document.getElementById('plant-species-sel').value;
+      const energy = document.getElementById('plant-energy-input').value;
+      const form = new FormData();
+      form.append('species_id', sid);
+      form.append('x', gx);
+      form.append('y', gy);
+      form.append('energy', energy);
+      const resp = await fetch('/api/config/placements/plant', { method: 'POST', body: form });
+      if (resp.ok) {
+        document.getElementById('placement-list').innerHTML = await resp.text();
+        await loadData();
+      }
+    } else if (tool === 'swarm') {
+      const sid = document.getElementById('swarm-species-sel').value;
+      const pop = document.getElementById('swarm-pop-input').value;
+      const energy = document.getElementById('swarm-energy-input').value;
+      const form = new FormData();
+      form.append('species_id', sid);
+      form.append('x', gx);
+      form.append('y', gy);
+      form.append('population', pop);
+      form.append('energy', energy);
+      const resp = await fetch('/api/config/placements/swarm', { method: 'POST', body: form });
+      if (resp.ok) {
+        document.getElementById('placement-list').innerHTML = await resp.text();
+        await loadData();
+      }
+    } else if (tool === 'erase') {
+      // Find and delete the first entity at this cell (plant first, then swarm)
+      if (placementData) {
+        let found = false;
+        for (const p of placementData.plants) {
+          if (p.x === gx && p.y === gy) {
+            const resp = await fetch('/api/config/placements/plant/' + p.idx, { method: 'DELETE' });
+            if (resp.ok) {
+              document.getElementById('placement-list').innerHTML = await resp.text();
+              await loadData();
+            }
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          for (const s of placementData.swarms) {
+            if (s.x === gx && s.y === gy) {
+              const resp = await fetch('/api/config/placements/swarm/' + s.idx, { method: 'DELETE' });
+              if (resp.ok) {
+                document.getElementById('placement-list').innerHTML = await resp.text();
+                await loadData();
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  canvas.addEventListener('click', handleCanvasClick);
+
+  // Tool selector: show/hide sub-options
+  document.getElementById('placement-tool').addEventListener('change', function () {
+    const v = this.value;
+    document.getElementById('plant-tool-opts').classList.toggle('hidden', v !== 'plant');
+    document.getElementById('plant-energy-opt').classList.toggle('hidden', v !== 'plant');
+    document.getElementById('swarm-tool-opts').classList.toggle('hidden', v !== 'swarm');
+    document.getElementById('swarm-pop-opt').classList.toggle('hidden', v !== 'swarm');
+    document.getElementById('swarm-energy-opt').classList.toggle('hidden', v !== 'swarm');
+  });
+
+  // Listen for HTMX afterSwap on placement-list to redraw canvas
+  function handleAfterSwap(evt) {
+    if (evt.detail.target && evt.detail.target.id === 'placement-list') {
+      loadData();
+    }
+  }
+
+  function handleResize() {
+    draw();
+  }
+
+  document.body.addEventListener('htmx:afterSwap', handleAfterSwap);
+  window.addEventListener('resize', handleResize);
+
+  // Initial load
+  loadData();
+})();
+</script>
+
+

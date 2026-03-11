@@ -1,0 +1,1188 @@
+<div id="dashboard-view" class="space-y-6">
+
+  <div class="bg-white rounded-xl shadow-sm border p-4">
+    <div class="flex items-center justify-between mb-3 gap-4">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-700">📊 Live Simulation Grid</h2>
+        <p class="text-xs text-slate-500 mt-1">
+          Hover any grid field to inspect plant energy, swarm state, signal clouds, toxins, and trigger status.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500">
+        <span id="canvas-legend" class="flex gap-3 flex-wrap justify-end"></span>
+        <span id="canvas-mode-badge"
+          class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+          Preview
+        </span>
+      </div>
+    </div>
+
+    <div id="canvas-frame" class="w-full overflow-x-auto">
+      <div id="canvas-stage"
+        class="relative inline-block rounded border border-slate-300 bg-slate-950 p-2 shadow-sm">
+        <canvas id="biotope-canvas" width="800" height="800"
+          style="image-rendering:pixelated;background:#0f172a;cursor:crosshair;"
+          class="rounded block shrink-0"></canvas>
+
+        <div id="canvas-overlay"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none"
+          style="display:none!important">
+          <p class="text-slate-400 text-sm bg-slate-900/70 px-4 py-2 rounded-lg">
+            No scenario loaded. Configure species and placements, then click
+            <strong class="text-indigo-300">Load Draft</strong>.
+          </p>
+        </div>
+
+        <div id="cell-tooltip"
+          class="hidden absolute z-20 max-w-sm rounded-xl border border-slate-700 bg-slate-950/95 text-slate-100 shadow-2xl backdrop-blur px-3 py-2 text-xs pointer-events-none">
+        </div>
+      </div>
+    </div>
+
+    <div id="species-bars" class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs hidden"></div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border p-4">
+    <h2 class="text-lg font-semibold text-slate-700 mb-2">📈 Lotka-Volterra Telemetry</h2>
+    <div id="telemetry-chart"
+      hx-get="/api/telemetry" hx-trigger="load, every 1s" hx-swap="innerHTML"
+      class="min-h-[80px] flex items-center justify-center">
+      <span class="text-slate-400 text-sm">No telemetry data yet.</span>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3" id="dashboard-faq">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-700">❓ Guide</h2>
+      <p class="text-xs text-slate-500 mt-1">
+        Reference for interpreting every live-grid overlay, tooltip section, diagnostic number, and how the displayed values are computed.
+      </p>
+    </div>
+    <div class="space-y-2 text-sm text-slate-600">
+      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <summary class="cursor-pointer font-medium text-slate-700">How is each cell rendered?</summary>
+        <div class="mt-2 text-xs leading-5 text-slate-600">
+          Cell fill color is the current flora energy layer for each species; brighter fill means more stored plant energy in that grid cell.
+          Colored dots are herbivore swarms grouped by species. Blue lines are active mycorrhizal links between adjacent plants.
+          Blue rings indicate plants with visible signal activity (active, synthesizing, or lingering signal substances), and purple squares indicate analogous toxin activity.
+          Cyan/purple screen overlays show the current per-cell maximum signal/toxin concentration across all configured substance layers.
+        </div>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <summary class="cursor-pointer font-medium text-slate-700">How should I read the top of the tooltip?</summary>
+        <div class="mt-2 text-xs leading-5 text-slate-600">
+          The header always identifies one grid cell only. The <strong>tick</strong> badge is the current simulation step of the live loop.
+          <strong>flow</strong> is the current flow-field value read from <code>env.flow_field[x, y]</code>.
+          <strong>wind</strong> is the uniform wind vector sampled from the environment wind matrices at that same cell.
+          <strong>signal peak</strong> is <code>max(signal_layers[:, x, y])</code>; <strong>toxin peak</strong> is <code>max(toxin_layers[:, x, y])</code>.
+          The “Signals here” and “Toxins here” lists then break those peaks back into per-substance concentrations for the hovered cell.
+        </div>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <summary class="cursor-pointer font-medium text-slate-700">What do the plant properties mean?</summary>
+        <div class="mt-2 text-xs leading-5 text-slate-600">
+          For each plant, <strong>energy / max energy</strong> is its current reserve relative to the species cap.
+          <strong>growth</strong> is the configured growth-rate parameter, <strong>camouflage</strong> reports whether the flow-field attenuation is enabled,
+          and <strong>root links</strong> is the number of current mycorrhizal neighbors. Each substance card shows whether it is active or just triggered,
+          whether it is lethal or repellent, how many synthesis/aftereffect ticks remain, and the <strong>gate</strong> line summarizing the activation predicate tree.
+        </div>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <summary class="cursor-pointer font-medium text-slate-700">What do swarms and mycorrhiza properties mean?</summary>
+        <div class="mt-2 text-xs leading-5 text-slate-600">
+          Swarm <strong>population</strong> is current headcount, <strong>baseline</strong> is the spawn population used for growth/mitosis comparisons,
+          <strong>signal</strong> and <strong>toxin</strong> are the local overlay concentrations at the hovered cell, and status lines report whether the swarm is starving,
+          repelled, or intoxicated. The Mycorrhiza block counts all root links touching the hovered cell, lists whether inter-species links are allowed,
+          shows connection cost and signal velocity settings, and enumerates each linked neighbour cell.
+        </div>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <summary class="cursor-pointer font-medium text-slate-700">What does the diagnostics sidebar show?</summary>
+        <div class="mt-2 text-xs leading-5 text-slate-600">
+          <strong>Model</strong> shows draft counts, live entity counts, the newest telemetry record, and a starvation watch driven by current swarm starvation ticks.
+          <strong>Frontend</strong> reports the dashboard controller state and WebSocket/render status.
+          <strong>Backend</strong> shows recent in-memory PHIDS logs from API requests, draft mutations, engine transitions, telemetry, and websocket activity.
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  if (window.__phidsDashboardController && typeof window.__phidsDashboardController.destroy === 'function') {
+    window.__phidsDashboardController.destroy();
+  }
+
+  const canvas = document.getElementById('biotope-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const canvasFrame = document.getElementById('canvas-frame');
+  const canvasStage = document.getElementById('canvas-stage');
+  const tooltip = document.getElementById('cell-tooltip');
+  const modeBadge = document.getElementById('canvas-mode-badge');
+  const legendEl = document.getElementById('canvas-legend');
+  const speciesBarsEl = document.getElementById('species-bars');
+
+  const FLORA_COLORS = [
+    '#22c55e','#16a34a','#15803d','#4ade80','#a3e635','#84cc16',
+    '#34d399','#10b981','#2dd4bf','#14b8a6','#6ee7b7','#86efac',
+    '#65a30d','#4d7c0f','#3f6212','#166534'
+  ];
+  const SWARM_COLORS = [
+    '#ef4444','#dc2626','#f97316','#ea580c','#fb923c','#e11d48',
+    '#f43f5e','#be123c','#a855f7','#9333ea','#6d28d9','#7c3aed',
+    '#ec4899','#db2777','#c026d3','#a21caf'
+  ];
+  const SIGNAL_COLOR = '#38bdf8';
+  const TOXIN_COLOR = '#c026d3';
+  const CELL_DETAILS_URL = '/api/ui/cell-details';
+
+  let simData = null;
+  let placementData = null;
+  let hoveredCell = null;
+  let tooltipAnchor = null;
+  let previewRevision = 0;
+  let lastDetailKey = '';
+  let detailTimer = null;
+  let previewInterval = null;
+  const tooltipCache = new Map();
+  let ws = null;
+  let reconnectTimer = null;
+  let wsRetryDelay = 1000;
+  let destroyed = false;
+  let canvasLayout = {
+    gW: 40,
+    gH: 40,
+    cellSize: 20,
+    cellW: 20,
+    cellH: 20,
+    drawWidth: 800,
+    drawHeight: 800,
+  };
+
+  function isActiveCanvas() {
+    return !destroyed && canvas.isConnected;
+  }
+
+  function frontendDiagnosticsUpdate(patch) {
+    window.__phidsFrontendDiagnostics = Object.assign(
+      {},
+      window.__phidsFrontendDiagnostics || {},
+      patch || {}
+    );
+    window.dispatchEvent(new CustomEvent('phids:frontend-diagnostics', {
+      detail: window.__phidsFrontendDiagnostics,
+    }));
+  }
+
+  function teardownSocket() {
+    if (!ws) return;
+    ws.onopen = null;
+    ws.onmessage = null;
+    ws.onclose = null;
+    ws.onerror = null;
+    try {
+      ws.close();
+    } catch (_error) {
+      // Ignore shutdown races.
+    }
+    ws = null;
+  }
+
+  function destroy() {
+    destroyed = true;
+    if (detailTimer) clearTimeout(detailTimer);
+    if (previewInterval) clearInterval(previewInterval);
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    teardownSocket();
+    window.removeEventListener('resize', handleResize);
+    document.body.removeEventListener('htmx:afterSwap', handleAfterSwap);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseleave', handleMouseLeave);
+    if (window.__phidsDashboardController === controller) {
+      delete window.__phidsDashboardController;
+    }
+    frontendDiagnosticsUpdate({
+      wsState: 'destroyed',
+      notes: ['Dashboard controller destroyed after HTMX swap or navigation.'],
+    });
+  }
+
+  const controller = { destroy };
+  window.__phidsDashboardController = controller;
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function formatNumber(value, digits = 2) {
+    if (value == null || Number.isNaN(Number(value))) return '—';
+    return Number(value).toFixed(digits);
+  }
+
+  function currentGridData() {
+    return simData && simData.plant_energy ? simData : placementData;
+  }
+
+  function gridDims(gridData) {
+    const gW = gridData.grid_width || (gridData.plant_energy ? gridData.plant_energy.length : 40);
+    const gH = gridData.grid_height || (gridData.plant_energy ? (gridData.plant_energy[0] || []).length : 40);
+    return { gW, gH };
+  }
+
+  function computeCanvasLayout(gridData) {
+    const { gW, gH } = gridDims(gridData || {});
+    const frameRect = canvasFrame.getBoundingClientRect();
+    const stageStyles = window.getComputedStyle(canvasStage);
+    const paddingX = parseFloat(stageStyles.paddingLeft || '0') + parseFloat(stageStyles.paddingRight || '0');
+    const paddingY = parseFloat(stageStyles.paddingTop || '0') + parseFloat(stageStyles.paddingBottom || '0');
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 900;
+    const availableWidth = Math.max(
+      160,
+      Math.floor((frameRect.width || canvasFrame.clientWidth || 960) - paddingX)
+    );
+    const availableHeight = Math.max(
+      160,
+      Math.floor(
+        Math.min(
+          viewportHeight * 0.62,
+          viewportHeight - frameRect.top - 80,
+          760
+        ) - paddingY
+      )
+    );
+    const cellSize = Math.max(1, Math.floor(Math.min(availableWidth / gW, availableHeight / gH)));
+    const drawWidth = cellSize * gW;
+    const drawHeight = cellSize * gH;
+    return {
+      gW,
+      gH,
+      cellSize,
+      cellW: cellSize,
+      cellH: cellSize,
+      drawWidth,
+      drawHeight,
+    };
+  }
+
+  function syncCanvasLayout(gridData) {
+    const nextLayout = computeCanvasLayout(gridData);
+    const dpr = window.devicePixelRatio || 1;
+    if (
+      canvasLayout.drawWidth !== nextLayout.drawWidth
+      || canvasLayout.drawHeight !== nextLayout.drawHeight
+      || canvasLayout.gW !== nextLayout.gW
+      || canvasLayout.gH !== nextLayout.gH
+    ) {
+      canvas.width = nextLayout.drawWidth * dpr;
+      canvas.height = nextLayout.drawHeight * dpr;
+      canvas.style.width = `${nextLayout.drawWidth}px`;
+      canvas.style.height = `${nextLayout.drawHeight}px`;
+    }
+    const stageStyles = window.getComputedStyle(canvasStage);
+    const paddingX = parseFloat(stageStyles.paddingLeft || '0') + parseFloat(stageStyles.paddingRight || '0');
+    const paddingY = parseFloat(stageStyles.paddingTop || '0') + parseFloat(stageStyles.paddingBottom || '0');
+    canvasStage.style.width = `${nextLayout.drawWidth + paddingX}px`;
+    canvasStage.style.height = `${nextLayout.drawHeight + paddingY}px`;
+    canvasLayout = nextLayout;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return nextLayout;
+  }
+
+  function clearCanvas() {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, canvasLayout.drawWidth, canvasLayout.drawHeight);
+  }
+
+  function chemicalAlpha(value, maxValue) {
+    if (!maxValue || value <= 0) return 0;
+    const normalized = Math.max(0, Math.min(1, value / maxValue));
+    return Math.min(0.9, 0.22 + Math.sqrt(normalized) * 0.58);
+  }
+
+  function drawGridLines(alpha = 0.42) {
+    const { gW, gH, cellW, cellH, drawWidth, drawHeight } = canvasLayout;
+    ctx.save();
+    ctx.strokeStyle = `rgba(51, 65, 85, ${alpha})`;
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= gW; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * cellW, 0);
+      ctx.lineTo(x * cellW, drawHeight);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= gH; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * cellH);
+      ctx.lineTo(drawWidth, y * cellH);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawChemicalOverlay(layer, color, maxValue) {
+    if (!Array.isArray(layer) || !maxValue) return;
+    const { gW, gH, cellW, cellH } = canvasLayout;
+    const red = parseInt(color.slice(1, 3), 16);
+    const green = parseInt(color.slice(3, 5), 16);
+    const blue = parseInt(color.slice(5, 7), 16);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (let x = 0; x < gW; x++) {
+      for (let y = 0; y < gH; y++) {
+        const value = layer[x] ? Number(layer[x][y] || 0) : 0;
+        if (value <= 0) continue;
+        const alpha = chemicalAlpha(value, maxValue);
+        ctx.fillStyle = `rgba(${red},${green},${blue},${alpha})`;
+        ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+        if (Math.min(cellW, cellH) >= 6) {
+          ctx.strokeStyle = `rgba(${red},${green},${blue},${Math.min(0.95, alpha + 0.18)})`;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x * cellW + 0.5, y * cellH + 0.5, Math.max(0, cellW - 1), Math.max(0, cellH - 1));
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function swarmMarkerOffset(index, total, span) {
+    const cols = Math.max(1, Math.ceil(Math.sqrt(total)));
+    const rows = Math.max(1, Math.ceil(total / cols));
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    return {
+      dx: (col - (cols - 1) / 2) * span,
+      dy: (row - (rows - 1) / 2) * span,
+    };
+  }
+
+  function drawSwarmMarkers(swarms, { preview = false } = {}) {
+    if (!Array.isArray(swarms) || swarms.length === 0) return;
+    const { cellW, cellH } = canvasLayout;
+    const grouped = new Map();
+    for (const swarm of swarms) {
+      const key = `${swarm.x},${swarm.y}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(swarm);
+    }
+
+    for (const group of grouped.values()) {
+      const total = group.length;
+      const base = Math.min(cellW, cellH);
+      const radius = Math.max(1.5, Math.min(base * 0.2, base / 2 - 2));
+      const padding = Math.max(2, base * 0.16);
+      const span = Math.max(0, base * 0.34);
+
+      group.forEach((swarm, index) => {
+        const color = SWARM_COLORS[swarm.species_id % SWARM_COLORS.length];
+        const cellLeft = swarm.x * cellW;
+        const cellTop = swarm.y * cellH;
+        const baseCx = cellLeft + cellW - padding - radius;
+        const baseCy = cellTop + padding + radius;
+        const offset = swarmMarkerOffset(index, total, span);
+        const minCx = cellLeft + radius + 1;
+        const maxCx = cellLeft + cellW - radius - 1;
+        const minCy = cellTop + radius + 1;
+        const maxCy = cellTop + cellH - radius - 1;
+        const cx = Math.max(minCx, Math.min(maxCx, baseCx + offset.dx));
+        const cy = Math.max(minCy, Math.min(maxCy, baseCy + offset.dy));
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.lineWidth = Math.max(1, Math.min(2, base * 0.08));
+        ctx.strokeStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        if (!preview && (swarm.intoxicated || swarm.repelled)) {
+          ctx.lineWidth = Math.max(1, Math.min(2.5, base * 0.1));
+          ctx.strokeStyle = swarm.repelled ? '#fde047' : '#f5d0fe';
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius + 1.5, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+
+        if (base >= 20) {
+          ctx.fillStyle = '#fff';
+          ctx.font = `bold ${Math.max(7, Math.min(10, base * 0.32))}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(swarm.population), cx, cy);
+        }
+      });
+    }
+  }
+
+  function drawMycorrhizalLinks(links) {
+    if (!Array.isArray(links) || links.length === 0) return;
+    const { cellW, cellH } = canvasLayout;
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const link of links) {
+      const x1 = (Number(link.x1) + 0.5) * cellW;
+      const y1 = (Number(link.y1) + 0.5) * cellH;
+      const x2 = (Number(link.x2) + 0.5) * cellW;
+      const y2 = (Number(link.y2) + 0.5) * cellH;
+      ctx.strokeStyle = link.inter_species ? 'rgba(245, 158, 11, 0.78)' : 'rgba(96, 165, 250, 0.82)';
+      ctx.lineWidth = Math.max(1.2, Math.min(3.2, Math.min(cellW, cellH) * 0.18));
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPlantActivity(plants) {
+    if (!Array.isArray(plants) || plants.length === 0) return;
+    const base = Math.min(canvasLayout.cellW, canvasLayout.cellH);
+    const centerRadius = Math.max(1.8, Math.min(base * 0.18, 6));
+    const ringRadius = Math.max(centerRadius + 1.8, Math.min(base * 0.34, base / 2 - 1));
+    for (const plant of plants) {
+      const cx = plant.x * canvasLayout.cellW + canvasLayout.cellW / 2;
+      const cy = plant.y * canvasLayout.cellH + canvasLayout.cellH / 2;
+      const hasSignal = Array.isArray(plant.active_signal_ids) && plant.active_signal_ids.length > 0;
+      const hasToxin = Array.isArray(plant.active_toxin_ids) && plant.active_toxin_ids.length > 0;
+      const hasRoots = Number(plant.root_link_count || 0) > 0;
+
+      if (hasRoots) {
+        ctx.fillStyle = 'rgba(248, 250, 252, 0.92)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, centerRadius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      if (hasSignal) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
+        ctx.lineWidth = Math.max(1.2, Math.min(2.6, base * 0.12));
+        ctx.beginPath();
+        ctx.arc(cx, cy, ringRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
+      if (hasToxin) {
+        const side = Math.max(4, Math.min(base * 0.34, base - 4));
+        ctx.strokeStyle = 'rgba(192, 38, 211, 0.95)';
+        ctx.lineWidth = Math.max(1.1, Math.min(2.4, base * 0.1));
+        ctx.strokeRect(cx - side / 2, cy - side / 2, side, side);
+      }
+    }
+  }
+
+  function cellOverlayValue(layer, x, y) {
+    if (!Array.isArray(layer) || !Array.isArray(layer[x])) return 0;
+    return Number(layer[x][y] || 0);
+  }
+
+  function linksTouchingCell(links, x, y) {
+    return (links || []).filter(link => (
+      (Number(link.x1) === x && Number(link.y1) === y)
+      || (Number(link.x2) === x && Number(link.y2) === y)
+    ));
+  }
+
+  function substanceFallbackName(substanceId, kind) {
+    return `${kind === 'toxin' ? 'Toxin' : 'Signal'} ${substanceId}`;
+  }
+
+  function buildLiveSnapshotTooltip(cell) {
+    if (!simData) return null;
+    const x = cell.x;
+    const y = cell.y;
+    const plantsAtCell = (simData.plants || []).filter(plant => plant.x === x && plant.y === y);
+    const touchingLinks = linksTouchingCell(simData.mycorrhizal_links || [], x, y);
+    const plants = plantsAtCell.map(plant => {
+      const neighbourLinks = linksTouchingCell(simData.mycorrhizal_links || [], plant.x, plant.y);
+      const mycorrhizalNeighbours = neighbourLinks.map(link => {
+        const otherX = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.x2) : Number(link.x1);
+        const otherY = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.y2) : Number(link.y1);
+        const neighbourPlant = (simData.plants || []).find(other => other.x === otherX && other.y === otherY);
+        return {
+          name: neighbourPlant?.name || `Plant @ (${otherX}, ${otherY})`,
+          x: otherX,
+          y: otherY,
+          inter_species: Boolean(link.inter_species),
+        };
+      });
+      return {
+        ...plant,
+        max_energy: null,
+        growth_rate: null,
+        camouflage: false,
+        camouflage_factor: null,
+        mycorrhizal_connections: Number(plant.root_link_count || 0),
+        mycorrhizal_neighbours: mycorrhizalNeighbours,
+        active_substances: [
+          ...((plant.active_signal_ids || []).map(substanceId => ({
+            substance_id: substanceId,
+            name: substanceFallbackName(substanceId, 'signal'),
+            kind: 'signal',
+            active: true,
+            triggered_this_tick: false,
+            synthesis_remaining: 0,
+            aftereffect_remaining_ticks: 0,
+            activation_condition_summary: 'active on rendered live snapshot',
+          }))),
+          ...((plant.active_toxin_ids || []).map(substanceId => ({
+            substance_id: substanceId,
+            name: substanceFallbackName(substanceId, 'toxin'),
+            kind: 'toxin',
+            active: true,
+            triggered_this_tick: false,
+            synthesis_remaining: 0,
+            aftereffect_remaining_ticks: 0,
+            activation_condition_summary: 'active on rendered live snapshot',
+          }))),
+        ],
+      };
+    });
+    const signalPeak = cellOverlayValue(simData.signal_overlay, x, y);
+    const toxinPeak = cellOverlayValue(simData.toxin_overlay, x, y);
+    return {
+      mode: 'live',
+      tick: simData.tick ?? null,
+      x,
+      y,
+      grid_width: simData.grid_width,
+      grid_height: simData.grid_height,
+      flow_field: null,
+      wind: { x: null, y: null },
+      signal_peak: signalPeak,
+      toxin_peak: toxinPeak,
+      signal_concentrations: signalPeak > 0 ? [{ name: 'Signal overlay', value: signalPeak }] : [],
+      toxin_concentrations: toxinPeak > 0 ? [{ name: 'Toxin overlay', value: toxinPeak }] : [],
+      mycorrhiza: {
+        enabled: touchingLinks.length > 0,
+        link_count: touchingLinks.length,
+        inter_species_enabled: null,
+        connection_cost: null,
+        signal_velocity: null,
+        links: touchingLinks.map(link => ({
+          from: { x: Number(link.x1), y: Number(link.y1) },
+          to: { x: Number(link.x2), y: Number(link.y2) },
+          inter_species: Boolean(link.inter_species),
+        })),
+      },
+      plants,
+      swarms: (simData.swarms || [])
+        .filter(swarm => swarm.x === x && swarm.y === y)
+        .map(swarm => ({
+          ...swarm,
+          initial_population: swarm.initial_population ?? null,
+          starvation_ticks: swarm.starvation_ticks ?? 0,
+          signal_level: signalPeak,
+          toxin_level: toxinPeak,
+          target_plant: swarm.target_plant ?? null,
+        })),
+    };
+  }
+
+  async function fetchPlacementPreview() {
+    if (!isActiveCanvas()) return;
+    try {
+      const response = await fetch('/api/config/placements/data');
+      if (!isActiveCanvas()) return;
+      placementData = await response.json();
+      tooltipCache.clear();
+      previewRevision += 1;
+      frontendDiagnosticsUpdate({
+        activeView: 'dashboard',
+        renderMode: 'preview',
+        notes: ['Placement preview refreshed from draft state.'],
+      });
+      if (hoveredCell) scheduleCellDetailsFetch(true);
+    } catch (_error) {
+      placementData = null;
+      frontendDiagnosticsUpdate({
+        notes: ['Placement preview fetch failed.'],
+      });
+    }
+  }
+
+  function updateLegend(flora, swarms, extras = []) {
+    const deduped = [];
+    const seen = new Set();
+    for (const item of [...flora, ...swarms, ...extras]) {
+      const key = `${item.name}:${item.color}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(item);
+    }
+    legendEl.innerHTML = deduped.slice(0, 10).map(item =>
+      `<span class="flex items-center gap-1">
+        <span class="inline-block w-3 h-3 rounded-sm" style="background:${item.color}"></span>
+        <span>${escapeHtml(item.name)}</span>
+       </span>`
+    ).join('');
+  }
+
+  function updateSpeciesBars(speciesEnergy, maxE) {
+    if (!speciesEnergy || speciesEnergy.length === 0) {
+      speciesBarsEl.classList.add('hidden');
+      speciesBarsEl.innerHTML = '';
+      return;
+    }
+    speciesBarsEl.classList.remove('hidden');
+    speciesBarsEl.innerHTML = speciesEnergy.map(sp => {
+      const total = sp.layer.flat().reduce((sum, value) => sum + value, 0);
+      const pct = Math.min(100, (total / (maxE * sp.layer.length * sp.layer[0].length)) * 100 * 10);
+      const color = FLORA_COLORS[sp.species_id % FLORA_COLORS.length];
+      return `<div class="bg-slate-50 rounded p-2">
+        <div class="flex justify-between text-slate-600 mb-1">
+          <span>${escapeHtml(sp.name)}</span>
+          <span class="font-mono">${total.toFixed(0)}</span>
+        </div>
+        <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function drawSim(data) {
+    const { gW, gH, cellW, cellH } = syncCanvasLayout(data);
+    clearCanvas();
+
+    const maxE = data.max_energy || 1;
+    if (data.species_energy && data.species_energy.length > 0) {
+      for (const sp of data.species_energy) {
+        const layer = sp.layer;
+        const color = FLORA_COLORS[sp.species_id % FLORA_COLORS.length];
+        const red = parseInt(color.slice(1, 3), 16);
+        const green = parseInt(color.slice(3, 5), 16);
+        const blue = parseInt(color.slice(5, 7), 16);
+        for (let x = 0; x < gW; x++) {
+          for (let y = 0; y < gH; y++) {
+            const energy = layer[x] ? Number(layer[x][y] || 0) : 0;
+            if (energy <= 0.01) continue;
+            const alpha = Math.min(1, 0.15 + (energy / maxE) * 0.85);
+            ctx.fillStyle = `rgba(${red},${green},${blue},${alpha})`;
+            ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+          }
+        }
+      }
+      updateSpeciesBars(data.species_energy, maxE);
+    } else if (data.plant_energy) {
+      for (let x = 0; x < gW; x++) {
+        for (let y = 0; y < gH; y++) {
+          const energy = data.plant_energy[x] ? Number(data.plant_energy[x][y] || 0) : 0;
+          if (energy <= 0) continue;
+          const value = Math.min(255, Math.round((energy / maxE) * 220) + 35);
+          ctx.fillStyle = `rgb(0,${value},0)`;
+          ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+        }
+      }
+      speciesBarsEl.classList.add('hidden');
+    }
+
+    drawMycorrhizalLinks(data.mycorrhizal_links || []);
+    drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
+    drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
+    drawPlantActivity(data.plants || []);
+    drawGridLines();
+
+    drawSwarmMarkers(data.swarms || []);
+
+    const floraLegend = (data.species_energy || []).map(species => ({
+      name: species.name,
+      color: FLORA_COLORS[species.species_id % FLORA_COLORS.length],
+    }));
+    const swarmLegend = (data.swarms || []).map(swarm => ({
+      name: swarm.name || `Predator ${swarm.species_id}`,
+      color: SWARM_COLORS[swarm.species_id % SWARM_COLORS.length],
+    }));
+    const extras = [];
+    if ((data.max_signal || 0) > 0) extras.push({ name: 'Signal cloud', color: SIGNAL_COLOR });
+    if ((data.max_toxin || 0) > 0) extras.push({ name: 'Toxin cloud', color: TOXIN_COLOR });
+    if ((data.mycorrhizal_links || []).length > 0) extras.push({ name: 'Root link', color: '#60a5fa' });
+    if ((data.plants || []).some(plant => (plant.active_signal_ids || []).length > 0)) {
+      extras.push({ name: 'Signal emitter', color: SIGNAL_COLOR });
+    }
+    if ((data.plants || []).some(plant => (plant.active_toxin_ids || []).length > 0)) {
+      extras.push({ name: 'Toxin emitter', color: TOXIN_COLOR });
+    }
+    updateLegend(floraLegend, swarmLegend, extras);
+
+    const status = data.terminated ? 'Terminated' : data.paused ? 'Paused' : data.running ? 'Running' : 'Loaded';
+    const statusColors = {
+      Running: 'bg-emerald-100 text-emerald-700',
+      Paused: 'bg-amber-100 text-amber-700',
+      Terminated: 'bg-red-100 text-red-600',
+      Loaded: 'bg-indigo-100 text-indigo-600',
+    };
+    modeBadge.textContent = status;
+    modeBadge.className = `px-2 py-0.5 rounded-full font-medium text-xs ${statusColors[status] || 'bg-slate-100 text-slate-500'}`;
+  }
+
+  function drawPreview(preview) {
+    const { cellW, cellH } = syncCanvasLayout(preview);
+    clearCanvas();
+
+    drawMycorrhizalLinks(preview.mycorrhizal_links || []);
+
+    for (const plant of (preview.plants || [])) {
+      ctx.fillStyle = FLORA_COLORS[plant.species_id % FLORA_COLORS.length];
+      ctx.fillRect(plant.x * cellW + 1, plant.y * cellH + 1, cellW - 2, cellH - 2);
+      if (cellW >= 10) {
+        ctx.fillStyle = '#fff';
+        ctx.font = `${Math.max(7, Math.min(11, cellW * 0.45))}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P', plant.x * cellW + cellW / 2, plant.y * cellH + cellH / 2);
+      }
+    }
+
+    drawGridLines();
+    drawSwarmMarkers(preview.swarms || [], { preview: true });
+
+    updateLegend(
+      (preview.flora_species || []).map(flora => ({
+        name: flora.name,
+        color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
+      })),
+      (preview.predator_species || []).map(predator => ({
+        name: predator.name,
+        color: SWARM_COLORS[predator.species_id % SWARM_COLORS.length],
+      }))
+    );
+    if ((preview.mycorrhizal_links || []).length > 0) {
+      updateLegend(
+        (preview.flora_species || []).map(flora => ({
+          name: flora.name,
+          color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
+        })),
+        (preview.predator_species || []).map(predator => ({
+          name: predator.name,
+          color: SWARM_COLORS[predator.species_id % SWARM_COLORS.length],
+        })),
+        [{ name: 'Potential root link', color: '#60a5fa' }]
+      );
+    }
+
+    const plants = (preview.plants || []).length;
+    const swarms = (preview.swarms || []).length;
+    modeBadge.textContent = plants + swarms > 0 ? `Preview (${plants}🌿 ${swarms}🐛)` : 'Draft – No placements';
+    modeBadge.className = plants + swarms > 0
+      ? 'px-2 py-0.5 rounded-full font-medium text-xs bg-blue-100 text-blue-700'
+      : 'px-2 py-0.5 rounded-full font-medium text-xs bg-amber-100 text-amber-700';
+    speciesBarsEl.classList.add('hidden');
+    speciesBarsEl.innerHTML = '';
+  }
+
+  function draw() {
+    if (!isActiveCanvas()) return;
+    const data = simData && simData.plant_energy ? simData : null;
+    if (data) {
+      drawSim(data);
+      return;
+    }
+    if (placementData) {
+      drawPreview(placementData);
+      return;
+    }
+    syncCanvasLayout({ grid_width: 40, grid_height: 40 });
+    clearCanvas();
+  }
+
+  function cellFromPointer(event) {
+    const source = currentGridData();
+    if (!source) return null;
+    const { gW, gH } = gridDims(source);
+    const rect = canvas.getBoundingClientRect();
+    const relX = (event.clientX - rect.left) / rect.width;
+    const relY = (event.clientY - rect.top) / rect.height;
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return null;
+    const x = Math.max(0, Math.min(gW - 1, Math.floor(relX * gW)));
+    const y = Math.max(0, Math.min(gH - 1, Math.floor(relY * gH)));
+    return { x, y };
+  }
+
+  function positionTooltip() {
+    if (!tooltipAnchor || tooltip.classList.contains('hidden')) return;
+    const hostRect = canvasStage.getBoundingClientRect();
+    const tooltipWidth = tooltip.offsetWidth || 320;
+    const tooltipHeight = tooltip.offsetHeight || 220;
+
+    let left = tooltipAnchor.clientX - hostRect.left + 14;
+    let top = tooltipAnchor.clientY - hostRect.top + 14;
+    if (left + tooltipWidth > hostRect.width - 8) left = Math.max(8, left - tooltipWidth - 28);
+    if (top + tooltipHeight > hostRect.height - 8) top = Math.max(8, top - tooltipHeight - 28);
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
+  function cellAnchorFor(cell) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      clientX: rect.left + ((cell.x + 0.5) / canvasLayout.gW) * rect.width,
+      clientY: rect.top + ((cell.y + 0.5) / canvasLayout.gH) * rect.height,
+    };
+  }
+
+  function renderConcentrationList(title, items, accentClass) {
+    if (!items || items.length === 0) return '';
+    return `
+      <div class="mt-2">
+        <div class="font-semibold ${accentClass} mb-1">${escapeHtml(title)}</div>
+        <ul class="space-y-1">
+          ${items.map(item => `
+            <li class="flex justify-between gap-3">
+              <span>${escapeHtml(item.name)}</span>
+              <span class="font-mono">${formatNumber(item.value, 3)}</span>
+            </li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  function renderPlantList(plants) {
+    if (!plants || plants.length === 0) return '<div class="text-slate-400">No plants in this field.</div>';
+    return plants.map(plant => {
+      const substances = (plant.active_substances || []).map(substance => {
+        const flags = [];
+        if (substance.active) flags.push('active');
+        if (substance.triggered_this_tick) flags.push('triggered');
+        if (substance.lethal) flags.push('lethal');
+        if (substance.repellent) flags.push('repellent');
+        if (substance.synthesis_remaining > 0) flags.push(`synth:${substance.synthesis_remaining}`);
+        if (substance.aftereffect_remaining_ticks > 0) flags.push(`linger:${substance.aftereffect_remaining_ticks}`);
+        return `
+          <li class="rounded bg-slate-900/60 px-2 py-1 mt-1">
+            <div class="flex justify-between gap-2">
+              <span>${escapeHtml(substance.name)}</span>
+              <span class="uppercase text-[10px] tracking-wide text-slate-400">${escapeHtml(substance.kind)}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-1">${escapeHtml(flags.join(' · ') || 'configured')}</div>
+            <div class="text-[10px] text-slate-500 mt-1">gate ${escapeHtml(substance.activation_condition_summary || 'unconditional')}</div>
+          </li>`;
+      }).join('');
+      const rootDetails = (plant.mycorrhizal_neighbours || []).map(neighbour => `
+        <li class="flex justify-between gap-3">
+          <span>${escapeHtml(neighbour.name)}</span>
+          <span class="font-mono text-slate-400">(${escapeHtml(neighbour.x)}, ${escapeHtml(neighbour.y)})${neighbour.inter_species ? ' *' : ''}</span>
+        </li>`).join('');
+
+      return `
+        <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-2 mt-2">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-semibold text-emerald-200">${escapeHtml(plant.name)}</span>
+            <span class="font-mono">${formatNumber(plant.energy, 1)} / ${formatNumber(plant.max_energy, 1)}</span>
+          </div>
+          <div class="text-[10px] text-slate-300 mt-1">
+            growth ${formatNumber(plant.growth_rate, 1)}% · camouflage ${plant.camouflage ? formatNumber(plant.camouflage_factor, 2) : 'off'} · root links ${plant.mycorrhizal_connections}
+          </div>
+          ${rootDetails ? `<div class="mt-1 text-[10px] text-slate-300"><div class="text-slate-400 mb-0.5">mycorrhiza</div><ul class="space-y-0.5">${rootDetails}</ul></div>` : ''}
+          ${substances ? `<ul class="mt-1">${substances}</ul>` : '<div class="text-[10px] text-slate-400 mt-1">No owned substances.</div>'}
+        </div>`;
+    }).join('');
+  }
+
+  function renderPreviewRules(plant) {
+    const rules = plant.configured_trigger_rules || [];
+    if (rules.length === 0) return '<div class="text-[10px] text-slate-400 mt-1">No trigger rules configured.</div>';
+    return `
+      <ul class="mt-1 space-y-1">
+        ${rules.map(rule => `
+          <li class="rounded bg-slate-900/60 px-2 py-1">
+            <div>${escapeHtml(rule.substance_name)} ← ${escapeHtml(rule.predator_name)} ≥ ${escapeHtml(rule.min_predator_population)}</div>
+            <div class="text-[10px] text-slate-400 mt-1">gate ${escapeHtml(rule.activation_condition_summary || 'unconditional')}</div>
+          </li>`).join('')}
+      </ul>`;
+  }
+
+  function renderSwarmList(swarms, mode) {
+    if (!swarms || swarms.length === 0) return '<div class="text-slate-400">No swarms in this field.</div>';
+    return swarms.map(swarm => {
+      if (mode === 'draft') {
+        return `
+          <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-2 mt-2">
+            <div class="flex items-center justify-between gap-3">
+              <span class="font-semibold text-rose-200">${escapeHtml(swarm.name)}</span>
+              <span class="font-mono">pop ${escapeHtml(swarm.population)}</span>
+            </div>
+            <div class="text-[10px] text-slate-300 mt-1">energy ${formatNumber(swarm.energy, 1)}</div>
+          </div>`;
+      }
+      const statusBits = [];
+      if (swarm.intoxicated) statusBits.push(`intoxicated ${formatNumber(swarm.toxin_level, 3)}`);
+      if (swarm.repelled) statusBits.push(`repelled ${swarm.repelled_ticks_remaining}t`);
+      if (swarm.starvation_ticks > 0) statusBits.push(`starving ${swarm.starvation_ticks}t`);
+      const metrics = [`energy ${formatNumber(swarm.energy, 1)}`];
+      if (swarm.initial_population != null) metrics.push(`baseline ${escapeHtml(swarm.initial_population)}`);
+      if (swarm.signal_level != null) metrics.push(`signal ${formatNumber(swarm.signal_level, 3)}`);
+      return `
+        <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-2 mt-2">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-semibold text-rose-200">${escapeHtml(swarm.name)}</span>
+            <span class="font-mono">pop ${escapeHtml(swarm.population)}</span>
+          </div>
+          <div class="text-[10px] text-slate-300 mt-1">
+            ${metrics.join(' · ')}
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1">${escapeHtml(statusBits.join(' · ') || 'healthy / tracking')}</div>
+          ${swarm.target_plant ? `<div class="text-[10px] text-slate-400 mt-1">target → ${escapeHtml(swarm.target_plant.name)} @ (${escapeHtml(swarm.target_plant.x)}, ${escapeHtml(swarm.target_plant.y)})</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function renderMycorrhiza(mycorrhiza) {
+    if (!mycorrhiza) return '';
+    const links = mycorrhiza.links || [];
+    const settings = [];
+    if (mycorrhiza.inter_species_enabled != null) settings.push(`inter-species ${mycorrhiza.inter_species_enabled ? 'on' : 'off'}`);
+    if (mycorrhiza.connection_cost != null) settings.push(`cost ${formatNumber(mycorrhiza.connection_cost, 2)}`);
+    if (mycorrhiza.signal_velocity != null) settings.push(`velocity ${escapeHtml(mycorrhiza.signal_velocity)}`);
+    return `
+      <div class="mt-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-2 py-2">
+        <div class="font-semibold text-sky-200 mb-1">Mycorrhiza</div>
+        <div class="text-[10px] text-slate-300">
+          ${mycorrhiza.link_count > 0 ? `${escapeHtml(mycorrhiza.link_count)} root link(s) touch this cell` : 'No root link touches this cell.'}
+        </div>
+        ${settings.length ? `<div class="text-[10px] text-slate-400 mt-1">${escapeHtml(settings.join(' · '))}</div>` : ''}
+        ${links.length ? `<ul class="mt-1 space-y-1 text-[10px] text-slate-300">${links.map(link => `
+          <li>(${escapeHtml(link.from.x)}, ${escapeHtml(link.from.y)}) ↔ (${escapeHtml(link.to.x)}, ${escapeHtml(link.to.y)})${link.inter_species ? ' · inter-species' : ''}</li>`).join('')}</ul>` : ''}
+      </div>`;
+  }
+
+  function renderTooltip(data) {
+    if (!data) return;
+    const liveBadge = data.mode === 'live'
+      ? `<span class="rounded bg-emerald-500/20 px-2 py-0.5 text-emerald-200">tick ${escapeHtml(data.tick)}</span>`
+      : '<span class="rounded bg-blue-500/20 px-2 py-0.5 text-blue-200">draft preview</span>';
+
+    const plantHtml = data.mode === 'live'
+      ? renderPlantList(data.plants || [])
+      : (data.plants || []).map(plant => `
+          <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-2 mt-2">
+            <div class="flex items-center justify-between gap-3">
+              <span class="font-semibold text-emerald-200">${escapeHtml(plant.name)}</span>
+              <span class="font-mono">${formatNumber(plant.energy, 1)}</span>
+            </div>
+            ${renderPreviewRules(plant)}
+          </div>`).join('') || '<div class="text-slate-400">No plants in this field.</div>';
+
+    tooltip.innerHTML = `
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <div class="font-semibold text-sm">Cell (${escapeHtml(data.x)}, ${escapeHtml(data.y)})</div>
+        ${liveBadge}
+      </div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-300">
+        <div>flow</div><div class="font-mono text-right">${formatNumber(data.flow_field, 3)}</div>
+        <div>wind</div><div class="font-mono text-right">${formatNumber(data.wind?.x, 2)}, ${formatNumber(data.wind?.y, 2)}</div>
+        <div>signal peak</div><div class="font-mono text-right">${formatNumber(data.signal_peak, 3)}</div>
+        <div>toxin peak</div><div class="font-mono text-right">${formatNumber(data.toxin_peak, 3)}</div>
+      </div>
+      ${renderConcentrationList('Signals here', data.signal_concentrations || [], 'text-sky-200')}
+      ${renderConcentrationList('Toxins here', data.toxin_concentrations || [], 'text-fuchsia-200')}
+      ${renderMycorrhiza(data.mycorrhiza)}
+      <div class="mt-2">
+        <div class="font-semibold text-emerald-200 mb-1">Plants</div>
+        ${plantHtml}
+      </div>
+      <div class="mt-2">
+        <div class="font-semibold text-rose-200 mb-1">Swarms</div>
+        ${renderSwarmList(data.swarms || [], data.mode)}
+      </div>`;
+    tooltip.classList.remove('hidden');
+    positionTooltip();
+    frontendDiagnosticsUpdate({
+      lastTooltipCell: `(${data.x}, ${data.y})`,
+    });
+  }
+
+  function tooltipVersion() {
+    if (simData && simData.plant_energy) return `live:${simData.tick ?? 0}`;
+    if (placementData) return `preview:${previewRevision}`;
+    return 'none';
+  }
+
+  function tooltipRequestKeyFor(cell) {
+    return `${cell.x},${cell.y}:${tooltipVersion()}`;
+  }
+
+  async function fetchCellDetails(force = false) {
+    if (!hoveredCell || !isActiveCanvas()) return;
+    const requestKey = tooltipRequestKeyFor(hoveredCell);
+    if (!force && lastDetailKey === requestKey) return;
+    lastDetailKey = requestKey;
+    const liveTick = simData && simData.plant_energy ? Number(simData.tick ?? 0) : null;
+
+    try {
+      const params = new URLSearchParams({
+        x: String(hoveredCell.x),
+        y: String(hoveredCell.y),
+      });
+      if (liveTick != null) params.set('expected_tick', String(liveTick));
+      const response = await fetch(`${CELL_DETAILS_URL}?${params.toString()}`);
+      if (response.status === 409) {
+        if (hoveredCell && simData) renderTooltip(buildLiveSnapshotTooltip(hoveredCell));
+        return;
+      }
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!hoveredCell || !isActiveCanvas() || lastDetailKey !== requestKey) return;
+      if (liveTick != null && Number(payload.tick ?? -1) !== liveTick) return;
+      tooltipCache.set(requestKey, payload);
+      renderTooltip(payload);
+      frontendDiagnosticsUpdate({
+        notes: [`Tooltip enriched from backend for cell (${payload.x}, ${payload.y}).`],
+      });
+    } catch (_error) {
+      // Ignore transient hover failures.
+    }
+  }
+
+  function scheduleCellDetailsFetch(force = false) {
+    if (!hoveredCell) return;
+    if (detailTimer) clearTimeout(detailTimer);
+    detailTimer = setTimeout(() => {
+      fetchCellDetails(force);
+    }, force ? 0 : 60);
+  }
+
+  function handleMouseMove(event) {
+    const cell = cellFromPointer(event);
+    if (!cell) {
+      hoveredCell = null;
+      tooltip.classList.add('hidden');
+      return;
+    }
+    tooltipAnchor = cellAnchorFor(cell);
+    const cellChanged = !hoveredCell || hoveredCell.x !== cell.x || hoveredCell.y !== cell.y;
+    if (!cellChanged) {
+      positionTooltip();
+      return;
+    }
+    hoveredCell = cell;
+    lastDetailKey = '';
+    const cachedPayload = tooltipCache.get(tooltipRequestKeyFor(cell));
+    if (cachedPayload) {
+      renderTooltip(cachedPayload);
+    } else if (simData && simData.plant_energy) {
+      const snapshotPayload = buildLiveSnapshotTooltip(cell);
+      if (snapshotPayload) renderTooltip(snapshotPayload);
+    }
+    positionTooltip();
+    scheduleCellDetailsFetch();
+  }
+
+  function handleMouseLeave() {
+    hoveredCell = null;
+    tooltipAnchor = null;
+    if (detailTimer) clearTimeout(detailTimer);
+    tooltip.classList.add('hidden');
+  }
+
+  canvas.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mouseleave', handleMouseLeave);
+
+  function startPreviewPolling() {
+    if (previewInterval) return;
+    fetchPlacementPreview().then(draw);
+    previewInterval = setInterval(() => {
+      fetchPlacementPreview().then(draw);
+    }, 2000);
+  }
+
+  function stopPreviewPolling() {
+    if (!previewInterval) return;
+    clearInterval(previewInterval);
+    previewInterval = null;
+  }
+
+  function connect() {
+    if (!isActiveCanvas()) return;
+    teardownSocket();
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(proto + '://' + location.host + '/ws/ui/stream');
+    frontendDiagnosticsUpdate({
+      activeView: 'dashboard',
+      wsState: 'connecting',
+      notes: ['Connecting to /ws/ui/stream for live canvas updates.'],
+    });
+
+    ws.onopen = function () {
+      wsRetryDelay = 1000;
+      frontendDiagnosticsUpdate({ wsState: 'open' });
+    };
+
+    ws.onmessage = function (event) {
+      if (!isActiveCanvas()) return;
+      let data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (_error) {
+        return;
+      }
+      if (!data) return;
+      simData = data;
+      tooltipCache.clear();
+      stopPreviewPolling();
+      const tickCounter = document.getElementById('tick-counter');
+      if (tickCounter && data.tick != null) tickCounter.textContent = data.tick;
+      draw();
+      frontendDiagnosticsUpdate({
+        wsState: 'streaming',
+        lastUiTick: data.tick ?? null,
+        lastDashboardMessageAt: new Date().toLocaleTimeString(),
+        renderMode: 'live',
+        notes: [`Rendered live dashboard snapshot for tick ${data.tick ?? 'n/a'}.`],
+      });
+      if (hoveredCell) {
+        const snapshotPayload = buildLiveSnapshotTooltip(hoveredCell);
+        if (snapshotPayload) renderTooltip(snapshotPayload);
+        scheduleCellDetailsFetch(true);
+      }
+    };
+
+    ws.onclose = function () {
+      if (!isActiveCanvas()) return;
+      simData = null;
+      startPreviewPolling();
+      wsRetryDelay = Math.min(wsRetryDelay * 1.5, 8000);
+      frontendDiagnosticsUpdate({
+        wsState: 'closed',
+        renderMode: 'preview',
+        notes: ['Live WebSocket closed; preview polling resumed.'],
+      });
+      reconnectTimer = setTimeout(connect, wsRetryDelay);
+    };
+
+    ws.onerror = function () {
+      frontendDiagnosticsUpdate({
+        wsState: 'error',
+        notes: ['Live WebSocket error observed; attempting reconnect.'],
+      });
+      ws.close();
+    };
+  }
+
+  startPreviewPolling();
+  syncCanvasLayout(currentGridData() || { grid_width: 40, grid_height: 40 });
+  draw();
+  connect();
+
+  function handleResize() {
+    draw();
+    positionTooltip();
+  }
+
+  function handleAfterSwap() {
+    fetchPlacementPreview().then(draw);
+  }
+
+  window.addEventListener('resize', handleResize);
+
+  document.body.addEventListener('htmx:afterSwap', handleAfterSwap);
+})();
+</script>
+

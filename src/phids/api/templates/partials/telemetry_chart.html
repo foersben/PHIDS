@@ -1,0 +1,31 @@
+<div class="space-y-3">
+  {% if live_summary %}
+  <div class="flex flex-wrap items-center gap-2 text-[11px]">
+    <span class="rounded-full px-2 py-0.5 font-medium {% if live_summary.terminated %}bg-red-100 text-red-700{% elif live_summary.running and not live_summary.paused %}bg-emerald-100 text-emerald-700{% elif live_summary.paused %}bg-amber-100 text-amber-700{% else %}bg-indigo-100 text-indigo-700{% endif %}">
+      {% if live_summary.terminated %}terminated{% elif live_summary.running and not live_summary.paused %}running{% elif live_summary.paused %}paused{% else %}loaded{% endif %}
+    </span>
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">tick {{ live_summary.tick }}</span>
+    {% if latest_metrics %}
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">flora {{ latest_metrics.flora_population }}</span>
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">predators {{ latest_metrics.predator_population }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {{ svg_content | safe }}
+
+  {% if legend %}
+  <div class="flex flex-wrap gap-4 text-xs text-slate-500">
+    <span class="flex items-center gap-1">
+      <span class="inline-block w-4 h-0.5 bg-green-500 rounded"></span> Flora population
+    </span>
+    <span class="flex items-center gap-1">
+      <span class="inline-block w-4 h-0.5 bg-red-500 rounded"></span> Predator population
+    </span>
+    <span class="flex items-center gap-1">
+      <span class="inline-block w-4 h-0.5 bg-blue-400 rounded"></span> Total flora energy
+    </span>
+  </div>
+  {% endif %}
+</div>
+

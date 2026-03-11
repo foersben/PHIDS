@@ -1,0 +1,63 @@
+<!-- Placed plants -->
+{% if initial_plants %}
+<h4 class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-2">
+  🌿 Plants ({{ initial_plants|length }})
+</h4>
+<div class="space-y-1 mb-4">
+  {% for p in initial_plants %}
+  {% set idx = loop.index0 %}
+  <div class="flex items-center justify-between bg-emerald-50 rounded px-2 py-1 text-xs">
+    <div>
+      <span class="font-mono text-emerald-700">
+        ({{ p.x }},{{ p.y }})
+      </span>
+      <span class="text-slate-600 ml-1">
+        {% for fp in flora_species %}
+          {% if fp.species_id == p.species_id %}{{ fp.name }}{% endif %}
+        {% endfor %}
+      </span>
+      <span class="text-slate-400 ml-1">E={{ p.energy }}</span>
+    </div>
+    <button hx-delete="/api/config/placements/plant/{{ idx }}"
+      hx-target="#placement-list" hx-swap="innerHTML"
+      class="text-red-500 hover:text-red-700 font-medium ml-2">✕</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Placed swarms -->
+{% if initial_swarms %}
+<h4 class="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">
+  🐛 Swarms ({{ initial_swarms|length }})
+</h4>
+<div class="space-y-1 mb-4">
+  {% for s in initial_swarms %}
+  {% set idx = loop.index0 %}
+  <div class="flex items-center justify-between bg-red-50 rounded px-2 py-1 text-xs">
+    <div>
+      <span class="font-mono text-red-700">
+        ({{ s.x }},{{ s.y }})
+      </span>
+      <span class="text-slate-600 ml-1">
+        {% for pp in predator_species %}
+          {% if pp.species_id == s.species_id %}{{ pp.name }}{% endif %}
+        {% endfor %}
+      </span>
+      <span class="text-slate-400 ml-1">n={{ s.population }} E={{ s.energy }}</span>
+    </div>
+    <button hx-delete="/api/config/placements/swarm/{{ idx }}"
+      hx-target="#placement-list" hx-swap="innerHTML"
+      class="text-red-500 hover:text-red-700 font-medium ml-2">✕</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if not initial_plants and not initial_swarms %}
+<p class="text-xs text-slate-400 text-center py-4">
+  No entities placed yet. Click on the grid to add plants or swarms.
+</p>
+{% endif %}
+
+

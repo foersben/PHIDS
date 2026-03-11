@@ -1,0 +1,121 @@
+<div id="substance-config-view">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-slate-800">🧪 Substance Definitions</h2>
+    {% if substances|length < 16 %}
+    <button hx-post="/api/config/substances" hx-target="#substance-config-view" hx-swap="outerHTML"
+      hx-vals='{"name":"Signal","is_toxin":"false","lethal":"false","repellent":"false","synthesis_duration":"3","aftereffect_ticks":"0","lethality_rate":"0","repellent_walk_ticks":"3","energy_cost_per_tick":"1"}'
+      class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+      + Add Substance
+    </button>
+    {% else %}
+    <button disabled
+      class="px-4 py-2 bg-slate-300 text-slate-500 rounded-lg text-sm font-medium cursor-not-allowed">
+      + Add Substance (max 16)
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border overflow-auto">
+    <table class="w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Substance layer index. Signal substances occupy signal_layers[id], toxins occupy toxin_layers[id]. Must be < num_signals or num_toxins set in Biotope Config.">ID</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Display name for this substance.">Name</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Signal: airborne VOC that diffuses and warns neighbouring plants via mycorrhiza. Lethal Toxin: kills herbivores proportional to lethality_rate. Repellent Toxin: triggers random walk away from plant. Toxin: generic toxin without lethal/repellent effect.">Type</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Synthesis Duration T(s): number of ticks from trigger to activation. During this window the substance is synthesising but not yet active. Mimics biochemical production delay.">Synth.</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Aftereffect Ticks T_k: after the triggering predator leaves, the substance stays active for this many extra ticks before deactivating. 0 = deactivates immediately when threat leaves.">Aftereff.</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Lethality Rate β: for Lethal Toxins, population_casualties = β × toxin_concentration × population each tick. 0 = no lethal effect. Typical values: 0.5–3.0.">Lethal β</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Repellent Walk k: for Repellent Toxins, swarm enters random walk for this many ticks after contact. Effectively chases the herbivore away temporarily.">Walk k</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Energy per Tick: energy drained from the plant per tick while this substance is active. Represents the metabolic cost of defence. 0 = free defence.">E/tick</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for sub in substances %}
+        <tr id="substance-row-{{ sub.substance_id }}">
+          <td class="px-2 py-2 font-mono text-slate-400">{{ sub.substance_id }}</td>
+          <td class="px-2 py-2">
+            <input type="text" value="{{ sub.name }}" name="name"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-24">
+          </td>
+          <td class="px-2 py-2">
+            <select name="type_label"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 text-sm">
+              <option value="Signal" {% if sub.type_label == 'Signal' %}selected{% endif %}>Signal</option>
+              <option value="Lethal Toxin" {% if sub.type_label == 'Lethal Toxin' %}selected{% endif %}>Lethal Toxin</option>
+              <option value="Repellent Toxin" {% if sub.type_label == 'Repellent Toxin' %}selected{% endif %}>Repellent Toxin</option>
+              <option value="Toxin" {% if sub.type_label == 'Toxin' %}selected{% endif %}>Toxin</option>
+            </select>
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ sub.synthesis_duration }}" min="1" step="1" name="synthesis_duration"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ sub.aftereffect_ticks }}" min="0" step="1" name="aftereffect_ticks"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ sub.lethality_rate }}" min="0" step="0.01" name="lethality_rate"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ sub.repellent_walk_ticks }}" min="0" step="1" name="repellent_walk_ticks"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14"
+              title="Random-walk duration k when repelling swarms">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ sub.energy_cost_per_tick }}" min="0" step="0.1" name="energy_cost_per_tick"
+              hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
+              hx-target="#substance-config-view" hx-swap="outerHTML"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14"
+              title="Energy drained from the plant per active tick">
+          </td>
+          <td class="px-2 py-2">
+            <button hx-delete="/api/config/substances/{{ sub.substance_id }}"
+              hx-target="#substance-row-{{ sub.substance_id }}" hx-swap="outerHTML swap:0.5s"
+              hx-confirm="Delete {{ sub.name }}?"
+              class="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
+              Delete
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="px-3 py-6 text-center text-slate-400">
+            No substances defined. Add one to enable chemical signaling.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 text-xs text-slate-400">
+    <strong>Synth.</strong>: ticks to complete synthesis.
+    <strong>Aftereff.</strong>: ticks substance lingers after emission ceases.
+    <strong>Walk k</strong>: random-walk duration on repel.
+    <strong>E/tick</strong>: energy drained from the plant per active tick.
+    Activation gates mixing enemies and precursor substances are configured per rule in the ⚡ Trigger Rules editor.
+  </p>
+</div>
+

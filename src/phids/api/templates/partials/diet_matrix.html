@@ -1,0 +1,61 @@
+<div id="diet-matrix-view">
+  <h2 class="text-xl font-semibold text-slate-800 mb-4">🍽️ Diet Compatibility Matrix</h2>
+  <p class="text-sm text-slate-500 mb-4">
+    Rows = Predator species (E<sub>i</sub>), Columns = Flora species (P<sub>j</sub>).
+    Check a cell to allow that predator to consume that flora species.
+    Unchecked = predator cannot feed on that plant even if adjacent.
+  </p>
+
+  {% if not flora_species or not predator_species %}
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm">
+    Define at least one flora species and one predator species first.
+  </div>
+  {% else %}
+  <div class="bg-white rounded-xl shadow-sm border overflow-auto">
+    <table class="divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase min-w-[120px]"
+            title="Predator species (row). Each predator can have different diet preferences.">
+            Predator \ Flora
+          </th>
+          {% for fp in flora_species %}
+          <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase"
+            title="Flora species {{ fp.name }} (id={{ fp.species_id }}). Check to allow the predator in this row to feed on it.">
+            {{ fp.name }}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for pp in predator_species %}
+        {% set pred_idx = loop.index0 %}
+        <tr>
+          <td class="px-4 py-3 font-medium text-slate-700"
+            title="Predator: {{ pp.name }} (id={{ pp.species_id }})">{{ pp.name }}</td>
+          {% for fp in flora_species %}
+          {% set fl_idx = loop.index0 %}
+          <td class="px-4 py-3 text-center">
+            <input type="checkbox"
+              {% if diet_matrix[pred_idx][fl_idx] %}checked{% endif %}
+              hx-post="/api/matrices/diet"
+              hx-vals='{"predator_idx": {{ pred_idx }}, "flora_idx": {{ fl_idx }}, "compatible": "toggle"}'
+              hx-trigger="change"
+              hx-target="#diet-matrix-view" hx-swap="outerHTML"
+              title="Allow {{ pp.name }} to feed on {{ fp.name }}. When checked, this predator moves toward this plant and consumes energy from it at its Eat Rate."
+              class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 text-xs text-slate-400">
+    A predator can have multiple food sources. The flow field directs predators toward the
+    highest-energy compatible plant cell within sensory range.
+  </p>
+  {% endif %}
+</div>
+
+

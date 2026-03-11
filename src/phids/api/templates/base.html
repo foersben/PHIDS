@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHIDS – Control Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+</head>
+<body class="h-screen w-full flex bg-slate-50 text-slate-900 overflow-hidden">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────── -->
+  <aside class="w-64 bg-slate-900 text-slate-100 flex flex-col shadow-xl z-10 shrink-0">
+    <div class="p-4 border-b border-slate-700">
+      <h1 class="text-lg font-bold text-white">PHIDS</h1>
+      <p class="text-xs text-slate-400">Plant-Herbivore Interaction & Defense Simulator</p>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto p-4 space-y-6">
+      <!-- Views -->
+      <div>
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Views</h2>
+        <ul class="space-y-1">
+          <li>
+            <button hx-get="/ui/dashboard" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              📊 Dashboard
+            </button>
+          </li>
+          <li>
+            <button hx-get="/ui/placements" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🗺️ Placement Editor
+            </button>
+          </li>
+          <li>
+            <button hx-get="/ui/biotope" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🌍 Biotope Config
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Rule of 16 Entities -->
+      <div>
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          Rule of 16 Entities
+        </h2>
+        <ul class="space-y-1">
+          <li>
+            <button hx-get="/ui/flora" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🌿 Flora Species
+            </button>
+          </li>
+          <li>
+            <button hx-get="/ui/predators" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🐛 Predators
+            </button>
+          </li>
+          <li>
+            <button hx-get="/ui/substances" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🧪 Substances
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Interactions -->
+      <div>
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          Interactions
+        </h2>
+        <ul class="space-y-1">
+          <li>
+            <button hx-get="/ui/diet-matrix" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🍽️ Diet Matrix
+            </button>
+          </li>
+          <li>
+            <button hx-get="/ui/trigger-rules" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              ⚡ Trigger Rules
+            </button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- File I/O -->
+    <div class="p-4 border-t border-slate-700 space-y-2">
+      <a href="/api/scenario/export"
+        class="block w-full text-center px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">
+        📥 Export JSON
+      </a>
+      <label class="block w-full text-center px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm cursor-pointer transition-colors">
+        📤 Import JSON
+        <input type="file" accept=".json" class="hidden" id="scenario-import-input"
+          onchange="phidsUploadScenario(this)">
+      </label>
+    </div>
+  </aside>
+
+  <!-- ── Main area ──────────────────────────────────────────────────── -->
+  <div class="flex-1 flex h-screen overflow-hidden">
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Sticky header -->
+      <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm z-10 shrink-0">
+        <div class="flex items-center gap-4">
+          <span class="font-semibold text-slate-700" id="scenario-name">{{ scenario_name }}</span>
+          <span class="text-sm text-slate-500">
+            Tick:&nbsp;<span id="tick-counter"
+              hx-get="/api/ui/tick" hx-trigger="every 1s" hx-swap="innerHTML"
+              class="font-mono font-bold text-indigo-600">0</span>
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button hx-post="/api/simulation/start"
+            hx-target="#sim-status" hx-swap="outerHTML"
+            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+            ▶ Start
+          </button>
+          <button hx-post="/api/simulation/pause"
+            hx-target="#sim-status" hx-swap="outerHTML"
+            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors">
+            ⏸ Pause
+          </button>
+          <button hx-post="/api/simulation/step"
+            hx-target="#sim-status" hx-swap="outerHTML"
+            class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors">
+            ⏭ Step
+          </button>
+          <button hx-post="/api/simulation/reset"
+            hx-target="#sim-status" hx-swap="outerHTML"
+            class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors">
+            ↺ Reset
+          </button>
+          <button hx-post="/api/scenario/load-draft"
+            hx-target="#sim-status" hx-swap="outerHTML"
+            hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
+            class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors">
+            🔄 Load Draft
+          </button>
+          <span id="sim-status"
+            hx-get="/api/ui/status-badge" hx-trigger="every 2s" hx-swap="outerHTML"
+            class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500">Idle</span>
+        </div>
+      </header>
+
+      <!-- Scrollable workspace -->
+      <main id="main-workspace" class="flex-1 overflow-auto p-6">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <aside id="diagnostics-rail"
+      class="hidden xl:flex w-[24rem] border-l border-slate-200 bg-white/95 backdrop-blur-sm flex-col shadow-inner shrink-0 transition-[width] duration-200 ease-out">
+      <div id="diagnostics-expanded-shell" class="flex h-full flex-col min-w-0">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-3 bg-slate-50/80">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-700">Diagnostics</h2>
+            <p class="text-[11px] text-slate-500">Live model, frontend and backend checks</p>
+          </div>
+          <button type="button" id="diagnostics-toggle"
+            class="group inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+            <span class="font-mono text-slate-400 group-hover:text-slate-600">⟨</span>
+            <span>Collapse</span>
+          </button>
+        </div>
+        <div class="px-2 py-2 border-b border-slate-200 bg-slate-50/60 flex flex-wrap gap-2" id="diagnostics-tabs">
+          <button type="button"
+            class="diagnostics-tab rounded-lg bg-indigo-100 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-200 transition-colors"
+            data-tab-key="model" data-diagnostics-url="/ui/diagnostics/model">Model</button>
+          <button type="button"
+            class="diagnostics-tab rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+            data-tab-key="frontend" data-diagnostics-url="/ui/diagnostics/frontend">Frontend</button>
+          <button type="button"
+            class="diagnostics-tab rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+            data-tab-key="backend" data-diagnostics-url="/ui/diagnostics/backend">Backend</button>
+        </div>
+        <div id="diagnostics-content"
+          data-diagnostics-url="/ui/diagnostics/model"
+          data-tab-key="model"
+          class="flex-1 overflow-auto p-4 space-y-4"></div>
+      </div>
+
+      <div id="diagnostics-collapsed-shell" class="hidden h-full flex-col items-center gap-3 bg-slate-50/90 px-2 py-3">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 [writing-mode:vertical-rl] rotate-180">Diag</div>
+        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+          data-tab-key="model" data-diagnostics-url="/ui/diagnostics/model" title="Model diagnostics">◫</button>
+        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+          data-tab-key="frontend" data-diagnostics-url="/ui/diagnostics/frontend" title="Frontend diagnostics">⌘</button>
+        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+          data-tab-key="backend" data-diagnostics-url="/ui/diagnostics/backend" title="Backend logs">☰</button>
+        <div class="mt-auto">
+          <button type="button" id="diagnostics-expand-collapsed"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors"
+            title="Expand diagnostics">⟩</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Scenario import helper (isolated vanilla JS) -->
+  <script>
+    window.__phidsFrontendDiagnostics = window.__phidsFrontendDiagnostics || {
+      activeView: 'dashboard',
+      wsState: 'idle',
+      lastUiTick: null,
+      lastTooltipCell: null,
+      lastDashboardMessageAt: null,
+      renderMode: 'preview',
+      notes: ['Waiting for dashboard controller updates.'],
+    };
+
+    function phidsHandleScenarioLoaded() {
+      const tickCounter = document.getElementById('tick-counter');
+      if (tickCounter) tickCounter.textContent = '0';
+      htmx.ajax('GET', '/ui/dashboard', { target: '#main-workspace', swap: 'innerHTML' });
+      const diagnostics = window.__phidsFrontendDiagnostics || {};
+      diagnostics.notes = ['Scenario loaded into live simulation and dashboard refresh requested.'];
+      diagnostics.renderMode = 'live';
+      window.__phidsFrontendDiagnostics = diagnostics;
+      if (typeof window.phidsRefreshDiagnostics === 'function') {
+        window.phidsRefreshDiagnostics(true);
+      }
+    }
+
+    async function phidsUploadScenario(input) {
+      if (!input.files.length) return;
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+      const name = input.files[0].name.replace(/\.json$/i, '');
+      const resp = await fetch('/api/scenario/import', { method: 'POST', body: formData });
+      if (resp.ok) {
+        const loadResp = await fetch('/api/scenario/load-draft', {
+          method: 'POST',
+          headers: { 'HX-Request': 'true' },
+        });
+        if (!loadResp.ok) {
+          const loadText = await loadResp.text();
+          alert('Import succeeded, but loading the live simulation failed: ' + loadText);
+          input.value = '';
+          return;
+        }
+        const simStatus = document.getElementById('sim-status');
+        if (simStatus) simStatus.outerHTML = await loadResp.text();
+        document.getElementById('scenario-name').textContent = name;
+        phidsHandleScenarioLoaded();
+      } else {
+        const txt = await resp.text();
+        alert('Import failed: ' + txt);
+      }
+      input.value = '';
+    }
+
+    (function () {
+      const rail = document.getElementById('diagnostics-rail');
+      const toggle = document.getElementById('diagnostics-toggle');
+      const expandCollapsed = document.getElementById('diagnostics-expand-collapsed');
+      const expandedShell = document.getElementById('diagnostics-expanded-shell');
+      const collapsedShell = document.getElementById('diagnostics-collapsed-shell');
+      const content = document.getElementById('diagnostics-content');
+      const tabs = Array.from(document.querySelectorAll('[data-diagnostics-url]'));
+      if (!rail || !toggle) return;
+
+      const STORAGE_COLLAPSED = 'phids.diagnostics.collapsed';
+      const STORAGE_ACTIVE_TAB = 'phids.diagnostics.activeTab';
+      let collapsed = localStorage.getItem(STORAGE_COLLAPSED) === 'true';
+      let activeTab = localStorage.getItem(STORAGE_ACTIVE_TAB) || 'model';
+      let refreshTimer = null;
+
+      function setCollapsed(nextCollapsed) {
+        collapsed = Boolean(nextCollapsed);
+        localStorage.setItem(STORAGE_COLLAPSED, collapsed ? 'true' : 'false');
+        rail.classList.toggle('w-[24rem]', !collapsed);
+        rail.classList.toggle('w-[4.25rem]', collapsed);
+        if (expandedShell) expandedShell.classList.toggle('hidden', collapsed);
+        if (collapsedShell) collapsedShell.classList.toggle('hidden', !collapsed);
+      }
+
+      function syncTabStyles() {
+        tabs.forEach(tab => {
+          const isActive = tab.dataset.tabKey === activeTab;
+          tab.classList.toggle('bg-indigo-100', isActive);
+          tab.classList.toggle('text-indigo-700', isActive);
+          tab.classList.toggle('bg-slate-100', !isActive);
+          tab.classList.toggle('text-slate-600', !isActive);
+        });
+      }
+
+      function loadDiagnostics(url, tabKey, { force = false, expand = false } = {}) {
+        if (!content || !url || !tabKey) return;
+        activeTab = tabKey;
+        localStorage.setItem(STORAGE_ACTIVE_TAB, activeTab);
+        syncTabStyles();
+        if (expand) setCollapsed(false);
+        if (!force && content.dataset.diagnosticsUrl === url && content.innerHTML.trim() && activeTab === content.dataset.tabKey) {
+          return;
+        }
+        content.dataset.diagnosticsUrl = url;
+        content.dataset.tabKey = tabKey;
+        htmx.ajax('GET', url, { target: '#diagnostics-content', swap: 'innerHTML' });
+      }
+
+      function refreshDiagnostics(force = false) {
+        if (!content || collapsed || document.hidden) return;
+        const url = content.dataset.diagnosticsUrl;
+        const tabKey = content.dataset.tabKey || activeTab;
+        if (!url || tabKey === 'frontend') return;
+        loadDiagnostics(url, tabKey, { force });
+      }
+
+      window.phidsRefreshDiagnostics = refreshDiagnostics;
+
+      toggle.addEventListener('click', function () {
+        setCollapsed(true);
+      });
+      expandCollapsed?.addEventListener('click', function () {
+        setCollapsed(false);
+        refreshDiagnostics(true);
+      });
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+          loadDiagnostics(tab.dataset.diagnosticsUrl, tab.dataset.tabKey, {
+            force: true,
+            expand: tab.classList.contains('diagnostics-tab-collapsed'),
+          });
+        });
+      });
+
+      setCollapsed(collapsed);
+      syncTabStyles();
+      loadDiagnostics(`/ui/diagnostics/${activeTab}`, activeTab, { force: true });
+      refreshTimer = window.setInterval(() => refreshDiagnostics(false), 1000);
+
+      document.body.addEventListener('htmx:beforeRequest', function (event) {
+        const source = event.target.closest?.('[hx-get]');
+        const url = source?.getAttribute?.('hx-get') || '';
+        if (url.startsWith('/ui/') && !url.startsWith('/ui/diagnostics/')) {
+          const diagnostics = window.__phidsFrontendDiagnostics || {};
+          diagnostics.activeView = url.replace('/ui/', '') || 'dashboard';
+          diagnostics.notes = [`HTMX requested ${url} for the main workspace.`];
+          window.__phidsFrontendDiagnostics = diagnostics;
+          window.dispatchEvent(new CustomEvent('phids:frontend-diagnostics', { detail: diagnostics }));
+        }
+      });
+
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) refreshDiagnostics(true);
+      });
+    })();
+  </script>
+</body>
+</html>
+

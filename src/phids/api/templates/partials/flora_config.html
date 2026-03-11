@@ -1,0 +1,151 @@
+<div id="flora-config-view">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-slate-800">🌿 Flora Species</h2>
+    {% if flora_species|length < 16 %}
+    <button hx-post="/api/config/flora" hx-target="#flora-config-view" hx-swap="outerHTML"
+      hx-vals='{"name":"NewFlora","base_energy":"10","max_energy":"100","growth_rate":"5","survival_threshold":"1","reproduction_interval":"10","seed_min_dist":"1","seed_max_dist":"3","seed_energy_cost":"5"}'
+      class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+      + Add Species
+    </button>
+    {% else %}
+    <button disabled
+      class="px-4 py-2 bg-slate-300 text-slate-500 rounded-lg text-sm font-medium cursor-not-allowed">
+      + Add Species (max 16)
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border overflow-auto">
+    <table class="w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Sequential species index (0-based). Referenced by the Diet Matrix and Trigger Rules.">ID</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Display name for this plant species.">Name</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Base Energy: energy added to the plant per tick during the growth phase. This is the primary growth parameter.">Base E</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Max Energy: plant energy is capped at this value. A plant at max energy is at peak biomass and most attractive to herbivores.">Max E</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Growth Rate: additional energy multiplier applied during the logistic growth phase. Higher = faster growth toward Max Energy.">Growth</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Survival Threshold: plant dies (is culled) when its energy falls below this value. Higher = plant needs more energy to survive.">Surv.</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Reproduction Interval: number of ticks between seed dispersal attempts. Lower = reproduces more often.">Repr.</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Seed Min Distance: minimum distance (in cells) from parent to place offspring seed.">Seed d<sub>min</sub></th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Seed Max Distance: maximum distance (in cells) from parent for seed dispersal. Wind direction biases placement within this range.">Seed d<sub>max</sub></th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Seed Energy Cost: energy deducted from the parent plant when a seed is produced. High cost limits reproduction at low energy.">Seed ΔE</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Camouflage: when enabled, this species attenuates its gradient in the herbivore flow field, making it harder to detect from a distance.">Camo</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Camouflage Factor: 0 = completely invisible to herbivores (gradient = 0). 1 = fully visible (no camouflage effect). Intermediate values partially hide the plant.">Camo F.</th>
+          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for fp in flora_species %}
+        <tr id="flora-row-{{ fp.species_id }}">
+          <td class="px-2 py-2 font-mono text-slate-400">{{ fp.species_id }}</td>
+          <td class="px-2 py-2">
+            <input type="text" value="{{ fp.name }}" name="name"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Display name for this flora species"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-24">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.base_energy }}" step="0.1" min="0.1" name="base_energy"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Energy added per tick during growth. Also the initial energy of a newly spawned seed."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.max_energy }}" step="0.1" min="0.1" name="max_energy"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Maximum energy cap. Plant cannot grow beyond this. A plant at Max E is brightest on the canvas and most attractive to herbivores."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.growth_rate }}" step="0.1" min="0" name="growth_rate"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Growth rate multiplier applied to logistic growth each tick. energy += base_energy × growth_rate × (1 − energy/max_energy). High values = fast fill-up."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.survival_threshold }}" step="0.1" min="0" name="survival_threshold"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Minimum energy needed to survive. Plant is culled when energy < survival_threshold. Raise to make plants die sooner when depleted by herbivores."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.reproduction_interval }}" step="1" min="1" name="reproduction_interval"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Ticks between seed dispersal events. 5 = seeds every 5 ticks. 20 = seeds every 20 ticks. Only seeds when energy > survival_threshold + seed_energy_cost."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.seed_min_dist }}" step="0.5" min="0" name="seed_min_dist"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Minimum seed distance in cells. Seeds are never placed closer than this to the parent. 0 = can seed adjacent cells."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.seed_max_dist }}" step="0.5" min="0.1" name="seed_max_dist"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Maximum seed dispersal distance in cells. Seeds placed within a Gaussian spread using wind direction. Larger values = wider colonisation."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.seed_energy_cost }}" step="0.5" min="0" name="seed_energy_cost"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Energy deducted from the parent when a seed is produced. High cost limits reproduction under stress. Too high and plants cannot reproduce at all."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2 text-center">
+            <input type="checkbox" {% if fp.camouflage %}checked{% endif %} name="camouflage"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Enable camouflage: the plant's gradient contribution to the herbivore flow field is multiplied by Camouflage Factor. Makes plant harder to detect from far away."
+              class="h-4 w-4 rounded border-slate-300 text-indigo-600">
+          </td>
+          <td class="px-2 py-2">
+            <input type="number" value="{{ fp.camouflage_factor }}" step="0.05" min="0" max="1" name="camouflage_factor"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-target="#flora-config-view" hx-swap="outerHTML"
+              title="Camouflage multiplier: 0 = completely invisible to herbivores (no gradient contribution). 1 = fully visible. 0.3 = 70% camouflaged. Only applies when Camo is checked."
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+          </td>
+          <td class="px-2 py-2">
+            <button hx-delete="/api/config/flora/{{ fp.species_id }}"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML swap:0.5s"
+              hx-confirm="Delete {{ fp.name }}?"
+              class="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
+              Delete
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="13" class="px-3 py-6 text-center text-slate-400">No flora species defined yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 text-xs text-slate-400">
+    <strong>Seed d<sub>min</sub>/d<sub>max</sub></strong>: offspring dispersal range.
+    <strong>Seed ΔE</strong>: energy cost per reproduction event.
+    <strong>Camo F.</strong>: gradient multiplier (0 = invisible, 1 = normal).
+  </p>
+</div>
+
