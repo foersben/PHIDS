@@ -1,0 +1,137 @@
+name: Build and Publish Release Binaries
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-binaries-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  UV_FROZEN: "true"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-binaries:
+    name: Build bundled binary (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Build PyInstaller bundle
+        run: uv run --with pyinstaller pyinstaller --noconfirm packaging/phids.spec
+
+      - name: Smoke-test launcher help (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./dist/phids/phids --help
+
+      - name: Smoke-test launcher help (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\dist\phids\phids.exe --help
+
+      - name: Smoke-test HTTP endpoint (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          ./dist/phids/phids --host 127.0.0.1 --port 8001 > phids.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          sleep 12
+          curl --fail --silent http://127.0.0.1:8001/ > /dev/null
+
+      - name: Smoke-test HTTP endpoint (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ".\dist\phids\phids.exe" -ArgumentList @("--host", "127.0.0.1", "--port", "8001") -PassThru
+          try {
+            Start-Sleep -Seconds 12
+            $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8001/"
+            if ($response.StatusCode -ne 200) {
+              throw "Unexpected status code $($response.StatusCode)"
+            }
+          }
+          finally {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Archive bundle (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME:-manual}"
+          platform="$(echo '${{ runner.os }}' | tr '[:upper:]' '[:lower:]')"
+          archive="phids-${version}-${platform}.tar.gz"
+          tar -czf "$archive" -C dist phids
+          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
+
+      - name: Archive bundle (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "manual" }
+          $archive = "phids-$version-windows.zip"
+          Compress-Archive -Path .\dist\phids -DestinationPath $archive -Force
+          "ARCHIVE=$archive" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish release assets
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download built archives
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Attach archives to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+
+
+

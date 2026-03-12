@@ -11,20 +11,24 @@ PHIDS needs CI that protects three things at the same time:
 - contributor hygiene and static checks,
 - documentation buildability.
 
-The project does **not** currently need a dedicated project `Dockerfile` just to run CI. The active
-setup uses GitHub-hosted Ubuntu runners on GitHub itself and reserves containers for local workflow
-emulation with `act`.
+The merge-gating workflow still does **not** run inside a PHIDS-specific CI container. It uses
+GitHub-hosted runners directly and reserves containers for:
+
+- local workflow emulation with `act`,
+- the runtime image published to GHCR,
+- the release-binary packaging flow described in
+  [`containers-and-release-automation.md`](containers-and-release-automation.md).
 
 ## Current Recommendation on Containers
 
 ### GitHub-hosted CI
 
-Use standard GitHub Actions runners:
+Use standard GitHub Actions runners for `.github/workflows/ci.yml`:
 
 - `runs-on: ubuntu-latest`
 
-This keeps the setup simple and avoids taking on a second build surface that would have to be
-maintained in parallel with the actual project runtime.
+This keeps the merge-gating pipeline simple while still allowing separate runtime/release
+automation to exist where it adds value.
 
 ### Local rehearsal
 
@@ -133,6 +137,35 @@ Current implication:
 - if you run the whole workflow with `act`, the workflow will use up to four runner containers,
   matching the four jobs,
 - there are currently no service containers in the workflow.
+
+## Related Runtime and Release Automation
+
+PHIDS now also maintains two non-CI workflows:
+
+- `.github/workflows/docker-publish.yml`
+- `.github/workflows/release-binaries.yml`
+
+These do not replace the CI workflow. They serve different purposes:
+
+- `docker-publish.yml` publishes the runtime image to `ghcr.io`,
+- `release-binaries.yml` builds bundled Linux, Windows, and macOS archives.
+
+That split keeps merge gating focused while still making distribution artifacts reproducible.
+
+## Why Dependency Downloads Repeat Across Workflows
+
+Repeated dependency downloads are expected across the current automation surfaces because each one
+creates an isolated environment:
+
+- local `uv sync` on the developer machine,
+- `act` runner containers,
+- each GitHub Actions job in `.github/workflows/ci.yml`,
+- the Docker builder image in `Dockerfile`,
+- each operating-system matrix runner in `release-binaries.yml`.
+
+Inside `Dockerfile`, PHIDS intentionally performs a dependency-only sync first and then installs the
+project after copying `src/`. This preserves a reusable dependency layer even though it looks like a
+two-step install.
 
 ## When a Dedicated Project Container Would Be Worth Adding Later
 

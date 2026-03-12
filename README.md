@@ -18,10 +18,66 @@ HTMX/Jinja control-center GUI.
 
 ```bash
 uv sync --all-extras --dev
-uv run uvicorn phids.api.main:app --reload --app-dir src
+uv run phids --reload
 ```
 
 Then open the GUI at `http://127.0.0.1:8000/`.
+
+## Containers
+
+PHIDS now ships a project `Dockerfile`, a local `docker-compose.yml`, and GitHub Actions workflows
+for publishing both container images and bundled desktop/server binaries.
+
+### Local container run
+
+```bash
+docker compose up --build
+```
+
+This starts the `phids` service on `http://127.0.0.1:8000/` with `./src` mounted into the
+container and `--reload` enabled.
+
+### Local container cleanup
+
+These are the PHIDS-specific cleanup commands used after local container testing:
+
+```bash
+docker rm -f phids-local
+docker rmi -f phids:test phids:local
+docker image prune -f
+```
+
+The first two commands target only the container/image names introduced by this repository. The
+final prune removes dangling intermediate layers left behind by interrupted local builds.
+
+### Why packages may appear to download twice
+
+You may see dependency downloads more than once for two separate reasons:
+
+1. `uv sync --all-extras --dev` installs into your **local** development environment.
+2. `docker build` installs into a **separate container build environment** inside the Docker image.
+
+Within the `Dockerfile` itself, PHIDS intentionally runs two `uv sync` commands:
+
+- `uv sync --frozen --no-dev --no-install-project` builds a cacheable dependency layer.
+- `uv sync --frozen --no-dev` installs the project itself after `src/` is copied.
+
+That pattern keeps dependency layers reusable when only application code changes. If a build is
+interrupted before the dependency layer is committed, retrying the build will download those wheels
+again because the previous layer never finished caching.
+
+GitHub Actions also installs dependencies independently per job and per operating-system runner, so
+the Linux, Windows, and macOS release jobs each resolve their own environment.
+
+## Published artifacts
+
+- `.github/workflows/docker-publish.yml` publishes a multi-architecture image to GitHub Container
+  Registry (`ghcr.io`).
+- `.github/workflows/release-binaries.yml` builds bundled binaries for Linux, Windows, and macOS.
+
+`docker-publish.yml` runs on pushes to `main`, on version tags matching `v*.*.*`, and on manual
+dispatch. `release-binaries.yml` runs on version tags and on manual dispatch; tagged runs also
+attach the generated archives to the corresponding GitHub release.
 
 ## Quality Gates
 
