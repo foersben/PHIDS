@@ -55,9 +55,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
 
     import uvicorn
+    from phids.api.main import app
 
     uvicorn.run(
-        "phids.api.main:app",
+        app,
         host=args.host,
         port=args.port,
         reload=args.reload,
@@ -67,4 +68,3 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-

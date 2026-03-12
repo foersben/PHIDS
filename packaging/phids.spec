@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_submodules
 
-project_root = Path(SPECPATH).resolve().parent.parent
+project_root = Path(SPECPATH).resolve().parent
 src_root = project_root / "src"
 
 hiddenimports = sorted(set(collect_submodules("uvicorn") + collect_submodules("websockets")))
@@ -58,4 +58,5 @@ coll = COLLECT(
     upx_exclude=[],
     name="phids",
 )
+
 
