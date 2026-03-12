@@ -6,6 +6,8 @@ This document outlines the strict technical requirements, software stack, and co
 
 Development must strictly adhere to the following technological stack. The deployment of these tools is governed by specific architectural mandates:
 
+Python Runtime Baseline: PHIDS targets Python 3.12 or newer. Compatibility work for Python 3.11 is no longer required.
+
 Environment Management (uv): Mandated for accelerated, deterministic dependency resolution and environment bootstrapping.
 
 Vectorized Data Structures (numpy): Utilized exclusively for the allocation and manipulation of all continuous spatial matrices (e.g., biotope grids, energy layers). The use of native Python multi-dimensional lists is strictly prohibited due to memory overhead.
@@ -28,7 +30,7 @@ Architectural Diagramming (mermaid.js): Required for the programmatic visualizat
 
 To ensure the integrity, performance, and maintainability of the PHIDS engine, the development pipeline must enforce the following operational tooling:
 
-Version Control Integration (GitHub Actions): A robust Continuous Integration/Continuous Deployment (CI/CD) pipeline is mandated. It must automatically trigger on all push and pull request events to validate builds, run the test suite, and enforce linting rules before code merges.
+Version Control Integration (GitHub Actions): A robust Continuous Integration/Continuous Deployment (CI/CD) pipeline is mandated. It should validate merge candidates and release boundaries without spending minutes on every intermediate branch commit. In the current PHIDS policy, the main CI workflow runs for pushes to `main`, pull requests targeting `main`, and manual dispatch, while release automation remains focused on `main` container publishes plus tag-driven/manual release jobs.
 
 Local Code Hygiene (pre-commit): Developers must utilize pre-commit hooks (including configurations for trailing whitespace and end-of-file fixers) to ensure no malformed code is committed to the repository.
 

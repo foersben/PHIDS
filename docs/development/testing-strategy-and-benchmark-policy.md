@@ -252,13 +252,12 @@ A good contribution should therefore:
 
 ## CI Parity
 
-The current CI workflow distributes validation across four focused jobs:
+The current CI workflow distributes validation across three focused jobs:
 
 ```bash
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest -o addopts='' tests/test_api_routes.py tests/test_ui_routes.py tests/test_systems_behavior.py tests/test_example_scenarios.py -q
 uv run mkdocs build --strict
 ```
 
@@ -266,8 +265,10 @@ In practice, the jobs are:
 
 - `quality` for the repository's currently green Ruff lint/format checks,
 - `tests-py312` for the full suite,
-- `compatibility-smoke-py311` for representative floor-version coverage,
 - `docs` for the strict MkDocs build.
+
+The workflow is now intentionally triggered only for pull requests targeting `main` and manual
+dispatch runs, which keeps expensive validation off intermediate branch pushes and off `develop`.
 
 Any serious contribution should be considered in relation to this path, even if local iteration uses
 smaller commands first. For the workflow structure and local `act` rehearsal commands, see

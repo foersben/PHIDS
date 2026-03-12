@@ -311,6 +311,11 @@ def run_signaling(
         if not sub.active:
             continue
 
+        if not sub.triggered_this_tick:
+            if sub.is_toxin or sub.aftereffect_remaining_ticks <= 0:
+                sub.active = False
+                continue
+
         owner_entity = (
             world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
         )
@@ -381,6 +386,8 @@ def run_signaling(
 
         if sub.aftereffect_remaining_ticks > 0:
             sub.aftereffect_remaining_ticks -= 1
+            if sub.aftereffect_remaining_ticks <= 0:
+                sub.active = False
         else:
             sub.active = False
 

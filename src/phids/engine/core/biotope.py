@@ -16,6 +16,7 @@ from phids.shared.constants import (
     GRID_W_MAX,
     MAX_FLORA_SPECIES,
     MAX_SUBSTANCE_TYPES,
+    SIGNAL_DECAY_FACTOR,
     SIGNAL_EPSILON,
 )
 
@@ -187,6 +188,7 @@ class GridEnvironment:
             shifted: npt.NDArray[np.float64] = np.roll(
                 np.roll(convolved, mean_vx, axis=0), mean_vy, axis=1
             )
+            shifted *= SIGNAL_DECAY_FACTOR
             # Zero sub-threshold values to preserve matrix sparsity
             shifted[shifted < SIGNAL_EPSILON] = 0.0
             self._signal_layers_write[s] = shifted

@@ -77,7 +77,7 @@ app = FastAPI(
         "Visual discrete-event simulator modelling ecological dynamics between "
         "plants and herbivores on a spatial grid."
     ),
-    version="0.1.0",
+    version="0.2.0",
 )
 
 # Mount static files only if the directory exists
@@ -384,6 +384,127 @@ def _links_touching_cell(links: list[dict[str, Any]], x: int, y: int) -> list[di
     ]
 
 
+def _is_live_substance_visible(substance: Any) -> bool:
+    """Return whether a live substance should be surfaced in UI payloads."""
+    return (
+        bool(substance.active)
+        or bool(substance.triggered_this_tick)
+        or int(substance.synthesis_remaining) > 0
+        or int(substance.aftereffect_remaining_ticks) > 0
+    )
+
+
+def _live_substance_state_payload(
+    *,
+    is_toxin: bool,
+    active: bool,
+    triggered_this_tick: bool,
+    synthesis_remaining: int,
+    aftereffect_remaining_ticks: int,
+    snapshot_only: bool = False,
+) -> tuple[str, str]:
+    """Describe the current UI-facing runtime state of a substance."""
+    if snapshot_only:
+        return ("field_snapshot", "visible field residue")
+    if synthesis_remaining > 0 and not active:
+        return ("synthesizing", "synthesizing")
+    if active and triggered_this_tick:
+        return ("triggered", "triggered this tick")
+    if active and not is_toxin and aftereffect_remaining_ticks > 0:
+        return ("aftereffect", "lingering aftereffect")
+    if active:
+        return ("active", "active emitter")
+    if triggered_this_tick:
+        return ("triggered", "triggered this tick")
+    return ("configured", "configured")
+
+
+def _serialize_live_substance(
+    substance: Any,
+    *,
+    predator_names: dict[int, str],
+) -> dict[str, Any]:
+    """Serialize one live runtime substance for dashboard and tooltip payloads."""
+    state, state_label = _live_substance_state_payload(
+        is_toxin=bool(substance.is_toxin),
+        active=bool(substance.active),
+        triggered_this_tick=bool(substance.triggered_this_tick),
+        synthesis_remaining=int(substance.synthesis_remaining),
+        aftereffect_remaining_ticks=int(substance.aftereffect_remaining_ticks),
+    )
+    return {
+        "substance_id": substance.substance_id,
+        "name": _substance_name(
+            substance.substance_id,
+            is_toxin=substance.is_toxin,
+        ),
+        "kind": "toxin" if substance.is_toxin else "signal",
+        "active": substance.active,
+        "state": state,
+        "state_label": state_label,
+        "snapshot_only": False,
+        "triggered_this_tick": substance.triggered_this_tick,
+        "synthesis_remaining": substance.synthesis_remaining,
+        "aftereffect_remaining_ticks": substance.aftereffect_remaining_ticks,
+        "lethal": substance.lethal,
+        "repellent": substance.repellent,
+        "lethality_rate": float(substance.lethality_rate),
+        "repellent_walk_ticks": substance.repellent_walk_ticks,
+        "trigger_predator_species_id": substance.trigger_predator_species_id,
+        "trigger_predator_name": predator_names.get(
+            substance.trigger_predator_species_id,
+            f"Predator {substance.trigger_predator_species_id}",
+        )
+        if substance.trigger_predator_species_id >= 0
+        else None,
+        "trigger_min_predator_population": substance.trigger_min_predator_population,
+        "activation_condition": substance.activation_condition,
+        "activation_condition_summary": _describe_activation_condition(
+            substance.activation_condition,
+            predator_names=predator_names,
+            substance_names=_sim_substance_names,
+        ),
+    }
+
+
+def _fallback_live_substance_payload(
+    substance_id: int,
+    *,
+    is_toxin: bool,
+) -> dict[str, Any]:
+    """Return a snapshot-only fallback when a local layer is visible without a runtime entity."""
+    kind = "toxin" if is_toxin else "signal"
+    state, state_label = _live_substance_state_payload(
+        is_toxin=is_toxin,
+        active=False,
+        triggered_this_tick=False,
+        synthesis_remaining=0,
+        aftereffect_remaining_ticks=0,
+        snapshot_only=True,
+    )
+    return {
+        "substance_id": substance_id,
+        "name": _substance_name(substance_id, is_toxin=is_toxin),
+        "kind": kind,
+        "active": False,
+        "state": state,
+        "state_label": state_label,
+        "snapshot_only": True,
+        "triggered_this_tick": False,
+        "synthesis_remaining": 0,
+        "aftereffect_remaining_ticks": 0,
+        "lethal": False,
+        "repellent": False,
+        "lethality_rate": 0.0,
+        "repellent_walk_ticks": 0,
+        "trigger_predator_species_id": -1,
+        "trigger_predator_name": None,
+        "trigger_min_predator_population": 0,
+        "activation_condition": None,
+        "activation_condition_summary": "visible on rendered live snapshot",
+    }
+
+
 def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, Any]:
     """Build a rich tooltip payload for one live-simulation grid cell."""
     from phids.engine.components.plant import PlantComponent
@@ -424,8 +545,44 @@ def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, 
         if entity.has_component(PlantComponent):
             plant = entity.get_component(PlantComponent)
             plant_substances = sorted(
-                owned_substances.get(plant.entity_id, []),
+                (
+                    substance
+                    for substance in owned_substances.get(plant.entity_id, [])
+                    if _is_live_substance_visible(substance)
+                ),
                 key=lambda substance: (substance.is_toxin, substance.substance_id),
+            )
+            visible_substances = [
+                _serialize_live_substance(
+                    substance,
+                    predator_names=predator_names,
+                )
+                for substance in plant_substances
+            ]
+            visible_keys = {
+                (int(payload["substance_id"]), payload["kind"] == "toxin")
+                for payload in visible_substances
+            }
+            for signal_id in range(env.num_signals):
+                if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
+                    continue
+                substance_key = (signal_id, False)
+                if substance_key in visible_keys:
+                    continue
+                visible_substances.append(
+                    _fallback_live_substance_payload(signal_id, is_toxin=False)
+                )
+                visible_keys.add(substance_key)
+            for toxin_id in range(env.num_toxins):
+                if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
+                    continue
+                substance_key = (toxin_id, True)
+                if substance_key in visible_keys:
+                    continue
+                visible_substances.append(_fallback_live_substance_payload(toxin_id, is_toxin=True))
+                visible_keys.add(substance_key)
+            visible_substances.sort(
+                key=lambda payload: (payload["kind"] == "toxin", int(payload["substance_id"]))
             )
             mycorrhizal_neighbours = []
             for neighbour_id in sorted(plant.mycorrhizal_connections):
@@ -456,39 +613,7 @@ def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, 
                     "camouflage_factor": float(plant.camouflage_factor),
                     "mycorrhizal_connections": len(plant.mycorrhizal_connections),
                     "mycorrhizal_neighbours": mycorrhizal_neighbours,
-                    "active_substances": [
-                        {
-                            "substance_id": substance.substance_id,
-                            "name": _substance_name(
-                                substance.substance_id,
-                                is_toxin=substance.is_toxin,
-                            ),
-                            "kind": "toxin" if substance.is_toxin else "signal",
-                            "active": substance.active,
-                            "triggered_this_tick": substance.triggered_this_tick,
-                            "synthesis_remaining": substance.synthesis_remaining,
-                            "aftereffect_remaining_ticks": substance.aftereffect_remaining_ticks,
-                            "lethal": substance.lethal,
-                            "repellent": substance.repellent,
-                            "lethality_rate": float(substance.lethality_rate),
-                            "repellent_walk_ticks": substance.repellent_walk_ticks,
-                            "trigger_predator_species_id": substance.trigger_predator_species_id,
-                            "trigger_predator_name": predator_names.get(
-                                substance.trigger_predator_species_id,
-                                f"Predator {substance.trigger_predator_species_id}",
-                            )
-                            if substance.trigger_predator_species_id >= 0
-                            else None,
-                            "trigger_min_predator_population": substance.trigger_min_predator_population,
-                            "activation_condition": substance.activation_condition,
-                            "activation_condition_summary": _describe_activation_condition(
-                                substance.activation_condition,
-                                predator_names=predator_names,
-                                substance_names=_sim_substance_names,
-                            ),
-                        }
-                        for substance in plant_substances
-                    ],
+                    "active_substances": visible_substances,
                 }
             )
 
@@ -742,12 +867,7 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                 substance.substance_id
                 for substance in plant_substances
                 if not substance.is_toxin
-                and (
-                    substance.active
-                    or substance.triggered_this_tick
-                    or substance.synthesis_remaining > 0
-                    or substance.aftereffect_remaining_ticks > 0
-                )
+                and _is_live_substance_visible(substance)
             }
         )
         visible_toxin_ids = sorted(
@@ -756,12 +876,7 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                 substance.substance_id
                 for substance in plant_substances
                 if substance.is_toxin
-                and (
-                    substance.active
-                    or substance.triggered_this_tick
-                    or substance.synthesis_remaining > 0
-                    or substance.aftereffect_remaining_ticks > 0
-                )
+                and _is_live_substance_visible(substance)
             }
         )
         plants.append(

@@ -23,6 +23,7 @@ GRID_H_MAX: int = 80
 # Diffusion / CA constants
 # ---------------------------------------------------------------------------
 SIGNAL_EPSILON: float = 1e-4  # values below this are zeroed after convolution
+SIGNAL_DECAY_FACTOR: float = 0.85  # per-tick airborne signal retention after diffusion
 
 # ---------------------------------------------------------------------------
 # Misc numeric sentinels

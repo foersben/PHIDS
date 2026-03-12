@@ -38,6 +38,10 @@ The current PHIDS control center combines several distinct interaction modes:
 - WebSocket-driven canvas rendering for live updates,
 - diagnostics tabs for frontend, backend, and model-state inspection.
 
+In live mode, the inspection surface is richer than a simple hover label: cell-detail payloads are
+expected to expose local plants, swarms, signal/toxin concentrations, visible substances, and
+touching mycorrhizal links in a way that stays aligned with the dashboard canvas overlays.
+
 This makes the UI more than a configuration form: it is an operational surface for building,
 running, and interpreting simulations.
 

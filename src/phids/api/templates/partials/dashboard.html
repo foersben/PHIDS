@@ -526,7 +526,10 @@
             substance_id: substanceId,
             name: substanceFallbackName(substanceId, 'signal'),
             kind: 'signal',
-            active: true,
+            active: false,
+            state: 'field_snapshot',
+            state_label: 'visible field residue',
+            snapshot_only: true,
             triggered_this_tick: false,
             synthesis_remaining: 0,
             aftereffect_remaining_ticks: 0,
@@ -536,7 +539,10 @@
             substance_id: substanceId,
             name: substanceFallbackName(substanceId, 'toxin'),
             kind: 'toxin',
-            active: true,
+            active: false,
+            state: 'field_snapshot',
+            state_label: 'visible field residue',
+            snapshot_only: true,
             triggered_this_tick: false,
             synthesis_remaining: 0,
             aftereffect_remaining_ticks: 0,
@@ -848,9 +854,7 @@
     if (!plants || plants.length === 0) return '<div class="text-slate-400">No plants in this field.</div>';
     return plants.map(plant => {
       const substances = (plant.active_substances || []).map(substance => {
-        const flags = [];
-        if (substance.active) flags.push('active');
-        if (substance.triggered_this_tick) flags.push('triggered');
+        const flags = [substance.state_label || substance.state || 'configured'];
         if (substance.lethal) flags.push('lethal');
         if (substance.repellent) flags.push('repellent');
         if (substance.synthesis_remaining > 0) flags.push(`synth:${substance.synthesis_remaining}`);

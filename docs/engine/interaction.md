@@ -66,8 +66,9 @@ This means velocity is represented as a movement period in ticks rather than as 
 
 ### Flow-field pursuit
 
-Normal movement uses `_best_neighbour(...)`, which compares the current cell with its 4-connected
-neighbors and chooses the highest flow-field value.
+Normal movement uses `_choose_neighbour_by_flow_probability(...)`, which now deterministically
+compares the current cell with its 4-connected neighbors and chooses the highest flow-field value,
+retaining the current cell on ties.
 
 This is the interaction phase’s principal dependence on the global flow field.
 

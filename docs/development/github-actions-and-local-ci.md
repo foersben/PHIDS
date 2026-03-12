@@ -3,6 +3,9 @@
 This chapter documents the current CI strategy for PHIDS and how to rehearse it locally before
 spending GitHub Actions minutes.
 
+PHIDS now intentionally standardizes on Python 3.12+ and avoids automatic GitHub Actions runs on
+every in-progress branch commit.
+
 ## CI Design Goal
 
 PHIDS needs CI that protects three things at the same time:
@@ -38,6 +41,27 @@ With the current workflow shape, `act` starts **one runner container per CI job*
 PHIDS does not currently need one long-lived project container plus service containers; it only needs
 runner containers that emulate GitHub-hosted jobs.
 
+## Trigger Policy
+
+The main CI workflow is intentionally narrow.
+
+It runs on:
+
+- pushes to `main`,
+- pull requests targeting `main`,
+- manual `workflow_dispatch` runs.
+
+It does **not** run on every branch push, and it therefore does **not** automatically run on
+`develop`.
+
+## Published Documentation Site
+
+The MkDocs site is published through `.github/workflows/docs-pages.yml`.
+
+- live URL: `https://foersben.github.io/phids/`
+- deploy triggers: pushes to `main` and manual `workflow_dispatch`
+- build gate: `uv run mkdocs build --strict` before artifact upload/deploy
+
 ## Current Job Layout
 
 The active workflow is split into focused jobs so failures are easier to interpret and the expensive
@@ -47,7 +71,6 @@ whole-suite test run does not block unrelated feedback.
 | --- | --- | --- | --- |
 | `quality` | 3.12 | Green repository hygiene checks | `uv run ruff check . && uv run ruff format --check .` |
 | `tests-py312` | 3.12 | Canonical whole-suite validation with coverage and benchmark tests | `uv run pytest` |
-| `compatibility-smoke-py311` | 3.11 | Floor-version compatibility smoke across representative surfaces | `uv run pytest -o addopts='' tests/test_api_routes.py tests/test_ui_routes.py tests/test_systems_behavior.py tests/test_example_scenarios.py -q` |
 | `docs` | 3.12 | Documentation buildability and broken-link/navigation protection | `uv run mkdocs build --strict` |
 
 ## Why the Jobs Are Split This Way
@@ -66,10 +89,11 @@ Python 3.12 is the main merge-confidence interpreter because:
 - the local contributor guidance already prefers Python 3.12,
 - this job runs the complete `pytest` configuration including coverage and benchmark files.
 
-### Compatibility smoke on Python 3.11
+### No separate Python 3.11 compatibility lane
 
-The project metadata still declares `requires-python = ">=3.11"`. A smaller representative smoke job
-keeps that floor honest without doubling the cost of the entire test suite.
+PHIDS now declares `requires-python = ">=3.12"` and no longer carries a dedicated Python 3.11
+compatibility smoke job. This reduces CI cost and avoids maintaining a floor the project no longer
+claims to support.
 
 ### Strict docs build as a first-class job
 
@@ -134,8 +158,8 @@ containerized execution without introducing a PHIDS-specific Docker image.
 
 Current implication:
 
-- if you run the whole workflow with `act`, the workflow will use up to four runner containers,
-  matching the four jobs,
+- if you run the whole workflow with `act`, the workflow will use up to three runner containers,
+  matching the three jobs,
 - there are currently no service containers in the workflow.
 
 ## Related Runtime and Release Automation
@@ -147,7 +171,7 @@ PHIDS now also maintains two non-CI workflows:
 
 These do not replace the CI workflow. They serve different purposes:
 
-- `docker-publish.yml` publishes the runtime image to `ghcr.io`,
+- `docker-publish.yml` publishes the runtime image to `ghcr.io` on `main` pushes, version tags, or manual runs,
 - `release-binaries.yml` builds bundled Linux, Windows, and macOS archives.
 
 That split keeps merge gating focused while still making distribution artifacts reproducible.

@@ -157,7 +157,14 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
 
 
 @pytest.mark.asyncio
-async def test_live_dashboard_payload_and_cell_details_include_signals_and_links() -> None:
+async def test_live_dashboard_payload_and_cell_details_include_signals_and_links(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "phids.engine.systems.interaction._choose_neighbour_by_flow_probability",
+        lambda x, y, flow_field, width, height, invert=False: (x, y),
+    )
+
     draft = get_draft()
     draft.add_plant_placement(0, 2, 2, 18.0)
     draft.add_plant_placement(0, 2, 3, 16.0)
@@ -185,6 +192,20 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         dashboard_payload = api_main._build_live_dashboard_payload(api_main._sim_loop)
         details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
 
+        from phids.engine.components.swarm import SwarmComponent
+
+        loop = api_main._sim_loop
+        assert loop is not None
+        swarm_entity = next(iter(loop.world.query(SwarmComponent)))
+        swarm = swarm_entity.get_component(SwarmComponent)
+        loop.world.move_entity(swarm.entity_id, swarm.x, swarm.y, 0, 0)
+        swarm.x = 0
+        swarm.y = 0
+
+        second_step_resp = await client.post("/api/simulation/step")
+        assert second_step_resp.status_code == 200
+        aftereffect_details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
+
     assert dashboard_payload["tick"] == 1
     assert any(0 in plant["active_signal_ids"] for plant in dashboard_payload["plants"])
     assert dashboard_payload["mycorrhizal_links"]
@@ -193,9 +214,31 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     assert details["mode"] == "live"
     assert details["tick"] == 1
     assert details["signal_concentrations"]
-    assert details["plants"][0]["active_substances"][0]["name"] == "Alarm Cloud"
+    triggered_alarm_clouds = [
+        substance
+        for plant in details["plants"]
+        for substance in plant["active_substances"]
+        if substance["name"] == "Alarm Cloud"
+    ]
+    assert any(substance["state"] == "triggered" for substance in triggered_alarm_clouds)
     assert details["mycorrhiza"]["link_count"] == 1
     assert details["swarms"][0]["population"] >= 6
+
+    assert aftereffect_details_resp.status_code == 200
+    aftereffect_details = aftereffect_details_resp.json()
+    assert aftereffect_details["tick"] == 2
+    assert aftereffect_details["signal_concentrations"]
+    lingering_alarm_clouds = [
+        substance
+        for plant in aftereffect_details["plants"]
+        for substance in plant["active_substances"]
+        if substance["name"] == "Alarm Cloud"
+    ]
+    assert any(substance["state"] == "aftereffect" for substance in lingering_alarm_clouds)
+    assert any(
+        substance["state"] == "aftereffect" and substance["aftereffect_remaining_ticks"] == 1
+        for substance in lingering_alarm_clouds
+    )
 
 
 @pytest.mark.asyncio

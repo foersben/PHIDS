@@ -293,9 +293,7 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
     assert sum(s.population for s in swarms) == 10
 
 
-def test_interaction_flow_field_movement_uses_probabilistic_choice(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_interaction_flow_field_movement_chooses_strongest_gradient() -> None:
     world = ECSWorld()
     env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
     env.flow_field[0, 0] = 9.0
@@ -305,10 +303,9 @@ def test_interaction_flow_field_movement_uses_probabilistic_choice(
     sid = _add_swarm(world, 1, 0, species_id=0, pop=4)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
 
-    monkeypatch.setattr(random, "choices", lambda population, weights, k: [population[1]])
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
-    assert (swarm.x, swarm.y) == (0, 0)
+    assert (swarm.x, swarm.y) == (2, 0)
 
 
 def test_interaction_reproduction_divisor_limits_growth() -> None:
@@ -498,11 +495,67 @@ def test_signaling_signal_lingers_for_aftereffect_then_deactivates() -> None:
 
     run_signaling(world, env, {0: [trigger]}, False, 1, 2)
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
-    assert sub.active is True
+    assert sub.active is False
 
-    run_signaling(world, env, {0: [trigger]}, False, 1, 3)
+
+def test_signaling_signal_with_zero_aftereffect_stops_emitting_next_tick() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=False,
+        aftereffect_ticks=0,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    assert float(env.signal_layers[1].max()) > 0.0
+
+    env.signal_layers[:] = 0.0
+    env._signal_layers_write[:] = 0.0
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
+    assert float(env.signal_layers[1].max()) == 0.0
+
+
+def test_signaling_owner_death_stops_emission_and_existing_signal_decays() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    plant_id = _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=False,
+        aftereffect_ticks=2,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    env.signal_layers[1, 2, 2] = 1.0
+    env._signal_layers_write[:] = env.signal_layers
+
+    world.unregister_position(plant_id, 2, 2)
+    world.collect_garbage([plant_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+
+    assert float(env.signal_layers[1].max()) < 1.0
+    assert list(world.query(SubstanceComponent)) == []
 
 
 def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> None:

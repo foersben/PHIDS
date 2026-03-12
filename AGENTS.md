@@ -25,7 +25,7 @@
 - Environment/dev server:
   `uv sync --all-extras --dev`
   `uv run uvicorn phids.api.main:app --reload --app-dir src`
-- Prefer Python 3.12 locally; `pyproject.toml` allows `>=3.11`, but Ruff targets `py312`.
+- Use Python 3.12 or newer locally; `pyproject.toml` now requires `>=3.12` and Ruff targets `py312`.
 - Full quality gate:
   `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest && uv run mkdocs build --strict`
 - Focused checks:

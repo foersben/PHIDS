@@ -145,6 +145,9 @@ This route is especially revealing of PHIDS’s interface philosophy.
   configuration.
 - It also supports an `expected_tick` parameter and can return `409 Conflict` if the live
   simulation advanced before the caller retrieved tooltip details.
+- In live mode, the payload now mirrors the dashboard's visible-substance semantics: it includes
+  both plant-owned runtime substances and local signal/toxin layer fallbacks when a concentration is
+  visible in the rendered snapshot.
 
 This design makes temporal mismatch explicit rather than silently returning stale detail data.
 

@@ -100,7 +100,7 @@ Typical resulting image names follow this pattern:
 ```text
 ghcr.io/<owner>/phids:latest
 ghcr.io/<owner>/phids:<git-sha>
-ghcr.io/<owner>/phids:v0.1.0
+ghcr.io/<owner>/phids:v0.2.0
 ```
 
 The workflow runs on:
@@ -108,6 +108,9 @@ The workflow runs on:
 - pushes to `main`,
 - version tags matching `v*.*.*`,
 - manual workflow dispatch.
+
+That means ordinary non-`main` branch pushes—including `develop` work—do not automatically publish
+container images.
 
 ## Bundled Binary Publishing
 
@@ -143,14 +146,13 @@ The release bundle depends on:
 For a normal release:
 
 ```bash
-git push origin main
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 Expected behavior:
 
-- the `main` push builds and publishes the container image,
+- the merge or push that lands on `main` builds and publishes the container image,
 - the version tag builds the container again with version tags and publishes the bundled archives to
   the GitHub release.
 
@@ -165,6 +167,9 @@ The container and release automation were validated with:
 
 If a future change adds static assets under `src/phids/api/static/`, update both the runtime image
 and `packaging/phids.spec` so those assets are included in the container and bundled binaries.
+
+
+
 
 
 

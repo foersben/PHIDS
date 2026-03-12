@@ -150,7 +150,7 @@ uv run uvicorn phids.api.main:app --reload --app-dir src
 
 The project metadata currently declares:
 
-- Python `>=3.11`,
+- Python `>=3.12`,
 - Ruff targeting `py312`,
 - strict mypy over `src/phids` and `tests`,
 - pytest with coverage and benchmark addopts,
@@ -190,8 +190,11 @@ The active jobs are:
 
 1. `quality` — `uv run ruff check .` and `uv run ruff format --check .`
 2. `tests-py312` — `uv run pytest`
-3. `compatibility-smoke-py311` — `uv run pytest -o addopts='' tests/test_api_routes.py tests/test_ui_routes.py tests/test_systems_behavior.py tests/test_example_scenarios.py -q`
-4. `docs` — `uv run mkdocs build --strict`
+3. `docs` — `uv run mkdocs build --strict`
+
+The workflow itself is intentionally scoped to pushes on `main`, pull requests targeting `main`,
+and manual dispatch, so branch pushes—including `develop`—do not automatically trigger the
+expensive CI lane.
 
 A contributor should treat this as the authoritative parity target for merge-ready work.
 

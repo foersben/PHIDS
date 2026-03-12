@@ -103,8 +103,8 @@ plant’s cell, not as a modification of plant energy itself.
 
 ## Consumer in the Interaction System
 
-`run_interaction()` uses the flow field through `_best_neighbour(...)`, which compares the current
-cell with its 4-connected neighbors and chooses:
+`run_interaction()` uses the flow field through `_choose_neighbour_by_flow_probability(...)`, which
+deterministically compares the current cell with its 4-connected neighbors and chooses:
 
 - the maximum field value for normal pursuit,
 - the minimum field value when inverted behavior is requested.

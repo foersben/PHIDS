@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 concurrency:
@@ -15,6 +16,7 @@ permissions:
 
 env:
   UV_FROZEN: "true"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   quality:
@@ -72,37 +74,6 @@ jobs:
       - name: Run full pytest suite
         run: uv run pytest
 
-  compatibility-smoke-py311:
-    name: Compatibility smoke (Python 3.11)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Sync dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run representative compatibility smoke tests
-        run: >-
-          uv run pytest -o addopts=''
-          tests/test_api_routes.py
-          tests/test_ui_routes.py
-          tests/test_systems_behavior.py
-          tests/test_example_scenarios.py
-          -q
 
   docs:
     name: Strict docs build

@@ -28,7 +28,7 @@ def _choose_neighbour_by_flow_probability(
     height: int,
     invert: bool = False,
 ) -> tuple[int, int]:
-    """Sample a 4-connected neighbour (or current cell) from the flow field.
+    """Choose the best 4-connected neighbour (or current cell) from the flow field.
 
     Args:
         x: Current X coordinate.
@@ -39,7 +39,7 @@ def _choose_neighbour_by_flow_probability(
         invert: When True, prefer lower gradients (flee behaviour).
 
     Returns:
-        tuple[int, int]: Sampled (nx, ny) cell to move to.
+        tuple[int, int]: Selected (nx, ny) cell to move to.
     """
     candidates: list[tuple[int, int]] = [(x, y)]
     if x > 0:
@@ -51,15 +51,19 @@ def _choose_neighbour_by_flow_probability(
     if y < height - 1:
         candidates.append((x, y + 1))
 
-    scores = np.asarray([flow_field[cx, cy] for cx, cy in candidates], dtype=np.float64)
-    if invert:
-        weights = scores.max() - scores
-    else:
-        weights = scores - scores.min()
-
-    # Keep every candidate reachable while still preferring stronger gradients.
-    normalized_weights = (weights + 1.0).tolist()
-    return random.choices(candidates, weights=normalized_weights, k=1)[0]
+    best_candidate = candidates[0]
+    best_score = float(flow_field[x, y])
+    for candidate_x, candidate_y in candidates[1:]:
+        candidate_score = float(flow_field[candidate_x, candidate_y])
+        if invert:
+            if candidate_score < best_score:
+                best_candidate = (candidate_x, candidate_y)
+                best_score = candidate_score
+            continue
+        if candidate_score > best_score:
+            best_candidate = (candidate_x, candidate_y)
+            best_score = candidate_score
+    return best_candidate
 
 
 def _random_walk_step(
