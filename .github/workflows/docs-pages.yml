@@ -30,6 +30,8 @@ jobs:
 
       - name: Set up Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
@@ -66,4 +68,5 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
 

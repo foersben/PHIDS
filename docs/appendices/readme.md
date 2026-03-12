@@ -24,6 +24,8 @@ JSON/WebSocket API, and a server-rendered HTMX/Jinja UI.
 
 PHIDS targets **Python 3.12+** and uses `uv` for environment management.
 
+Live documentation: <https://foersben.github.io/PHIDS/>
+
 ```bash
 uv sync --all-extras --dev
 uv run uvicorn phids.api.main:app --reload --app-dir src
@@ -36,7 +38,7 @@ Then open `http://127.0.0.1:8000/`.
 - Main CI runs on **pushes to `main`**, **pull requests targeting `main`**, and manual dispatch.
 - Expensive automation does **not** run on every branch push and does **not** automatically run on
   `develop`.
-- GHCR container publishing runs on **pushes to `main`**, version tags, and manual dispatch.
+- GHCR container publishing runs on **version tags** and manual dispatch.
 - Bundled binary publishing remains **tag-driven/manual**.
 
 ## High-value next links

@@ -93,7 +93,7 @@ The workflow `.github/workflows/docker-publish.yml`:
 - logs in to `ghcr.io` using the repository `GITHUB_TOKEN`,
 - lowercases the repository name for a valid image path,
 - builds a multi-architecture image for `linux/amd64` and `linux/arm64`,
-- publishes tags for the default branch, Git refs, semantic versions, and commit SHAs.
+- publishes tags for release refs, semantic versions, and commit SHAs.
 
 Typical resulting image names follow this pattern:
 
@@ -105,12 +105,11 @@ ghcr.io/<owner>/phids:v0.2.0
 
 The workflow runs on:
 
-- pushes to `main`,
 - version tags matching `v*.*.*`,
 - manual workflow dispatch.
 
-That means ordinary non-`main` branch pushes—including `develop` work—do not automatically publish
-container images.
+That means ordinary branch pushes—including `main` and `develop` work—do not automatically publish
+container images. Automatic GHCR publication now happens only for release tags.
 
 ## Bundled Binary Publishing
 
@@ -152,9 +151,10 @@ git push origin v0.2.0
 
 Expected behavior:
 
-- the merge or push that lands on `main` builds and publishes the container image,
-- the version tag builds the container again with version tags and publishes the bundled archives to
-  the GitHub release.
+- the version tag publishes the GHCR image with release tags,
+- the same version tag publishes the bundled archives to the GitHub release,
+- a manual workflow dispatch is available if you need to rehearse the container build without
+  cutting a tag.
 
 ## Verification Notes
 

@@ -18,6 +18,8 @@ PHIDS combines:
 - a JSON/WebSocket API for control, telemetry, and streaming integration,
 - a server-rendered HTMX/Jinja control center for authoring and live inspection.
 
+Live documentation: <https://foersben.github.io/PHIDS/>
+
 This `README.md` is the repository landing page. The detailed architecture, interface, scenario,
 engine, and contributor guidance lives under `docs/`.
 

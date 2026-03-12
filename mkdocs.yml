@@ -1,8 +1,8 @@
 site_name: PHIDS
 site_description: Plant-Herbivore Interaction & Defense Simulator
-site_url: https://foersben.github.io/phids/
-repo_name: foersben/phids
-repo_url: https://github.com/foersben/phids
+site_url: https://foersben.github.io/PHIDS/
+repo_name: foersben/PHIDS
+repo_url: https://github.com/foersben/PHIDS
 
 theme:
   name: material

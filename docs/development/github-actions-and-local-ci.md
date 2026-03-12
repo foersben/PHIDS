@@ -58,7 +58,7 @@ It does **not** run on every branch push, and it therefore does **not** automati
 
 The MkDocs site is published through `.github/workflows/docs-pages.yml`.
 
-- live URL: `https://foersben.github.io/phids/`
+- live URL: `https://foersben.github.io/PHIDS/`
 - deploy triggers: pushes to `main` and manual `workflow_dispatch`
 - build gate: `uv run mkdocs build --strict` before artifact upload/deploy
 
@@ -171,7 +171,7 @@ PHIDS now also maintains two non-CI workflows:
 
 These do not replace the CI workflow. They serve different purposes:
 
-- `docker-publish.yml` publishes the runtime image to `ghcr.io` on `main` pushes, version tags, or manual runs,
+- `docker-publish.yml` publishes the runtime image to `ghcr.io` on version tags or manual runs,
 - `release-binaries.yml` builds bundled Linux, Windows, and macOS archives.
 
 That split keeps merge gating focused while still making distribution artifacts reproducible.

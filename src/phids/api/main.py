@@ -866,8 +866,7 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
             | {
                 substance.substance_id
                 for substance in plant_substances
-                if not substance.is_toxin
-                and _is_live_substance_visible(substance)
+                if not substance.is_toxin and _is_live_substance_visible(substance)
             }
         )
         visible_toxin_ids = sorted(
@@ -875,8 +874,7 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
             | {
                 substance.substance_id
                 for substance in plant_substances
-                if substance.is_toxin
-                and _is_live_substance_visible(substance)
+                if substance.is_toxin and _is_live_substance_visible(substance)
             }
         )
         plants.append(

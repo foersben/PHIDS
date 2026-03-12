@@ -6,6 +6,13 @@ localized interaction on a discrete grid. The project couples a data-oriented EC
 vectorized environmental layers, a scientific telemetry pipeline, and two operator surfaces:
 a programmatic JSON/WebSocket API and a server-rendered HTMX/Jinja control center.
 
+## Live Documentation
+
+- **Published GitHub Pages site**: <https://foersben.github.io/PHIDS/>
+- **Deployment workflow**:
+  <https://github.com/foersben/PHIDS/actions/workflows/docs-pages.yml>
+- **Source repository**: <https://github.com/foersben/PHIDS>
+
 ## Scientific Framing
 
 PHIDS should be read as a research-grade simulation instrument with explicit architectural
