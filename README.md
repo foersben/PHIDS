@@ -1,45 +1,53 @@
 # PHIDS
 
-PHIDS (Plant-Herbivore Interaction & Defense Simulator) is a deterministic
-ecosystem simulation engine based on a data-oriented ECS architecture and
-grid cellular automata. It ships both a JSON/WebSocket API and a server-driven
-HTMX/Jinja control-center GUI.
+PHIDS (Plant-Herbivore Interaction & Defense Simulator) is a deterministic ecosystem simulator for
+studying plant–herbivore interaction, chemical signaling, spatial spread, and emergent defensive
+behavior on a grid.
 
-## Stack
+It combines:
 
-- Runtime: `numpy`, `scipy`, `numba`
-- API/streaming: `fastapi`, `uvicorn`, `websockets`
-- Validation: `pydantic`
-- Telemetry: `polars`
-- State serialization: `msgpack`
-- Docs: `mkdocs`, `mkdocs-material`, `mkdocstrings`
+- a data-oriented simulation core built around `SimulationLoop`, `ECSWorld`, and vectorized NumPy
+  layers,
+- a JSON/WebSocket API for programmatic integration and streaming,
+- a server-rendered HTMX/Jinja control center for interactive scenario authoring and live
+  inspection.
 
-## Quickstart (uv)
+This `README.md` is the project landing page. The detailed architecture, interface, scenario, and
+development guidance lives under `docs/`.
+
+## Highlights
+
+- deterministic tick-ordered simulation
+- ECS-based entity storage with spatial hashing
+- double-buffered environmental layers
+- flow-field-driven herbivore navigation
+- trigger-based signaling and toxin rules
+- telemetry export, replay support, and termination tracking
+- both API-first and browser-based operator surfaces
+
+## Quick start
+
+### Local development with `uv`
 
 ```bash
 uv sync --all-extras --dev
 uv run phids --reload
 ```
 
-Then open the GUI at `http://127.0.0.1:8000/`.
+Open:
 
-## Containers
+- UI: `http://127.0.0.1:8000/`
+- OpenAPI docs: `http://127.0.0.1:8000/docs`
 
-PHIDS now ships a project `Dockerfile`, a local `docker-compose.yml`, and GitHub Actions workflows
-for publishing both container images and bundled desktop/server binaries.
-
-### Local container run
+### Run with containers
 
 ```bash
 docker compose up --build
 ```
 
-This starts the `phids` service on `http://127.0.0.1:8000/` with `./src` mounted into the
-container and `--reload` enabled.
+This starts the application with `src/` mounted for live reload.
 
-### Local container cleanup
-
-These are the PHIDS-specific cleanup commands used after local container testing:
+PHIDS-specific cleanup after local container work:
 
 ```bash
 docker rm -f phids-local
@@ -47,113 +55,116 @@ docker rmi -f phids:test phids:local
 docker image prune -f
 ```
 
-The first two commands target only the container/image names introduced by this repository. The
-final prune removes dangling intermediate layers left behind by interrupted local builds.
+For more on runtime images, release bundles, and cleanup of local rehearsal artifacts, see
+[`docs/development/containers-and-release-automation.md`](docs/development/containers-and-release-automation.md).
 
-### Why packages may appear to download twice
+## Project shape
 
-You may see dependency downloads more than once for two separate reasons:
+The active runtime lives in `src/phids/`.
 
-1. `uv sync --all-extras --dev` installs into your **local** development environment.
-2. `docker build` installs into a **separate container build environment** inside the Docker image.
+Important anchors:
 
-Within the `Dockerfile` itself, PHIDS intentionally runs two `uv sync` commands:
+- `src/phids/engine/loop.py` — ordered simulation phases via `SimulationLoop`
+- `src/phids/engine/core/ecs.py` — entity and spatial-hash storage via `ECSWorld`
+- `src/phids/engine/core/biotope.py` — double-buffered environmental layers
+- `src/phids/api/main.py` — REST, WebSocket, and HTML surfaces
+- `src/phids/api/ui_state.py` — `DraftState` and scenario-builder state
+- `src/phids/io/replay.py` — replay/state serialization
+- `src/phids/telemetry/` — analytics, export, and termination utilities
 
-- `uv sync --frozen --no-dev --no-install-project` builds a cacheable dependency layer.
-- `uv sync --frozen --no-dev` installs the project itself after `src/` is copied.
+## Interfaces
 
-That pattern keeps dependency layers reusable when only application code changes. If a build is
-interrupted before the dependency layer is committed, retrying the build will download those wheels
-again because the previous layer never finished caching.
+PHIDS intentionally exposes two operator surfaces:
 
-GitHub Actions also installs dependencies independently per job and per operating-system runner, so
-the Linux, Windows, and macOS release jobs each resolve their own environment.
+- **API surface** — REST + WebSocket endpoints for scenario loading, simulation control, telemetry,
+  and streamed state snapshots
+- **Control-center UI** — server-rendered HTMX/Jinja views for editing draft scenarios and
+  interacting with the live simulation
 
-## Published artifacts
+For the complete route inventory and transport semantics, see:
 
-- `.github/workflows/docker-publish.yml` publishes a multi-architecture image to GitHub Container
-  Registry (`ghcr.io`).
-- `.github/workflows/release-binaries.yml` builds bundled binaries for Linux, Windows, and macOS.
+- [`docs/interfaces/rest-and-websocket-surfaces.md`](docs/interfaces/rest-and-websocket-surfaces.md)
+- [`docs/ui/index.md`](docs/ui/index.md)
 
-`docker-publish.yml` runs on pushes to `main`, on version tags matching `v*.*.*`, and on manual
-dispatch. `release-binaries.yml` runs on version tags and on manual dispatch; tagged runs also
-attach the generated archives to the corresponding GitHub release.
+## Scenarios and examples
 
-## Quality Gates
+Curated example scenarios live in `examples/`.
 
-- Lint/format: `uv run ruff check .` and `uv run ruff format --check .`
-- Tests + coverage + benchmarks: `uv run pytest`
-- Docs build: `uv run mkdocs build --strict`
+Examples include:
 
-Additional local hygiene tooling remains available via:
+- `examples/meadow_defense.json`
+- `examples/root_network_alarm_chain.json`
+- `examples/wind_tunnel_orchard.json`
 
-- Pre-commit hooks: `uv run pre-commit run --all-files`
-- Type check cleanup target: `uv run mypy`
+Authoring, schema semantics, trigger rules, and curated scenario guidance are documented in:
 
-These broader hooks are useful for incremental cleanup, but the current GitHub Actions workflow is
-kept on the repository's green path: Ruff, pytest, compatibility smoke tests, and strict docs.
+- [`docs/scenarios/index.md`](docs/scenarios/index.md)
+- [`docs/scenarios/schema-and-curated-examples.md`](docs/scenarios/schema-and-curated-examples.md)
+- [`docs/scenarios/scenario-authoring-and-trigger-semantics.md`](docs/scenarios/scenario-authoring-and-trigger-semantics.md)
 
-## Documentation
+## Quality and contributor workflow
 
-- Site entry point: `docs/index.md`
-- Local docs server: `uv run mkdocs serve`
-- Generated Python reference: `docs/reference/api.md`
-- Documentation handoff / open TODOs: `docs/development/documentation-status-and-open-work.md`
+Main local quality commands:
 
-## CI and Local Rehearsal
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+uv run mkdocs build --strict
+```
 
-- Main GitHub Actions workflow: `.github/workflows/ci.yml`
-- Current-interpreter CI parity helper: `./scripts/local_ci.sh`
-- Local GitHub Actions rehearsal with `act`: `./scripts/run_ci_with_act.sh`
-- `act` runner image mapping: `.actrc`
-
-Typical local rehearsal flow:
+CI-parity helper:
 
 ```bash
 ./scripts/local_ci.sh all
-./scripts/run_ci_with_act.sh --dryrun
-./scripts/run_ci_with_act.sh --job tests-py312
 ```
 
-The `act` rehearsal path requires a running Docker or Podman daemon. When Podman is installed with
-user systemd services, the helper script will try to start `podman.socket` automatically.
+Optional local GitHub Actions rehearsal:
 
-## Key Interface Endpoints
+```bash
+./scripts/run_ci_with_act.sh --dryrun
+```
 
-### Scenario ingress
+The canonical CI and workflow guidance lives in:
 
-- `POST /api/scenario/load`
-- `POST /api/scenario/load-draft`
-- `GET /api/scenario/export`
-- `POST /api/scenario/import`
+- [`docs/development/github-actions-and-local-ci.md`](docs/development/github-actions-and-local-ci.md)
+- [`docs/development/contribution-workflow-and-quality-gates.md`](docs/development/contribution-workflow-and-quality-gates.md)
 
-### Simulation lifecycle
+## Release and distribution
 
-- `POST /api/simulation/start`
-- `POST /api/simulation/pause`
-- `POST /api/simulation/step`
-- `POST /api/simulation/reset`
-- `GET /api/simulation/status`
-- `PUT /api/simulation/wind`
+PHIDS now includes:
 
-### Telemetry and streams
+- a runtime `Dockerfile`
+- `docker-compose.yml` for local containerized development
+- `.github/workflows/docker-publish.yml` for GHCR container publishing
+- `.github/workflows/release-binaries.yml` for bundled Linux, Windows, and macOS artifacts
 
-- `GET /api/telemetry/export/csv`
-- `GET /api/telemetry/export/json`
-- `WS /ws/simulation/stream` (msgpack + zlib frames)
-- `WS /ws/ui/stream` (lightweight JSON for the control-center canvas)
+These workflows are documented in:
 
-### UI surfaces
+- [`docs/development/containers-and-release-automation.md`](docs/development/containers-and-release-automation.md)
 
-- `GET /`
-- `GET /ui/dashboard`
-- `GET /ui/biotope`
-- `GET /ui/flora`
-- `GET /ui/predators`
-- `GET /ui/substances`
-- `GET /ui/diet-matrix`
-- `GET /ui/trigger-rules`
-- `GET /ui/placements`
+## Documentation
 
-For the fuller route inventory and response semantics, see
-[`docs/interfaces/rest-and-websocket-surfaces.md`](docs/interfaces/rest-and-websocket-surfaces.md).
+Start here if you want the full project picture:
+
+- documentation home: [`docs/index.md`](docs/index.md)
+- architecture overview: [`docs/architecture/index.md`](docs/architecture/index.md)
+- engine docs: [`docs/engine/index.md`](docs/engine/index.md)
+- interfaces docs: [`docs/interfaces/index.md`](docs/interfaces/index.md)
+- development docs: [`docs/development/index.md`](docs/development/index.md)
+- reference docs: [`docs/reference/index.md`](docs/reference/index.md)
+
+Serve the documentation locally with:
+
+```bash
+uv run mkdocs serve
+```
+
+## Technology stack
+
+- simulation/math: `numpy`, `scipy`, `numba`
+- API/runtime: `fastapi`, `uvicorn`, `websockets`
+- schemas/validation: `pydantic`
+- telemetry/data processing: `polars`
+- serialization: `msgpack`
+- docs: `mkdocs`, `mkdocs-material`, `mkdocstrings`
