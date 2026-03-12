@@ -60,7 +60,14 @@ def _add_plant(world: ECSWorld, x: int, y: int, species_id: int = 0, energy: flo
     return e.entity_id
 
 
-def _add_swarm(world: ECSWorld, x: int, y: int, species_id: int = 0, pop: int = 10) -> int:
+def _add_swarm(
+    world: ECSWorld,
+    x: int,
+    y: int,
+    species_id: int = 0,
+    pop: int = 10,
+    reproduction_divisor: float = 1.0,
+) -> int:
     e = world.create_entity()
     s = SwarmComponent(
         entity_id=e.entity_id,
@@ -73,6 +80,7 @@ def _add_swarm(world: ECSWorld, x: int, y: int, species_id: int = 0, pop: int = 
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
+        reproduction_energy_divisor=reproduction_divisor,
     )
     world.add_component(e.entity_id, s)
     world.register_position(e.entity_id, x, y)
@@ -175,9 +183,13 @@ def test_lifecycle_mycorrhiza_grows_one_link_per_interval() -> None:
     plant1 = world.get_entity(p1).get_component(PlantComponent)
     plant2 = world.get_entity(p2).get_component(PlantComponent)
     plant3 = world.get_entity(p3).get_component(PlantComponent)
-    assert plant1.mycorrhizal_connections == {p2}
-    assert plant2.mycorrhizal_connections == {p1}
-    assert plant3.mycorrhizal_connections == set()
+    first_links = {
+        tuple(sorted((left, right)))
+        for left, plant in ((p1, plant1), (p2, plant2), (p3, plant3))
+        for right in plant.mycorrhizal_connections
+        if left < right
+    }
+    assert first_links in ({(p1, p2)}, {(p2, p3)})
 
     run_lifecycle(
         world,
@@ -191,7 +203,47 @@ def test_lifecycle_mycorrhiza_grows_one_link_per_interval() -> None:
 
     plant2 = world.get_entity(p2).get_component(PlantComponent)
     plant3 = world.get_entity(p3).get_component(PlantComponent)
+    plant1 = world.get_entity(p1).get_component(PlantComponent)
+    final_links = {
+        tuple(sorted((left, right)))
+        for left, plant in ((p1, plant1), (p2, plant2), (p3, plant3))
+        for right in plant.mycorrhizal_connections
+        if left < right
+    }
+    assert final_links == {(p1, p2), (p2, p3)}
     assert plant2.mycorrhizal_connections == {p1, p3}
+    assert plant3.mycorrhizal_connections == {p2}
+
+
+def test_lifecycle_mycorrhiza_can_select_non_top_left_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=6, height=4, num_signals=1, num_toxins=1)
+
+    p1 = _add_plant(world, 1, 1, species_id=0, energy=12.0)
+    p2 = _add_plant(world, 2, 1, species_id=0, energy=12.0)
+    p3 = _add_plant(world, 3, 1, species_id=0, energy=12.0)
+
+    for entity_id in (p1, p2, p3):
+        plant = world.get_entity(entity_id).get_component(PlantComponent)
+        plant.reproduction_interval = 999
+        plant.seed_energy_cost = 999.0
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
+    run_lifecycle(
+        world,
+        env,
+        tick=0,
+        flora_species_params={0: _flora_params(0)},
+        mycorrhizal_connection_cost=1.0,
+        mycorrhizal_growth_interval_ticks=1,
+        mycorrhizal_inter_species=False,
+    )
+
+    plant2 = world.get_entity(p2).get_component(PlantComponent)
+    plant3 = world.get_entity(p3).get_component(PlantComponent)
+    assert plant2.mycorrhizal_connections == {p3}
     assert plant3.mycorrhizal_connections == {p2}
 
 
@@ -232,13 +284,52 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
     sid = _add_swarm(world, 1, 1, species_id=0, pop=9)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
-    swarm.energy = 1.0
+    swarm.energy = 9.0
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     swarms = [e.get_component(SwarmComponent) for e in world.query(SwarmComponent)]
     assert len(swarms) == 2
     assert sum(s.population for s in swarms) == 10
+
+
+def test_interaction_flow_field_movement_uses_probabilistic_choice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
+    env.flow_field[0, 0] = 9.0
+    env.flow_field[1, 0] = 1.0
+    env.flow_field[2, 0] = 10.0
+
+    sid = _add_swarm(world, 1, 0, species_id=0, pop=4)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+
+    monkeypatch.setattr(random, "choices", lambda population, weights, k: [population[1]])
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    assert (swarm.x, swarm.y) == (0, 0)
+
+
+def test_interaction_reproduction_divisor_limits_growth() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=6, height=2, num_signals=1, num_toxins=1)
+
+    fast_id = _add_swarm(world, 1, 0, species_id=0, pop=6, reproduction_divisor=1.0)
+    slow_id = _add_swarm(world, 4, 0, species_id=0, pop=6, reproduction_divisor=2.0)
+
+    fast = world.get_entity(fast_id).get_component(SwarmComponent)
+    slow = world.get_entity(slow_id).get_component(SwarmComponent)
+    fast.initial_population = 100
+    slow.initial_population = 100
+    fast.energy = 24.0
+    slow.energy = 24.0
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    assert fast.population > slow.population
+    assert fast.population == 10
+    assert slow.population == 8
 
 
 def test_interaction_mitosis_conserves_odd_population() -> None:

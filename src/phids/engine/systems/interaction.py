@@ -20,7 +20,7 @@ from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import TOXIN_CASUALTY_FACTOR
 
 
-def _best_neighbour(
+def _choose_neighbour_by_flow_probability(
     x: int,
     y: int,
     flow_field: npt.NDArray[np.float64],
@@ -28,7 +28,7 @@ def _best_neighbour(
     height: int,
     invert: bool = False,
 ) -> tuple[int, int]:
-    """Return the best 4-connected neighbour (or current cell).
+    """Sample a 4-connected neighbour (or current cell) from the flow field.
 
     Args:
         x: Current X coordinate.
@@ -36,10 +36,10 @@ def _best_neighbour(
         flow_field: Scalar attraction field.
         width: Grid width.
         height: Grid height.
-        invert: When True, choose the lowest gradient (flee behaviour).
+        invert: When True, prefer lower gradients (flee behaviour).
 
     Returns:
-        tuple[int, int]: Best (nx, ny) cell to move to.
+        tuple[int, int]: Sampled (nx, ny) cell to move to.
     """
     candidates: list[tuple[int, int]] = [(x, y)]
     if x > 0:
@@ -51,9 +51,15 @@ def _best_neighbour(
     if y < height - 1:
         candidates.append((x, y + 1))
 
+    scores = np.asarray([flow_field[cx, cy] for cx, cy in candidates], dtype=np.float64)
     if invert:
-        return min(candidates, key=lambda c: flow_field[c[0], c[1]])
-    return max(candidates, key=lambda c: flow_field[c[0], c[1]])
+        weights = scores.max() - scores
+    else:
+        weights = scores - scores.min()
+
+    # Keep every candidate reachable while still preferring stronger gradients.
+    normalized_weights = (weights + 1.0).tolist()
+    return random.choices(candidates, weights=normalized_weights, k=1)[0]
 
 
 def _random_walk_step(
@@ -118,6 +124,7 @@ def _perform_mitosis(
         energy_min=swarm.energy_min,
         velocity=swarm.velocity,
         consumption_rate=swarm.consumption_rate,
+        reproduction_energy_divisor=swarm.reproduction_energy_divisor,
     )
     swarm.energy /= 2.0
     world.add_component(new_entity.entity_id, offspring)
@@ -165,7 +172,13 @@ def run_interaction(
                     swarm.repelled = False
                     swarm.target_plant_id = -1
             else:
-                nx, ny = _best_neighbour(swarm.x, swarm.y, env.flow_field, env.width, env.height)
+                nx, ny = _choose_neighbour_by_flow_probability(
+                    swarm.x,
+                    swarm.y,
+                    env.flow_field,
+                    env.width,
+                    env.height,
+                )
 
             if (nx, ny) != (old_x, old_y):
                 world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
@@ -232,12 +245,16 @@ def run_interaction(
             continue
 
         # ----------------------------------------------------------------
-        # 7. Reproduction: generate floor(energy / energy_min) new individuals
+        # 7. Reproduction: convert only swarm-scale surplus energy into growth
         # ----------------------------------------------------------------
-        new_individuals = int(swarm.energy // swarm.energy_min)
+        reproduction_threshold = max(
+            swarm.energy_min,
+            swarm.population * swarm.energy_min * swarm.reproduction_energy_divisor,
+        )
+        new_individuals = int(swarm.energy // reproduction_threshold)
         if new_individuals > 0:
             swarm.population += new_individuals
-            swarm.energy -= new_individuals * swarm.energy_min
+            swarm.energy -= new_individuals * reproduction_threshold
 
         # ----------------------------------------------------------------
         # 8. Mitosis

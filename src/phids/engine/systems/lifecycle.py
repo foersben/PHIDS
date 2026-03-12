@@ -115,8 +115,8 @@ def _establish_mycorrhizal_connections(
     Plants located at Manhattan distance 1 may form symbiotic root
     connections.  Each new connection costs ``connection_cost`` energy
     deducted from both participants.  Inter-species links are only created
-    when ``inter_species`` is True.  To keep growth gradual and deterministic,
-    the function establishes at most one new connection per invocation.
+    when ``inter_species`` is True. To keep growth gradual, the function
+    establishes at most one new connection per invocation.
 
     Args:
         world: ECSWorld registry.
@@ -142,6 +142,8 @@ def _establish_mycorrhizal_connections(
     for p in plants:
         pos_index.setdefault((p.x, p.y), []).append(p)
 
+    candidate_pairs: list[tuple[PlantComponent, PlantComponent]] = []
+
     for plant in plants:
         for dx, dy in ((1, 0), (0, 1)):
             nx, ny = plant.x + dx, plant.y + dy
@@ -159,18 +161,19 @@ def _establish_mycorrhizal_connections(
                 # Both plants must afford the connection cost
                 if plant.energy < connection_cost or neighbour.energy < connection_cost:
                     continue
-                # Establish bidirectional link and pay cost
-                plant.mycorrhizal_connections.add(neighbour.entity_id)
-                neighbour.mycorrhizal_connections.add(plant.entity_id)
-                plant.energy -= connection_cost
-                neighbour.energy -= connection_cost
-                env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
-                env.set_plant_energy(
-                    neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy
-                )
-                return True
+                candidate_pairs.append((plant, neighbour))
 
-    return False
+    if not candidate_pairs:
+        return False
+
+    plant, neighbour = random.choice(candidate_pairs)
+    plant.mycorrhizal_connections.add(neighbour.entity_id)
+    neighbour.mycorrhizal_connections.add(plant.entity_id)
+    plant.energy -= connection_cost
+    neighbour.energy -= connection_cost
+    env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+    env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
+    return True
 
 
 def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) -> bool:

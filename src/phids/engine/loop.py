@@ -156,6 +156,9 @@ class SimulationLoop:
                 energy_min=self._get_predator_energy_min(placement.species_id),
                 velocity=self._get_predator_velocity(placement.species_id),
                 consumption_rate=self._get_predator_consumption_rate(placement.species_id),
+                reproduction_energy_divisor=self._get_predator_reproduction_divisor(
+                    placement.species_id
+                ),
             )
             self.world.add_component(entity.entity_id, swarm)
             self.world.register_position(entity.entity_id, placement.x, placement.y)
@@ -209,6 +212,20 @@ class SimulationLoop:
         for sp in self.config.predator_species:
             if sp.species_id == species_id:
                 return sp.consumption_rate
+        return 1.0
+
+    def _get_predator_reproduction_divisor(self, species_id: int) -> float:
+        """Return the configured reproduction divisor for a predator species.
+
+        Args:
+            species_id: Predator species identifier to look up.
+
+        Returns:
+            float: Reproduction divisor if present, otherwise 1.0.
+        """
+        for sp in self.config.predator_species:
+            if sp.species_id == species_id:
+                return sp.reproduction_energy_divisor
         return 1.0
 
     # ------------------------------------------------------------------

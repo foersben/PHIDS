@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
 
@@ -55,3 +56,16 @@ def test_example_pack_mixes_mycorrhizal_and_non_mycorrhizal_scenarios() -> None:
     assert example_stems == CURATED_EXAMPLE_STEMS
     assert any(config.mycorrhizal_inter_species for config in configs)
     assert any(not config.mycorrhizal_inter_species for config in configs)
+
+
+def test_dry_shrubland_cycles_preserves_predator_reproduction_divisors() -> None:
+    config = load_scenario_from_json(EXAMPLES_DIR / "dry_shrubland_cycles.json")
+    loop = SimulationLoop(config)
+
+    divisors = sorted(
+        swarm.reproduction_energy_divisor
+        for entity in loop.world.query(SwarmComponent)
+        for swarm in [entity.get_component(SwarmComponent)]
+    )
+
+    assert divisors == [0.9, 0.9, 1.15]

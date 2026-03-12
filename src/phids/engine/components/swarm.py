@@ -23,6 +23,7 @@ class SwarmComponent:
         energy_min: Minimum energy per individual.
         velocity: Movement period in ticks between moves.
         consumption_rate: Per-tick consumption scalar.
+        reproduction_energy_divisor: Species-level growth throttle.
         starvation_ticks: Consecutive ticks without feeding.
         repelled: Whether the swarm is currently repelled by toxin.
         repelled_ticks_remaining: Remaining ticks of repelled behavior.
@@ -40,6 +41,7 @@ class SwarmComponent:
     energy_min: float
     velocity: int
     consumption_rate: float
+    reproduction_energy_divisor: float = 1.0
     starvation_ticks: int = 0
     repelled: bool = False
     repelled_ticks_remaining: int = 0
