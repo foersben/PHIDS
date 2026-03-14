@@ -79,6 +79,8 @@ async def test_ui_partials_render(path: str, marker: str) -> None:
 
     assert resp.status_code == 200
     assert marker in resp.text
+    if path == "/ui/batch":
+        assert "Load Persisted Batches" in resp.text
 
 
 @pytest.mark.asyncio
@@ -185,6 +187,11 @@ async def test_batch_view_renders_survival_chart_when_summary_exists(
     assert "batch-survival-chart" in resp.text
     assert "batch-table-preview" in resp.text
     assert "batch-export-stride" in resp.text
+    assert "batch-chart-title" in resp.text
+    assert "batch-columns" in resp.text
+    assert "batch-chart-preset" in resp.text
+    assert "batch-apply-chart" in resp.text
+    assert "batch-apply-table" in resp.text
 
 
 @pytest.mark.asyncio

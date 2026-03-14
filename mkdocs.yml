@@ -57,6 +57,7 @@ nav:
       - UI Control Center: ui/index.md
       - Draft State and Load Workflow: ui/draft-state-and-load-workflow.md
       - HTMX Partials and Builder Routes: ui/htmx-partials-and-builder-routes.md
+      - Batch Runner and Aggregate Analysis: ui/batch-runner-and-aggregate-analysis.md
       - Diagnostics and Live Observation: ui/diagnostics-and-live-observation.md
   - Scenarios:
       - Overview: scenarios/index.md

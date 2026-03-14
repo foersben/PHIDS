@@ -53,6 +53,8 @@ running, and interpreting simulations.
   [`htmx-partials-and-builder-routes.md`](htmx-partials-and-builder-routes.md)
 - Live observation, cell-detail inspection, and diagnostics rail:
   [`diagnostics-and-live-observation.md`](diagnostics-and-live-observation.md)
+- Batch execution, persisted summaries, and aggregate customization:
+  [`batch-runner-and-aggregate-analysis.md`](batch-runner-and-aggregate-analysis.md)
 
 ## Current UI Invariants
 

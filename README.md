@@ -103,6 +103,30 @@ server-side `DraftState` (`src/phids/api/ui_state.py`), and only
 
 See [`docs/ui/index.md`](docs/ui/index.md).
 
+### Batch evaluation control center
+
+The batch surface (`/ui/batch`) is designed for post-hoc statistical analysis rather than
+live-grid rendering. The operational flow is:
+
+1. run `N` seeded trajectories from a validated draft;
+2. persist aggregate outputs to `data/batches/{job_id}_summary.json`;
+3. inspect completed jobs in a chart/data-grid detail view;
+4. export decimated, publication-oriented aggregate artifacts.
+
+The batch detail pane exposes:
+
+- `Charts` tab with mean±sigma trajectory overlays and survival-probability curve;
+- `Data Grid` tab with column projection and tick-stride decimation controls;
+- explicit `Apply Chart Settings` and `Apply Table Settings` actions for deterministic UI state transitions;
+- chart presets (`Balanced overview`, `Collapse risk focus`, `Predator pressure focus`, `Survival probability only`) for rapid comparative evaluation;
+- export controls for `CSV`, `LaTeX table`, and `TikZ` with metadata overrides.
+
+Previously computed batches can be rehydrated into the in-memory ledger using the
+`Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).
+
+Reference chapter:
+[`docs/ui/batch-runner-and-aggregate-analysis.md`](docs/ui/batch-runner-and-aggregate-analysis.md).
+
 ---
 
 ## 🧪 Scenario model and curated examples
@@ -224,6 +248,12 @@ Representative route/system smoke slice:
 
 ```bash
 uv run pytest -o addopts='' tests/test_api_routes.py tests/test_ui_routes.py tests/test_systems_behavior.py tests/test_example_scenarios.py -q
+```
+
+Focused batch/UI smoke slice:
+
+```bash
+uv run pytest tests/test_ui_routes.py tests/test_api_routes.py -q
 ```
 
 Scripted local CI:
