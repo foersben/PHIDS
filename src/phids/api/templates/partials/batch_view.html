@@ -62,9 +62,11 @@
       download>TikZ</a>
   </div>
 
+  <script id="batch-aggregate-data" type="application/json">{{ aggregate | tojson }}</script>
   <script>
   (function () {
-    const agg = {{ aggregate | tojson }};
+    const aggRaw = document.getElementById('batch-aggregate-data');
+    const agg = aggRaw ? JSON.parse(aggRaw.textContent || '{}') : null;
     if (!agg || !agg.ticks || agg.ticks.length === 0) return;
 
     const ctx = document.getElementById('batch-agg-chart');
@@ -89,17 +91,17 @@
         labels,
         datasets: [
           // Flora mean
-          { label: 'Flora μ', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, order: 1 },
+          { label: 'Flora mean', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, order: 1 },
           // Flora +σ fill
-          { label: 'Flora +σ', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 2 },
+          { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 2 },
           // Flora -σ fill
-          { label: 'Flora −σ', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 3 },
+          { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 3 },
           // Predator mean
-          { label: 'Predator μ', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3], order: 4 },
+          { label: 'Predator mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3], order: 4 },
           // Predator +σ
-          { label: 'Predator +σ', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 5 },
+          { label: 'Predator +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 5 },
           // Predator -σ
-          { label: 'Predator −σ', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 6 },
+          { label: 'Predator -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 6 },
         ],
       },
       options: {

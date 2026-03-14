@@ -146,6 +146,18 @@ class TestGeneratePngBytes:
         with pytest.raises(ValueError, match="Unknown plot_type"):
             generate_png_bytes(_sample_rows(), "histogram")
 
+    def test_defense_economy_returns_nonempty_bytes(self) -> None:
+        """PNG export for defense economy mode returns non-empty bytes."""
+        data = generate_png_bytes(_sample_rows(), "defense_economy")
+        assert isinstance(data, bytes)
+        assert len(data) > 1000
+
+    def test_biomass_stack_returns_nonempty_bytes(self) -> None:
+        """PNG export for stacked biomass mode returns non-empty bytes."""
+        data = generate_png_bytes(_sample_rows(), "biomass_stack")
+        assert isinstance(data, bytes)
+        assert len(data) > 1000
+
 
 class TestGenerateTikzStr:
     """Validates PGFPlots LaTeX source generation."""
@@ -176,6 +188,18 @@ class TestGenerateTikzStr:
         """An unknown plot_type raises ValueError."""
         with pytest.raises(ValueError):
             generate_tikz_str(_sample_rows(), "scatter3d")
+
+    def test_defense_economy_tikz_contains_axis(self) -> None:
+        """Defense economy TikZ output contains a valid axis environment."""
+        s = generate_tikz_str(_sample_rows(), "defense_economy")
+        assert "\\begin{axis}" in s
+        assert "Defense economy" in s
+
+    def test_biomass_stack_tikz_contains_axis(self) -> None:
+        """Biomass stack TikZ output contains a valid axis environment."""
+        s = generate_tikz_str(_sample_rows(), "biomass_stack")
+        assert "\\begin{axis}" in s
+        assert "Carrying Capacity" in s
 
     def test_custom_title_and_axes_are_applied(self) -> None:
         """User-provided title and axis labels are propagated into TikZ output."""

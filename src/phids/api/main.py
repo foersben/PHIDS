@@ -1400,7 +1400,7 @@ async def telemetry_table_preview(
         return templates.TemplateResponse(
             request,
             "partials/telemetry_table_preview.html",
-            {"headers": [], "rows": [], "empty_message": "No telemetry data available."},
+            {"table_html": "", "empty_message": "No telemetry data available."},
         )
 
     rows = filter_telemetry_rows(_sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids)
@@ -1411,13 +1411,15 @@ async def telemetry_table_preview(
         df = df.head(min(limit, 1000))
 
     if df.empty:
-        context = {"headers": [], "rows": [], "empty_message": "No rows match current table filters."}
+        context = {"table_html": "", "empty_message": "No rows match current table filters."}
     else:
-        context = {
-            "headers": list(df.columns),
-            "rows": df.to_dict(orient="records"),
-            "empty_message": "",
-        }
+        table_html = df.to_html(
+            index=False,
+            classes="min-w-full text-[11px]",
+            border=0,
+            justify="left",
+        )
+        context = {"table_html": table_html, "empty_message": ""}
     return templates.TemplateResponse(request, "partials/telemetry_table_preview.html", context)
 
 
@@ -1440,7 +1442,9 @@ async def export_telemetry_format(
     """Export telemetry data as CSV, LaTeX table, PGFPlots TikZ source, or PNG.
 
     Supported ``data_type`` values are ``timeseries`` (per-species population
-    time series) and ``phasespace`` (Lotka-Volterra phase-space trajectory).
+    time series), ``phasespace`` (Lotka-Volterra phase-space trajectory),
+    ``defense_economy`` (defense-cost to energy ratio), and ``biomass_stack``
+    (stacked flora biomass proxy).
     Supported ``format`` values are ``csv``, ``tex_table``, ``tex_tikz``, and
     ``png``. All export formats are generated server-side using the headless
     matplotlib Agg backend and the PGFPlots template generator; no LaTeX
@@ -1461,6 +1465,15 @@ async def export_telemetry_format(
     """
     if _sim_loop is None:
         raise HTTPException(status_code=404, detail="No simulation loaded.")
+
+    supported_data_types = {"timeseries", "phasespace", "defense_economy", "biomass_stack"}
+    if data_type not in supported_data_types:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, defense_economy, or biomass_stack."
+            ),
+        )
 
     rows = _sim_loop.telemetry._rows
     flora_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
@@ -1483,36 +1496,42 @@ async def export_telemetry_format(
         filename = f"phids_{data_type}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
-        tikz = generate_tikz_str(
-            filtered_rows,
-            data_type,
-            flora_names=flora_names,
-            predator_names=predator_names,
-            prey_species_id=prey_species_id,
-            predator_species_id=predator_species_id,
-            include_flora_ids=flora_ids,
-            include_predator_ids=predator_ids,
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-        )
+        try:
+            tikz = generate_tikz_str(
+                filtered_rows,
+                data_type,
+                flora_names=flora_names,
+                predator_names=predator_names,
+                prey_species_id=prey_species_id,
+                predator_species_id=predator_species_id,
+                include_flora_ids=flora_ids,
+                include_predator_ids=predator_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         data = tikz.encode("utf-8")
         filename = f"phids_{data_type}.tex"
         media_type = "text/plain"
     elif format == "png":
-        data = generate_png_bytes(
-            filtered_rows,
-            data_type,
-            flora_names=flora_names,
-            predator_names=predator_names,
-            prey_species_id=prey_species_id,
-            predator_species_id=predator_species_id,
-            include_flora_ids=flora_ids,
-            include_predator_ids=predator_ids,
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-        )
+        try:
+            data = generate_png_bytes(
+                filtered_rows,
+                data_type,
+                flora_names=flora_names,
+                predator_names=predator_names,
+                prey_species_id=prey_species_id,
+                predator_species_id=predator_species_id,
+                include_flora_ids=flora_ids,
+                include_predator_ids=predator_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         filename = f"phids_{data_type}.png"
         media_type = "image/png"
     else:

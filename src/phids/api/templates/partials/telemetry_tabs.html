@@ -19,7 +19,25 @@
     <div id="ts-legend" class="flex flex-wrap gap-2 text-[11px]"></div>
     <canvas id="ts-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas>
     <canvas id="defense-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
+    <div class="flex flex-wrap gap-2 text-xs -mt-1">
+      <span class="text-slate-400 text-[11px] self-center">Defense export:</span>
+      <a id="defense-export-png" href="/api/export/defense_economy?format=png"
+        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+        download="phids_defense_economy.png">PNG</a>
+      <a id="defense-export-tikz" href="/api/export/defense_economy?format=tex_tikz"
+        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+        download="phids_defense_economy.tex">TikZ</a>
+    </div>
     <canvas id="biomass-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
+    <div class="flex flex-wrap gap-2 text-xs -mt-1">
+      <span class="text-slate-400 text-[11px] self-center">Biomass export:</span>
+      <a id="biomass-export-png" href="/api/export/biomass_stack?format=png"
+        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+        download="phids_biomass_stack.png">PNG</a>
+      <a id="biomass-export-tikz" href="/api/export/biomass_stack?format=tex_tikz"
+        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+        download="phids_biomass_stack.tex">TikZ</a>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-slate-600">
       <label>Title
@@ -219,6 +237,10 @@
     setHref('ts-export-tex-table', '/api/export/timeseries?format=tex_table');
     setHref('ps-export-png', '/api/export/phasespace?format=png');
     setHref('ps-export-tikz', '/api/export/phasespace?format=tex_tikz');
+    setHref('defense-export-png', '/api/export/defense_economy?format=png');
+    setHref('defense-export-tikz', '/api/export/defense_economy?format=tex_tikz');
+    setHref('biomass-export-png', '/api/export/biomass_stack?format=png');
+    setHref('biomass-export-tikz', '/api/export/biomass_stack?format=tex_tikz');
 
     _refreshTablePreview(sel);
   }

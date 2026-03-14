@@ -275,7 +275,7 @@ def generate_png_bytes(
 ) -> bytes:
     """Render a matplotlib chart to PNG bytes using the headless Agg backend.
 
-    Supports two ``plot_type`` modes:
+    Supports four ``plot_type`` modes:
 
     * ``"timeseries"`` — Overlaid line chart with one series per flora and predator
       species, sharing a common tick x-axis and a left y-axis for population counts.
@@ -284,13 +284,18 @@ def generate_png_bytes(
       semantics, plotting the aggregate population of ``prey_species_id`` flora on
       the x-axis and the aggregate population of ``predator_species_id`` herbivores
       on the y-axis as a connected trajectory through time, revealing orbital cycles.
+    * ``"defense_economy"`` — Per-species ratio of defense maintenance cost to
+      per-species stored plant energy.
+    * ``"biomass_stack"`` — Stacked area chart of per-species flora population,
+      used as a biomass proxy under fixed-cell carrying-capacity constraints.
 
     The ``matplotlib.use("Agg")`` backend directive is applied locally before any
     pyplot call to prevent interference with interactive display backends.
 
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
-        plot_type: Chart mode — ``"timeseries"`` or ``"phasespace"``.
+        plot_type: Chart mode — ``"timeseries"``, ``"phasespace"``,
+            ``"defense_economy"``, or ``"biomass_stack"``.
         flora_names: Optional display names keyed by flora species id.
         predator_names: Optional display names keyed by predator species id.
         prey_species_id: Flora species id for phase-space x-axis.
@@ -301,7 +306,7 @@ def generate_png_bytes(
         bytes: PNG-encoded figure bytes.
 
     Raises:
-        ValueError: If ``plot_type`` is not ``"timeseries"`` or ``"phasespace"``.
+        ValueError: If ``plot_type`` is not a supported chart mode.
     """
     import matplotlib
     matplotlib.use("Agg")
@@ -342,9 +347,31 @@ def generate_png_bytes(
             x_label=x_label,
             y_label=y_label,
         )
+    elif plot_type == "defense_economy":
+        _plot_defense_economy(
+            ax,
+            plot_rows,
+            ticks,
+            flora_names=flora_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
+    elif plot_type == "biomass_stack":
+        _plot_biomass_stack(
+            ax,
+            plot_rows,
+            ticks,
+            flora_names=flora_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
     else:
         plt.close(fig)
-        raise ValueError(f"Unknown plot_type '{plot_type}'; expected 'timeseries' or 'phasespace'")
+        raise ValueError(
+            f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, or biomass_stack"
+        )
 
     fig.tight_layout()
     buf = io.BytesIO()
@@ -442,6 +469,91 @@ def _plot_phasespace(
     ax.grid(True, alpha=0.3)
 
 
+def _plot_defense_economy(
+    ax: Any,
+    rows: list[dict[str, Any]],
+    ticks: list[int],
+    *,
+    flora_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> None:
+    """Render per-species defense-cost to energy ratio trajectories onto ``ax``.
+
+    Args:
+        ax: Matplotlib Axes instance.
+        rows: Raw telemetry rows.
+        ticks: Tick index list aligned with ``rows``.
+        flora_names: Optional display names for flora species.
+        title: Optional chart title override.
+        x_label: Optional x-axis label override.
+        y_label: Optional y-axis label override.
+    """
+    all_flora: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_energy_by_species", {}).keys())
+        all_flora.update(r.get("defense_cost_by_species", {}).keys())
+
+    for i, fid in enumerate(sorted(all_flora)):
+        colour = _FLORA_COLOURS[i % len(_FLORA_COLOURS)]
+        name = (flora_names or {}).get(fid, f"Flora {fid}")
+        ratio: list[float] = []
+        for r in rows:
+            defense = float(r.get("defense_cost_by_species", {}).get(fid, 0.0))
+            energy = float(r.get("plant_energy_by_species", {}).get(fid, 0.0))
+            ratio.append(defense / energy if energy > 0.0 else 0.0)
+        ax.plot(ticks, ratio, color=colour, linewidth=1.5, label=name)
+
+    ax.set_xlabel(x_label or "Tick")
+    ax.set_ylabel(y_label or "Defense economy ratio")
+    ax.set_title(title or "PHIDS - Metabolic Defense Economy")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+
+def _plot_biomass_stack(
+    ax: Any,
+    rows: list[dict[str, Any]],
+    ticks: list[int],
+    *,
+    flora_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> None:
+    """Render stacked flora population trajectories as a biomass-proxy area chart.
+
+    Args:
+        ax: Matplotlib Axes instance.
+        rows: Raw telemetry rows.
+        ticks: Tick index list aligned with ``rows``.
+        flora_names: Optional display names for flora species.
+        title: Optional chart title override.
+        x_label: Optional x-axis label override.
+        y_label: Optional y-axis label override.
+    """
+    all_flora: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_pop_by_species", {}).keys())
+    ordered = sorted(all_flora)
+    if not ordered:
+        ax.plot(ticks, [0.0] * len(ticks), color="#94a3b8", linewidth=1.0, label="No flora")
+    else:
+        ys = [[float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows] for fid in ordered]
+        labels = [(flora_names or {}).get(fid, f"Flora {fid}") for fid in ordered]
+        colours = [_FLORA_COLOURS[i % len(_FLORA_COLOURS)] for i, _ in enumerate(ordered)]
+        ax.stackplot(ticks, ys, labels=labels, colors=colours, alpha=0.35)
+        for i, series in enumerate(ys):
+            ax.plot(ticks, series, color=colours[i], linewidth=0.9, alpha=0.7)
+
+    ax.set_xlabel(x_label or "Tick")
+    ax.set_ylabel(y_label or "Stacked biomass proxy")
+    ax.set_title(title or "PHIDS - Systemic Carrying Capacity")
+    ax.legend(fontsize=8, loc="upper left")
+    ax.grid(True, alpha=0.3)
+
+
 # ---------------------------------------------------------------------------
 # PGFPlots / TikZ export (LaTeX-compilable, no tikzplotlib dependency)
 # ---------------------------------------------------------------------------
@@ -475,7 +587,8 @@ def generate_tikz_str(
 
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
-        plot_type: Chart mode — ``"timeseries"`` or ``"phasespace"``.
+        plot_type: Chart mode — ``"timeseries"``, ``"phasespace"``,
+            ``"defense_economy"``, or ``"biomass_stack"``.
         flora_names: Optional display names keyed by flora species id.
         predator_names: Optional display names keyed by predator species id.
         prey_species_id: Flora species id for phase-space x-axis.
@@ -485,7 +598,7 @@ def generate_tikz_str(
         str: LaTeX source code for a complete ``tikzpicture`` environment.
 
     Raises:
-        ValueError: If ``plot_type`` is not ``"timeseries"`` or ``"phasespace"``.
+        ValueError: If ``plot_type`` is not a supported chart mode.
     """
     plot_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
     if plot_type == "timeseries":
@@ -508,7 +621,25 @@ def generate_tikz_str(
             x_label=x_label,
             y_label=y_label,
         )
-    raise ValueError(f"Unknown plot_type '{plot_type}'; expected 'timeseries' or 'phasespace'")
+    if plot_type == "defense_economy":
+        return _tikz_defense_economy(
+            plot_rows,
+            flora_names=flora_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
+    if plot_type == "biomass_stack":
+        return _tikz_biomass_stack(
+            plot_rows,
+            flora_names=flora_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
+    raise ValueError(
+        f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, or biomass_stack"
+    )
 
 
 def _tikz_timeseries(
@@ -621,6 +752,118 @@ def _tikz_phasespace(
         "]\n"
         f"    \\addplot[color=violet!70!black, thick, mark=none] coordinates {{{coords}}};\n"
         "\\end{axis}\n\\end{tikzpicture}"
+    )
+
+
+def _tikz_defense_economy(
+    rows: list[dict[str, Any]],
+    *,
+    flora_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> str:
+    """Build PGFPlots code for per-species defense economy trajectories.
+
+    Args:
+        rows: Raw telemetry rows.
+        flora_names: Optional display names for flora species.
+        title: Optional chart title override.
+        x_label: Optional x-axis label override.
+        y_label: Optional y-axis label override.
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source.
+    """
+    all_flora: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_energy_by_species", {}).keys())
+        all_flora.update(r.get("defense_cost_by_species", {}).keys())
+
+    flora_colours = ["green!60!black", "lime!80!black", "teal", "green!40!black", "olive"]
+    plots = []
+    for i, fid in enumerate(sorted(all_flora)):
+        colour = flora_colours[i % len(flora_colours)]
+        name = (flora_names or {}).get(fid, f"Flora {fid}")
+        coords_parts = []
+        for r in rows:
+            tick = r.get("tick", 0)
+            defense = float(r.get("defense_cost_by_species", {}).get(fid, 0.0))
+            energy = float(r.get("plant_energy_by_species", {}).get(fid, 0.0))
+            ratio = defense / energy if energy > 0.0 else 0.0
+            coords_parts.append(f"({tick},{ratio})")
+        coords = " ".join(coords_parts)
+        plots.append(
+            f"    \\addplot[color={colour}, thick] coordinates {{{coords}}};\n"
+            f"    \\addlegendentry{{{name}}}"
+        )
+
+    body = "\n".join(plots)
+    return (
+        "\\begin{tikzpicture}\n"
+        "\\begin{axis}[\n"
+        f"    xlabel={{{x_label or 'Tick'}}},\n"
+        f"    ylabel={{{y_label or 'Defense economy ratio'}}},\n"
+        f"    title={{{title or 'PHIDS -- Metabolic Defense Economy'}}},\n"
+        "    legend pos=north east,\n"
+        "    grid=major,\n"
+        "    width=12cm, height=7cm,\n"
+        "]\n"
+        + body
+        + "\n\\end{axis}\n\\end{tikzpicture}"
+    )
+
+
+def _tikz_biomass_stack(
+    rows: list[dict[str, Any]],
+    *,
+    flora_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> str:
+    """Build PGFPlots code for stacked-biomass proxy trajectories.
+
+    Args:
+        rows: Raw telemetry rows.
+        flora_names: Optional display names for flora species.
+        title: Optional chart title override.
+        x_label: Optional x-axis label override.
+        y_label: Optional y-axis label override.
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source.
+    """
+    all_flora: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_pop_by_species", {}).keys())
+
+    flora_colours = ["green!60!black", "lime!80!black", "teal", "green!40!black", "olive"]
+    plots = []
+    for i, fid in enumerate(sorted(all_flora)):
+        colour = flora_colours[i % len(flora_colours)]
+        name = (flora_names or {}).get(fid, f"Flora {fid}")
+        coords = " ".join(
+            f"({r.get('tick', 0)},{r.get('plant_pop_by_species', {}).get(fid, 0)})" for r in rows
+        )
+        plots.append(
+            f"    \\addplot+[name path={name.replace(' ', '_')}, color={colour}, thick] coordinates {{{coords}}};\n"
+            f"    \\addlegendentry{{{name}}}"
+        )
+
+    body = "\n".join(plots)
+    return (
+        "\\begin{tikzpicture}\n"
+        "\\begin{axis}[\n"
+        f"    xlabel={{{x_label or 'Tick'}}},\n"
+        f"    ylabel={{{y_label or 'Stacked biomass proxy'}}},\n"
+        f"    title={{{title or 'PHIDS -- Systemic Carrying Capacity'}}},\n"
+        "    legend pos=north east,\n"
+        "    grid=major,\n"
+        "    width=12cm, height=7cm,\n"
+        "]\n"
+        + body
+        + "\n\\end{axis}\n\\end{tikzpicture}"
     )
 
 

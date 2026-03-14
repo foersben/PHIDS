@@ -134,6 +134,18 @@ async def test_table_preview_route_renders_empty_state_without_loaded_simulation
 
 
 @pytest.mark.asyncio
+async def test_dashboard_contains_extended_telemetry_canvases() -> None:
+    """Ensures the dashboard partial exposes defense and biomass telemetry canvases."""
+    async with _default_client() as client:
+        resp = await client.get("/ui/dashboard")
+
+    assert resp.status_code == 200
+    assert 'id="ts-chart"' in resp.text
+    assert 'id="defense-chart"' in resp.text
+    assert 'id="biomass-chart"' in resp.text
+
+
+@pytest.mark.asyncio
 async def test_batch_view_renders_survival_chart_when_summary_exists(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
