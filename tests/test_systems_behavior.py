@@ -1347,6 +1347,60 @@ def test_signaling_any_of_gate_allows_alternative_enemy_or_substance_paths() -> 
     assert sub.active is True
 
 
+def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately() -> None:
+    """Validate that a swarm annihilated by a lethal toxin is immediately GC'd within the signaling phase.
+
+    This test exercises the "Ghost Swarm" invariant: when a lethal toxin emitted during
+    Phase 4 (signaling) reduces a swarm's population to zero, the swarm entity must be
+    unregistered from the spatial hash and destroyed via ``world.collect_garbage`` within
+    the same signaling tick. Without this localised garbage collection, the zero-population
+    entity would persist as an invisible ghost entry, corrupting subsequent O(1) spatial-hash
+    lookups and confounding predator-presence evaluations in ``_check_activation_condition``
+    until Phase 3 (interaction) of the following tick purged it.
+
+    The test configures a single plant-swarm pair with a lethal toxin whose ``lethality_rate``
+    is high enough to guarantee total annihilation in one tick. After ``run_signaling``, it
+    asserts that:
+    - No ``SwarmComponent`` entities remain in the ECS world.
+    - The spatial hash returns no entities at the swarm's former position.
+    - The swarm entity no longer exists in the ECS registry.
+
+    Returns:
+        None. Correctness is enforced through assertions rather than data return.
+    """
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=20.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=5)
+
+    # lethality_rate=1.0 and toxin concentration will be SUBSTANCE_EMIT_RATE (≈0.1)
+    # casualties = int(1.0 * emit_rate * 5) may be 0 for low rates, so use a very high rate
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        lethal=True,
+        lethality_rate=100.0,  # Guarantees int(100 * emit_rate * 5) >= 5 casualties
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    # The swarm must have been destroyed within this signaling tick
+    assert list(world.query(SwarmComponent)) == [], (
+        "Ghost swarm detected: zero-population swarm entity was not garbage-collected "
+        "within the signaling phase."
+    )
+    assert not world.has_entity(swarm_id), (
+        "Ghost swarm detected: swarm entity still present in ECS registry after lethal toxin kill."
+    )
+    assert world.entities_at(2, 2) == set() or swarm_id not in world.entities_at(2, 2), (
+        "Ghost swarm detected: swarm entity still registered in spatial hash after lethal toxin kill."
+    )
+
+
 def test_repelled_swarm_performs_random_walk(monkeypatch: pytest.MonkeyPatch) -> None:
     """Validates the repelled swarm performs random walk invariant and confirms the expected biological behavior under controlled simulation conditions.
 

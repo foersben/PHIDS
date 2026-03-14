@@ -36,8 +36,13 @@ def _check_activation_condition(
     owner_plant_id: int,
     activation_condition: dict[str, Any] | None,
     world: ECSWorld,
+    env: GridEnvironment,
 ) -> bool:
-    """Evaluate a nested activation predicate tree for one plant-owned substance."""
+    """Evaluate a nested activation predicate tree for one plant-owned substance.
+
+    Args:
+
+    """
     if activation_condition is None:
         return True
 
@@ -49,23 +54,34 @@ def _check_activation_condition(
             _co_located_swarm_population(world, plant.x, plant.y, predator_species_id)
             >= min_predator_population
         )
+
     if kind == "substance_active":
         substance_id = int(activation_condition.get("substance_id", -1))
         return _is_substance_active_for_owner(owner_plant_id, substance_id, world)
+
+    if kind == "environmental_signal":
+        signal_id = int(activation_condition.get("signal_id", -1))
+        min_conc = float(activation_condition.get("min_concentration", 0.01))
+        if 0 <= signal_id < env.num_signals:
+            return float(env.signal_layers[signal_id, plant.x, plant.y]) >= min_conc
+        return False
+
     if kind == "all_of":
         conditions = activation_condition.get("conditions", [])
         return bool(conditions) and all(
-            _check_activation_condition(plant, owner_plant_id, child, world)
+            _check_activation_condition(plant, owner_plant_id, child, world, env)
             for child in conditions
             if isinstance(child, dict)
         )
+
     if kind == "any_of":
         conditions = activation_condition.get("conditions", [])
         return any(
-            _check_activation_condition(plant, owner_plant_id, child, world)
+            _check_activation_condition(plant, owner_plant_id, child, world, env)
             for child in conditions
             if isinstance(child, dict)
         )
+
     return False
 
 
@@ -74,13 +90,31 @@ def _apply_toxin_to_swarms(
     env: GridEnvironment,
     world: ECSWorld,
 ) -> None:
-    """Apply lethal and repellent toxin effects to swarms at affected cells.
+    """Apply lethal and repellent toxin effects to swarms and immediately GC killed swarms.
+
+    This function constitutes the chemical-defense enforcement step within the signaling
+    phase. For each swarm co-located with a non-zero toxin concentration, lethal casualties
+    are subtracted from the swarm population according to the substance's configured
+    lethality rate. Repellent substances additionally set the ``repelled`` flag, initiating
+    a stochastic random-walk dispersal sequence in the subsequent interaction phase.
+
+    Critically, any swarm whose population reaches zero as a direct result of toxin
+    mortality is subjected to immediate localised garbage collection: its spatial-hash
+    registration is revoked via ``world.unregister_position`` and the entity is queued for
+    bulk destruction via ``world.collect_garbage``. Without this step, zero-population
+    swarm entities would persist as "ghost" entries in the spatial hash until the interaction
+    phase of the following tick purged them, thereby corrupting O(1) spatial-hash lookups and
+    confounding predator-presence evaluations in ``_check_activation_condition``.
 
     Args:
-        sub: Substance component representing the toxin.
-        env: GridEnvironment providing toxin concentrations.
-        world: ECSWorld to iterate swarms.
+        sub: Substance component representing the emitted toxin, providing lethality and
+            repellency parameters.
+        env: GridEnvironment providing per-cell toxin concentrations via
+            ``env.toxin_layers``.
+        world: ECSWorld to iterate swarms, update the spatial hash, and execute GC.
     """
+    dead_swarms: list[int] = []
+
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
         toxin_val = float(env.toxin_layers[sub.substance_id, swarm.x, swarm.y])
@@ -94,6 +128,15 @@ def _apply_toxin_to_swarms(
         if sub.repellent and not swarm.repelled:
             swarm.repelled = True
             swarm.repelled_ticks_remaining = sub.repellent_walk_ticks
+
+        # Immediate localised GC: a swarm annihilated by chemical defense must not
+        # linger as a ghost entity in the spatial hash until the next interaction tick.
+        if swarm.population <= 0:
+            world.unregister_position(entity.entity_id, swarm.x, swarm.y)
+            dead_swarms.append(entity.entity_id)
+
+    if dead_swarms:
+        world.collect_garbage(dead_swarms)
 
 
 def _co_located_swarm_population(
@@ -313,10 +356,7 @@ def run_signaling(
             sub.synthesis_remaining -= 1
         if sub.synthesis_remaining <= 0:
             if not _check_activation_condition(
-                plant,
-                sub.owner_plant_id,
-                sub.activation_condition,
-                world,
+                plant, sub.owner_plant_id, sub.activation_condition, world, env
             ):
                 continue
             sub.active = True
