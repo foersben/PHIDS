@@ -97,8 +97,8 @@ stateDiagram-v2
         [*] --> FlowField
         FlowField --> Lifecycle : compute_flow_field (numba)
         Lifecycle --> Interaction : grow / reproduce / cull
-        Interaction --> Signaling : feed / starve / mitosis
-        Signaling --> Telemetry : synthesise / diffuse / toxins
+        Interaction --> Signaling : feed / upkeep / mitosis
+        Signaling --> Telemetry : synthesise / relay / local toxins
         Telemetry --> CheckTermination : record Polars row
         CheckTermination --> FlowField : not terminated
         CheckTermination --> [*] : terminated

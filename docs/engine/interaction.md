@@ -1,8 +1,8 @@
 # Interaction
 
 The interaction system governs swarm-centered ecological behavior in PHIDS. It is the phase in
-which herbivore swarms move, feed, pay metabolic upkeep, suffer toxin losses, convert stored energy
-into new individuals, and split by mitosis when they exceed their configured population threshold.
+which herbivore swarms move, feed, pay metabolic upkeep, convert stored energy into new
+individuals, and split by mitosis when they exceed their configured population threshold.
 
 This chapter documents the current implementation in `src/phids/engine/systems/interaction.py`.
 
@@ -14,7 +14,7 @@ This ordering means that interaction currently consumes:
 
 - the flow field generated at the beginning of the tick,
 - the post-lifecycle plant distribution and plant-energy field,
-- the current toxin layers already present at that point in the tick.
+- any repelled state previously written onto swarms by signaling.
 
 It also means that signaling observes the post-interaction world, including any feeding damage,
 movement, metabolic losses, or swarm growth that happened during interaction.
@@ -45,13 +45,12 @@ In its current implementation, `run_interaction()` performs the following tasks:
 1. update movement cooldowns,
 2. move swarms via the global flow field or repelled random walk,
 3. resolve plant feeding through the spatial hash and diet matrix,
-4. apply toxin casualties from toxin layers,
-5. apply metabolic upkeep and deficit-driven attrition,
-6. cull dead swarms,
-7. convert stored energy into new individuals,
-8. trigger mitosis when the population threshold is met,
-9. garbage-collect dead swarms,
-10. rebuild the plant-energy layer.
+4. apply metabolic upkeep and deficit-driven attrition,
+5. cull dead swarms,
+6. convert stored energy into new individuals,
+7. trigger mitosis when the population threshold is met,
+8. garbage-collect dead swarms,
+9. rebuild the plant-energy layer.
 
 ## Movement Model
 
@@ -134,7 +133,7 @@ This means the interaction phase can directly remove plants from the world.
 
 The interaction phase now uses a continuous reserve model instead of a starvation tick counter.
 
-After movement/feeding and toxin processing, each swarm pays metabolic upkeep:
+After movement/feeding, each swarm pays metabolic upkeep:
 
 - `population * energy_min * energy_upkeep_per_individual`
 
@@ -144,18 +143,13 @@ If this drives `swarm.energy` below zero, the deficit is converted into casualti
 This creates a smooth depletion-and-recovery cycle where population and intake capacity naturally
 co-evolve over time.
 
-## Toxin Damage Model
+## Toxin Interaction Boundary
 
-The current interaction system also applies toxin casualties directly from `env.toxin_layers`.
+Direct toxin casualties are no longer resolved inside `run_interaction()`.
 
-For each toxin layer at the swarm’s current position:
-
-- toxin concentration is read,
-- casualties are computed as `int(toxin_val * swarm.population * TOXIN_CASUALTY_FACTOR)`,
-- population is reduced accordingly.
-
-This is an important current-state coupling: toxin effects are not confined entirely to the
-signaling module. Interaction also applies concentration-based toxin damage.
+Instead, the signaling phase is the sole authority for toxin lethality and repellence because it has
+access to the full `SubstanceComponent` configuration for each active defense. Interaction only
+observes resulting swarm state such as reduced population or active repelled-walk timers.
 
 ## Death and Garbage Collection
 

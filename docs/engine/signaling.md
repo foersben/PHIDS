@@ -16,13 +16,14 @@ configuration of the world.
 Its high-level responsibilities are:
 
 - evaluate trigger conditions,
+- garbage-collect orphaned substance entities before evaluation,
 - create and update `SubstanceComponent` entities,
 - advance synthesis timers,
 - activate substances,
 - emit signals and toxins,
 - relay signals through mycorrhizal links,
 - manage aftereffects and deactivation,
-- delegate diffusion to `GridEnvironment`.
+- delegate airborne signal diffusion to `GridEnvironment`.
 
 ## Runtime Data Model
 
@@ -47,6 +48,7 @@ values.
 
 At the beginning of each signaling pass, the system:
 
+- removes orphaned substance entities whose owner plant no longer exists,
 - clears local toxin state in the environment,
 - resets `triggered_this_tick` on all substance entities,
 - iterates over plants,
@@ -123,12 +125,13 @@ For non-toxin substances:
 For toxin substances:
 
 - the toxin layer at the owner plant’s cell is incremented,
-- toxin effects may be applied to swarms directly through `_apply_toxin_to_swarms()`,
-- toxin diffusion is still delegated to `env.diffuse_toxins()` in the current implementation.
+- toxin effects are applied to swarms directly through `_apply_toxin_to_swarms()`,
+- toxin damage is resolved once per active toxin layer per tick,
+- toxins do not diffuse through the environment.
 
-This is one of the most important current-state nuances of PHIDS: toxins are conceptually local in
-parts of the signaling design, but in the present runtime they still interact with toxin layers and
-pass through the toxin diffusion helper.
+This is one of the most important current-state nuances of PHIDS: toxin layers are rebuilt locally
+from active emitters each pass and therefore behave as plant-tissue defenses rather than airborne
+chemical clouds.
 
 ## Energy Maintenance Cost
 
@@ -182,10 +185,9 @@ defense response.
 At the end of `run_signaling()`, the system calls:
 
 - `env.diffuse_signals()`
-- `env.diffuse_toxins()`
 
-This means that final field propagation is delegated to the environmental layer subsystem rather than
-implemented inline in the signaling system.
+This means that airborne signal propagation is delegated to the environmental layer subsystem rather
+than implemented inline in the signaling system. Toxins are intentionally excluded from diffusion.
 
 ## Direct Toxin Effects
 
@@ -195,8 +197,7 @@ The signaling module also contains `_apply_toxin_to_swarms(...)`, which currentl
 - applies lethal population loss when configured,
 - toggles repelled state and repelled-walk duration when configured.
 
-This coexists with toxin-based casualty handling in the interaction phase, which is an important
-current-state coupling to keep documented accurately.
+This is the sole runtime authority for toxin damage and repellence.
 
 ## Evidence from Tests
 
@@ -217,7 +218,9 @@ Tests verify that:
 
 - toxins with nonzero aftereffect linger after trigger loss,
 - toxins with zero aftereffect stop on the next non-triggered tick,
-- irreversible toxins remain active after trigger loss.
+- irreversible toxins remain active after trigger loss,
+- ownerless substance entities are garbage-collected before they can accumulate as leaks,
+- multiple emitters of the same toxin layer do not multiply per-tick damage.
 
 ### Signal aftereffect persistence
 
@@ -245,8 +248,8 @@ communication across plants.
 
 The current implementation should be described precisely.
 
-- toxins are rebuilt locally per signaling pass, yet still pass through `env.diffuse_toxins()`,
-- toxin effects exist both in the signaling module and in the interaction module,
+- toxins are rebuilt locally per signaling pass and never diffuse,
+- toxin effects are applied only in the signaling module,
 - synthesis delay and signal aftereffect are explicit,
 - irreversible mode intentionally allows always-on defenses once activated,
 - activation conditions are powerful but still expressed as JSON-like predicate trees rather than a

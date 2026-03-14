@@ -164,7 +164,8 @@ Current-state nuance matters here:
 
 - toxin layers are rebuilt from active emitters each signaling pass,
 - active toxin effects are also applied directly to swarms through the signaling logic,
-- `env.diffuse_signals()` and `env.diffuse_toxins()` are both called at the end of the phase,
+- only `env.diffuse_signals()` is called at the end of the phase,
+- toxins remain local to emitting plant cells and do not diffuse,
 - signals and toxins both honor aftereffect persistence, and either can be configured as
   irreversible induced defenses.
 
@@ -209,8 +210,8 @@ this is most concretely implemented in `GridEnvironment`.
 ### Diffusion-layer buffering
 
 - `signal_layers` and `_signal_layers_write` form a read/write pair,
-- `toxin_layers` and `_toxin_layers_write` form a read/write pair,
-- each diffusion helper computes into the write buffer and then swaps.
+- `toxin_layers` and `_toxin_layers_write` remain pre-allocated for local toxin state,
+- only signal diffusion computes into a write buffer and then swaps.
 
 This means PHIDS currently has **field-level double-buffering** rather than a universally cloned
 entire simulation state. The engine relies on phase ordering plus buffered fields to preserve
@@ -227,8 +228,9 @@ used globally by moving swarms.
 
 ### Diffusion
 
-Signal and toxin diffusion use `scipy.signal.convolve2d` and explicitly truncate subnormal tails
-below `SIGNAL_EPSILON` to preserve sparsity and avoid performance degradation.
+Airborne signal diffusion uses `scipy.signal.convolve2d` and explicitly truncates subnormal tails
+below `SIGNAL_EPSILON` to preserve sparsity and avoid performance degradation. Toxins are rebuilt as
+local layers and therefore skip Gaussian diffusion entirely.
 
 ### Spatial queries
 

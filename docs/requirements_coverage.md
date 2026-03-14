@@ -36,8 +36,8 @@ implemented project artifacts.
 
 ## 3. Architectural and Execution Constraints
 
-- Double-buffering: read/write buffers are enforced for diffusive signal and toxin
-  layers in `src/phids/engine/core/biotope.py`.
+- Double-buffering: read/write buffers are enforced for diffusive signal layers and
+  pre-allocated local toxin layers in `src/phids/engine/core/biotope.py`.
 - Rule of 16: hard caps and pre-allocation constants are in
   `src/phids/shared/constants.py` and used across schemas/environment code.
 - ECS garbage collection: dead entities are purged via

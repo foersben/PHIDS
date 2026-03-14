@@ -109,7 +109,9 @@ buffers.
 
 ### Toxin diffusion writes
 
-Toxin diffusion uses the same read/write swap pattern via `toxin_layers` and `_toxin_layers_write`.
+Toxin layers remain pre-allocated via `toxin_layers` and `_toxin_layers_write`, but they are no
+longer propagated by an environmental diffusion helper. The signaling phase rebuilds them locally
+each tick from currently active emitters.
 
 ## Diffusion Model
 
@@ -127,18 +129,17 @@ The environment defines a precomputed Gaussian kernel through `DIFFUSION_KERNEL`
 5. write into the signal write buffer,
 6. swap read and write buffers.
 
-### Current toxin diffusion procedure
+### Toxin locality procedure
 
-`diffuse_toxins()` currently mirrors the same procedure for toxin layers.
+Toxin layers do not use Gaussian diffusion.
 
-This is a significant current-state fact: in the present implementation, toxins still pass through a
-convolution-and-roll diffusion helper, even though higher-level design intentions may treat toxins
-as more localized defenses.
+Instead, signaling clears toxin layers at the start of the phase and rewrites only the cells of
+currently active toxin-emitting plants. This keeps toxins local to plant tissue and avoids airborne
+Gaussian spread.
 
 ## Subnormal Float Mitigation
 
-After convolution and wind shifting, both signal and toxin diffusion zero out values below
-`SIGNAL_EPSILON`.
+After convolution and wind shifting, signal diffusion zeroes out values below `SIGNAL_EPSILON`.
 
 This is not cosmetic cleanup. It is a performance invariant motivated by the cost of processing
 subnormal floating-point tails. In PHIDS, sparsity preservation is part of the computational model.
@@ -205,7 +206,7 @@ The current environment model should be described precisely:
 
 - wind advection is represented by integer rolls of the convolved field,
 - diffusion is layer-based rather than particle-based,
-- toxins currently still use the diffusion helper,
+- toxins are rebuilt locally by signaling rather than passed through diffusion,
 - double-buffering is strongest at the field level rather than as a full read/write universe clone.
 
 These are important characteristics of the current scientific and computational model.

@@ -126,7 +126,7 @@ class GridEnvironment:
         self._signal_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.signal_layers)
 
         # ------------------------------------------------------------------
-        # Toxin layers  [num_toxins, W, H]
+        # Toxin layers  [num_toxins, W, H] (local plant-tissue fields)
         # ------------------------------------------------------------------
         self.toxin_layers: npt.NDArray[np.float64] = np.zeros(
             (num_toxins, width, height), dtype=np.float64
@@ -197,31 +197,6 @@ class GridEnvironment:
         self.signal_layers, self._signal_layers_write = (
             self._signal_layers_write,
             self.signal_layers,
-        )
-
-    def diffuse_toxins(self) -> None:
-        """Compute one diffusion tick for all toxin layers.
-
-        Toxins diffuse using the same kernel as signals. Small values are
-        zeroed using the same epsilon threshold.
-        """
-        mean_vx: int = int(round(float(self.wind_vector_x.mean())))
-        mean_vy: int = int(round(float(self.wind_vector_y.mean())))
-
-        for t in range(self.num_toxins):
-            layer: npt.NDArray[np.float64] = self.toxin_layers[t]
-            convolved: npt.NDArray[np.float64] = convolve2d(
-                layer, DIFFUSION_KERNEL, mode="same", boundary="fill", fillvalue=0.0
-            )
-            shifted: npt.NDArray[np.float64] = np.roll(
-                np.roll(convolved, mean_vx, axis=0), mean_vy, axis=1
-            )
-            shifted[shifted < SIGNAL_EPSILON] = 0.0
-            self._toxin_layers_write[t] = shifted
-
-        self.toxin_layers, self._toxin_layers_write = (
-            self._toxin_layers_write,
-            self.toxin_layers,
         )
 
     # ------------------------------------------------------------------

@@ -1,9 +1,9 @@
-"""Signaling system: substance synthesis, activation and toxin effects.
+"""Signaling system: substance synthesis, activation and local toxin effects.
 
 This module manages the lifecycle of VOC signals and defensive toxins,
 including trigger evaluation via the spatial hash, synthesis countdowns,
-delegation of airborne diffusion to :class:`GridEnvironment`, mycorrhizal
-signal relays and application of toxin effects to swarms.
+delegation of airborne signal diffusion to :class:`GridEnvironment`,
+mycorrhizal signal relays and application of toxin effects to swarms.
 """
 
 from __future__ import annotations
@@ -192,9 +192,21 @@ def run_signaling(
 
     dead_substances: list[int] = []
 
-    # Toxins are rebuilt from currently active emitters each signaling pass.
-    # Non-triggered toxins remain active only through configured aftereffects
-    # (or indefinitely when irreversible=True).
+    # ------------------------------------------------------------------
+    # 0. Garbage-collect orphaned substances before any trigger checks
+    # ------------------------------------------------------------------
+    for entity in list(world.query(SubstanceComponent)):
+        sub = entity.get_component(SubstanceComponent)
+        if not world.has_entity(sub.owner_plant_id):
+            dead_substances.append(entity.entity_id)
+
+    world.collect_garbage(dead_substances)
+    dead_substances.clear()
+
+    # Toxins are rebuilt from currently active emitters each signaling pass
+    # and remain local to living plant tissue. Non-triggered toxins remain
+    # active only through configured aftereffects (or indefinitely when
+    # irreversible=True).
     env.toxin_layers[:] = 0.0
     env._toxin_layers_write[:] = 0.0
 
@@ -315,6 +327,8 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 3. Emit active signals / toxins into environment layers
     # ------------------------------------------------------------------
+    active_toxin_types: dict[int, SubstanceComponent] = {}
+
     for entity in list(world.query(SubstanceComponent)):
         sub = entity.get_component(SubstanceComponent)
         if not sub.active:
@@ -346,8 +360,7 @@ def run_signaling(
                     float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
                     + SUBSTANCE_EMIT_RATE,
                 )
-            # Apply toxin effects to nearby swarms
-            _apply_toxin_to_swarms(sub, env, world)
+                active_toxin_types.setdefault(sub.substance_id, sub)
         else:
             if sub.substance_id < env.num_signals:
                 env.signal_layers[sub.substance_id, plant.x, plant.y] = min(
@@ -366,6 +379,9 @@ def run_signaling(
                 signal_velocity,
                 tick,
             )
+
+    for sub in active_toxin_types.values():
+        _apply_toxin_to_swarms(sub, env, world)
 
     # ------------------------------------------------------------------
     # 4. Check aftereffects and deactivate expired substances
@@ -401,7 +417,6 @@ def run_signaling(
     # 5. Diffusion (delegated to GridEnvironment)
     # ------------------------------------------------------------------
     env.diffuse_signals()
-    env.diffuse_toxins()
 
     # ------------------------------------------------------------------
     # 6. Garbage collect expired substance entities

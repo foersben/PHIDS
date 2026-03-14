@@ -691,6 +691,33 @@ def test_signaling_owner_death_stops_emission_and_existing_signal_decays() -> No
     assert list(world.query(SubstanceComponent)) == []
 
 
+def test_signaling_preemptively_collects_inactive_orphaned_substances() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    plant_id = _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    sub_entity = world.create_entity()
+    world.add_component(
+        sub_entity.entity_id,
+        SubstanceComponent(
+            entity_id=sub_entity.entity_id,
+            substance_id=1,
+            owner_plant_id=plant_id,
+            is_toxin=True,
+            synthesis_duration=2,
+            synthesis_remaining=1,
+            active=False,
+        ),
+    )
+
+    world.unregister_position(plant_id, 2, 2)
+    world.collect_garbage([plant_id])
+
+    run_signaling(world, env, {}, False, 1, 0)
+
+    assert list(world.query(SubstanceComponent)) == []
+
+
 def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> None:
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
@@ -718,6 +745,67 @@ def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> N
     run_signaling(world, env, {0: [trigger]}, False, 1, 2)
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
+
+
+def test_signaling_applies_toxin_damage_once_per_active_layer() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=6, height=6, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 1, 1, species_id=0, energy=12.0)
+    _add_plant(world, 4, 4, species_id=0, energy=12.0)
+    swarm_a_id = _add_swarm(world, 1, 1, species_id=0, pop=10)
+    swarm_b_id = _add_swarm(world, 4, 4, species_id=0, pop=10)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        lethal=True,
+        lethality_rate=2.0,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    swarm_a = world.get_entity(swarm_a_id).get_component(SwarmComponent)
+    swarm_b = world.get_entity(swarm_b_id).get_component(SwarmComponent)
+    assert swarm_a.population == 8
+    assert swarm_b.population == 8
+    assert float(env.toxin_layers[1, 1, 1]) > 0.0
+    assert float(env.toxin_layers[1, 4, 4]) > 0.0
+
+
+def test_signaling_toxins_remain_local_and_do_not_diffuse() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        aftereffect_ticks=1,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    assert float(env.toxin_layers[1, 2, 2]) > 0.0
+    assert float(env.toxin_layers[1, 2, 3]) == 0.0
+    assert float(env.toxin_layers[1, 3, 2]) == 0.0
+
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+
+    assert float(env.toxin_layers[1, 2, 2]) > 0.0
+    assert float(env.toxin_layers[1, 2, 3]) == 0.0
+    assert float(env.toxin_layers[1, 3, 2]) == 0.0
 
 
 def test_signaling_precursor_gate_blocks_activation() -> None:

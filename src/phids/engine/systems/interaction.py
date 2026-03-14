@@ -1,9 +1,9 @@
-"""Interaction system: swarm movement, feeding, energy economy and toxin effects.
+"""Interaction system: swarm movement, feeding and continuous energy economy.
 
 This module implements swarm behaviour including movement (gradient
 navigation or random walk), feeding using the diet compatibility matrix,
-metabolic attrition, mitosis and application of toxin effects. Spatial
-hash lookups provide O(1) co-occupancy checks.
+metabolic attrition and mitosis. Spatial hash lookups provide O(1)
+co-occupancy checks.
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
-from phids.shared.constants import TOXIN_CASUALTY_FACTOR
 
 
 def _choose_neighbour_by_flow_probability(
@@ -217,19 +216,7 @@ def run_interaction(
                     world.collect_garbage([co_eid])
 
         # ----------------------------------------------------------------
-        # 4. Lethal toxin damage at current cell (from toxin_layers)
-        # ----------------------------------------------------------------
-        for t_idx in range(env.num_toxins):
-            toxin_val = float(env.toxin_layers[t_idx, swarm.x, swarm.y])
-            if toxin_val > 0.0:
-                # Each toxin layer can cause casualties; handled by signaling system
-                # which writes the lethality_rate into toxin_layers scaled values.
-                # Here we apply a generic casualty proportional to concentration.
-                casualties = int(toxin_val * swarm.population * TOXIN_CASUALTY_FACTOR)
-                swarm.population = max(0, swarm.population - casualties)
-
-        # ----------------------------------------------------------------
-        # 5. Metabolic upkeep and deficit attrition
+        # 4. Metabolic upkeep and deficit attrition
         # ----------------------------------------------------------------
         metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual
         swarm.energy -= metabolic_cost
@@ -243,7 +230,7 @@ def run_interaction(
             swarm.energy = 0.0
 
         # ----------------------------------------------------------------
-        # 6. Death check
+        # 5. Death check
         # ----------------------------------------------------------------
         if swarm.population <= 0:
             world.unregister_position(entity.entity_id, swarm.x, swarm.y)
@@ -251,7 +238,7 @@ def run_interaction(
             continue
 
         # ----------------------------------------------------------------
-        # 7. Reproduction: convert only swarm-scale surplus energy into growth
+        # 6. Reproduction: convert only swarm-scale surplus energy into growth
         # ----------------------------------------------------------------
         reproduction_threshold = max(
             swarm.energy_min,
@@ -263,7 +250,7 @@ def run_interaction(
             swarm.energy -= new_individuals * reproduction_threshold
 
         # ----------------------------------------------------------------
-        # 8. Mitosis
+        # 7. Mitosis
         # ----------------------------------------------------------------
         split_threshold = (
             swarm.split_population_threshold
