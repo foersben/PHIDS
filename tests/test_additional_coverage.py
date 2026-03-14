@@ -393,6 +393,7 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda a, b: next(values))
     blocked = _attempt_reproduction(blocked_parent, 5, blocked_world, env, flora_params)
     assert blocked == []
+    assert blocked_parent.energy == pytest.approx(10.0)
 
     low_energy_parent = PlantComponent(
         entity_id=99,
@@ -410,6 +411,25 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
         seed_energy_cost=2.0,
     )
     assert _attempt_reproduction(low_energy_parent, 5, blocked_world, env, flora_params) == []
+
+    threshold_parent = PlantComponent(
+        entity_id=100,
+        species_id=0,
+        x=0,
+        y=0,
+        energy=2.5,
+        max_energy=20.0,
+        base_energy=10.0,
+        growth_rate=5.0,
+        survival_threshold=1.0,
+        reproduction_interval=1,
+        seed_min_dist=1.0,
+        seed_max_dist=1.0,
+        seed_energy_cost=2.0,
+    )
+    threshold_parent.last_reproduction_tick = -10
+    assert _attempt_reproduction(threshold_parent, 5, blocked_world, env, flora_params) == []
+    assert threshold_parent.energy == pytest.approx(2.5)
 
 
 def test_newborn_reproduction_respects_cooldown_and_energy_constraints(

@@ -8,6 +8,8 @@
     {% if latest_metrics %}
     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">flora {{ latest_metrics.flora_population }}</span>
     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">predators {{ latest_metrics.predator_population }}</span>
+    {% set plant_death_total = latest_metrics.death_reproduction + latest_metrics.death_mycorrhiza + latest_metrics.death_defense_maintenance + latest_metrics.death_herbivore_feeding + latest_metrics.death_background_deficit %}
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">plant deaths {{ plant_death_total }}</span>
     {% endif %}
   </div>
   {% endif %}

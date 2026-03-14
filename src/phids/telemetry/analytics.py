@@ -31,12 +31,18 @@ class TelemetryRecorder:
         self._rows: list[dict[str, Any]] = []
         self._df: pl.DataFrame | None = None
 
-    def record(self, world: ECSWorld, tick: int) -> None:
+    def record(
+        self,
+        world: ECSWorld,
+        tick: int,
+        plant_death_causes: dict[str, int] | None = None,
+    ) -> None:
         """Snapshot current metrics and append to the internal buffer.
 
         Args:
             world: The ECS world to sample entity components from.
             tick: Current simulation tick index.
+            plant_death_causes: Per-tick plant death diagnostics keyed by cause.
         """
         total_flora_energy = 0.0
         flora_population = 0
@@ -52,6 +58,17 @@ class TelemetryRecorder:
             predator_clusters += 1
             predator_population += swarm.population
 
+        death_counts = {
+            "death_reproduction": 0,
+            "death_mycorrhiza": 0,
+            "death_defense_maintenance": 0,
+            "death_herbivore_feeding": 0,
+            "death_background_deficit": 0,
+        }
+        if plant_death_causes is not None:
+            for key in death_counts:
+                death_counts[key] = int(plant_death_causes.get(key, 0))
+
         self._rows.append(
             {
                 "tick": tick,
@@ -59,6 +76,7 @@ class TelemetryRecorder:
                 "flora_population": flora_population,
                 "predator_clusters": predator_clusters,
                 "predator_population": predator_population,
+                **death_counts,
             }
         )
         self._df = None  # invalidate cache
@@ -92,6 +110,11 @@ class TelemetryRecorder:
                         "flora_population": pl.Series([], dtype=pl.Int64),
                         "predator_clusters": pl.Series([], dtype=pl.Int64),
                         "predator_population": pl.Series([], dtype=pl.Int64),
+                        "death_reproduction": pl.Series([], dtype=pl.Int64),
+                        "death_mycorrhiza": pl.Series([], dtype=pl.Int64),
+                        "death_defense_maintenance": pl.Series([], dtype=pl.Int64),
+                        "death_herbivore_feeding": pl.Series([], dtype=pl.Int64),
+                        "death_background_deficit": pl.Series([], dtype=pl.Int64),
                     }
                 )
         return self._df

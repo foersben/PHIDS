@@ -176,6 +176,7 @@ def run_signaling(
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
     tick: int,
+    plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.
 
@@ -191,6 +192,8 @@ def run_signaling(
     from phids.api.schemas import TriggerConditionSchema  # avoid circular at module level
 
     dead_substances: list[int] = []
+    dead_plants: list[int] = []
+    dead_plant_ids: set[int] = set()
 
     # ------------------------------------------------------------------
     # 0. Garbage-collect orphaned substances before any trigger checks
@@ -347,11 +350,38 @@ def run_signaling(
             continue
 
         plant = owner_entity.get_component(PlantComponent)
+        if plant.entity_id in dead_plant_ids:
+            sub.active = False
+            dead_substances.append(entity.entity_id)
+            continue
 
         # --- Energy maintenance cost (Section 4: continuous depletion) ---
+        if (
+            sub.energy_cost_per_tick > 0.0
+            and not sub.triggered_this_tick
+            and not sub.irreversible
+            and (plant.energy - sub.energy_cost_per_tick) < plant.survival_threshold
+        ):
+            sub.active = False
+            sub.aftereffect_remaining_ticks = 0
+            continue
+
         if sub.energy_cost_per_tick > 0.0:
             plant.energy -= sub.energy_cost_per_tick
             env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+            plant.last_energy_loss_cause = "death_defense_maintenance"
+            if plant.energy < plant.survival_threshold:
+                if plant_death_causes is not None:
+                    plant_death_causes["death_defense_maintenance"] = (
+                        plant_death_causes.get("death_defense_maintenance", 0) + 1
+                    )
+                env.clear_plant_energy(plant.x, plant.y, plant.species_id)
+                world.unregister_position(plant.entity_id, plant.x, plant.y)
+                dead_plants.append(plant.entity_id)
+                dead_plant_ids.add(plant.entity_id)
+                sub.active = False
+                dead_substances.append(entity.entity_id)
+                continue
 
         if sub.is_toxin:
             if sub.substance_id < env.num_toxins:
@@ -398,6 +428,10 @@ def run_signaling(
 
         owner_entity = world.get_entity(sub.owner_plant_id)
         plant = owner_entity.get_component(PlantComponent)
+        if plant.entity_id in dead_plant_ids:
+            sub.active = False
+            dead_substances.append(entity.entity_id)
+            continue
 
         if sub.triggered_this_tick:
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
@@ -421,4 +455,5 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 6. Garbage collect expired substance entities
     # ------------------------------------------------------------------
+    world.collect_garbage(dead_plants)
     world.collect_garbage(dead_substances)

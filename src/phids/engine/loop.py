@@ -331,6 +331,13 @@ class SimulationLoop:
 
             debug_summary = self._should_log_debug_summary()
             phase_timings_ms: dict[str, float] = {}
+            plant_death_causes = {
+                "death_reproduction": 0,
+                "death_mycorrhiza": 0,
+                "death_defense_maintenance": 0,
+                "death_herbivore_feeding": 0,
+                "death_background_deficit": 0,
+            }
             phase_started = time.perf_counter()
 
             # --------------------------------------------------------
@@ -363,6 +370,7 @@ class SimulationLoop:
                 mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
                 mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
                 mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
+                plant_death_causes=plant_death_causes,
             )
             if debug_summary:
                 phase_timings_ms["lifecycle"] = (time.perf_counter() - phase_started) * 1000.0
@@ -371,7 +379,13 @@ class SimulationLoop:
             # --------------------------------------------------------
             # Phase 3: Interaction (movement, feeding, starvation, mitosis)
             # --------------------------------------------------------
-            run_interaction(self.world, self.env, self._diet_matrix, self.tick)
+            run_interaction(
+                self.world,
+                self.env,
+                self._diet_matrix,
+                self.tick,
+                plant_death_causes=plant_death_causes,
+            )
             if debug_summary:
                 phase_timings_ms["interaction"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
@@ -386,6 +400,7 @@ class SimulationLoop:
                 self.config.mycorrhizal_inter_species,
                 self.config.mycorrhizal_signal_velocity,
                 self.tick,
+                plant_death_causes=plant_death_causes,
             )
             if debug_summary:
                 phase_timings_ms["signaling"] = (time.perf_counter() - phase_started) * 1000.0
@@ -394,7 +409,7 @@ class SimulationLoop:
             # --------------------------------------------------------
             # Phase 5: Telemetry
             # --------------------------------------------------------
-            self.telemetry.record(self.world, self.tick)
+            self.telemetry.record(self.world, self.tick, plant_death_causes=plant_death_causes)
             self.replay.append(self.get_state_snapshot())
             latest_metrics = self.telemetry.get_latest_metrics()
             if debug_summary:

@@ -136,6 +136,7 @@ def run_interaction(
     env: GridEnvironment,
     diet_matrix: list[list[bool]],
     tick: int,
+    plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one interaction tick for all swarm entities.
 
@@ -204,13 +205,21 @@ def run_interaction(
                 if not (plant.species_id < len(pred_row) and pred_row[plant.species_id]):
                     continue
 
-                consumed = min(swarm.consumption_rate * swarm.population, plant.energy)
+                effective_velocity = max(1, swarm.velocity)
+                consumed = min(
+                    (swarm.consumption_rate / effective_velocity) * swarm.population,
+                    plant.energy,
+                )
                 plant.energy -= consumed
                 env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
                 swarm.energy += consumed
 
                 # Kill plant if energy below threshold
                 if plant.energy < plant.survival_threshold:
+                    if plant_death_causes is not None:
+                        plant_death_causes["death_herbivore_feeding"] = (
+                            plant_death_causes.get("death_herbivore_feeding", 0) + 1
+                        )
                     env.clear_plant_energy(plant.x, plant.y, plant.species_id)
                     world.unregister_position(co_eid, plant.x, plant.y)
                     world.collect_garbage([co_eid])

@@ -29,6 +29,8 @@ class PlantComponent:
         camouflage: Whether constitutive camouflage is active.
         camouflage_factor: Gradient multiplier when camouflaged.
         last_reproduction_tick: Tick of the most recent reproduction.
+        last_energy_loss_cause: Most recent energetically relevant action label
+            used for death diagnostics attribution.
         mycorrhizal_connections: Set of connected plant entity ids.
     """
 
@@ -48,4 +50,5 @@ class PlantComponent:
     camouflage: bool = False
     camouflage_factor: float = 1.0
     last_reproduction_tick: int = 0
+    last_energy_loss_cause: str | None = None
     mycorrhizal_connections: set[int] = field(default_factory=set)

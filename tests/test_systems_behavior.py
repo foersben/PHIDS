@@ -136,18 +136,54 @@ def test_lifecycle_respects_interspecies_connection_switch() -> None:
     assert p2 not in plant1.mycorrhizal_connections
 
 
-def test_lifecycle_mycorrhiza_grows_one_link_per_interval() -> None:
+def test_lifecycle_mycorrhiza_does_not_spend_last_surplus_energy() -> None:
     world = ECSWorld()
-    env = GridEnvironment(width=6, height=4, num_signals=1, num_toxins=1)
+    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
+
+    p1 = _add_plant(world, 1, 1, species_id=0, energy=1.5)
+    p2 = _add_plant(world, 2, 1, species_id=0, energy=1.5)
+
+    for entity_id in (p1, p2):
+        plant = world.get_entity(entity_id).get_component(PlantComponent)
+        plant.growth_rate = 0.0
+        plant.reproduction_interval = 999
+        plant.seed_energy_cost = 999.0
+
+    run_lifecycle(
+        world,
+        env,
+        tick=0,
+        flora_species_params={0: _flora_params(0)},
+        mycorrhizal_connection_cost=1.0,
+        mycorrhizal_growth_interval_ticks=1,
+        mycorrhizal_inter_species=False,
+    )
+
+    plant1 = world.get_entity(p1).get_component(PlantComponent)
+    plant2 = world.get_entity(p2).get_component(PlantComponent)
+    assert plant1.mycorrhizal_connections == set()
+    assert plant2.mycorrhizal_connections == set()
+    assert plant1.energy == pytest.approx(1.5)
+    assert plant2.energy == pytest.approx(1.5)
+
+
+def test_lifecycle_mycorrhiza_respects_interval_and_forms_parallel_pairs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=8, height=4, num_signals=1, num_toxins=1)
 
     p1 = _add_plant(world, 1, 1, species_id=0, energy=12.0)
     p2 = _add_plant(world, 2, 1, species_id=0, energy=12.0)
-    p3 = _add_plant(world, 3, 1, species_id=0, energy=12.0)
+    p3 = _add_plant(world, 5, 1, species_id=0, energy=12.0)
+    p4 = _add_plant(world, 6, 1, species_id=0, energy=12.0)
 
-    for entity_id in (p1, p2, p3):
+    for entity_id in (p1, p2, p3, p4):
         plant = world.get_entity(entity_id).get_component(PlantComponent)
         plant.reproduction_interval = 999
         plant.seed_energy_cost = 999.0
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
 
     params = {0: _flora_params(0)}
     growth_interval = 4
@@ -163,12 +199,9 @@ def test_lifecycle_mycorrhiza_grows_one_link_per_interval() -> None:
             mycorrhizal_inter_species=False,
         )
 
-    plant1 = world.get_entity(p1).get_component(PlantComponent)
-    plant2 = world.get_entity(p2).get_component(PlantComponent)
-    plant3 = world.get_entity(p3).get_component(PlantComponent)
-    assert plant1.mycorrhizal_connections == set()
-    assert plant2.mycorrhizal_connections == set()
-    assert plant3.mycorrhizal_connections == set()
+    for entity_id in (p1, p2, p3, p4):
+        plant = world.get_entity(entity_id).get_component(PlantComponent)
+        assert plant.mycorrhizal_connections == set()
 
     run_lifecycle(
         world,
@@ -183,46 +216,24 @@ def test_lifecycle_mycorrhiza_grows_one_link_per_interval() -> None:
     plant1 = world.get_entity(p1).get_component(PlantComponent)
     plant2 = world.get_entity(p2).get_component(PlantComponent)
     plant3 = world.get_entity(p3).get_component(PlantComponent)
+    plant4 = world.get_entity(p4).get_component(PlantComponent)
     first_links = {
         tuple(sorted((left, right)))
-        for left, plant in ((p1, plant1), (p2, plant2), (p3, plant3))
+        for left, plant in ((p1, plant1), (p2, plant2), (p3, plant3), (p4, plant4))
         for right in plant.mycorrhizal_connections
         if left < right
     }
-    assert first_links in ({(p1, p2)}, {(p2, p3)})
-
-    run_lifecycle(
-        world,
-        env,
-        tick=(growth_interval * 2) - 1,
-        flora_species_params=params,
-        mycorrhizal_connection_cost=1.0,
-        mycorrhizal_growth_interval_ticks=growth_interval,
-        mycorrhizal_inter_species=False,
-    )
-
-    plant2 = world.get_entity(p2).get_component(PlantComponent)
-    plant3 = world.get_entity(p3).get_component(PlantComponent)
-    plant1 = world.get_entity(p1).get_component(PlantComponent)
-    final_links = {
-        tuple(sorted((left, right)))
-        for left, plant in ((p1, plant1), (p2, plant2), (p3, plant3))
-        for right in plant.mycorrhizal_connections
-        if left < right
-    }
-    assert final_links == {(p1, p2), (p2, p3)}
-    assert plant2.mycorrhizal_connections == {p1, p3}
-    assert plant3.mycorrhizal_connections == {p2}
+    assert first_links == {(p1, p2), (p3, p4)}
 
 
-def test_lifecycle_mycorrhiza_can_select_non_top_left_candidate(
+def test_lifecycle_mycorrhiza_limits_one_new_link_per_plant_per_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     world = ECSWorld()
-    env = GridEnvironment(width=6, height=4, num_signals=1, num_toxins=1)
+    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
 
-    p1 = _add_plant(world, 1, 1, species_id=0, energy=12.0)
-    p2 = _add_plant(world, 2, 1, species_id=0, energy=12.0)
+    p1 = _add_plant(world, 2, 1, species_id=0, energy=12.0)
+    p2 = _add_plant(world, 1, 1, species_id=0, energy=12.0)
     p3 = _add_plant(world, 3, 1, species_id=0, energy=12.0)
 
     for entity_id in (p1, p2, p3):
@@ -230,7 +241,7 @@ def test_lifecycle_mycorrhiza_can_select_non_top_left_candidate(
         plant.reproduction_interval = 999
         plant.seed_energy_cost = 999.0
 
-    monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
     run_lifecycle(
         world,
         env,
@@ -241,10 +252,11 @@ def test_lifecycle_mycorrhiza_can_select_non_top_left_candidate(
         mycorrhizal_inter_species=False,
     )
 
+    plant1 = world.get_entity(p1).get_component(PlantComponent)
     plant2 = world.get_entity(p2).get_component(PlantComponent)
     plant3 = world.get_entity(p3).get_component(PlantComponent)
-    assert plant2.mycorrhizal_connections == {p3}
-    assert plant3.mycorrhizal_connections == {p2}
+    assert len(plant1.mycorrhizal_connections) == 1
+    assert plant2.mycorrhizal_connections != plant3.mycorrhizal_connections
 
 
 def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
@@ -344,6 +356,35 @@ def test_interaction_moved_swarm_does_not_feed_in_same_tick(
     assert (swarm.x, swarm.y) == (2, 0)
     assert plant.energy == pytest.approx(10.0)
     assert swarm.energy == pytest.approx(0.0)
+
+
+def test_interaction_velocity_scaled_grazing_prevents_cooldown_hyper_feeding() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=1, num_signals=1, num_toxins=1)
+
+    plant_id = _add_plant(world, 1, 0, species_id=0, energy=100.0)
+    slow_swarm_id = _add_swarm(world, 1, 0, species_id=0, pop=10)
+    fast_swarm_id = _add_swarm(world, 2, 0, species_id=0, pop=10)
+
+    slow_swarm = world.get_entity(slow_swarm_id).get_component(SwarmComponent)
+    fast_swarm = world.get_entity(fast_swarm_id).get_component(SwarmComponent)
+    slow_swarm.velocity = 5
+    slow_swarm.move_cooldown = 4
+    fast_swarm.velocity = 1
+    fast_swarm.move_cooldown = 0
+    slow_swarm.energy_upkeep_per_individual = 0.0
+    fast_swarm.energy_upkeep_per_individual = 0.0
+    slow_swarm.split_population_threshold = 1000
+    fast_swarm.split_population_threshold = 1000
+
+    run_interaction(world, env, diet_matrix=[[True]], tick=0)
+
+    plant = world.get_entity(plant_id).get_component(PlantComponent)
+    # Slow swarm feeds at a velocity-scaled rate while stationary.
+    assert slow_swarm.energy == pytest.approx(2.0)
+    # Fast swarm can only feed if co-located; this swarm is not.
+    assert fast_swarm.energy == pytest.approx(0.0)
+    assert plant.energy == pytest.approx(98.0)
 
 
 def test_interaction_mitosis_offspring_can_diverge_next_tick(
@@ -658,6 +699,43 @@ def test_signaling_signal_with_zero_aftereffect_stops_emitting_next_tick() -> No
     run_signaling(world, env, {0: [trigger]}, False, 1, 1)
 
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+    assert float(env.signal_layers[1].max()) == 0.0
+
+
+def test_signaling_aftereffect_does_not_starve_plant_without_predator() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    plant_id = _add_plant(world, 2, 2, species_id=0, energy=3.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=False,
+        aftereffect_ticks=1,
+        energy_cost_per_tick=1.5,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    plant = world.get_entity(plant_id).get_component(PlantComponent)
+    assert plant.energy == pytest.approx(1.5)
+
+    env.signal_layers[:] = 0.0
+    env._signal_layers_write[:] = 0.0
+
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+
+    plant = world.get_entity(plant_id).get_component(PlantComponent)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert plant.energy == pytest.approx(1.5)
     assert sub.active is False
     assert float(env.signal_layers[1].max()) == 0.0
 

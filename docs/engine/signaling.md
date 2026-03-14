@@ -73,6 +73,12 @@ Implemented node kinds include:
 
 This allows the runtime to express richer conditions than a simple one-cell matrix lookup.
 
+An important current limitation must be stated explicitly: there is **no** activation predicate that
+reads ambient `signal_layers[x, y]` directly. Mycorrhizally relayed or airborne signals therefore do
+not, by themselves, trigger a neighbour plant’s defense. They are visible in the environment and UI,
+but trigger logic still depends on co-located predator presence and owner-local `substance_active`
+state.
+
 ## Substance Materialization
 
 When a trigger fires for a `(plant, substance_id)` pair and no matching runtime substance entity
@@ -141,6 +147,13 @@ active tick.
 This cost is immediately written back into the environment’s plant-energy buffers via
 `env.set_plant_energy(...)`.
 
+Current self-preservation semantics are asymmetric by design. If a substance is only lingering due to
+aftereffect persistence and paying the next maintenance tick would push the plant below its
+`survival_threshold`, the substance is deactivated instead of draining the plant. By contrast, if the
+defense is still actively triggered—or is irreversible—the plant may continue paying the energetic
+cost and die from defense maintenance. That behavior is currently treated as an intentional ecological
+trade-off rather than as an engine bug.
+
 ## Mycorrhizal Relay
 
 Signals may be relayed via `_relay_signal_via_mycorrhizal(...)` to connected plants.
@@ -153,6 +166,11 @@ Current relay properties:
 - relay bypasses airborne transport by depositing directly into signal layers at connected cells.
 
 This makes root networks a distinct signaling pathway rather than just another diffusion effect.
+
+However, the current runtime should not be over-interpreted as a full systemic alarm cascade. The
+relay deposits signal concentration into neighbouring cells, but because trigger predicates do not yet
+query ambient signal concentration, the relay does not automatically cause neighbouring plants to
+synthesize their own defenses.
 
 ## Deactivation and Aftereffects
 
@@ -227,6 +245,12 @@ Tests verify that:
 Tests verify that signals can remain active for a bounded number of ticks after the triggering swarm
 is removed.
 
+### Defense-maintenance death attribution
+
+Tests also verify that non-triggered aftereffects do not continue draining a plant below its survival
+threshold once predator pressure is gone. When plants do die from active defense maintenance, the
+telemetry layer now attributes that event explicitly.
+
 ### Non-reactivation without trigger
 
 Tests verify that an inactive substance does not spontaneously reactivate without renewed triggering.
@@ -252,6 +276,7 @@ The current implementation should be described precisely.
 - toxin effects are applied only in the signaling module,
 - synthesis delay and signal aftereffect are explicit,
 - irreversible mode intentionally allows always-on defenses once activated,
+- mycorrhizal relay does not presently constitute a direct ambient-signal trigger pathway,
 - activation conditions are powerful but still expressed as JSON-like predicate trees rather than a
   separate compiled rule engine.
 

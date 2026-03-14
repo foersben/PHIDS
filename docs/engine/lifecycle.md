@@ -36,7 +36,7 @@ In its current form, `run_lifecycle()` performs the following tasks:
 3. write current plant energy into the environment,
 4. prune dead mycorrhizal links,
 5. identify and unregister dead plants,
-6. optionally establish one new mycorrhizal link,
+6. optionally establish new mycorrhizal links for disjoint plant pairs,
 7. garbage-collect dead plants,
 8. rebuild the aggregate plant-energy layer.
 
@@ -55,6 +55,7 @@ The lifecycle system operates on `PlantComponent`, which currently stores:
 - seed energy cost,
 - camouflage settings,
 - `last_reproduction_tick`,
+- `last_energy_loss_cause`,
 - `mycorrhizal_connections`.
 
 This means lifecycle is the phase that primarily updates the long-term state trajectory of plant
@@ -62,17 +63,15 @@ entities.
 
 ## Growth Model
 
-The helper `_grow(plant, tick)` applies the current growth rule:
+The helper `_grow(plant, tick)` now applies an incremental deterministic rule rather than a
+global-clock formula:
 
-- `new_energy = plant.base_energy * (1.0 + plant.growth_rate / 100.0 * tick)`
-- `plant.energy = min(new_energy, plant.max_energy)`
+- `growth_amount = plant.base_energy * (plant.growth_rate / 100.0)`
+- `plant.energy = min(plant.energy + growth_amount, plant.max_energy)`
 
-Important current-state implication:
-
-- growth is tied to `base_energy` and the current tick,
-- the result is clamped to the species-specific maximum.
-
-This is a deterministic plant-energy update, not an incremental random drift.
+This is important because late-born plants no longer inherit fictitious age from the global tick.
+Growth is now a per-tick integration of species-specific productivity and therefore remains
+compatible with the simulator’s bounded, current-state plant-energy interpretation.
 
 ## Reproduction Model
 
@@ -81,14 +80,16 @@ Reproduction is handled by `_attempt_reproduction(...)`.
 A plant may attempt reproduction only if:
 
 - enough ticks have elapsed since `last_reproduction_tick`, and
-- the plant has at least `seed_energy_cost` energy.
+- the plant can pay `seed_energy_cost` while remaining at or above its `survival_threshold`.
 
 Current behavior includes several important details.
 
-### Energy is spent regardless of success
+### Energy is only spent on valid successful placement
 
-When a plant is eligible, the seed energy cost is deducted before the system knows whether
-reproduction will succeed.
+The current implementation no longer burns seed energy on invalid reproduction attempts. Boundary
+checks, occupancy checks, and species-parameter resolution all happen before the cost is deducted.
+This means a crowded canopy no longer induces self-starvation merely because stochastic dispersal
+selects blocked cells.
 
 ### Dispersal is stochastic but bounded
 
@@ -105,7 +106,8 @@ no offspring is created.
 ### Offspring are spawned as new ECS entities
 
 When reproduction succeeds, the lifecycle system creates a new `PlantComponent`, registers it in the
-spatial hash, and writes its initial energy into the environment.
+spatial hash, writes its initial energy into the environment, and initializes the offspring’s
+`last_reproduction_tick` to its birth tick so newborns cannot bypass the species-specific cooldown.
 
 ## Mycorrhizal Networking
 
@@ -131,17 +133,21 @@ When root growth is attempted, `_establish_mycorrhizal_connections(...)`:
 - sorts plants deterministically by `(y, x, species_id, entity_id)`,
 - only checks forward neighbors `(1, 0)` and `(0, 1)`.
 
-This ensures gradual, deterministic network formation rather than uncontrolled saturation.
+This ensures deterministic candidate enumeration even though more than one disjoint pair may now
+form during the same permitted growth tick.
 
-### At most one new link per allowed attempt
+### Parallel but bounded growth
 
-The current implementation establishes **at most one** new root link per invocation.
-
-This is one of the most important current-state properties of the mycorrhizal model.
+The current implementation no longer uses a single global root-growth token. Instead, each plant may
+form at most one new link during an eligible growth pass, provided the participating pair is disjoint
+from pairs already formed that tick. This allows sparse and dense biotopes to expand their root
+networks in parallel while still preventing one plant from opening an arbitrary number of new links
+in a single lifecycle pass.
 
 ### Link costs
 
-Both participating plants must be able to pay `connection_cost`. When the link is formed:
+Both participating plants must be able to pay `connection_cost` **and remain above their individual
+`survival_threshold` values after paying it**. When the link is formed:
 
 - each plant loses the configured energy amount,
 - both plants receive the bidirectional connection,
@@ -164,6 +170,10 @@ If so, the current implementation:
 - marks the plant for later garbage collection.
 
 Actual destruction is deferred until after the full plant pass completes.
+
+The lifecycle phase also records the most recent energetically relevant action in
+`last_energy_loss_cause`. When a plant is culled here, that marker is used to attribute the immediate
+death cause to reproduction, mycorrhizal growth, or background deficit in the telemetry layer.
 
 ## Read/Write Boundary
 
@@ -211,10 +221,10 @@ connections.
 
 Tests verify that the inter-species switch blocks cross-species links when disabled.
 
-### One-link-per-interval growth
+### Interval-gated parallel root growth
 
-Tests verify that no links form before the configured interval and that only one new link is added
-per permitted growth opportunity.
+Tests verify that no links form before the configured interval, that disjoint pairs can form in the
+same eligible tick, and that an individual plant still forms at most one new link per growth pass.
 
 ### Environmental energy rebuild behavior
 

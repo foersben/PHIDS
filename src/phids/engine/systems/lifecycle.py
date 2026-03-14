@@ -51,12 +51,8 @@ def _attempt_reproduction(
 
     if (tick - plant.last_reproduction_tick) < plant.reproduction_interval:
         return []
-    if plant.energy < plant.seed_energy_cost:
+    if (plant.energy - plant.seed_energy_cost) < plant.survival_threshold:
         return []
-
-    # Deduct energy regardless of success
-    plant.energy -= plant.seed_energy_cost
-    plant.last_reproduction_tick = tick
 
     # Choose a random seed location within [d_min, d_max]
     angle = random.uniform(0, 2 * math.pi)
@@ -79,6 +75,10 @@ def _attempt_reproduction(
     if not isinstance(params_raw, FloraSpeciesParams):
         return []
     params: FloraSpeciesParams = params_raw
+
+    plant.energy -= plant.seed_energy_cost
+    plant.last_reproduction_tick = tick
+    plant.last_energy_loss_cause = "death_reproduction"
 
     new_entity = world.create_entity()
     new_plant = PlantComponent(
@@ -111,14 +111,16 @@ def _establish_mycorrhizal_connections(
     connection_cost: float,
     inter_species: bool,
     excluded_entity_ids: set[int] | None = None,
+    plant_death_causes: dict[str, int] | None = None,
 ) -> bool:
     """Establish bidirectional root connections between adjacent plants.
 
     Plants located at Manhattan distance 1 may form symbiotic root
-    connections.  Each new connection costs ``connection_cost`` energy
-    deducted from both participants.  Inter-species links are only created
-    when ``inter_species`` is True. To keep growth gradual, the function
-    establishes at most one new connection per invocation.
+    connections. Each new connection costs ``connection_cost`` energy
+    deducted from both participants. Inter-species links are only created
+    when ``inter_species`` is True. During one growth invocation, each plant
+    can establish at most one new connection so disjoint pairs can grow in
+    parallel without a single global bottleneck.
 
     Args:
         world: ECSWorld registry.
@@ -144,38 +146,50 @@ def _establish_mycorrhizal_connections(
     for p in plants:
         pos_index.setdefault((p.x, p.y), []).append(p)
 
-    candidate_pairs: list[tuple[PlantComponent, PlantComponent]] = []
+    formed_this_tick: set[int] = set()
+    made_connection = False
 
     for plant in plants:
-        for dx, dy in ((1, 0), (0, 1)):
+        if plant.entity_id in formed_this_tick:
+            continue
+        if (plant.energy - connection_cost) < plant.survival_threshold:
+            continue
+
+        neighbours: list[PlantComponent] = []
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             nx, ny = plant.x + dx, plant.y + dy
             if not (0 <= nx < env.width and 0 <= ny < env.height):
                 continue
             for neighbour in pos_index.get((nx, ny), []):
                 if neighbour.entity_id == plant.entity_id:
                     continue
-                # Already connected
+                if neighbour.entity_id in formed_this_tick:
+                    continue
                 if neighbour.entity_id in plant.mycorrhizal_connections:
                     continue
-                # Species restriction
                 if not inter_species and neighbour.species_id != plant.species_id:
                     continue
-                # Both plants must afford the connection cost
-                if plant.energy < connection_cost or neighbour.energy < connection_cost:
+                if (neighbour.energy - connection_cost) < neighbour.survival_threshold:
                     continue
-                candidate_pairs.append((plant, neighbour))
+                neighbours.append(neighbour)
 
-    if not candidate_pairs:
-        return False
+        if not neighbours:
+            continue
 
-    plant, neighbour = random.choice(candidate_pairs)
-    plant.mycorrhizal_connections.add(neighbour.entity_id)
-    neighbour.mycorrhizal_connections.add(plant.entity_id)
-    plant.energy -= connection_cost
-    neighbour.energy -= connection_cost
-    env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
-    env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
-    return True
+        neighbour = random.choice(neighbours)
+        plant.mycorrhizal_connections.add(neighbour.entity_id)
+        neighbour.mycorrhizal_connections.add(plant.entity_id)
+        plant.energy -= connection_cost
+        neighbour.energy -= connection_cost
+        plant.last_energy_loss_cause = "death_mycorrhiza"
+        neighbour.last_energy_loss_cause = "death_mycorrhiza"
+        formed_this_tick.add(plant.entity_id)
+        formed_this_tick.add(neighbour.entity_id)
+        env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+        env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
+        made_connection = True
+
+    return made_connection
 
 
 def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) -> bool:
@@ -196,6 +210,7 @@ def run_lifecycle(
     mycorrhizal_connection_cost: float = 1.0,
     mycorrhizal_growth_interval_ticks: int = 8,
     mycorrhizal_inter_species: bool = False,
+    plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one lifecycle tick: grow, connect, reproduce, and cull.
 
@@ -213,6 +228,7 @@ def run_lifecycle(
 
     for entity in list(world.query(PlantComponent)):
         plant: PlantComponent = entity.get_component(PlantComponent)
+        plant.last_energy_loss_cause = None
 
         # Growth
         _grow(plant, tick)
@@ -230,6 +246,9 @@ def run_lifecycle(
 
         # Survival check
         if plant.energy < plant.survival_threshold:
+            cause_key = plant.last_energy_loss_cause or "death_background_deficit"
+            if plant_death_causes is not None:
+                plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
             env.clear_plant_energy(plant.x, plant.y, plant.species_id)
             world.unregister_position(entity.entity_id, plant.x, plant.y)
             dead.append(entity.entity_id)
@@ -242,6 +261,7 @@ def run_lifecycle(
             mycorrhizal_connection_cost,
             mycorrhizal_inter_species,
             excluded_entity_ids=set(dead),
+            plant_death_causes=plant_death_causes,
         )
 
     world.collect_garbage(dead)

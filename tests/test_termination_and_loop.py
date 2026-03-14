@@ -147,6 +147,10 @@ def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
     assert loop.tick == before_tick + 1
     assert len(loop.replay) == 1
     assert loop.telemetry.dataframe.height >= 1
+    latest = loop.telemetry.get_latest_metrics()
+    assert latest is not None
+    assert "death_herbivore_feeding" in latest
+    assert "death_defense_maintenance" in latest
 
 
 def test_simulation_loop_terminates_when_z1_reached(caplog) -> None:

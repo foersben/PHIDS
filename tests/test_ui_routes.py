@@ -279,6 +279,7 @@ async def test_model_diagnostics_and_telemetry_refresh_context() -> None:
 
     assert model_resp.status_code == 200
     assert "Latest telemetry" in model_resp.text
+    assert "Plant death diagnostics" in model_resp.text
     assert "Energy deficit watch" in model_resp.text
     assert telemetry_resp.status_code == 200
     assert "tick 1" in telemetry_resp.text

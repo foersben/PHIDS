@@ -32,7 +32,8 @@ intermediate state.
 
 ## Recorded Fields
 
-The current implementation records exactly five columns per tick.
+The current implementation records the core population/resource metrics together with per-tick plant
+death diagnostics.
 
 ### `tick`
 
@@ -54,6 +55,16 @@ The count of live swarm entities.
 
 The sum of `swarm.population` across all live `SwarmComponent` entities.
 
+### Plant death diagnostics
+
+The telemetry row also records the immediate plant death causes detected during that tick:
+
+- `death_reproduction`
+- `death_mycorrhiza`
+- `death_defense_maintenance`
+- `death_herbivore_feeding`
+- `death_background_deficit`
+
 These fields intentionally span both abundance and resource-state perspectives.
 
 ## Analytical Interpretation
@@ -73,6 +84,9 @@ The current telemetry fields support several classes of interpretation.
 `predator_population` provides a coarse measure of herbivore pressure on the system.
 
 Together, these metrics form a compact Lotka–Volterra-style observability surface for comparing runs.
+The death-diagnostic columns add an immediate mechanistic layer, making it possible to distinguish
+whether plant loss was driven by herbivory, self-funded lifecycle actions, active chemical defense,
+or a generic background deficit state.
 
 ## In-Memory Representation
 
@@ -86,6 +100,10 @@ Current behavior:
 - `dataframe` rebuilds the Polars structure on demand,
 - `get_latest_metrics()` exposes the most recent row for live UI or diagnostics use.
 
+The death-cause counters are injected at `SimulationLoop.step()` scope. Lifecycle, interaction, and
+signaling each contribute immediate plant-loss events into the same per-tick accumulator before the
+telemetry row is materialized.
+
 This design keeps per-tick recording simple while preserving a convenient tabular export interface.
 
 ## Empty DataFrame Semantics
@@ -98,6 +116,11 @@ stable schema:
 - `flora_population: Int64`
 - `predator_clusters: Int64`
 - `predator_population: Int64`
+- `death_reproduction: Int64`
+- `death_mycorrhiza: Int64`
+- `death_defense_maintenance: Int64`
+- `death_herbivore_feeding: Int64`
+- `death_background_deficit: Int64`
 
 This is important because it gives the export and UI layers a consistent typed structure even before
 any ticks have executed.
@@ -176,8 +199,8 @@ The current test suite verifies key telemetry/export behaviors.
 
 ### Loop integration
 
-`tests/test_termination_and_loop.py` verifies that stepping a simulation updates telemetry and
-produces at least one telemetry row.
+`tests/test_termination_and_loop.py` verifies that stepping a simulation updates telemetry,
+produces at least one telemetry row, and exposes the plant-death diagnostic columns.
 
 ### API export behavior
 
@@ -190,7 +213,8 @@ functions directly.
 
 ### UI telemetry chart context
 
-`tests/test_ui_routes.py` verifies the UI telemetry refresh path and empty-state behavior.
+`tests/test_ui_routes.py` verifies the UI telemetry refresh path, empty-state behavior, and the
+presence of plant-death diagnostics in the model diagnostics rail.
 
 ## Methodological Limits of the Current Analytics Layer
 
@@ -199,6 +223,7 @@ The current telemetry layer should be described precisely.
 - it captures a compact summary, not every derived ecological statistic,
 - it does not presently preserve per-species telemetry breakdowns,
 - it focuses on run comparison and diagnostics rather than full state reconstruction,
+- plant-death attribution is immediate-cause oriented rather than a full causal graph,
 - its JSON export is NDJSON rather than a custom nested schema.
 
 These are deliberate features of the current implementation surface.

@@ -73,6 +73,21 @@
         <div class="mt-1 font-mono text-slate-700">{{ '%.2f'|format((latest_metrics.predator_population / [1, latest_metrics.predator_clusters]|max)) }}</div>
       </div>
     </div>
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+      <div class="font-semibold text-slate-700">Plant death diagnostics</div>
+      {% set plant_death_total = latest_metrics.death_reproduction + latest_metrics.death_mycorrhiza + latest_metrics.death_defense_maintenance + latest_metrics.death_herbivore_feeding + latest_metrics.death_background_deficit %}
+      {% if plant_death_total > 0 %}
+      <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
+        <dt>herbivore feeding</dt><dd class="text-right">{{ latest_metrics.death_herbivore_feeding }}</dd>
+        <dt>defense maintenance</dt><dd class="text-right">{{ latest_metrics.death_defense_maintenance }}</dd>
+        <dt>reproduction</dt><dd class="text-right">{{ latest_metrics.death_reproduction }}</dd>
+        <dt>mycorrhiza</dt><dd class="text-right">{{ latest_metrics.death_mycorrhiza }}</dd>
+        <dt>background deficit</dt><dd class="text-right">{{ latest_metrics.death_background_deficit }}</dd>
+      </dl>
+      {% else %}
+      <div class="text-slate-500">No plant deaths recorded during the latest telemetry tick.</div>
+      {% endif %}
+    </div>
     {% else %}
     <div class="text-slate-500">Telemetry will appear after the first tick.</div>
     {% endif %}

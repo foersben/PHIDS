@@ -18,7 +18,7 @@ def _compute_flow_field_impl(
     width: int,
     height: int,
 ) -> npt.NDArray[np.float64]:
-    """Compute the attraction gradient using an iterative propagation.
+    """Compute the attraction gradient using iterative Jacobi propagation.
 
     Args:
         plant_energy: 2-D array ``(W, H)`` of aggregated plant energy per cell.
@@ -29,31 +29,47 @@ def _compute_flow_field_impl(
     Returns:
         npt.NDArray[np.float64]: Scalar attraction field of shape ``(W, H)``.
     """
-    gradient = np.zeros((width, height), dtype=np.float64)
+    base = np.zeros((width, height), dtype=np.float64)
+    current = np.zeros((width, height), dtype=np.float64)
+    nxt = np.zeros((width, height), dtype=np.float64)
 
-    # Base layer: plant attraction minus toxin repulsion
     for x in range(width):
         for y in range(height):
-            gradient[x, y] = plant_energy[x, y] - toxin_sum[x, y]
+            base[x, y] = plant_energy[x, y] - toxin_sum[x, y]
+            current[x, y] = base[x, y]
 
-    # Single BFS-style propagation pass (spreading attraction to neighbours)
-    propagated = np.zeros((width, height), dtype=np.float64)
-    decay = 0.5
+    # Iterative propagation lets attraction/repulsion travel multiple hops.
+    decay = 0.6
+    max_iterations = width + height
+    for _ in range(max_iterations):
+        for x in range(width):
+            for y in range(height):
+                neighbours_sum = 0.0
+                neighbour_count = 0
+                if x > 0:
+                    neighbours_sum += current[x - 1, y]
+                    neighbour_count += 1
+                if x < width - 1:
+                    neighbours_sum += current[x + 1, y]
+                    neighbour_count += 1
+                if y > 0:
+                    neighbours_sum += current[x, y - 1]
+                    neighbour_count += 1
+                if y < height - 1:
+                    neighbours_sum += current[x, y + 1]
+                    neighbour_count += 1
+
+                propagated = neighbours_sum / neighbour_count if neighbour_count > 0 else 0.0
+                nxt[x, y] = base[x, y] + (decay * propagated)
+
+        current, nxt = nxt, current
+
     for x in range(width):
         for y in range(height):
-            val = gradient[x, y]
-            propagated[x, y] += val
-            # Propagate to 4-connected neighbours with decay
-            if x > 0:
-                propagated[x - 1, y] += val * decay
-            if x < width - 1:
-                propagated[x + 1, y] += val * decay
-            if y > 0:
-                propagated[x, y - 1] += val * decay
-            if y < height - 1:
-                propagated[x, y + 1] += val * decay
+            if abs(current[x, y]) < 1e-4:
+                current[x, y] = 0.0
 
-    return propagated
+    return current
 
 
 _compute_flow_field = njit(cache=True)(_compute_flow_field_impl)

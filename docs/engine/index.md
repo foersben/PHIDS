@@ -166,6 +166,7 @@ Current-state nuance matters here:
 - active toxin effects are also applied directly to swarms through the signaling logic,
 - only `env.diffuse_signals()` is called at the end of the phase,
 - toxins remain local to emitting plant cells and do not diffuse,
+- mycorrhizal relay deposits signal concentration but is not itself a direct trigger predicate,
 - signals and toxins both honor aftereffect persistence, and either can be configured as
   irreversible induced defenses.
 
@@ -178,6 +179,10 @@ appends a serialized snapshot of the current environment state.
 
 The order matters: replay and telemetry are intended to describe the post-phase state of the
 completed tick, not an intermediate partial state.
+
+Current telemetry includes not only aggregate flora/predator measures, but also per-tick plant death
+diagnostics distinguishing herbivore feeding, defense maintenance, reproduction, mycorrhizal growth,
+and background deficit culling.
 
 ### 7. Termination evaluation
 
