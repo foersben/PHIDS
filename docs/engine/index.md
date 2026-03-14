@@ -135,10 +135,10 @@ Important current-state details:
 - gradient-following movement via the flow field,
 - random-walk behavior for repelled swarms,
 - diet-matrix gated feeding on co-located plants,
-- starvation accumulation and attrition,
+- metabolic upkeep and deficit-driven attrition,
 - toxin casualty application from toxin layers,
 - reproduction by converting stored energy into new individuals,
-- mitosis when population reaches twice the current initial baseline.
+- mitosis at a configured split threshold (or legacy baseline fallback).
 
 Two architectural features are especially important here:
 
@@ -165,8 +165,8 @@ Current-state nuance matters here:
 - toxin layers are rebuilt from active emitters each signaling pass,
 - active toxin effects are also applied directly to swarms through the signaling logic,
 - `env.diffuse_signals()` and `env.diffuse_toxins()` are both called at the end of the phase,
-- signal persistence and toxin persistence are therefore not identical in semantics, even though
-  both currently pass through environment-layer helpers.
+- signals and toxins both honor aftereffect persistence, and either can be configured as
+  irreversible induced defenses.
 
 This is one of the richest areas of the simulator and deserves a dedicated chapter later.
 

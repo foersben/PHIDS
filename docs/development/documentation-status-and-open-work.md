@@ -59,7 +59,7 @@ place.
 - `src/phids/api/main.py`
   - `_build_live_dashboard_payload`
   - `_build_live_summary`
-  - `_build_starving_swarms`
+  - `_build_energy_deficit_swarms`
   - `GET /api/ui/cell-details`
   - `GET /api/telemetry`
   - `WS /ws/ui/stream`

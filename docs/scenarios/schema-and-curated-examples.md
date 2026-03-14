@@ -65,6 +65,12 @@ This gives scenarios a strong role as reproducible scientific artifacts.
 
 The current test suite verifies several important expectations for scenarios.
 
+### Trigger persistence mode is explicit
+
+`TriggerConditionSchema` now supports an `irreversible` flag to model SAR-like permanent induced
+defense once activated. Curated examples currently keep this mode disabled for comparability and
+therefore declare `"irreversible": false` across trigger entries.
+
 ### Plants and swarms are both required in curated examples
 
 The curated example pack is expected to include both:

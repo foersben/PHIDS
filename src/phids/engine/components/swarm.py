@@ -24,7 +24,8 @@ class SwarmComponent:
         velocity: Movement period in ticks between moves.
         consumption_rate: Per-tick consumption scalar.
         reproduction_energy_divisor: Species-level growth throttle.
-        starvation_ticks: Consecutive ticks without feeding.
+        energy_upkeep_per_individual: Metabolic upkeep scalar applied each tick.
+        split_population_threshold: Explicit population threshold for mitosis (<=0 keeps legacy rule).
         repelled: Whether the swarm is currently repelled by toxin.
         repelled_ticks_remaining: Remaining ticks of repelled behavior.
         target_plant_id: Entity id of the targeted plant (-1 = none).
@@ -42,7 +43,8 @@ class SwarmComponent:
     velocity: int
     consumption_rate: float
     reproduction_energy_divisor: float = 1.0
-    starvation_ticks: int = 0
+    energy_upkeep_per_individual: float = 0.05
+    split_population_threshold: int = 0
     repelled: bool = False
     repelled_ticks_remaining: int = 0
     target_plant_id: int = -1

@@ -35,6 +35,7 @@ class SubstanceComponent:
         activation_condition: Optional nested activation predicate tree stored
             in JSON-serialisable form for runtime evaluation and tooltip display.
         energy_cost_per_tick: Energy drained from the owner plant per active tick.
+        irreversible: Whether activation remains permanently on once active.
         triggered_this_tick: Whether the trigger condition was satisfied in the
             current signaling pass.
     """
@@ -56,6 +57,7 @@ class SubstanceComponent:
     precursor_signal_ids: tuple[int, ...] = ()
     activation_condition: dict[str, object] | None = None
     energy_cost_per_tick: float = 0.0
+    irreversible: bool = False
     trigger_predator_species_id: int = -1
     trigger_min_predator_population: int = 0
     triggered_this_tick: bool = False

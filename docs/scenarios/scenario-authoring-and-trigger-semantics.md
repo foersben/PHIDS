@@ -82,6 +82,7 @@ A trigger currently includes:
 - `repellent`
 - `repellent_walk_ticks`
 - `aftereffect_ticks`
+- `irreversible`
 - `activation_condition`
 - `energy_cost_per_tick`
 
@@ -186,6 +187,7 @@ Use trigger rules to specify:
 - whether the response is a signal or toxin,
 - how long synthesis takes,
 - how long aftereffects persist,
+- whether activation becomes irreversible after first activation,
 - what activation-condition logic must already hold.
 
 ### 4. Define spatial starting conditions
@@ -223,6 +225,16 @@ This scenario emphasizes atmospheric transport and compound gating. It includes:
 - multiple predator species,
 - nested logic in which repellent and lethal toxins depend on intermediate signal states and enemy
   combinations.
+
+## Current Curated-Example Policy on SAR-like Mode
+
+The scenario language now supports `irreversible` trigger semantics (SAR-like permanent induced
+defense once active). To keep the curated pack behavior easy to compare across releases, all current
+examples under `examples/` explicitly set:
+
+- `"irreversible": false`
+
+for every trigger rule.
 
 ## How Trigger Logic Reaches Runtime
 

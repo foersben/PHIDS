@@ -159,6 +159,8 @@ class SimulationLoop:
                 reproduction_energy_divisor=self._get_predator_reproduction_divisor(
                     placement.species_id
                 ),
+                energy_upkeep_per_individual=self._get_predator_energy_upkeep(placement.species_id),
+                split_population_threshold=self._get_predator_split_threshold(placement.species_id),
             )
             self.world.add_component(entity.entity_id, swarm)
             self.world.register_position(entity.entity_id, placement.x, placement.y)
@@ -227,6 +229,20 @@ class SimulationLoop:
             if sp.species_id == species_id:
                 return sp.reproduction_energy_divisor
         return 1.0
+
+    def _get_predator_energy_upkeep(self, species_id: int) -> float:
+        """Return the configured per-individual metabolic upkeep scalar."""
+        for sp in self.config.predator_species:
+            if sp.species_id == species_id:
+                return sp.energy_upkeep_per_individual
+        return 0.05
+
+    def _get_predator_split_threshold(self, species_id: int) -> int:
+        """Return the configured explicit mitosis population threshold."""
+        for sp in self.config.predator_species:
+            if sp.species_id == species_id:
+                return sp.split_population_threshold
+        return 0
 
     # ------------------------------------------------------------------
     # Simulation control

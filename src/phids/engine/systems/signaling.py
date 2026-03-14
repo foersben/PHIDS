@@ -192,9 +192,9 @@ def run_signaling(
 
     dead_substances: list[int] = []
 
-    # Toxins are local, per-tick defenses: rebuild their field from currently
-    # active emitters each signaling pass so concentrations vanish immediately
-    # once triggers cease.
+    # Toxins are rebuilt from currently active emitters each signaling pass.
+    # Non-triggered toxins remain active only through configured aftereffects
+    # (or indefinitely when irreversible=True).
     env.toxin_layers[:] = 0.0
     env._toxin_layers_write[:] = 0.0
 
@@ -260,6 +260,7 @@ def run_signaling(
                         else None
                     ),
                     energy_cost_per_tick=trig.energy_cost_per_tick,
+                    irreversible=trig.irreversible,
                     trigger_predator_species_id=trig.predator_species_id,
                     trigger_min_predator_population=trig.min_predator_population,
                 )
@@ -304,6 +305,14 @@ def run_signaling(
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
 
     # ------------------------------------------------------------------
+    # 2b. Irreversible induced defense lock
+    # ------------------------------------------------------------------
+    for entity in list(world.query(SubstanceComponent)):
+        sub = entity.get_component(SubstanceComponent)
+        if sub.active and sub.irreversible:
+            sub.triggered_this_tick = True
+
+    # ------------------------------------------------------------------
     # 3. Emit active signals / toxins into environment layers
     # ------------------------------------------------------------------
     for entity in list(world.query(SubstanceComponent)):
@@ -312,7 +321,7 @@ def run_signaling(
             continue
 
         if not sub.triggered_this_tick:
-            if sub.is_toxin or sub.aftereffect_remaining_ticks <= 0:
+            if not sub.irreversible and sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
                 continue
 
@@ -378,10 +387,7 @@ def run_signaling(
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
             continue
 
-        if sub.is_toxin:
-            sub.active = False
-            if sub.substance_id < env.num_toxins:
-                env.toxin_layers[sub.substance_id, plant.x, plant.y] = 0.0
+        if sub.irreversible:
             continue
 
         if sub.aftereffect_remaining_ticks > 0:

@@ -203,7 +203,8 @@ def test_main_live_summary_and_starving_swarm_helpers() -> None:
     api_main._sim_loop = loop
 
     swarm = next(iter(loop.world.query(SwarmComponent))).get_component(SwarmComponent)
-    swarm.starvation_ticks = 2
+    swarm.energy = 0.0
+    swarm.energy_min = 2.0
     swarm.repelled = True
 
     extra_swarm_entity = loop.world.create_entity()
@@ -218,7 +219,8 @@ def test_main_live_summary_and_starving_swarm_helpers() -> None:
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
-        starvation_ticks=4,
+        energy_upkeep_per_individual=0.05,
+        split_population_threshold=0,
     )
     loop.world.add_component(extra_swarm_entity.entity_id, extra_swarm)
     loop.world.register_position(extra_swarm_entity.entity_id, 1, 1)
@@ -236,14 +238,14 @@ def test_main_live_summary_and_starving_swarm_helpers() -> None:
     )
 
     summary = api_main._build_live_summary()
-    starving = api_main._build_starving_swarms()
+    starving = api_main._build_energy_deficit_swarms()
 
     assert summary is not None
     assert summary["plants"] == 1
     assert summary["swarms"] == 2
     assert summary["active_substances"] == 1
-    assert starving[0]["starvation_ticks"] == 4
-    assert starving[1]["repelled"] is True
+    assert starving[0]["energy_deficit"] >= starving[1]["energy_deficit"]
+    assert any(swarm_entry["repelled"] is True for swarm_entry in starving)
 
 
 @pytest.mark.asyncio

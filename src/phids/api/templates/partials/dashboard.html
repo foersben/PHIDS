@@ -91,7 +91,7 @@
         <summary class="cursor-pointer font-medium text-slate-700">What do swarms and mycorrhiza properties mean?</summary>
         <div class="mt-2 text-xs leading-5 text-slate-600">
           Swarm <strong>population</strong> is current headcount, <strong>baseline</strong> is the spawn population used for growth/mitosis comparisons,
-          <strong>signal</strong> and <strong>toxin</strong> are the local overlay concentrations at the hovered cell, and status lines report whether the swarm is starving,
+          <strong>signal</strong> and <strong>toxin</strong> are the local overlay concentrations at the hovered cell, and status lines report whether the swarm is energy-stressed,
           repelled, or intoxicated. The Mycorrhiza block counts all root links touching the hovered cell, lists whether inter-species links are allowed,
           shows connection cost and signal velocity settings, and enumerates each linked neighbour cell.
         </div>
@@ -99,7 +99,7 @@
       <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
         <summary class="cursor-pointer font-medium text-slate-700">What does the diagnostics sidebar show?</summary>
         <div class="mt-2 text-xs leading-5 text-slate-600">
-          <strong>Model</strong> shows draft counts, live entity counts, the newest telemetry record, and a starvation watch driven by current swarm starvation ticks.
+          <strong>Model</strong> shows draft counts, live entity counts, the newest telemetry record, and an energy-deficit watch driven by current swarm reserves.
           <strong>Frontend</strong> reports the dashboard controller state and WebSocket/render status.
           <strong>Backend</strong> shows recent in-memory PHIDS logs from API requests, draft mutations, engine transitions, telemetry, and websocket activity.
         </div>
@@ -584,7 +584,7 @@
         .map(swarm => ({
           ...swarm,
           initial_population: swarm.initial_population ?? null,
-          starvation_ticks: swarm.starvation_ticks ?? 0,
+          energy_deficit: swarm.energy_deficit ?? 0,
           signal_level: signalPeak,
           toxin_level: toxinPeak,
           target_plant: swarm.target_plant ?? null,
@@ -919,7 +919,7 @@
       const statusBits = [];
       if (swarm.intoxicated) statusBits.push(`intoxicated ${formatNumber(swarm.toxin_level, 3)}`);
       if (swarm.repelled) statusBits.push(`repelled ${swarm.repelled_ticks_remaining}t`);
-      if (swarm.starvation_ticks > 0) statusBits.push(`starving ${swarm.starvation_ticks}t`);
+      if ((swarm.energy_deficit || 0) > 0) statusBits.push(`deficit ${formatNumber(swarm.energy_deficit, 2)}`);
       const metrics = [`energy ${formatNumber(swarm.energy, 1)}`];
       if (swarm.initial_population != null) metrics.push(`baseline ${escapeHtml(swarm.initial_population)}`);
       if (swarm.signal_level != null) metrics.push(`signal ${formatNumber(swarm.signal_level, 3)}`);

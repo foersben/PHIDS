@@ -69,8 +69,15 @@ class SwarmComponentSchema(BaseModel):
     energy_min: float = Field(..., gt=0.0, description="Minimum energy per individual E_min(e_h).")
     velocity: int = Field(..., gt=0, description="Movement period v_h (ticks between moves).")
     consumption_rate: float = Field(..., gt=0.0, description="Per-tick consumption scalar η(C_i).")
-    starvation_ticks: int = Field(
-        default=0, description="Consecutive ticks without adequate feeding."
+    energy_upkeep_per_individual: float = Field(
+        default=0.05,
+        ge=0.0,
+        description="Per-individual metabolic upkeep scalar applied each tick.",
+    )
+    split_population_threshold: int = Field(
+        default=0,
+        ge=0,
+        description="Explicit mitosis threshold; 0 keeps legacy initial-population based split rule.",
     )
     repelled: bool = Field(default=False, description="Currently repelled by toxin.")
     repelled_ticks_remaining: int = Field(
@@ -106,6 +113,10 @@ class SubstanceComponentSchema(BaseModel):
     )
     energy_cost_per_tick: float = Field(
         default=0.0, ge=0.0, description="Energy cost drained from the owner plant per active tick."
+    )
+    irreversible: bool = Field(
+        default=False,
+        description="Whether activation is irreversible once the substance becomes active.",
     )
 
 
@@ -218,6 +229,13 @@ class TriggerConditionSchema(BaseModel):
     energy_cost_per_tick: float = Field(
         default=0.0, ge=0.0, description="Energy drained from the plant per tick while active."
     )
+    irreversible: bool = Field(
+        default=False,
+        description=(
+            "If true, activation is irreversible: once active, the substance remains active "
+            "until owner death."
+        ),
+    )
 
     @model_validator(mode="after")
     def _populate_activation_condition_from_legacy_precursors(self) -> TriggerConditionSchema:
@@ -277,6 +295,16 @@ class PredatorSpeciesParams(BaseModel):
         default=1.0,
         gt=0.0,
         description="Denominator for φ(e_h,t) = floor(R(C_i,t) / E_min(e_h)).",
+    )
+    energy_upkeep_per_individual: float = Field(
+        default=0.05,
+        ge=0.0,
+        description="Per-individual metabolic upkeep scalar applied every interaction tick.",
+    )
+    split_population_threshold: int = Field(
+        default=0,
+        ge=0,
+        description="Explicit population threshold for mitosis; 0 keeps legacy thresholding.",
     )
 
 

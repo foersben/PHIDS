@@ -44,6 +44,7 @@ class SubstanceDefinition:
         lethality_rate: Population units eliminated per tick (β).
         repellent_walk_ticks: Random-walk duration on repel trigger.
         energy_cost_per_tick: Energy drained from the plant per active tick.
+        irreversible: Keep the substance active permanently once activated.
         precursor_signal_id: Signal id required before activation (−1 = none).
         min_predator_population: Minimum swarm size to trigger synthesis.
     """
@@ -58,6 +59,7 @@ class SubstanceDefinition:
     lethality_rate: float = 0.0
     repellent_walk_ticks: int = 3
     energy_cost_per_tick: float = 1.0
+    irreversible: bool = False
     precursor_signal_id: int = -1
     min_predator_population: int = 5
 
@@ -859,6 +861,7 @@ class DraftState:
                     aftereffect_ticks=sd.aftereffect_ticks,
                     activation_condition=deepcopy(rule.activation_condition),
                     energy_cost_per_tick=sd.energy_cost_per_tick,
+                    irreversible=sd.irreversible,
                 )
             )
 

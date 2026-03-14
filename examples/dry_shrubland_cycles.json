@@ -46,7 +46,8 @@
             "predator_species_id": 0,
             "min_predator_population": 6
           },
-          "energy_cost_per_tick": 0.3
+          "energy_cost_per_tick": 0.3,
+          "irreversible": false
         }
       ]
     },
@@ -89,7 +90,8 @@
               }
             ]
           },
-          "energy_cost_per_tick": 0.9
+          "energy_cost_per_tick": 0.9,
+          "irreversible": false
         }
       ]
     },
@@ -132,7 +134,8 @@
               }
             ]
           },
-          "energy_cost_per_tick": 1.0
+          "energy_cost_per_tick": 1.0,
+          "irreversible": false
         }
       ]
     }
@@ -157,25 +160,101 @@
   ],
   "diet_matrix": {
     "rows": [
-      [true, false, true],
-      [true, true, false]
+      [
+        true,
+        false,
+        true
+      ],
+      [
+        true,
+        true,
+        false
+      ]
     ]
   },
   "initial_plants": [
-    {"species_id": 0, "x": 9, "y": 8, "energy": 40.0},
-    {"species_id": 0, "x": 11, "y": 8, "energy": 42.0},
-    {"species_id": 0, "x": 13, "y": 9, "energy": 41.0},
-    {"species_id": 0, "x": 15, "y": 8, "energy": 39.0},
-    {"species_id": 1, "x": 24, "y": 12, "energy": 37.0},
-    {"species_id": 1, "x": 26, "y": 13, "energy": 38.0},
-    {"species_id": 1, "x": 28, "y": 12, "energy": 36.0},
-    {"species_id": 2, "x": 38, "y": 15, "energy": 39.0},
-    {"species_id": 2, "x": 40, "y": 16, "energy": 40.0},
-    {"species_id": 2, "x": 42, "y": 15, "energy": 38.0}
+    {
+      "species_id": 0,
+      "x": 9,
+      "y": 8,
+      "energy": 40.0
+    },
+    {
+      "species_id": 0,
+      "x": 11,
+      "y": 8,
+      "energy": 42.0
+    },
+    {
+      "species_id": 0,
+      "x": 13,
+      "y": 9,
+      "energy": 41.0
+    },
+    {
+      "species_id": 0,
+      "x": 15,
+      "y": 8,
+      "energy": 39.0
+    },
+    {
+      "species_id": 1,
+      "x": 24,
+      "y": 12,
+      "energy": 37.0
+    },
+    {
+      "species_id": 1,
+      "x": 26,
+      "y": 13,
+      "energy": 38.0
+    },
+    {
+      "species_id": 1,
+      "x": 28,
+      "y": 12,
+      "energy": 36.0
+    },
+    {
+      "species_id": 2,
+      "x": 38,
+      "y": 15,
+      "energy": 39.0
+    },
+    {
+      "species_id": 2,
+      "x": 40,
+      "y": 16,
+      "energy": 40.0
+    },
+    {
+      "species_id": 2,
+      "x": 42,
+      "y": 15,
+      "energy": 38.0
+    }
   ],
   "initial_swarms": [
-    {"species_id": 0, "x": 13, "y": 9, "population": 6, "energy": 19.0},
-    {"species_id": 0, "x": 40, "y": 16, "population": 4, "energy": 16.0},
-    {"species_id": 1, "x": 26, "y": 13, "population": 3, "energy": 18.0}
+    {
+      "species_id": 0,
+      "x": 13,
+      "y": 9,
+      "population": 6,
+      "energy": 19.0
+    },
+    {
+      "species_id": 0,
+      "x": 40,
+      "y": 16,
+      "population": 4,
+      "energy": 16.0
+    },
+    {
+      "species_id": 1,
+      "x": 26,
+      "y": 13,
+      "population": 3,
+      "energy": 18.0
+    }
   ]
 }

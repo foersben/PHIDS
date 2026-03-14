@@ -1,8 +1,8 @@
 # Interaction
 
 The interaction system governs swarm-centered ecological behavior in PHIDS. It is the phase in
-which herbivore swarms move, feed, suffer starvation or toxin losses, convert stored energy into new
-individuals, and split by mitosis when they exceed their current reproduction threshold.
+which herbivore swarms move, feed, pay metabolic upkeep, suffer toxin losses, convert stored energy
+into new individuals, and split by mitosis when they exceed their configured population threshold.
 
 This chapter documents the current implementation in `src/phids/engine/systems/interaction.py`.
 
@@ -17,7 +17,7 @@ This ordering means that interaction currently consumes:
 - the current toxin layers already present at that point in the tick.
 
 It also means that signaling observes the post-interaction world, including any feeding damage,
-movement, starvation, or swarm growth that happened during interaction.
+movement, metabolic losses, or swarm growth that happened during interaction.
 
 ## Swarm Runtime Model
 
@@ -30,7 +30,8 @@ The interaction system operates on `SwarmComponent`, which currently stores:
 - `energy_min`,
 - movement `velocity`,
 - `consumption_rate`,
-- `starvation_ticks`,
+- `energy_upkeep_per_individual`,
+- `split_population_threshold`,
 - repelled-state flags,
 - `target_plant_id`,
 - `move_cooldown`.
@@ -45,7 +46,7 @@ In its current implementation, `run_interaction()` performs the following tasks:
 2. move swarms via the global flow field or repelled random walk,
 3. resolve plant feeding through the spatial hash and diet matrix,
 4. apply toxin casualties from toxin layers,
-5. apply starvation attrition,
+5. apply metabolic upkeep and deficit-driven attrition,
 6. cull dead swarms,
 7. convert stored energy into new individuals,
 8. trigger mitosis when the population threshold is met,
@@ -66,9 +67,16 @@ This means velocity is represented as a movement period in ticks rather than as 
 
 ### Flow-field pursuit
 
-Normal movement uses `_choose_neighbour_by_flow_probability(...)`, which now deterministically
-compares the current cell with its 4-connected neighbors and chooses the highest flow-field value,
-retaining the current cell on ties.
+Normal movement uses `_choose_neighbour_by_flow_probability(...)`, which builds a local
+4-connected candidate set and samples the next cell using probability weights derived from
+flow-field values.
+
+Implementation details:
+
+- candidate scores are shifted to positive weights so toxin-driven negative values remain valid,
+- higher flow values are still preferred, but not selected as a strict greedy argmax,
+- this allows co-located swarms to naturally de-phase over subsequent ticks instead of remaining
+  permanently lockstepped.
 
 This is the interaction phase’s principal dependence on the global flow field.
 
@@ -112,12 +120,6 @@ Current consumption is:
 
 The consumed energy is removed from the plant and added to the swarm.
 
-### Starvation reset
-
-If feeding occurs:
-
-- `swarm.starvation_ticks` is reset to `0`.
-
 ### Plant death during feeding
 
 If feeding reduces the plant below its survival threshold, the plant is:
@@ -128,16 +130,19 @@ If feeding reduces the plant below its survival threshold, the plant is:
 
 This means the interaction phase can directly remove plants from the world.
 
-## Starvation Model
+## Energy Economy Model
 
-If no compatible food source is found at the swarm’s cell, the swarm’s `starvation_ticks`
-increase.
+The interaction phase now uses a continuous reserve model instead of a starvation tick counter.
 
-Later in the pass, if starvation has lasted more than one tick, the swarm suffers attrition:
+After movement/feeding and toxin processing, each swarm pays metabolic upkeep:
 
-- `max(1, int(swarm.population * 0.05 * swarm.starvation_ticks))`
+- `population * energy_min * energy_upkeep_per_individual`
 
-This makes starvation cumulative rather than a simple binary alive/dead condition.
+If this drives `swarm.energy` below zero, the deficit is converted into casualties based on
+`energy_min`, and energy is clamped back to `0.0`.
+
+This creates a smooth depletion-and-recovery cycle where population and intake capacity naturally
+co-evolve over time.
 
 ## Toxin Damage Model
 
@@ -211,19 +216,27 @@ Thus interaction is not purely entity-local; it is a coordinated entity-plus-fie
 
 Several ordering details matter.
 
-### Movement precedes feeding
+### Movement and feeding are mutually exclusive per tick
 
-The swarm may change cell before feeding is attempted. Feeding therefore occurs at the post-move
-location, not the pre-move location.
+If a swarm moves during its interaction step, feeding is skipped for that swarm in the same tick.
+Only swarms that remain in place are eligible to feed.
+
+This enforces a strict per-tick action budget (`move` XOR `eat`) and removes same-tick
+"move-then-consume" behavior.
 
 ### Toxin damage follows feeding
 
-The current implementation applies toxin-layer casualties after feeding and starvation bookkeeping.
+The current implementation applies toxin-layer casualties after feeding and before metabolic upkeep.
 
 ### Reproduction precedes mitosis
 
 Energy-based reproduction is applied before the mitosis threshold is checked. This means same-tick
 reproduction can push a swarm over the mitosis threshold.
+
+### Split threshold behavior
+
+Mitosis uses `split_population_threshold` when configured (`> 0`). Otherwise, interaction falls back
+to the legacy `2 * initial_population` threshold.
 
 ## Evidence from Tests
 
@@ -231,7 +244,8 @@ The current test suite verifies several important interaction behaviors.
 
 ### Diet incompatibility blocks feeding
 
-Tests verify that incompatible diet-matrix entries prevent plant consumption and increase starvation.
+Tests verify that incompatible diet-matrix entries prevent plant consumption and can push swarms into
+energy deficit and attrition.
 
 ### Same-tick reproduction and mitosis
 

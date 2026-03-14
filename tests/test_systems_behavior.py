@@ -261,7 +261,8 @@ def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     assert plant.energy == pytest.approx(initial_energy)
-    assert swarm.starvation_ticks >= 1
+    assert swarm.energy == pytest.approx(0.0)
+    assert swarm.population < 5
 
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
@@ -284,6 +285,7 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
     sid = _add_swarm(world, 1, 1, species_id=0, pop=9)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
+    swarm.energy_upkeep_per_individual = 0.0
     swarm.energy = 9.0
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
@@ -293,7 +295,9 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
     assert sum(s.population for s in swarms) == 10
 
 
-def test_interaction_flow_field_movement_chooses_strongest_gradient() -> None:
+def test_interaction_flow_field_movement_chooses_strongest_gradient(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     world = ECSWorld()
     env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
     env.flow_field[0, 0] = 9.0
@@ -303,9 +307,77 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient() -> None:
     sid = _add_swarm(world, 1, 0, species_id=0, pop=4)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
 
+    monkeypatch.setattr(
+        random,
+        "choices",
+        lambda seq, weights, k: [seq[weights.index(max(weights))]],
+    )
+
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     assert (swarm.x, swarm.y) == (2, 0)
+
+
+def test_interaction_moved_swarm_does_not_feed_in_same_tick(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
+    env.flow_field[0, 0] = 0.0
+    env.flow_field[1, 0] = 1.0
+    env.flow_field[2, 0] = 5.0
+
+    plant_id = _add_plant(world, 2, 0, species_id=0, energy=10.0)
+    swarm_id = _add_swarm(world, 1, 0, species_id=0, pop=5)
+    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
+    swarm.energy_upkeep_per_individual = 0.0
+
+    monkeypatch.setattr(
+        random,
+        "choices",
+        lambda seq, weights, k: [seq[weights.index(max(weights))]],
+    )
+
+    run_interaction(world, env, diet_matrix=[[True]], tick=0)
+
+    plant = world.get_entity(plant_id).get_component(PlantComponent)
+    assert (swarm.x, swarm.y) == (2, 0)
+    assert plant.energy == pytest.approx(10.0)
+    assert swarm.energy == pytest.approx(0.0)
+
+
+def test_interaction_mitosis_offspring_can_diverge_next_tick(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=1, num_signals=1, num_toxins=1)
+    env.flow_field[:, 0] = 1.0
+
+    swarm_id = _add_swarm(world, 2, 0, species_id=0, pop=12)
+    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
+    swarm.initial_population = 6
+    swarm.energy_upkeep_per_individual = 0.0
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    calls = {"count": 0}
+
+    def _split_pick(
+        seq: list[tuple[int, int]], weights: list[float], k: int
+    ) -> list[tuple[int, int]]:
+        del weights, k
+        calls["count"] += 1
+        return [seq[1] if calls["count"] == 1 else seq[2]]
+
+    monkeypatch.setattr(random, "choices", _split_pick)
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=1)
+
+    positions = {
+        (entity.get_component(SwarmComponent).x, entity.get_component(SwarmComponent).y)
+        for entity in world.query(SwarmComponent)
+    }
+    assert len(positions) == 2
 
 
 def test_interaction_reproduction_divisor_limits_growth() -> None:
@@ -319,6 +391,8 @@ def test_interaction_reproduction_divisor_limits_growth() -> None:
     slow = world.get_entity(slow_id).get_component(SwarmComponent)
     fast.initial_population = 100
     slow.initial_population = 100
+    fast.energy_upkeep_per_individual = 0.0
+    slow.energy_upkeep_per_individual = 0.0
     fast.energy = 24.0
     slow.energy = 24.0
 
@@ -336,6 +410,7 @@ def test_interaction_mitosis_conserves_odd_population() -> None:
     sid = _add_swarm(world, 1, 1, species_id=0, pop=11)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
+    swarm.energy_upkeep_per_individual = 0.0
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
@@ -459,6 +534,64 @@ def test_signaling_toxin_deactivates_when_trigger_species_is_gone() -> None:
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
     assert float(env.toxin_layers[1].max()) == 0.0
+
+
+def test_signaling_toxin_lingers_for_aftereffect_then_deactivates() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        aftereffect_ticks=2,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is True
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 2)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+
+
+def test_signaling_irreversible_toxin_stays_active_after_trigger_loss() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        aftereffect_ticks=0,
+        irreversible=True,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is True
+    assert sub.triggered_this_tick is True
+    assert float(env.toxin_layers[1].max()) > 0.0
 
 
 def test_signaling_signal_lingers_for_aftereffect_then_deactivates() -> None:

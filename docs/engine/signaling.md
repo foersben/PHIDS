@@ -34,6 +34,7 @@ The key runtime record is `SubstanceComponent`, which stores:
 - synthesis duration and remaining synthesis time,
 - active state,
 - configured and remaining aftereffect,
+- irreversible activation mode,
 - lethality and repellence parameters,
 - optional activation-condition trees,
 - energy cost per tick,
@@ -81,6 +82,7 @@ The created runtime entity receives its behavior parameters from the triggering 
 - synthesis duration,
 - lethality and repellence settings,
 - aftereffect duration,
+- irreversible activation flag,
 - activation condition,
 - energy cost.
 
@@ -162,12 +164,18 @@ If a signal was not triggered this tick:
 
 ### Toxins
 
+Toxins now follow the same aftereffect persistence model as signals.
+
 If a toxin was not triggered this tick:
 
-- it is deactivated immediately in the current implementation,
-- its cell-local toxin layer value is zeroed at the owner plant’s position.
+- `aftereffect_remaining_ticks` is decremented,
+- once it reaches zero, the toxin deactivates.
 
-Thus signals and toxins currently follow different persistence semantics.
+### Irreversible induced defense mode
+
+When `irreversible=True`, an active substance is pinned in the triggered state and does not
+deactivate due to trigger loss or aftereffect expiry. This models a SAR-like permanent induced
+defense response.
 
 ## Diffusion Delegation
 
@@ -203,9 +211,13 @@ Tests verify that a trigger can spawn a toxin with configured lethal and repelle
 Trigger thresholds are tested against the aggregate population of multiple co-located swarms of the
 same predator species.
 
-### Immediate toxin deactivation
+### Toxin persistence controls
 
-Tests verify that toxins deactivate when the triggering species is gone and aftereffect is zero.
+Tests verify that:
+
+- toxins with nonzero aftereffect linger after trigger loss,
+- toxins with zero aftereffect stop on the next non-triggered tick,
+- irreversible toxins remain active after trigger loss.
 
 ### Signal aftereffect persistence
 
@@ -236,7 +248,7 @@ The current implementation should be described precisely.
 - toxins are rebuilt locally per signaling pass, yet still pass through `env.diffuse_toxins()`,
 - toxin effects exist both in the signaling module and in the interaction module,
 - synthesis delay and signal aftereffect are explicit,
-- toxin persistence and signal persistence are not symmetric,
+- irreversible mode intentionally allows always-on defenses once activated,
 - activation conditions are powerful but still expressed as JSON-like predicate trees rather than a
   separate compiled rule engine.
 

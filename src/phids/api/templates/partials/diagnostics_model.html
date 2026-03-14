@@ -1,7 +1,7 @@
 <div class="space-y-4">
   <div>
     <h3 class="text-sm font-semibold text-slate-700">Model diagnostics</h3>
-    <p class="text-[11px] text-slate-500 mt-1">Live simulation summary, draft configuration counts, fresh telemetry, and starvation warnings refreshed continuously.</p>
+    <p class="text-[11px] text-slate-500 mt-1">Live simulation summary, draft configuration counts, fresh telemetry, and energy-deficit warnings refreshed continuously.</p>
   </div>
 
   <div class="grid grid-cols-2 gap-2 text-xs">
@@ -79,21 +79,21 @@
   </div>
 
   <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs">
-    <div class="font-semibold text-slate-700">Starvation watch</div>
-    {% if starving_swarms %}
+    <div class="font-semibold text-slate-700">Energy deficit watch</div>
+    {% if energy_deficit_swarms %}
     <ul class="space-y-2">
-      {% for swarm in starving_swarms %}
+      {% for swarm in energy_deficit_swarms %}
       <li class="rounded-lg bg-amber-50 border border-amber-100 px-2 py-2 text-[11px] text-slate-700">
         <div class="flex justify-between gap-3">
           <span class="font-medium">{{ swarm.name }}</span>
           <span class="rounded-full bg-white px-2 py-0.5 border border-amber-200">pop {{ swarm.population }}</span>
         </div>
-        <div class="mt-1 text-slate-500">starving {{ swarm.starvation_ticks }} tick(s) @ ({{ swarm.x }}, {{ swarm.y }}){% if swarm.repelled %} · repelled{% endif %}</div>
+        <div class="mt-1 text-slate-500">deficit {{ '%.2f'|format(swarm.energy_deficit) }} @ ({{ swarm.x }}, {{ swarm.y }}){% if swarm.repelled %} · repelled{% endif %}</div>
       </li>
       {% endfor %}
     </ul>
     {% else %}
-    <div class="text-slate-500">No starving swarms detected right now.</div>
+    <div class="text-slate-500">No energy-stressed swarms detected right now.</div>
     {% endif %}
   </div>
 </div>

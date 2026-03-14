@@ -641,7 +641,10 @@ def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, 
                     "initial_population": swarm.initial_population,
                     "energy": float(swarm.energy),
                     "energy_min": float(swarm.energy_min),
-                    "starvation_ticks": swarm.starvation_ticks,
+                    "energy_deficit": max(
+                        0.0,
+                        float(swarm.population * swarm.energy_min - swarm.energy),
+                    ),
                     "repelled": swarm.repelled,
                     "repelled_ticks_remaining": swarm.repelled_ticks_remaining,
                     "intoxicated": cell_toxin_peak > 0.0,
@@ -906,7 +909,10 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                 "species_id": swarm.species_id,
                 "name": predator_names.get(swarm.species_id, f"Predator {swarm.species_id}"),
                 "energy": float(swarm.energy),
-                "starvation_ticks": swarm.starvation_ticks,
+                "energy_deficit": max(
+                    0.0,
+                    float(swarm.population * swarm.energy_min - swarm.energy),
+                ),
                 "repelled": swarm.repelled,
                 "repelled_ticks_remaining": swarm.repelled_ticks_remaining,
                 "toxin_level": toxin_level,
@@ -981,8 +987,8 @@ def _build_live_summary() -> dict[str, Any] | None:
     }
 
 
-def _build_starving_swarms() -> list[dict[str, Any]]:
-    """Return swarms currently accumulating starvation ticks."""
+def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
+    """Return swarms currently in an energy-deficit state."""
     if _sim_loop is None:
         return []
 
@@ -991,24 +997,25 @@ def _build_starving_swarms() -> list[dict[str, Any]]:
     predator_names = {
         species.species_id: species.name for species in _sim_loop.config.predator_species
     }
-    starving = []
+    energy_stressed = []
     for entity in _sim_loop.world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
-        if swarm.starvation_ticks <= 0:
+        energy_deficit = float(max(0.0, swarm.population * swarm.energy_min - swarm.energy))
+        if energy_deficit <= 0.0:
             continue
-        starving.append(
+        energy_stressed.append(
             {
                 "entity_id": swarm.entity_id,
                 "name": predator_names.get(swarm.species_id, f"Predator {swarm.species_id}"),
                 "population": swarm.population,
-                "starvation_ticks": swarm.starvation_ticks,
+                "energy_deficit": energy_deficit,
                 "x": swarm.x,
                 "y": swarm.y,
                 "repelled": swarm.repelled,
             }
         )
-    starving.sort(key=lambda swarm: (-int(swarm["starvation_ticks"]), str(swarm["name"])))
-    return starving[:12]
+    energy_stressed.sort(key=lambda swarm: (-float(swarm["energy_deficit"]), str(swarm["name"])))
+    return energy_stressed[:12]
 
 
 def _render_status_badge_html() -> str:
@@ -1410,7 +1417,7 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
 
 @app.get("/ui/diagnostics/model", response_class=HTMLResponse, summary="Diagnostics model tab")
 async def ui_diagnostics_model(request: Request) -> Any:
-    """Render live model counters, telemetry, and starvation watch."""
+    """Render live model counters, telemetry, and energy-deficit watch."""
     return templates.TemplateResponse(
         request,
         "partials/diagnostics_model.html",
@@ -1420,7 +1427,7 @@ async def ui_diagnostics_model(request: Request) -> Any:
             "latest_metrics": _sim_loop.telemetry.get_latest_metrics()
             if _sim_loop is not None
             else None,
-            "starving_swarms": _build_starving_swarms(),
+            "energy_deficit_swarms": _build_energy_deficit_swarms(),
         },
     )
 
@@ -1992,6 +1999,8 @@ async def config_predator_add(
     velocity: Annotated[int, Form()] = 2,
     consumption_rate: Annotated[float, Form()] = 10.0,
     reproduction_energy_divisor: Annotated[float, Form()] = 1.0,
+    energy_upkeep_per_individual: Annotated[float, Form()] = 0.05,
+    split_population_threshold: Annotated[int, Form()] = 0,
 ) -> Any:
     """Add a new predator species to the draft.
 
@@ -2002,6 +2011,8 @@ async def config_predator_add(
         velocity: Movement period in ticks.
         consumption_rate: Per-tick consumption scalar.
         reproduction_energy_divisor: Divisor for reproduction formula.
+        energy_upkeep_per_individual: Per-individual metabolic upkeep scalar.
+        split_population_threshold: Explicit mitosis threshold (0 keeps legacy behavior).
 
     Returns:
         TemplateResponse: Updated predator config table partial.
@@ -2021,6 +2032,8 @@ async def config_predator_add(
         velocity=velocity,
         consumption_rate=consumption_rate,
         reproduction_energy_divisor=reproduction_energy_divisor,
+        energy_upkeep_per_individual=energy_upkeep_per_individual,
+        split_population_threshold=split_population_threshold,
     )
     draft.add_predator(params)
     logger.info("Predator species added via API (species_id=%d, name=%s)", new_id, name)
@@ -2044,6 +2057,8 @@ async def config_predator_update(
     velocity: Annotated[int | None, Form()] = None,
     consumption_rate: Annotated[float | None, Form()] = None,
     reproduction_energy_divisor: Annotated[float | None, Form()] = None,
+    energy_upkeep_per_individual: Annotated[float | None, Form()] = None,
+    split_population_threshold: Annotated[int | None, Form()] = None,
 ) -> Any:
     """Patch a single predator species in the draft.
 
@@ -2055,6 +2070,8 @@ async def config_predator_update(
         velocity: Updated velocity (optional).
         consumption_rate: Updated consumption rate (optional).
         reproduction_energy_divisor: Updated reproduction divisor (optional).
+        energy_upkeep_per_individual: Updated metabolic upkeep scalar (optional).
+        split_population_threshold: Updated mitosis threshold (optional).
 
     Returns:
         TemplateResponse: Updated ``<tr>`` row partial.
@@ -2087,6 +2104,10 @@ async def config_predator_update(
         updates["consumption_rate"] = consumption_rate
     if reproduction_energy_divisor is not None:
         updates["reproduction_energy_divisor"] = reproduction_energy_divisor
+    if energy_upkeep_per_individual is not None:
+        updates["energy_upkeep_per_individual"] = energy_upkeep_per_individual
+    if split_population_threshold is not None:
+        updates["split_population_threshold"] = split_population_threshold
 
     draft.predator_species[idx] = pp.model_copy(update=updates)  # type: ignore[union-attr]
     logger.debug(
@@ -2146,6 +2167,7 @@ async def config_substance_add(
     lethality_rate: Annotated[float, Form()] = 0.0,
     repellent_walk_ticks: Annotated[int, Form()] = 3,
     energy_cost_per_tick: Annotated[float, Form()] = 1.0,
+    irreversible: Annotated[str, Form()] = "false",
 ) -> Any:
     """Add a substance definition to the draft.
 
@@ -2160,6 +2182,7 @@ async def config_substance_add(
         lethality_rate: Population eliminated per tick.
         repellent_walk_ticks: Random-walk duration.
         energy_cost_per_tick: Energy drain per active tick.
+        irreversible: ``"true"`` to keep the substance active after first activation.
     Returns:
         TemplateResponse: Updated substance config table partial.
 
@@ -2174,6 +2197,7 @@ async def config_substance_add(
     toxin_flag = is_toxin.lower() in ("true", "1", "yes", "on")
     lethal_flag = lethal.lower() in ("true", "1", "yes", "on")
     repellent_flag = repellent.lower() in ("true", "1", "yes", "on")
+    irreversible_flag = irreversible.lower() in ("true", "1", "yes", "on")
     draft.substance_definitions.append(
         SubstanceDefinition(
             substance_id=new_id,
@@ -2186,6 +2210,7 @@ async def config_substance_add(
             lethality_rate=max(0.0, lethality_rate),
             repellent_walk_ticks=max(0, repellent_walk_ticks),
             energy_cost_per_tick=max(0.0, energy_cost_per_tick),
+            irreversible=irreversible_flag,
         )
     )
     logger.info(
@@ -2213,6 +2238,7 @@ async def config_substance_update(
     lethality_rate: Annotated[float | None, Form()] = None,
     repellent_walk_ticks: Annotated[int | None, Form()] = None,
     energy_cost_per_tick: Annotated[float | None, Form()] = None,
+    irreversible: Annotated[str | None, Form()] = None,
 ) -> Any:
     """Patch a substance definition in the draft.
 
@@ -2227,6 +2253,7 @@ async def config_substance_update(
         lethality_rate: Updated lethality rate (optional).
         repellent_walk_ticks: Updated random-walk duration (optional).
         energy_cost_per_tick: Updated energy drain per tick (optional).
+        irreversible: Updated irreversible activation flag (optional).
 
     Returns:
         TemplateResponse: Updated substance config table partial.
@@ -2260,6 +2287,8 @@ async def config_substance_update(
         sd.repellent_walk_ticks = max(0, repellent_walk_ticks)
     if energy_cost_per_tick is not None:
         sd.energy_cost_per_tick = max(0.0, energy_cost_per_tick)
+    if irreversible is not None:
+        sd.irreversible = irreversible.lower() in ("true", "1", "yes", "on")
     logger.debug("Substance updated via API (substance_id=%d, name=%s)", substance_id, sd.name)
 
     return templates.TemplateResponse(
@@ -2967,6 +2996,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
                         lethality_rate=trig.lethality_rate,
                         repellent_walk_ticks=trig.repellent_walk_ticks,
                         energy_cost_per_tick=trig.energy_cost_per_tick,
+                        irreversible=trig.irreversible,
                         precursor_signal_id=(
                             trig.precursor_signal_ids[0]
                             if len(trig.precursor_signal_ids) == 1

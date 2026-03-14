@@ -1,8 +1,8 @@
-"""Interaction system: swarm movement, feeding, mitosis and toxin effects.
+"""Interaction system: swarm movement, feeding, energy economy and toxin effects.
 
 This module implements swarm behaviour including movement (gradient
 navigation or random walk), feeding using the diet compatibility matrix,
-starvation attrition, mitosis and application of toxin effects. Spatial
+metabolic attrition, mitosis and application of toxin effects. Spatial
 hash lookups provide O(1) co-occupancy checks.
 """
 
@@ -28,7 +28,7 @@ def _choose_neighbour_by_flow_probability(
     height: int,
     invert: bool = False,
 ) -> tuple[int, int]:
-    """Choose the best 4-connected neighbour (or current cell) from the flow field.
+    """Choose a 4-connected neighbour (or current cell) from flow-weighted probabilities.
 
     Args:
         x: Current X coordinate.
@@ -51,19 +51,13 @@ def _choose_neighbour_by_flow_probability(
     if y < height - 1:
         candidates.append((x, y + 1))
 
-    best_candidate = candidates[0]
-    best_score = float(flow_field[x, y])
-    for candidate_x, candidate_y in candidates[1:]:
-        candidate_score = float(flow_field[candidate_x, candidate_y])
-        if invert:
-            if candidate_score < best_score:
-                best_candidate = (candidate_x, candidate_y)
-                best_score = candidate_score
-            continue
-        if candidate_score > best_score:
-            best_candidate = (candidate_x, candidate_y)
-            best_score = candidate_score
-    return best_candidate
+    scores = [
+        float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates
+    ]
+    adjusted_scores = [-score for score in scores] if invert else scores
+    min_score = min(adjusted_scores)
+    weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
+    return random.choices(candidates, weights=weights, k=1)[0]
 
 
 def _random_walk_step(
@@ -129,6 +123,8 @@ def _perform_mitosis(
         velocity=swarm.velocity,
         consumption_rate=swarm.consumption_rate,
         reproduction_energy_divisor=swarm.reproduction_energy_divisor,
+        energy_upkeep_per_individual=swarm.energy_upkeep_per_individual,
+        split_population_threshold=swarm.split_population_threshold,
     )
     swarm.energy /= 2.0
     world.add_component(new_entity.entity_id, offspring)
@@ -145,7 +141,7 @@ def run_interaction(
     """Execute one interaction tick for all swarm entities.
 
     The routine performs movement, feeding using the diet matrix, toxin
-    damage, starvation attrition, and mitosis, then collects dead swarms
+    damage, metabolic attrition, and mitosis, then collects dead swarms
     and rebuilds the plant energy layer.
 
     Args:
@@ -157,6 +153,7 @@ def run_interaction(
     dead_swarms: list[int] = []
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        has_moved = False
 
         # ----------------------------------------------------------------
         # 1. Movement cooldown
@@ -187,39 +184,37 @@ def run_interaction(
             if (nx, ny) != (old_x, old_y):
                 world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
                 swarm.x, swarm.y = nx, ny
+                has_moved = True
 
             swarm.move_cooldown = swarm.velocity - 1
 
         # ----------------------------------------------------------------
         # 3. Feeding – check co-located plants via spatial hash
         # ----------------------------------------------------------------
-        fed = False
-        for co_eid in list(world.entities_at(swarm.x, swarm.y)):
-            co_entity = world.get_entity(co_eid)
-            if not co_entity.has_component(PlantComponent):
-                continue
-            plant: PlantComponent = co_entity.get_component(PlantComponent)
+        if not has_moved:
+            for co_eid in list(world.entities_at(swarm.x, swarm.y)):
+                co_entity = world.get_entity(co_eid)
+                if not co_entity.has_component(PlantComponent):
+                    continue
+                plant: PlantComponent = co_entity.get_component(PlantComponent)
 
-            # Diet compatibility check
-            pred_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-            if not (plant.species_id < len(pred_row) and pred_row[plant.species_id]):
-                continue
+                # Diet compatibility check
+                pred_row = (
+                    diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
+                )
+                if not (plant.species_id < len(pred_row) and pred_row[plant.species_id]):
+                    continue
 
-            consumed = min(swarm.consumption_rate * swarm.population, plant.energy)
-            plant.energy -= consumed
-            env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
-            swarm.energy += consumed
-            swarm.starvation_ticks = 0
-            fed = True
+                consumed = min(swarm.consumption_rate * swarm.population, plant.energy)
+                plant.energy -= consumed
+                env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+                swarm.energy += consumed
 
-            # Kill plant if energy below threshold
-            if plant.energy < plant.survival_threshold:
-                env.clear_plant_energy(plant.x, plant.y, plant.species_id)
-                world.unregister_position(co_eid, plant.x, plant.y)
-                world.collect_garbage([co_eid])
-
-        if not fed:
-            swarm.starvation_ticks += 1
+                # Kill plant if energy below threshold
+                if plant.energy < plant.survival_threshold:
+                    env.clear_plant_energy(plant.x, plant.y, plant.species_id)
+                    world.unregister_position(co_eid, plant.x, plant.y)
+                    world.collect_garbage([co_eid])
 
         # ----------------------------------------------------------------
         # 4. Lethal toxin damage at current cell (from toxin_layers)
@@ -234,11 +229,18 @@ def run_interaction(
                 swarm.population = max(0, swarm.population - casualties)
 
         # ----------------------------------------------------------------
-        # 5. Starvation attrition
+        # 5. Metabolic upkeep and deficit attrition
         # ----------------------------------------------------------------
-        if swarm.starvation_ticks > 1:
-            attrition = max(1, int(swarm.population * 0.05 * swarm.starvation_ticks))
-            swarm.population = max(0, swarm.population - attrition)
+        metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual
+        swarm.energy -= metabolic_cost
+
+        if swarm.energy < 0.0 and swarm.population > 0:
+            deficit = -swarm.energy
+            casualties = int(deficit // swarm.energy_min)
+            if casualties * swarm.energy_min < deficit:
+                casualties += 1
+            swarm.population = max(0, swarm.population - casualties)
+            swarm.energy = 0.0
 
         # ----------------------------------------------------------------
         # 6. Death check
@@ -263,7 +265,12 @@ def run_interaction(
         # ----------------------------------------------------------------
         # 8. Mitosis
         # ----------------------------------------------------------------
-        if swarm.population >= 2 * swarm.initial_population:
+        split_threshold = (
+            swarm.split_population_threshold
+            if swarm.split_population_threshold > 0
+            else 2 * swarm.initial_population
+        )
+        if swarm.population >= split_threshold:
             _perform_mitosis(swarm, world)
 
     world.collect_garbage(dead_swarms)
