@@ -233,8 +233,7 @@ simulation as a scientific software artifact:
 - `uv run pytest`,
 - `uv run mkdocs build --strict`.
 
-The strict type gate currently targets runtime source modules (`src/phids`). A temporary
-module-level override remains for `phids.api.main` while API typing debt is retired.
+The strict type gate currently targets runtime source modules (`src/phids`).
 
 Install both hook types once per clone:
 

@@ -15,7 +15,10 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from phids.api.schemas import SimulationConfig
 
 logger = logging.getLogger(__name__)
 
@@ -816,7 +819,7 @@ class DraftState:
     # Config export
     # ------------------------------------------------------------------
 
-    def build_sim_config(self) -> object:
+    def build_sim_config(self) -> SimulationConfig:
         """Assemble a :class:`~phids.api.schemas.SimulationConfig`.
 
         Returns:

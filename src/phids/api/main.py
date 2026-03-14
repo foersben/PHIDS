@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from collections.abc import Awaitable, Callable
 import json
 import logging
 import pathlib
@@ -86,7 +87,10 @@ if _STATIC_DIR.exists():
 
 
 @app.middleware("http")
-async def log_http_requests(request: Request, call_next: Any) -> Response:
+async def log_http_requests(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     """Log API/UI request timing with low overhead.
 
     DEBUG logging is emitted for successful API, HTMX, and UI requests.
@@ -124,7 +128,37 @@ async def log_http_requests(request: Request, call_next: Any) -> Response:
 _sim_loop: SimulationLoop | None = None
 _sim_task: asyncio.Task[None] | None = None
 _sim_substance_names: dict[int, str] = {}
-_condition_adapter = TypeAdapter(ConditionNode)
+_condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
+
+
+def _coerce_int(value: object, *, default: int = -1) -> int:
+    """Return ``value`` coerced to ``int`` when possible, otherwise ``default``."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _coerce_float(value: object, *, default: float = 0.0) -> float:
+    """Return ``value`` coerced to ``float`` when possible, otherwise ``default``."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
@@ -198,8 +232,8 @@ def _describe_activation_condition(
 
     kind = condition.get("kind")
     if kind == "enemy_presence":
-        predator_species_id = int(condition.get("predator_species_id", -1))
-        min_population = int(condition.get("min_predator_population", 1))
+        predator_species_id = _coerce_int(condition.get("predator_species_id", -1), default=-1)
+        min_population = _coerce_int(condition.get("min_predator_population", 1), default=1)
         predator_label = (
             predator_names.get(predator_species_id, f"Predator {predator_species_id}")
             if predator_names is not None
@@ -207,7 +241,7 @@ def _describe_activation_condition(
         )
         return f"{predator_label} ≥ {min_population}"
     if kind == "substance_active":
-        substance_id = int(condition.get("substance_id", -1))
+        substance_id = _coerce_int(condition.get("substance_id", -1), default=-1)
         substance_label = (
             substance_names.get(substance_id, _default_substance_name(substance_id, is_toxin=False))
             if substance_names is not None
@@ -355,7 +389,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[dict[str, Any]]:
         for neighbour_id in sorted(plant.mycorrhizal_connections):
             if neighbour_id not in plant_lookup:
                 continue
-            pair = tuple(sorted((plant_id, neighbour_id)))
+            pair = (min(plant_id, neighbour_id), max(plant_id, neighbour_id))
             if pair in seen_pairs:
                 continue
             seen_pairs.add(pair)
@@ -730,7 +764,7 @@ def _build_preview_cell_details(x: int, y: int) -> dict[str, Any]:
     preview_links = _build_draft_mycorrhizal_links(draft)
     touching_links = _links_touching_cell(preview_links, x, y)
 
-    plants = []
+    plants: list[dict[str, Any]] = []
     for index, plant in enumerate(draft.initial_plants):
         if plant.x != x or plant.y != y:
             continue
@@ -761,9 +795,11 @@ def _build_preview_cell_details(x: int, y: int) -> dict[str, Any]:
                 "configured_trigger_rules": [
                     {
                         "substance_id": rule.substance_id,
-                        "substance_name": substances.get(rule.substance_id).name
-                        if rule.substance_id in substances
-                        else _default_substance_name(rule.substance_id, is_toxin=False),
+                        "substance_name": (
+                            substances[rule.substance_id].name
+                            if rule.substance_id in substances
+                            else _default_substance_name(rule.substance_id, is_toxin=False)
+                        ),
                         "predator_species_id": rule.predator_species_id,
                         "predator_name": predator_names.get(
                             rule.predator_species_id,
@@ -893,9 +929,15 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                 "active_toxin_ids": visible_toxin_ids,
             }
         )
-    plants.sort(key=lambda plant: (int(plant["x"]), int(plant["y"]), int(plant["species_id"])))
+    plants.sort(
+        key=lambda plant: (
+            _coerce_int(plant.get("x", 0), default=0),
+            _coerce_int(plant.get("y", 0), default=0),
+            _coerce_int(plant.get("species_id", 0), default=0),
+        )
+    )
 
-    swarms = []
+    swarms: list[dict[str, Any]] = []
     for entity in world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
         toxin_level = (
@@ -919,7 +961,13 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                 "intoxicated": toxin_level > 0.0,
             }
         )
-    swarms.sort(key=lambda swarm: (int(swarm["x"]), int(swarm["y"]), int(swarm["species_id"])))
+    swarms.sort(
+        key=lambda swarm: (
+            _coerce_int(swarm.get("x", 0), default=0),
+            _coerce_int(swarm.get("y", 0), default=0),
+            _coerce_int(swarm.get("species_id", 0), default=0),
+        )
+    )
 
     species_energy: list[dict[str, object]] = []
     for species in loop.config.flora_species:
@@ -997,7 +1045,7 @@ def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
     predator_names = {
         species.species_id: species.name for species in _sim_loop.config.predator_species
     }
-    energy_stressed = []
+    energy_stressed: list[dict[str, Any]] = []
     for entity in _sim_loop.world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
         energy_deficit = float(max(0.0, swarm.population * swarm.energy_min - swarm.energy))
@@ -1014,7 +1062,12 @@ def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
                 "repelled": swarm.repelled,
             }
         )
-    energy_stressed.sort(key=lambda swarm: (-float(swarm["energy_deficit"]), str(swarm["name"])))
+    energy_stressed.sort(
+        key=lambda swarm: (
+            -_coerce_float(swarm.get("energy_deficit", 0.0), default=0.0),
+            str(swarm.get("name", "")),
+        )
+    )
     return energy_stressed[:12]
 
 
@@ -1916,7 +1969,7 @@ async def config_flora_update(
         (
             i
             for i, fp in enumerate(draft.flora_species)
-            if hasattr(fp, "species_id") and fp.species_id == species_id  # type: ignore[union-attr]
+            if isinstance(fp, FloraSpeciesParams) and fp.species_id == species_id
         ),
         None,
     )
@@ -1925,6 +1978,8 @@ async def config_flora_update(
         raise HTTPException(status_code=404, detail=f"Flora species {species_id} not found.")
 
     fp = draft.flora_species[idx]
+    if not isinstance(fp, FloraSpeciesParams):
+        raise HTTPException(status_code=400, detail="Invalid flora species entry in draft state.")
     updates: dict[str, Any] = {}
     if name is not None:
         updates["name"] = name
@@ -1949,7 +2004,7 @@ async def config_flora_update(
     if camouflage_factor is not None:
         updates["camouflage_factor"] = max(0.0, min(1.0, camouflage_factor))
 
-    draft.flora_species[idx] = fp.model_copy(update=updates)  # type: ignore[union-attr]
+    draft.flora_species[idx] = fp.model_copy(update=updates)
     logger.debug(
         "Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates)
     )
@@ -2084,7 +2139,7 @@ async def config_predator_update(
         (
             i
             for i, pp in enumerate(draft.predator_species)
-            if hasattr(pp, "species_id") and pp.species_id == species_id  # type: ignore[union-attr]
+            if isinstance(pp, PredatorSpeciesParams) and pp.species_id == species_id
         ),
         None,
     )
@@ -2093,6 +2148,10 @@ async def config_predator_update(
         raise HTTPException(status_code=404, detail=f"Predator species {species_id} not found.")
 
     pp = draft.predator_species[idx]
+    if not isinstance(pp, PredatorSpeciesParams):
+        raise HTTPException(
+            status_code=400, detail="Invalid predator species entry in draft state."
+        )
     updates: dict[str, Any] = {}
     if name is not None:
         updates["name"] = name
@@ -2109,7 +2168,7 @@ async def config_predator_update(
     if split_population_threshold is not None:
         updates["split_population_threshold"] = split_population_threshold
 
-    draft.predator_species[idx] = pp.model_copy(update=updates)  # type: ignore[union-attr]
+    draft.predator_species[idx] = pp.model_copy(update=updates)
     logger.debug(
         "Predator species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates)
     )
@@ -2924,7 +2983,7 @@ async def scenario_export() -> Response:
     draft = get_draft()
     try:
         config = draft.build_sim_config()
-        data = json.dumps(config.model_dump(), indent=2)  # type: ignore[union-attr]
+        data = json.dumps(config.model_dump(), indent=2)
     except (ValueError, AttributeError) as exc:
         logger.warning("Scenario export failed: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3090,14 +3149,14 @@ async def scenario_load_draft(request: Request) -> Any:
         with contextlib.suppress(asyncio.CancelledError):
             await _sim_task
 
-    _sim_loop = SimulationLoop(config)  # type: ignore[arg-type]
+    _sim_loop = SimulationLoop(config)
     _sim_task = None
-    _set_simulation_substance_names(config, draft=draft)  # type: ignore[arg-type]
+    _set_simulation_substance_names(config, draft=draft)
     logger.info(
         "Draft loaded: %dx%d grid, %d flora, %d predators",
         config.grid_width,
-        config.grid_height,  # type: ignore[union-attr]
+        config.grid_height,
         len(config.flora_species),
-        len(config.predator_species),  # type: ignore[union-attr]
+        len(config.predator_species),
     )
     return HTMLResponse(content=_render_status_badge_html())

@@ -80,8 +80,7 @@ whole-suite test run does not block unrelated feedback.
 The current repository-wide green lane is Ruff lint plus Ruff format check. The local contributor
 workflow is intentionally broader than hosted CI: commit-stage `pre-commit` hooks enforce hygiene
 and spelling, while push-stage hooks run strict source `mypy`, `pytest`, and
-`mkdocs build --strict`. The current type boundary targets `src/phids` and keeps a temporary
-override for `phids.api.main` while API typing debt is reduced. Those slower gates remain
+`mkdocs build --strict`. The current type boundary targets `src/phids`. Those slower gates remain
 local-first because the hosted workflow is intentionally scoped to a narrower, faster merge lane.
 
 ### Full test suite on Python 3.12

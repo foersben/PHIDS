@@ -172,8 +172,7 @@ detection, secret scanning, and spelling review. The `pre-push` stage escalates 
 repository-wide executable validation through strict source `mypy`, `pytest`, and
 `mkdocs build --strict`, thereby
 turning each push into a compact rehearsal of the same scientific reproducibility standards
-expected from merge-ready work. The current type boundary checks `src/phids` and retains a
-temporary targeted override for `phids.api.main` while legacy API typing debt is reduced.
+expected from merge-ready work. The current type boundary checks `src/phids`.
 
 Install both hook types once per clone:
 
