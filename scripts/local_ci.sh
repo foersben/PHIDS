@@ -77,4 +77,3 @@ case "$job" in
     exit 1
     ;;
 esac
-

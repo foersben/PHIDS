@@ -582,5 +582,3 @@ def test_run_lifecycle_growth_is_incremental_at_late_ticks() -> None:
 
     grown = world.get_entity(plant_entity.entity_id).get_component(PlantComponent)
     assert grown.energy == pytest.approx(10.5)
-
-

@@ -20,4 +20,3 @@ def test_signal_diffusion_wind_does_not_wrap_across_edges() -> None:
     env.diffuse_signals()
 
     assert float(env.signal_layers[0, 0, :].sum()) == 0.0
-

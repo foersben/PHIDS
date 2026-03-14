@@ -142,9 +142,9 @@ Current docstring expectations include:
 
 The active enforcement sources are:
 
-- `pyproject.toml`
-- `.pre-commit-config.yaml`
-- CI checks
+- `pyproject.toml` for docstring convention configuration
+- `.pre-commit-config.yaml` for repository hygiene and documentation-adjacent file validation
+- strict documentation builds in CI and local rehearsal
 
 Historical guidance remains preserved in:
 

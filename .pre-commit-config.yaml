@@ -1,30 +1,60 @@
+minimum_pre_commit_version: "3.7.0"
+default_language_version:
+  python: python3.12
+default_stages: [pre-commit]
+exclude: ^(site/|docs/legacy/|__pycache__/)
+
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - pydantic>=2.7
-          - numpy>=1.26
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
       - id: check-yaml
+        args: [--unsafe]
       - id: check-toml
+      - id: check-json
       - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: detect-private-key
+      - id: debug-statements
 
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.3.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.2
     hooks:
-      - id: pydocstyle
-        args: ["--convention=google"]
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args: [--ignore-words=.codespell-ignore-words.txt]
+
+  - repo: local
+    hooks:
+      - id: mypy-strict
+        name: mypy (strict, project scope)
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: pytest-suite
+        name: pytest (full suite)
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: mkdocs-strict
+        name: mkdocs build --strict
+        entry: uv run mkdocs build --strict
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

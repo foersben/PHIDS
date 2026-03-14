@@ -68,7 +68,7 @@ still track the actual codebase.
 | Requirement | Primary implementation owners | Canonical docs | Strong corroborating tests / checks |
 | --- | --- | --- | --- |
 | Ruff, mypy, pytest, MkDocs strict workflow | `pyproject.toml`, `.github/workflows/ci.yml`, `.pre-commit-config.yaml` | `docs/development/contribution-workflow-and-quality-gates.md` | CI workflow, local `uv run ...` gates |
-| Google-style docstrings | `pyproject.toml`, `.pre-commit-config.yaml`, source docstrings | `docs/development/documentation-standards.md` | `pydocstyle` via pre-commit / CI |
+| Google-style docstrings | `pyproject.toml`, source docstrings, repository writing guidance | `docs/development/documentation-standards.md` | contributor review, `pydocstyle` local audit |
 | Canonical docs with legacy provenance preserved | `docs/`, `docs/legacy/`, `mkdocs.yml` | `docs/information-architecture.md`, `docs/development/documentation-standards.md` | `uv run mkdocs build --strict` |
 
 ## Relationship to Legacy Documents

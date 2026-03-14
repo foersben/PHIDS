@@ -167,10 +167,3 @@ The container and release automation were validated with:
 
 If a future change adds static assets under `src/phids/api/static/`, update both the runtime image
 and `packaging/phids.spec` so those assets are included in the container and bundled binaries.
-
-
-
-
-
-
-

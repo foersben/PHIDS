@@ -65,4 +65,3 @@ scholarly, and scientific writing style:
      double-buffering) and the biological phenomena it simulates.
 5. **Formatting:** Adhere strictly to Google-style docstrings, but expand the top-level description
    into a mini-essay or scholarly abstract.
-

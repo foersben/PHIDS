@@ -52,8 +52,10 @@ Attributes:
 """
 
 Enforcement
-- `pydocstyle` is configured in `pyproject.toml` and runs in pre-commit/CI.
-- Use `--convention=google` with pydocstyle.
+- `pydocstyle` remains configured in `pyproject.toml` as a local audit tool for docstring
+  conformance.
+- Google-style structure is additionally reinforced through the repository documentation policy and
+  contributor review rather than through a blocking CI hook.
 
 Notes
 - mkdocstrings will render these docstrings in the API reference automatically.
@@ -82,4 +84,3 @@ behavior via O(1) spatial hash co-occupancy checks. When a swarm's accumulated
 energy surpasses the biological threshold, the system triggers mitosis, splitting
 the population to simulate offspring generation.
 """
-

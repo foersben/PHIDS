@@ -162,6 +162,33 @@ uv run pytest
 uv run mkdocs build --strict
 ```
 
+### 5) Install repository hook gates
+
+PHIDS uses a staged `pre-commit` regimen so that the commit boundary remains fast enough for
+iterative work while the push boundary still rehearses the expensive integrity checks that protect
+the engine, the documentation corpus, and the public contributor surface. The `pre-commit` stage
+enforces repository hygiene, Ruff linting/formatting, YAML and TOML validity, merge-conflict
+detection, secret scanning, and spelling review. The `pre-push` stage escalates to green,
+repository-wide executable validation through `pytest` and `mkdocs build --strict`, thereby
+turning each push into a compact rehearsal of the same scientific reproducibility standards
+expected from merge-ready work. Strict `mypy` remains available as an explicit manual audit rather
+than a blocking push hook because the repository still carries pre-existing type debt outside the
+scope of this infrastructure upgrade.
+
+Install both hook types once per clone:
+
+```bash
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+```
+
+Rehearse them manually when needed:
+
+```bash
+uv run pre-commit run --all-files
+uv run pre-commit run --all-files --hook-stage pre-push
+uv run pre-commit run mypy-strict --hook-stage manual
+```
+
 ---
 
 ## 🐳 Containerized execution
@@ -205,6 +232,14 @@ Scripted local CI:
 
 ```bash
 ./scripts/local_ci.sh all
+```
+
+Hook-only verification:
+
+```bash
+uv run pre-commit run --all-files
+uv run pre-commit run --all-files --hook-stage pre-push
+uv run pre-commit run mypy-strict --hook-stage manual
 ```
 
 Optional workflow rehearsal:

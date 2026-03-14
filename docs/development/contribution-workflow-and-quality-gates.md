@@ -154,7 +154,7 @@ The project metadata currently declares:
 - Ruff targeting `py312`,
 - strict mypy over `src/phids` and `tests`,
 - pytest with coverage and benchmark addopts,
-- Google-style docstrings via `pydocstyle`.
+- Google-style docstring conventions recorded in `pyproject.toml` and the documentation guidance.
 
 ## Quality Gates in Current Configuration
 
@@ -199,7 +199,8 @@ expensive CI lane.
 A contributor should treat this as the authoritative parity target for merge-ready work.
 
 `pre-commit` and `mypy` still exist as useful local cleanup tools, but they are not currently part
-of the merge-blocking CI path because the repository still carries pre-existing type/docstyle debt.
+of the merge-blocking CI path because the repository still carries pre-existing type debt and the
+maintainers intentionally keep the hosted workflow narrower than the full local contributor gate.
 
 For the reasoning behind that split and how to rehearse it locally with `act`, see:
 
@@ -207,17 +208,53 @@ For the reasoning behind that split and how to rehearse it locally with `act`, s
 
 ## Pre-commit Responsibilities
 
-The current pre-commit setup runs:
+The repository now uses a staged hook topology. This separation is deliberate. A commit should fail
+quickly on mechanical defects that can be repaired immediately, whereas a push should fail on
+deeper semantic regressions before they leave the developer workstation.
 
-- Ruff with `--fix`,
-- Ruff format,
-- mypy,
-- whitespace and file-ending hygiene hooks,
-- YAML/TOML validity checks,
-- merge-conflict checks,
-- `pydocstyle --convention=google`.
+### Commit-stage hooks (`pre-commit`)
 
-This means style and structural hygiene are enforced before CI, not only inside it.
+The `pre-commit` stage performs fast repository hygiene and source normalization:
+
+- trailing-whitespace and end-of-file normalization,
+- LF line-ending enforcement,
+- YAML, TOML, and JSON structural validation,
+- merge-conflict and case-conflict detection,
+- large-file and private-key guards,
+- Python debug-statement detection,
+- Ruff lint autofix and Ruff formatting,
+- codespell with a repository-scoped ignore list for domain-specific false positives.
+
+### Push-stage hooks (`pre-push`)
+
+The `pre-push` stage runs slower whole-project checks whose failure would materially compromise the
+simulation as a scientific software artifact:
+
+- `uv run pytest`,
+- `uv run mkdocs build --strict`.
+
+Strict `mypy` remains wired into the repository as a manual audit rather than a blocking push hook.
+That choice is intentional: the project still carries pre-existing type debt, so a permanently red
+push hook would degrade contributor trust in the tooling instead of strengthening it.
+
+Install both hook types once per clone:
+
+```bash
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+```
+
+Rehearse both blocking stages explicitly when preparing a merge-worthy branch:
+
+```bash
+uv run pre-commit run --all-files
+uv run pre-commit run --all-files --hook-stage pre-push
+```
+
+Run the strict type audit on demand:
+
+```bash
+uv run pre-commit run mypy-strict --hook-stage manual
+```
 
 ## Focused Test Selection
 
@@ -273,7 +310,7 @@ documentation surface.
 Current rules include:
 
 - Google-style docstrings,
-- `pydocstyle` enforcement,
+- scholarly prose rules captured in `docs/docstring_guidelines.md`,
 - clear Args/Returns/Notes structure when useful,
 - alignment with actual runtime behavior.
 
@@ -339,4 +376,3 @@ Good contributions preserve this chain instead of short-circuiting it.
 - For draft-to-live semantics: [`../ui/draft-state-and-load-workflow.md`](../ui/draft-state-and-load-workflow.md)
 - For the architecture-level state boundary overview: [`../architecture/index.md`](../architecture/index.md)
 - For the current docs handoff and deferred work: [`documentation-status-and-open-work.md`](documentation-status-and-open-work.md)
-

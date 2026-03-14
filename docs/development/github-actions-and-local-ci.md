@@ -77,9 +77,12 @@ whole-suite test run does not block unrelated feedback.
 
 ### Quality job
 
-The current repository-wide green lane is Ruff lint plus Ruff format check. Full `pre-commit`,
-`mypy`, and `pydocstyle` are still useful local cleanup tools, but they are not currently part of
-the merge-blocking workflow because the repository still carries pre-existing type/docstyle debt.
+The current repository-wide green lane is Ruff lint plus Ruff format check. The local contributor
+workflow is intentionally broader than hosted CI: commit-stage `pre-commit` hooks enforce hygiene
+and spelling, while push-stage hooks run the currently green repository-wide executables:
+`pytest` and `mkdocs build --strict`. Strict `mypy` remains available as a manual audit because
+the repository still carries pre-existing type debt. Those slower gates remain local-first because
+the hosted workflow is intentionally scoped to a narrower, faster merge lane.
 
 ### Full test suite on Python 3.12
 
@@ -116,6 +119,12 @@ through the normal test suite.
 
 PHIDS now supports two local rehearsal modes.
 
+Before either mode is useful, install both repository hook stages once:
+
+```bash
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+```
+
 ### 1. Fast local parity on your current interpreter
 
 Use the helper script:
@@ -134,6 +143,14 @@ You can also run specific slices:
 
 This path is best when you want quick confirmation that the repo passes the same top-level commands
 without waiting for GitHub.
+
+If the goal is hook parity rather than CI parity, run:
+
+```bash
+uv run pre-commit run --all-files
+uv run pre-commit run --all-files --hook-stage pre-push
+uv run pre-commit run mypy-strict --hook-stage manual
+```
 
 ### 2. Containerized workflow rehearsal with `act`
 
@@ -234,4 +251,3 @@ Then, if you want to rehearse a specific GitHub Actions job locally:
 - For the broader contributor workflow: [`contribution-workflow-and-quality-gates.md`](contribution-workflow-and-quality-gates.md)
 - For the testing rationale behind the selected jobs: [`testing-strategy-and-benchmark-policy.md`](testing-strategy-and-benchmark-policy.md)
 - For the current documentation handoff/backlog: [`documentation-status-and-open-work.md`](documentation-status-and-open-work.md)
-

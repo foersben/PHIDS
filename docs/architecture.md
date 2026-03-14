@@ -223,4 +223,3 @@ Taken together, the four diagrams show PHIDS as a simulation architecture in whi
 depends on explicit state ownership, strict phase ordering, and bounded lifecycle transitions. That is
 the level at which the documentation should be read: not as a collection of disconnected boxes and
 arrows, but as an argument for why the simulator remains interpretable under change.
-

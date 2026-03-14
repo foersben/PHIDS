@@ -324,4 +324,3 @@ These are the kinds of behaviors contributors should protect first when making c
 - For contributor workflow around these checks: [`contribution-workflow-and-quality-gates.md`](contribution-workflow-and-quality-gates.md)
 - For quality-gate traceability: [`../reference/requirements-traceability.md`](../reference/requirements-traceability.md)
 - For benchmark-sensitive runtime subsystems: [`../engine/flow-field.md`](../engine/flow-field.md) and [`../engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md)
-
