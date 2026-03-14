@@ -1810,6 +1810,9 @@ async def batch_export(
     format: str = "csv",  # noqa: A002
     tick_interval: int = 1,
     columns: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
 ) -> Response:
     """Export a batch aggregate summary as CSV, LaTeX table, or PGFPlots TikZ source.
 
@@ -1860,7 +1863,13 @@ async def batch_export(
                 "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
                 "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
             })
-        tikz = generate_tikz_str(rows_agg, "timeseries")
+        tikz = generate_tikz_str(
+            rows_agg,
+            "timeseries",
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
         data = tikz.encode("utf-8")
         filename = f"phids_batch_{job_id}.tex"
         media_type = "text/plain"

@@ -54,6 +54,10 @@
         <input id="batch-chart-title" type="text" placeholder="Batch aggregate dynamics"
           class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
       </label>
+      <label>X-axis label
+        <input id="batch-x-label" type="text" placeholder="Tick"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
       <label>Population axis label
         <input id="batch-y-label" type="text" placeholder="Population (mean ± sigma)"
           class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
@@ -144,6 +148,7 @@
             const tablePreview = document.getElementById('batch-table-preview');
                     const colsSelect = document.getElementById('batch-columns');
                     const chartTitleInput = document.getElementById('batch-chart-title');
+                                    const xLabelInput = document.getElementById('batch-x-label');
                     const yLabelInput = document.getElementById('batch-y-label');
 
                     function _selectedColumnsCsv() {
@@ -158,9 +163,12 @@
             function _syncBatchExportLinks() {
               const stride = Math.max(1, parseInt(strideInput?.value || '1', 10) || 1);
                       const columns = encodeURIComponent(_selectedColumnsCsv());
+                      const title = encodeURIComponent(chartTitleInput?.value || '');
+                      const xLabel = encodeURIComponent(xLabelInput?.value || '');
+                      const yLabel = encodeURIComponent(yLabelInput?.value || '');
                       if (csvExport) csvExport.href = `/api/batch/export/{{ job_id }}?format=csv&tick_interval=${stride}&columns=${columns}`;
                       if (texExport) texExport.href = `/api/batch/export/{{ job_id }}?format=tex_table&tick_interval=${stride}&columns=${columns}`;
-                      if (tikzExport) tikzExport.href = `/api/batch/export/{{ job_id }}?format=tex_tikz&tick_interval=${stride}`;
+                      if (tikzExport) tikzExport.href = `/api/batch/export/{{ job_id }}?format=tex_tikz&tick_interval=${stride}&title=${title}&x_label=${xLabel}&y_label=${yLabel}`;
 
               if (!tablePreview) return;
               let html = '<table class="min-w-full text-[11px]">';
@@ -207,6 +215,7 @@
                     const onChartMetaChange = () => {
                       if (!ctx || !ctx._batchChart) return;
                       const title = chartTitleInput?.value || '';
+                                      const xlabel = xLabelInput?.value || '';
                       const ylabel = yLabelInput?.value || '';
                       ctx._batchChart.options.plugins = ctx._batchChart.options.plugins || {};
                       ctx._batchChart.options.plugins.title = {
@@ -217,9 +226,18 @@
                       if (ctx._batchChart.options.scales?.y?.title) {
                         ctx._batchChart.options.scales.y.title.text = ylabel || 'Population (mean ± sigma)';
                       }
+                                      if (ctx._batchChart.options.scales?.x) {
+                                        ctx._batchChart.options.scales.x.title = {
+                                          display: true,
+                                          text: xlabel || 'Tick',
+                                          font: { size: 10 },
+                                        };
+                                      }
                       ctx._batchChart.update();
+                                      _syncBatchExportLinks();
                     };
                     if (chartTitleInput) chartTitleInput.addEventListener('input', onChartMetaChange);
+                                    if (xLabelInput) xLabelInput.addEventListener('input', onChartMetaChange);
                     if (yLabelInput) yLabelInput.addEventListener('input', onChartMetaChange);
 
                     phidsBatchTab('chart');

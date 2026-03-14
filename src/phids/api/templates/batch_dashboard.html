@@ -127,5 +127,17 @@ function phidsBatchLoadPersisted() {
       resultEl.innerHTML = `<span class="text-red-600">Load failed: ${err}</span>`;
     });
 }
+
+// Ensure scripts inside HTMX-swapped batch detail fragments execute reliably.
+document.body.addEventListener('htmx:afterSwap', function (evt) {
+  const target = evt.detail && evt.detail.target;
+  if (!target || target.id !== 'batch-detail') return;
+  const scripts = target.querySelectorAll('script:not([type]), script[type="text/javascript"]');
+  scripts.forEach((scriptEl) => {
+    const replacement = document.createElement('script');
+    replacement.textContent = scriptEl.textContent;
+    scriptEl.replaceWith(replacement);
+  });
+});
 </script>
 

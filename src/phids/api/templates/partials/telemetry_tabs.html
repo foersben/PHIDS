@@ -149,6 +149,8 @@
   let _defenseChart = null;
   let _biomassChart = null;
   let _lastData = null;
+  let _lastTickSeen = -1;
+  let _lastSpeciesSignature = '';
 
   // Colour palettes
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
@@ -157,6 +159,10 @@
 
   // Species visibility flags
   const _visible = {};
+
+  function _resetTelemetryUiState() {
+    Object.keys(_visible).forEach(key => { delete _visible[key]; });
+  }
 
   function _isVisible(key) {
     return _visible[key] !== false;
@@ -676,11 +682,24 @@
   // Polling / update entry point
   // ---------------------------------------------------------------------------
   window.phidsTelemetryUpdate = function (data) {
+    const labels = data.labels || [];
+    const latestTick = labels.length > 0 ? labels[labels.length - 1] : -1;
+    const speciesSignature = JSON.stringify({
+      flora: data.flora_ids || [],
+      predators: data.predator_ids || [],
+    });
+    if ((_lastTickSeen >= 0 && latestTick >= 0 && latestTick < _lastTickSeen) ||
+      (_lastSpeciesSignature && speciesSignature !== _lastSpeciesSignature)) {
+      _resetTelemetryUiState();
+    }
+
     _lastData = data;
     const psActive = !document.getElementById('panel-ps').classList.contains('hidden');
     _buildTsChart(data);
     if (psActive) _buildPsChart(data);
     _refreshExportLinks(data);
+    _lastTickSeen = latestTick;
+    _lastSpeciesSignature = speciesSignature;
   };
 
   // Periodic polling (every 2 s while visible)
