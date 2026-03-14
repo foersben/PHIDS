@@ -30,6 +30,7 @@ def test_required_routes_present() -> None:
     assert "/api/export/{data_type}" in paths
     assert "/api/batch/start" in paths
     assert "/api/batch/ledger" in paths
+    assert "/api/batch/load-persisted" in paths
     assert "/ui/batch" in paths
     assert "/ws/simulation/stream" in paths
     assert "/ws/ui/stream" in paths

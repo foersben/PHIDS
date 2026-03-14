@@ -60,6 +60,15 @@
     <!-- ── Right: Ledger ───────────────────────────────────────────── -->
     <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3">
       <h2 class="text-base font-semibold text-slate-700">Job Ledger</h2>
+      <div class="flex items-center gap-2">
+        <button onclick="phidsBatchLoadPersisted()"
+          class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+          ⟳ Load Persisted Batches
+        </button>
+        <span class="text-[11px] text-slate-500">
+          Completed batches are stored automatically as <code>*_summary.json</code> in <code>data/batches</code>.
+        </span>
+      </div>
       <div id="batch-ledger"
         hx-get="/api/batch/ledger"
         hx-trigger="load, every 3s"
@@ -103,6 +112,20 @@ function phidsBatchStart() {
     }
   })
   .catch(err => { resultEl.innerHTML = `<span class="text-red-600">Request failed: ${err}</span>`; });
+}
+
+function phidsBatchLoadPersisted() {
+  const resultEl = document.getElementById('batch-submit-result');
+  resultEl.textContent = 'Loading persisted batches…';
+  fetch('/api/batch/load-persisted', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      resultEl.innerHTML = `<span class="text-emerald-600">✓ Loaded ${d.loaded} persisted batches (${d.total} jobs visible).</span>`;
+      htmx.trigger('#batch-ledger', 'load');
+    })
+    .catch(err => {
+      resultEl.innerHTML = `<span class="text-red-600">Load failed: ${err}</span>`;
+    });
 }
 </script>
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 from collections.abc import Awaitable, Callable
+import datetime
 import json
 import logging
 import pathlib
@@ -1571,6 +1572,43 @@ async def export_telemetry_format(
 _BATCH_DIR = pathlib.Path("data") / "batches"
 
 
+def _discover_persisted_batches() -> list[BatchJobState]:
+    """Discover persisted batch summaries from disk and map them to UI job rows.
+
+    Returns:
+        list[BatchJobState]: Jobs reconstructed from ``*_summary.json`` files.
+    """
+    if not _BATCH_DIR.exists():
+        return []
+
+    discovered: list[BatchJobState] = []
+    for summary_path in sorted(_BATCH_DIR.glob("*_summary.json")):
+        job_id = summary_path.stem.removesuffix("_summary")
+        try:
+            with summary_path.open(encoding="utf-8") as fp:
+                aggregate = json.load(fp)
+        except Exception:
+            logger.warning("Skipping unreadable batch summary file: %s", summary_path)
+            continue
+
+        runs_completed = int(aggregate.get("runs_completed", 1) or 1)
+        ticks = aggregate.get("ticks", [])
+        started_at = datetime.datetime.fromtimestamp(summary_path.stat().st_mtime, tz=datetime.timezone.utc)
+        discovered.append(
+            BatchJobState(
+                job_id=job_id,
+                status="done",
+                completed=runs_completed,
+                total=runs_completed,
+                scenario_name=f"persisted_{job_id}",
+                started_at=started_at.isoformat(),
+                finished_at=started_at.isoformat(),
+                max_ticks=len(ticks),
+            )
+        )
+    return discovered
+
+
 @app.get("/ui/batch", response_class=HTMLResponse, summary="Batch runner dashboard")
 async def ui_batch_dashboard(request: Request) -> Any:
     """Render the Monte Carlo batch runner dashboard partial.
@@ -1715,6 +1753,23 @@ async def batch_ledger(request: Request) -> Any:
     )
 
 
+@app.post("/api/batch/load-persisted", summary="Load persisted batch summaries into the UI ledger")
+async def batch_load_persisted() -> JSONResponse:
+    """Load persisted batch summaries from disk into draft ``active_batch_jobs``.
+
+    Returns:
+        JSONResponse: Number of jobs loaded into memory.
+    """
+    draft = get_draft()
+    loaded = 0
+    for job in _discover_persisted_batches():
+        if job.job_id not in draft.active_batch_jobs:
+            draft.active_batch_jobs[job.job_id] = job
+            loaded += 1
+    logger.info("Loaded %d persisted batch jobs into UI ledger", loaded)
+    return JSONResponse({"loaded": loaded, "total": len(draft.active_batch_jobs)})
+
+
 @app.get("/api/batch/view/{job_id}", response_class=HTMLResponse, summary="Batch aggregate view")
 async def batch_view(request: Request, job_id: str) -> Any:
     """Return an HTMX fragment showing aggregate statistics for a completed batch job.
@@ -1754,6 +1809,7 @@ async def batch_export(
     job_id: str,
     format: str = "csv",  # noqa: A002
     tick_interval: int = 1,
+    columns: str | None = None,
 ) -> Response:
     """Export a batch aggregate summary as CSV, LaTeX table, or PGFPlots TikZ source.
 
@@ -1780,6 +1836,7 @@ async def batch_export(
     df = aggregate_to_dataframe(aggregate)
     if tick_interval < 1:
         raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
+    df = filter_dataframe_columns(df, columns)
     df = decimate_dataframe(df, tick_interval)
 
     if format == "csv":

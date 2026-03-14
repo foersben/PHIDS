@@ -188,6 +188,77 @@ async def test_batch_view_renders_survival_chart_when_summary_exists(
 
 
 @pytest.mark.asyncio
+async def test_load_persisted_batches_populates_ledger(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ensures persisted summary files can be reloaded into the in-memory batch ledger."""
+    summary_path = tmp_path / "batches"
+    summary_path.mkdir(parents=True, exist_ok=True)
+    (summary_path / "persisted01_summary.json").write_text(
+        json.dumps(
+            {
+                "ticks": [0, 1],
+                "flora_population_mean": [5.0, 4.0],
+                "flora_population_std": [0.0, 0.1],
+                "predator_population_mean": [2.0, 2.0],
+                "predator_population_std": [0.0, 0.1],
+                "survival_probability_curve": [1.0, 1.0],
+                "extinction_probability": 0.0,
+                "runs_completed": 3,
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(api_main, "_BATCH_DIR", summary_path)
+
+    async with _default_client() as client:
+        load_resp = await client.post("/api/batch/load-persisted")
+        ledger_resp = await client.get("/api/batch/ledger")
+
+    assert load_resp.status_code == 200
+    assert load_resp.json()["loaded"] == 1
+    assert ledger_resp.status_code == 200
+    assert "persisted01" in ledger_resp.text
+
+
+@pytest.mark.asyncio
+async def test_batch_export_csv_respects_tick_interval_decimation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Validates batch CSV export row count decreases when tick_interval increases."""
+    job_id = "decimate01"
+    summary = {
+        "ticks": [0, 1, 2, 3, 4, 5],
+        "flora_population_mean": [10, 9, 8, 7, 6, 5],
+        "flora_population_std": [0, 0, 0, 0, 0, 0],
+        "predator_population_mean": [1, 1, 2, 2, 3, 3],
+        "predator_population_std": [0, 0, 0, 0, 0, 0],
+        "survival_probability_curve": [1, 1, 1, 0.8, 0.8, 0.6],
+        "extinction_probability": 0.4,
+        "runs_completed": 5,
+    }
+    batch_dir = tmp_path / "batches"
+    batch_dir.mkdir(parents=True, exist_ok=True)
+    (batch_dir / f"{job_id}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
+
+    async with _default_client() as client:
+        full_resp = await client.get(f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 1})
+        decimated_resp = await client.get(
+            f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 2}
+        )
+
+    assert full_resp.status_code == 200
+    assert decimated_resp.status_code == 200
+    full_lines = [line for line in full_resp.text.splitlines() if line.strip()]
+    decimated_lines = [line for line in decimated_resp.text.splitlines() if line.strip()]
+    # Both include header; decimated export must contain fewer data rows.
+    assert len(full_lines) > len(decimated_lines)
+
+
+@pytest.mark.asyncio
 async def test_export_route_accepts_metabolic_alias_and_returns_tikz() -> None:
     """Validates that the metabolic alias resolves to defense-economy export generation."""
     draft = get_draft()
