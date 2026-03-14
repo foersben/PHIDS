@@ -256,9 +256,20 @@ def _remap_condition_references(
     if condition is None:
         return None
 
+    def _int_from_condition(key: str, default: int = -1) -> int:
+        raw = condition.get(key, default)
+        if isinstance(raw, bool):
+            return default
+        if isinstance(raw, (int, float, str)):
+            try:
+                return int(raw)
+            except ValueError:
+                return default
+        return default
+
     kind = condition.get("kind")
     if kind == "enemy_presence":
-        predator_species_id = int(condition.get("predator_species_id", -1))
+        predator_species_id = _int_from_condition("predator_species_id")
         if removed_predator_id is not None:
             if predator_species_id == removed_predator_id:
                 return None
@@ -266,7 +277,7 @@ def _remap_condition_references(
                 condition["predator_species_id"] = predator_species_id - 1
         return condition
     if kind == "substance_active":
-        substance_id = int(condition.get("substance_id", -1))
+        substance_id = _int_from_condition("substance_id")
         if removed_substance_id is not None:
             if substance_id == removed_substance_id:
                 return None
@@ -373,12 +384,12 @@ class DraftState:
         from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams
 
         self.flora_species = [
-            fp.model_copy(update={"species_id": i})  # type: ignore[union-attr]
+            fp.model_copy(update={"species_id": i})
             for i, fp in enumerate(self.flora_species)
             if isinstance(fp, FloraSpeciesParams)
         ]
         self.predator_species = [
-            pp.model_copy(update={"species_id": i})  # type: ignore[union-attr]
+            pp.model_copy(update={"species_id": i})
             for i, pp in enumerate(self.predator_species)
             if isinstance(pp, PredatorSpeciesParams)
         ]
@@ -819,6 +830,7 @@ class DraftState:
             FloraSpeciesParams,
             InitialPlantPlacement,
             InitialSwarmPlacement,
+            PredatorSpeciesParams,
             SimulationConfig,
             TriggerConditionSchema,
         )
@@ -904,7 +916,9 @@ class DraftState:
             wind_x=self.wind_x,
             wind_y=self.wind_y,
             flora_species=flora_with_triggers,
-            predator_species=list(self.predator_species),  # type: ignore[arg-type]
+            predator_species=[
+                pp for pp in self.predator_species if isinstance(pp, PredatorSpeciesParams)
+            ],
             diet_matrix=DietCompatibilityMatrix(rows=diet_rows),
             initial_plants=plant_placements,
             initial_swarms=swarm_placements,

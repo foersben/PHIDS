@@ -42,7 +42,8 @@ def _make_gaussian_kernel(
     ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)
     xx, yy = np.meshgrid(ax, ax)
     kernel: npt.NDArray[np.float64] = np.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))
-    return kernel / kernel.sum()
+    normalized = np.asarray(kernel / kernel.sum(), dtype=np.float64)
+    return normalized
 
 
 DIFFUSION_KERNEL: npt.NDArray[np.float64] = _make_gaussian_kernel()

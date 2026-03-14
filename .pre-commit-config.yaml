@@ -43,7 +43,7 @@ repos:
         entry: uv run mypy
         language: system
         pass_filenames: false
-        stages: [manual]
+        stages: [pre-push]
 
       - id: pytest-suite
         name: pytest (full suite)

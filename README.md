@@ -169,11 +169,11 @@ iterative work while the push boundary still rehearses the expensive integrity c
 the engine, the documentation corpus, and the public contributor surface. The `pre-commit` stage
 enforces repository hygiene, Ruff linting/formatting, YAML and TOML validity, merge-conflict
 detection, secret scanning, and spelling review. The `pre-push` stage escalates to green,
-repository-wide executable validation through `pytest` and `mkdocs build --strict`, thereby
+repository-wide executable validation through strict source `mypy`, `pytest`, and
+`mkdocs build --strict`, thereby
 turning each push into a compact rehearsal of the same scientific reproducibility standards
-expected from merge-ready work. Strict `mypy` remains available as an explicit manual audit rather
-than a blocking push hook because the repository still carries pre-existing type debt outside the
-scope of this infrastructure upgrade.
+expected from merge-ready work. The current type boundary checks `src/phids` and retains a
+temporary targeted override for `phids.api.main` while legacy API typing debt is reduced.
 
 Install both hook types once per clone:
 
@@ -186,7 +186,6 @@ Rehearse them manually when needed:
 ```bash
 uv run pre-commit run --all-files
 uv run pre-commit run --all-files --hook-stage pre-push
-uv run pre-commit run mypy-strict --hook-stage manual
 ```
 
 ---
@@ -239,7 +238,6 @@ Hook-only verification:
 ```bash
 uv run pre-commit run --all-files
 uv run pre-commit run --all-files --hook-stage pre-push
-uv run pre-commit run mypy-strict --hook-stage manual
 ```
 
 Optional workflow rehearsal:

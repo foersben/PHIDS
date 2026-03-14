@@ -246,9 +246,12 @@ def run_signaling(
             # Ensure a substance entity exists for this (plant, substance_id) pair
             existing_sub = None
             for sub_entity in world.query(SubstanceComponent):
-                sub: SubstanceComponent = sub_entity.get_component(SubstanceComponent)
-                if sub.owner_plant_id == plant.entity_id and sub.substance_id == trig.substance_id:
-                    existing_sub = sub
+                candidate_sub: SubstanceComponent = sub_entity.get_component(SubstanceComponent)
+                if (
+                    candidate_sub.owner_plant_id == plant.entity_id
+                    and candidate_sub.substance_id == trig.substance_id
+                ):
+                    existing_sub = candidate_sub
                     break
 
             if existing_sub is None:

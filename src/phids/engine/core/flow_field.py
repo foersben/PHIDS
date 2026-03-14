@@ -93,7 +93,10 @@ def compute_flow_field(
         npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
     """
     toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
-    return _compute_flow_field(plant_energy, toxin_sum, width, height)
+    result = np.asarray(
+        _compute_flow_field(plant_energy, toxin_sum, width, height), dtype=np.float64
+    )
+    return result
 
 
 def apply_camouflage(

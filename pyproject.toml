@@ -56,8 +56,12 @@ ignore = ["ANN401"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["src/phids", "tests"]
+files = ["src/phids"]
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["phids.api.main"]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

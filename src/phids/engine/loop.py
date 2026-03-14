@@ -108,23 +108,23 @@ class SimulationLoop:
         spawned_plants = 0
         spawned_swarms = 0
 
-        for placement in self.config.initial_plants:
-            params = self._flora_params.get(placement.species_id)
+        for plant_placement in self.config.initial_plants:
+            params = self._flora_params.get(plant_placement.species_id)
             if params is None:
                 logger.warning(
                     "Skipping initial plant placement with unknown flora species_id=%d at (%d, %d)",
-                    placement.species_id,
-                    placement.x,
-                    placement.y,
+                    plant_placement.species_id,
+                    plant_placement.x,
+                    plant_placement.y,
                 )
                 continue
             entity = self.world.create_entity()
             plant = PlantComponent(
                 entity_id=entity.entity_id,
-                species_id=placement.species_id,
-                x=placement.x,
-                y=placement.y,
-                energy=placement.energy,
+                species_id=plant_placement.species_id,
+                x=plant_placement.x,
+                y=plant_placement.y,
+                energy=plant_placement.energy,
                 max_energy=params.max_energy,
                 base_energy=params.base_energy,
                 growth_rate=params.growth_rate,
@@ -137,33 +137,40 @@ class SimulationLoop:
                 camouflage_factor=params.camouflage_factor,
             )
             self.world.add_component(entity.entity_id, plant)
-            self.world.register_position(entity.entity_id, placement.x, placement.y)
+            self.world.register_position(entity.entity_id, plant_placement.x, plant_placement.y)
             self.env.set_plant_energy(
-                placement.x, placement.y, placement.species_id, placement.energy
+                plant_placement.x,
+                plant_placement.y,
+                plant_placement.species_id,
+                plant_placement.energy,
             )
             spawned_plants += 1
 
-        for placement in self.config.initial_swarms:
+        for swarm_placement in self.config.initial_swarms:
             entity = self.world.create_entity()
             swarm = SwarmComponent(
                 entity_id=entity.entity_id,
-                species_id=placement.species_id,
-                x=placement.x,
-                y=placement.y,
-                population=placement.population,
-                initial_population=placement.population,
-                energy=placement.energy,
-                energy_min=self._get_predator_energy_min(placement.species_id),
-                velocity=self._get_predator_velocity(placement.species_id),
-                consumption_rate=self._get_predator_consumption_rate(placement.species_id),
+                species_id=swarm_placement.species_id,
+                x=swarm_placement.x,
+                y=swarm_placement.y,
+                population=swarm_placement.population,
+                initial_population=swarm_placement.population,
+                energy=swarm_placement.energy,
+                energy_min=self._get_predator_energy_min(swarm_placement.species_id),
+                velocity=self._get_predator_velocity(swarm_placement.species_id),
+                consumption_rate=self._get_predator_consumption_rate(swarm_placement.species_id),
                 reproduction_energy_divisor=self._get_predator_reproduction_divisor(
-                    placement.species_id
+                    swarm_placement.species_id
                 ),
-                energy_upkeep_per_individual=self._get_predator_energy_upkeep(placement.species_id),
-                split_population_threshold=self._get_predator_split_threshold(placement.species_id),
+                energy_upkeep_per_individual=self._get_predator_energy_upkeep(
+                    swarm_placement.species_id
+                ),
+                split_population_threshold=self._get_predator_split_threshold(
+                    swarm_placement.species_id
+                ),
             )
             self.world.add_component(entity.entity_id, swarm)
-            self.world.register_position(entity.entity_id, placement.x, placement.y)
+            self.world.register_position(entity.entity_id, swarm_placement.x, swarm_placement.y)
             spawned_swarms += 1
 
         self.env.rebuild_energy_layer()

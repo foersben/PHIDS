@@ -34,7 +34,8 @@ class InMemoryLogHandler(logging.Handler):
         try:
             message = record.getMessage()
             if record.exc_info:
-                exc_text = self.formatException(record.exc_info)
+                formatter = self.formatter or logging.Formatter()
+                exc_text = formatter.formatException(record.exc_info)
                 if exc_text:
                     message = f"{message}\n{exc_text}"
             entry = {

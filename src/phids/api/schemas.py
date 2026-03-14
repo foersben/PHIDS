@@ -431,17 +431,17 @@ class SimulationConfig(BaseModel):
     def _validate_species_ids(self) -> SimulationConfig:
         flora_ids = {s.species_id for s in self.flora_species}
         predator_ids = {s.species_id for s in self.predator_species}
-        for placement in self.initial_plants:
-            if placement.species_id not in flora_ids:
+        for plant_placement in self.initial_plants:
+            if plant_placement.species_id not in flora_ids:
                 raise ValueError(
                     f"InitialPlantPlacement references unknown "
-                    f"flora species {placement.species_id}."
+                    f"flora species {plant_placement.species_id}."
                 )
-        for placement in self.initial_swarms:
-            if placement.species_id not in predator_ids:
+        for swarm_placement in self.initial_swarms:
+            if swarm_placement.species_id not in predator_ids:
                 raise ValueError(
                     f"InitialSwarmPlacement references unknown predator species "
-                    f"{placement.species_id}."
+                    f"{swarm_placement.species_id}."
                 )
         return self
 

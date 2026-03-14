@@ -233,9 +233,8 @@ simulation as a scientific software artifact:
 - `uv run pytest`,
 - `uv run mkdocs build --strict`.
 
-Strict `mypy` remains wired into the repository as a manual audit rather than a blocking push hook.
-That choice is intentional: the project still carries pre-existing type debt, so a permanently red
-push hook would degrade contributor trust in the tooling instead of strengthening it.
+The strict type gate currently targets runtime source modules (`src/phids`). A temporary
+module-level override remains for `phids.api.main` while API typing debt is retired.
 
 Install both hook types once per clone:
 
@@ -248,12 +247,6 @@ Rehearse both blocking stages explicitly when preparing a merge-worthy branch:
 ```bash
 uv run pre-commit run --all-files
 uv run pre-commit run --all-files --hook-stage pre-push
-```
-
-Run the strict type audit on demand:
-
-```bash
-uv run pre-commit run mypy-strict --hook-stage manual
 ```
 
 ## Focused Test Selection
