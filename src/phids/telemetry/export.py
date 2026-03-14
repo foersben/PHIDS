@@ -49,6 +49,37 @@ _FLORA_COLOURS = ["#22c55e", "#84cc16", "#10b981", "#4ade80", "#a3e635"]
 _PREDATOR_COLOURS = ["#ef4444", "#f97316", "#ec4899", "#f43f5e", "#fb923c"]
 
 
+def _append_species_id(csv_ids: str | None, species_id: int) -> str:
+    """Return a comma-delimited id list that contains ``species_id``.
+
+    Args:
+        csv_ids: Existing CSV id list or ``None``.
+        species_id: Species identifier that must be present.
+
+    Returns:
+        str: Normalized CSV list including ``species_id``.
+    """
+    ids = _parse_species_ids(csv_ids) or set()
+    ids.add(int(species_id))
+    return ",".join(str(i) for i in sorted(ids))
+
+
+def decimate_dataframe(df: "pd.DataFrame", tick_interval: int) -> "pd.DataFrame":
+    """Return a tick-decimated DataFrame using stride semantics.
+
+    Args:
+        df: Input DataFrame.
+        tick_interval: Row stride; values below 1 are treated as 1.
+
+    Returns:
+        pd.DataFrame: Decimated DataFrame.
+    """
+    stride = max(1, int(tick_interval))
+    if stride <= 1 or df.empty:
+        return df
+    return df.iloc[::stride, :]
+
+
 def _parse_species_ids(raw: str | None) -> set[int] | None:
     """Parse a comma-delimited species-id string into an integer set.
 
@@ -271,6 +302,8 @@ def generate_png_bytes(
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
+    x_max: float | None = None,
+    y_max: float | None = None,
     dpi: int = 150,
 ) -> bytes:
     """Render a matplotlib chart to PNG bytes using the headless Agg backend.
@@ -312,7 +345,12 @@ def generate_png_bytes(
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    plot_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
+    flora_filter = include_flora_ids
+    predator_filter = include_predator_ids
+    if plot_type == "phasespace":
+        flora_filter = _append_species_id(flora_filter, prey_species_id)
+        predator_filter = _append_species_id(predator_filter, predator_species_id)
+    plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, predator_ids=predator_filter)
     fig, ax = plt.subplots(figsize=(10, 5), dpi=dpi)
 
     if not plot_rows:
@@ -346,6 +384,8 @@ def generate_png_bytes(
             title=title,
             x_label=x_label,
             y_label=y_label,
+            x_max=x_max,
+            y_max=y_max,
         )
     elif plot_type == "defense_economy":
         _plot_defense_economy(
@@ -437,6 +477,8 @@ def _plot_phasespace(
     title: str | None,
     x_label: str | None,
     y_label: str | None,
+    x_max: float | None,
+    y_max: float | None,
 ) -> None:
     """Render a Lotka-Volterra phase-space trajectory onto ``ax``.
 
@@ -465,6 +507,10 @@ def _plot_phasespace(
     ax.set_xlabel(x_label or f"Population - {prey_name}")
     ax.set_ylabel(y_label or f"Population - {pred_name}")
     ax.set_title(title or "PHIDS - Lotka-Volterra Phase Space")
+    if x_max is not None and x_max > 0:
+        ax.set_xlim(0, float(x_max))
+    if y_max is not None and y_max > 0:
+        ax.set_ylim(0, float(y_max))
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
@@ -572,6 +618,8 @@ def generate_tikz_str(
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
+    x_max: float | None = None,
+    y_max: float | None = None,
 ) -> str:
     """Generate a PGFPlots LaTeX source string for publication-quality figures.
 
@@ -600,7 +648,12 @@ def generate_tikz_str(
     Raises:
         ValueError: If ``plot_type`` is not a supported chart mode.
     """
-    plot_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
+    flora_filter = include_flora_ids
+    predator_filter = include_predator_ids
+    if plot_type == "phasespace":
+        flora_filter = _append_species_id(flora_filter, prey_species_id)
+        predator_filter = _append_species_id(predator_filter, predator_species_id)
+    plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, predator_ids=predator_filter)
     if plot_type == "timeseries":
         return _tikz_timeseries(
             plot_rows,
@@ -620,6 +673,8 @@ def generate_tikz_str(
             title=title,
             x_label=x_label,
             y_label=y_label,
+            x_max=x_max,
+            y_max=y_max,
         )
     if plot_type == "defense_economy":
         return _tikz_defense_economy(
@@ -719,6 +774,8 @@ def _tikz_phasespace(
     title: str | None,
     x_label: str | None,
     y_label: str | None,
+    x_max: float | None,
+    y_max: float | None,
 ) -> str:
     """Build PGFPlots code for a Lotka-Volterra phase-space chart.
 
@@ -741,15 +798,20 @@ def _tikz_phasespace(
         for r in rows
     )
 
+    x_bound = f"    xmax={float(x_max)},\n" if x_max is not None and x_max > 0 else ""
+    y_bound = f"    ymax={float(y_max)},\n" if y_max is not None and y_max > 0 else ""
+
     return (
         "\\begin{tikzpicture}\n"
         "\\begin{axis}[\n"
         f"    xlabel={{{x_label or (prey_name + ' Population')}}},\n"
         f"    ylabel={{{y_label or (pred_name + ' Population')}}},\n"
         f"    title={{{title or 'PHIDS -- Lotka-Volterra Phase Space'}}},\n"
-        "    grid=major,\n"
-        "    width=10cm, height=10cm,\n"
-        "]\n"
+        + x_bound
+        + y_bound
+        + "    grid=major,\n"
+        + "    width=10cm, height=10cm,\n"
+        + "]\n"
         f"    \\addplot[color=violet!70!black, thick, mark=none] coordinates {{{coords}}};\n"
         "\\end{axis}\n\\end{tikzpicture}"
     )
@@ -878,6 +940,7 @@ def export_bytes_tex_table(
     columns: str | None = None,
     include_flora_ids: str | None = None,
     include_predator_ids: str | None = None,
+    tick_interval: int = 1,
 ) -> bytes:
     """Render the telemetry rows as a booktabs LaTeX tabular environment.
 
@@ -896,6 +959,7 @@ def export_bytes_tex_table(
     filtered_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
     df = telemetry_to_dataframe(filtered_rows)
     df = filter_dataframe_columns(df, columns)
+    df = decimate_dataframe(df, tick_interval)
     if df.empty:
         return b"% No telemetry data\n"
     latex: str = df.to_latex(index=False, float_format="%.2f")  # type: ignore[attr-defined]

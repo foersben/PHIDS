@@ -55,6 +55,7 @@ from phids.api.ui_state import (
 )
 from phids.engine.loop import SimulationLoop
 from phids.telemetry.export import (
+    decimate_dataframe,
     export_bytes_csv,
     export_bytes_json,
     filter_dataframe_columns,
@@ -1382,6 +1383,7 @@ async def telemetry_table_preview(
     columns: str | None = None,
     flora_ids: str | None = None,
     predator_ids: str | None = None,
+    tick_interval: int = 1,
     limit: int = 200,
 ) -> Any:
     """Render an HTMX table preview aligned with current telemetry visibility filters.
@@ -1406,6 +1408,7 @@ async def telemetry_table_preview(
     rows = filter_telemetry_rows(_sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids)
     df = telemetry_to_dataframe(rows)
     df = filter_dataframe_columns(df, columns)
+    df = decimate_dataframe(df, tick_interval)
 
     if limit > 0:
         df = df.head(min(limit, 1000))
@@ -1439,6 +1442,9 @@ async def export_telemetry_format(
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
+    x_max: float | None = None,
+    y_max: float | None = None,
+    tick_interval: int = 1,
 ) -> Response:
     """Export telemetry data as CSV, LaTeX table, PGFPlots TikZ source, or PNG.
 
@@ -1467,14 +1473,17 @@ async def export_telemetry_format(
     if _sim_loop is None:
         raise HTTPException(status_code=404, detail="No simulation loaded.")
 
-    supported_data_types = {"timeseries", "phasespace", "defense_economy", "biomass_stack"}
-    if data_type not in supported_data_types:
+    normalized_data_type = "defense_economy" if data_type == "metabolic" else data_type
+    if normalized_data_type not in {"timeseries", "phasespace", "defense_economy", "biomass_stack"}:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, defense_economy, or biomass_stack."
+                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, defense_economy, biomass_stack, or metabolic."
             ),
         )
+
+    if tick_interval < 1:
+        raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
 
     rows = _sim_loop.telemetry._rows
     flora_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
@@ -1484,8 +1493,9 @@ async def export_telemetry_format(
     if format == "csv":
         df = telemetry_to_dataframe(filtered_rows)
         df = filter_dataframe_columns(df, columns)
+        df = decimate_dataframe(df, tick_interval)
         data = df.to_csv(index=False).encode("utf-8")
-        filename = f"phids_{data_type}.csv"
+        filename = f"phids_{normalized_data_type}.csv"
         media_type = "text/csv"
     elif format == "tex_table":
         data = export_bytes_tex_table(
@@ -1493,14 +1503,15 @@ async def export_telemetry_format(
             columns=columns,
             include_flora_ids=flora_ids,
             include_predator_ids=predator_ids,
+            tick_interval=tick_interval,
         )
-        filename = f"phids_{data_type}_table.tex"
+        filename = f"phids_{normalized_data_type}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
         try:
             tikz = generate_tikz_str(
                 filtered_rows,
-                data_type,
+                normalized_data_type,
                 flora_names=flora_names,
                 predator_names=predator_names,
                 prey_species_id=prey_species_id,
@@ -1510,17 +1521,19 @@ async def export_telemetry_format(
                 title=title,
                 x_label=x_label,
                 y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         data = tikz.encode("utf-8")
-        filename = f"phids_{data_type}.tex"
+        filename = f"phids_{normalized_data_type}.tex"
         media_type = "text/plain"
     elif format == "png":
         try:
             data = generate_png_bytes(
                 filtered_rows,
-                data_type,
+                normalized_data_type,
                 flora_names=flora_names,
                 predator_names=predator_names,
                 prey_species_id=prey_species_id,
@@ -1530,10 +1543,12 @@ async def export_telemetry_format(
                 title=title,
                 x_label=x_label,
                 y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        filename = f"phids_{data_type}.png"
+        filename = f"phids_{normalized_data_type}.png"
         media_type = "image/png"
     else:
         raise HTTPException(
@@ -1541,7 +1556,7 @@ async def export_telemetry_format(
             detail=f"Unknown format '{format}'. Use csv, tex_table, tex_tikz, or png.",
         )
 
-    logger.info("Export (%s/%s): %d bytes", data_type, format, len(data))
+    logger.info("Export (%s/%s): %d bytes", normalized_data_type, format, len(data))
     return Response(
         content=data,
         media_type=media_type,
@@ -1738,6 +1753,7 @@ async def batch_view(request: Request, job_id: str) -> Any:
 async def batch_export(
     job_id: str,
     format: str = "csv",  # noqa: A002
+    tick_interval: int = 1,
 ) -> Response:
     """Export a batch aggregate summary as CSV, LaTeX table, or PGFPlots TikZ source.
 
@@ -1762,6 +1778,9 @@ async def batch_export(
     from phids.telemetry.export import aggregate_to_dataframe
 
     df = aggregate_to_dataframe(aggregate)
+    if tick_interval < 1:
+        raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
+    df = decimate_dataframe(df, tick_interval)
 
     if format == "csv":
         data = df.to_csv(index=False).encode("utf-8")

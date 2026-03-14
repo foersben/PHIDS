@@ -101,6 +101,17 @@
       </label>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-600">
+      <label>X max (optional)
+        <input id="ps-x-max" type="number" min="0" step="0.1" oninput="phidsTelemetryRefreshState()"
+          placeholder="auto" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>Y max (optional)
+        <input id="ps-y-max" type="number" min="0" step="0.1" oninput="phidsTelemetryRefreshState()"
+          placeholder="auto" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+    </div>
+
     <div class="flex flex-wrap gap-2 text-xs" id="ps-export-bar">
       <span class="text-slate-400 text-[11px] self-center">Export:</span>
       <a id="ps-export-png" href="/api/export/phasespace?format=png"
@@ -110,12 +121,20 @@
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_phasespace.tex">TikZ</a>
     </div>
+    <div id="ps-stability-status" class="text-[11px] text-slate-500"></div>
   </div>
 
   <div id="panel-table" class="space-y-2 hidden">
     <p class="text-[11px] text-slate-500">
       The tabular preview follows active species visibility and updates every telemetry poll cycle.
     </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-600">
+      <label>Export tick interval
+        <input id="export-tick-interval" type="number" min="1" step="1" value="1"
+          oninput="phidsTelemetryRefreshState()"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+    </div>
     <div id="telemetry-table-preview"></div>
   </div>
 </div>
@@ -207,6 +226,9 @@
     const psTitle = document.getElementById('ps-title')?.value || '';
     const psX = document.getElementById('ps-x-label')?.value || '';
     const psY = document.getElementById('ps-y-label')?.value || '';
+    const psXMax = document.getElementById('ps-x-max')?.value || '';
+    const psYMax = document.getElementById('ps-y-max')?.value || '';
+    const tickInterval = document.getElementById('export-tick-interval')?.value || '1';
 
     const tsParams = _encodeParams({
       columns: sel.columns,
@@ -215,6 +237,7 @@
       title: tsTitle,
       x_label: tsX,
       y_label: tsY,
+      tick_interval: tickInterval,
     });
     const psParams = _encodeParams({
       prey_species_id: species.prey,
@@ -224,23 +247,27 @@
       title: psTitle,
       x_label: psX,
       y_label: psY,
+      x_max: psXMax,
+      y_max: psYMax,
+      tick_interval: tickInterval,
     });
 
-    const setHref = (id, base) => {
+    const setHref = (id, base, mode) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.href = `${base}&${base.includes('timeseries') ? tsParams : psParams}`;
+      const query = mode === 'phase' ? psParams : tsParams;
+      el.href = `${base}&${query}`;
     };
-    setHref('ts-export-csv', '/api/export/timeseries?format=csv');
-    setHref('ts-export-png', '/api/export/timeseries?format=png');
-    setHref('ts-export-tikz', '/api/export/timeseries?format=tex_tikz');
-    setHref('ts-export-tex-table', '/api/export/timeseries?format=tex_table');
-    setHref('ps-export-png', '/api/export/phasespace?format=png');
-    setHref('ps-export-tikz', '/api/export/phasespace?format=tex_tikz');
-    setHref('defense-export-png', '/api/export/defense_economy?format=png');
-    setHref('defense-export-tikz', '/api/export/defense_economy?format=tex_tikz');
-    setHref('biomass-export-png', '/api/export/biomass_stack?format=png');
-    setHref('biomass-export-tikz', '/api/export/biomass_stack?format=tex_tikz');
+    setHref('ts-export-csv', '/api/export/timeseries?format=csv', 'series');
+    setHref('ts-export-png', '/api/export/timeseries?format=png', 'series');
+    setHref('ts-export-tikz', '/api/export/timeseries?format=tex_tikz', 'series');
+    setHref('ts-export-tex-table', '/api/export/timeseries?format=tex_table', 'series');
+    setHref('ps-export-png', '/api/export/phasespace?format=png', 'phase');
+    setHref('ps-export-tikz', '/api/export/phasespace?format=tex_tikz', 'phase');
+    setHref('defense-export-png', '/api/export/metabolic?format=png', 'series');
+    setHref('defense-export-tikz', '/api/export/metabolic?format=tex_tikz', 'series');
+    setHref('biomass-export-png', '/api/export/biomass_stack?format=png', 'series');
+    setHref('biomass-export-tikz', '/api/export/biomass_stack?format=tex_tikz', 'series');
 
     _refreshTablePreview(sel);
   }
@@ -248,11 +275,56 @@
   function _refreshTablePreview(sel) {
     const target = document.getElementById('telemetry-table-preview');
     if (!target) return;
-    const params = _encodeParams({ columns: sel.columns, flora_ids: sel.floraIds, predator_ids: sel.predIds });
+    const tickInterval = document.getElementById('export-tick-interval')?.value || '1';
+    const params = _encodeParams({
+      columns: sel.columns,
+      flora_ids: sel.floraIds,
+      predator_ids: sel.predIds,
+      tick_interval: tickInterval,
+    });
     fetch('/api/telemetry/table_preview?' + params)
       .then(r => r.ok ? r.text() : '')
       .then(html => { if (html) target.innerHTML = html; })
       .catch(() => {});
+  }
+
+  function _updateStabilityStatus(points) {
+    const el = document.getElementById('ps-stability-status');
+    if (!el) return;
+    if (!points || points.length < 20) {
+      el.textContent = 'System State: insufficient trajectory length for stability assessment.';
+      el.className = 'text-[11px] text-slate-500';
+      return;
+    }
+    const windowSize = Math.min(120, points.length);
+    const tail = points.slice(points.length - windowSize);
+    const mid = Math.floor(tail.length / 2);
+    const first = tail.slice(0, mid);
+    const second = tail.slice(mid);
+    const centroid = (pts) => {
+      let sx = 0.0; let sy = 0.0;
+      pts.forEach(p => { sx += p.x; sy += p.y; });
+      return { x: sx / Math.max(1, pts.length), y: sy / Math.max(1, pts.length) };
+    };
+    const radialVariance = (pts) => {
+      const c = centroid(pts);
+      const radii = pts.map(p => Math.hypot(p.x - c.x, p.y - c.y));
+      const mean = radii.reduce((a, b) => a + b, 0.0) / Math.max(1, radii.length);
+      const varSum = radii.reduce((a, r) => a + Math.pow(r - mean, 2), 0.0);
+      return varSum / Math.max(1, radii.length);
+    };
+    const v1 = radialVariance(first);
+    const v2 = radialVariance(second);
+    if (v2 < v1 * 0.85) {
+      el.textContent = 'System State: Attractor - Stable limit cycle.';
+      el.className = 'text-[11px] text-emerald-700';
+    } else if (v2 > v1 * 1.15) {
+      el.textContent = 'System State: Attractor - Divergent (extinction risk elevated).';
+      el.className = 'text-[11px] text-red-700';
+    } else {
+      el.textContent = 'System State: Transitional orbit (no clear convergence yet).';
+      el.className = 'text-[11px] text-amber-700';
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -581,6 +653,8 @@
         },
       },
     });
+
+    _updateStabilityStatus(points);
 
     _refreshExportLinks(data);
   }

@@ -183,6 +183,44 @@ async def test_batch_view_renders_survival_chart_when_summary_exists(
 
     assert resp.status_code == 200
     assert "batch-survival-chart" in resp.text
+    assert "batch-table-preview" in resp.text
+    assert "batch-export-stride" in resp.text
+
+
+@pytest.mark.asyncio
+async def test_export_route_accepts_metabolic_alias_and_returns_tikz() -> None:
+    """Validates that the metabolic alias resolves to defense-economy export generation."""
+    draft = get_draft()
+    draft.add_plant_placement(0, 2, 2, 20.0)
+    draft.add_swarm_placement(0, 2, 2, 5, 20.0)
+
+    async with _default_client() as client:
+        load_resp = await client.post("/api/scenario/load-draft")
+        assert load_resp.status_code == 200
+        await client.post("/api/simulation/step")
+        resp = await client.get("/api/export/metabolic", params={"format": "tex_tikz"})
+
+    assert resp.status_code == 200
+    assert "Metabolic Defense Economy" in resp.text
+
+
+@pytest.mark.asyncio
+async def test_export_route_rejects_non_positive_tick_interval() -> None:
+    """Ensures telemetry export returns HTTP 400 when tick_interval is below 1."""
+    draft = get_draft()
+    draft.add_plant_placement(0, 1, 1, 10.0)
+    draft.add_swarm_placement(0, 1, 1, 3, 12.0)
+
+    async with _default_client() as client:
+        load_resp = await client.post("/api/scenario/load-draft")
+        assert load_resp.status_code == 200
+        resp = await client.get(
+            "/api/export/timeseries",
+            params={"format": "csv", "tick_interval": 0},
+        )
+
+    assert resp.status_code == 400
+    assert "tick_interval" in resp.text
 
 
 @pytest.mark.asyncio

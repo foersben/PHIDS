@@ -49,18 +49,27 @@
   </div>
 
   <!-- Export buttons -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+    <label class="text-[11px] text-slate-600">
+      Export tick interval
+      <input id="batch-export-stride" type="number" min="1" step="1" value="1"
+        class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+    </label>
+  </div>
   <div class="flex flex-wrap gap-2 text-xs">
     <span class="text-slate-400 text-[11px] self-center">Export aggregate:</span>
-    <a href="/api/batch/export/{{ job_id }}?format=csv"
+    <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv"
       class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
       download>CSV</a>
-    <a href="/api/batch/export/{{ job_id }}?format=tex_table"
+    <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table"
       class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
       download>LaTeX Table</a>
-    <a href="/api/batch/export/{{ job_id }}?format=tex_tikz"
+    <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz"
       class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
       download>TikZ</a>
   </div>
+
+  <div id="batch-table-preview" class="max-h-72 overflow-auto rounded border border-slate-200"></div>
 
   <script id="batch-aggregate-data" type="application/json">{{ aggregate | tojson }}</script>
   <script>
@@ -74,6 +83,49 @@
     if (ctx._batchChart) { ctx._batchChart.destroy(); }
 
     const labels = agg.ticks;
+            const strideInput = document.getElementById('batch-export-stride');
+            const csvExport = document.getElementById('batch-export-csv');
+            const texExport = document.getElementById('batch-export-tex');
+            const tikzExport = document.getElementById('batch-export-tikz');
+            const tablePreview = document.getElementById('batch-table-preview');
+
+            function _syncBatchExportLinks() {
+              const stride = Math.max(1, parseInt(strideInput?.value || '1', 10) || 1);
+              if (csvExport) csvExport.href = `/api/batch/export/{{ job_id }}?format=csv&tick_interval=${stride}`;
+              if (texExport) texExport.href = `/api/batch/export/{{ job_id }}?format=tex_table&tick_interval=${stride}`;
+              if (tikzExport) tikzExport.href = `/api/batch/export/{{ job_id }}?format=tex_tikz&tick_interval=${stride}`;
+
+              if (!tablePreview) return;
+              let html = '<table class="min-w-full text-[11px]">';
+              html += '<thead class="sticky top-0 bg-slate-100 text-slate-600"><tr>';
+              html += '<th class="px-2 py-1 text-left border-b border-slate-200">Tick</th>';
+              html += '<th class="px-2 py-1 text-left border-b border-slate-200">Flora mean</th>';
+              html += '<th class="px-2 py-1 text-left border-b border-slate-200">Flora std</th>';
+              html += '<th class="px-2 py-1 text-left border-b border-slate-200">Predator mean</th>';
+              html += '<th class="px-2 py-1 text-left border-b border-slate-200">Predator std</th>';
+              html += '<th class="px-2 py-1 text-left border-b border-slate-200">Survival %</th>';
+              html += '</tr></thead><tbody>';
+
+              for (let i = 0; i < labels.length; i += stride) {
+                const surv = 100.0 * ((agg.survival_probability_curve || [])[i] || 0.0);
+                html += '<tr class="odd:bg-white even:bg-slate-50">';
+                html += `<td class="px-2 py-1 border-b border-slate-100">${labels[i]}</td>`;
+                html += `<td class="px-2 py-1 border-b border-slate-100">${(floraMean[i] || 0).toFixed(2)}</td>`;
+                html += `<td class="px-2 py-1 border-b border-slate-100">${(floraStd[i] || 0).toFixed(2)}</td>`;
+                html += `<td class="px-2 py-1 border-b border-slate-100">${(predMean[i] || 0).toFixed(2)}</td>`;
+                html += `<td class="px-2 py-1 border-b border-slate-100">${(predStd[i] || 0).toFixed(2)}</td>`;
+                html += `<td class="px-2 py-1 border-b border-slate-100">${surv.toFixed(1)}</td>`;
+                html += '</tr>';
+              }
+              html += '</tbody></table>';
+              tablePreview.innerHTML = html;
+            }
+
+            if (strideInput) {
+              strideInput.addEventListener('input', _syncBatchExportLinks);
+            }
+            _syncBatchExportLinks();
+
     const floraMean = agg.flora_population_mean || [];
     const floraStd  = agg.flora_population_std  || [];
     const predMean  = agg.predator_population_mean || [];
@@ -110,7 +162,7 @@
           legend: {
             labels: {
               font: { size: 10 },
-              filter: (item) => !item.text.includes('σ'),
+              filter: (item) => !item.text.includes('sigma'),
             },
           },
         },

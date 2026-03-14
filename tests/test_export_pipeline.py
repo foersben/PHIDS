@@ -214,6 +214,20 @@ class TestGenerateTikzStr:
         assert "Prey Axis" in s
         assert "Pred Axis" in s
 
+    def test_phasespace_keeps_selected_targets_even_when_visibility_filter_excludes(self) -> None:
+        """Phase-space export preserves selected species ids even if UI visibility filters omit them."""
+        s = generate_tikz_str(
+            _sample_rows(),
+            "phasespace",
+            prey_species_id=1,
+            predator_species_id=0,
+            include_flora_ids="0",
+            include_predator_ids="0",
+        )
+        # plant species 1 has x=4 at both sample ticks; if dropped, this becomes x=0.
+        assert "(4,3)" in s
+        assert "(4,4)" in s
+
 
 class TestExportBytesTexTable:
     """Validates booktabs LaTeX table export."""
@@ -240,4 +254,19 @@ class TestExportBytesTexTable:
         latex = data.decode("utf-8")
         assert "plant_0_pop" in latex
         assert "predator_population" not in latex
+
+    def test_tick_interval_decimates_rows(self) -> None:
+        """Tick-interval decimation reduces exported LaTeX row count as expected."""
+        rows: list[dict] = []
+        for idx in range(6):
+            src = _sample_rows()[idx % 2]
+            row = dict(src)
+            row["tick"] = idx
+            rows.append(row)
+        data = export_bytes_tex_table(rows, columns="tick,flora_population", tick_interval=2)
+        latex = data.decode("utf-8")
+        # rows should include 0,2,4 only under stride=2
+        assert "0 &" in latex
+        assert "2 &" in latex
+        assert "4 &" in latex
 
