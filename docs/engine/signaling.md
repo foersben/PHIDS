@@ -66,18 +66,22 @@ trees.
 
 Implemented node kinds include:
 
-- `enemy_presence`
-- `substance_active`
-- `all_of`
-- `any_of`
+- `enemy_presence` — evaluates aggregate co-located population of a specific predator species,
+- `substance_active` — checks whether a named substance on the same plant is currently active,
+- `environmental_signal` — checks whether a named signal layer exceeds a minimum concentration at
+  the plant's cell, enabling defenses to activate in response to ambient alarm signals deposited by
+  mycorrhizal relay or airborne diffusion from neighbours,
+- `all_of` — short-circuit conjunction of child predicates,
+- `any_of` — short-circuit disjunction of child predicates.
 
 This allows the runtime to express richer conditions than a simple one-cell matrix lookup.
 
-An important current limitation must be stated explicitly: there is **no** activation predicate that
-reads ambient `signal_layers[x, y]` directly. Mycorrhizally relayed or airborne signals therefore do
-not, by themselves, trigger a neighbour plant’s defense. They are visible in the environment and UI,
-but trigger logic still depends on co-located predator presence and owner-local `substance_active`
-state.
+The `environmental_signal` predicate is particularly significant: it provides a direct pathway by
+which mycorrhizally relayed or airborne signal concentrations can satisfy an activation condition,
+enabling a form of primed systemic defense in neighbouring plants. However, relay deposits signal
+concentration at connected plant cells without directly firing their trigger rules — a receiving
+plant must have a trigger rule configured with an `environmental_signal` activation condition to
+act on the relayed concentration.
 
 ## Substance Materialization
 
@@ -209,13 +213,31 @@ than implemented inline in the signaling system. Toxins are intentionally exclud
 
 ## Direct Toxin Effects
 
-The signaling module also contains `_apply_toxin_to_swarms(...)`, which currently:
+The signaling module contains `_apply_toxin_to_swarms(...)`, which currently:
 
-- reads toxin concentration at swarm positions,
-- applies lethal population loss when configured,
-- toggles repelled state and repelled-walk duration when configured.
+- reads toxin concentration at each swarm's current cell,
+- applies lethal population loss when `sub.lethal` is set and `lethality_rate > 0`,
+- toggles the `repelled` flag and initializes `repelled_ticks_remaining` when `sub.repellent` is set.
 
 This is the sole runtime authority for toxin damage and repellence.
+
+### Immediate garbage collection of toxin-killed swarms
+
+Critically, after lethal casualties are applied, `_apply_toxin_to_swarms` immediately evaluates
+whether `swarm.population <= 0`. If so, the swarm is subjected to in-place localised garbage
+collection within the signaling phase:
+
+1. `world.unregister_position(entity_id, x, y)` removes the entity from the spatial hash
+   before the loop completes,
+2. the entity ID is appended to a `dead_swarms` list,
+3. after the full swarm iteration, `world.collect_garbage(dead_swarms)` destroys all queued
+   entities in a single bulk pass.
+
+Without this immediate GC step, a swarm annihilated by chemical defense would persist as a ghost
+entry in the spatial hash until the subsequent tick's interaction phase performed its own death
+sweep. Such ghost entries corrupt O(1) spatial-hash lookups and confound the `enemy_presence`
+predicate in `_check_activation_condition`, which could cause a plant to maintain a defensive
+posture against a predator population that has already been eliminated.
 
 ## Evidence from Tests
 
@@ -240,6 +262,12 @@ Tests verify that:
 - ownerless substance entities are garbage-collected before they can accumulate as leaks,
 - multiple emitters of the same toxin layer do not multiply per-tick damage.
 
+### Immediate GC of toxin-killed swarms
+
+Tests verify that a swarm whose population reaches zero through lethal toxin damage is absent from
+both the ECS entity registry and the spatial hash immediately after `run_signaling` completes,
+without requiring a subsequent interaction tick to perform cleanup.
+
 ### Signal aftereffect persistence
 
 Tests verify that signals can remain active for a bounded number of ticks after the triggering swarm
@@ -261,7 +289,8 @@ Tests verify:
 
 - `substance_active` gating,
 - `all_of` composite conditions,
-- `any_of` composite conditions.
+- `any_of` composite conditions,
+- `environmental_signal` threshold gating.
 
 ### Mycorrhizal relay context
 

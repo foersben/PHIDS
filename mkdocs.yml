@@ -57,6 +57,7 @@ nav:
       - UI Control Center: ui/index.md
       - Draft State and Load Workflow: ui/draft-state-and-load-workflow.md
       - HTMX Partials and Builder Routes: ui/htmx-partials-and-builder-routes.md
+      - Diagnostics and Live Observation: ui/diagnostics-and-live-observation.md
   - Scenarios:
       - Overview: scenarios/index.md
       - Scenario Schema and Curated Examples: scenarios/schema-and-curated-examples.md
@@ -77,6 +78,7 @@ nav:
   - Reference:
       - Guide: reference/index.md
       - Module Map and Symbol Guide: reference/module-map.md
+      - Glossary and Concept Index: reference/glossary-and-concept-index.md
       - Requirements Traceability: reference/requirements-traceability.md
       - Python API Reference: reference/api.md
       - Repository README Mirror: appendices/readme.md

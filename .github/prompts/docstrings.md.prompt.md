@@ -8,10 +8,10 @@ Act as a Scientific Documentation Agent. Add comprehensive Google-style docstrin
 
 ### ⚠️ CRITICAL EXECUTION CONSTRAINTS
 1. **DOCSTRINGS ONLY:** You are strictly forbidden from modifying, refactoring, or reformatting ANY actual source code, logic, variables, or imports. ONLY add or modify `"""` docstring blocks.
-2. **NO TYPES IN DOCSTRINGS:** The codebase uses comprehensive Python type hints. Do NOT include type information in the `Args:`, `Returns:`, or `Yields:` sections. 
+2. **NO TYPES IN DOCSTRINGS:** The codebase uses comprehensive Python type hints. Do NOT include type information in the `Args:`, `Returns:`, or `Yields:` sections.
    - ❌ Bad: `param_name (int): Description`
    - ✅ Good: `param_name: Description`
-3. **NO META-COMMENTARY:** Do not state the obvious or describe what you are doing. Never write phrases like "This module-level docstring provides a scholarly abstract..." Just write the abstract. 
+3. **NO META-COMMENTARY:** Do not state the obvious or describe what you are doing. Never write phrases like "This module-level docstring provides a scholarly abstract..." Just write the abstract.
 4. **NO REDUNDANCY:** Do not repeat module-level claims inside functions if the information is already implied by the module description. Keep it DRY.
 
 ### 🧬 TONE & CONTENT

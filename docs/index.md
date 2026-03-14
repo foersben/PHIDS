@@ -46,6 +46,8 @@ scope and the kinds of ecological questions PHIDS can answer reproducibly.
   [`engine/`](engine/index.md)
 - **Interfaces** — REST, WebSocket, and control-center surfaces:
   [`interfaces/`](interfaces/index.md) and [`ui/`](ui/index.md)
+- **Live Observation and Diagnostics** — cell inspection, canvas streaming, diagnostics rail:
+  [`ui/diagnostics-and-live-observation.md`](ui/diagnostics-and-live-observation.md)
 - **Scenarios** — schema semantics, import/export, and curated examples:
   [`scenarios/`](scenarios/index.md)
 - **Telemetry** — analytics, replay framing, and termination interpretation:
@@ -53,8 +55,10 @@ scope and the kinds of ecological questions PHIDS can answer reproducibly.
 - **Development handoff and CI guidance** — deferred documentation work and workflow validation:
   [`development/documentation-status-and-open-work.md`](development/documentation-status-and-open-work.md)
   and [`development/github-actions-and-local-ci.md`](development/github-actions-and-local-ci.md)
-- **Reference** — module map and generated Python API docs:
+- **Reference** — module map, glossary and concept index, and generated Python API docs:
   [`reference/`](reference/index.md)
+- **Glossary** — current-state definitions for all major PHIDS terms:
+  [`reference/glossary-and-concept-index.md`](reference/glossary-and-concept-index.md)
 - **Legacy Archive** — preserved historical source documents:
   [`legacy/`](legacy/index.md)
 

@@ -12,6 +12,8 @@ The reference section separates human-oriented explanation from symbol-oriented 
 ## Components of This Section
 
 - `reference/module-map.md` — whole-project package and symbol ownership map.
+- `reference/glossary-and-concept-index.md` — current-state definitions for scientific and
+  engineering vocabulary, each cross-linked to the owning narrative chapter.
 - `reference/requirements-traceability.md` — current-state mapping from requirements to code, docs, and tests.
 - `reference/api.md` — mkdocstrings-backed Python API reference.
 - `appendices/readme.md` — mirror of the repository README inside the docs site.

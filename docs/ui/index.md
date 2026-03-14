@@ -51,6 +51,8 @@ running, and interpreting simulations.
   [`draft-state-and-load-workflow.md`](draft-state-and-load-workflow.md)
 - HTMX partial composition and builder route structure:
   [`htmx-partials-and-builder-routes.md`](htmx-partials-and-builder-routes.md)
+- Live observation, cell-detail inspection, and diagnostics rail:
+  [`diagnostics-and-live-observation.md`](diagnostics-and-live-observation.md)
 
 ## Current UI Invariants
 

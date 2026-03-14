@@ -64,6 +64,28 @@ Movement is not evaluated on every tick for every swarm. Instead, the current im
 
 This means velocity is represented as a movement period in ticks rather than as a continuous speed.
 
+### Crowding-induced dispersal
+
+Before selecting a movement target, the interaction system evaluates aggregate population pressure
+at the swarm's current cell via `_co_located_swarm_population(world, x, y)`.
+
+This helper sums the `population` attribute of every `SwarmComponent` occupying a given cell,
+performing an O(N)-over-occupants scan via the spatial hash rather than a global O(N²) scan over all
+swarms. The result is compared against the module-level carrying-capacity constant:
+
+- `TILE_CARRYING_CAPACITY = 500`
+
+If the total biological population at the cell exceeds this threshold, the swarm is involuntarily
+repelled and assigned `repelled_ticks_remaining = 1`, initiating one random-walk dispersal step.
+
+Two details distinguish this model from the chemical repellence pathway:
+
+1. the crowding check is evaluated against aggregate **individual count** across all co-located
+   swarms, not against the number of swarm entities, thereby correctly reflecting biological
+   density rather than entity-graph cardinality,
+2. the threshold is a carrying-capacity constant, so the model remains meaningful as individual
+   swarm populations grow through energy-based reproduction.
+
 ### Flow-field pursuit
 
 Normal movement uses `_choose_neighbour_by_flow_probability(...)`, which builds a local
@@ -94,7 +116,7 @@ This gives PHIDS a local fleeing behavior without requiring a separate pathfindi
 
 ## Feeding Model
 
-After movement, the interaction phase attempts feeding by examining all entities at the swarm’s
+After movement, the interaction phase attempts feeding by examining all entities at the swarm's
 current cell.
 
 ### Spatial-hash locality
@@ -103,8 +125,20 @@ Feeding uses:
 
 - `world.entities_at(swarm.x, swarm.y)`
 
-This is a direct expression of the project’s locality invariant: feeding is resolved by co-location,
+This is a direct expression of the project's locality invariant: feeding is resolved by co-location,
 not by global search.
+
+### Stale-entity guard
+
+Before inspecting each co-located entity, the feeding loop calls `world.has_entity(co_eid)` as a
+defensive validity check. This guard defends against reference-invalidation errors that arise when
+a plant entity was garbage-collected mid-iteration — either because another swarm killed it earlier
+in the same tick's feeding pass, or because the lifecycle phase queued it for removal at a
+different point in the same tick.
+
+Without this guard, a stale entity ID returned by the spatial hash would cause a `KeyError` in
+`world.get_entity(co_eid)`. With the guard, such entries are skipped atomically and the feeding
+pass remains safe.
 
 ### Diet-matrix gating
 
@@ -113,11 +147,12 @@ consume the plant species.
 
 ### Consumption rule
 
-Current consumption is:
+Current consumption is velocity-adjusted to prevent high-frequency movers from extracting
+disproportionate energy per tick:
 
-- `min(swarm.consumption_rate * swarm.population, plant.energy)`
+- `consumed = min((consumption_rate / velocity) * population, plant.energy)`
 
-The consumed energy is removed from the plant and added to the swarm.
+The consumed energy is removed from the plant and added to the swarm's energy reserve.
 
 ### Plant death during feeding
 
@@ -163,19 +198,32 @@ Actual destruction is deferred until after the loop over swarms completes.
 
 ## Reproduction by Energy Conversion
 
-If the swarm survives, the interaction phase next converts stored energy into new individuals.
+If the swarm survives metabolic upkeep and the death check, the interaction phase next converts
+accumulated surplus energy into new individuals using a reserve-above-baseline rule.
 
-Current rule:
+The key invariant is that reproduction is only funded from energy **above** what the current
+population strictly requires to remain at minimum viability:
 
-- `new_individuals = int(swarm.energy // swarm.energy_min)`
+1. `baseline_energy = population × energy_min`
+2. `surplus = energy − baseline_energy`
+3. `cost_per_offspring = energy_min × reproduction_energy_divisor`
+4. `new_individuals = int(surplus // cost_per_offspring)`
 
-When positive:
+When `new_individuals > 0`:
 
-- population is incremented,
-- the corresponding energy is subtracted.
+- the swarm's population is incremented by that count,
+- the corresponding cost (`new_individuals × cost_per_offspring`) is subtracted from the energy
+  reserve.
 
-This means PHIDS currently models one form of reproduction as energy-to-individual conversion within
-a single swarm.
+This model has two important ecological consequences that distinguish it from a naive
+energy-divided-by-minimum rule:
+
+- a large swarm requires proportionally more reserve energy before any growth occurs, preventing a
+  "sterile mega-swarm" artifact where an enormous but barely-fed population would reproduce purely
+  on the grounds that `energy > energy_min`,
+- `reproduction_energy_divisor` acts as a species-level efficiency parameter: higher values make
+  reproduction more expensive per offspring and therefore slow population growth relative to energy
+  intake.
 
 ## Mitosis
 
@@ -240,6 +288,22 @@ The current test suite verifies several important interaction behaviors.
 
 Tests verify that incompatible diet-matrix entries prevent plant consumption and can push swarms into
 energy deficit and attrition.
+
+### Reproduction divisor limits growth rate
+
+Tests verify that `reproduction_energy_divisor` correctly modulates the number of offspring
+produced per tick, with higher divisors yielding fewer new individuals for the same surplus energy.
+
+### Crowding triggers dispersal above carrying capacity
+
+Tests verify that co-located swarms whose aggregate biological population exceeds
+`TILE_CARRYING_CAPACITY` are moved via random walk rather than following the flow field, and that
+swarms below the threshold continue gradient-following navigation.
+
+### Stale-entity guard prevents crash on mid-tick plant death
+
+Tests verify that the feeding loop safely skips entity IDs that have been garbage-collected
+mid-iteration due to another swarm feeding on the same plant in the same tick.
 
 ### Same-tick reproduction and mitosis
 
