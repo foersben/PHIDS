@@ -73,7 +73,7 @@ app = FastAPI(
         "Visual discrete-event simulator modelling ecological dynamics between "
         "plants and herbivores on a spatial grid."
     ),
-    version="0.2.0",
+    version="0.3.0",
 )
 
 # Mount static files only if the directory exists
