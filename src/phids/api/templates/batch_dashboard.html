@@ -1,0 +1,108 @@
+<div class="space-y-6">
+
+  <div>
+    <h1 class="text-xl font-bold text-slate-800">🧬 Monte Carlo Batch Runner</h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Execute N independent simulation trajectories in parallel using a
+      <code>ProcessPoolExecutor</code> (spawn context). Each run is seeded
+      independently to generate ensemble diversity while preserving per-seed
+      determinism. Aggregate statistics (mean ± σ) are computed across the ensemble
+      and persisted for export.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- ── Left: Batch config form ─────────────────────────────────── -->
+    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-4">
+      <h2 class="text-base font-semibold text-slate-700">Configure Batch Run</h2>
+      <p class="text-xs text-slate-500">
+        The current server-side draft scenario is used as the simulation configuration.
+        Ensure species, placements, and trigger rules are configured before starting.
+      </p>
+
+      <div class="space-y-3">
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Job Label (optional)
+          </label>
+          <input type="text" id="batch-label" placeholder="e.g. meadow_study_2026"
+            class="w-full text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">
+              Runs (1–256)
+            </label>
+            <input type="number" id="batch-runs" value="10" min="1" max="256"
+              class="w-full text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">
+              Max Ticks / Run
+            </label>
+            <input type="number" id="batch-ticks" value="500" min="1"
+              class="w-full text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">
+          </div>
+        </div>
+
+        <button onclick="phidsBatchStart()"
+          class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
+          ▶ Start Batch
+        </button>
+      </div>
+
+      <div id="batch-submit-result" class="text-xs text-slate-500"></div>
+    </div>
+
+    <!-- ── Right: Ledger ───────────────────────────────────────────── -->
+    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3">
+      <h2 class="text-base font-semibold text-slate-700">Job Ledger</h2>
+      <div id="batch-ledger"
+        hx-get="/api/batch/ledger"
+        hx-trigger="load, every 3s"
+        hx-swap="innerHTML"
+        class="min-h-[60px]">
+        <p class="text-slate-400 text-xs">Loading…</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Detail view (loaded when user clicks a row) ──────────────── -->
+  <div id="batch-detail" class="bg-white rounded-xl shadow-sm border p-4">
+    <p class="text-slate-400 text-xs">Select a job from the ledger to view aggregate results.</p>
+  </div>
+
+</div>
+
+<script>
+function phidsBatchStart() {
+  const payload = {
+    scenario_name: document.getElementById('batch-label').value || '',
+    runs: parseInt(document.getElementById('batch-runs').value, 10) || 10,
+    max_ticks: parseInt(document.getElementById('batch-ticks').value, 10) || 500,
+  };
+  const resultEl = document.getElementById('batch-submit-result');
+  resultEl.textContent = 'Submitting…';
+  fetch('/api/batch/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.job_id) {
+      resultEl.innerHTML = `<span class="text-emerald-600">✓ Job <code class="font-mono">${d.job_id}</code> enqueued. Monitor progress in the ledger.</span>`;
+      // Refresh ledger immediately
+      htmx.trigger('#batch-ledger', 'load');
+    } else if (d.detail) {
+      resultEl.innerHTML = `<span class="text-red-600">Error: ${d.detail}</span>`;
+    }
+  })
+  .catch(err => { resultEl.innerHTML = `<span class="text-red-600">Request failed: ${err}</span>`; });
+}
+</script>
+

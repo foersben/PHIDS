@@ -1,14 +1,57 @@
-"""Telemetry export utilities: CSV and NDJSON export helpers.
+"""Academic export pipeline for PHIDS telemetry data.
 
-Helpers to persist or stream Polars DataFrames produced by the telemetry
-recorder as CSV or newline-delimited JSON (NDJSON).
+This module implements the export layer that transforms Polars DataFrames produced by
+:class:`~phids.telemetry.analytics.TelemetryRecorder` into publication-ready artifacts
+suitable for peer-reviewed manuscript submission. Four output formats are supported:
+
+1. **CSV** — Plain-text comma-separated values compatible with spreadsheet tools and
+   statistical computing environments.
+2. **NDJSON** — Newline-delimited JSON for programmatic ingestion.
+3. **PNG** — Rasterized chart rendered via ``matplotlib`` using the ``Agg`` (headless)
+   backend, supporting both time-series and Lotka-Volterra phase-space views.
+4. **PGFPlots TikZ** — LaTeX ``pgfplots`` source code generated from matplotlib figures
+   via the ``pgf`` backend or an internal template generator, enabling vector-quality
+   figures with full typography control for publication workflows. Note that TikZ
+   generation does not require a local LaTeX installation at the Python level; the
+   returned string is intended to be compiled by the end user's LaTeX toolchain.
+5. **LaTeX Table** — A ``\\begin{tabular}`` environment generated via ``pandas.DataFrame.to_latex``
+   with ``booktabs`` formatting (``\\toprule``, ``\\midrule``, ``\\bottomrule``), suitable
+   for direct inclusion in manuscripts.
+
+Per-species flattening is performed by :func:`telemetry_to_dataframe`, which converts the
+nested per-species dicts stored in :attr:`TelemetryRecorder._rows` into a wide-format
+pandas DataFrame with columns named ``plant_{id}_pop``, ``plant_{id}_energy``,
+``swarm_{id}_pop``, and ``defense_cost_{id}``. This columnar layout is compatible with
+both the matplotlib plotting functions and the LaTeX table generator.
+
+The ``matplotlib.use("Agg")`` call is scoped to the function body (not the module level)
+to avoid conflicting with interactive display backends in notebook or GUI contexts.
 """
 
 from __future__ import annotations
 
+import io
+import logging
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import polars as pl
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Palette for per-species Chart.js / matplotlib series
+# ---------------------------------------------------------------------------
+_FLORA_COLOURS = ["#22c55e", "#84cc16", "#10b981", "#4ade80", "#a3e635"]
+_PREDATOR_COLOURS = ["#ef4444", "#f97316", "#ec4899", "#f43f5e", "#fb923c"]
+
+
+# ---------------------------------------------------------------------------
+# Low-level Polars helpers (no external deps)
+# ---------------------------------------------------------------------------
 
 
 def export_csv(df: pl.DataFrame, path: str | Path) -> None:
@@ -53,3 +96,473 @@ def export_bytes_json(df: pl.DataFrame) -> bytes:
         bytes: NDJSON-encoded bytes.
     """
     return df.write_ndjson().encode()
+
+
+# ---------------------------------------------------------------------------
+# Per-species flattening — Polars rows → wide pandas DataFrame
+# ---------------------------------------------------------------------------
+
+
+def telemetry_to_dataframe(rows: list[dict[str, Any]]) -> "pd.DataFrame":
+    """Flatten per-species nested dicts from raw telemetry rows into a pandas DataFrame.
+
+    Converts the list of row dicts accumulated by
+    :class:`~phids.telemetry.analytics.TelemetryRecorder` into a wide-format
+    pandas DataFrame. Each per-species nested dictionary (``plant_pop_by_species``,
+    ``plant_energy_by_species``, ``swarm_pop_by_species``, ``defense_cost_by_species``)
+    is exploded into individual columns named ``plant_{id}_pop``, ``plant_{id}_energy``,
+    ``swarm_{id}_pop``, and ``defense_cost_{id}`` respectively. Missing species in a
+    given tick are filled with zero, ensuring a fully rectangular output suitable for
+    vectorised statistical operations and LaTeX table generation.
+
+    Args:
+        rows: Raw row list from ``TelemetryRecorder._rows``.
+
+    Returns:
+        pd.DataFrame: Wide-format DataFrame with one row per tick and one column per
+        scalar metric or per-species measurement.
+    """
+    import pandas as pd  # local import to keep dependency optional at module load
+
+    if not rows:
+        return pd.DataFrame()
+
+    # Collect all species ids seen across all rows
+    all_flora_ids: set[int] = set()
+    all_swarm_ids: set[int] = set()
+    for row in rows:
+        all_flora_ids.update(row.get("plant_pop_by_species", {}).keys())
+        all_swarm_ids.update(row.get("swarm_pop_by_species", {}).keys())
+
+    flat_rows = []
+    for row in rows:
+        flat: dict[str, Any] = {
+            k: v for k, v in row.items() if not isinstance(v, dict)
+        }
+        pop_by = row.get("plant_pop_by_species", {})
+        energy_by = row.get("plant_energy_by_species", {})
+        swarm_by = row.get("swarm_pop_by_species", {})
+        defense_by = row.get("defense_cost_by_species", {})
+
+        for fid in sorted(all_flora_ids):
+            flat[f"plant_{fid}_pop"] = pop_by.get(fid, 0)
+            flat[f"plant_{fid}_energy"] = energy_by.get(fid, 0.0)
+            flat[f"defense_cost_{fid}"] = defense_by.get(fid, 0.0)
+
+        for sid in sorted(all_swarm_ids):
+            flat[f"swarm_{sid}_pop"] = swarm_by.get(sid, 0)
+
+        flat_rows.append(flat)
+
+    logger.debug(
+        "telemetry_to_dataframe: %d rows, %d flora species, %d predator species",
+        len(rows), len(all_flora_ids), len(all_swarm_ids),
+    )
+    return pd.DataFrame(flat_rows)
+
+
+# ---------------------------------------------------------------------------
+# PNG export via matplotlib (headless Agg backend)
+# ---------------------------------------------------------------------------
+
+
+def generate_png_bytes(
+    rows: list[dict[str, Any]],
+    plot_type: str = "timeseries",
+    *,
+    flora_names: dict[int, str] | None = None,
+    predator_names: dict[int, str] | None = None,
+    prey_species_id: int = 0,
+    predator_species_id: int = 0,
+    dpi: int = 150,
+) -> bytes:
+    """Render a matplotlib chart to PNG bytes using the headless Agg backend.
+
+    Supports two ``plot_type`` modes:
+
+    * ``"timeseries"`` — Overlaid line chart with one series per flora and predator
+      species, sharing a common tick x-axis and a left y-axis for population counts.
+      Total flora energy is plotted on a secondary y-axis.
+    * ``"phasespace"`` — Lotka-Volterra phase-space scatter with ``showLine=True``
+      semantics, plotting the aggregate population of ``prey_species_id`` flora on
+      the x-axis and the aggregate population of ``predator_species_id`` herbivores
+      on the y-axis as a connected trajectory through time, revealing orbital cycles.
+
+    The ``matplotlib.use("Agg")`` backend directive is applied locally before any
+    pyplot call to prevent interference with interactive display backends.
+
+    Args:
+        rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
+        plot_type: Chart mode — ``"timeseries"`` or ``"phasespace"``.
+        flora_names: Optional display names keyed by flora species id.
+        predator_names: Optional display names keyed by predator species id.
+        prey_species_id: Flora species id for phase-space x-axis.
+        predator_species_id: Predator species id for phase-space y-axis.
+        dpi: Output resolution in dots per inch.
+
+    Returns:
+        bytes: PNG-encoded figure bytes.
+
+    Raises:
+        ValueError: If ``plot_type`` is not ``"timeseries"`` or ``"phasespace"``.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(10, 5), dpi=dpi)
+
+    if not rows:
+        ax.text(0.5, 0.5, "No telemetry data", ha="center", va="center", transform=ax.transAxes)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight")
+        plt.close(fig)
+        return buf.getvalue()
+
+    ticks = [r["tick"] for r in rows]
+
+    if plot_type == "timeseries":
+        _plot_timeseries(ax, rows, ticks, flora_names=flora_names, predator_names=predator_names)
+    elif plot_type == "phasespace":
+        _plot_phasespace(
+            ax, rows,
+            prey_species_id=prey_species_id,
+            predator_species_id=predator_species_id,
+            flora_names=flora_names,
+            predator_names=predator_names,
+        )
+    else:
+        plt.close(fig)
+        raise ValueError(f"Unknown plot_type '{plot_type}'; expected 'timeseries' or 'phasespace'")
+
+    fig.tight_layout()
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight")
+    plt.close(fig)
+    logger.debug("PNG export complete (plot_type=%s, dpi=%d, bytes=%d)", plot_type, dpi, buf.tell())
+    return buf.getvalue()
+
+
+def _plot_timeseries(
+    ax: Any,
+    rows: list[dict[str, Any]],
+    ticks: list[int],
+    *,
+    flora_names: dict[int, str] | None,
+    predator_names: dict[int, str] | None,
+) -> None:
+    """Render per-species population time series onto ``ax``.
+
+    Args:
+        ax: Matplotlib Axes instance.
+        rows: Raw telemetry rows.
+        ticks: Tick index list aligned with ``rows``.
+        flora_names: Optional display names for flora species.
+        predator_names: Optional display names for predator species.
+    """
+    all_flora: set[int] = set()
+    all_pred: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_pop_by_species", {}).keys())
+        all_pred.update(r.get("swarm_pop_by_species", {}).keys())
+
+    for i, fid in enumerate(sorted(all_flora)):
+        colour = _FLORA_COLOURS[i % len(_FLORA_COLOURS)]
+        name = (flora_names or {}).get(fid, f"Flora {fid}")
+        y = [r.get("plant_pop_by_species", {}).get(fid, 0) for r in rows]
+        ax.plot(ticks, y, color=colour, linewidth=1.5, label=name)
+
+    for i, pid in enumerate(sorted(all_pred)):
+        colour = _PREDATOR_COLOURS[i % len(_PREDATOR_COLOURS)]
+        name = (predator_names or {}).get(pid, f"Predator {pid}")
+        y = [r.get("swarm_pop_by_species", {}).get(pid, 0) for r in rows]
+        ax.plot(ticks, y, color=colour, linewidth=1.5, linestyle="--", label=name)
+
+    ax.set_xlabel("Tick")
+    ax.set_ylabel("Population")
+    ax.set_title("PHIDS – Population Time Series")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+
+def _plot_phasespace(
+    ax: Any,
+    rows: list[dict[str, Any]],
+    *,
+    prey_species_id: int,
+    predator_species_id: int,
+    flora_names: dict[int, str] | None,
+    predator_names: dict[int, str] | None,
+) -> None:
+    """Render a Lotka-Volterra phase-space trajectory onto ``ax``.
+
+    Args:
+        ax: Matplotlib Axes instance.
+        rows: Raw telemetry rows.
+        prey_species_id: Flora species id to use as x-axis.
+        predator_species_id: Predator species id to use as y-axis.
+        flora_names: Optional display names for flora species.
+        predator_names: Optional display names for predator species.
+    """
+    x = [r.get("plant_pop_by_species", {}).get(prey_species_id, 0) for r in rows]
+    y = [r.get("swarm_pop_by_species", {}).get(predator_species_id, 0) for r in rows]
+
+    prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
+    pred_name = (predator_names or {}).get(predator_species_id, f"Predator {predator_species_id}")
+
+    n = len(x)
+    if n > 0:
+        colours = [float(i) / max(n - 1, 1) for i in range(n)]
+        ax.scatter(x, y, c=colours, cmap="viridis", s=10, zorder=3, alpha=0.8)
+        ax.plot(x, y, color="#64748b", linewidth=0.8, alpha=0.5, zorder=2)
+        ax.plot(x[0], y[0], "go", markersize=8, label="Start", zorder=4)
+        ax.plot(x[-1], y[-1], "rs", markersize=8, label="End", zorder=4)
+
+    ax.set_xlabel(f"Population – {prey_name}")
+    ax.set_ylabel(f"Population – {pred_name}")
+    ax.set_title("PHIDS – Lotka-Volterra Phase Space")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+
+# ---------------------------------------------------------------------------
+# PGFPlots / TikZ export (LaTeX-compilable, no tikzplotlib dependency)
+# ---------------------------------------------------------------------------
+
+
+def generate_tikz_str(
+    rows: list[dict[str, Any]],
+    plot_type: str = "timeseries",
+    *,
+    flora_names: dict[int, str] | None = None,
+    predator_names: dict[int, str] | None = None,
+    prey_species_id: int = 0,
+    predator_species_id: int = 0,
+) -> str:
+    """Generate a PGFPlots LaTeX source string for publication-quality figures.
+
+    Produces a self-contained ``tikzpicture`` environment using the ``pgfplots``
+    package. The output does not require the ``tikzplotlib`` library; instead,
+    coordinates are injected directly into ``\\addplot`` commands via a
+    ``\\pgfplotstable``-compatible inline coordinate format. This approach ensures
+    compatibility with any LaTeX installation providing ``pgfplots >= 1.16``.
+
+    The generated code is intended for compilation with ``pdflatex``, ``xelatex``,
+    or ``lualatex`` after pasting into a document preamble that includes
+    ``\\usepackage{pgfplots}`` and ``\\pgfplotsset{compat=1.18}``.
+
+    Args:
+        rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
+        plot_type: Chart mode — ``"timeseries"`` or ``"phasespace"``.
+        flora_names: Optional display names keyed by flora species id.
+        predator_names: Optional display names keyed by predator species id.
+        prey_species_id: Flora species id for phase-space x-axis.
+        predator_species_id: Predator species id for phase-space y-axis.
+
+    Returns:
+        str: LaTeX source code for a complete ``tikzpicture`` environment.
+
+    Raises:
+        ValueError: If ``plot_type`` is not ``"timeseries"`` or ``"phasespace"``.
+    """
+    if plot_type == "timeseries":
+        return _tikz_timeseries(rows, flora_names=flora_names, predator_names=predator_names)
+    if plot_type == "phasespace":
+        return _tikz_phasespace(
+            rows,
+            prey_species_id=prey_species_id,
+            predator_species_id=predator_species_id,
+            flora_names=flora_names,
+            predator_names=predator_names,
+        )
+    raise ValueError(f"Unknown plot_type '{plot_type}'; expected 'timeseries' or 'phasespace'")
+
+
+def _tikz_timeseries(
+    rows: list[dict[str, Any]],
+    *,
+    flora_names: dict[int, str] | None,
+    predator_names: dict[int, str] | None,
+) -> str:
+    """Build PGFPlots code for a population time-series chart.
+
+    Args:
+        rows: Raw telemetry rows.
+        flora_names: Optional display names for flora species.
+        predator_names: Optional display names for predator species.
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source.
+    """
+    all_flora: set[int] = set()
+    all_pred: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_pop_by_species", {}).keys())
+        all_pred.update(r.get("swarm_pop_by_species", {}).keys())
+
+    flora_colours = ["green!60!black", "lime!80!black", "teal", "green!40!black", "olive"]
+    pred_colours = ["red!70!black", "orange!80!black", "magenta!60!black", "pink!60!black", "brown"]
+
+    plots = []
+    for i, fid in enumerate(sorted(all_flora)):
+        colour = flora_colours[i % len(flora_colours)]
+        name = (flora_names or {}).get(fid, f"Flora {fid}")
+        coords = " ".join(
+            f"({r['tick']},{r.get('plant_pop_by_species', {}).get(fid, 0)})" for r in rows
+        )
+        plots.append(
+            f"    \\addplot[color={colour}, thick] coordinates {{{coords}}};\n"
+            f"    \\addlegendentry{{{name}}}"
+        )
+
+    for i, pid in enumerate(sorted(all_pred)):
+        colour = pred_colours[i % len(pred_colours)]
+        name = (predator_names or {}).get(pid, f"Predator {pid}")
+        coords = " ".join(
+            f"({r['tick']},{r.get('swarm_pop_by_species', {}).get(pid, 0)})" for r in rows
+        )
+        plots.append(
+            f"    \\addplot[color={colour}, thick, dashed] coordinates {{{coords}}};\n"
+            f"    \\addlegendentry{{{name}}}"
+        )
+
+    body = "\n".join(plots)
+    return (
+        "\\begin{tikzpicture}\n"
+        "\\begin{axis}[\n"
+        "    xlabel={Tick},\n"
+        "    ylabel={Population},\n"
+        "    title={PHIDS -- Population Time Series},\n"
+        "    legend pos=north east,\n"
+        "    grid=major,\n"
+        "    width=12cm, height=7cm,\n"
+        "]\n"
+        + body
+        + "\n\\end{axis}\n\\end{tikzpicture}"
+    )
+
+
+def _tikz_phasespace(
+    rows: list[dict[str, Any]],
+    *,
+    prey_species_id: int,
+    predator_species_id: int,
+    flora_names: dict[int, str] | None,
+    predator_names: dict[int, str] | None,
+) -> str:
+    """Build PGFPlots code for a Lotka-Volterra phase-space chart.
+
+    Args:
+        rows: Raw telemetry rows.
+        prey_species_id: Flora species id for x-axis.
+        predator_species_id: Predator species id for y-axis.
+        flora_names: Optional display names for flora species.
+        predator_names: Optional display names for predator species.
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source.
+    """
+    prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
+    pred_name = (predator_names or {}).get(predator_species_id, f"Predator {predator_species_id}")
+
+    coords = " ".join(
+        f"({r.get('plant_pop_by_species', {}).get(prey_species_id, 0)},"
+        f"{r.get('swarm_pop_by_species', {}).get(predator_species_id, 0)})"
+        for r in rows
+    )
+
+    return (
+        "\\begin{tikzpicture}\n"
+        "\\begin{axis}[\n"
+        f"    xlabel={{{prey_name} Population}},\n"
+        f"    ylabel={{{pred_name} Population}},\n"
+        "    title={PHIDS -- Lotka-Volterra Phase Space},\n"
+        "    grid=major,\n"
+        "    width=10cm, height=10cm,\n"
+        "]\n"
+        f"    \\addplot[color=violet!70!black, thick, mark=none] coordinates {{{coords}}};\n"
+        "\\end{axis}\n\\end{tikzpicture}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# LaTeX table export via pandas
+# ---------------------------------------------------------------------------
+
+
+def export_bytes_tex_table(rows: list[dict[str, Any]]) -> bytes:
+    """Render the telemetry rows as a booktabs LaTeX tabular environment.
+
+    Flattens per-species dicts into a wide pandas DataFrame via
+    :func:`telemetry_to_dataframe`, then serialises to LaTeX using
+    ``DataFrame.to_latex(booktabs=True, index=False)``, which generates
+    ``\\toprule``, ``\\midrule``, and ``\\bottomrule`` rules consistent with
+    the ``booktabs`` LaTeX package conventions expected in peer-reviewed journals.
+
+    Args:
+        rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
+
+    Returns:
+        bytes: UTF-8 encoded LaTeX ``tabular`` source.
+    """
+    df = telemetry_to_dataframe(rows)
+    if df.empty:
+        return b"% No telemetry data\n"
+    latex: str = df.to_latex(index=False)  # type: ignore[attr-defined]
+    return latex.encode("utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Batch aggregate export helpers
+# ---------------------------------------------------------------------------
+
+
+def aggregate_to_dataframe(
+    aggregate: dict[str, Any],
+    *,
+    flora_names: dict[int, str] | None = None,
+    predator_names: dict[int, str] | None = None,
+) -> "pd.DataFrame":
+    """Convert a batch aggregate summary dict to a wide pandas DataFrame.
+
+    Constructs a per-tick DataFrame from the mean and standard deviation arrays
+    stored inside the aggregate summary produced by
+    :func:`~phids.engine.batch.aggregate_batch_telemetry`.
+
+    Args:
+        aggregate: Dict with keys ``ticks``, ``flora_population_mean``,
+            ``flora_population_std``, ``predator_population_mean``,
+            ``predator_population_std``, and optionally per-species series.
+        flora_names: Optional display name mapping for flora species.
+        predator_names: Optional display name mapping for predator species.
+
+    Returns:
+        pd.DataFrame: Wide-format DataFrame ready for export.
+    """
+    import pandas as pd
+
+    ticks = aggregate.get("ticks", [])
+    if not ticks:
+        return pd.DataFrame()
+
+    data: dict[str, Any] = {"tick": ticks}
+    data["flora_population_mean"] = aggregate.get("flora_population_mean", [0.0] * len(ticks))
+    data["flora_population_std"] = aggregate.get("flora_population_std", [0.0] * len(ticks))
+    data["predator_population_mean"] = aggregate.get("predator_population_mean", [0.0] * len(ticks))
+    data["predator_population_std"] = aggregate.get("predator_population_std", [0.0] * len(ticks))
+
+    for fid, series_mean in aggregate.get("per_flora_pop_mean", {}).items():
+        name = (flora_names or {}).get(int(fid), f"flora_{fid}")
+        data[f"{name}_pop_mean"] = series_mean
+        series_std = aggregate.get("per_flora_pop_std", {}).get(fid, [0.0] * len(ticks))
+        data[f"{name}_pop_std"] = series_std
+
+    for pid, series_mean in aggregate.get("per_predator_pop_mean", {}).items():
+        name = (predator_names or {}).get(int(pid), f"predator_{pid}")
+        data[f"{name}_pop_mean"] = series_mean
+        series_std = aggregate.get("per_predator_pop_std", {}).get(pid, [0.0] * len(ticks))
+        data[f"{name}_pop_std"] = series_std
+
+    return pd.DataFrame(data)
+
+

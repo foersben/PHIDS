@@ -1,0 +1,130 @@
+<!-- Batch aggregate result view fragment -->
+<div class="space-y-4">
+
+  {% if job %}
+  <div class="flex flex-wrap items-center gap-3">
+    <h2 class="text-base font-semibold text-slate-700">
+      Job <code class="font-mono text-indigo-600">{{ job.job_id }}</code>
+      — {{ job.scenario_name }}
+    </h2>
+    <span class="rounded-full px-2 py-0.5 text-[11px] font-medium
+      {% if job.status == 'done' %}bg-emerald-100 text-emerald-700
+      {% elif job.status == 'running' %}bg-indigo-100 text-indigo-700
+      {% elif job.status == 'failed' %}bg-red-100 text-red-700
+      {% else %}bg-slate-100 text-slate-500{% endif %}">
+      {{ job.status }}
+    </span>
+  </div>
+  {% endif %}
+
+  {% if aggregate %}
+  <!-- Summary badges -->
+  <div class="flex flex-wrap gap-3 text-xs">
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+      Runs completed: <strong>{{ aggregate.runs_completed }}</strong>
+    </span>
+    <span class="rounded-full
+      {% if aggregate.extinction_probability > 0.5 %}bg-red-100 text-red-700
+      {% elif aggregate.extinction_probability > 0.1 %}bg-amber-100 text-amber-700
+      {% else %}bg-emerald-100 text-emerald-700{% endif %}
+      px-2 py-0.5">
+      Flora extinction P = <strong>{{ "%.1f"|format(aggregate.extinction_probability * 100) }}%</strong>
+    </span>
+    {% if aggregate.ticks %}
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+      Ticks (aligned): <strong>{{ aggregate.ticks|length }}</strong>
+    </span>
+    {% endif %}
+  </div>
+
+  <!-- Mean ± σ chart -->
+  <div>
+    <canvas id="batch-agg-chart" height="200"
+      style="display:block;width:100%;max-height:220px;"></canvas>
+  </div>
+
+  <!-- Export buttons -->
+  <div class="flex flex-wrap gap-2 text-xs">
+    <span class="text-slate-400 text-[11px] self-center">Export aggregate:</span>
+    <a href="/api/batch/export/{{ job_id }}?format=csv"
+      class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
+      download>CSV</a>
+    <a href="/api/batch/export/{{ job_id }}?format=tex_table"
+      class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
+      download>LaTeX Table</a>
+    <a href="/api/batch/export/{{ job_id }}?format=tex_tikz"
+      class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
+      download>TikZ</a>
+  </div>
+
+  <script>
+  (function () {
+    const agg = {{ aggregate | tojson }};
+    if (!agg || !agg.ticks || agg.ticks.length === 0) return;
+
+    const ctx = document.getElementById('batch-agg-chart');
+    if (!ctx) return;
+    if (ctx._batchChart) { ctx._batchChart.destroy(); }
+
+    const labels = agg.ticks;
+    const floraMean = agg.flora_population_mean || [];
+    const floraStd  = agg.flora_population_std  || [];
+    const predMean  = agg.predator_population_mean || [];
+    const predStd   = agg.predator_population_std  || [];
+
+    // Build ±σ fill area datasets
+    const floraUpper = floraMean.map((v, i) => v + (floraStd[i] || 0));
+    const floraLower = floraMean.map((v, i) => v - (floraStd[i] || 0));
+    const predUpper  = predMean.map((v, i) => v + (predStd[i] || 0));
+    const predLower  = predMean.map((v, i) => v - (predStd[i] || 0));
+
+    ctx._batchChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          // Flora mean
+          { label: 'Flora μ', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, order: 1 },
+          // Flora +σ fill
+          { label: 'Flora +σ', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 2 },
+          // Flora -σ fill
+          { label: 'Flora −σ', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 3 },
+          // Predator mean
+          { label: 'Predator μ', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3], order: 4 },
+          // Predator +σ
+          { label: 'Predator +σ', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 5 },
+          // Predator -σ
+          { label: 'Predator −σ', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0, order: 6 },
+        ],
+      },
+      options: {
+        animation: false, responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            labels: {
+              font: { size: 10 },
+              filter: (item) => !item.text.includes('σ'),
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+          y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Population (mean ± σ)', font: { size: 10 } }, min: 0 },
+        },
+      },
+    });
+  })();
+  </script>
+
+  {% else %}
+  <p class="text-slate-400 text-sm">
+    {% if job and job.status in ('running', 'queued') %}
+    Aggregation not yet available — job is still running ({{ job.completed }}/{{ job.total }}).
+    {% else %}
+    No aggregate data found for this job.
+    {% endif %}
+  </p>
+  {% endif %}
+
+</div>
+
