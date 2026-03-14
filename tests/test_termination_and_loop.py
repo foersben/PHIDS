@@ -1,3 +1,8 @@
+"""Experimental validation suite for test termination and loop.
+
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -99,6 +104,14 @@ def _world_with_counts(plant_species: list[int], predator_species: list[int]) ->
 
 
 def test_termination_z1_max_ticks() -> None:
+    """Validates the termination z1 max ticks invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = _world_with_counts([0], [0])
     result = check_termination(world, tick=10, max_ticks=10)
     assert result.terminated is True
@@ -106,6 +119,14 @@ def test_termination_z1_max_ticks() -> None:
 
 
 def test_termination_z2_and_z4_specific_species_extinction() -> None:
+    """Validates the termination z2 and z4 specific species extinction invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = _world_with_counts([0], [0])
 
     z2 = check_termination(world, tick=0, max_ticks=100, z2_flora_species=1)
@@ -118,6 +139,14 @@ def test_termination_z2_and_z4_specific_species_extinction() -> None:
 
 
 def test_termination_z3_z5_all_extinction() -> None:
+    """Validates the termination z3 z5 all extinction invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = _world_with_counts([], [])
 
     z3 = check_termination(world, tick=0, max_ticks=100)
@@ -126,6 +155,14 @@ def test_termination_z3_z5_all_extinction() -> None:
 
 
 def test_termination_z6_z7_thresholds() -> None:
+    """Validates the termination z6 z7 thresholds invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = _world_with_counts([0], [0])
 
     z6 = check_termination(world, tick=0, max_ticks=100, z6_max_flora_energy=1.0)
@@ -138,6 +175,14 @@ def test_termination_z6_z7_thresholds() -> None:
 
 
 def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
+    """Validates the simulation loop step updates replay and telemetry invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     loop = SimulationLoop(_base_config(max_ticks=30))
 
     before_tick = loop.tick
@@ -154,6 +199,17 @@ def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
 
 
 def test_simulation_loop_terminates_when_z1_reached(caplog) -> None:
+    """Validates the simulation loop terminates when z1 reached invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        caplog: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     loop = SimulationLoop(_base_config(max_ticks=1))
     loop.tick = loop.config.max_ticks
 

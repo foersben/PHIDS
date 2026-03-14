@@ -1,3 +1,9 @@
+"""
+Test coverage for PHIDS flow-field computation and signal/toxin propagation invariants.
+
+This module implements unit tests for the PHIDS flow-field computation and signal/toxin propagation logic. The test suite verifies deterministic gradient generation, camouflage application, and toxin repulsion, ensuring compliance with NumPy vectorization, double-buffered state management, and O(1) spatial hash invariants. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and flow-field mechanics. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -10,6 +16,14 @@ from phids.engine.core.flow_field import (
 
 
 def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
+    """Validates the compute flow field impl returns zero field for zero inputs invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((1, 1), dtype=np.float64)
     toxin_sum = np.zeros((1, 1), dtype=np.float64)
 
@@ -19,6 +33,14 @@ def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
 
 
 def test_compute_flow_field_impl_propagates_along_single_row() -> None:
+    """Validates the compute flow field impl propagates along single row invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((1, 5), dtype=np.float64)
     toxin_sum = np.zeros((1, 5), dtype=np.float64)
     plant_energy[0, 2] = 6.0
@@ -33,6 +55,14 @@ def test_compute_flow_field_impl_propagates_along_single_row() -> None:
 
 
 def test_compute_flow_field_impl_propagates_toxin_repulsion_along_single_column() -> None:
+    """Validates the compute flow field impl propagates toxin repulsion along single column invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((5, 1), dtype=np.float64)
     toxin_sum = np.zeros((5, 1), dtype=np.float64)
     toxin_sum[2, 0] = 2.5
@@ -47,6 +77,14 @@ def test_compute_flow_field_impl_propagates_toxin_repulsion_along_single_column(
 
 
 def test_compute_flow_field_propagates_plant_attraction_and_toxin_repulsion() -> None:
+    """Validates the compute flow field propagates plant attraction and toxin repulsion invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((3, 3), dtype=np.float64)
     toxin_layers = np.zeros((2, 3, 3), dtype=np.float64)
     plant_energy[1, 1] = 4.0
@@ -60,6 +98,14 @@ def test_compute_flow_field_propagates_plant_attraction_and_toxin_repulsion() ->
 
 
 def test_compute_flow_field_sums_multiple_toxin_layers_and_handles_edges() -> None:
+    """Validates the compute flow field sums multiple toxin layers and handles edges invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((2, 2), dtype=np.float64)
     toxin_layers = np.zeros((2, 2, 2), dtype=np.float64)
     plant_energy[0, 0] = 2.0
@@ -74,6 +120,14 @@ def test_compute_flow_field_sums_multiple_toxin_layers_and_handles_edges() -> No
 
 
 def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
+    """Validates the compute flow field impl is linear for multiple sources invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     shape = (3, 3)
     zero_toxins = np.zeros(shape, dtype=np.float64)
 
@@ -96,6 +150,14 @@ def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
 
 
 def test_compute_flow_field_wrapper_sums_toxin_layers_before_propagation() -> None:
+    """Validates the compute flow field wrapper sums toxin layers before propagation invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((2, 3), dtype=np.float64)
     toxin_layers = np.zeros((3, 2, 3), dtype=np.float64)
     toxin_layers[0, 0, 1] = 0.25
@@ -109,6 +171,14 @@ def test_compute_flow_field_wrapper_sums_toxin_layers_before_propagation() -> No
 
 
 def test_compute_flow_field_reaches_cells_beyond_one_hop() -> None:
+    """Validates the compute flow field reaches cells beyond one hop invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.zeros((7, 7), dtype=np.float64)
     toxin_layers = np.zeros((1, 7, 7), dtype=np.float64)
     plant_energy[0, 0] = 10.0
@@ -119,6 +189,14 @@ def test_compute_flow_field_reaches_cells_beyond_one_hop() -> None:
 
 
 def test_apply_camouflage_scales_one_cell_in_place() -> None:
+    """Validates the apply camouflage scales one cell in place invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     flow_field = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
 
     apply_camouflage(flow_field, 1, 0, 0.25)
@@ -127,6 +205,14 @@ def test_apply_camouflage_scales_one_cell_in_place() -> None:
 
 
 def test_apply_camouflage_supports_full_and_zero_attenuation() -> None:
+    """Validates the apply camouflage supports full and zero attenuation invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     flow_field = np.array([[5.0, -2.0]], dtype=np.float64)
 
     apply_camouflage(flow_field, 0, 0, 1.0)

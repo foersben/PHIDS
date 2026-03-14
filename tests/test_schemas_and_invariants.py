@@ -1,3 +1,8 @@
+"""Experimental validation suite for test schemas and invariants.
+
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+"""
+
 from __future__ import annotations
 
 import pytest
@@ -47,6 +52,14 @@ def _predator(species_id: int = 0) -> PredatorSpeciesParams:
 
 
 def test_trigger_schema_supports_full_substance_matrix() -> None:
+    """Validates the trigger schema supports full substance matrix invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     trig = TriggerConditionSchema(
         predator_species_id=1,
         min_predator_population=3,
@@ -78,11 +91,27 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
 
 
 def test_diet_matrix_enforces_rule_of_16() -> None:
+    """Validates the diet matrix enforces rule of 16 invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     with pytest.raises(ValidationError):
         DietCompatibilityMatrix(rows=[[True] * 17])
 
 
 def test_simulation_config_rejects_unknown_species_placements() -> None:
+    """Validates the simulation config rejects unknown species placements invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     flora = [_flora(0)]
     predator = [_predator(0)]
 
@@ -106,6 +135,14 @@ def test_simulation_config_rejects_unknown_species_placements() -> None:
 
 
 def test_simulation_config_validates_mycorrhizal_growth_interval_bounds() -> None:
+    """Validates the simulation config validates mycorrhizal growth interval bounds invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     flora = [_flora(0)]
     predator = [_predator(0)]
 
@@ -128,6 +165,14 @@ def test_simulation_config_validates_mycorrhizal_growth_interval_bounds() -> Non
 
 
 def test_grid_environment_invariants_and_double_buffer_swap() -> None:
+    """Validates the grid environment invariants and double buffer swap invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
     with pytest.raises(ValueError):
@@ -146,6 +191,14 @@ def test_grid_environment_invariants_and_double_buffer_swap() -> None:
 
 
 def test_ecs_query_intersection_and_component_removal() -> None:
+    """Validates the ecs query intersection and component removal invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = ECSWorld()
 
     class C1:
@@ -169,6 +222,14 @@ def test_ecs_query_intersection_and_component_removal() -> None:
 
 
 def test_spatial_hash_allows_multiple_entities_per_cell() -> None:
+    """Validates the spatial hash allows multiple entities per cell invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = ECSWorld()
     e1 = world.create_entity()
     e2 = world.create_entity()
@@ -180,6 +241,14 @@ def test_spatial_hash_allows_multiple_entities_per_cell() -> None:
 
 
 def test_plant_component_energy_never_negative_on_set() -> None:
+    """Validates the plant component energy never negative on set invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
     world = ECSWorld()
     e = world.create_entity()

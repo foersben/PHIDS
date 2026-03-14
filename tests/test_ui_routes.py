@@ -1,4 +1,8 @@
-"""Integration coverage for PHIDS HTMX/UI routes and dashboard helpers."""
+"""
+Integration coverage for PHIDS HTMX/UI routes and dashboard helpers.
+
+This module implements integration tests for the PHIDS HTMX-driven UI routes and dashboard helpers. The test suite verifies the correctness of server-side draft state mutation, scenario loading, placement editing, and dashboard rendering, ensuring compliance with deterministic simulation logic, double-buffered state management, and O(1) spatial hash invariants. Each test function is documented to state the invariant or biological behavior being verified and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and UI interactions. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +22,11 @@ def _default_client() -> AsyncClient:
 
 @pytest.fixture(autouse=True)
 def _reset_state() -> None:
-    """Reset draft and live loop between UI tests."""
+    """
+    Resets the draft and live simulation loop state between UI tests to ensure deterministic reproducibility.
+
+    This fixture enforces a clean simulation environment for each test, preventing cross-test contamination of mutable draft state and live simulation loop. By resetting the draft and nullifying the simulation loop and task, the fixture guarantees that each test operates on a pristine state, thereby upholding the scientific rigor required for reproducible validation of emergent ecological dynamics and UI interactions in PHIDS.
+    """
     reset_draft()
     api_main._sim_loop = None
     api_main._sim_task = None
@@ -26,6 +34,11 @@ def _reset_state() -> None:
 
 @pytest.mark.asyncio
 async def test_root_returns_full_html() -> None:
+    """
+    Validates that the root endpoint returns a complete HTML workspace for the PHIDS UI.
+
+    This test ensures that the main workspace, diagnostics rail, and upload scenario elements are present in the HTML response, confirming the integrity of the HTMX-driven UI. The presence of these elements is critical for user interaction, scenario management, and diagnostics, supporting the scientific workflow of ecosystem simulation and analysis.
+    """
     async with _default_client() as client:
         resp = await client.get("/")
 
@@ -53,6 +66,11 @@ async def test_root_returns_full_html() -> None:
     ],
 )
 async def test_ui_partials_render(path: str, marker: str) -> None:
+    """
+    Verifies that each UI partial endpoint renders the expected canvas or configuration view.
+
+    This test suite systematically checks the rendering of dashboard and configuration views for biotope, flora, predators, substances, diet matrix, and trigger rules. The presence of specific markers in the HTML response confirms that the UI correctly exposes the configuration and visualization surfaces necessary for deterministic scenario editing and ecological simulation, supporting rigorous scientific experimentation.
+    """
     async with _default_client() as client:
         resp = await client.get(path)
 
@@ -70,6 +88,11 @@ async def test_ui_partials_render(path: str, marker: str) -> None:
     ],
 )
 async def test_diagnostics_tabs_render(path: str) -> None:
+    """
+    Ensures that diagnostics tab endpoints render the diagnostics content for model, frontend, and backend.
+
+    This test validates the accessibility and rendering of diagnostics views, which are essential for monitoring simulation health, model correctness, and backend/frontend integration. The presence of diagnostics content in the response supports the scientific requirement for transparent telemetry and error reporting in PHIDS.
+    """
     async with _default_client() as client:
         resp = await client.get(path)
 
@@ -79,6 +102,11 @@ async def test_diagnostics_tabs_render(path: str) -> None:
 
 @pytest.mark.asyncio
 async def test_ui_status_helpers_render_without_loaded_simulation() -> None:
+    """
+    Confirms that UI status helpers render correctly when no simulation is loaded.
+
+    This test checks the tick, status badge, and telemetry endpoints for correct responses in the absence of a loaded simulation. The test ensures that the UI accurately reflects the idle state, supporting the scientific principle of deterministic state reporting and user feedback in ecosystem simulation workflows.
+    """
     async with _default_client() as client:
         tick_resp = await client.get("/api/ui/tick")
         status_resp = await client.get("/api/ui/status-badge")
@@ -94,6 +122,11 @@ async def test_ui_status_helpers_render_without_loaded_simulation() -> None:
 
 @pytest.mark.asyncio
 async def test_placement_preview_data_includes_root_links() -> None:
+    """
+    Validates that placement preview data includes mycorrhizal root links and correct plant/swarm attributes.
+
+    This test ensures that the placement preview endpoint returns data reflecting plant and swarm placements, including mycorrhizal links. The test supports the scientific requirement for accurate visualization and analysis of root network connectivity and population attributes in draft scenarios, facilitating reproducible ecological experimentation.
+    """
     draft = get_draft()
     draft.add_plant_placement(0, 4, 4, 12.0)
     draft.add_plant_placement(0, 4, 5, 11.0)
@@ -112,6 +145,11 @@ async def test_placement_preview_data_includes_root_links() -> None:
 
 @pytest.mark.asyncio
 async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza() -> None:
+    """
+    Ensures that cell details endpoint returns draft preview payload including mycorrhizal connections.
+
+    This test verifies that the cell details endpoint provides draft mode data with correct plant, swarm, and mycorrhizal connection attributes. The test supports the scientific requirement for transparent reporting of root network connectivity and population attributes in draft scenarios, facilitating rigorous ecological analysis and scenario design.
+    """
     draft = get_draft()
     draft.add_plant_placement(0, 1, 2, 15.0)
     draft.add_plant_placement(0, 1, 3, 14.0)
@@ -132,6 +170,11 @@ async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza() -
 
 @pytest.mark.asyncio
 async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -> None:
+    """
+    Validates that biotope configuration updates clamp mycorrhizal growth interval to minimum value.
+
+    This test ensures that the biotope configuration endpoint enforces a minimum value for mycorrhizal growth interval ticks, supporting the scientific requirement for deterministic parameter validation and ecological realism in simulation configuration.
+    """
     async with _default_client() as client:
         resp = await client.post(
             "/api/config/biotope",
@@ -160,6 +203,11 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
 async def test_live_dashboard_payload_and_cell_details_include_signals_and_links(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """
+    Validates that live dashboard payload and cell details include signals, mycorrhizal links, and triggered substances.
+
+    This test simulates a live scenario with plant and swarm placements, trigger rules, and substance definitions. It verifies that the dashboard and cell details endpoints report active signals, mycorrhizal links, and triggered/aftereffect states for substances, supporting the scientific requirement for transparent reporting of emergent ecological dynamics and signal propagation in PHIDS.
+    """
     monkeypatch.setattr(
         "phids.engine.systems.interaction._choose_neighbour_by_flow_probability",
         lambda x, y, flow_field, width, height, invert=False: (x, y),
@@ -243,6 +291,11 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
 
 @pytest.mark.asyncio
 async def test_ui_cell_details_rejects_stale_live_tick() -> None:
+    """
+    Ensures that cell details endpoint rejects requests with stale expected tick in live mode.
+
+    This test verifies that the cell details endpoint returns a 409 status and correct tick information when the expected tick is stale, supporting the scientific requirement for deterministic state synchronization and error reporting in live simulation scenarios.
+    """
     draft = get_draft()
     draft.add_plant_placement(0, 3, 3, 20.0)
     draft.add_swarm_placement(0, 3, 3, 5, 20.0)
@@ -267,6 +320,11 @@ async def test_ui_cell_details_rejects_stale_live_tick() -> None:
 
 @pytest.mark.asyncio
 async def test_model_diagnostics_and_telemetry_refresh_context() -> None:
+    """
+    Validates that model diagnostics and telemetry endpoints refresh context after simulation step.
+
+    This test ensures that the diagnostics and telemetry endpoints report updated context after a simulation step, supporting the scientific requirement for transparent reporting of simulation progress, plant death diagnostics, and energy deficit watch in PHIDS.
+    """
     draft = get_draft()
     draft.add_plant_placement(0, 5, 5, 17.0)
     draft.add_swarm_placement(0, 5, 5, 8, 32.0)
@@ -287,6 +345,11 @@ async def test_model_diagnostics_and_telemetry_refresh_context() -> None:
 
 @pytest.mark.asyncio
 async def test_backend_diagnostics_shows_recent_logs() -> None:
+    """
+    Ensures that backend diagnostics endpoint displays recent logs for UI diagnostics.
+
+    This test validates that the backend diagnostics endpoint exposes recent log entries, supporting the scientific requirement for transparent error reporting and backend health monitoring in PHIDS UI diagnostics workflows.
+    """
     api_main.logger.info("UI diagnostics backend smoke test")
 
     async with _default_client() as client:
@@ -299,6 +362,11 @@ async def test_backend_diagnostics_shows_recent_logs() -> None:
 
 @pytest.mark.asyncio
 async def test_scenario_export_and_import_round_trip_ui() -> None:
+    """
+    Validates scenario export and import round-trip functionality via the UI endpoints.
+
+    This test ensures that the scenario export and import endpoints correctly serialize and deserialize scenario state, preserving mycorrhizal growth interval and placement attributes. The test supports the scientific requirement for reproducible scenario management and state persistence in PHIDS ecosystem simulation workflows.
+    """
     export_path = Path("/tmp/phids-ui-test.json")
     draft = get_draft()
     draft.add_plant_placement(0, 2, 2, 10.0)

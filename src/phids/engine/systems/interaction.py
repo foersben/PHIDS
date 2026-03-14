@@ -167,6 +167,7 @@ def run_interaction(
         env: GridEnvironment instance (provides flow_field and toxin layers).
         diet_matrix: Compatibility matrix indexed by predator_id then flora_id.
         tick: Current simulation tick (reserved for future use).
+        plant_death_causes: Mapping of death causes to their respective counts.
     """
     dead_swarms: list[int] = []
     for entity in list(world.query(SwarmComponent)):

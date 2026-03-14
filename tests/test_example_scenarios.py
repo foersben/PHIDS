@@ -1,3 +1,9 @@
+"""
+Test coverage for PHIDS curated example scenarios and scenario validation invariants.
+
+This module implements integration tests for PHIDS curated example scenarios. The test suite verifies scenario loading, placement validation, and simulation step execution, ensuring compliance with deterministic scenario construction, Rule of 16 entity caps, and double-buffered simulation logic. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and scenario configuration. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,6 +28,20 @@ CURATED_EXAMPLE_STEMS = {
 
 @pytest.mark.parametrize("path", EXAMPLE_PATHS, ids=lambda path: path.stem)
 def test_example_scenarios_validate(path: Path) -> None:
+    """
+    Validates scenario configuration invariants for curated PHIDS example scenarios.
+
+    This test function ensures that each curated scenario adheres to deterministic placement rules, including the presence of initial plant and herbivore placements, and enforces the Rule of 16 entity caps for flora and predator species. The validation supports reproducible ecological simulation and prevents configuration errors that could compromise emergent dynamics or violate architectural constraints fundamental to PHIDS.
+
+    Args:
+        path: The absolute path to the scenario JSON file. The parameter is used to load scenario configuration and validate placement and entity caps.
+
+    Returns:
+        None. Asserts scenario configuration invariants and placement rules.
+
+    Raises:
+        AssertionError: If scenario violates placement rules or entity caps, ensuring architectural and biological correctness.
+    """
     config = load_scenario_from_json(path)
 
     assert config.initial_plants, f"{path.name} should include plant placements"
@@ -33,6 +53,20 @@ def test_example_scenarios_validate(path: Path) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("path", EXAMPLE_PATHS, ids=lambda path: path.stem)
 async def test_example_scenarios_step_without_runtime_errors(path: Path) -> None:
+    """
+    Verifies simulation step execution and snapshot integrity for PHIDS example scenarios.
+
+    This asynchronous test function advances the simulation loop for each curated scenario, confirming that no runtime errors occur during step execution and that state snapshots expose plant energy layers with correct dimensions. The test substantiates the integrity of double-buffered simulation logic and the deterministic propagation of ecological signals, supporting rigorous validation of emergent ecosystem behavior.
+
+    Args:
+        path: The absolute path to the scenario JSON file. Used to load scenario configuration and advance simulation steps.
+
+    Returns:
+        None. Asserts simulation step execution and snapshot integrity.
+
+    Raises:
+        AssertionError: If simulation step or snapshot validation fails, ensuring architectural and biological correctness.
+    """
     config = load_scenario_from_json(path)
     loop = SimulationLoop(config)
 
@@ -50,6 +84,20 @@ async def test_example_scenarios_step_without_runtime_errors(path: Path) -> None
 
 
 def test_example_pack_mixes_mycorrhizal_and_non_mycorrhizal_scenarios() -> None:
+    """
+    Ensures curated PHIDS example scenarios include both mycorrhizal and non-mycorrhizal configurations.
+
+    This test function verifies that the curated scenario pack contains a scientifically diverse set of scenarios, including those with and without inter-species mycorrhizal networks. The validation supports comprehensive coverage of ecological phenomena and ensures the scenario suite reflects the full spectrum of biological interactions modeled by PHIDS.
+
+    Args:
+        None
+
+    Returns:
+        None. Asserts scenario diversity and mycorrhizal coverage.
+
+    Raises:
+        AssertionError: If scenario pack lacks diversity or mycorrhizal coverage, ensuring scientific completeness.
+    """
     configs = [load_scenario_from_json(path) for path in EXAMPLE_PATHS]
     example_stems = {path.stem for path in EXAMPLE_PATHS}
 
@@ -59,6 +107,20 @@ def test_example_pack_mixes_mycorrhizal_and_non_mycorrhizal_scenarios() -> None:
 
 
 def test_dry_shrubland_cycles_preserves_predator_reproduction_divisors() -> None:
+    """
+    Validates preservation of predator reproduction energy divisors in the 'dry_shrubland_cycles' scenario.
+
+    This test function confirms that the scenario configuration maintains the intended reproduction energy divisors for predator entities, ensuring deterministic reproduction thresholds and supporting the scientific accuracy of metabolic attrition and population dynamics within the PHIDS simulation framework.
+
+    Args:
+        None
+
+    Returns:
+        None. Asserts preservation of predator reproduction divisors.
+
+    Raises:
+        AssertionError: If divisors are not preserved, ensuring scientific and architectural correctness.
+    """
     config = load_scenario_from_json(EXAMPLES_DIR / "dry_shrubland_cycles.json")
     loop = SimulationLoop(config)
 

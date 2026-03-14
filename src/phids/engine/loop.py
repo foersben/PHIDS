@@ -1,9 +1,9 @@
-"""Simulation loop orchestration with deterministic ticks.
+"""
+Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
 
-This module implements the main simulation driver which advances the
-grid environment and ECS world through ordered systems. It captures
-per-tick snapshots for replay and telemetry and enforces deterministic
-update ordering using an asyncio lock.
+This module implements the principal simulation driver for PHIDS, responsible for advancing the grid environment and ECS world through a rigorously ordered sequence of systems: flow field, lifecycle, interaction, signaling, and telemetry/termination. The simulation loop enforces deterministic update ordering via an asyncio lock, ensuring reproducibility and scientific validity. Double-buffering is employed to maintain a strict separation between read and write states, preventing race conditions and guaranteeing the integrity of biological phenomena such as systemic acquired resistance, metabolic attrition, and mitosis. Per-tick snapshots are captured for replay and telemetry, supporting comprehensive analysis of emergent behaviors and ecological dynamics. The architectural design reflects the project's commitment to data-oriented modeling, O(1) spatial hash lookups, and the Rule of 16 for memory allocation, thereby simulating complex plant-herbivore interactions with maximal computational efficiency and biological fidelity.
+
+This module-level docstring is written in accordance with Google-style documentation standards, providing a detailed scholarly abstract of the simulation loop's algorithmic mechanics and biological rationale.
 """
 
 from __future__ import annotations

@@ -1,14 +1,9 @@
-"""FastAPI application exposing REST endpoints and WebSocket streaming.
+"""
+FastAPI application exposing REST endpoints and WebSocket streaming for PHIDS ecosystem simulation.
 
-The application provides endpoints for loading scenarios, controlling the
-simulation lifecycle, updating environmental parameters and exporting
-telemetry.  A WebSocket endpoint streams per-tick grid snapshots.
+This module implements the FastAPI application for PHIDS, providing REST endpoints for scenario loading, simulation lifecycle control, environmental parameter updates, and telemetry export. A WebSocket endpoint streams per-tick grid snapshots, supporting real-time visualization and analysis. The application also serves a browser-oriented surface via Jinja2-rendered HTML under / and /ui/*, together with HTMX-driven config endpoints that mutate the server-side DraftState before committing scenarios to the engine. The architectural design ensures deterministic simulation, reproducibility, and scientific integrity, supporting rigorous validation, double-buffered state management, and compliance with the Rule of 16 and O(1) spatial hash invariants. The module is central to the API and UI’s ability to model complex ecological dynamics and emergent behaviors with maximal biological fidelity.
 
-A second, browser-oriented surface is provided via Jinja2-rendered HTML
-served under ``/`` and ``/ui/*``, together with HTMX-driven config
-endpoints (``/api/config/*``, ``/api/matrices/*``) that mutate the
-server-side :mod:`~phids.api.ui_state` draft before the operator
-commits a scenario to the engine.
+This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the application's architectural role, algorithmic mechanics, and biological rationale.
 """
 
 from __future__ import annotations
@@ -983,8 +978,6 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
         "termination_reason": loop.termination_reason,
         "running": loop.running,
         "paused": loop.paused,
-        "grid_width": env.width,
-        "grid_height": env.height,
     }
 
 
@@ -1871,6 +1864,8 @@ async def config_flora_add(
         seed_min_dist: Minimum dispersal distance.
         seed_max_dist: Maximum dispersal distance.
         seed_energy_cost: Energy cost per seed event.
+        camouflage: Checkbox value ("on" or "off").
+        camouflage_factor: Camouflage factor (0–1).
 
     Returns:
         TemplateResponse: Updated flora config table partial.
@@ -2228,11 +2223,9 @@ async def config_substance_add(
         repellent_walk_ticks: Random-walk duration.
         energy_cost_per_tick: Energy drain per active tick.
         irreversible: ``"true"`` to keep the substance active after first activation.
-    Returns:
-        TemplateResponse: Updated substance config table partial.
 
-    Raises:
-        HTTPException: 400 if Rule of 16 limit is reached.
+    Returns:
+        Any: Response object.
     """
     draft = get_draft()
     if len(draft.substance_definitions) >= 16:

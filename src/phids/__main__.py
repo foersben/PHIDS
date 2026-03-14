@@ -1,4 +1,7 @@
-"""Command-line launcher for the PHIDS application."""
+"""Command-line entry point for the PHIDS runtime server.
+
+This module defines the process boundary between operating-system invocation and the PHIDS API runtime. It formalizes host, port, reload, and logging controls so simulation services can be started reproducibly across local development and containerized deployments. The launcher delegates execution to the FastAPI surface without mutating simulation state, preserving deterministic behavior in downstream ECS and double-buffered engine phases.
+"""
 
 from __future__ import annotations
 
@@ -9,10 +12,12 @@ _VALID_LOG_LEVELS = ("critical", "error", "warning", "info", "debug", "trace")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the PHIDS command-line interface parser.
+    """Construct the PHIDS command-line parser for server bootstrap.
+
+    The parser encodes operational parameters that influence network exposure and observability of the runtime process. Centralizing these flags constrains startup variability and supports reproducible execution conditions for API, HTMX, and WebSocket interfaces.
 
     Returns:
-        argparse.ArgumentParser: Configured parser for launching the web UI/API server.
+        Configured parser for launching the PHIDS server process.
     """
     parser = argparse.ArgumentParser(
         prog="phids",
@@ -47,10 +52,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> None:
-    """Launch the PHIDS FastAPI server.
+    """Start the PHIDS FastAPI application with parsed runtime arguments.
+
+    This function materializes command-line intent into a concrete ASGI server configuration. It resolves arguments, loads the API application, and transfers control to Uvicorn for long-running service orchestration.
 
     Args:
-        argv: Optional command-line arguments, mainly for tests or embedding.
+        argv: Optional argument sequence used by tests or embedding contexts.
+
+    Returns:
+        None. The function starts the server process and does not produce a data value.
     """
     args = build_parser().parse_args(argv)
 

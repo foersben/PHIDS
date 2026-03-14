@@ -187,6 +187,7 @@ def run_signaling(
             is permitted.
         signal_velocity: Ticks per hop for root-network relays.
         tick: Current simulation tick.
+        plant_death_causes: Mapping of death causes to their respective counts.
     """
     from phids.api.schemas import TriggerConditionSchema  # avoid circular at module level
 

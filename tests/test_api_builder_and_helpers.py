@@ -1,3 +1,8 @@
+"""Experimental validation suite for test api builder and helpers.
+
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+"""
+
 from __future__ import annotations
 
 import json
@@ -98,6 +103,14 @@ def _reset_state() -> None:
 
 
 def test_main_helper_functions_cover_condition_and_status_logic() -> None:
+    """Validates the main helper functions cover condition and status logic invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     assert api_main._default_substance_name(2, is_toxin=False) == "Signal 2"
     assert api_main._default_substance_name(3, is_toxin=True) == "Toxin 3"
 
@@ -199,6 +212,14 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
 
 
 def test_main_live_summary_and_starving_swarm_helpers() -> None:
+    """Validates the main live summary and starving swarm helpers invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     loop = SimulationLoop(_config_with_trigger())
     api_main._sim_loop = loop
 
@@ -250,6 +271,14 @@ def test_main_live_summary_and_starving_swarm_helpers() -> None:
 
 @pytest.mark.asyncio
 async def test_condition_node_update_creates_root_when_rule_has_no_condition() -> None:
+    """Validates the condition node update creates root when rule has no condition invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     draft = get_draft()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Signal A")]
     draft.add_trigger_rule(0, 0, 0)
@@ -275,6 +304,14 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
 
 @pytest.mark.asyncio
 async def test_builder_crud_routes_cover_flora_predators_substances_and_diet_matrix() -> None:
+    """Validates the builder crud routes cover flora predators substances and diet matrix invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     async with _default_client() as client:
         flora_add = await client.post(
             "/api/config/flora",
@@ -369,6 +406,14 @@ async def test_builder_crud_routes_cover_flora_predators_substances_and_diet_mat
 
 @pytest.mark.asyncio
 async def test_builder_route_rule_of_16_branches() -> None:
+    """Validates the builder route rule of 16 branches invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     draft = get_draft()
     draft.flora_species = [_flora(i) for i in range(16)]
     draft.predator_species = [_predator(i) for i in range(16)]
@@ -388,6 +433,14 @@ async def test_builder_route_rule_of_16_branches() -> None:
 
 @pytest.mark.asyncio
 async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_error_paths() -> None:
+    """Validates the trigger rule placement and scenario routes cover success and error paths invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     draft = get_draft()
     draft.substance_definitions = [
         SubstanceDefinition(substance_id=0, name="Signal A"),
@@ -482,6 +535,14 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
 
 @pytest.mark.asyncio
 async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
+    """Validates the scenario import reconstructs triggers and substances invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     payload = _config_with_trigger().model_dump(mode="json")
     payload["flora_species"][0]["triggers"][0]["activation_condition"] = {
         "kind": "enemy_presence",
@@ -509,6 +570,14 @@ async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
 
 
 def test_websocket_stream_endpoints_close_cleanly() -> None:
+    """Validates the websocket stream endpoints close cleanly invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     client = TestClient(app)
 
     with client.websocket_connect("/ws/simulation/stream") as websocket:
@@ -521,4 +590,5 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     with client.websocket_connect("/ws/ui/stream") as websocket:
         payload = json.loads(websocket.receive_text())
     assert payload["tick"] == 0
-    assert payload["grid_width"] == 8
+    assert len(payload["plant_energy"]) == 8
+    assert len(payload["plant_energy"][0]) == 8

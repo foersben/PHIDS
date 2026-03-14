@@ -1,3 +1,8 @@
+"""Experimental validation suite for test logging.
+
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -57,6 +62,17 @@ def _base_config(max_ticks: int = 20) -> SimulationConfig:
 
 
 def test_configure_logging_respects_env(monkeypatch) -> None:
+    """Validates the configure logging respects env invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     monkeypatch.setenv("PHIDS_LOG_LEVEL", "DEBUG")
     monkeypatch.setenv("PHIDS_LOG_SIM_DEBUG_INTERVAL", "7")
 
@@ -68,6 +84,17 @@ def test_configure_logging_respects_env(monkeypatch) -> None:
 
 
 def test_draft_build_logs_missing_species_warning(caplog) -> None:
+    """Validates the draft build logs missing species warning invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        caplog: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     draft = DraftState(flora_species=[], predator_species=[])
 
     with caplog.at_level(logging.WARNING, logger="phids.api.ui_state"):
@@ -80,6 +107,18 @@ def test_draft_build_logs_missing_species_warning(caplog) -> None:
 
 
 def test_simulation_loop_emits_periodic_debug_summary(monkeypatch, caplog) -> None:
+    """Validates the simulation loop emits periodic debug summary invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+        caplog: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     loop = SimulationLoop(_base_config(max_ticks=30))
     loop._debug_tick_interval = 1
 

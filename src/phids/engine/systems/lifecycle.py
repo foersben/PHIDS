@@ -223,6 +223,7 @@ def run_lifecycle(
         mycorrhizal_growth_interval_ticks: Ticks between new root-growth
             attempts. At most one new link is created per attempt.
         mycorrhizal_inter_species: Allow inter-species root connections.
+        plant_death_causes: Mapping of death causes to their respective counts.
     """
     dead: list[int] = []
 

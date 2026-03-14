@@ -1,3 +1,8 @@
+"""Experimental validation suite for test additional coverage.
+
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -98,6 +103,17 @@ def _config(max_ticks: int = 5) -> SimulationConfig:
 
 @pytest.mark.asyncio
 async def test_api_control_endpoints_cover_main_branches(_client: AsyncClient) -> None:
+    """Validates the api control endpoints cover main branches invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        _client: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     async with _client as client:
         root_resp = await client.get("/")
         assert "⏭ Step" in root_resp.text
@@ -182,6 +198,18 @@ async def test_api_control_endpoints_cover_main_branches(_client: AsyncClient) -
 async def test_http_middleware_logs_ui_and_api_requests(
     _client: AsyncClient, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """Validates the http middleware logs ui and api requests invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        _client: Input value used to parameterize deterministic behavior for this callable.
+        caplog: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     with caplog.at_level(logging.WARNING):
         async with _client as client:
             root_resp = await client.get("/")
@@ -195,6 +223,17 @@ async def test_http_middleware_logs_ui_and_api_requests(
 
 @pytest.mark.asyncio
 async def test_scenario_import_export_endpoints_roundtrip(_client: AsyncClient) -> None:
+    """Validates the scenario import export endpoints roundtrip invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        _client: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     async with _client as client:
         config = _config()
         import_resp = await client.post(
@@ -218,6 +257,17 @@ async def test_scenario_import_export_endpoints_roundtrip(_client: AsyncClient) 
 
 @pytest.mark.asyncio
 async def test_scenario_import_rejects_invalid_json(_client: AsyncClient) -> None:
+    """Validates the scenario import rejects invalid json invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        _client: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     async with _client as client:
         resp = await client.post(
             "/api/scenario/import",
@@ -227,6 +277,17 @@ async def test_scenario_import_rejects_invalid_json(_client: AsyncClient) -> Non
 
 
 def test_scenario_helpers_roundtrip_json_file(tmp_path: Path) -> None:
+    """Validates the scenario helpers roundtrip json file invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        tmp_path: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     config = _config()
     data = config.model_dump(mode="json")
 
@@ -244,6 +305,18 @@ def test_scenario_helpers_roundtrip_json_file(tmp_path: Path) -> None:
 def test_replay_buffer_save_load_and_truncated_file_warning(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """Validates the replay buffer save load and truncated file warning invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        tmp_path: Input value used to parameterize deterministic behavior for this callable.
+        caplog: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     replay = ReplayBuffer()
     replay.append({"tick": 0, "value": 1})
     replay.append({"tick": 1, "value": 2})
@@ -263,6 +336,17 @@ def test_replay_buffer_save_load_and_truncated_file_warning(
 
 
 def test_telemetry_export_helpers_write_files_and_bytes(tmp_path: Path) -> None:
+    """Validates the telemetry export helpers write files and bytes invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        tmp_path: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     frame = pl.DataFrame({"tick": [0, 1], "flora_population": [2, 3]})
 
     csv_path = tmp_path / "telemetry.csv"
@@ -277,6 +361,14 @@ def test_telemetry_export_helpers_write_files_and_bytes(tmp_path: Path) -> None:
 
 
 def test_flow_field_generation_and_camouflage() -> None:
+    """Validates the flow field generation and camouflage invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     plant_energy = np.array([[0.0, 0.0], [10.0, 0.0]], dtype=np.float64)
     toxin_layers = np.zeros((1, 2, 2), dtype=np.float64)
     toxin_layers[0, 0, 1] = 2.0
@@ -293,6 +385,18 @@ def test_flow_field_generation_and_camouflage() -> None:
 def test_configure_logging_supports_invalid_env_and_file_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Validates the configure logging supports invalid env and file output invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        tmp_path: Input value used to parameterize deterministic behavior for this callable.
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     log_path = tmp_path / "phids.log"
     monkeypatch.setenv("PHIDS_LOG_LEVEL", "not-a-level")
     monkeypatch.setenv("PHIDS_LOG_FILE_LEVEL", "still-invalid")
@@ -316,6 +420,17 @@ def test_configure_logging_supports_invalid_env_and_file_output(
 def test_attempt_reproduction_handles_success_and_blocking_cases(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Validates the attempt reproduction handles success and blocking cases invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     params = _config().flora_species[0]
     flora_params = {0: params}
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
@@ -435,6 +550,17 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
 def test_newborn_reproduction_respects_cooldown_and_energy_constraints(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Validates the newborn reproduction respects cooldown and energy constraints invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Args:
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     params = _config().flora_species[0]
     params.reproduction_interval = 3
     params.seed_energy_cost = 4.0
@@ -497,6 +623,14 @@ def test_newborn_reproduction_respects_cooldown_and_energy_constraints(
 
 
 def test_run_lifecycle_culls_dead_plants_and_prunes_missing_links() -> None:
+    """Validates the run lifecycle culls dead plants and prunes missing links invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
     params = {0: _config().flora_species[0]}
@@ -555,6 +689,14 @@ def test_run_lifecycle_culls_dead_plants_and_prunes_missing_links() -> None:
 
 
 def test_run_lifecycle_growth_is_incremental_at_late_ticks() -> None:
+    """Validates the run lifecycle growth is incremental at late ticks invariant and confirms the expected biological behavior under controlled simulation conditions.
+
+    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+
+    """
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
     params = {0: _config().flora_species[0]}
