@@ -32,6 +32,7 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
+from phids.shared.constants import MAX_TELEMETRY_TICKS
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +50,15 @@ class TelemetryRecorder:
     ``defense_cost_{id}`` to support Polars column-oriented operations.
     """
 
-    def __init__(self) -> None:
-        """Create a TelemetryRecorder with empty in-memory buffers."""
+    def __init__(self, max_rows: int = MAX_TELEMETRY_TICKS) -> None:
+        """Create a TelemetryRecorder with empty in-memory buffers.
+
+        Args:
+            max_rows: Maximum in-memory tick rows retained in the rolling window.
+        """
         self._rows: list[dict[str, Any]] = []
         self._df: pl.DataFrame | None = None
+        self._max_rows = max(1, int(max_rows))
 
     def record(
         self,
@@ -134,6 +140,10 @@ class TelemetryRecorder:
             "defense_cost_by_species": dict(defense_cost_by_species),
         }
         self._rows.append(row)
+        if len(self._rows) > self._max_rows:
+            # Enforce bounded telemetry memory by dropping oldest ticks first.
+            overflow = len(self._rows) - self._max_rows
+            del self._rows[:overflow]
         self._df = None  # invalidate cache
         logger.debug(
             "Telemetry row recorded (tick=%d, flora=%d, predators=%d, flora_energy=%.2f)",

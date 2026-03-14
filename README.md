@@ -119,7 +119,11 @@ The batch detail pane exposes:
 - `Data Grid` tab with column projection and tick-stride decimation controls;
 - explicit `Apply Chart Settings` and `Apply Table Settings` actions for deterministic UI state transitions;
 - chart presets (`Balanced overview`, `Collapse risk focus`, `Predator pressure focus`, `Survival probability only`) for rapid comparative evaluation;
-- export controls for `CSV`, `LaTeX table`, and `TikZ` with metadata overrides.
+- export controls for `CSV`, `LaTeX table`, and `TikZ` with metadata overrides (including survival-focused TikZ export when the survival preset is active).
+
+Telemetry retention is intentionally bounded (`MAX_TELEMETRY_TICKS = 10000`) and table previews
+show a decimated recent-tail window to keep both backend memory and browser DOM usage stable under
+long-running observations.
 
 Previously computed batches can be rehydrated into the in-memory ledger using the
 `Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).

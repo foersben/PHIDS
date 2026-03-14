@@ -308,7 +308,7 @@ def generate_png_bytes(
 ) -> bytes:
     """Render a matplotlib chart to PNG bytes using the headless Agg backend.
 
-    Supports four ``plot_type`` modes:
+    Supports five ``plot_type`` modes:
 
     * ``"timeseries"`` — Overlaid line chart with one series per flora and predator
       species, sharing a common tick x-axis and a left y-axis for population counts.
@@ -321,6 +321,7 @@ def generate_png_bytes(
       per-species stored plant energy.
     * ``"biomass_stack"`` — Stacked area chart of per-species flora population,
       used as a biomass proxy under fixed-cell carrying-capacity constraints.
+    * ``"survival_probability"`` — Per-tick percentage of runs remaining alive.
 
     The ``matplotlib.use("Agg")`` backend directive is applied locally before any
     pyplot call to prevent interference with interactive display backends.
@@ -328,7 +329,8 @@ def generate_png_bytes(
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
         plot_type: Chart mode — ``"timeseries"``, ``"phasespace"``,
-            ``"defense_economy"``, or ``"biomass_stack"``.
+            ``"defense_economy"``, ``"biomass_stack"``, or
+            ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
         predator_names: Optional display names keyed by predator species id.
         prey_species_id: Flora species id for phase-space x-axis.
@@ -407,10 +409,22 @@ def generate_png_bytes(
             x_label=x_label,
             y_label=y_label,
         )
+    elif plot_type == "survival_probability":
+        _plot_survival_probability(
+            ax,
+            plot_rows,
+            ticks,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
     else:
         plt.close(fig)
         raise ValueError(
-            f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, or biomass_stack"
+            (
+                f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, "
+                "defense_economy, biomass_stack, or survival_probability"
+            )
         )
 
     fig.tight_layout()
@@ -600,6 +614,36 @@ def _plot_biomass_stack(
     ax.grid(True, alpha=0.3)
 
 
+def _plot_survival_probability(
+    ax: Any,
+    rows: list[dict[str, Any]],
+    ticks: list[int],
+    *,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> None:
+    """Render batch survival probability trajectory onto ``ax``.
+
+    Args:
+        ax: Matplotlib Axes instance.
+        rows: Raw telemetry rows containing ``survival_probability``.
+        ticks: Tick index list aligned with ``rows``.
+        title: Optional chart title override.
+        x_label: Optional x-axis label override.
+        y_label: Optional y-axis label override.
+    """
+    y = [100.0 * float(r.get("survival_probability", 0.0)) for r in rows]
+    ax.plot(ticks, y, color="#0ea5e9", linewidth=2.0, label="Survival probability")
+    ax.fill_between(ticks, y, [0.0] * len(y), color="#0ea5e9", alpha=0.15)
+    ax.set_xlabel(x_label or "Tick")
+    ax.set_ylabel(y_label or "Simulations alive (%)")
+    ax.set_title(title or "PHIDS - Batch Survival Probability")
+    ax.set_ylim(0, 100)
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+
 # ---------------------------------------------------------------------------
 # PGFPlots / TikZ export (LaTeX-compilable, no tikzplotlib dependency)
 # ---------------------------------------------------------------------------
@@ -636,7 +680,8 @@ def generate_tikz_str(
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
         plot_type: Chart mode — ``"timeseries"``, ``"phasespace"``,
-            ``"defense_economy"``, or ``"biomass_stack"``.
+            ``"defense_economy"``, ``"biomass_stack"``, or
+            ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
         predator_names: Optional display names keyed by predator species id.
         prey_species_id: Flora species id for phase-space x-axis.
@@ -692,8 +737,18 @@ def generate_tikz_str(
             x_label=x_label,
             y_label=y_label,
         )
+    if plot_type == "survival_probability":
+        return _tikz_survival_probability(
+            plot_rows,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
     raise ValueError(
-        f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, or biomass_stack"
+        (
+            f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, "
+            "biomass_stack, or survival_probability"
+        )
     )
 
 
@@ -926,6 +981,42 @@ def _tikz_biomass_stack(
         "]\n"
         + body
         + "\n\\end{axis}\n\\end{tikzpicture}"
+    )
+
+
+def _tikz_survival_probability(
+    rows: list[dict[str, Any]],
+    *,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> str:
+    """Build PGFPlots code for batch survival probability trajectories.
+
+    Args:
+        rows: Raw telemetry rows containing ``survival_probability``.
+        title: Optional chart title override.
+        x_label: Optional x-axis label override.
+        y_label: Optional y-axis label override.
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source.
+    """
+    coords = " ".join(
+        f"({r.get('tick', 0)},{100.0 * float(r.get('survival_probability', 0.0))})" for r in rows
+    )
+    return (
+        "\\begin{tikzpicture}\n"
+        "\\begin{axis}[\n"
+        f"    xlabel={{{x_label or 'Tick'}}},\n"
+        f"    ylabel={{{y_label or 'Simulations alive (%)'}}},\n"
+        f"    title={{{title or 'PHIDS -- Batch Survival Probability'}}},\n"
+        "    ymin=0, ymax=100,\n"
+        "    grid=major,\n"
+        "    width=12cm, height=7cm,\n"
+        "]\n"
+        f"    \\addplot[color=cyan!70!black, thick] coordinates {{{coords}}};\n"
+        "\\end{axis}\n\\end{tikzpicture}"
     )
 
 

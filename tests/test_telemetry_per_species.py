@@ -192,3 +192,12 @@ class TestPerSpeciesTelemetry:
         assert len(rec._rows) == 0
         assert rec._df is None
 
+    def test_buffer_cap_retains_only_latest_ticks(self) -> None:
+        """TelemetryRecorder enforces FIFO retention once max_rows is exceeded."""
+        world = ECSWorld()
+        rec = TelemetryRecorder(max_rows=3)
+        for tick in range(6):
+            rec.record(world, tick=tick)
+        assert len(rec._rows) == 3
+        assert [row["tick"] for row in rec._rows] == [3, 4, 5]
+

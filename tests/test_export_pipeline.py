@@ -43,6 +43,7 @@ def _sample_rows() -> list[dict]:
             "plant_energy_by_species": {0: 300.0, 1: 200.0},
             "swarm_pop_by_species": {0: 3},
             "defense_cost_by_species": {},
+            "survival_probability": 1.0,
         },
         {
             "tick": 1,
@@ -59,6 +60,7 @@ def _sample_rows() -> list[dict]:
             "plant_energy_by_species": {0: 280.0, 1: 200.0},
             "swarm_pop_by_species": {0: 4},
             "defense_cost_by_species": {},
+            "survival_probability": 0.5,
         },
     ]
 
@@ -158,6 +160,12 @@ class TestGeneratePngBytes:
         assert isinstance(data, bytes)
         assert len(data) > 1000
 
+    def test_survival_probability_returns_nonempty_bytes(self) -> None:
+        """PNG export for survival probability mode returns non-empty bytes."""
+        data = generate_png_bytes(_sample_rows(), "survival_probability")
+        assert isinstance(data, bytes)
+        assert len(data) > 1000
+
 
 class TestGenerateTikzStr:
     """Validates PGFPlots LaTeX source generation."""
@@ -200,6 +208,12 @@ class TestGenerateTikzStr:
         s = generate_tikz_str(_sample_rows(), "biomass_stack")
         assert "\\begin{axis}" in s
         assert "Carrying Capacity" in s
+
+    def test_survival_probability_tikz_contains_axis(self) -> None:
+        """Survival probability TikZ output contains a valid axis environment."""
+        s = generate_tikz_str(_sample_rows(), "survival_probability")
+        assert "\\begin{axis}" in s
+        assert "Survival Probability" in s
 
     def test_custom_title_and_axes_are_applied(self) -> None:
         """User-provided title and axis labels are propagated into TikZ output."""

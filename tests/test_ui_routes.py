@@ -266,6 +266,38 @@ async def test_batch_export_csv_respects_tick_interval_decimation(
 
 
 @pytest.mark.asyncio
+async def test_batch_export_tikz_supports_survival_chart_type(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ensures batch TikZ export can render survival-probability diagnostics."""
+    job_id = "survival01"
+    summary = {
+        "ticks": [0, 1, 2],
+        "flora_population_mean": [10, 8, 6],
+        "flora_population_std": [0, 1, 1],
+        "predator_population_mean": [2, 3, 4],
+        "predator_population_std": [0, 1, 1],
+        "survival_probability_curve": [1.0, 0.8, 0.5],
+        "extinction_probability": 0.5,
+        "runs_completed": 3,
+    }
+    batch_dir = tmp_path / "batches"
+    batch_dir.mkdir(parents=True, exist_ok=True)
+    (batch_dir / f"{job_id}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
+
+    async with _default_client() as client:
+        resp = await client.get(
+            f"/api/batch/export/{job_id}",
+            params={"format": "tex_tikz", "chart_type": "survival", "title": "Survival"},
+        )
+
+    assert resp.status_code == 200
+    assert "Simulations alive (%)" in resp.text
+
+
+@pytest.mark.asyncio
 async def test_export_route_accepts_metabolic_alias_and_returns_tikz() -> None:
     """Validates that the metabolic alias resolves to defense-economy export generation."""
     draft = get_draft()

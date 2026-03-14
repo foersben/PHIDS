@@ -96,6 +96,7 @@ or a generic background deficit state.
 Current behavior:
 
 - each `record()` call appends one metrics row,
+- the recorder enforces a bounded FIFO retention cap (`MAX_TELEMETRY_TICKS = 10000`),
 - the cached dataframe is invalidated,
 - `dataframe` rebuilds the Polars structure on demand,
 - `get_latest_metrics()` exposes the most recent row for live UI or diagnostics use.
@@ -105,6 +106,9 @@ signaling each contribute immediate plant-loss events into the same per-tick acc
 telemetry row is materialized.
 
 This design keeps per-tick recording simple while preserving a convenient tabular export interface.
+
+The retention cap is a memory-safety invariant. Long-running sessions therefore expose a rolling
+window of the most recent telemetry rather than unbounded historical growth in backend memory.
 
 ## Empty DataFrame Semantics
 
@@ -177,6 +181,9 @@ This is an important current distinction:
 
 - `/api/telemetry/export/*` is for external analysis artifacts,
 - `/api/telemetry` is for live operator-facing visualization.
+
+For browser table previews, PHIDS intentionally renders a bounded recent-tail projection (after
+optional decimation) to prevent DOM overload from multi-thousand-row HTML payloads.
 
 ## Artifact Lifecycle
 

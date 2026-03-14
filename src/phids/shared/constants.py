@@ -29,6 +29,7 @@ SIGNAL_DECAY_FACTOR: float = 0.85  # per-tick airborne signal retention after di
 # Misc numeric sentinels
 # ---------------------------------------------------------------------------
 EMPTY_CELL: int = -1
+MAX_TELEMETRY_TICKS: int = 10_000
 
 # ---------------------------------------------------------------------------
 # Substance emission / dissipation rates

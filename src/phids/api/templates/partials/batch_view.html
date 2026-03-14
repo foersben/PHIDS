@@ -210,9 +210,10 @@
       const title = encodeURIComponent(chartTitleInput.value || '');
       const xLabel = encodeURIComponent(xLabelInput.value || '');
       const yLabel = encodeURIComponent(yLabelInput.value || '');
+      const chartType = chartPreset.value === 'survival_only' ? 'survival' : 'timeseries';
       csvExport.href = `/api/batch/export/{{ job_id }}?format=csv&tick_interval=${stride}&columns=${cols}`;
       texExport.href = `/api/batch/export/{{ job_id }}?format=tex_table&tick_interval=${stride}&columns=${cols}`;
-      tikzExport.href = `/api/batch/export/{{ job_id }}?format=tex_tikz&tick_interval=${stride}&title=${title}&x_label=${xLabel}&y_label=${yLabel}`;
+      tikzExport.href = `/api/batch/export/{{ job_id }}?format=tex_tikz&chart_type=${chartType}&tick_interval=${stride}&title=${title}&x_label=${xLabel}&y_label=${yLabel}`;
     }
 
     function buildTablePreview() {

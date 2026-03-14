@@ -42,11 +42,14 @@ Batch export endpoint: `GET /api/batch/export/{job_id}`
 Supported query parameters:
 
 - `format=csv|tex_table|tex_tikz`
+- `chart_type=timeseries|survival` (TikZ mode)
 - `tick_interval>=1`
 - `columns=...` (CSV and LaTeX table export projection)
 - `title`, `x_label`, `y_label` (TikZ export metadata)
 
 The decimation and projection settings are applied before serialization so the generated artifact remains aligned with the active data-grid interpretation. Float rendering in table exports is constrained to fixed precision (`%.2f`) to maintain manuscript-safe table widths.
+
+Telemetry retention remains bounded at recorder level (`MAX_TELEMETRY_TICKS`) and UI table previews use bounded windows to avoid backend/browser overload during long-running sessions.
 
 ## Statistical interpretation guidance
 

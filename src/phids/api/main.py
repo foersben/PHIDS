@@ -1411,8 +1411,8 @@ async def telemetry_table_preview(
     df = filter_dataframe_columns(df, columns)
     df = decimate_dataframe(df, tick_interval)
 
-    if limit > 0:
-        df = df.head(min(limit, 1000))
+    limit = max(1, min(limit, 1000))
+    df = df.tail(limit)
 
     if df.empty:
         context = {"table_html": "", "empty_message": "No rows match current table filters."}
@@ -1813,6 +1813,7 @@ async def batch_export(
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
+    chart_type: str = "timeseries",
 ) -> Response:
     """Export a batch aggregate summary as CSV, LaTeX table, or PGFPlots TikZ source.
 
@@ -1852,20 +1853,23 @@ async def batch_export(
         filename = f"phids_batch_{job_id}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
-        # Build simplified TikZ from aggregate mean series
+        # Build simplified export rows from aggregate mean and survival series.
         rows_agg: list[dict[str, Any]] = []
         ticks = aggregate.get("ticks", [])
         flora_mean = aggregate.get("flora_population_mean", [])
         pred_mean = aggregate.get("predator_population_mean", [])
+        survival = aggregate.get("survival_probability_curve", [])
         for i, t in enumerate(ticks):
             rows_agg.append({
                 "tick": t,
                 "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
                 "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
+                "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
             })
+        normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
         tikz = generate_tikz_str(
             rows_agg,
-            "timeseries",
+            normalized_chart_type,
             title=title,
             x_label=x_label,
             y_label=y_label,
