@@ -176,6 +176,8 @@ def aggregate_batch_telemetry(
     The extinction probability is estimated as the fraction of runs in which the
     total flora population reached zero at any tick, providing a coarse measure of
     ecosystem collapse risk under the configured parameter regime.
+    A per-tick survival curve is also computed as the fraction of runs that retain
+    strictly positive flora population at each aligned tick.
 
     Args:
         per_run: List of per-run row lists, each produced by
@@ -187,6 +189,7 @@ def aggregate_batch_telemetry(
         ``predator_population_mean``, ``predator_population_std``,
         ``total_flora_energy_mean``, ``total_flora_energy_std``,
         ``extinction_probability``, ``runs_completed``,
+        ``survival_probability_curve``,
         ``per_flora_pop_mean``, ``per_flora_pop_std``,
         ``per_predator_pop_mean``, ``per_predator_pop_std``.
     """
@@ -206,6 +209,7 @@ def aggregate_batch_telemetry(
     # Extinction probability: fraction of runs where flora hit zero at any tick
     extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
     extinction_probability = extinction_count / len(per_run)
+    survival_probability_curve = np.mean(flora_pop > 0, axis=0).tolist()
 
     # Collect all per-species ids seen
     all_flora_ids: set[int] = set()
@@ -244,6 +248,7 @@ def aggregate_batch_telemetry(
         "total_flora_energy_mean": flora_energy.mean(axis=0).tolist(),
         "total_flora_energy_std": flora_energy.std(axis=0).tolist(),
         "extinction_probability": extinction_probability,
+        "survival_probability_curve": survival_probability_curve,
         "runs_completed": len(per_run),
         "per_flora_pop_mean": {str(k): v for k, v in per_flora_pop_mean.items()},
         "per_flora_pop_std": {str(k): v for k, v in per_flora_pop_std.items()},

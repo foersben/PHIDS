@@ -25,5 +25,11 @@ def test_required_routes_present() -> None:
     assert "/api/simulation/step" in paths
     assert "/api/simulation/reset" in paths
     assert "/api/ui/cell-details" in paths
+    assert "/api/telemetry/chartjs-data" in paths
+    assert "/api/telemetry/table_preview" in paths
+    assert "/api/export/{data_type}" in paths
+    assert "/api/batch/start" in paths
+    assert "/api/batch/ledger" in paths
+    assert "/ui/batch" in paths
     assert "/ws/simulation/stream" in paths
     assert "/ws/ui/stream" in paths

@@ -6,6 +6,7 @@ This module implements integration tests for the PHIDS HTMX-driven UI routes and
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from httpx import ASGITransport, AsyncClient
 
 from phids.api import main as api_main
 from phids.api.main import app
+from phids.api.schemas import BatchJobState
 from phids.api.ui_state import SubstanceDefinition, get_draft, reset_draft
 
 
@@ -63,6 +65,7 @@ async def test_root_returns_full_html() -> None:
         ("/ui/substances", "substance-config-view"),
         ("/ui/diet-matrix", "diet-matrix-view"),
         ("/ui/trigger-rules", "trigger-rules-view"),
+        ("/ui/batch", "Monte Carlo Batch Runner"),
     ],
 )
 async def test_ui_partials_render(path: str, marker: str) -> None:
@@ -118,6 +121,56 @@ async def test_ui_status_helpers_render_without_loaded_simulation() -> None:
     assert "Idle" in status_resp.text
     assert telemetry_resp.status_code == 200
     assert "No telemetry data yet" in telemetry_resp.text
+
+
+@pytest.mark.asyncio
+async def test_table_preview_route_renders_empty_state_without_loaded_simulation() -> None:
+    """Confirms telemetry table preview fragment reports an informative empty-state message."""
+    async with _default_client() as client:
+        resp = await client.get("/api/telemetry/table_preview")
+
+    assert resp.status_code == 200
+    assert "No telemetry data available" in resp.text
+
+
+@pytest.mark.asyncio
+async def test_batch_view_renders_survival_chart_when_summary_exists(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Validates that the batch aggregate fragment includes the survival probability chart canvas."""
+    job_id = "jobtest01"
+    draft = get_draft()
+    draft.active_batch_jobs[job_id] = BatchJobState(
+        job_id=job_id,
+        status="done",
+        completed=2,
+        total=2,
+        scenario_name="smoke",
+        started_at="now",
+        max_ticks=4,
+    )
+
+    summary = {
+        "ticks": [0, 1, 2, 3],
+        "flora_population_mean": [10.0, 8.0, 6.0, 4.0],
+        "flora_population_std": [0.0, 0.5, 0.5, 1.0],
+        "predator_population_mean": [2.0, 3.0, 4.0, 5.0],
+        "predator_population_std": [0.0, 0.5, 0.5, 1.0],
+        "survival_probability_curve": [1.0, 1.0, 0.5, 0.5],
+        "extinction_probability": 0.5,
+        "runs_completed": 2,
+    }
+    batch_dir = tmp_path / "batches"
+    batch_dir.mkdir(parents=True, exist_ok=True)
+    (batch_dir / f"{job_id}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
+
+    async with _default_client() as client:
+        resp = await client.get(f"/api/batch/view/{job_id}")
+
+    assert resp.status_code == 200
+    assert "batch-survival-chart" in resp.text
 
 
 @pytest.mark.asyncio

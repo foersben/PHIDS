@@ -1,76 +1,104 @@
-<!-- Telemetry tabs: per-species time series (Chart.js) + Lotka-Volterra phase space -->
+<!-- Telemetry tabs: per-species time series, phase-space, and tabular preview -->
 <div class="space-y-3" id="telemetry-tabs-wrapper">
-
-  <!-- Tab bar -->
   <div class="flex gap-1 border-b border-slate-200 pb-0">
-    <button id="tab-ts-btn"
-      onclick="phidsTelemetryTab('ts')"
+    <button id="tab-ts-btn" onclick="phidsTelemetryTab('ts')"
       class="px-4 py-1.5 text-xs font-medium rounded-t-md border border-b-0 border-slate-200 bg-white text-indigo-600">
       📈 Time Series
     </button>
-    <button id="tab-ps-btn"
-      onclick="phidsTelemetryTab('ps')"
+    <button id="tab-ps-btn" onclick="phidsTelemetryTab('ps')"
       class="px-4 py-1.5 text-xs font-medium rounded-t-md border border-b-0 border-transparent text-slate-500 hover:text-slate-700">
       🔄 Phase Space
     </button>
+    <button id="tab-table-btn" onclick="phidsTelemetryTab('table')"
+      class="px-4 py-1.5 text-xs font-medium rounded-t-md border border-b-0 border-transparent text-slate-500 hover:text-slate-700">
+      🧾 Tabular View
+    </button>
   </div>
 
-  <!-- Time Series panel -->
   <div id="panel-ts" class="space-y-2">
-    <!-- Species toggles -->
     <div id="ts-legend" class="flex flex-wrap gap-2 text-[11px]"></div>
-    <canvas id="ts-chart" height="200"
-      style="display:block;width:100%;max-height:220px;"></canvas>
+    <canvas id="ts-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas>
+    <canvas id="defense-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
+    <canvas id="biomass-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
 
-    <!-- Export bar -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-slate-600">
+      <label>Title
+        <input id="ts-title" oninput="phidsTelemetryRefreshState()" placeholder="PHIDS - Population Time Series"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>X Label
+        <input id="ts-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Tick"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>Y Label
+        <input id="ts-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Population"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+    </div>
+
     <div class="flex flex-wrap gap-2 text-xs">
       <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a href="/api/export/timeseries?format=csv"
+      <a id="ts-export-csv" href="/api/export/timeseries?format=csv"
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_timeseries.csv">CSV</a>
-      <a href="/api/export/timeseries?format=png"
+      <a id="ts-export-png" href="/api/export/timeseries?format=png"
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_timeseries.png">PNG</a>
-      <a href="/api/export/timeseries?format=tex_tikz"
+      <a id="ts-export-tikz" href="/api/export/timeseries?format=tex_tikz"
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_timeseries.tex">TikZ</a>
-      <a href="/api/export/timeseries?format=tex_table"
+      <a id="ts-export-tex-table" href="/api/export/timeseries?format=tex_table"
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_timeseries_table.tex">LaTeX Table</a>
     </div>
   </div>
 
-  <!-- Phase Space panel -->
   <div id="panel-ps" class="space-y-2 hidden">
     <div class="flex flex-wrap gap-3 items-center text-[11px] text-slate-600">
       <label>
         Prey (x):
         <select id="ps-prey" onchange="phidsTelemetryRedrawPS()"
-          class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5">
-        </select>
+          class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5"></select>
       </label>
       <label>
         Predator (y):
         <select id="ps-pred" onchange="phidsTelemetryRedrawPS()"
-          class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5">
-        </select>
+          class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5"></select>
       </label>
     </div>
-    <canvas id="ps-chart" height="260"
-      style="display:block;width:100%;max-height:280px;"></canvas>
+    <canvas id="ps-chart" height="260" style="display:block;width:100%;max-height:280px;"></canvas>
 
-    <!-- Export bar -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-slate-600">
+      <label>Title
+        <input id="ps-title" oninput="phidsTelemetryRefreshState()" placeholder="PHIDS - Lotka-Volterra Phase Space"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>X Label
+        <input id="ps-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Prey population"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>Y Label
+        <input id="ps-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Predator population"
+          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+    </div>
+
     <div class="flex flex-wrap gap-2 text-xs" id="ps-export-bar">
       <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="ps-export-png"
-        href="/api/export/phasespace?format=png"
+      <a id="ps-export-png" href="/api/export/phasespace?format=png"
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_phasespace.png">PNG</a>
-      <a id="ps-export-tikz"
-        href="/api/export/phasespace?format=tex_tikz"
+      <a id="ps-export-tikz" href="/api/export/phasespace?format=tex_tikz"
         class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
         download="phids_phasespace.tex">TikZ</a>
     </div>
+  </div>
+
+  <div id="panel-table" class="space-y-2 hidden">
+    <p class="text-[11px] text-slate-500">
+      The tabular preview follows active species visibility and updates every telemetry poll cycle.
+    </p>
+    <div id="telemetry-table-preview"></div>
   </div>
 </div>
 
@@ -81,37 +109,159 @@
   // ---------------------------------------------------------------------------
   let _tsChart = null;
   let _psChart = null;
+  let _defenseChart = null;
+  let _biomassChart = null;
   let _lastData = null;
 
   // Colour palettes
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
   const PREDATOR_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
   const ENERGY_COLOUR    = '#60a5fa';
-  const DEFENSE_COLOUR   = '#a78bfa';
 
   // Species visibility flags
   const _visible = {};
+
+  function _isVisible(key) {
+    return _visible[key] !== false;
+  }
+
+  function _buildColumnSelection(data) {
+    const cols = ['tick'];
+    const floraIds = [];
+    const predIds = [];
+
+    if (_isVisible('flora_total')) cols.push('flora_population');
+    if (_isVisible('pred_total')) cols.push('predator_population');
+    if (_isVisible('energy')) cols.push('total_flora_energy');
+
+    (data.flora_ids || []).forEach(fid => {
+      if (_isVisible('plant_' + fid)) {
+        floraIds.push(String(fid));
+        cols.push('plant_' + fid + '_pop');
+        cols.push('plant_' + fid + '_energy');
+        cols.push('defense_cost_' + fid);
+      }
+    });
+    (data.predator_ids || []).forEach(pid => {
+      if (_isVisible('swarm_' + pid)) {
+        predIds.push(String(pid));
+        cols.push('swarm_' + pid + '_pop');
+      }
+    });
+
+    return { columns: cols.join(','), floraIds: floraIds.join(','), predIds: predIds.join(',') };
+  }
+
+  function _selectedPhaseSpecies(data) {
+    const preyEl = document.getElementById('ps-prey');
+    const predEl = document.getElementById('ps-pred');
+    const floraIds = data.flora_ids || [];
+    const predIds = data.predator_ids || [];
+
+    const prey = preyEl && floraIds.includes(parseInt(preyEl.value, 10))
+      ? parseInt(preyEl.value, 10)
+      : (floraIds.length > 0 ? floraIds[0] : 0);
+    const pred = predEl && predIds.includes(parseInt(predEl.value, 10))
+      ? parseInt(predEl.value, 10)
+      : (predIds.length > 0 ? predIds[0] : 0);
+    return { prey, pred };
+  }
+
+  function _encodeParams(params) {
+    const q = new URLSearchParams();
+    Object.keys(params).forEach(key => {
+      const value = params[key];
+      if (value !== null && value !== undefined && String(value).trim() !== '') {
+        q.set(key, String(value));
+      }
+    });
+    return q.toString();
+  }
+
+  function _refreshExportLinks(data) {
+    if (!data) return;
+    const sel = _buildColumnSelection(data);
+    const species = _selectedPhaseSpecies(data);
+
+    const tsTitle = document.getElementById('ts-title')?.value || '';
+    const tsX = document.getElementById('ts-x-label')?.value || '';
+    const tsY = document.getElementById('ts-y-label')?.value || '';
+    const psTitle = document.getElementById('ps-title')?.value || '';
+    const psX = document.getElementById('ps-x-label')?.value || '';
+    const psY = document.getElementById('ps-y-label')?.value || '';
+
+    const tsParams = _encodeParams({
+      columns: sel.columns,
+      flora_ids: sel.floraIds,
+      predator_ids: sel.predIds,
+      title: tsTitle,
+      x_label: tsX,
+      y_label: tsY,
+    });
+    const psParams = _encodeParams({
+      prey_species_id: species.prey,
+      predator_species_id: species.pred,
+      flora_ids: sel.floraIds,
+      predator_ids: sel.predIds,
+      title: psTitle,
+      x_label: psX,
+      y_label: psY,
+    });
+
+    const setHref = (id, base) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.href = `${base}&${base.includes('timeseries') ? tsParams : psParams}`;
+    };
+    setHref('ts-export-csv', '/api/export/timeseries?format=csv');
+    setHref('ts-export-png', '/api/export/timeseries?format=png');
+    setHref('ts-export-tikz', '/api/export/timeseries?format=tex_tikz');
+    setHref('ts-export-tex-table', '/api/export/timeseries?format=tex_table');
+    setHref('ps-export-png', '/api/export/phasespace?format=png');
+    setHref('ps-export-tikz', '/api/export/phasespace?format=tex_tikz');
+
+    _refreshTablePreview(sel);
+  }
+
+  function _refreshTablePreview(sel) {
+    const target = document.getElementById('telemetry-table-preview');
+    if (!target) return;
+    const params = _encodeParams({ columns: sel.columns, flora_ids: sel.floraIds, predator_ids: sel.predIds });
+    fetch('/api/telemetry/table_preview?' + params)
+      .then(r => r.ok ? r.text() : '')
+      .then(html => { if (html) target.innerHTML = html; })
+      .catch(() => {});
+  }
 
   // ---------------------------------------------------------------------------
   // Tab switching
   // ---------------------------------------------------------------------------
   window.phidsTelemetryTab = function (tab) {
     const isTs = tab === 'ts';
+    const isPs = tab === 'ps';
+    const isTable = tab === 'table';
     document.getElementById('panel-ts').classList.toggle('hidden', !isTs);
-    document.getElementById('panel-ps').classList.toggle('hidden',  isTs);
+    document.getElementById('panel-ps').classList.toggle('hidden', !isPs);
+    document.getElementById('panel-table').classList.toggle('hidden', !isTable);
     const tsBtn = document.getElementById('tab-ts-btn');
     const psBtn = document.getElementById('tab-ps-btn');
+    const tableBtn = document.getElementById('tab-table-btn');
+    [tsBtn, psBtn, tableBtn].forEach(btn => {
+      btn.classList.add('text-slate-500', 'border-transparent');
+      btn.classList.remove('text-indigo-600', 'bg-white', 'border-slate-200');
+    });
+
     if (isTs) {
       tsBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
       tsBtn.classList.remove('text-slate-500', 'border-transparent');
-      psBtn.classList.add('text-slate-500', 'border-transparent');
-      psBtn.classList.remove('text-indigo-600', 'bg-white', 'border-slate-200');
-    } else {
+    } else if (isPs) {
       psBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
       psBtn.classList.remove('text-slate-500', 'border-transparent');
-      tsBtn.classList.add('text-slate-500', 'border-transparent');
-      tsBtn.classList.remove('text-indigo-600', 'bg-white', 'border-slate-200');
       if (_lastData) _buildPsChart(_lastData);
+    } else {
+      tableBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
+      tableBtn.classList.remove('text-slate-500', 'border-transparent');
+      if (_lastData) _refreshExportLinks(_lastData);
     }
   };
 
@@ -201,6 +351,101 @@
     });
 
     _buildLegend(datasets);
+    _buildDefenseChart(data);
+    _buildBiomassChart(data);
+  }
+
+  function _buildDefenseChart(data) {
+    const ctx = document.getElementById('defense-chart');
+    if (!ctx) return;
+    const labels = data.labels || [];
+    const datasets = [];
+
+    (data.flora_ids || []).forEach((fid, i) => {
+      if (!_isVisible('plant_' + fid)) return;
+      const name = (data.flora_names || {})[fid] || ('Flora ' + fid);
+      const defense = data.series['defense_cost_' + fid] || [];
+      const energy = data.series['plant_' + fid + '_energy'] || [];
+      const n = Math.min(defense.length, energy.length);
+      const ratio = [];
+      for (let idx = 0; idx < n; idx++) {
+        const denom = energy[idx] || 0;
+        ratio.push(denom > 0 ? defense[idx] / denom : 0.0);
+      }
+      datasets.push({
+        label: name + ' defense/energy',
+        data: ratio,
+        borderColor: FLORA_COLOURS[i % FLORA_COLOURS.length],
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        pointRadius: 0,
+      });
+    });
+
+    if (_defenseChart) { _defenseChart.destroy(); _defenseChart = null; }
+    _defenseChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { labels: { font: { size: 10 } } } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+          y: {
+            ticks: { font: { size: 10 } },
+            grid: { color: '#f1f5f9' },
+            title: { display: true, text: 'Defense economy ratio', font: { size: 10 } },
+            min: 0,
+          },
+        },
+      },
+    });
+  }
+
+  function _buildBiomassChart(data) {
+    const ctx = document.getElementById('biomass-chart');
+    if (!ctx) return;
+    const labels = data.labels || [];
+    const datasets = [];
+
+    (data.flora_ids || []).forEach((fid, i) => {
+      if (!_isVisible('plant_' + fid)) return;
+      const name = (data.flora_names || {})[fid] || ('Flora ' + fid);
+      datasets.push({
+        label: name + ' biomass proxy',
+        data: data.series['plant_' + fid + '_pop'] || [],
+        borderColor: FLORA_COLOURS[i % FLORA_COLOURS.length],
+        backgroundColor: FLORA_COLOURS[i % FLORA_COLOURS.length] + '55',
+        borderWidth: 1,
+        pointRadius: 0,
+        fill: true,
+        stack: 'biomass',
+      });
+    });
+
+    if (_biomassChart) { _biomassChart.destroy(); _biomassChart = null; }
+    _biomassChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { labels: { font: { size: 10 } } } },
+        scales: {
+          x: { stacked: true, ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+          y: {
+            stacked: true,
+            ticks: { font: { size: 10 } },
+            grid: { color: '#f1f5f9' },
+            title: { display: true, text: 'Stacked biomass proxy', font: { size: 10 } },
+            min: 0,
+          },
+        },
+      },
+    });
   }
 
   function _buildLegend(datasets) {
@@ -224,6 +469,12 @@
     _visible[key] = wasHidden; // new state
     _tsChart.update();
     _buildLegend(_tsChart.data.datasets);
+    if (_lastData) {
+      _refreshExportLinks(_lastData);
+      if (!document.getElementById('panel-ps').classList.contains('hidden')) {
+        _buildPsChart(_lastData);
+      }
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -256,8 +507,11 @@
 
     const preyEl = document.getElementById('ps-prey');
     const predEl = document.getElementById('ps-pred');
-    const preyId = preyEl ? parseInt(preyEl.value, 10) || 0 : 0;
-    const predId = predEl ? parseInt(predEl.value, 10) || 0 : 0;
+    const species = _selectedPhaseSpecies(data);
+    if (preyEl) preyEl.value = String(species.prey);
+    if (predEl) predEl.value = String(species.pred);
+    const preyId = species.prey;
+    const predId = species.pred;
 
     const preyKey = 'plant_' + preyId + '_pop';
     const predKey = 'swarm_' + predId + '_pop';
@@ -306,17 +560,20 @@
       },
     });
 
-    // Update server-side export links
-    const preyParam = `&prey_species_id=${preyId}`;
-    const predParam = `&predator_species_id=${predId}`;
-    const pngA = document.getElementById('ps-export-png');
-    const tikzA = document.getElementById('ps-export-tikz');
-    if (pngA)  pngA.href  = `/api/export/phasespace?format=png${preyParam}${predParam}`;
-    if (tikzA) tikzA.href = `/api/export/phasespace?format=tex_tikz${preyParam}${predParam}`;
+    _refreshExportLinks(data);
   }
 
   window.phidsTelemetryRedrawPS = function () {
     if (_lastData) _buildPsChart(_lastData);
+  };
+
+  window.phidsTelemetryRefreshState = function () {
+    if (_lastData) {
+      _refreshExportLinks(_lastData);
+      if (!document.getElementById('panel-ps').classList.contains('hidden')) {
+        _buildPsChart(_lastData);
+      }
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -327,6 +584,7 @@
     const psActive = !document.getElementById('panel-ps').classList.contains('hidden');
     _buildTsChart(data);
     if (psActive) _buildPsChart(data);
+    _refreshExportLinks(data);
   };
 
   // Periodic polling (every 2 s while visible)

@@ -49,6 +49,98 @@ _FLORA_COLOURS = ["#22c55e", "#84cc16", "#10b981", "#4ade80", "#a3e635"]
 _PREDATOR_COLOURS = ["#ef4444", "#f97316", "#ec4899", "#f43f5e", "#fb923c"]
 
 
+def _parse_species_ids(raw: str | None) -> set[int] | None:
+    """Parse a comma-delimited species-id string into an integer set.
+
+    Args:
+        raw: Comma-delimited string (for example ``"0,2,4"``) or ``None``.
+
+    Returns:
+        Optional set[int]: Parsed ids; ``None`` when input is empty.
+    """
+    if raw is None or raw.strip() == "":
+        return None
+    out: set[int] = set()
+    for token in raw.split(","):
+        token = token.strip()
+        if token == "":
+            continue
+        try:
+            out.add(int(token))
+        except ValueError:
+            continue
+    return out if out else None
+
+
+def filter_telemetry_rows(
+    rows: list[dict[str, Any]],
+    *,
+    flora_ids: str | None = None,
+    predator_ids: str | None = None,
+) -> list[dict[str, Any]]:
+    """Filter per-species nested telemetry dictionaries by id.
+
+    Args:
+        rows: Raw telemetry rows.
+        flora_ids: Optional CSV flora species-id list.
+        predator_ids: Optional CSV predator species-id list.
+
+    Returns:
+        list[dict[str, Any]]: Row list with filtered species dictionaries.
+    """
+    flora_keep = _parse_species_ids(flora_ids)
+    predator_keep = _parse_species_ids(predator_ids)
+    if flora_keep is None and predator_keep is None:
+        return rows
+
+    filtered: list[dict[str, Any]] = []
+    for row in rows:
+        clone = dict(row)
+        if flora_keep is not None:
+            clone["plant_pop_by_species"] = {
+                sid: val
+                for sid, val in row.get("plant_pop_by_species", {}).items()
+                if int(sid) in flora_keep
+            }
+            clone["plant_energy_by_species"] = {
+                sid: val
+                for sid, val in row.get("plant_energy_by_species", {}).items()
+                if int(sid) in flora_keep
+            }
+            clone["defense_cost_by_species"] = {
+                sid: val
+                for sid, val in row.get("defense_cost_by_species", {}).items()
+                if int(sid) in flora_keep
+            }
+        if predator_keep is not None:
+            clone["swarm_pop_by_species"] = {
+                sid: val
+                for sid, val in row.get("swarm_pop_by_species", {}).items()
+                if int(sid) in predator_keep
+            }
+        filtered.append(clone)
+    return filtered
+
+
+def filter_dataframe_columns(df: "pd.DataFrame", columns: str | None) -> "pd.DataFrame":
+    """Return a DataFrame restricted to requested columns.
+
+    Args:
+        df: Input pandas DataFrame.
+        columns: Optional CSV column list.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame containing only existing columns.
+    """
+    if columns is None or columns.strip() == "" or df.empty:
+        return df
+    wanted = [c.strip() for c in columns.split(",") if c.strip()]
+    if "tick" not in wanted and "tick" in df.columns:
+        wanted.insert(0, "tick")
+    kept = [c for c in wanted if c in df.columns]
+    return df.loc[:, kept] if kept else df
+
+
 # ---------------------------------------------------------------------------
 # Low-level Polars helpers (no external deps)
 # ---------------------------------------------------------------------------
@@ -174,6 +266,11 @@ def generate_png_bytes(
     predator_names: dict[int, str] | None = None,
     prey_species_id: int = 0,
     predator_species_id: int = 0,
+    include_flora_ids: str | None = None,
+    include_predator_ids: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
     dpi: int = 150,
 ) -> bytes:
     """Render a matplotlib chart to PNG bytes using the headless Agg backend.
@@ -210,26 +307,40 @@ def generate_png_bytes(
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    plot_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
     fig, ax = plt.subplots(figsize=(10, 5), dpi=dpi)
 
-    if not rows:
+    if not plot_rows:
         ax.text(0.5, 0.5, "No telemetry data", ha="center", va="center", transform=ax.transAxes)
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight")
+        fig.savefig(buf, format="png", bbox_inches="tight", facecolor="white")
         plt.close(fig)
         return buf.getvalue()
 
-    ticks = [r["tick"] for r in rows]
+    ticks = [r["tick"] for r in plot_rows]
 
     if plot_type == "timeseries":
-        _plot_timeseries(ax, rows, ticks, flora_names=flora_names, predator_names=predator_names)
+        _plot_timeseries(
+            ax,
+            plot_rows,
+            ticks,
+            flora_names=flora_names,
+            predator_names=predator_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
     elif plot_type == "phasespace":
         _plot_phasespace(
-            ax, rows,
+            ax,
+            plot_rows,
             prey_species_id=prey_species_id,
             predator_species_id=predator_species_id,
             flora_names=flora_names,
             predator_names=predator_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
         )
     else:
         plt.close(fig)
@@ -237,7 +348,7 @@ def generate_png_bytes(
 
     fig.tight_layout()
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight")
+    fig.savefig(buf, format="png", bbox_inches="tight", facecolor="white")
     plt.close(fig)
     logger.debug("PNG export complete (plot_type=%s, dpi=%d, bytes=%d)", plot_type, dpi, buf.tell())
     return buf.getvalue()
@@ -250,6 +361,9 @@ def _plot_timeseries(
     *,
     flora_names: dict[int, str] | None,
     predator_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
 ) -> None:
     """Render per-species population time series onto ``ax``.
 
@@ -278,9 +392,9 @@ def _plot_timeseries(
         y = [r.get("swarm_pop_by_species", {}).get(pid, 0) for r in rows]
         ax.plot(ticks, y, color=colour, linewidth=1.5, linestyle="--", label=name)
 
-    ax.set_xlabel("Tick")
-    ax.set_ylabel("Population")
-    ax.set_title("PHIDS – Population Time Series")
+    ax.set_xlabel(x_label or "Tick")
+    ax.set_ylabel(y_label or "Population")
+    ax.set_title(title or "PHIDS - Population Time Series")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
@@ -293,6 +407,9 @@ def _plot_phasespace(
     predator_species_id: int,
     flora_names: dict[int, str] | None,
     predator_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
 ) -> None:
     """Render a Lotka-Volterra phase-space trajectory onto ``ax``.
 
@@ -318,9 +435,9 @@ def _plot_phasespace(
         ax.plot(x[0], y[0], "go", markersize=8, label="Start", zorder=4)
         ax.plot(x[-1], y[-1], "rs", markersize=8, label="End", zorder=4)
 
-    ax.set_xlabel(f"Population – {prey_name}")
-    ax.set_ylabel(f"Population – {pred_name}")
-    ax.set_title("PHIDS – Lotka-Volterra Phase Space")
+    ax.set_xlabel(x_label or f"Population - {prey_name}")
+    ax.set_ylabel(y_label or f"Population - {pred_name}")
+    ax.set_title(title or "PHIDS - Lotka-Volterra Phase Space")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
@@ -338,6 +455,11 @@ def generate_tikz_str(
     predator_names: dict[int, str] | None = None,
     prey_species_id: int = 0,
     predator_species_id: int = 0,
+    include_flora_ids: str | None = None,
+    include_predator_ids: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
 ) -> str:
     """Generate a PGFPlots LaTeX source string for publication-quality figures.
 
@@ -365,15 +487,26 @@ def generate_tikz_str(
     Raises:
         ValueError: If ``plot_type`` is not ``"timeseries"`` or ``"phasespace"``.
     """
+    plot_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
     if plot_type == "timeseries":
-        return _tikz_timeseries(rows, flora_names=flora_names, predator_names=predator_names)
+        return _tikz_timeseries(
+            plot_rows,
+            flora_names=flora_names,
+            predator_names=predator_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
     if plot_type == "phasespace":
         return _tikz_phasespace(
-            rows,
+            plot_rows,
             prey_species_id=prey_species_id,
             predator_species_id=predator_species_id,
             flora_names=flora_names,
             predator_names=predator_names,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
         )
     raise ValueError(f"Unknown plot_type '{plot_type}'; expected 'timeseries' or 'phasespace'")
 
@@ -383,6 +516,9 @@ def _tikz_timeseries(
     *,
     flora_names: dict[int, str] | None,
     predator_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
 ) -> str:
     """Build PGFPlots code for a population time-series chart.
 
@@ -430,9 +566,9 @@ def _tikz_timeseries(
     return (
         "\\begin{tikzpicture}\n"
         "\\begin{axis}[\n"
-        "    xlabel={Tick},\n"
-        "    ylabel={Population},\n"
-        "    title={PHIDS -- Population Time Series},\n"
+        f"    xlabel={{{x_label or 'Tick'}}},\n"
+        f"    ylabel={{{y_label or 'Population'}}},\n"
+        f"    title={{{title or 'PHIDS -- Population Time Series'}}},\n"
         "    legend pos=north east,\n"
         "    grid=major,\n"
         "    width=12cm, height=7cm,\n"
@@ -449,6 +585,9 @@ def _tikz_phasespace(
     predator_species_id: int,
     flora_names: dict[int, str] | None,
     predator_names: dict[int, str] | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
 ) -> str:
     """Build PGFPlots code for a Lotka-Volterra phase-space chart.
 
@@ -474,9 +613,9 @@ def _tikz_phasespace(
     return (
         "\\begin{tikzpicture}\n"
         "\\begin{axis}[\n"
-        f"    xlabel={{{prey_name} Population}},\n"
-        f"    ylabel={{{pred_name} Population}},\n"
-        "    title={PHIDS -- Lotka-Volterra Phase Space},\n"
+        f"    xlabel={{{x_label or (prey_name + ' Population')}}},\n"
+        f"    ylabel={{{y_label or (pred_name + ' Population')}}},\n"
+        f"    title={{{title or 'PHIDS -- Lotka-Volterra Phase Space'}}},\n"
         "    grid=major,\n"
         "    width=10cm, height=10cm,\n"
         "]\n"
@@ -490,12 +629,18 @@ def _tikz_phasespace(
 # ---------------------------------------------------------------------------
 
 
-def export_bytes_tex_table(rows: list[dict[str, Any]]) -> bytes:
+def export_bytes_tex_table(
+    rows: list[dict[str, Any]],
+    *,
+    columns: str | None = None,
+    include_flora_ids: str | None = None,
+    include_predator_ids: str | None = None,
+) -> bytes:
     """Render the telemetry rows as a booktabs LaTeX tabular environment.
 
     Flattens per-species dicts into a wide pandas DataFrame via
     :func:`telemetry_to_dataframe`, then serialises to LaTeX using
-    ``DataFrame.to_latex(booktabs=True, index=False)``, which generates
+    ``DataFrame.to_latex(index=False)``, which emits
     ``\\toprule``, ``\\midrule``, and ``\\bottomrule`` rules consistent with
     the ``booktabs`` LaTeX package conventions expected in peer-reviewed journals.
 
@@ -505,7 +650,9 @@ def export_bytes_tex_table(rows: list[dict[str, Any]]) -> bytes:
     Returns:
         bytes: UTF-8 encoded LaTeX ``tabular`` source.
     """
-    df = telemetry_to_dataframe(rows)
+    filtered_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
+    df = telemetry_to_dataframe(filtered_rows)
+    df = filter_dataframe_columns(df, columns)
     if df.empty:
         return b"% No telemetry data\n"
     latex: str = df.to_latex(index=False)  # type: ignore[attr-defined]

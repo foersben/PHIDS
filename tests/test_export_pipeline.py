@@ -177,6 +177,19 @@ class TestGenerateTikzStr:
         with pytest.raises(ValueError):
             generate_tikz_str(_sample_rows(), "scatter3d")
 
+    def test_custom_title_and_axes_are_applied(self) -> None:
+        """User-provided title and axis labels are propagated into TikZ output."""
+        s = generate_tikz_str(
+            _sample_rows(),
+            "phasespace",
+            title="Custom Phase",
+            x_label="Prey Axis",
+            y_label="Pred Axis",
+        )
+        assert "Custom Phase" in s
+        assert "Prey Axis" in s
+        assert "Pred Axis" in s
+
 
 class TestExportBytesTexTable:
     """Validates booktabs LaTeX table export."""
@@ -196,4 +209,11 @@ class TestExportBytesTexTable:
         """The tick column appears in the exported LaTeX table."""
         data = export_bytes_tex_table(_sample_rows())
         assert b"tick" in data
+
+    def test_column_filter_is_respected(self) -> None:
+        """Column-scoped table export omits non-selected telemetry columns."""
+        data = export_bytes_tex_table(_sample_rows(), columns="tick,plant_0_pop")
+        latex = data.decode("utf-8")
+        assert "plant_0_pop" in latex
+        assert "predator_population" not in latex
 

@@ -57,9 +57,12 @@ from phids.engine.loop import SimulationLoop
 from phids.telemetry.export import (
     export_bytes_csv,
     export_bytes_json,
+    filter_dataframe_columns,
+    filter_telemetry_rows,
     generate_png_bytes,
     generate_tikz_str,
     export_bytes_tex_table,
+    telemetry_to_dataframe,
 )
 from phids.shared.logging_config import configure_logging, get_recent_logs
 
@@ -1373,6 +1376,51 @@ async def telemetry_chartjs_data() -> JSONResponse:
     })
 
 
+@app.get("/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview")
+async def telemetry_table_preview(
+    request: Request,
+    columns: str | None = None,
+    flora_ids: str | None = None,
+    predator_ids: str | None = None,
+    limit: int = 200,
+) -> Any:
+    """Render an HTMX table preview aligned with current telemetry visibility filters.
+
+    Args:
+        request: FastAPI request object.
+        columns: Optional comma-delimited DataFrame columns to include.
+        flora_ids: Optional comma-delimited flora species ids to include.
+        predator_ids: Optional comma-delimited predator species ids to include.
+        limit: Maximum preview rows for UI responsiveness.
+
+    Returns:
+        TemplateResponse: Rendered ``partials/telemetry_table_preview.html`` fragment.
+    """
+    if _sim_loop is None:
+        return templates.TemplateResponse(
+            request,
+            "partials/telemetry_table_preview.html",
+            {"headers": [], "rows": [], "empty_message": "No telemetry data available."},
+        )
+
+    rows = filter_telemetry_rows(_sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids)
+    df = telemetry_to_dataframe(rows)
+    df = filter_dataframe_columns(df, columns)
+
+    if limit > 0:
+        df = df.head(min(limit, 1000))
+
+    if df.empty:
+        context = {"headers": [], "rows": [], "empty_message": "No rows match current table filters."}
+    else:
+        context = {
+            "headers": list(df.columns),
+            "rows": df.to_dict(orient="records"),
+            "empty_message": "",
+        }
+    return templates.TemplateResponse(request, "partials/telemetry_table_preview.html", context)
+
+
 @app.get(
     "/api/export/{data_type}",
     summary="Export telemetry data in academic formats",
@@ -1382,6 +1430,12 @@ async def export_telemetry_format(
     format: str = "csv",  # noqa: A002
     prey_species_id: int = 0,
     predator_species_id: int = 0,
+    columns: str | None = None,
+    flora_ids: str | None = None,
+    predator_ids: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
 ) -> Response:
     """Export telemetry data as CSV, LaTeX table, PGFPlots TikZ source, or PNG.
 
@@ -1411,35 +1465,53 @@ async def export_telemetry_format(
     rows = _sim_loop.telemetry._rows
     flora_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
     predator_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.predator_species}
+    filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, predator_ids=predator_ids)
 
     if format == "csv":
-        data = export_bytes_csv(_sim_loop.telemetry.dataframe)
+        df = telemetry_to_dataframe(filtered_rows)
+        df = filter_dataframe_columns(df, columns)
+        data = df.to_csv(index=False).encode("utf-8")
         filename = f"phids_{data_type}.csv"
         media_type = "text/csv"
     elif format == "tex_table":
-        data = export_bytes_tex_table(rows)
+        data = export_bytes_tex_table(
+            rows,
+            columns=columns,
+            include_flora_ids=flora_ids,
+            include_predator_ids=predator_ids,
+        )
         filename = f"phids_{data_type}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
         tikz = generate_tikz_str(
-            rows,
+            filtered_rows,
             data_type,
             flora_names=flora_names,
             predator_names=predator_names,
             prey_species_id=prey_species_id,
             predator_species_id=predator_species_id,
+            include_flora_ids=flora_ids,
+            include_predator_ids=predator_ids,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
         )
         data = tikz.encode("utf-8")
         filename = f"phids_{data_type}.tex"
         media_type = "text/plain"
     elif format == "png":
         data = generate_png_bytes(
-            rows,
+            filtered_rows,
             data_type,
             flora_names=flora_names,
             predator_names=predator_names,
             prey_species_id=prey_species_id,
             predator_species_id=predator_species_id,
+            include_flora_ids=flora_ids,
+            include_predator_ids=predator_ids,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
         )
         filename = f"phids_{data_type}.png"
         media_type = "image/png"

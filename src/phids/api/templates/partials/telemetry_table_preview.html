@@ -1,0 +1,27 @@
+{% if empty_message %}
+<div class="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+  {{ empty_message }}
+</div>
+{% else %}
+<div class="max-h-72 overflow-auto rounded border border-slate-200">
+  <table class="min-w-full text-[11px]">
+    <thead class="sticky top-0 bg-slate-100 text-slate-600">
+      <tr>
+        {% for header in headers %}
+        <th class="px-2 py-1 text-left font-medium border-b border-slate-200 whitespace-nowrap">{{ header }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr class="odd:bg-white even:bg-slate-50">
+        {% for header in headers %}
+        <td class="px-2 py-1 border-b border-slate-100 whitespace-nowrap">{{ row.get(header, "") }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+

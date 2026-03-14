@@ -43,6 +43,11 @@
       style="display:block;width:100%;max-height:220px;"></canvas>
   </div>
 
+  <div>
+    <canvas id="batch-survival-chart" height="180"
+      style="display:block;width:100%;max-height:200px;"></canvas>
+  </div>
+
   <!-- Export buttons -->
   <div class="flex flex-wrap gap-2 text-xs">
     <span class="text-slate-400 text-[11px] self-center">Export aggregate:</span>
@@ -110,6 +115,41 @@
         scales: {
           x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
           y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Population (mean ± σ)', font: { size: 10 } }, min: 0 },
+        },
+      },
+    });
+
+    const survivalCtx = document.getElementById('batch-survival-chart');
+    if (!survivalCtx) return;
+    if (survivalCtx._batchSurvivalChart) { survivalCtx._batchSurvivalChart.destroy(); }
+
+    const survivalSeries = (agg.survival_probability_curve || []).map(v => 100.0 * v);
+    survivalCtx._batchSurvivalChart = new Chart(survivalCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Survival probability',
+          data: survivalSeries,
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14,165,233,0.1)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          stepped: 'before',
+        }],
+      },
+      options: {
+        animation: false, responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { labels: { font: { size: 10 } } } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+          y: {
+            ticks: { font: { size: 10 } },
+            min: 0, max: 100,
+            grid: { color: '#f1f5f9' },
+            title: { display: true, text: 'Simulations alive (%)', font: { size: 10 } },
+          },
         },
       },
     });

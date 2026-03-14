@@ -15,8 +15,6 @@ instead, the aggregation and single-run interfaces are tested in-process via
 
 from __future__ import annotations
 
-import pytest
-
 
 def _minimal_scenario() -> dict:
     """Return a JSON-serialisable SimulationConfig dict for a 4×4 grid with one flora and one predator."""
@@ -175,5 +173,57 @@ class TestAggregateBatchTelemetry:
         assert "per_flora_pop_mean" in agg
         assert "0" in agg["per_flora_pop_mean"]
         assert abs(agg["per_flora_pop_mean"]["0"][0] - 8.0) < 1e-6
+
+    def test_survival_probability_curve_present(self) -> None:
+        """Aggregate output includes per-tick survival fractions across runs."""
+        from phids.engine.batch import aggregate_batch_telemetry
+
+        runs = [self._make_rows(4, 8, 2), self._make_rows(4, 8, 2)]
+        agg = aggregate_batch_telemetry(runs)
+        assert "survival_probability_curve" in agg
+        assert agg["survival_probability_curve"] == [1.0, 1.0, 1.0, 1.0]
+
+    def test_survival_probability_curve_monotonic_for_terminal_extinction(self) -> None:
+        """Survival curve decreases when a run reaches terminal flora extinction."""
+        from phids.engine.batch import aggregate_batch_telemetry
+
+        alive = self._make_rows(4, 6, 2)
+        extinct = [
+            {
+                "tick": 0,
+                "flora_population": 6,
+                "predator_population": 2,
+                "total_flora_energy": 60.0,
+                "plant_pop_by_species": {0: 6},
+                "swarm_pop_by_species": {0: 2},
+            },
+            {
+                "tick": 1,
+                "flora_population": 0,
+                "predator_population": 1,
+                "total_flora_energy": 0.0,
+                "plant_pop_by_species": {0: 0},
+                "swarm_pop_by_species": {0: 1},
+            },
+            {
+                "tick": 2,
+                "flora_population": 0,
+                "predator_population": 1,
+                "total_flora_energy": 0.0,
+                "plant_pop_by_species": {0: 0},
+                "swarm_pop_by_species": {0: 1},
+            },
+            {
+                "tick": 3,
+                "flora_population": 0,
+                "predator_population": 1,
+                "total_flora_energy": 0.0,
+                "plant_pop_by_species": {0: 0},
+                "swarm_pop_by_species": {0: 1},
+            },
+        ]
+
+        agg = aggregate_batch_telemetry([alive, extinct])
+        assert agg["survival_probability_curve"] == [1.0, 0.5, 0.5, 0.5]
 
 
