@@ -1418,6 +1418,7 @@ async def telemetry_table_preview(
             classes="min-w-full text-[11px]",
             border=0,
             justify="left",
+            float_format=lambda value: f"{value:.2f}",
         )
         context = {"table_html": table_html, "empty_message": ""}
     return templates.TemplateResponse(request, "partials/telemetry_table_preview.html", context)
@@ -1767,7 +1768,7 @@ async def batch_export(
         filename = f"phids_batch_{job_id}.csv"
         media_type = "text/csv"
     elif format == "tex_table":
-        latex: str = df.to_latex(index=False)  # type: ignore[attr-defined]
+        latex: str = df.to_latex(index=False, float_format="%.2f")  # type: ignore[attr-defined]
         data = latex.encode("utf-8")
         filename = f"phids_batch_{job_id}_table.tex"
         media_type = "text/plain"

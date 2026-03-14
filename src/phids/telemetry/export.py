@@ -898,7 +898,7 @@ def export_bytes_tex_table(
     df = filter_dataframe_columns(df, columns)
     if df.empty:
         return b"% No telemetry data\n"
-    latex: str = df.to_latex(index=False)  # type: ignore[attr-defined]
+    latex: str = df.to_latex(index=False, float_format="%.2f")  # type: ignore[attr-defined]
     return latex.encode("utf-8")
 
 
