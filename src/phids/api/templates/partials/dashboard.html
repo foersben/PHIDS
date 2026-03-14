@@ -587,7 +587,6 @@
           energy_deficit: swarm.energy_deficit ?? 0,
           signal_level: signalPeak,
           toxin_level: toxinPeak,
-          target_plant: swarm.target_plant ?? null,
         })),
     };
   }
@@ -933,7 +932,6 @@
             ${metrics.join(' · ')}
           </div>
           <div class="text-[10px] text-slate-400 mt-1">${escapeHtml(statusBits.join(' · ') || 'healthy / tracking')}</div>
-          ${swarm.target_plant ? `<div class="text-[10px] text-slate-400 mt-1">target → ${escapeHtml(swarm.target_plant.name)} @ (${escapeHtml(swarm.target_plant.x)}, ${escapeHtml(swarm.target_plant.y)})</div>` : ''}
         </div>`;
     }).join('');
   }

@@ -94,7 +94,6 @@ def _apply_toxin_to_swarms(
         if sub.repellent and not swarm.repelled:
             swarm.repelled = True
             swarm.repelled_ticks_remaining = sub.repellent_walk_ticks
-            swarm.target_plant_id = -1
 
 
 def _co_located_swarm_population(

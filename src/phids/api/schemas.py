@@ -83,7 +83,6 @@ class SwarmComponentSchema(BaseModel):
     repelled_ticks_remaining: int = Field(
         default=0, description="Ticks remaining in repelled random-walk."
     )
-    target_plant_id: int = Field(default=-1, description="ECS id of targeted plant entity.")
 
 
 class SubstanceComponentSchema(BaseModel):

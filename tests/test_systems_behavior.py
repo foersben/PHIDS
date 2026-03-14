@@ -461,6 +461,61 @@ def test_interaction_mitosis_conserves_odd_population() -> None:
     assert sorted(s.population for s in swarms) == [5, 6]
 
 
+def test_interaction_mitosis_applies_natal_dispersal(monkeypatch: pytest.MonkeyPatch) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
+
+    sid = _add_swarm(world, 1, 1, species_id=0, pop=10)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.initial_population = 5
+    swarm.energy_upkeep_per_individual = 0.0
+    swarm.move_cooldown = 1
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    positions = {
+        (entity.get_component(SwarmComponent).x, entity.get_component(SwarmComponent).y)
+        for entity in world.query(SwarmComponent)
+    }
+    assert len(positions) == 2
+
+
+def test_interaction_crowding_uses_random_walk_without_flow_choice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=1, num_signals=1, num_toxins=1)
+    env.flow_field[:, 0] = [0.0, 1.0, 3.0, 5.0]
+
+    sids = [_add_swarm(world, 1, 0, species_id=0, pop=5) for _ in range(3)]
+    for sid in sids:
+        swarm = world.get_entity(sid).get_component(SwarmComponent)
+        swarm.energy_upkeep_per_individual = 0.0
+
+    calls = {"count": 0}
+
+    def _choice(seq: list[tuple[int, int]]) -> tuple[int, int]:
+        calls["count"] += 1
+        return seq[0]
+
+    def _choices_fail(
+        seq: list[tuple[int, int]],
+        weights: list[float],
+        k: int,
+    ) -> list[tuple[int, int]]:
+        del seq, weights, k
+        raise AssertionError("flow chooser should not run")
+
+    monkeypatch.setattr(random, "choice", _choice)
+    monkeypatch.setattr(random, "choices", _choices_fail)
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    assert calls["count"] >= 3
+
+
 def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)

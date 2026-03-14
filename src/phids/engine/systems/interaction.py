@@ -19,6 +19,9 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 
 
+SWARM_TILE_CROWDING_THRESHOLD = 2
+
+
 def _choose_neighbour_by_flow_probability(
     x: int,
     y: int,
@@ -88,9 +91,22 @@ def _random_walk_step(
     return random.choice(candidates)
 
 
+def _co_located_swarm_count(world: ECSWorld, x: int, y: int) -> int:
+    """Return the number of swarms currently occupying one grid cell."""
+    count = 0
+    for entity_id in world.entities_at(x, y):
+        if not world.has_entity(entity_id):
+            continue
+        entity = world.get_entity(entity_id)
+        if entity.has_component(SwarmComponent):
+            count += 1
+    return count
+
+
 def _perform_mitosis(
     swarm: SwarmComponent,
     world: ECSWorld,
+    env: GridEnvironment,
 ) -> SwarmComponent:
     """Split an oversized swarm into two equal halves and spawn offspring.
 
@@ -100,6 +116,7 @@ def _perform_mitosis(
     Args:
         swarm: Parent swarm component to split.
         world: ECSWorld used to allocate the new entity.
+        env: GridEnvironment used to sample a local dispersal cell.
 
     Returns:
         SwarmComponent: The newly spawned offspring swarm component.
@@ -108,13 +125,14 @@ def _perform_mitosis(
     retained_population = swarm.population - offspring_population
     swarm.population = retained_population
     swarm.initial_population = retained_population
+    offspring_x, offspring_y = _random_walk_step(swarm.x, swarm.y, env.width, env.height)
 
     new_entity = world.create_entity()
     offspring = SwarmComponent(
         entity_id=new_entity.entity_id,
         species_id=swarm.species_id,
-        x=swarm.x,
-        y=swarm.y,
+        x=offspring_x,
+        y=offspring_y,
         population=offspring_population,
         initial_population=offspring_population,
         energy=swarm.energy / 2.0,
@@ -127,7 +145,7 @@ def _perform_mitosis(
     )
     swarm.energy /= 2.0
     world.add_component(new_entity.entity_id, offspring)
-    world.register_position(new_entity.entity_id, swarm.x, swarm.y)
+    world.register_position(new_entity.entity_id, offspring_x, offspring_y)
     return offspring
 
 
@@ -162,16 +180,22 @@ def run_interaction(
             swarm.move_cooldown -= 1
         else:
             # ----------------------------------------------------------------
-            # 2. Navigate
+            # 2. Navigate with local crowding pressure
             # ----------------------------------------------------------------
             old_x, old_y = swarm.x, swarm.y
+
+            if (
+                not swarm.repelled
+                and _co_located_swarm_count(world, swarm.x, swarm.y) > SWARM_TILE_CROWDING_THRESHOLD
+            ):
+                swarm.repelled = True
+                swarm.repelled_ticks_remaining = 1
 
             if swarm.repelled and swarm.repelled_ticks_remaining > 0:
                 nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height)
                 swarm.repelled_ticks_remaining -= 1
                 if swarm.repelled_ticks_remaining <= 0:
                     swarm.repelled = False
-                    swarm.target_plant_id = -1
             else:
                 nx, ny = _choose_neighbour_by_flow_probability(
                     swarm.x,
@@ -267,7 +291,7 @@ def run_interaction(
             else 2 * swarm.initial_population
         )
         if swarm.population >= split_threshold:
-            _perform_mitosis(swarm, world)
+            _perform_mitosis(swarm, world, env)
 
     world.collect_garbage(dead_swarms)
     env.rebuild_energy_layer()

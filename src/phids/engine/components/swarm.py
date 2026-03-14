@@ -28,7 +28,6 @@ class SwarmComponent:
         split_population_threshold: Explicit population threshold for mitosis (<=0 keeps legacy rule).
         repelled: Whether the swarm is currently repelled by toxin.
         repelled_ticks_remaining: Remaining ticks of repelled behavior.
-        target_plant_id: Entity id of the targeted plant (-1 = none).
         move_cooldown: Ticks remaining until the next movement.
     """
 
@@ -47,5 +46,4 @@ class SwarmComponent:
     split_population_threshold: int = 0
     repelled: bool = False
     repelled_ticks_remaining: int = 0
-    target_plant_id: int = -1
     move_cooldown: int = 0

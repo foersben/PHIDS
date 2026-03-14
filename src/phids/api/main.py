@@ -653,19 +653,6 @@ def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, 
 
         if entity.has_component(SwarmComponent):
             swarm = entity.get_component(SwarmComponent)
-            target_summary: dict[str, Any] | None = None
-            if swarm.target_plant_id >= 0 and world.has_entity(swarm.target_plant_id):
-                target_entity = world.get_entity(swarm.target_plant_id)
-                if target_entity.has_component(PlantComponent):
-                    target = target_entity.get_component(PlantComponent)
-                    target_summary = {
-                        "entity_id": target.entity_id,
-                        "species_id": target.species_id,
-                        "name": flora_names.get(target.species_id, f"Flora {target.species_id}"),
-                        "x": target.x,
-                        "y": target.y,
-                    }
-
             swarms.append(
                 {
                     "entity_id": swarm.entity_id,
@@ -684,7 +671,6 @@ def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, 
                     "intoxicated": cell_toxin_peak > 0.0,
                     "signal_level": cell_signal_peak,
                     "toxin_level": cell_toxin_peak,
-                    "target_plant": target_summary,
                 }
             )
 
