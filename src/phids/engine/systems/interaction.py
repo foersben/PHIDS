@@ -19,7 +19,7 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 
 
-SWARM_TILE_CROWDING_THRESHOLD = 2
+TILE_CARRYING_CAPACITY = 500
 
 
 def _choose_neighbour_by_flow_probability(
@@ -91,16 +91,17 @@ def _random_walk_step(
     return random.choice(candidates)
 
 
-def _co_located_swarm_count(world: ECSWorld, x: int, y: int) -> int:
-    """Return the number of swarms currently occupying one grid cell."""
-    count = 0
+def _co_located_swarm_population(world: ECSWorld, x: int, y: int) -> int:
+    """Return the total individual population of all swarms currently occupying one grid cell."""
+    total_population = 0
     for entity_id in world.entities_at(x, y):
         if not world.has_entity(entity_id):
             continue
         entity = world.get_entity(entity_id)
         if entity.has_component(SwarmComponent):
-            count += 1
-    return count
+            swarm = entity.get_component(SwarmComponent)
+            total_population += swarm.population
+    return total_population
 
 
 def _perform_mitosis(
@@ -187,7 +188,7 @@ def run_interaction(
 
             if (
                 not swarm.repelled
-                and _co_located_swarm_count(world, swarm.x, swarm.y) > SWARM_TILE_CROWDING_THRESHOLD
+                and _co_located_swarm_population(world, swarm.x, swarm.y) > TILE_CARRYING_CAPACITY
             ):
                 swarm.repelled = True
                 swarm.repelled_ticks_remaining = 1
@@ -218,6 +219,8 @@ def run_interaction(
         # ----------------------------------------------------------------
         if not has_moved:
             for co_eid in list(world.entities_at(swarm.x, swarm.y)):
+                if not world.has_entity(co_eid):
+                    continue
                 co_entity = world.get_entity(co_eid)
                 if not co_entity.has_component(PlantComponent):
                     continue
@@ -274,14 +277,15 @@ def run_interaction(
         # ----------------------------------------------------------------
         # 6. Reproduction: convert only swarm-scale surplus energy into growth
         # ----------------------------------------------------------------
-        reproduction_threshold = max(
-            swarm.energy_min,
-            swarm.population * swarm.energy_min * swarm.reproduction_energy_divisor,
-        )
-        new_individuals = int(swarm.energy // reproduction_threshold)
-        if new_individuals > 0:
-            swarm.population += new_individuals
-            swarm.energy -= new_individuals * reproduction_threshold
+        baseline_energy = swarm.population * swarm.energy_min
+        if swarm.energy > baseline_energy:
+            surplus = swarm.energy - baseline_energy
+            cost_per_offspring = swarm.energy_min * swarm.reproduction_energy_divisor
+
+            new_individuals = int(surplus // cost_per_offspring)
+            if new_individuals > 0:
+                swarm.population += new_individuals
+                swarm.energy -= new_individuals * cost_per_offspring
 
         # ----------------------------------------------------------------
         # 7. Mitosis

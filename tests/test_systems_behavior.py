@@ -366,7 +366,7 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
     swarm.energy_upkeep_per_individual = 0.0
-    swarm.energy = 9.0
+    swarm.energy = 10.0
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
@@ -517,7 +517,9 @@ def test_interaction_mitosis_offspring_can_diverge_next_tick(
     ) -> list[tuple[int, int]]:
         del weights, k
         calls["count"] += 1
-        return [seq[1] if calls["count"] == 1 else seq[2]]
+        if calls["count"] == 1:
+            return [seq[1] if len(seq) > 1 else seq[0]]
+        return [seq[-1]]
 
     monkeypatch.setattr(random, "choices", _split_pick)
 
@@ -557,8 +559,8 @@ def test_interaction_reproduction_divisor_limits_growth() -> None:
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     assert fast.population > slow.population
-    assert fast.population == 10
-    assert slow.population == 8
+    assert fast.population == 24
+    assert slow.population == 15
 
 
 def test_interaction_mitosis_conserves_odd_population() -> None:
@@ -636,7 +638,7 @@ def test_interaction_crowding_uses_random_walk_without_flow_choice(
     env = GridEnvironment(width=4, height=1, num_signals=1, num_toxins=1)
     env.flow_field[:, 0] = [0.0, 1.0, 3.0, 5.0]
 
-    sids = [_add_swarm(world, 1, 0, species_id=0, pop=5) for _ in range(3)]
+    sids = [_add_swarm(world, 1, 0, species_id=0, pop=250) for _ in range(3)]
     for sid in sids:
         swarm = world.get_entity(sid).get_component(SwarmComponent)
         swarm.energy_upkeep_per_individual = 0.0
@@ -661,6 +663,38 @@ def test_interaction_crowding_uses_random_walk_without_flow_choice(
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     assert calls["count"] >= 3
+
+
+def test_interaction_feeding_ignores_stale_plant_entity_ids() -> None:
+    """Validates that feeding skips stale spatial-hash entity identifiers after plant garbage collection.
+
+    The test exercises two co-located swarms feeding in one tick. The first swarm can consume and delete
+    a plant entity, and the second swarm must then continue safely without dereferencing a removed entity.
+
+    Returns:
+        None. The function verifies crash-free interaction processing under concurrent co-location feeding.
+
+    """
+    world = ECSWorld()
+    env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
+
+    _add_plant(world, 1, 1, species_id=0, energy=1.0)
+    first_swarm_id = _add_swarm(world, 1, 1, species_id=0, pop=2)
+    second_swarm_id = _add_swarm(world, 1, 1, species_id=0, pop=2)
+
+    first_swarm = world.get_entity(first_swarm_id).get_component(SwarmComponent)
+    second_swarm = world.get_entity(second_swarm_id).get_component(SwarmComponent)
+    first_swarm.energy_upkeep_per_individual = 0.0
+    second_swarm.energy_upkeep_per_individual = 0.0
+    first_swarm.move_cooldown = 1
+    second_swarm.move_cooldown = 1
+
+    run_interaction(world, env, diet_matrix=[[True]], tick=0)
+
+    remaining_plants = [entity for entity in world.query(PlantComponent)]
+    assert remaining_plants == []
+    assert world.has_entity(first_swarm_id)
+    assert world.has_entity(second_swarm_id)
 
 
 def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
