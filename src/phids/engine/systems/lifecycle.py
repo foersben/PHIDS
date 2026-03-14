@@ -17,14 +17,15 @@ from phids.engine.core.ecs import ECSWorld
 
 
 def _grow(plant: PlantComponent, tick: int) -> None:
-    """Apply the growth formula and clamp to max energy.
+    """Apply one incremental growth step and clamp to max energy.
 
     Args:
         plant: PlantComponent to update.
-        tick: Current simulation tick used in the growth formula.
+        tick: Current simulation tick (unused; kept for call-site parity).
     """
-    new_energy = plant.base_energy * (1.0 + plant.growth_rate / 100.0 * tick)
-    plant.energy = min(new_energy, plant.max_energy)
+    del tick
+    growth_amount = plant.base_energy * (plant.growth_rate / 100.0)
+    plant.energy = min(plant.energy + growth_amount, plant.max_energy)
 
 
 def _attempt_reproduction(
@@ -96,6 +97,7 @@ def _attempt_reproduction(
         seed_energy_cost=params.seed_energy_cost,
         camouflage=params.camouflage,
         camouflage_factor=params.camouflage_factor,
+        last_reproduction_tick=tick,
     )
     world.add_component(new_entity.entity_id, new_plant)
     world.register_position(new_entity.entity_id, tx, ty)

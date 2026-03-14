@@ -347,6 +347,7 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     assert len(offspring) == 1
     assert offspring[0].x == 3
     assert offspring[0].y == 2
+    assert offspring[0].last_reproduction_tick == 5
 
     blocked_world = ECSWorld()
     blocked_parent_entity = blocked_world.create_entity()
@@ -411,6 +412,70 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     assert _attempt_reproduction(low_energy_parent, 5, blocked_world, env, flora_params) == []
 
 
+def test_newborn_reproduction_respects_cooldown_and_energy_constraints(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    params = _config().flora_species[0]
+    params.reproduction_interval = 3
+    params.seed_energy_cost = 4.0
+    params.seed_min_dist = 1.0
+    params.seed_max_dist = 1.0
+    flora_params = {0: params}
+
+    env = GridEnvironment(width=7, height=7, num_signals=1, num_toxins=1)
+    world = ECSWorld()
+
+    parent_entity = world.create_entity()
+    parent = PlantComponent(
+        entity_id=parent_entity.entity_id,
+        species_id=0,
+        x=2,
+        y=3,
+        energy=20.0,
+        max_energy=40.0,
+        base_energy=10.0,
+        growth_rate=5.0,
+        survival_threshold=1.0,
+        reproduction_interval=params.reproduction_interval,
+        seed_min_dist=params.seed_min_dist,
+        seed_max_dist=params.seed_max_dist,
+        seed_energy_cost=params.seed_energy_cost,
+    )
+    parent.last_reproduction_tick = -100
+    world.add_component(parent_entity.entity_id, parent)
+    world.register_position(parent_entity.entity_id, parent.x, parent.y)
+
+    # First call spawns the newborn; second successful call (later) also needs angle+distance.
+    values = iter([0.0, 1.0, 0.0, 1.0])
+    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda a, b: next(values))
+
+    birth_tick = 10
+    newborn_list = _attempt_reproduction(parent, birth_tick, world, env, flora_params)
+    assert len(newborn_list) == 1
+    newborn = newborn_list[0]
+    assert newborn.last_reproduction_tick == birth_tick
+
+    # Cooldown Constraint: before birth_tick + interval, reproduction is always blocked.
+    for attempt_tick in range(birth_tick, birth_tick + newborn.reproduction_interval):
+        newborn.energy = 100.0
+        assert _attempt_reproduction(newborn, attempt_tick, world, env, flora_params) == []
+
+    boundary_tick = birth_tick + newborn.reproduction_interval
+
+    # Energy Constraint: at boundary tick, insufficient energy still blocks reproduction.
+    newborn.energy = newborn.seed_energy_cost - 0.1
+    assert _attempt_reproduction(newborn, boundary_tick, world, env, flora_params) == []
+
+    # Success State: at boundary tick, sufficient energy + empty target allows spawning.
+    newborn.energy = newborn.seed_energy_cost + 5.0
+    before_entities = len(list(world.query(PlantComponent)))
+    offspring = _attempt_reproduction(newborn, boundary_tick, world, env, flora_params)
+    after_entities = len(list(world.query(PlantComponent)))
+
+    assert len(offspring) == 1
+    assert after_entities == before_entities + 1
+
+
 def test_run_lifecycle_culls_dead_plants_and_prunes_missing_links() -> None:
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
@@ -467,3 +532,35 @@ def test_run_lifecycle_culls_dead_plants_and_prunes_missing_links() -> None:
     assert world.has_entity(alive_entity.entity_id) is True
     assert world.has_entity(dead_entity.entity_id) is False
     assert alive_plant.mycorrhizal_connections == set()
+
+
+def test_run_lifecycle_growth_is_incremental_at_late_ticks() -> None:
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
+    params = {0: _config().flora_species[0]}
+
+    plant_entity = world.create_entity()
+    plant = PlantComponent(
+        entity_id=plant_entity.entity_id,
+        species_id=0,
+        x=1,
+        y=1,
+        energy=10.0,
+        max_energy=20.0,
+        base_energy=10.0,
+        growth_rate=5.0,
+        survival_threshold=1.0,
+        reproduction_interval=999,
+        seed_min_dist=1.0,
+        seed_max_dist=1.0,
+        seed_energy_cost=999.0,
+    )
+    world.add_component(plant_entity.entity_id, plant)
+    world.register_position(plant_entity.entity_id, 1, 1)
+
+    run_lifecycle(world, env, tick=1000, flora_species_params=params)
+
+    grown = world.get_entity(plant_entity.entity_id).get_component(PlantComponent)
+    assert grown.energy == pytest.approx(10.5)
+
+

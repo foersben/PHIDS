@@ -172,10 +172,10 @@ class GridEnvironment:
         """Compute one diffusion tick for all signal layers.
 
         This applies a 2-D convolution with a pre-computed Gaussian kernel,
-        advects the result by the mean wind vector using integer pixel
-        rolls, and applies a sparsity threshold to zero small values.
+        advects the result by a bounded integer cell shift (zero-filled at
+        boundaries), and applies a sparsity threshold to zero small values.
         """
-        # Compute mean wind shift (integer pixel shift for np.roll)
+        # Compute mean wind shift in integer grid cells.
         mean_vx: int = int(round(float(self.wind_vector_x.mean())))
         mean_vy: int = int(round(float(self.wind_vector_y.mean())))
 
@@ -184,10 +184,25 @@ class GridEnvironment:
             convolved: npt.NDArray[np.float64] = convolve2d(
                 layer, DIFFUSION_KERNEL, mode="same", boundary="fill", fillvalue=0.0
             )
-            # Wind advection via cyclic roll
-            shifted: npt.NDArray[np.float64] = np.roll(
-                np.roll(convolved, mean_vx, axis=0), mean_vy, axis=1
-            )
+
+            shifted: npt.NDArray[np.float64] = np.zeros_like(convolved)
+            x_shift = mean_vx
+            y_shift = mean_vy
+            src_x_start = max(0, -x_shift)
+            src_x_end = self.width - max(0, x_shift)
+            dst_x_start = max(0, x_shift)
+            dst_x_end = self.width - max(0, -x_shift)
+            src_y_start = max(0, -y_shift)
+            src_y_end = self.height - max(0, y_shift)
+            dst_y_start = max(0, y_shift)
+            dst_y_end = self.height - max(0, -y_shift)
+
+            if src_x_start < src_x_end and src_y_start < src_y_end:
+                shifted[dst_x_start:dst_x_end, dst_y_start:dst_y_end] = convolved[
+                    src_x_start:src_x_end,
+                    src_y_start:src_y_end,
+                ]
+
             shifted *= SIGNAL_DECAY_FACTOR
             # Zero sub-threshold values to preserve matrix sparsity
             shifted[shifted < SIGNAL_EPSILON] = 0.0

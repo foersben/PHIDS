@@ -5,6 +5,12 @@ PHIDS is a deterministic ecological simulation system organized around a single 
 state transitions, operator workflows, and external interfaces remain traceable to a small set
 of explicit state owners.
 
+From a documentation perspective, this matters because PHIDS is not merely a collection of modules
+that happen to cooperate. It is a constrained experimental apparatus. Each architectural boundary is
+therefore also an epistemic boundary: it determines where ecological state is allowed to exist, how
+it may be mutated, and which transformations can be interpreted as scientifically meaningful steps in
+the simulated world.
+
 At a high level, PHIDS combines:
 
 1. a **validated scenario boundary** built with Pydantic,
@@ -26,6 +32,11 @@ a data-oriented runtime in which:
 This architecture is a methodological commitment as much as a software design decision. It
 constrains the simulation to a deterministic, inspectable, and benchmarkable execution model.
 
+In higher-quality scientific writing, a systems diagram is rarely presented as decoration. It is used
+to make a causal claim about the model. The same principle applies here: the PHIDS architecture is
+valuable not because it looks orderly, but because it makes the provenance of every observable result
+recoverable from a bounded chain of state transitions.
+
 ## Runtime Center of Gravity
 
 The architectural center of gravity is `phids.engine.loop.SimulationLoop`.
@@ -43,6 +54,11 @@ The loop is also the only place where the engine’s ordered phases are composed
 simulation tick.
 
 ## Layered Decomposition
+
+The layered decomposition below should be read from the outside inward. Validation and interface
+surfaces constrain what may enter the runtime; the engine then transforms that input through ordered
+phases; telemetry finally converts runtime state into persistent analytical evidence. This sequence is
+what gives PHIDS its dual character as both a simulator and a reproducible experimental record.
 
 ### 1. Schema and ingress layer
 
@@ -163,6 +179,18 @@ flowchart LR
 This diagram intentionally emphasizes ownership rather than network topology: `SimulationLoop`
 is the orchestrator, while `ECSWorld` and `GridEnvironment` are the principal runtime stores.
 
+What the diagram suppresses for clarity, but what contributors should keep in mind, is that the two
+stores play very different scientific roles. `ECSWorld` holds discrete biological actors and their
+local relations; `GridEnvironment` holds continuous spatial fields whose values are meaningful only
+because the loop updates them in a stable phase order. The architecture therefore couples discrete
+and continuous representations without allowing either to become an informal side channel.
+
+This separation is especially important for interpretation of downstream telemetry. When a swarm
+changes position, the meaning of that change is grounded in ECS locality and spatial-hash updates.
+When a signal plume spreads, the meaning of that spread is grounded in buffered field propagation.
+The architecture is designed so these two kinds of evidence can coexist without collapsing into one
+another.
+
 ## Current-State Determinism Model
 
 PHIDS presently achieves determinism through ordered execution, explicit tick control, and
@@ -178,6 +206,13 @@ The codebase also describes this in double-buffering terms. In current implement
 most concrete in `GridEnvironment`, where plant-energy aggregates and diffusion layers have
 distinct read and write buffers that are swapped after updates. PHIDS is therefore best described
 as having **buffered environmental state** rather than a fully duplicated whole-world state.
+
+That distinction should be stated carefully. The simulator does not construct a second complete
+universe for every tick. Instead, it isolates the numerically sensitive environmental fields that most
+need read/write discipline, while relying on deterministic phase sequencing for the entity world.
+This is a pragmatic architecture: strict where numerical stability and interpretability demand it,
+and deliberately lighter where a full mirrored world would add cost without corresponding scientific
+benefit.
 
 ## Architectural Invariants
 
@@ -225,6 +260,12 @@ ownership, but some boundaries are important to state precisely:
 
 These are not flaws in themselves; they are part of the present architectural state and should be
 documented as such.
+
+For that reason, PHIDS documentation should read less like promotional software copy and more like a
+methods section. The aim is not to claim maximal elegance, but to state exactly which architectural
+guarantees are presently strong, which are intentionally bounded, and which remain topics for future
+refinement. That style is the best fit for a simulator whose credibility depends on traceability more
+than on abstraction for its own sake.
 
 ## Where to Read Next
 

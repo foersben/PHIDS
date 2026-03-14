@@ -57,3 +57,29 @@ Enforcement
 
 Notes
 - mkdocstrings will render these docstrings in the API reference automatically.
+
+## Scientific & Scholarly Tone Requirement
+
+All documentation must be written in an academic, scientifically rigorous style. We prefer long,
+precise explanatory texts over brief summaries.
+
+### ❌ Bad Example (Too terse, informal)
+"""Handles swarm movement and eating.
+This runs every tick to make sure swarms move towards food and eat it if they are hungry.
+"""
+
+### ✅ Good Example (Scholarly, precise, comprehensive)
+"""Interaction system: swarm movement, feeding, energy economy, and toxin effects.
+
+This module implements the core behavioral loop for herbivore swarms. It governs
+spatial navigation via probabilistic evaluation of the flow-field gradient,
+allowing swarms to traverse the biotope towards high-energy flora while evading
+localized toxin concentrations.
+
+Furthermore, this system models the metabolic attrition of the swarm. It applies
+a continuous energy deficit based on the population size and executes feeding
+behavior via O(1) spatial hash co-occupancy checks. When a swarm's accumulated
+energy surpasses the biological threshold, the system triggers mitosis, splitting
+the population to simulate offspring generation.
+"""
+
