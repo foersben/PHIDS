@@ -156,6 +156,7 @@
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
   const PREDATOR_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
   const ENERGY_COLOUR    = '#60a5fa';
+  const MAX_TELEMETRY_POINTS = 300;
 
   // Species visibility flags
   const _visible = {};
@@ -333,16 +334,36 @@
     }
   }
 
+  function _tailWindow(values, maxPoints) {
+    if (!Array.isArray(values)) return [];
+    if (values.length <= maxPoints) return values.slice();
+    return values.slice(values.length - maxPoints);
+  }
+
+  function _windowData(data) {
+    const labels = _tailWindow(data.labels || [], MAX_TELEMETRY_POINTS);
+    const series = {};
+    const srcSeries = data.series || {};
+    Object.keys(srcSeries).forEach((key) => {
+      series[key] = _tailWindow(srcSeries[key], labels.length);
+    });
+    return {
+      ...data,
+      labels,
+      series,
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Tab switching
   // ---------------------------------------------------------------------------
   window.phidsTelemetryTab = function (tab) {
-    const isTs = tab === 'ts';
-    const isPs = tab === 'ps';
-    const isTable = tab === 'table';
-    document.getElementById('panel-ts').classList.toggle('hidden', !isTs);
-    document.getElementById('panel-ps').classList.toggle('hidden', !isPs);
-    document.getElementById('panel-table').classList.toggle('hidden', !isTable);
+    const isTimeSeriesTab = tab === 'ts';
+    const isPhaseSpaceTab = tab === 'ps';
+    const isTableTab = tab === 'table';
+    document.getElementById('panel-ts').classList.toggle('hidden', !isTimeSeriesTab);
+    document.getElementById('panel-ps').classList.toggle('hidden', !isPhaseSpaceTab);
+    document.getElementById('panel-table').classList.toggle('hidden', !isTableTab);
     const tsBtn = document.getElementById('tab-ts-btn');
     const psBtn = document.getElementById('tab-ps-btn');
     const tableBtn = document.getElementById('tab-table-btn');
@@ -351,10 +372,10 @@
       btn.classList.remove('text-indigo-600', 'bg-white', 'border-slate-200');
     });
 
-    if (isTs) {
+    if (isTimeSeriesTab) {
       tsBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
       tsBtn.classList.remove('text-slate-500', 'border-transparent');
-    } else if (isPs) {
+    } else if (isPhaseSpaceTab) {
       psBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
       psBtn.classList.remove('text-slate-500', 'border-transparent');
       if (_lastData) _buildPsChart(_lastData);
@@ -368,6 +389,35 @@
   // ---------------------------------------------------------------------------
   // Time-series chart
   // ---------------------------------------------------------------------------
+  function _syncDatasetsInPlace(chart, nextDatasets) {
+    const existingByKey = {};
+    (chart.data.datasets || []).forEach(ds => {
+      if (ds && ds._key) existingByKey[ds._key] = ds;
+    });
+    const merged = nextDatasets.map((next) => {
+      const key = next._key;
+      if (key && existingByKey[key]) {
+        Object.assign(existingByKey[key], next);
+        return existingByKey[key];
+      }
+      return next;
+    });
+    chart.data.datasets = merged;
+  }
+
+  function _baseLineChartOptions(yTitle) {
+    return {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+        y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: yTitle, font: { size: 10 } } },
+      },
+    };
+  }
+
   function _buildTsChart(data) {
     const ctx = document.getElementById('ts-chart');
     if (!ctx) return;
@@ -432,23 +482,24 @@
       _key: 'energy',
     });
 
-    if (_tsChart) { _tsChart.destroy(); _tsChart = null; }
+    if (!_tsChart) {
+      const opts = _baseLineChartOptions('Population');
+      opts.scales.yEnergy = {
+        position: 'right',
+        ticks: { font: { size: 10 } },
+        grid: { display: false },
+        title: { display: true, text: 'Energy', font: { size: 10 } },
+      };
+      _tsChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: opts,
+      });
+    }
 
-    _tsChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: data.labels || [], datasets },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-          y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Population', font: { size: 10 } } },
-          yEnergy: { position: 'right', ticks: { font: { size: 10 } }, grid: { display: false }, title: { display: true, text: 'Energy', font: { size: 10 } } },
-        },
-      },
-    });
+    _tsChart.data.labels = data.labels || [];
+    _syncDatasetsInPlace(_tsChart, datasets);
+    _tsChart.update('none');
 
     _buildLegend(datasets);
     _buildDefenseChart(data);
@@ -482,26 +533,23 @@
       });
     });
 
-    if (_defenseChart) { _defenseChart.destroy(); _defenseChart = null; }
-    _defenseChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: { legend: { labels: { font: { size: 10 } } } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-          y: {
-            ticks: { font: { size: 10 } },
-            grid: { color: '#f1f5f9' },
-            title: { display: true, text: 'Defense economy ratio', font: { size: 10 } },
-            min: 0,
-          },
-        },
-      },
-    });
+    if (!_defenseChart) {
+      const opts = _baseLineChartOptions('Defense economy ratio');
+      opts.plugins = { legend: { labels: { font: { size: 10 } } } };
+      opts.scales.y.min = 0;
+      _defenseChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: opts,
+      });
+    }
+
+    _defenseChart.data.labels = labels;
+    _syncDatasetsInPlace(
+      _defenseChart,
+      datasets.map((ds) => ({ ...ds, _key: ds.label })),
+    );
+    _defenseChart.update('none');
   }
 
   function _buildBiomassChart(data) {
@@ -525,27 +573,25 @@
       });
     });
 
-    if (_biomassChart) { _biomassChart.destroy(); _biomassChart = null; }
-    _biomassChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: { legend: { labels: { font: { size: 10 } } } },
-        scales: {
-          x: { stacked: true, ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-          y: {
-            stacked: true,
-            ticks: { font: { size: 10 } },
-            grid: { color: '#f1f5f9' },
-            title: { display: true, text: 'Stacked biomass proxy', font: { size: 10 } },
-            min: 0,
-          },
-        },
-      },
-    });
+    if (!_biomassChart) {
+      const opts = _baseLineChartOptions('Stacked biomass proxy');
+      opts.plugins = { legend: { labels: { font: { size: 10 } } } };
+      opts.scales.x.stacked = true;
+      opts.scales.y.stacked = true;
+      opts.scales.y.min = 0;
+      _biomassChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: opts,
+      });
+    }
+
+    _biomassChart.data.labels = labels;
+    _syncDatasetsInPlace(
+      _biomassChart,
+      datasets.map((ds) => ({ ...ds, _key: ds.label })),
+    );
+    _biomassChart.update('none');
   }
 
   function _buildLegend(datasets) {
@@ -625,40 +671,46 @@
     const preyName = (data.flora_names || {})[preyId] || ('Flora ' + preyId);
     const predName = (data.predator_names || {})[predId] || ('Predator ' + predId);
 
-    if (_psChart) { _psChart.destroy(); _psChart = null; }
-
-    _psChart = new Chart(ctx, {
-      type: 'scatter',
-      data: {
-        datasets: [{
-          label: 'Trajectory',
-          data: points,
-          showLine: true,
-          borderColor: '#7c3aed',
-          backgroundColor: 'rgba(124,58,237,0.15)',
-          pointRadius: 2,
-          borderWidth: 1.5,
-        }, {
-          label: 'Start',
-          data: points.length > 0 ? [points[0]] : [],
-          backgroundColor: '#22c55e', pointRadius: 6, showLine: false,
-        }, {
-          label: 'End',
-          data: points.length > 1 ? [points[points.length - 1]] : [],
-          backgroundColor: '#ef4444', pointRadius: 6, pointStyle: 'rectRot', showLine: false,
-        }],
-      },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } },
-        scales: {
-          x: { title: { display: true, text: preyName + ' population', font: { size: 10 } }, ticks: { font: { size: 10 } } },
-          y: { title: { display: true, text: predName + ' population', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+    if (!_psChart) {
+      _psChart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets: [] },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } },
+          scales: {
+            x: { title: { display: true, text: '', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+            y: { title: { display: true, text: '', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+          },
         },
-      },
-    });
+      });
+    }
+
+    _syncDatasetsInPlace(_psChart, [{
+      label: 'Trajectory',
+      data: points,
+      showLine: true,
+      borderColor: '#7c3aed',
+      backgroundColor: 'rgba(124,58,237,0.15)',
+      pointRadius: 2,
+      borderWidth: 1.5,
+      _key: 'trajectory',
+    }, {
+      label: 'Start',
+      data: points.length > 0 ? [points[0]] : [],
+      backgroundColor: '#22c55e', pointRadius: 6, showLine: false,
+      _key: 'start',
+    }, {
+      label: 'End',
+      data: points.length > 1 ? [points[points.length - 1]] : [],
+      backgroundColor: '#ef4444', pointRadius: 6, pointStyle: 'rectRot', showLine: false,
+      _key: 'end',
+    }]);
+    _psChart.options.scales.x.title.text = preyName + ' population';
+    _psChart.options.scales.y.title.text = predName + ' population';
+    _psChart.update('none');
 
     _updateStabilityStatus(points);
 
@@ -682,22 +734,23 @@
   // Polling / update entry point
   // ---------------------------------------------------------------------------
   window.phidsTelemetryUpdate = function (data) {
-    const labels = data.labels || [];
+    const view = _windowData(data);
+    const labels = view.labels || [];
     const latestTick = labels.length > 0 ? labels[labels.length - 1] : -1;
     const speciesSignature = JSON.stringify({
-      flora: data.flora_ids || [],
-      predators: data.predator_ids || [],
+      flora: view.flora_ids || [],
+      predators: view.predator_ids || [],
     });
     if ((_lastTickSeen >= 0 && latestTick >= 0 && latestTick < _lastTickSeen) ||
       (_lastSpeciesSignature && speciesSignature !== _lastSpeciesSignature)) {
       _resetTelemetryUiState();
     }
 
-    _lastData = data;
+    _lastData = view;
     const psActive = !document.getElementById('panel-ps').classList.contains('hidden');
-    _buildTsChart(data);
-    if (psActive) _buildPsChart(data);
-    _refreshExportLinks(data);
+    _buildTsChart(view);
+    if (psActive) _buildPsChart(view);
+    _refreshExportLinks(view);
     _lastTickSeen = latestTick;
     _lastSpeciesSignature = speciesSignature;
   };
@@ -722,4 +775,3 @@
   }
 })();
 </script>
-

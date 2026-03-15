@@ -240,12 +240,30 @@ Release and packaging policy:
 
 ## ✅ Testing, benchmarks, and CI behavior
 
+Current verified state (local full-suite run):
+
+- `196 passed`
+- repository-wide coverage: `89.65%`
+- all currently reported runtime modules in `src/phids/*` are at `>=80%` coverage
+
 Focused checks:
 
 ```bash
 uv run pytest tests/test_ui_routes.py -q
 uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py -q
 uv run pytest tests/test_flow_field_benchmark.py tests/test_spatial_hash_benchmark.py -q
+```
+
+Coverage-uplift regression checks (entrypoint + batch orchestration):
+
+```bash
+uv run pytest tests/test_cli_main.py tests/test_batch_runner.py -q
+```
+
+If you want to list only modules below 80% after a full run:
+
+```bash
+uv run pytest tests/ --no-header 2>&1 | awk '/^src\/phids\// {gsub("%","",$4); if (($4+0) < 80) print $0}'
 ```
 
 Representative route/system smoke slice:

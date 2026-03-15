@@ -34,6 +34,7 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 
 from phids.api.schemas import (
     ConditionNode,
@@ -1297,8 +1298,13 @@ async def export_telemetry_csv() -> Response:
         Response: FastAPI response containing CSV bytes and headers.
     """
     loop = _get_loop()
-    data = export_bytes_csv(loop.telemetry.dataframe)
-    logger.info("Telemetry exported as CSV (%d rows)", loop.telemetry.dataframe.height)
+
+    def _build_csv_payload() -> tuple[bytes, int]:
+        df = loop.telemetry.dataframe
+        return export_bytes_csv(df), int(df.height)
+
+    data, rows = await run_in_threadpool(_build_csv_payload)
+    logger.info("Telemetry exported as CSV (%d rows)", rows)
     return Response(
         content=data,
         media_type="text/csv",
@@ -1314,8 +1320,13 @@ async def export_telemetry_json() -> Response:
         Response: FastAPI response containing NDJSON bytes and headers.
     """
     loop = _get_loop()
-    data = export_bytes_json(loop.telemetry.dataframe)
-    logger.info("Telemetry exported as NDJSON (%d rows)", loop.telemetry.dataframe.height)
+
+    def _build_json_payload() -> tuple[bytes, int]:
+        df = loop.telemetry.dataframe
+        return export_bytes_json(df), int(df.height)
+
+    data, rows = await run_in_threadpool(_build_json_payload)
+    logger.info("Telemetry exported as NDJSON (%d rows)", rows)
     return Response(
         content=data,
         media_type="application/x-ndjson",
@@ -1368,17 +1379,21 @@ async def telemetry_chartjs_data() -> JSONResponse:
             float(r.get("swarm_pop_by_species", {}).get(pid, 0)) for r in rows
         ]
 
-    return JSONResponse({
-        "labels": labels,
-        "flora_ids": flora_ids,
-        "predator_ids": predator_ids,
-        "flora_names": {str(k): v for k, v in flora_names.items()},
-        "predator_names": {str(k): v for k, v in predator_names.items()},
-        "series": series,
-    })
+    return JSONResponse(
+        {
+            "labels": labels,
+            "flora_ids": flora_ids,
+            "predator_ids": predator_ids,
+            "flora_names": {str(k): v for k, v in flora_names.items()},
+            "predator_names": {str(k): v for k, v in predator_names.items()},
+            "series": series,
+        }
+    )
 
 
-@app.get("/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview")
+@app.get(
+    "/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview"
+)
 async def telemetry_table_preview(
     request: Request,
     columns: str | None = None,
@@ -1406,7 +1421,9 @@ async def telemetry_table_preview(
             {"table_html": "", "empty_message": "No telemetry data available."},
         )
 
-    rows = filter_telemetry_rows(_sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids)
+    rows = filter_telemetry_rows(
+        _sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids
+    )
     df = telemetry_to_dataframe(rows)
     df = filter_dataframe_columns(df, columns)
     df = decimate_dataframe(df, tick_interval)
@@ -1488,43 +1505,57 @@ async def export_telemetry_format(
 
     rows = _sim_loop.telemetry._rows
     flora_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
-    predator_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.predator_species}
+    predator_names: dict[int, str] = {
+        sp.species_id: sp.name for sp in _sim_loop.config.predator_species
+    }
     filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, predator_ids=predator_ids)
 
     if format == "csv":
-        df = telemetry_to_dataframe(filtered_rows)
-        df = filter_dataframe_columns(df, columns)
-        df = decimate_dataframe(df, tick_interval)
-        data = df.to_csv(index=False).encode("utf-8")
+
+        def _build_export_csv() -> bytes:
+            df = telemetry_to_dataframe(filtered_rows)
+            df = filter_dataframe_columns(df, columns)
+            df = decimate_dataframe(df, tick_interval)
+            return df.to_csv(index=False).encode("utf-8")
+
+        data = await run_in_threadpool(_build_export_csv)
         filename = f"phids_{normalized_data_type}.csv"
         media_type = "text/csv"
     elif format == "tex_table":
-        data = export_bytes_tex_table(
-            rows,
-            columns=columns,
-            include_flora_ids=flora_ids,
-            include_predator_ids=predator_ids,
-            tick_interval=tick_interval,
-        )
+
+        def _build_export_tex_table() -> bytes:
+            return export_bytes_tex_table(
+                rows,
+                columns=columns,
+                include_flora_ids=flora_ids,
+                include_predator_ids=predator_ids,
+                tick_interval=tick_interval,
+            )
+
+        data = await run_in_threadpool(_build_export_tex_table)
         filename = f"phids_{normalized_data_type}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
         try:
-            tikz = generate_tikz_str(
-                filtered_rows,
-                normalized_data_type,
-                flora_names=flora_names,
-                predator_names=predator_names,
-                prey_species_id=prey_species_id,
-                predator_species_id=predator_species_id,
-                include_flora_ids=flora_ids,
-                include_predator_ids=predator_ids,
-                title=title,
-                x_label=x_label,
-                y_label=y_label,
-                x_max=x_max,
-                y_max=y_max,
-            )
+
+            def _build_export_tikz() -> str:
+                return generate_tikz_str(
+                    filtered_rows,
+                    normalized_data_type,
+                    flora_names=flora_names,
+                    predator_names=predator_names,
+                    prey_species_id=prey_species_id,
+                    predator_species_id=predator_species_id,
+                    include_flora_ids=flora_ids,
+                    include_predator_ids=predator_ids,
+                    title=title,
+                    x_label=x_label,
+                    y_label=y_label,
+                    x_max=x_max,
+                    y_max=y_max,
+                )
+
+            tikz = await run_in_threadpool(_build_export_tikz)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         data = tikz.encode("utf-8")
@@ -1532,21 +1563,25 @@ async def export_telemetry_format(
         media_type = "text/plain"
     elif format == "png":
         try:
-            data = generate_png_bytes(
-                filtered_rows,
-                normalized_data_type,
-                flora_names=flora_names,
-                predator_names=predator_names,
-                prey_species_id=prey_species_id,
-                predator_species_id=predator_species_id,
-                include_flora_ids=flora_ids,
-                include_predator_ids=predator_ids,
-                title=title,
-                x_label=x_label,
-                y_label=y_label,
-                x_max=x_max,
-                y_max=y_max,
-            )
+
+            def _build_export_png() -> bytes:
+                return generate_png_bytes(
+                    filtered_rows,
+                    normalized_data_type,
+                    flora_names=flora_names,
+                    predator_names=predator_names,
+                    prey_species_id=prey_species_id,
+                    predator_species_id=predator_species_id,
+                    include_flora_ids=flora_ids,
+                    include_predator_ids=predator_ids,
+                    title=title,
+                    x_label=x_label,
+                    y_label=y_label,
+                    x_max=x_max,
+                    y_max=y_max,
+                )
+
+            data = await run_in_threadpool(_build_export_png)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         filename = f"phids_{normalized_data_type}.png"
@@ -1593,7 +1628,9 @@ def _discover_persisted_batches() -> list[BatchJobState]:
 
         runs_completed = int(aggregate.get("runs_completed", 1) or 1)
         ticks = aggregate.get("ticks", [])
-        started_at = datetime.datetime.fromtimestamp(summary_path.stat().st_mtime, tz=datetime.timezone.utc)
+        started_at = datetime.datetime.fromtimestamp(
+            summary_path.stat().st_mtime, tz=datetime.timezone.utc
+        )
         discovered.append(
             BatchJobState(
                 job_id=job_id,
@@ -1668,12 +1705,15 @@ async def batch_start(
         max_ticks=payload.max_ticks,
     )
     draft.active_batch_jobs[job_id] = job
-    logger.info("Batch job %s enqueued (runs=%d, max_ticks=%d)", job_id, payload.runs, payload.max_ticks)
+    logger.info(
+        "Batch job %s enqueued (runs=%d, max_ticks=%d)", job_id, payload.runs, payload.max_ticks
+    )
 
     scenario_dict = config.model_dump()
 
     async def _run_batch() -> None:
         from phids.engine.batch import BatchRunner
+
         job.status = "running"
         try:
             _BATCH_DIR.mkdir(parents=True, exist_ok=True)
@@ -1703,6 +1743,7 @@ async def batch_start(
             job.status = "failed"
         finally:
             import datetime as dt
+
             job.finished_at = dt.datetime.now(tz=dt.timezone.utc).isoformat()
 
     asyncio.create_task(_run_batch())
@@ -1786,6 +1827,7 @@ async def batch_view(request: Request, job_id: str) -> Any:
         TemplateResponse: Rendered ``partials/batch_view.html`` fragment.
     """
     import json as _json
+
     draft = get_draft()
     job = draft.active_batch_jobs.get(job_id)
     summary_path = _BATCH_DIR / f"{job_id}_summary.json"
@@ -1828,6 +1870,7 @@ async def batch_export(
         HTTPException: 404 if the summary file for ``job_id`` does not exist.
     """
     import json as _json
+
     summary_path = _BATCH_DIR / f"{job_id}_summary.json"
     if not summary_path.exists():
         raise HTTPException(status_code=404, detail=f"No summary found for job '{job_id}'.")
@@ -1860,12 +1903,14 @@ async def batch_export(
         pred_mean = aggregate.get("predator_population_mean", [])
         survival = aggregate.get("survival_probability_curve", [])
         for i, t in enumerate(ticks):
-            rows_agg.append({
-                "tick": t,
-                "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
-                "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
-                "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
-            })
+            rows_agg.append(
+                {
+                    "tick": t,
+                    "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
+                    "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
+                    "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
+                }
+            )
         normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
         tikz = generate_tikz_str(
             rows_agg,

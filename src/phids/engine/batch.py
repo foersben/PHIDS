@@ -30,6 +30,7 @@ import asyncio
 import concurrent.futures
 import json
 import logging
+import math
 import multiprocessing
 import os
 import random
@@ -127,7 +128,9 @@ def _run_single_headless(
     rows: list[dict[str, Any]] = list(loop.telemetry._rows)
     logger.debug(
         "Headless run complete (seed=%d, ticks=%d, rows=%d)",
-        seed, loop.tick, len(rows),
+        seed,
+        loop.tick,
+        len(rows),
     )
     return rows
 
@@ -202,9 +205,15 @@ def aggregate_batch_telemetry(
     ticks = [r["tick"] for r in aligned[0]]
 
     # Stack aggregate scalar columns
-    flora_pop = np.array([[r["flora_population"] for r in run] for run in aligned], dtype=np.float64)
-    pred_pop = np.array([[r["predator_population"] for r in run] for run in aligned], dtype=np.float64)
-    flora_energy = np.array([[r["total_flora_energy"] for r in run] for run in aligned], dtype=np.float64)
+    flora_pop = np.array(
+        [[r["flora_population"] for r in run] for run in aligned], dtype=np.float64
+    )
+    pred_pop = np.array(
+        [[r["predator_population"] for r in run] for run in aligned], dtype=np.float64
+    )
+    flora_energy = np.array(
+        [[r["total_flora_energy"] for r in run] for run in aligned], dtype=np.float64
+    )
 
     # Extinction probability: fraction of runs where flora hit zero at any tick
     extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
@@ -257,9 +266,36 @@ def aggregate_batch_telemetry(
     }
     logger.info(
         "Batch aggregation complete (runs=%d, min_len=%d, extinction_prob=%.3f)",
-        len(per_run), min_len, extinction_probability,
+        len(per_run),
+        min_len,
+        extinction_probability,
     )
     return result
+
+
+def _sanitize_for_json(value: Any) -> Any:
+    """Recursively coerce aggregate values into strict JSON-compatible scalars.
+
+    This sanitiser replaces all non-finite floating-point values (``NaN``,
+    ``+inf``, ``-inf``) with ``None`` so downstream ``json.dump(...,
+    allow_nan=False)`` remains standards-compliant and browser ``JSON.parse``
+    never encounters invalid numeric tokens.
+
+    Args:
+        value: Arbitrary Python/NumPy value.
+
+    Returns:
+        Any: JSON-safe structure preserving the original shape.
+    """
+    if isinstance(value, dict):
+        return {str(k): _sanitize_for_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_for_json(v) for v in value]
+    if isinstance(value, np.generic):
+        return _sanitize_for_json(value.item())
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    return value
 
 
 # ---------------------------------------------------------------------------
@@ -320,7 +356,10 @@ class BatchRunner:
 
         logger.info(
             "Batch job %s starting (runs=%d, max_ticks=%d, workers=%d)",
-            job_id, runs, max_ticks, max_workers,
+            job_id,
+            runs,
+            max_ticks,
+            max_workers,
         )
 
         args_list = [
@@ -345,10 +384,11 @@ class BatchRunner:
                     on_progress(completed)
 
         aggregate = aggregate_batch_telemetry(per_run_telemetry)
+        aggregate = _sanitize_for_json(aggregate)
 
         summary_path = save_dir / f"{job_id}_summary.json"
         with summary_path.open("w", encoding="utf-8") as fp:
-            json.dump(aggregate, fp)
+            json.dump(aggregate, fp, allow_nan=False)
         logger.info("Batch job %s complete; summary written to %s", job_id, summary_path)
 
         return BatchResult(
@@ -357,5 +397,3 @@ class BatchRunner:
             per_run_telemetry=per_run_telemetry,
             aggregate=aggregate,
         )
-
-

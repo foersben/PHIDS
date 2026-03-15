@@ -121,6 +121,10 @@ For the analytics and replay semantics behind these routes, see:
 
 These routes export the current loop’s telemetry dataframe in external analysis formats.
 
+Current implementation note: heavy export serialization paths are executed via
+`run_in_threadpool` in `src/phids/api/main.py` so CPU-bound pandas/matplotlib/TikZ generation
+does not block the asyncio event loop that also drives control endpoints and WebSocket streams.
+
 ## 4. UI Polling and Inspection Helpers
 
 The UI uses lighter-weight polling endpoints such as:
@@ -135,6 +139,11 @@ The UI uses lighter-weight polling endpoints such as:
 
 These are not bulk export routes. They exist to drive incremental interface updates and localized
 inspection inside the control center.
+
+Telemetry chart polling is intentionally bounded on the browser side. The dashboard telemetry
+script keeps Chart.js instances alive and performs in-place dataset updates with a strict rolling
+window cap, avoiding full chart teardown/recreation loops and preventing unbounded client-memory
+growth during long runs.
 
 ## `GET /api/ui/cell-details`
 

@@ -133,6 +133,34 @@ This protects the curated example pack as both a validation and runtime-compatib
 
 ## Recommended Focused Runs by Change Type
 
+## Coverage Uplift Playbook (March 2026)
+
+To keep module-level coverage robust under repository growth, PHIDS now includes
+targeted regression tests for two historically under-covered operational paths:
+
+- CLI launcher orchestration in `src/phids/__main__.py` via
+  `tests/test_cli_main.py`.
+- Batch executor orchestration in `src/phids/engine/batch.py` via
+  additional tests in `tests/test_batch_runner.py` that cover:
+  - `_run_and_save` tuple-unpacking delegation,
+  - `_run_single_headless` early-termination break semantics,
+  - `BatchRunner.execute_batch` success/failure future collection,
+  - strict JSON summary persistence with non-finite value sanitization.
+
+Recommended fast verification command for this specific coverage surface:
+
+```bash
+uv run pytest -o addopts='' tests/test_cli_main.py tests/test_batch_runner.py -q
+```
+
+To audit whether any runtime module dropped below 80% in a full run, use:
+
+```bash
+uv run pytest tests/ --no-header 2>&1 | awk '/^src\/phids\// {gsub("%","",$4); if (($4+0) < 80) print $0}'
+```
+
+An empty result means all currently reported modules satisfy the `>=80%` threshold.
+
 ### UI and builder changes
 
 When editing:

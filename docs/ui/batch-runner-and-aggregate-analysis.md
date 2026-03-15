@@ -4,6 +4,11 @@ The PHIDS batch runner provides deterministic, reproducible Monte Carlo analysis
 
 The implementation separates batch computation from live single-run rendering in order to preserve operational clarity. Runtime batch workers are launched via `ProcessPoolExecutor` and emit run-level telemetry that is consolidated into aligned aggregate arrays (mean, standard deviation, extinction/survival metrics) and persisted to `data/batches/*_summary.json`. The UI layer then reconstructs chart and table representations from this persisted aggregate state, allowing the operator to revisit completed analyses without re-running the simulation.
 
+Before persistence, aggregate payloads are recursively sanitized to strict JSON-safe values. Any
+non-finite float (`NaN`, `+inf`, `-inf`) is normalized to `null`, and summary files are written
+with `allow_nan=False`. This guarantees standards-compliant JSON documents and prevents frontend
+`JSON.parse` failures when loading persisted batch artifacts.
+
 This architecture couples deterministic simulation mechanics with publication-oriented observability. The computational branch computes aggregate trajectories and probabilistic endpoints, while the UI branch provides interactive chart controls, tabular decimation, and export pathways that maintain consistency with selected display state. Consequently, the same aggregate object can be inspected qualitatively in browser charts and exported quantitatively as CSV/LaTeX/TikZ artifacts for manuscript-grade reporting.
 
 ## Execution and persistence workflow
@@ -60,5 +65,3 @@ The aggregate chart composes:
 - per-tick survival probability as a horizon-level persistence metric.
 
 The survival curve should be interpreted as the fraction of runs retaining non-zero flora population at each aligned tick. This quantity complements extinction probability by preserving time-localized collapse behavior rather than collapsing all events into a single terminal scalar.
-
-
