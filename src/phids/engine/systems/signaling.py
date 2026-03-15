@@ -283,8 +283,8 @@ def run_signaling(
                 continue
             trig: TriggerConditionSchema = trig_raw
 
-            # Check for predator presence at this cell via spatial hash
-            triggered = (
+            # Check for predator presence at this cell via spatial hash.
+            predator_present = (
                 _co_located_swarm_population(
                     world,
                     plant.x,
@@ -293,6 +293,22 @@ def run_signaling(
                 )
                 >= trig.min_predator_population
             )
+
+            # Evaluate optional condition trees as an alternative trigger path.
+            # This enables alarm-chain behavior where a plant reacts to an
+            # already-active internal condition without requiring direct
+            # predator co-location on the same cell.
+            condition_met = False
+            if trig.activation_condition is not None:
+                condition_met = _check_activation_condition(
+                    plant,
+                    plant.entity_id,
+                    trig.activation_condition.model_dump(mode="json"),
+                    world,
+                    env,
+                )
+
+            triggered = predator_present or condition_met
 
             if not triggered:
                 continue
