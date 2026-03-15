@@ -98,10 +98,14 @@ class TestTelemetryToDataframe:
                 "plant_energy_by_species": {0: 100.0},
                 "swarm_pop_by_species": {},
                 "defense_cost_by_species": {},
-                "flora_population": 5, "predator_population": 0,
-                "total_flora_energy": 100.0, "predator_clusters": 0,
-                "death_reproduction": 0, "death_mycorrhiza": 0,
-                "death_defense_maintenance": 0, "death_herbivore_feeding": 0,
+                "flora_population": 5,
+                "predator_population": 0,
+                "total_flora_energy": 100.0,
+                "predator_clusters": 0,
+                "death_reproduction": 0,
+                "death_mycorrhiza": 0,
+                "death_defense_maintenance": 0,
+                "death_herbivore_feeding": 0,
                 "death_background_deficit": 0,
             },
             {
@@ -110,10 +114,14 @@ class TestTelemetryToDataframe:
                 "plant_energy_by_species": {0: 60.0, 1: 40.0},
                 "swarm_pop_by_species": {},
                 "defense_cost_by_species": {},
-                "flora_population": 5, "predator_population": 0,
-                "total_flora_energy": 100.0, "predator_clusters": 0,
-                "death_reproduction": 0, "death_mycorrhiza": 0,
-                "death_defense_maintenance": 0, "death_herbivore_feeding": 0,
+                "flora_population": 5,
+                "predator_population": 0,
+                "total_flora_energy": 100.0,
+                "predator_clusters": 0,
+                "death_reproduction": 0,
+                "death_mycorrhiza": 0,
+                "death_defense_maintenance": 0,
+                "death_herbivore_feeding": 0,
                 "death_background_deficit": 0,
             },
         ]
@@ -283,4 +291,3 @@ class TestExportBytesTexTable:
         assert "0 &" in latex
         assert "2 &" in latex
         assert "4 &" in latex
-

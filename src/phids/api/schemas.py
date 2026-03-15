@@ -513,4 +513,3 @@ class BatchStartPayload(BaseModel):
     runs: int = Field(default=10, ge=1, le=256, description="Number of parallel Monte Carlo runs.")
     max_ticks: int = Field(default=500, gt=0, description="Maximum ticks per run.")
     scenario_name: str = Field(default="", description="Optional display label for the job ledger.")
-
