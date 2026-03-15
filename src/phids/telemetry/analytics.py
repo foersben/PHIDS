@@ -1,23 +1,33 @@
 """Telemetry analytics: accumulate per-tick Lotka-Volterra metrics into a Polars DataFrame.
 
-The :class:`TelemetryRecorder` accumulates per-tick population and energy
-metrics into an in-memory row buffer and exposes a lazily-constructed
-:class:`polars.DataFrame` for downstream export, Chart.js serialisation, and
-statistical aggregation. Each recorded tick captures both aggregate scalars
-(total flora energy, total predator population) and granular per-species
-dictionaries (population and aggregate energy keyed by ``species_id``), thereby
-enabling precise Lotka-Volterra phase-space visualisation and Monte Carlo
-batch evaluation.
+The :class:`TelemetryRecorder` accumulates per-tick population and energy metrics into an
+in-memory row buffer and exposes a lazily-constructed :class:`polars.DataFrame` for
+downstream export, Chart.js serialisation, and statistical aggregation. Each recorded tick
+captures both aggregate scalars (total flora energy, total predator population) and
+granular per-species dictionaries (population and aggregate energy keyed by
+``species_id``), thereby enabling precise Lotka-Volterra phase-space visualisation and
+Monte Carlo batch evaluation.
 
 The per-species data is accumulated via ``defaultdict`` accumulators inside
-:meth:`TelemetryRecorder.record` so that sparse or absent species naturally
-resolve to zero without requiring sentinel guards. Active defense-maintenance
-costs are also attributed per flora ``species_id`` by querying
-:class:`~phids.engine.components.substances.SubstanceComponent` entities whose
-``active`` flag is set, summing their ``energy_cost_per_tick`` contribution. This
-diagnostic facilitates identification of runaway defense-maintenance scenarios in
-which an entire connected mycorrhizal network commits metabolic resources to
-sustained chemical defense under persistent herbivore pressure.
+:meth:`TelemetryRecorder.record` so that sparse or absent species naturally resolve to
+zero without requiring sentinel guards. Active defense-maintenance costs are also
+attributed per flora ``species_id`` by querying
+:class:`~phids.engine.components.substances.SubstanceComponent` entities whose ``active``
+flag is set, summing their ``energy_cost_per_tick`` contribution. This diagnostic
+facilitates identification of runaway defense-maintenance scenarios in which an entire
+connected mycorrhizal network commits metabolic resources to sustained chemical defense
+under persistent herbivore pressure.
+
+The :attr:`TelemetryRecorder.dataframe` property materialises a fully rectangular Polars
+DataFrame that preserves per-species breakdowns as typed scalar columns
+(``plant_{id}_pop``, ``plant_{id}_energy``, ``defense_cost_{id}``,
+``swarm_{id}_pop``). This columnar representation exposes the per-species data through
+the primary CSV and NDJSON export routes without requiring callers to reach into the raw
+``_rows`` buffer or invoke the auxiliary
+:func:`~phids.telemetry.export.telemetry_to_dataframe` pandas-conversion helper. Species
+identifiers observed across the accumulated session are unioned and sorted before columns
+are written, guaranteeing a consistent column order even when individual ticks contain
+sparse species sets.
 """
 
 from __future__ import annotations
@@ -40,14 +50,18 @@ logger = logging.getLogger(__name__)
 class TelemetryRecorder:
     """Accumulate per-tick Lotka-Volterra metrics into a Polars DataFrame.
 
-    The recorder appends one row per tick containing the following fields:
-    ``tick``, ``total_flora_energy``, ``flora_population``,
-    ``predator_clusters``, ``predator_population``, per-tick plant death
-    cause counts, per-species flora population and energy, per-species
-    predator population, and per-species active defense maintenance costs.
-    Per-species columns follow the naming convention
-    ``plant_{id}_pop``, ``plant_{id}_energy``, ``swarm_{id}_pop``, and
-    ``defense_cost_{id}`` to support Polars column-oriented operations.
+    The recorder appends one row per tick and materialises a lazily-built Polars
+    DataFrame containing aggregate scalars together with per-species flat columns.
+    Aggregate fields comprise ``tick``, ``total_flora_energy``, ``flora_population``,
+    ``predator_clusters``, ``predator_population``, and the five per-tick plant death
+    cause counts (``death_reproduction``, ``death_mycorrhiza``,
+    ``death_defense_maintenance``, ``death_herbivore_feeding``,
+    ``death_background_deficit``). Per-species breakdowns are exposed as typed Polars
+    scalar columns following the naming convention ``plant_{id}_pop``,
+    ``plant_{id}_energy``, ``swarm_{id}_pop``, and ``defense_cost_{id}``, where
+    ``{id}`` denotes the integer ``species_id``. Missing species in a given tick are
+    zero-filled to guarantee a fully rectangular DataFrame suitable for vectorised
+    statistical operations and direct CSV or NDJSON export.
     """
 
     def __init__(self, max_rows: int = MAX_TELEMETRY_TICKS) -> None:
@@ -108,7 +122,11 @@ class TelemetryRecorder:
             sub: SubstanceComponent = entity.get_component(SubstanceComponent)
             if not sub.active or sub.energy_cost_per_tick <= 0.0:
                 continue
-            owner = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
+            owner = (
+                world.get_entity(sub.owner_plant_id)
+                if world.has_entity(sub.owner_plant_id)
+                else None
+            )
             if owner is None:
                 continue
             if owner.has_component(PlantComponent):
@@ -147,7 +165,10 @@ class TelemetryRecorder:
         self._df = None  # invalidate cache
         logger.debug(
             "Telemetry row recorded (tick=%d, flora=%d, predators=%d, flora_energy=%.2f)",
-            tick, flora_population, predator_population, total_flora_energy,
+            tick,
+            flora_population,
+            predator_population,
+            total_flora_energy,
         )
 
     def get_latest_metrics(self) -> dict[str, Any] | None:
@@ -184,27 +205,68 @@ class TelemetryRecorder:
 
     @property
     def dataframe(self) -> pl.DataFrame:
-        """Return recorded metrics as a Polars DataFrame (lazily built).
+        """Return recorded metrics as a Polars DataFrame with per-species flat columns (lazily built).
 
-        Per-species dictionary columns are omitted from the DataFrame because
-        Polars does not natively support nested dicts as column values; callers
-        requiring per-species time-series should use :meth:`get_latest_metrics`
-        or the :func:`~phids.telemetry.export.telemetry_to_dataframe` function
-        which flattens the per-species dicts into columnar pandas DataFrames.
+        Per-species dictionary accumulators stored in each row's
+        ``plant_pop_by_species``, ``plant_energy_by_species``,
+        ``swarm_pop_by_species``, and ``defense_cost_by_species`` fields are
+        flattened into typed Polars scalar columns named ``plant_{id}_pop``
+        (``Int64``), ``plant_{id}_energy`` (``Float64``), ``swarm_{id}_pop``
+        (``Int64``), and ``defense_cost_{id}`` (``Float64``) respectively.
+        Missing species values for a given tick are zero-filled, ensuring the
+        resulting DataFrame is fully rectangular and free of null entries.
+
+        All species identifiers observed across the full retention window are
+        unioned and sorted prior to column construction, so that the column
+        layout is deterministic and consistent even when individual ticks contain
+        sparse species sets due to extinction or delayed colonisation events.
+
+        The empty-state DataFrame (no recorded ticks) retains only the stable
+        aggregate schema; per-species columns are added dynamically once at
+        least one tick has been recorded and at least one species has been
+        observed, reflecting the inherently dynamic cardinality of the species
+        pool across independent simulation sessions.
 
         Returns:
-            pl.DataFrame: DataFrame containing accumulated scalar telemetry rows.
+            pl.DataFrame: DataFrame containing aggregate and per-species flat
+            telemetry columns for all accumulated ticks.
         """
         if self._df is None:
             logger.debug("Materialising telemetry dataframe from %d rows", len(self._rows))
             if self._rows:
-                # Build scalar-only rows for Polars (strip nested dict fields)
-                scalar_rows = [
-                    {k: v for k, v in r.items() if not isinstance(v, dict)}
-                    for r in self._rows
-                ]
-                self._df = pl.DataFrame(scalar_rows)
+                # Union of all species IDs observed across the full retention window
+                all_flora_ids: set[int] = set()
+                all_swarm_ids: set[int] = set()
+                for r in self._rows:
+                    all_flora_ids.update(r.get("plant_pop_by_species", {}).keys())
+                    all_swarm_ids.update(r.get("swarm_pop_by_species", {}).keys())
+                sorted_flora = sorted(all_flora_ids)
+                sorted_swarm = sorted(all_swarm_ids)
+
+                # Build flat rows: aggregate scalars + per-species flat columns
+                flat_rows: list[dict[str, Any]] = []
+                for r in self._rows:
+                    flat: dict[str, Any] = {k: v for k, v in r.items() if not isinstance(v, dict)}
+                    for fid in sorted_flora:
+                        flat[f"plant_{fid}_pop"] = int(
+                            r.get("plant_pop_by_species", {}).get(fid, 0)
+                        )
+                        flat[f"plant_{fid}_energy"] = float(
+                            r.get("plant_energy_by_species", {}).get(fid, 0.0)
+                        )
+                        flat[f"defense_cost_{fid}"] = float(
+                            r.get("defense_cost_by_species", {}).get(fid, 0.0)
+                        )
+                    for sid in sorted_swarm:
+                        flat[f"swarm_{sid}_pop"] = int(
+                            r.get("swarm_pop_by_species", {}).get(sid, 0)
+                        )
+                    flat_rows.append(flat)
+                self._df = pl.DataFrame(flat_rows)
             else:
+                # Stable aggregate-only schema when no ticks have been recorded.
+                # Per-species columns are absent because no species IDs are yet known;
+                # they will be added dynamically on the first post-tick materialisation.
                 self._df = pl.DataFrame(
                     {
                         "tick": pl.Series([], dtype=pl.Int64),

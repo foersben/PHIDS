@@ -113,7 +113,7 @@ window of the most recent telemetry rather than unbounded historical growth in b
 ## Empty DataFrame Semantics
 
 When no telemetry has yet been recorded, `TelemetryRecorder.dataframe` still returns a DataFrame with
-stable schema:
+a stable aggregate schema:
 
 - `tick: Int64`
 - `total_flora_energy: Float64`
@@ -126,8 +126,19 @@ stable schema:
 - `death_herbivore_feeding: Int64`
 - `death_background_deficit: Int64`
 
-This is important because it gives the export and UI layers a consistent typed structure even before
-any ticks have executed.
+This guarantees a consistent typed structure for the export and UI layers before any ticks have
+executed.
+
+Once at least one tick has been recorded, the materialised DataFrame additionally contains
+per-species flat columns for every species identifier observed across the current retention window:
+
+- `plant_{id}_pop: Int64`
+- `plant_{id}_energy: Float64`
+- `defense_cost_{id}: Float64`
+- `swarm_{id}_pop: Int64`
+
+Missing species for any individual tick are zero-filled, ensuring the DataFrame is fully
+rectangular with no null entries regardless of species cardinality or extinction events.
 
 ## Export Layer
 
@@ -209,6 +220,14 @@ The current test suite verifies key telemetry/export behaviors.
 `tests/test_termination_and_loop.py` verifies that stepping a simulation updates telemetry,
 produces at least one telemetry row, and exposes the plant-death diagnostic columns.
 
+### Per-species accumulation and flat column layout
+
+`tests/test_telemetry_per_species.py` verifies that `TelemetryRecorder.record()` correctly
+accumulates per-species population, energy, and defense-cost accumulators from a multi-species ECS
+world, and that `TelemetryRecorder.dataframe` flattens those accumulators into typed Polars scalar
+columns (`plant_{id}_pop`, `plant_{id}_energy`, `defense_cost_{id}`, `swarm_{id}_pop`) with
+zero-filling for absent species and deterministic column ordering.
+
 ### API export behavior
 
 `tests/test_additional_coverage.py` verifies that CSV and NDJSON export routes return usable data.
@@ -223,23 +242,45 @@ functions directly.
 `tests/test_ui_routes.py` verifies the UI telemetry refresh path, empty-state behavior, and the
 presence of plant-death diagnostics in the model diagnostics rail.
 
+## Per-Species Breakdown in the Export Artifact
+
+`TelemetryRecorder.dataframe` now flattens the per-species nested-dict accumulators
+(`plant_pop_by_species`, `plant_energy_by_species`, `swarm_pop_by_species`,
+`defense_cost_by_species`) into typed Polars scalar columns following the naming
+convention `plant_{id}_pop`, `plant_{id}_energy`, `swarm_{id}_pop`, and
+`defense_cost_{id}`.
+
+This means the primary export routes (`GET /api/telemetry/export/csv` and
+`GET /api/telemetry/export/json`) automatically include per-species breakdowns in their
+output without requiring any additional API parameters or client-side post-processing.
+
+Species identifiers are unioned across all retained rows and sorted numerically before
+the columns are written, so the column order is deterministic even when different
+simulation sessions involve different species cardinalities. Ticks in which a species was
+absent (due to extinction or delayed colonisation) receive a zero value in the
+corresponding column, preserving full rectangular structure.
+
+The auxiliary `telemetry_to_dataframe` function in `src/phids/telemetry/export.py`
+remains available for callers that require a pandas DataFrame representation (e.g., for
+the matplotlib and LaTeX export pipelines). Both functions produce equivalent per-species
+breakdown columns from the same source data.
+
 ## Methodological Limits of the Current Analytics Layer
 
 The current telemetry layer should be described precisely.
 
 - it captures a compact summary, not every derived ecological statistic,
-- it does not presently preserve per-species telemetry breakdowns,
 - it focuses on run comparison and diagnostics rather than full state reconstruction,
 - plant-death attribution is immediate-cause oriented rather than a full causal graph,
 - its JSON export is NDJSON rather than a custom nested schema.
 
-These are deliberate features of the current implementation surface.
 
 ## Verified Current-State Evidence
 
 - `src/phids/telemetry/analytics.py`
 - `src/phids/telemetry/export.py`
 - `src/phids/api/main.py`
+- `tests/test_telemetry_per_species.py`
 - `tests/test_termination_and_loop.py`
 - `tests/test_additional_coverage.py`
 - `tests/test_ui_routes.py`

@@ -25,7 +25,8 @@ def _make_plant(world: ECSWorld, eid: int, species_id: int, energy: float) -> No
         PlantComponent(
             entity_id=eid,
             species_id=species_id,
-            x=0, y=0,
+            x=0,
+            y=0,
             energy=energy,
             max_energy=100.0,
             base_energy=50.0,
@@ -47,7 +48,8 @@ def _make_swarm(world: ECSWorld, eid: int, species_id: int, population: int) -> 
         SwarmComponent(
             entity_id=eid,
             species_id=species_id,
-            x=1, y=1,
+            x=1,
+            y=1,
             population=population,
             initial_population=population,
             energy=float(population * 5),
@@ -160,8 +162,19 @@ class TestPerSpeciesTelemetry:
         assert 0 in ids["flora_ids"]
         assert 1 in ids["flora_ids"]
 
-    def test_dataframe_excludes_nested_dicts(self) -> None:
-        """The Polars DataFrame contains only scalar columns, not nested dict columns."""
+    def test_dataframe_excludes_nested_dicts_but_includes_flat_columns(self) -> None:
+        """The Polars DataFrame exposes per-species flat columns and omits raw nested-dict columns.
+
+        The per-species population, energy, and defense-cost dictionaries stored
+        in each raw telemetry row must be flattened into typed Polars scalar
+        columns (``plant_{id}_pop``, ``plant_{id}_energy``, ``swarm_{id}_pop``,
+        ``defense_cost_{id}``) rather than the original nested-dict keys.  The
+        primary dict-keyed columns (``plant_pop_by_species``,
+        ``plant_energy_by_species``, ``swarm_pop_by_species``,
+        ``defense_cost_by_species``) must be absent because Polars does not
+        natively represent Python dicts as column values and their presence would
+        indicate a regression to the previous scalar-only materialisation path.
+        """
         world = ECSWorld()
         e1 = world.create_entity()
         _make_plant(world, e1.entity_id, 0, 50.0)
@@ -170,10 +183,79 @@ class TestPerSpeciesTelemetry:
         rec.record(world, tick=0)
 
         df = rec.dataframe
+        # Aggregate columns must remain present
         assert "tick" in df.columns
         assert "flora_population" in df.columns
-        # Nested dict columns must not be present in the Polars frame
+        # Per-species flat columns must be present for species 0
+        assert "plant_0_pop" in df.columns
+        assert "plant_0_energy" in df.columns
+        assert "defense_cost_0" in df.columns
+        # Raw nested-dict columns must be absent
         assert "plant_pop_by_species" not in df.columns
+        assert "plant_energy_by_species" not in df.columns
+        assert "swarm_pop_by_species" not in df.columns
+        assert "defense_cost_by_species" not in df.columns
+
+    def test_dataframe_per_species_values_match_raw_rows(self) -> None:
+        """Per-species flat column values in the Polars DataFrame match the raw row dicts.
+
+        Confirms that the integer population count, aggregate energy, and
+        defense maintenance cost for each flora species are correctly propagated
+        from the ``defaultdict`` accumulators in :meth:`TelemetryRecorder.record`
+        through to the materialised Polars column values, with no precision loss
+        or identity mapping errors.
+        """
+        world = ECSWorld()
+        e1 = world.create_entity()
+        e2 = world.create_entity()
+        e3 = world.create_entity()
+        _make_plant(world, e1.entity_id, 0, 30.0)
+        _make_plant(world, e2.entity_id, 0, 20.0)
+        _make_plant(world, e3.entity_id, 1, 45.0)
+        _make_swarm(world, world.create_entity().entity_id, 0, 80)
+
+        rec = TelemetryRecorder()
+        rec.record(world, tick=0)
+
+        df = rec.dataframe
+        assert df["plant_0_pop"][0] == 2
+        assert abs(df["plant_0_energy"][0] - 50.0) < 1e-6
+        assert df["plant_1_pop"][0] == 1
+        assert abs(df["plant_1_energy"][0] - 45.0) < 1e-6
+        assert df["swarm_0_pop"][0] == 80
+
+    def test_dataframe_multi_tick_species_union_fills_zeros(self) -> None:
+        """Per-species flat columns cover the union of all observed species, zero-filling absent ticks.
+
+        When a species is present in tick *t* but absent in tick *t+1*, the
+        corresponding per-species columns must contain zero rather than null or
+        a missing entry.  This invariant is necessary to guarantee a fully
+        rectangular DataFrame for vectorised statistical operations and safe
+        CSV/NDJSON serialisation.
+        """
+        world = ECSWorld()
+        e1 = world.create_entity()
+        _make_plant(world, e1.entity_id, 0, 10.0)
+
+        rec = TelemetryRecorder()
+        rec.record(world, tick=0)
+
+        # Species 0 plant gone; species 1 introduced
+        world.collect_garbage([e1.entity_id])
+        e2 = world.create_entity()
+        _make_plant(world, e2.entity_id, 1, 20.0)
+        rec.record(world, tick=1)
+
+        df = rec.dataframe
+        # Both species must appear as columns
+        assert "plant_0_pop" in df.columns
+        assert "plant_1_pop" in df.columns
+        # Tick 0: species 1 absent → zero
+        assert df["plant_1_pop"][0] == 0
+        # Tick 1: species 0 absent → zero
+        assert df["plant_0_pop"][1] == 0
+        # Tick 1: species 1 present
+        assert df["plant_1_pop"][1] == 1
 
     def test_empty_recorder_returns_empty_dataframe(self) -> None:
         """An unrecorded TelemetryRecorder returns an empty well-typed Polars DataFrame."""
@@ -200,4 +282,3 @@ class TestPerSpeciesTelemetry:
             rec.record(world, tick=tick)
         assert len(rec._rows) == 3
         assert [row["tick"] for row in rec._rows] == [3, 4, 5]
-
