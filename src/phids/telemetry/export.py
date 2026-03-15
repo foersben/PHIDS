@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 
 if TYPE_CHECKING:
-    import pandas as pd
+    import pandas as pd  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -259,9 +259,7 @@ def telemetry_to_dataframe(rows: list[dict[str, Any]]) -> "pd.DataFrame":
 
     flat_rows = []
     for row in rows:
-        flat: dict[str, Any] = {
-            k: v for k, v in row.items() if not isinstance(v, dict)
-        }
+        flat: dict[str, Any] = {k: v for k, v in row.items() if not isinstance(v, dict)}
         pop_by = row.get("plant_pop_by_species", {})
         energy_by = row.get("plant_energy_by_species", {})
         swarm_by = row.get("swarm_pop_by_species", {})
@@ -279,7 +277,9 @@ def telemetry_to_dataframe(rows: list[dict[str, Any]]) -> "pd.DataFrame":
 
     logger.debug(
         "telemetry_to_dataframe: %d rows, %d flora species, %d predator species",
-        len(rows), len(all_flora_ids), len(all_swarm_ids),
+        len(rows),
+        len(all_flora_ids),
+        len(all_swarm_ids),
     )
     return pd.DataFrame(flat_rows)
 
@@ -344,6 +344,7 @@ def generate_png_bytes(
         ValueError: If ``plot_type`` is not a supported chart mode.
     """
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -600,7 +601,10 @@ def _plot_biomass_stack(
     if not ordered:
         ax.plot(ticks, [0.0] * len(ticks), color="#94a3b8", linewidth=1.0, label="No flora")
     else:
-        ys = [[float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows] for fid in ordered]
+        ys = [
+            [float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows]
+            for fid in ordered
+        ]
         labels = [(flora_names or {}).get(fid, f"Flora {fid}") for fid in ordered]
         colours = [_FLORA_COLOURS[i % len(_FLORA_COLOURS)] for i, _ in enumerate(ordered)]
         ax.stackplot(ticks, ys, labels=labels, colors=colours, alpha=0.35)
@@ -813,9 +817,7 @@ def _tikz_timeseries(
         "    legend pos=north east,\n"
         "    grid=major,\n"
         "    width=12cm, height=7cm,\n"
-        "]\n"
-        + body
-        + "\n\\end{axis}\n\\end{tikzpicture}"
+        "]\n" + body + "\n\\end{axis}\n\\end{tikzpicture}"
     )
 
 
@@ -925,9 +927,7 @@ def _tikz_defense_economy(
         "    legend pos=north east,\n"
         "    grid=major,\n"
         "    width=12cm, height=7cm,\n"
-        "]\n"
-        + body
-        + "\n\\end{axis}\n\\end{tikzpicture}"
+        "]\n" + body + "\n\\end{axis}\n\\end{tikzpicture}"
     )
 
 
@@ -978,9 +978,7 @@ def _tikz_biomass_stack(
         "    legend pos=north east,\n"
         "    grid=major,\n"
         "    width=12cm, height=7cm,\n"
-        "]\n"
-        + body
-        + "\n\\end{axis}\n\\end{tikzpicture}"
+        "]\n" + body + "\n\\end{axis}\n\\end{tikzpicture}"
     )
 
 
@@ -1047,13 +1045,15 @@ def export_bytes_tex_table(
     Returns:
         bytes: UTF-8 encoded LaTeX ``tabular`` source.
     """
-    filtered_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids)
+    filtered_rows = filter_telemetry_rows(
+        rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids
+    )
     df = telemetry_to_dataframe(filtered_rows)
     df = filter_dataframe_columns(df, columns)
     df = decimate_dataframe(df, tick_interval)
     if df.empty:
         return b"% No telemetry data\n"
-    latex: str = df.to_latex(index=False, float_format="%.2f")  # type: ignore[attr-defined]
+    latex: str = df.to_latex(index=False, float_format="%.2f")
     return latex.encode("utf-8")
 
 
@@ -1109,5 +1109,3 @@ def aggregate_to_dataframe(
         data[f"{name}_pop_std"] = series_std
 
     return pd.DataFrame(data)
-
-

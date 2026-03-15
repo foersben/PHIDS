@@ -17,7 +17,7 @@ import logging
 import pathlib
 import time
 import zlib
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import msgpack  # type: ignore[import-untyped]
 from pydantic import TypeAdapter, ValidationError
@@ -1516,7 +1516,8 @@ async def export_telemetry_format(
             df = telemetry_to_dataframe(filtered_rows)
             df = filter_dataframe_columns(df, columns)
             df = decimate_dataframe(df, tick_interval)
-            return df.to_csv(index=False).encode("utf-8")
+            csv_text = cast(str, df.to_csv(index=False))
+            return csv_text.encode("utf-8")
 
         data = await run_in_threadpool(_build_export_csv)
         filename = f"phids_{normalized_data_type}.csv"
@@ -1891,7 +1892,7 @@ async def batch_export(
         filename = f"phids_batch_{job_id}.csv"
         media_type = "text/csv"
     elif format == "tex_table":
-        latex: str = df.to_latex(index=False, float_format="%.2f")  # type: ignore[attr-defined]
+        latex: str = df.to_latex(index=False, float_format="%.2f")
         data = latex.encode("utf-8")
         filename = f"phids_batch_{job_id}_table.tex"
         media_type = "text/plain"
