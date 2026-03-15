@@ -86,7 +86,11 @@ def _check_activation_condition(
 
 
 def _apply_toxin_to_swarms(
-    sub: SubstanceComponent,
+    sub_id: int,
+    lethal: bool,
+    lethality_rate: float,
+    repellent: bool,
+    repellent_walk_ticks: int,
     env: GridEnvironment,
     world: ECSWorld,
 ) -> None:
@@ -107,8 +111,11 @@ def _apply_toxin_to_swarms(
     confounding predator-presence evaluations in ``_check_activation_condition``.
 
     Args:
-        sub: Substance component representing the emitted toxin, providing lethality and
-            repellency parameters.
+        sub_id: Toxin layer index.
+        lethal: Whether the toxin can kill individuals.
+        lethality_rate: Lethal attrition factor.
+        repellent: Whether the toxin marks swarms as repelled.
+        repellent_walk_ticks: Duration of repelled random-walk behavior.
         env: GridEnvironment providing per-cell toxin concentrations via
             ``env.toxin_layers``.
         world: ECSWorld to iterate swarms, update the spatial hash, and execute GC.
@@ -117,17 +124,21 @@ def _apply_toxin_to_swarms(
 
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
-        toxin_val = float(env.toxin_layers[sub.substance_id, swarm.x, swarm.y])
+        toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
         if toxin_val <= 0.0:
             continue
 
-        if sub.lethal and sub.lethality_rate > 0.0:
-            casualties = int(sub.lethality_rate * toxin_val * swarm.population)
-            swarm.population = max(0, swarm.population - casualties)
+        if lethal and lethality_rate > 0.0:
+            casualties = int(lethality_rate * toxin_val * swarm.population)
+            if casualties > 0:
+                swarm.population = max(0, swarm.population - casualties)
+                # Remove the energetic mass of dead individuals; survivors cannot inherit it.
+                energy_loss = casualties * swarm.energy_min
+                swarm.energy = max(0.0, swarm.energy - energy_loss)
 
-        if sub.repellent and not swarm.repelled:
+        if repellent and not swarm.repelled:
             swarm.repelled = True
-            swarm.repelled_ticks_remaining = sub.repellent_walk_ticks
+            swarm.repelled_ticks_remaining = repellent_walk_ticks
 
         # Immediate localised GC: a swarm annihilated by chemical defense must not
         # linger as a ghost entity in the spatial hash until the next interaction tick.
@@ -373,7 +384,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 3. Emit active signals / toxins into environment layers
     # ------------------------------------------------------------------
-    active_toxin_types: dict[int, SubstanceComponent] = {}
+    active_toxin_props: dict[int, dict[str, Any]] = {}
 
     for entity in list(world.query(SubstanceComponent)):
         sub = entity.get_component(SubstanceComponent)
@@ -433,7 +444,24 @@ def run_signaling(
                     float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
                     + SUBSTANCE_EMIT_RATE,
                 )
-                active_toxin_types.setdefault(sub.substance_id, sub)
+                if sub.substance_id not in active_toxin_props:
+                    active_toxin_props[sub.substance_id] = {
+                        "lethal": sub.lethal,
+                        "lethality_rate": sub.lethality_rate,
+                        "repellent": sub.repellent,
+                        "repellent_walk_ticks": sub.repellent_walk_ticks,
+                    }
+                else:
+                    props = active_toxin_props[sub.substance_id]
+                    props["lethal"] = bool(props["lethal"] or sub.lethal)
+                    props["lethality_rate"] = max(
+                        float(props["lethality_rate"]), sub.lethality_rate
+                    )
+                    props["repellent"] = bool(props["repellent"] or sub.repellent)
+                    props["repellent_walk_ticks"] = max(
+                        int(props["repellent_walk_ticks"]),
+                        sub.repellent_walk_ticks,
+                    )
         else:
             if sub.substance_id < env.num_signals:
                 env.signal_layers[sub.substance_id, plant.x, plant.y] = min(
@@ -453,8 +481,16 @@ def run_signaling(
                 tick,
             )
 
-    for sub in active_toxin_types.values():
-        _apply_toxin_to_swarms(sub, env, world)
+    for sub_id, props in active_toxin_props.items():
+        _apply_toxin_to_swarms(
+            sub_id,
+            bool(props["lethal"]),
+            float(props["lethality_rate"]),
+            bool(props["repellent"]),
+            int(props["repellent_walk_ticks"]),
+            env,
+            world,
+        )
 
     # ------------------------------------------------------------------
     # 4. Check aftereffects and deactivate expired substances

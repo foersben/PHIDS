@@ -432,6 +432,37 @@ async def test_builder_route_rule_of_16_branches() -> None:
 
 
 @pytest.mark.asyncio
+async def test_predator_routes_clamp_reproduction_divisor_to_physical_minimum() -> None:
+    """Predator add/update routes clamp reproduction divisor to avoid discounted offspring creation."""
+    async with _default_client() as client:
+        add_resp = await client.post(
+            "/api/config/predators",
+            data={
+                "name": "ClampBug",
+                "energy_min": 2.0,
+                "velocity": 1,
+                "consumption_rate": 1.0,
+                "reproduction_energy_divisor": 0.25,
+            },
+        )
+
+        update_resp = await client.put(
+            "/api/config/predators/1",
+            data={"reproduction_energy_divisor": 0.1},
+        )
+
+    assert add_resp.status_code == 200
+    assert update_resp.status_code == 200
+    draft = get_draft()
+    predator = next(
+        p
+        for p in draft.predator_species
+        if isinstance(p, PredatorSpeciesParams) and p.species_id == 1
+    )
+    assert predator.reproduction_energy_divisor == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
 async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_error_paths() -> None:
     """Validates the trigger rule placement and scenario routes cover success and error paths invariant and confirms the expected biological behavior under controlled simulation conditions.
 

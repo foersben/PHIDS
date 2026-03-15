@@ -264,7 +264,9 @@ def run_interaction(
             if casualties * swarm.energy_min < deficit:
                 casualties += 1
             swarm.population = max(0, swarm.population - casualties)
-            swarm.energy = 0.0
+            total_casualty_energy = casualties * swarm.energy_min
+            leftover_energy = total_casualty_energy - deficit
+            swarm.energy = max(0.0, leftover_energy)
 
         # ----------------------------------------------------------------
         # 5. Death check
@@ -280,7 +282,10 @@ def run_interaction(
         baseline_energy = swarm.population * swarm.energy_min
         if swarm.energy > baseline_energy:
             surplus = swarm.energy - baseline_energy
-            cost_per_offspring = swarm.energy_min * swarm.reproduction_energy_divisor
+            cost_per_offspring = max(
+                swarm.energy_min,
+                swarm.energy_min * swarm.reproduction_energy_divisor,
+            )
 
             new_individuals = int(surplus // cost_per_offspring)
             if new_individuals > 0:

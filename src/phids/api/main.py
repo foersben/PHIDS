@@ -2694,7 +2694,7 @@ async def config_predator_add(
         energy_min=energy_min,
         velocity=velocity,
         consumption_rate=consumption_rate,
-        reproduction_energy_divisor=reproduction_energy_divisor,
+        reproduction_energy_divisor=max(1.0, reproduction_energy_divisor),
         energy_upkeep_per_individual=energy_upkeep_per_individual,
         split_population_threshold=split_population_threshold,
     )
@@ -2770,7 +2770,7 @@ async def config_predator_update(
     if consumption_rate is not None:
         updates["consumption_rate"] = consumption_rate
     if reproduction_energy_divisor is not None:
-        updates["reproduction_energy_divisor"] = reproduction_energy_divisor
+        updates["reproduction_energy_divisor"] = max(1.0, reproduction_energy_divisor)
     if energy_upkeep_per_individual is not None:
         updates["energy_upkeep_per_individual"] = energy_upkeep_per_individual
     if split_population_threshold is not None:
