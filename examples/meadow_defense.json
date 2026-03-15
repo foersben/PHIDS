@@ -57,9 +57,19 @@
           "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
-            "kind": "enemy_presence",
-            "predator_species_id": 0,
-            "min_predator_population": 4
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 4
+              },
+              {
+                "kind": "environmental_signal",
+                "signal_id": 0,
+                "min_concentration": 0.05
+              }
+            ]
           },
           "energy_cost_per_tick": 0.4,
           "irreversible": false

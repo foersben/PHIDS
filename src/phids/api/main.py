@@ -87,7 +87,7 @@ app = FastAPI(
         "Visual discrete-event simulator modelling ecological dynamics between "
         "plants and herbivores on a spatial grid."
     ),
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # Mount static files only if the directory exists
@@ -257,6 +257,15 @@ def _describe_activation_condition(
             else _default_substance_name(substance_id, is_toxin=False)
         )
         return f"{substance_label} active"
+    if kind == "environmental_signal":
+        signal_id = _coerce_int(condition.get("signal_id", -1), default=-1)
+        min_conc = float(condition.get("min_concentration", 0.01))
+        signal_label = (
+            substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False))
+            if substance_names is not None
+            else _default_substance_name(signal_id, is_toxin=False)
+        )
+        return f"{signal_label} concentration ≥ {min_conc:.2f}"
 
     children = [child for child in condition.get("conditions", []) if isinstance(child, dict)]
     joiner = " AND " if kind == "all_of" else " OR "
@@ -302,7 +311,11 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
             for index, rule in enumerate(draft.trigger_rules)
         },
         "condition_group_kinds": ["all_of", "any_of"],
-        "condition_leaf_kinds": ["enemy_presence", "substance_active"],
+        "condition_leaf_kinds": [
+            "enemy_presence",
+            "substance_active",
+            "environmental_signal",
+        ],
     }
 
 
@@ -327,6 +340,12 @@ def _default_activation_condition_for_rule(
         }
     if node_kind == "substance_active":
         return {"kind": "substance_active", "substance_id": default_substance_id}
+    if node_kind == "environmental_signal":
+        return {
+            "kind": "environmental_signal",
+            "signal_id": rule.substance_id,
+            "min_concentration": 0.01,
+        }
     if node_kind in {"all_of", "any_of"}:
         return {
             "kind": node_kind,
@@ -3210,6 +3229,8 @@ async def config_trigger_rule_condition_node_update(
     predator_species_id: Annotated[int | None, Form()] = None,
     min_predator_population: Annotated[int | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
+    signal_id: Annotated[int | None, Form()] = None,
+    min_concentration: Annotated[float | None, Form()] = None,
 ) -> Any:
     """Update or replace a node in a trigger-rule activation-condition tree."""
     draft = get_draft()
@@ -3256,6 +3277,11 @@ async def config_trigger_rule_condition_node_update(
             elif current_node.get("kind") == "substance_active":
                 if substance_id is not None:
                     updates["substance_id"] = substance_id
+            elif current_node.get("kind") == "environmental_signal":
+                if signal_id is not None:
+                    updates["signal_id"] = signal_id
+                if min_concentration is not None:
+                    updates["min_concentration"] = max(0.0, min_concentration)
             elif current_node.get("kind") in {"all_of", "any_of"} and kind is not None:
                 updates["kind"] = kind
 

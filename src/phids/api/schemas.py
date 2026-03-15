@@ -140,6 +140,20 @@ class SubstanceActiveConditionSchema(BaseModel):
     )
 
 
+class EnvironmentalSignalConditionSchema(BaseModel):
+    """Leaf predicate requiring a minimum ambient signal concentration at the owner's cell."""
+
+    kind: Literal["environmental_signal"] = "environmental_signal"
+    signal_id: SubstanceId = Field(
+        ..., description="Signal layer identifier to read from the environment."
+    )
+    min_concentration: float = Field(
+        default=0.01,
+        ge=0.0,
+        description="Minimum concentration required for this predicate.",
+    )
+
+
 class AllOfConditionSchema(BaseModel):
     """Boolean AND over nested activation predicates."""
 
@@ -165,6 +179,7 @@ class AnyOfConditionSchema(BaseModel):
 ConditionNode: TypeAlias = Annotated[
     EnemyPresenceConditionSchema
     | SubstanceActiveConditionSchema
+    | EnvironmentalSignalConditionSchema
     | AllOfConditionSchema
     | AnyOfConditionSchema,
     Field(discriminator="kind"),

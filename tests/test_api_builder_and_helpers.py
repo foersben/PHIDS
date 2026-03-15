@@ -133,6 +133,13 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
         "predator_species_id": 0,
         "min_predator_population": 3,
     }
+    assert api_main._parse_activation_condition_json(
+        '{"kind":"environmental_signal","signal_id":0,"min_concentration":0.2}'
+    ) == {
+        "kind": "environmental_signal",
+        "signal_id": 0,
+        "min_concentration": 0.2,
+    }
     with pytest.raises(HTTPException):
         api_main._parse_activation_condition_json("{bad json")
     with pytest.raises(HTTPException):
@@ -152,6 +159,13 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
             substance_names={7: "Alarm"},
         )
         == "Alarm active"
+    )
+    assert (
+        api_main._describe_activation_condition(
+            {"kind": "environmental_signal", "signal_id": 0, "min_concentration": 0.25},
+            substance_names={0: "Alarm"},
+        )
+        == "Alarm concentration ≥ 0.25"
     )
     assert (
         api_main._describe_activation_condition({"kind": "all_of", "conditions": []})

@@ -1317,6 +1317,46 @@ def test_signaling_allows_condition_only_trigger_without_local_predator() -> Non
     assert by_id[1].active is True
 
 
+def test_signaling_environmental_signal_condition_triggers_without_predator() -> None:
+    """Ambient signal concentration can trigger activation without direct herbivore co-location."""
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    env.signal_layers[0, 2, 2] = 0.2
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        activation_condition={
+            "kind": "environmental_signal",
+            "signal_id": 0,
+            "min_concentration": 0.1,
+        },
+    )
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
+    )
+
+    by_id = {
+        sub.substance_id: sub
+        for sub in (
+            entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent)
+        )
+    }
+    assert 1 in by_id
+    assert by_id[1].active is True
+
+
 def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_predicates() -> None:
     """Validates the signaling all of gate supports mixed enemy and substance predicates invariant and confirms the expected biological behavior under controlled simulation conditions.
 
