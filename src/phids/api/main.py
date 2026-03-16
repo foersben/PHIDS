@@ -983,9 +983,25 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
         )
     )
 
+    live_flora_species_ids = {
+        species_id
+        for species_id in (_coerce_int(plant.get("species_id", -1), default=-1) for plant in plants)
+        if species_id >= 0
+    }
+    all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []
     for species in loop.config.flora_species:
         species_id = species.species_id
+        is_extinct = species_id not in live_flora_species_ids
+        all_flora_species.append(
+            {
+                "species_id": species_id,
+                "name": species.name,
+                "extinct": is_extinct,
+            }
+        )
+        if is_extinct:
+            continue
         if species_id < env.plant_energy_by_species.shape[0]:
             species_energy.append(
                 {
@@ -994,12 +1010,22 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                     "layer": env.plant_energy_by_species[species_id].tolist(),
                 }
             )
+        else:
+            # Defensive fallback: species_id outside pre-allocated layer bounds.
+            species_energy.append(
+                {
+                    "species_id": species_id,
+                    "name": species.name,
+                    "layer": [[0.0] * env.height for _ in range(env.width)],
+                }
+            )
 
     return {
         "tick": loop.tick,
         "max_energy": max_e,
         "plant_energy": env.plant_energy_layer.tolist(),
         "species_energy": species_energy,
+        "all_flora_species": all_flora_species,
         "signal_overlay": signal_overlay.tolist() if signal_overlay is not None else [],
         "toxin_overlay": toxin_overlay.tolist() if toxin_overlay is not None else [],
         "max_signal": float(signal_overlay.max()) if signal_overlay is not None else 0.0,

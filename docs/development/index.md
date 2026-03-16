@@ -13,6 +13,7 @@ to make changes without breaking the simulator’s methodological guarantees*.
 - [`github-actions-and-local-ci.md`](github-actions-and-local-ci.md)
 - [`documentation-standards.md`](documentation-standards.md)
 - [`testing-strategy-and-benchmark-policy.md`](testing-strategy-and-benchmark-policy.md)
+- [`release-checklist.md`](release-checklist.md)
 
 ## Non-Negotiable Engineering Principles
 

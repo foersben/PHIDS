@@ -7,6 +7,8 @@ data-oriented engine core, strict state invariants, and reproducible telemetry s
 scenario outcomes can be interpreted as traceable computational experiments rather than opaque
 animation artifacts.
 
+Current release line: `v0.4.0`.
+
 Live documentation: <https://foersben.github.io/PHIDS/>
 
 ---
@@ -317,6 +319,34 @@ The repository includes:
 - `Dockerfile` and `docker-compose.yml` for container workflows
 - `.github/workflows/docker-publish.yml` for GHCR publication policy
 - `.github/workflows/release-binaries.yml` for bundled Linux/Windows/macOS artifacts
+
+### v0.4.0 release highlights
+
+- Engine thermodynamic invariants hardened in toxin lethality, starvation attrition, and reproduction-cost handling.
+- API export routes remain async-safe under load via threadpool offloading of heavy serialization paths.
+- Telemetry visualization now uses bounded in-place Chart.js updates, preventing long-run client memory growth.
+- Batch summaries persist strict JSON payloads (non-finite values normalized) for robust browser parsing.
+
+### Release runbook (main + tag)
+
+The canonical automated release flow is:
+
+1. merge `develop` into `main` through a reviewed PR,
+2. push a semantic tag from `main` (for example `v0.4.0`),
+3. allow GitHub Actions to publish all release artifacts.
+
+```bash
+git checkout main
+git pull --ff-only origin main
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+Expected automation outcomes:
+
+- `Docs Pages` workflow publishes updated documentation to GitHub Pages,
+- `Build and Publish Release Binaries` workflow attaches OS-specific bundles to the GitHub release,
+- `Build and Publish Docker Image` workflow publishes multi-arch GHCR images for the release tag.
 
 ---
 

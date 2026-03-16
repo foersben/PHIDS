@@ -74,6 +74,7 @@ nav:
       - Documentation Status and Open Work: development/documentation-status-and-open-work.md
       - GitHub Actions and Local CI Rehearsal: development/github-actions-and-local-ci.md
       - Containers and Release Automation: development/containers-and-release-automation.md
+      - Release Checklist: development/release-checklist.md
       - Documentation Standards: development/documentation-standards.md
       - Testing Strategy and Benchmark Policy: development/testing-strategy-and-benchmark-policy.md
   - Reference:

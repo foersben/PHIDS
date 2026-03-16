@@ -6,6 +6,8 @@ localized interaction on a discrete grid. The project couples a data-oriented EC
 vectorized environmental layers, a scientific telemetry pipeline, and two operator surfaces:
 a programmatic JSON/WebSocket API and a server-rendered HTMX/Jinja control center.
 
+Current release line: `v0.4.0`.
+
 ## Live Documentation
 
 - **Published GitHub Pages site**: <https://foersben.github.io/PHIDS/>
@@ -55,6 +57,8 @@ scope and the kinds of ecological questions PHIDS can answer reproducibly.
 - **Development handoff and CI guidance** — deferred documentation work and workflow validation:
   [`development/documentation-status-and-open-work.md`](development/documentation-status-and-open-work.md)
   and [`development/github-actions-and-local-ci.md`](development/github-actions-and-local-ci.md)
+- **Release governance** — version bump, promotion, tag publication, and artifact checks:
+  [`development/release-checklist.md`](development/release-checklist.md)
 - **Reference** — module map, glossary and concept index, and generated Python API docs:
   [`reference/`](reference/index.md)
 - **Glossary** — current-state definitions for all major PHIDS terms:

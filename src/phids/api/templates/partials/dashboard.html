@@ -636,24 +636,41 @@
     ).join('');
   }
 
-  function updateSpeciesBars(speciesEnergy, maxE) {
-    if (!speciesEnergy || speciesEnergy.length === 0) {
+  function updateSpeciesBars(allFloraSpecies, speciesEnergy, maxE) {
+    if (!allFloraSpecies || allFloraSpecies.length === 0) {
       speciesBarsEl.classList.add('hidden');
       speciesBarsEl.innerHTML = '';
       return;
     }
+    const liveSpeciesById = new Map((speciesEnergy || []).map(sp => [sp.species_id, sp]));
     speciesBarsEl.classList.remove('hidden');
-    speciesBarsEl.innerHTML = speciesEnergy.map(sp => {
-      const total = sp.layer.flat().reduce((sum, value) => sum + value, 0);
-      const pct = Math.min(100, (total / (maxE * sp.layer.length * sp.layer[0].length)) * 100 * 10);
-      const color = FLORA_COLORS[sp.species_id % FLORA_COLORS.length];
-      return `<div class="bg-slate-50 rounded p-2">
+    speciesBarsEl.innerHTML = allFloraSpecies.map(species => {
+      const liveSpecies = liveSpeciesById.get(species.species_id);
+      const isExtinct = !!species.extinct;
+      const layer = liveSpecies ? liveSpecies.layer : [];
+      const total = liveSpecies ? layer.flat().reduce((sum, value) => sum + value, 0) : 0;
+      const width = layer.length || 1;
+      const height = (layer[0] || []).length || 1;
+      const pct = liveSpecies
+        ? Math.min(100, (total / (maxE * width * height || 1)) * 100 * 10)
+        : 0;
+      const color = FLORA_COLORS[species.species_id % FLORA_COLORS.length];
+      const nameHtml = isExtinct
+        ? `<span class="line-through text-slate-400">${escapeHtml(species.name)}</span><span class="ml-1 text-[10px] text-rose-400 font-semibold" title="Extinct">†</span>`
+        : `<span>${escapeHtml(species.name)}</span>`;
+      const valueHtml = isExtinct
+        ? `<span class="font-mono text-slate-400">0</span>`
+        : `<span class="font-mono">${total.toFixed(0)}</span>`;
+      const barStyle = isExtinct
+        ? `width:0%;background:${color};opacity:0.25`
+        : `width:${pct}%;background:${color}`;
+      return `<div class="bg-slate-50 rounded p-2${isExtinct ? ' opacity-55' : ''}">
         <div class="flex justify-between text-slate-600 mb-1">
-          <span>${escapeHtml(sp.name)}</span>
-          <span class="font-mono">${total.toFixed(0)}</span>
+          ${nameHtml}
+          ${valueHtml}
         </div>
         <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-          <div class="h-full rounded-full transition-all" style="width:${pct}%;background:${color}"></div>
+          <div class="h-full rounded-full transition-all" style="${barStyle}"></div>
         </div>
       </div>`;
     }).join('');
@@ -675,13 +692,14 @@
           for (let y = 0; y < gH; y++) {
             const energy = layer[x] ? Number(layer[x][y] || 0) : 0;
             if (energy <= 0.01) continue;
-            const alpha = Math.min(1, 0.15 + (energy / maxE) * 0.85);
+            // Keep species hue stable; energy magnitude is presented in species bars and tooltips.
+            const alpha = 0.78;
             ctx.fillStyle = `rgba(${red},${green},${blue},${alpha})`;
             ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
           }
         }
       }
-      updateSpeciesBars(data.species_energy, maxE);
+      updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
     } else if (data.plant_energy) {
       for (let x = 0; x < gW; x++) {
         for (let y = 0; y < gH; y++) {
@@ -703,9 +721,9 @@
 
     drawSwarmMarkers(data.swarms || []);
 
-    const floraLegend = (data.species_energy || []).map(species => ({
-      name: species.name,
-      color: FLORA_COLORS[species.species_id % FLORA_COLORS.length],
+    const floraLegend = (data.all_flora_species || data.species_energy || []).map(species => ({
+      name: species.extinct ? `${species.name} (†)` : species.name,
+      color: species.extinct ? '#94a3b8' : FLORA_COLORS[species.species_id % FLORA_COLORS.length],
     }));
     const swarmLegend = (data.swarms || []).map(swarm => ({
       name: swarm.name || `Predator ${swarm.species_id}`,
