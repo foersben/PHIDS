@@ -439,6 +439,15 @@ wheels = [
 ]
 
 [[package]]
+name = "defusedxml"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69", size = 75520, upload-time = "2021-03-08T10:59:26.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61", size = 25604, upload-time = "2021-03-08T10:59:24.45Z" },
+]
+
+[[package]]
 name = "distlib"
 version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1053,6 +1062,21 @@ wheels = [
 ]
 
 [[package]]
+name = "mkdocs-kroki-plugin"
+version = "1.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "defusedxml" },
+    { name = "httpx" },
+    { name = "mkdocs" },
+    { name = "result" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bb/97/179da4cd063035d2f5fc876e42fc1fc9674454b8b4a9151e1863205290f3/mkdocs_kroki_plugin-1.3.0.tar.gz", hash = "sha256:cca01dfe6ea593867d0f3dffbfddd3c0d977bb33640a92b1f3b5af3da39be7ca", size = 19173, upload-time = "2026-03-02T15:27:14.36Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/85/1d5a02775fb9497a0c7c330ab0b22f35d6e1ac9eff53450dc4159da8b248/mkdocs_kroki_plugin-1.3.0-py3-none-any.whl", hash = "sha256:29d028fcfe2565b983d28bfa9261fe2bd48d0a890f2508a3800246cf2ee128c5", size = 22460, upload-time = "2026-03-02T15:27:13.22Z" },
+]
+
+[[package]]
 name = "mkdocs-material"
 version = "9.7.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1402,11 +1426,13 @@ dependencies = [
 dev = [
     { name = "httpx" },
     { name = "mkdocs" },
+    { name = "mkdocs-kroki-plugin" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pydocstyle" },
+    { name = "pymdown-extensions" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-benchmark" },
@@ -1421,7 +1447,8 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", specifier = ">=3.9" },
     { name = "mcp", specifier = ">=1.26.0" },
-    { name = "mkdocs", marker = "extra == 'dev'", specifier = ">=1.6" },
+    { name = "mkdocs", marker = "extra == 'dev'", specifier = ">=1.6,<2" },
+    { name = "mkdocs-kroki-plugin", marker = "extra == 'dev'", specifier = ">=0.8" },
     { name = "mkdocs-material", marker = "extra == 'dev'", specifier = ">=9.5" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'", specifier = ">=0.25" },
     { name = "msgpack", specifier = ">=1.0" },
@@ -1433,6 +1460,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydocstyle", marker = "extra == 'dev'", specifier = ">=6.1" },
+    { name = "pymdown-extensions", marker = "extra == 'dev'", specifier = ">=10.8" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
     { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4.0" },
@@ -1950,6 +1978,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+]
+
+[[package]]
+name = "result"
+version = "0.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a3/47/2175be65744aa4d8419c27bd3a7a7d65af5bcad7a4dc6a812c00778754f0/result-0.17.0.tar.gz", hash = "sha256:b73da420c0cb1a3bf741dbd41ff96dedafaad6a1b3ef437a9e33e380bb0d91cf", size = 20180, upload-time = "2024-06-02T16:39:54.51Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/90/19110ce9374c3db619e2df0816f2c58e4ddc5cdad5f7284cd81d8b30b7cb/result-0.17.0-py3-none-any.whl", hash = "sha256:49fd668b4951ad15800b8ccefd98b6b94effc789607e19c65064b775570933e8", size = 11689, upload-time = "2024-06-02T16:39:52.715Z" },
 ]
 
 [[package]]

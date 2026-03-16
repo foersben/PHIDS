@@ -121,6 +121,10 @@ class DraftService:
         wind_y: float,
         num_signals: int,
         num_toxins: int,
+        z2_flora_species_extinction: int,
+        z4_predator_species_extinction: int,
+        z6_max_total_flora_energy: float,
+        z7_max_total_predator_population: int,
         mycorrhizal_inter_species: bool,
         mycorrhizal_connection_cost: float,
         mycorrhizal_growth_interval_ticks: int,
@@ -138,6 +142,11 @@ class DraftService:
             wind_y: Requested uniform wind y-component.
             num_signals: Requested number of signal layers.
             num_toxins: Requested number of toxin layers.
+            z2_flora_species_extinction: Requested species-specific flora-extinction termination rule.
+            z4_predator_species_extinction: Requested species-specific predator-extinction rule.
+            z6_max_total_flora_energy: Requested upper bound for total flora energy termination.
+            z7_max_total_predator_population: Requested upper bound for predator population
+                termination.
             mycorrhizal_inter_species: Requested root-link species policy.
             mycorrhizal_connection_cost: Requested root-link establishment cost.
             mycorrhizal_growth_interval_ticks: Requested root-growth interval.
@@ -152,6 +161,10 @@ class DraftService:
         clamped_tick_rate_hz = max(0.1, tick_rate_hz)
         clamped_num_signals = max(1, min(16, num_signals))
         clamped_num_toxins = max(1, min(16, num_toxins))
+        clamped_z2 = max(-1, min(15, z2_flora_species_extinction))
+        clamped_z4 = max(-1, min(15, z4_predator_species_extinction))
+        clamped_z6 = max(-1.0, z6_max_total_flora_energy)
+        clamped_z7 = max(-1, z7_max_total_predator_population)
         clamped_connection_cost = max(0.0, mycorrhizal_connection_cost)
         clamped_growth_interval = max(1, min(256, mycorrhizal_growth_interval_ticks))
         clamped_signal_velocity = max(1, mycorrhizal_signal_velocity)
@@ -164,6 +177,10 @@ class DraftService:
         draft.wind_y = wind_y
         draft.num_signals = clamped_num_signals
         draft.num_toxins = clamped_num_toxins
+        draft.z2_flora_species_extinction = clamped_z2
+        draft.z4_predator_species_extinction = clamped_z4
+        draft.z6_max_total_flora_energy = clamped_z6
+        draft.z7_max_total_predator_population = clamped_z7
         draft.mycorrhizal_inter_species = mycorrhizal_inter_species
         draft.mycorrhizal_connection_cost = clamped_connection_cost
         draft.mycorrhizal_growth_interval_ticks = clamped_growth_interval
@@ -177,6 +194,10 @@ class DraftService:
                 clamped_tick_rate_hz != tick_rate_hz,
                 clamped_num_signals != num_signals,
                 clamped_num_toxins != num_toxins,
+                clamped_z2 != z2_flora_species_extinction,
+                clamped_z4 != z4_predator_species_extinction,
+                clamped_z6 != z6_max_total_flora_energy,
+                clamped_z7 != z7_max_total_predator_population,
                 clamped_connection_cost != mycorrhizal_connection_cost,
                 clamped_growth_interval != mycorrhizal_growth_interval_ticks,
                 clamped_signal_velocity != mycorrhizal_signal_velocity,

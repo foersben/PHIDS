@@ -331,6 +331,11 @@ class DraftState:
         wind_y: Initial uniform wind y-component.
         num_signals: Number of airborne signal layers.
         num_toxins: Number of toxin layers.
+        z2_flora_species_extinction: Halt when this flora species goes extinct (-1 disables).
+        z4_predator_species_extinction: Halt when this predator species goes extinct (-1 disables).
+        z6_max_total_flora_energy: Halt when total flora energy exceeds this threshold (-1 disables).
+        z7_max_total_predator_population: Halt when predator population exceeds this threshold
+            (-1 disables).
         mycorrhizal_inter_species: Allow root connections across species.
         mycorrhizal_connection_cost: Energy to establish a root link.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.
@@ -355,6 +360,10 @@ class DraftState:
     wind_y: float = 0.0
     num_signals: int = 4
     num_toxins: int = 4
+    z2_flora_species_extinction: int = -1
+    z4_predator_species_extinction: int = -1
+    z6_max_total_flora_energy: float = -1.0
+    z7_max_total_predator_population: int = -1
     mycorrhizal_inter_species: bool = False
     mycorrhizal_connection_cost: float = 1.0
     mycorrhizal_growth_interval_ticks: int = 8
@@ -482,6 +491,10 @@ class DraftState:
             mycorrhizal_connection_cost=self.mycorrhizal_connection_cost,
             mycorrhizal_growth_interval_ticks=self.mycorrhizal_growth_interval_ticks,
             mycorrhizal_signal_velocity=self.mycorrhizal_signal_velocity,
+            z2_flora_species_extinction=self.z2_flora_species_extinction,
+            z4_predator_species_extinction=self.z4_predator_species_extinction,
+            z6_max_total_flora_energy=self.z6_max_total_flora_energy,
+            z7_max_total_predator_population=self.z7_max_total_predator_population,
         )
         logger.info(
             "Draft converted to SimulationConfig (grid=%dx%d, flora=%d, predators=%d, trigger_rules=%d, plants=%d, swarms=%d)",

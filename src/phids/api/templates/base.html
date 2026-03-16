@@ -121,6 +121,8 @@
       <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm z-10 shrink-0">
         <div class="flex items-center gap-4">
           <span class="font-semibold text-slate-700" id="scenario-name">{{ scenario_name }}</span>
+          <span id="draft-save-indicator" class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500"
+            title="Draft autosave status for builder edits.">Draft idle</span>
           <span class="text-sm text-slate-500">
             Tick:&nbsp;<span id="tick-counter"
               hx-get="/api/ui/tick" hx-trigger="every 1s" hx-swap="innerHTML"
@@ -128,7 +130,18 @@
           </span>
         </div>
         <div class="flex items-center gap-2">
+          <form hx-put="/api/simulation/tick-rate"
+            hx-target="#sim-status" hx-swap="outerHTML"
+            hx-trigger="change"
+            class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+            <label for="live-tick-rate" class="text-xs text-slate-500">Speed (Hz)</label>
+            <input id="live-tick-rate" type="number" name="tick_rate_hz" min="0.1" step="0.1"
+              value="{{ default_tick_rate_hz | default(10.0) }}"
+              class="w-20 border border-slate-300 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              title="Live simulation tick rate in ticks per second. Adjusts background run speed without reloading the scenario.">
+          </form>
           <button hx-post="/api/simulation/start"
+            hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
             class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
             ▶ Start
@@ -139,16 +152,19 @@
             ⏸ Pause
           </button>
           <button hx-post="/api/simulation/step"
+            hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
             class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors">
             ⏭ Step
           </button>
           <button hx-post="/api/simulation/reset"
+            hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
             class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors">
             ↺ Reset
           </button>
           <button hx-post="/api/scenario/load-draft"
+            hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
             hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
             class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors">
@@ -266,6 +282,45 @@
       }
       input.value = '';
     }
+
+    (function () {
+      function setDraftIndicator(state, message) {
+        const el = document.getElementById('draft-save-indicator');
+        if (!el) return;
+        if (state === 'saving') {
+          el.className = 'text-xs px-2 py-1 rounded bg-amber-100 text-amber-700';
+          el.textContent = message || 'Saving draft...';
+          return;
+        }
+        if (state === 'saved') {
+          el.className = 'text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700';
+          el.textContent = message || 'Draft saved';
+          return;
+        }
+        el.className = 'text-xs px-2 py-1 rounded bg-red-100 text-red-700';
+        el.textContent = message || 'Draft save failed';
+      }
+
+      document.body.addEventListener('htmx:beforeRequest', function (event) {
+        const path = event?.detail?.pathInfo?.requestPath || '';
+        if (path.startsWith('/api/config/')) {
+          setDraftIndicator('saving');
+        }
+      });
+
+      document.body.addEventListener('htmx:afterRequest', function (event) {
+        const path = event?.detail?.pathInfo?.requestPath || '';
+        if (path.startsWith('/api/config/')) {
+          setDraftIndicator(event?.detail?.successful ? 'saved' : 'error');
+          return;
+        }
+        if (path === '/api/scenario/load-draft' || path === '/api/simulation/start') {
+          if (event?.detail?.successful) {
+            setDraftIndicator('saved', 'Draft applied to live loop');
+          }
+        }
+      });
+    })();
 
     (function () {
       const rail = document.getElementById('diagnostics-rail');

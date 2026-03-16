@@ -29,6 +29,7 @@ import random
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
+from phids.shared.constants import SEED_DROP_HEIGHT_DEFAULT, SEED_TERMINAL_VELOCITY_DEFAULT
 
 
 def _grow(plant: PlantComponent, tick: int) -> None:
@@ -69,11 +70,39 @@ def _attempt_reproduction(
     if (plant.energy - plant.seed_energy_cost) < plant.survival_threshold:
         return []
 
-    # Choose a random seed location within [d_min, d_max]
+    # Base radial ejection around the parent within [d_min, d_max].
     angle = random.uniform(0, 2 * math.pi)
     distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
-    tx = int(round(plant.x + distance * math.cos(angle)))
-    ty = int(round(plant.y + distance * math.sin(angle)))
+    radial_dx = distance * math.cos(angle)
+    radial_dy = distance * math.sin(angle)
+
+    local_wind_x = float(env.wind_vector_x[plant.x, plant.y])
+    local_wind_y = float(env.wind_vector_y[plant.x, plant.y])
+    wind_speed = math.hypot(local_wind_x, local_wind_y)
+
+    wind_dx = 0.0
+    wind_dy = 0.0
+    if wind_speed > 1e-9:
+        # Approximate downwind shift by flight time (drop-height / terminal velocity), then
+        # apply anisotropic turbulent spread aligned with the local wind axis.
+        drop_height = max(1e-3, float(getattr(plant, "seed_drop_height", SEED_DROP_HEIGHT_DEFAULT)))
+        terminal_velocity = max(
+            1e-3,
+            float(getattr(plant, "seed_terminal_velocity", SEED_TERMINAL_VELOCITY_DEFAULT)),
+        )
+        flight_time = drop_height / terminal_velocity
+        ux = local_wind_x / wind_speed
+        uy = local_wind_y / wind_speed
+        mean_parallel = wind_speed * flight_time
+        sigma_parallel = max(0.2, 0.35 * distance + 0.25 * mean_parallel)
+        sigma_perpendicular = max(0.15, 0.45 * sigma_parallel)
+        sampled_parallel = random.gauss(mean_parallel, sigma_parallel)
+        sampled_perpendicular = random.gauss(0.0, sigma_perpendicular)
+        wind_dx = sampled_parallel * ux - sampled_perpendicular * uy
+        wind_dy = sampled_parallel * uy + sampled_perpendicular * ux
+
+    tx = int(round(plant.x + radial_dx + wind_dx))
+    ty = int(round(plant.y + radial_dy + wind_dy))
 
     # Boundary check
     if not (0 <= tx < env.width and 0 <= ty < env.height):
@@ -110,6 +139,8 @@ def _attempt_reproduction(
         seed_min_dist=params.seed_min_dist,
         seed_max_dist=params.seed_max_dist,
         seed_energy_cost=params.seed_energy_cost,
+        seed_drop_height=params.seed_drop_height,
+        seed_terminal_velocity=params.seed_terminal_velocity,
         camouflage=params.camouflage,
         camouflage_factor=params.camouflage_factor,
         last_reproduction_tick=tick,

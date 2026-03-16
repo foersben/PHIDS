@@ -33,6 +33,12 @@ from phids.shared.constants import (
 _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.8
 
+# Wind anisotropy controls for directional-kernel diffusion.
+_ANISOTROPY_GAIN: float = 0.55
+_ANISOTROPY_MIN_RATIO: float = 0.45
+_ADVECTIVE_KERNEL_SHIFT_GAIN: float = 0.6
+_ADVECTIVE_KERNEL_SHIFT_CLAMP: float = 1.5
+
 
 def _make_gaussian_kernel(
     size: int = _KERNEL_SIZE, sigma: float = _SIGMA
@@ -54,6 +60,46 @@ def _make_gaussian_kernel(
 
 
 DIFFUSION_KERNEL: npt.NDArray[np.float64] = _make_gaussian_kernel()
+
+
+def _make_wind_biased_kernel(vx: float, vy: float) -> npt.NDArray[np.float64]:
+    """Return a normalized anisotropic kernel aligned with the supplied wind vector.
+
+    The kernel stretches along the wind axis and applies a bounded mean shift in
+    the downwind direction, approximating advection-diffusion coupling without
+    introducing additional per-cell interpolation passes.
+    """
+    speed = float(np.hypot(vx, vy))
+    if speed <= 1e-9:
+        return DIFFUSION_KERNEL
+
+    ux = vx / speed
+    uy = vy / speed
+    sigma_parallel = _SIGMA * (1.0 + _ANISOTROPY_GAIN * speed)
+    sigma_perpendicular = max(_SIGMA * _ANISOTROPY_MIN_RATIO, _SIGMA / (1.0 + 0.3 * speed))
+    mean_parallel = float(
+        np.clip(
+            _ADVECTIVE_KERNEL_SHIFT_GAIN * speed,
+            -_ADVECTIVE_KERNEL_SHIFT_CLAMP,
+            _ADVECTIVE_KERNEL_SHIFT_CLAMP,
+        )
+    )
+
+    ax = np.arange(-(_KERNEL_SIZE // 2), _KERNEL_SIZE // 2 + 1, dtype=np.float64)
+    xx, yy = np.meshgrid(ax, ax)
+    parallel = xx * ux + yy * uy
+    perpendicular = -xx * uy + yy * ux
+    exponent = ((parallel - mean_parallel) ** 2) / (2.0 * sigma_parallel**2) + (
+        perpendicular**2
+    ) / (2.0 * sigma_perpendicular**2)
+    kernel = np.exp(-exponent)
+
+    # Preserve sparsity and avoid subnormal tails from entering convolution updates.
+    kernel[kernel < SIGNAL_EPSILON] = 0.0
+    total = float(kernel.sum())
+    if total <= 0.0:
+        return DIFFUSION_KERNEL
+    return np.asarray(kernel / total, dtype=np.float64)
 
 
 # ---------------------------------------------------------------------------
@@ -179,41 +225,28 @@ class GridEnvironment:
     def diffuse_signals(self) -> None:
         """Compute one diffusion tick for all signal layers.
 
-        This applies a 2-D convolution with a pre-computed Gaussian kernel,
-        advects the result by a bounded integer cell shift (zero-filled at
-        boundaries), and applies a sparsity threshold to zero small values.
+        This applies a directional advection-diffusion approximation through a
+        wind-biased convolution kernel and then zeros sub-threshold values to
+        preserve matrix sparsity.
         """
-        # Compute mean wind shift in integer grid cells.
-        mean_vx: int = int(round(float(self.wind_vector_x.mean())))
-        mean_vy: int = int(round(float(self.wind_vector_y.mean())))
+        mean_vx = float(self.wind_vector_x.mean())
+        mean_vy = float(self.wind_vector_y.mean())
+        kernel = _make_wind_biased_kernel(mean_vx, mean_vy)
 
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
             if not np.any(layer >= SIGNAL_EPSILON):
                 self._signal_layers_write[s].fill(0.0)
                 continue
-            convolved: npt.NDArray[np.float64] = convolve2d(
-                layer, DIFFUSION_KERNEL, mode="same", boundary="fill", fillvalue=0.0
+            convolved = convolve2d(
+                layer,
+                kernel,
+                mode="same",
+                boundary="fill",
+                fillvalue=0.0,
             )
 
-            shifted: npt.NDArray[np.float64] = np.zeros_like(convolved)
-            x_shift = mean_vx
-            y_shift = mean_vy
-            src_x_start = max(0, -x_shift)
-            src_x_end = self.width - max(0, x_shift)
-            dst_x_start = max(0, x_shift)
-            dst_x_end = self.width - max(0, -x_shift)
-            src_y_start = max(0, -y_shift)
-            src_y_end = self.height - max(0, y_shift)
-            dst_y_start = max(0, y_shift)
-            dst_y_end = self.height - max(0, -y_shift)
-
-            if src_x_start < src_x_end and src_y_start < src_y_end:
-                shifted[dst_x_start:dst_x_end, dst_y_start:dst_y_end] = convolved[
-                    src_x_start:src_x_end,
-                    src_y_start:src_y_end,
-                ]
-
+            shifted = np.asarray(convolved, dtype=np.float64)
             shifted *= SIGNAL_DECAY_FACTOR
             # Zero sub-threshold values to preserve matrix sparsity
             shifted[shifted < SIGNAL_EPSILON] = 0.0

@@ -1,67 +1,42 @@
 # Batch Runner and Aggregate Analysis
 
-The PHIDS batch runner provides deterministic, reproducible Monte Carlo analysis for scenario-level robustness assessment under stochastic movement and interaction pathways. In this surface, a single validated draft scenario is executed across multiple independent seeds through a process-isolated execution model, and the resulting trajectories are aggregated into statistical summaries that preserve the temporal structure of population dynamics.
+The PHIDS batch runner provides a repeatable route from one draft scenario to many seeded executions and one persisted aggregate artifact. The feature is designed for robustness analysis, comparative reporting, and post hoc interpretation of variability across runs, not for replacing single-run live observation. In practical terms, it gives the operator a way to ask whether a scenario is merely plausible in one trajectory or resilient across a controlled family of trajectories.
 
-The implementation separates batch computation from live single-run rendering in order to preserve operational clarity. Runtime batch workers are launched via `ProcessPoolExecutor` and emit run-level telemetry that is consolidated into aligned aggregate arrays (mean, standard deviation, extinction/survival metrics) and persisted to `data/batches/*_summary.json`. The UI layer then reconstructs chart and table representations from this persisted aggregate state, allowing the operator to revisit completed analyses without re-running the simulation.
+This page documents the batch runner as an operational workflow rather than only as an endpoint list. It explains how jobs are launched, how aggregate summaries are persisted and later reloaded, how chart and table settings affect export artifacts, and how to interpret the resulting outputs without confusing exploratory UI state with the underlying stored batch summary.
 
-Before persistence, aggregate payloads are recursively sanitized to strict JSON-safe values. Any
-non-finite float (`NaN`, `+inf`, `-inf`) is normalized to `null`, and summary files are written
-with `allow_nan=False`. This guarantees standards-compliant JSON documents and prevents frontend
-`JSON.parse` failures when loading persisted batch artifacts.
+Execution and presentation are intentionally separated. Batch jobs are executed in worker processes (`ProcessPoolExecutor`), aggregated into aligned summary arrays, and persisted to `data/batches/{job_id}_summary.json`. The UI reads those persisted summaries to render charts, data-grid previews, and exports without rerunning the simulation.
 
-This architecture couples deterministic simulation mechanics with publication-oriented observability. The computational branch computes aggregate trajectories and probabilistic endpoints, while the UI branch provides interactive chart controls, tabular decimation, and export pathways that maintain consistency with selected display state. Consequently, the same aggregate object can be inspected qualitatively in browser charts and exported quantitatively as CSV/LaTeX/TikZ artifacts for manuscript-grade reporting.
+Before writing summary files, payloads are sanitized to strict JSON-safe values. Non-finite floats are converted to `null`, and files are written with `allow_nan=False`, which prevents downstream parsing failures in browser and export workflows.
 
-## Execution and persistence workflow
+```mermaid
+flowchart LR
+	A[configure runs and max ticks] --> B[POST /api/batch/start]
+	B --> C[worker execution and aggregation]
+	C --> D[persist summary json]
+	D --> E[ledger and detail views]
+	E --> F[chart or table export]
+```
 
-1. Configure runs and max ticks in `UI -> Batch Runner`.
-2. Submit a job (`POST /api/batch/start`).
-3. Poll ledger/detail views (`/api/batch/ledger`, `/api/batch/view/{job_id}`).
-4. Persisted summaries are written automatically to `data/batches/{job_id}_summary.json`.
-5. Reload previously computed summaries into the active ledger via `POST /api/batch/load-persisted`.
+## Operator Workflow
 
-## Batch detail customization surface
+The practical path is to configure run count and horizon in the Batch Runner tab, submit a job, and monitor progress through ledger and detail routes. Completed summaries are automatically persisted and can be reloaded into active UI state with `POST /api/batch/load-persisted`.
 
-Completed jobs expose two analysis tabs:
+Detail pages expose two analysis surfaces: chart view for trajectory interpretation and data-grid view for tabular inspection. Both surfaces use explicit apply actions so edits can be staged before they affect rendering and export links.
 
-- `Charts`: mean±sigma population trajectories and survival curve visualization.
-- `Data Grid`: decimated aggregate table preview with column selection controls.
+## Detail Customization
 
-Both tabs follow an explicit submission model so the analyst can stage multiple parameter edits before committing them:
+Chart controls support predefined interpretation presets plus title and axis metadata. Data-grid controls support decimation stride (`tick_interval`) and column projection. This explicit-apply model reduces accidental redraw churn during exploratory work and keeps generated exports aligned with confirmed UI settings.
 
-- `Apply Chart Settings` commits preset/title/axis selections to the rendered figure and export links.
-- `Apply Table Settings` commits decimation/column projection changes to the table preview and table-oriented exports.
+## Export Behavior
 
-This avoids accidental high-frequency redraws during exploratory editing and keeps exported artifacts aligned with deliberate UI confirmation.
+`GET /api/batch/export/{job_id}` supports CSV, LaTeX table, and TikZ export modes with parameters for chart type, decimation interval, column projection, and chart labels. Projection and decimation are applied before serialization, so exported artifacts match the current analysis context rather than raw unfiltered aggregates.
 
-The following controls are available in the detail fragment:
+Fixed-precision float formatting in table exports keeps output widths stable for manuscript-oriented workflows. Telemetry retention and UI table previews remain bounded to prevent backend and browser overload on large runs.
 
-- `Preset` chart configurations for common interpretation modes (`Balanced overview`, `Collapse risk focus`, `Predator pressure focus`, `Survival probability only`).
-- `Chart title`, `X-axis label`, `Population axis label` (chart metadata tuning).
-- `Export tick interval` (row decimation stride for table-oriented exports).
-- `Columns` (CSV/LaTeX table projection of aggregate fields).
+## Interpreting Aggregate Outputs
 
-## Export semantics
+Timeseries outputs combine mean trajectories for flora and predators with standard-deviation envelopes. Survival outputs represent per-tick persistence probability and are best interpreted as time-local collapse risk, not only terminal extinction count. This distinction helps differentiate early fragile regimes from late-run instability under the same final outcome class.
 
-Batch export endpoint: `GET /api/batch/export/{job_id}`
+## Verification Anchors
 
-Supported query parameters:
-
-- `format=csv|tex_table|tex_tikz`
-- `chart_type=timeseries|survival` (TikZ mode)
-- `tick_interval>=1`
-- `columns=...` (CSV and LaTeX table export projection)
-- `title`, `x_label`, `y_label` (TikZ export metadata)
-
-The decimation and projection settings are applied before serialization so the generated artifact remains aligned with the active data-grid interpretation. Float rendering in table exports is constrained to fixed precision (`%.2f`) to maintain manuscript-safe table widths.
-
-Telemetry retention remains bounded at recorder level (`MAX_TELEMETRY_TICKS`) and UI table previews use bounded windows to avoid backend/browser overload during long-running sessions.
-
-## Statistical interpretation guidance
-
-The aggregate chart composes:
-
-- mean population trajectories for flora and predators,
-- standard-deviation envelopes around each mean,
-- per-tick survival probability as a horizon-level persistence metric.
-
-The survival curve should be interpreted as the fraction of runs retaining non-zero flora population at each aligned tick. This quantity complements extinction probability by preserving time-localized collapse behavior rather than collapsing all events into a single terminal scalar.
+Current behavior is grounded in `src/phids/api/routers/batch.py`, persisted summaries in `data/batches/`, and route-level coverage in `tests/test_api_routes.py` and `tests/test_ui_routes.py`. For telemetry semantics used in aggregate computation, see `docs/telemetry/analytics-and-export-formats.md`.

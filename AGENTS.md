@@ -65,3 +65,9 @@ scholarly, and scientific writing style:
      double-buffering) and the biological phenomena it simulates.
 5. **Formatting:** Adhere strictly to Google-style docstrings, but expand the top-level description
    into a mini-essay or scholarly abstract.
+
+## Documentation Mode Selection (Required)
+- Use a **scientific formal mode** for engine, modeling, simulation, and algorithm pages (for example `docs/engine/*`, `docs/foundations/*`, and analytical sections in `docs/reference/*`). In these pages, extensive floating text, formal terminology, equations, Mermaid state-flow diagrams, and TikZ vector graphics are encouraged when they improve explanatory precision.
+- Use an **operational prose mode** for administrative checklists, CI/CD workflows, release processes, contributor onboarding, and project-management notes (for example `docs/development/*`, process-heavy parts of `README.md`, and runbook-like pages). In these pages, avoid equation-heavy formalization and avoid symbolic predicates unless they are strictly necessary for implementation clarity.
+- For operational prose mode, prefer clear narrative explanations, compact Mermaid process diagrams, and copyable command snippets. Keep mathematical notation minimal or absent.
+- Do not translate routine governance text into pseudo-theorem style. Documentation quality for these pages is defined by practical clarity, reproducibility of steps, and compatibility with GitHub Actions and GitHub Pages build constraints.

@@ -1,229 +1,54 @@
 # Documentation Standards
 
-PHIDS documentation is now a canonical scientific MkDocs corpus rather than a loose collection of
-notes. This chapter defines the current documentation standards contributors should follow when they
-add or revise prose, docstrings, navigation, or reference material.
+PHIDS documentation is a maintained product surface with the same quality expectations applied to source code. Every canonical page must be current-state accurate, traceable to implementation, and compatible with strict MkDocs builds used in local rehearsal and GitHub Actions. This chapter defines the contributor standard for writing, structuring, and validating documentation updates.
 
-## Purpose of the Documentation Layer
+## Documentation Responsibilities
 
-The documentation layer in PHIDS has three simultaneous responsibilities:
+The documentation corpus has three concurrent responsibilities. It must explain the simulator as an architectural and scientific system, map claims to real modules and tests, and preserve historical provenance without allowing legacy intent to override current implementation behavior. A page that fails any one of these responsibilities is incomplete.
 
-1. explain the simulator as a scientific and architectural system,
-2. trace concepts back to real symbols and modules,
-3. preserve migration continuity from the historical markdown corpus.
+## Required Writing Modes
 
-Good documentation must satisfy all three.
+PHIDS uses two required writing modes. Scientific formal mode applies to modeling and algorithm chapters, especially under `docs/engine/*` and `docs/foundations/*`, where equations and Mermaid state-flow diagrams improve explanatory precision. TikZ is reserved for geometry-constrained figures that Mermaid cannot represent faithfully, such as coordinate-anchored constructions and stencil-like layouts. Operational prose mode applies to administrative checklists, CI/CD workflow pages, release operations, and contributor runbooks, where practical clarity and reproducible steps are more important than symbolic formalization.
 
-## Canonical Tone and Style
+Contributors must choose the mode that matches the page purpose. Scientific pages should provide rigorous floating-text explanation of mechanics and rationale. Operational pages should avoid equation-heavy presentation and instead prioritize direct narrative guidance, compact process diagrams, and copyable commands.
 
-Current canonical documentation should be:
+```mermaid
+flowchart LR
+    A[Identify page purpose] --> B{Modeling or operations?}
+    B -->|Modeling| C[Scientific formal mode]
+    B -->|Operations| D[Operational prose mode]
+    C --> E[Equations plus diagrams as needed]
+    D --> F[Procedural clarity and commands]
+```
 
-- formal,
-- precise,
-- current-state oriented,
-- explicit about methodological limits,
-- traceable to code and tests.
+## Current-State and Traceability Rule
 
-It should avoid:
+Canonical pages describe what the repository currently does. They should reference real symbols, routes, and modules, and they should prefer tested behavior over aspirational architecture language. When implementation is nuanced or constrained, document the nuance explicitly rather than smoothing it into generic statements.
 
-- aspirational claims presented as implemented facts,
-- vague architecture language detached from real modules,
-- duplicating large amounts of legacy prose without attribution,
-- mixing speculative roadmap ideas into current-state chapters without clear labeling.
-
-## Narrative Docs vs Reference Docs
-
-PHIDS distinguishes two major documentation modes.
-
-### Narrative pages
-
-Narrative pages explain:
-
-- why a subsystem exists,
-- how it behaves conceptually,
-- what invariants or constraints define it,
-- how it fits into the broader project.
-
-Examples:
-
-- `docs/architecture/index.md`
-- `docs/engine/*.md`
-- `docs/scenarios/*.md`
-- `docs/telemetry/*.md`
-
-### Reference pages
-
-Reference pages explain:
-
-- what modules and symbols exist,
-- how they are declared,
-- what their docstrings say.
-
-Examples:
-
-- `docs/reference/module-map.md`
-- `docs/reference/api.md`
-
-Contributors should choose the right mode instead of forcing one page to do both jobs.
-
-## Current-State Rule
-
-Canonical pages should document what the repository currently does.
-
-That means:
-
-- describe actual tick ordering from `SimulationLoop.step()`,
-- describe the current `GridEnvironment` buffering model precisely,
-- describe the actual `DraftState` to `SimulationConfig` workflow,
-- describe current toxin/signal behavior as implemented, even when a richer design discussion exists
-  elsewhere.
-
-When the implementation is nuanced or imperfect, the correct documentation strategy is precision, not
-silence.
-
-## Symbol and Module Linking
-
-Good PHIDS documentation should link statements to real code anchors whenever practical.
-
-Recommended pattern:
-
-- name the module, symbol, or route explicitly,
-- connect prose chapters to the relevant subsystem page,
-- keep the module map and API reference synchronized with new public surfaces.
-
-Examples of strong linkage:
-
-- `SimulationLoop`
-- `DraftState`
-- `ECSWorld`
-- `GridEnvironment`
-- `ReplayBuffer`
-- `TelemetryRecorder`
-
-## Test-Corroborated Claims
-
-When a behavior is verified by tests, contributors should cite the relevant test files or clearly
-base the prose on tested current behavior.
-
-This is especially important for:
-
-- lifecycle and interaction edge cases,
-- signaling and trigger semantics,
-- replay framing,
-- UI draft/live behavior,
-- curated example-pack guarantees.
+Useful anchors include runtime symbols (`SimulationLoop`, `GridEnvironment`, `ECSWorld`, `DraftState`), owning modules under `src/phids/`, and corroborating tests under `tests/`. Claims that are sensitive to edge behavior should cite the most relevant test file so readers can verify semantics directly.
 
 ## Legacy Provenance Rule
 
-The legacy archive remains important, but it is no longer the canonical active documentation.
+Legacy documents under `docs/legacy/` remain archival evidence, not active authority. During migration, preserve legacy sources, write fresh current-state prose in canonical pages, and note provenance when historical context materially aids interpretation. If legacy design intent diverges from current implementation, document the implementation truth and describe the divergence plainly.
 
-When migrating legacy material:
+## Docstrings and API Surface
 
-- preserve the archived source in `docs/legacy/`,
-- write current canonical pages in fresh prose,
-- cite the legacy page as provenance when relevant,
-- prefer implementation and tests over legacy design intent when they differ.
+Docstrings are part of the rendered documentation surface through mkdocstrings. Public-facing modules and symbols should maintain Google-style docstrings aligned with current behavior and existing type hints. Contributors should avoid duplicative narrative between module pages and API reference output; narrative chapters explain system behavior, while API reference pages enumerate module and symbol surfaces.
 
-This keeps the docs historically grounded without allowing older design memos to override present
-runtime truth.
+## Navigation and Build Contract
 
-## Docstring Standards
-
-Public-facing Python modules and symbols participate in the documentation surface through
-mkdocstrings.
-
-Current docstring expectations include:
-
-- Google-style docstrings,
-- triple-quoted strings,
-- concise summaries followed by details when needed,
-- useful `Args`, `Returns`, `Raises`, `Notes`, or `Examples` sections where appropriate,
-- alignment with actual current behavior.
-
-The active enforcement sources are:
-
-- `pyproject.toml` for docstring convention configuration
-- `.pre-commit-config.yaml` for repository hygiene and documentation-adjacent file validation
-- strict documentation builds in CI and local rehearsal
-
-Historical guidance remains preserved in:
-
-- `docs/legacy/2026-03-11/docstring_guidelines.md`
-- `docs/docstring_guidelines.md`
-
-## When to Update Navigation
-
-Contributors should update `mkdocs.yml` when they:
-
-- add a new canonical page,
-- split a chapter into child pages,
-- repurpose a top-level section,
-- promote a previously implicit topic into a first-class surface.
-
-Because PHIDS builds docs in strict mode, navigation is not optional structure; it is part of the
-build contract.
-
-## When to Update API Reference Coverage
-
-Contributors should extend `docs/reference/api.md` when:
-
-- a new public module becomes important to users or contributors,
-- a major public-facing package is missing from rendered API docs,
-- the module map points to a symbol that is not reachable through the API reference.
-
-## Documentation Build Requirement
-
-All documentation changes should remain compatible with:
+Navigation in `mkdocs.yml` is part of the build contract. When adding or restructuring canonical pages, update navigation entries in the same change set so strict builds remain green. Documentation changes are complete only when strict build validation succeeds.
 
 ```bash
 uv run mkdocs build --strict
 ```
 
-This is a required quality gate, not a best-effort suggestion.
+## Practical Update Workflow
 
-## Practical Contributor Checklist
+A reliable contributor workflow is to identify the owning subsystem, review implementation and relevant tests, draft the page in the correct writing mode, add cross-links to adjacent chapters, update `mkdocs.yml` if navigation changed, and run strict docs build before opening review. For non-trivial updates, run the repository test suite to ensure behavior claims remain synchronized with executable state.
 
-When adding a new canonical page, a contributor should usually:
+## Verification Anchors
 
-1. identify the owning subsystem,
-2. read the relevant code and tests,
-3. write the page in current-state scientific prose,
-4. add cross-links from neighboring chapters,
-5. update `mkdocs.yml`,
-6. rebuild the docs strictly.
+Primary policy anchors for this standard are `mkdocs.yml`, `pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, and the canonical pages under `docs/reference/` and `docs/development/`.
 
-## Common Documentation Pitfalls
-
-### Rewriting history instead of preserving it
-
-Do not silently overwrite historically important documents without archiving their prior role.
-
-### Using legacy intent as present fact
-
-If legacy design and current implementation differ, say so clearly and document the implementation.
-
-### Over-generalizing from one module
-
-A subsystem page should explain ownership boundaries, not imply that one module owns behavior that is
-currently split across several modules.
-
-### Treating API docs as narrative docs
-
-`mkdocstrings` is not a substitute for architectural explanation.
-
-## Verified Current-State Evidence
-
-- `docs/information-architecture.md`
-- `mkdocs.yml`
-- `pyproject.toml`
-- `.pre-commit-config.yaml`
-- `.github/workflows/ci.yml`
-- `docs/reference/`
-- `docs/legacy/`
-
-## Where to Read Next
-
-- For contributor workflow and quality gates: [`contribution-workflow-and-quality-gates.md`](contribution-workflow-and-quality-gates.md)
-- For whole-project package ownership: [`../reference/module-map.md`](../reference/module-map.md)
-- For requirement-to-code coverage: [`../reference/requirements-traceability.md`](../reference/requirements-traceability.md)
-- For rendered API docs: [`../reference/api.md`](../reference/api.md)
+For adjacent guidance, see `docs/development/contribution-workflow-and-quality-gates.md`, `docs/development/scientific-authoring-workflow.md`, and `docs/reference/module-map.md`.

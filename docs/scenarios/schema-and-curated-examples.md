@@ -1,10 +1,8 @@
 # Scenario Schema and Curated Example Pack
 
-Scenarios are the formal experimental units of PHIDS. Every reproducible run begins as a
-`SimulationConfig`, whether it was authored as JSON, assembled through the builder UI, or exported
-from a prior draft.
+Scenarios are the formal experimental units of PHIDS. Every reproducible run begins as a validated `SimulationConfig`, whether authored as JSON, assembled through the builder UI, or exported from prior draft state. In methodological terms, the scenario boundary is the point at which editable configuration intent becomes an executable ecological specification.
 
-This chapter documents the current scenario boundary and the role of the curated example pack.
+This chapter documents that boundary and the role of the curated example pack as a compatibility and reproducibility surface. It explains how schema validation, import/export pathways, and runtime smoke execution together establish that a scenario is not only syntactically valid, but scientifically and computationally admissible under current PHIDS invariants.
 
 ## Canonical Scenario Boundary
 

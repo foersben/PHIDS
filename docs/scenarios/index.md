@@ -1,8 +1,8 @@
 # Scenarios
 
-Scenarios are the formal experimental inputs of PHIDS. They define the biotope, species,
-interaction matrices, trigger rules, placements, and global simulation parameters required to
-instantiate a deterministic run.
+Scenarios are the formal experimental inputs of PHIDS and function as the simulator's equivalent of a methods section plus initial conditions. A scenario specifies the admissible ecological world to be executed: the biotope geometry, species definitions, trophic compatibility, defensive trigger structure, placements, and global stopping conditions. Because PHIDS is deterministic for fixed parameters and initial state, the scenario is not a convenience artifact; it is the reproducibility contract for the experiment.
+
+This section explains how PHIDS represents, validates, edits, imports, exports, and compiles scenarios across draft authoring state, schema-normalized configuration state, and live runtime state. The purpose is to make clear that scenario work in PHIDS is a controlled compilation process rather than an informal collection of UI fields. What the operator edits in the builder, what the repository stores in JSON, and what the engine executes at runtime are closely related, but they are not identical objects and should not be interpreted as such.
 
 ## Canonical Schema
 

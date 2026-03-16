@@ -1,260 +1,71 @@
 # Lifecycle
 
-The lifecycle system governs plant-centered ecological change in PHIDS. It is the phase in which
-flora grow, attempt reproduction, prune stale root-network references, die when energy falls below
-survival limits, and gradually extend mycorrhizal connectivity.
+The lifecycle phase in PHIDS governs plant-centered state evolution by integrating deterministic growth, interval-gated reproduction, mycorrhizal network extension, and survival-threshold culling inside `src/phids/engine/systems/lifecycle.py`. Within the global tick schedule, lifecycle executes after flow-field construction and camouflage attenuation, but before swarm interaction and signaling. This ordering is biologically and computationally consequential because interaction must consume plant energy that has already been updated for the current tick, and signaling must evaluate defense triggers against the flora population that survived lifecycle transitions.
 
-This chapter documents the current implementation in `src/phids/engine/systems/lifecycle.py`.
+A compact operator expression for this phase is
 
-## Role in the Engine
+$$
+(\mathcal{P}_{t+1}, \mathcal{G}_{t+1}) = \mathcal{L}(\mathcal{P}_t, \mathcal{G}_t, t, \Theta_{flora}, \Theta_{myco}),
+$$
 
-`run_lifecycle()` executes after flow-field generation and camouflage attenuation but before swarm
-interaction and signaling.
+where $\mathcal{P}_t$ denotes plant entities in ECS state, $\mathcal{G}_t$ denotes environmental plant-energy layers, and parameter bundles encode species growth, reproduction, and mycorrhizal constraints.
 
-This ordering matters. The lifecycle phase updates plant state first so that:
+## Phase Mechanics
 
-- later feeding decisions observe current plant energy,
-- later signaling decisions observe the plant population that survived the lifecycle pass,
-- the aggregate plant-energy layer is rebuilt before subsequent phases depend on it.
+Lifecycle applies a strict local progression for each plant entity: growth is integrated, reproduction eligibility is evaluated, successful offspring are materialized as new ECS entities, and energy writes are pushed through biotope helpers. A subsequent pass prunes invalid mycorrhizal references, removes plants below survival threshold, and optionally attempts deterministic network expansion among disjoint neighboring pairs. Aggregate plant-energy visibility is then synchronized through a single `rebuild_energy_layer()` call, preserving a coherent read boundary for downstream phases.
 
-## Runtime Inputs
+```mermaid
+flowchart TD
+    A[Lifecycle tick begins] --> B[Per-plant growth update]
+    B --> C[Reproduction eligibility check]
+    C --> D[Successful offspring placement]
+    D --> E[Write plant energies]
+    E --> F[Prune stale mycorrhizal links]
+    F --> G[Cull plants below survival threshold]
+    G --> H[Attempt interval-gated mycorrhizal growth]
+    H --> I[Garbage collect dead plants]
+    I --> J[Rebuild aggregate plant-energy layer]
+```
 
-The lifecycle system currently consumes:
+## Growth and Reproduction Dynamics
 
-- `ECSWorld` for plant entities and spatial occupancy,
-- `GridEnvironment` for plant-energy writes and layer rebuilds,
-- `tick` for growth and reproduction timing,
-- flora species parameter lookups,
-- mycorrhizal settings from the simulation config.
+Growth is implemented as a bounded incremental update,
 
-## Principal Responsibilities
+$$
+E_i^{t+1} = \min\!\left(E_i^t + E_{base,i}\,\frac{g_i}{100},\;E_{max,i}\right),
+$$
 
-In its current form, `run_lifecycle()` performs the following tasks:
+where $E_i$ is current plant energy, $E_{base,i}$ is species base energy, and $g_i$ is growth rate. The key modeling decision is local incremental integration rather than a global-clock reconstruction, which avoids assigning artificial age-dependent energy to newly spawned plants.
 
-1. apply growth to each plant,
-2. attempt reproduction when interval and energy constraints permit,
-3. write current plant energy into the environment,
-4. prune dead mycorrhizal links,
-5. identify and unregister dead plants,
-6. optionally establish new mycorrhizal links for disjoint plant pairs,
-7. garbage-collect dead plants,
-8. rebuild the aggregate plant-energy layer.
+Reproduction requires both temporal and energetic feasibility. A plant can attempt seed placement only when the species reproduction interval has elapsed since `last_reproduction_tick` and when paying the configured seed cost still keeps the parent at or above its survival threshold. Reproduction target selection is stochastic in angle and dispersal distance, but placement is constrained by bounds and occupancy checks. Energy is deducted only on successful placement, preventing crowded environments from inducing deterministic self-starvation through failed placement attempts.
 
-## Plant Runtime Model
+The local dispersal geometry can be interpreted as a bounded annulus around the parent position with inner and outer radii determined by species parameters:
 
-The lifecycle system operates on `PlantComponent`, which currently stores:
+```mermaid
+flowchart TD
+    A[Parent position] --> B[Minimum radius r_min exclusion zone]
+    A --> C[Maximum radius r_max dispersal boundary]
+    B --> D[Candidate seed sampled in annulus r_min <= r <= r_max]
+    C --> D
+```
 
-- spatial coordinates,
-- current energy,
-- max energy,
-- base energy,
-- growth rate,
-- survival threshold,
-- reproduction interval,
-- seed dispersal bounds,
-- seed energy cost,
-- camouflage settings,
-- `last_reproduction_tick`,
-- `last_energy_loss_cause`,
-- `mycorrhizal_connections`.
+## Mycorrhizal Network Extension
 
-This means lifecycle is the phase that primarily updates the long-term state trajectory of plant
-entities.
+Lifecycle is the sole phase that forms new mycorrhizal edges in the current runtime. Growth attempts are interval-gated and deterministic in candidate ordering. Plants are sorted by stable coordinates and identifiers, and only forward neighbors are evaluated to avoid duplicate pair enumeration. During an eligible tick, multiple links may form, but each plant can participate in at most one new edge, and participating pairs must be disjoint within that pass.
 
-## Growth Model
+Both plants in a candidate pair must be able to pay connection cost while remaining above survival thresholds after payment. When link formation succeeds, energy is deducted symmetrically and the bidirectional connection is written immediately. When inter-species linking is disabled, cross-species candidates are rejected before energy checks.
 
-The helper `_grow(plant, tick)` now applies an incremental deterministic rule rather than a
-global-clock formula:
+## Survival Threshold Culling and Telemetry Coupling
 
-- `growth_amount = plant.base_energy * (plant.growth_rate / 100.0)`
-- `plant.energy = min(plant.energy + growth_amount, plant.max_energy)`
+After growth and possible reproduction, any plant with energy below survival threshold is unregistered from the spatial hash, cleared from write-side energy layers, and queued for garbage collection. Destruction is executed in a bulk cleanup step after iteration, which avoids in-loop structural mutation hazards.
 
-This is important because late-born plants no longer inherit fictitious age from the global tick.
-Growth is now a per-tick integration of species-specific productivity and therefore remains
-compatible with the simulator’s bounded, current-state plant-energy interpretation.
+Lifecycle also updates `last_energy_loss_cause`, enabling downstream telemetry attribution to distinguish deaths associated with reproduction spending, mycorrhizal construction costs, or background deficit attrition. This causal bookkeeping is important for interpreting whether a collapse is resource-limited, connectivity-limited, or behaviorally induced by prior phase interactions.
 
-## Reproduction Model
+## Numerical and Architectural Boundary
 
-Reproduction is handled by `_attempt_reproduction(...)`.
+Lifecycle mutates ECS plant components directly but treats environmental layers through write-side biotope helpers (`set_plant_energy`, `clear_plant_energy`) and a single synchronized rebuild at phase end. The resulting hybrid strategy preserves deterministic throughput and avoids read-after-write contamination across phase boundaries, while remaining faithful to the project rule that locality-sensitive queries must use O(1) spatial-hash lookups instead of global pairwise scans.
 
-A plant may attempt reproduction only if:
-
-- enough ticks have elapsed since `last_reproduction_tick`, and
-- the plant can pay `seed_energy_cost` while remaining at or above its `survival_threshold`.
-
-Current behavior includes several important details.
-
-### Energy is only spent on valid successful placement
-
-The current implementation no longer burns seed energy on invalid reproduction attempts. Boundary
-checks, occupancy checks, and species-parameter resolution all happen before the cost is deducted.
-This means a crowded canopy no longer induces self-starvation merely because stochastic dispersal
-selects blocked cells.
-
-### Dispersal is stochastic but bounded
-
-The target seed location is chosen using:
-
-- a random angle,
-- a random distance in `[seed_min_dist, seed_max_dist]`.
-
-### Germination is occupancy-constrained
-
-If the target cell is out of bounds or already contains a plant, the reproduction attempt fails and
-no offspring is created.
-
-### Offspring are spawned as new ECS entities
-
-When reproduction succeeds, the lifecycle system creates a new `PlantComponent`, registers it in the
-spatial hash, writes its initial energy into the environment, and initializes the offspring’s
-`last_reproduction_tick` to its birth tick so newborns cannot bypass the species-specific cooldown.
-
-## Mycorrhizal Networking
-
-The lifecycle phase is also responsible for establishing new mycorrhizal links.
-
-### Growth cadence
-
-The helper `_should_attempt_mycorrhizal_growth(tick, growth_interval_ticks)` determines whether the
-current lifecycle pass is allowed to form a new root connection.
-
-Current semantics:
-
-- no new link is attempted on most ticks,
-- the first attempt occurs only after the configured interval has elapsed,
-- an interval of `1` permits an attempt every tick.
-
-### Deterministic connection ordering
-
-When root growth is attempted, `_establish_mycorrhizal_connections(...)`:
-
-- collects current plants,
-- excludes plants already marked dead in this pass,
-- sorts plants deterministically by `(y, x, species_id, entity_id)`,
-- only checks forward neighbors `(1, 0)` and `(0, 1)`.
-
-This ensures deterministic candidate enumeration even though more than one disjoint pair may now
-form during the same permitted growth tick.
-
-### Parallel but bounded growth
-
-The current implementation no longer uses a single global root-growth token. Instead, each plant may
-form at most one new link during an eligible growth pass, provided the participating pair is disjoint
-from pairs already formed that tick. This allows sparse and dense biotopes to expand their root
-networks in parallel while still preventing one plant from opening an arbitrary number of new links
-in a single lifecycle pass.
-
-### Link costs
-
-Both participating plants must be able to pay `connection_cost` **and remain above their individual
-`survival_threshold` values after paying it**. When the link is formed:
-
-- each plant loses the configured energy amount,
-- both plants receive the bidirectional connection,
-- the updated energies are written into the environment.
-
-### Species restrictions
-
-When `inter_species` is false, mycorrhizal links are limited to plants of the same species.
-
-## Death and Culling
-
-After growth, reproduction, and energy update, lifecycle checks whether:
-
-- `plant.energy < plant.survival_threshold`
-
-If so, the current implementation:
-
-- clears the plant’s energy contribution in the environment write buffer,
-- unregisters the plant from the spatial hash,
-- marks the plant for later garbage collection.
-
-Actual destruction is deferred until after the full plant pass completes.
-
-The lifecycle phase also records the most recent energetically relevant action in
-`last_energy_loss_cause`. When a plant is culled here, that marker is used to attribute the immediate
-death cause to reproduction, mycorrhizal growth, or background deficit in the telemetry layer.
-
-## Read/Write Boundary
-
-Lifecycle mutates plant components in place, but it updates environmental plant energy through the
-biotope write-side helpers:
-
-- `env.set_plant_energy(...)`
-- `env.clear_plant_energy(...)`
-- `env.rebuild_energy_layer()`
-
-This is another example of PHIDS’s current hybrid model:
-
-- entity state is updated directly within the phase,
-- field visibility is synchronized through buffered environmental rebuilds.
-
-## Ordering Nuances
-
-Several ordering details are important to document explicitly.
-
-### Reproduction precedes root-growth attempt
-
-In the current implementation, reproduction happens during the plant iteration before the optional
-mycorrhizal growth attempt at the end of the phase.
-
-### Dead plants are excluded from new root links
-
-Plants marked dead during the pass are excluded from mycorrhizal link formation even before garbage
-collection occurs.
-
-### Layer rebuild occurs once per lifecycle pass
-
-The environment’s aggregate plant-energy layer is rebuilt only after all lifecycle updates and dead
-entity cleanup are complete.
-
-## Evidence from Tests
-
-The current test suite verifies several important lifecycle behaviors.
-
-### Mycorrhizal connection cost and bidirectionality
-
-Tests verify that adjacent plants can form links, pay energy cost, and receive reciprocal
-connections.
-
-### Inter-species connection restrictions
-
-Tests verify that the inter-species switch blocks cross-species links when disabled.
-
-### Interval-gated parallel root growth
-
-Tests verify that no links form before the configured interval, that disjoint pairs can form in the
-same eligible tick, and that an individual plant still forms at most one new link per growth pass.
-
-### Environmental energy rebuild behavior
-
-Invariant tests verify that plant-energy writes become visible only after `rebuild_energy_layer()`
-and that clearing plant energy is reflected after rebuild.
-
-### Reproduction and scenario helpers
-
-Additional coverage tests exercise reproduction and scenario helpers that feed lifecycle behavior.
-
-## Methodological Limits of the Current Lifecycle Model
-
-The lifecycle system should be described precisely rather than idealized.
-
-- reproduction uses randomness for seed direction and distance,
-- the current growth formula depends on `base_energy` and global tick rather than on a purely local
-  incremental energy differential,
-- mycorrhizal growth is deterministic in order and cadence but intentionally very conservative,
-- lifecycle mutates components in place while synchronizing field state through biotope rebuilds.
-
-These are part of the current engine model.
-
-## Verified Current-State Evidence
-
-- `src/phids/engine/systems/lifecycle.py`
-- `src/phids/engine/components/plant.py`
-- `src/phids/engine/loop.py`
-- `tests/test_systems_behavior.py`
-- `tests/test_schemas_and_invariants.py`
-- `tests/test_additional_coverage.py`
+Implementation and validation anchors for this chapter are `src/phids/engine/systems/lifecycle.py`, `src/phids/engine/components/plant.py`, `src/phids/engine/loop.py`, `tests/test_systems_behavior.py`, `tests/test_schemas_and_invariants.py`, and `tests/test_additional_coverage.py`.
 
 ## Where to Read Next
 

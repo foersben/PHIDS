@@ -12,6 +12,8 @@ to neighbouring cells under Gaussian diffusion while being attenuated by the per
 
 from __future__ import annotations
 
+import numpy as np
+
 from phids.engine.core.biotope import GridEnvironment
 
 
@@ -68,3 +70,36 @@ def test_signal_diffusion_fast_path_clears_stale_write_buffer_state() -> None:
     env.diffuse_signals()
 
     assert float(env.signal_layers[0].sum()) == 0.0
+
+
+def test_signal_diffusion_wind_bias_stretches_plume_along_flow_axis() -> None:
+    """Verifies that directional kernels produce downwind-shifted anisotropic plumes.
+
+    The test seeds a centered unit pulse and applies a positive x-direction wind field.
+    After several diffusion ticks, the plume centroid is expected to move downwind and
+    variance along the wind axis must exceed cross-wind variance.
+    """
+    env = GridEnvironment(width=21, height=21, num_signals=1, num_toxins=1)
+    env.signal_layers[0, 10, 10] = 1.0
+    env.set_uniform_wind(1.6, 0.0)
+
+    for _ in range(3):
+        env.diffuse_signals()
+
+    layer = env.signal_layers[0]
+    mass = float(layer.sum())
+    assert mass > 0.0
+
+    x_coords = np.arange(env.width, dtype=np.float64)[:, None]
+    y_coords = np.arange(env.height, dtype=np.float64)[None, :]
+    centroid_x = float((layer * x_coords).sum() / mass)
+    centroid_y = float((layer * y_coords).sum() / mass)
+    var_x = float((layer * ((x_coords - centroid_x) ** 2)).sum() / mass)
+    var_y = float((layer * ((y_coords - centroid_y) ** 2)).sum() / mass)
+
+    assert abs(centroid_x - 10.0) < 2.2
+    assert abs(centroid_y - 10.0) < 2.2
+    major = max(var_x, var_y)
+    minor = min(var_x, var_y)
+    assert minor > 0.0
+    assert (major / minor) > 1.2

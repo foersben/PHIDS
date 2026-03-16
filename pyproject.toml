@@ -37,9 +37,11 @@ dev = [
     "pytest-benchmark>=4.0",
     "pytest-asyncio>=0.23",
     "httpx>=0.27",
-    "mkdocs>=1.6",
+    "mkdocs>=1.6,<2",
     "mkdocs-material>=9.5",
+    "mkdocs-kroki-plugin>=0.8",
     "mkdocstrings[python]>=0.25",
+    "pymdown-extensions>=10.8",
     "pre-commit>=3.7",
     "pydocstyle>=6.1",
 ]

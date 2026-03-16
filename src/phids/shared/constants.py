@@ -45,6 +45,12 @@ EMPTY_CELL: int = -1
 MAX_TELEMETRY_TICKS: int = 10_000
 
 # ---------------------------------------------------------------------------
+# Seed dispersal defaults (global, species-overridable)
+# ---------------------------------------------------------------------------
+SEED_DROP_HEIGHT_DEFAULT: float = 1.25
+SEED_TERMINAL_VELOCITY_DEFAULT: float = 0.8
+
+# ---------------------------------------------------------------------------
 # Substance emission / dissipation rates
 # ---------------------------------------------------------------------------
 SUBSTANCE_EMIT_RATE: float = 0.1  # concentration added per tick when active

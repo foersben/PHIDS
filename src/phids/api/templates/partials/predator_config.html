@@ -40,35 +40,35 @@
           <td class="px-2 py-2 font-mono text-slate-400">{{ pp.species_id }}</td>
           <td class="px-2 py-2">
             <input type="text" value="{{ pp.name }}" name="name"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
               title="Display name for this predator species"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-28">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ pp.energy_min }}" step="0.1" min="0.1" name="energy_min"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
               title="Per-individual energy floor used for metabolism, deficit casualties, and reproduction scaling."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ pp.velocity }}" step="1" min="1" name="velocity"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
               title="Ticks between moves. 1 = moves every tick (fast). 5 = moves every 5th tick (slow). Slower predators are easier for chemical defenses to outrun."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ pp.consumption_rate }}" step="0.1" min="0.1" name="consumption_rate"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
               title="Energy extracted from the plant cell per feeding tick. A plant with max_energy=100 feeding a predator at rate 10 can sustain it for ~10 ticks before exhaustion."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ pp.reproduction_energy_divisor }}" step="0.1" min="0.1" name="reproduction_energy_divisor"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
               title="Fission (mitosis) threshold multiplier. Swarm splits when energy > initial_energy × this value. 1.0 = doubles before splitting. 0.5 = splits very frequently. 2.0 = requires much energy accumulation."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">

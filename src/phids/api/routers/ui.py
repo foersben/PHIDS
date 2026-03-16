@@ -114,7 +114,10 @@ async def root(request: Request) -> Any:
     return api_main.templates.TemplateResponse(
         request,
         "index.html",
-        {"scenario_name": draft.scenario_name},
+        {
+            "scenario_name": draft.scenario_name,
+            "default_tick_rate_hz": draft.tick_rate_hz,
+        },
     )
 
 

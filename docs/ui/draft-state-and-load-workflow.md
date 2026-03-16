@@ -1,11 +1,8 @@
 # Draft State and Load Workflow
 
-The most important UI-specific invariant in PHIDS is that editable builder state is **not** the
-live simulation. The server-side `DraftState` acts as a staging area in which the operator can
-assemble, mutate, import, inspect, and export a scenario before committing it to a running
-`SimulationLoop`.
+The most important UI-specific invariant in PHIDS is that editable builder state is **not** the live simulation. The server-side `DraftState` functions as a controlled staging area in which an operator can assemble, normalize, inspect, import, and export a scenario before committing it to an executable `SimulationLoop`. This distinction is foundational to the control-center architecture: it prevents exploratory authoring from mutating the active runtime and makes scenario preparation a deliberate, inspectable process rather than an accumulation of hidden side effects.
 
-This chapter documents that workflow in its current implementation.
+This chapter documents that workflow as an operational pipeline. It explains why draft state exists, how `DraftService` preserves structural invariants during editing, how `DraftState.build_sim_config()` compiles builder state into the canonical schema boundary, and what exactly happens when a draft is promoted into live runtime state. The objective is to make the draft-to-live transition legible both to operators using the UI and to contributors maintaining the builder internals.
 
 ## Why Draft State Exists
 
@@ -118,6 +115,8 @@ It currently:
 This means the draft is **not itself** the final schema object. It is a richer editing structure
 that must be normalized and validated before execution or export.
 
+Termination controls configured in the biotope editor (`Z2`, `Z4`, `Z6`, `Z7`) are part of this compilation boundary. They remain inert draft values until `build_sim_config()` materializes them into executable schema fields consumed by `check_termination()`.
+
 ## Import Workflow
 
 `POST /api/scenario/import` follows the reverse direction:
@@ -153,6 +152,8 @@ Its current behavior includes:
 
 The route returns an updated status-badge HTML fragment because it is primarily designed for the
 HTMX control surface.
+
+After load, runtime cadence can be adjusted independently through the live speed control in the grid toolbar (`PUT /api/simulation/tick-rate`). This changes live execution pace without mutating the already-compiled draft.
 
 ## Preview Without a Live Simulation
 

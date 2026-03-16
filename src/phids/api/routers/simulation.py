@@ -14,13 +14,14 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
 from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
     PlacedPlant,
@@ -33,6 +34,157 @@ from phids.api.ui_state import (
 from phids.engine.loop import SimulationLoop
 
 router = APIRouter()
+draft_service = DraftService()
+
+
+def _form_scalar(form_data: Any, key: str) -> str | None:
+    """Return a scalar form value as string, ignoring file uploads."""
+    value = form_data.get(key)
+    if value is None or isinstance(value, UploadFile):
+        return None
+    return str(value)
+
+
+def _form_int(form_data: Any, key: str) -> int | None:
+    """Parse an optional integer form field."""
+    raw = _form_scalar(form_data, key)
+    if raw is None:
+        return None
+    return int(raw)
+
+
+def _form_float(form_data: Any, key: str) -> float | None:
+    """Parse an optional float form field."""
+    raw = _form_scalar(form_data, key)
+    if raw is None:
+        return None
+    return float(raw)
+
+
+def _apply_optional_biotope_overrides(
+    *,
+    grid_width: int | None,
+    grid_height: int | None,
+    max_ticks: int | None,
+    tick_rate_hz: float | None,
+    wind_x: float | None,
+    wind_y: float | None,
+    num_signals: int | None,
+    num_toxins: int | None,
+    z2_flora_species_extinction: int | None,
+    z4_predator_species_extinction: int | None,
+    z6_max_total_flora_energy: float | None,
+    z7_max_total_predator_population: int | None,
+    mycorrhizal_inter_species: str | None,
+    mycorrhizal_connection_cost: float | None,
+    mycorrhizal_growth_interval_ticks: int | None,
+    mycorrhizal_signal_velocity: int | None,
+) -> None:
+    """Persist optional biotope form fields into draft state when present.
+
+    This helper enables simulation-control actions to commit pending builder edits
+    in the same request, avoiding stale draft state when users type and click a
+    control button without waiting for autosave round-trips.
+    """
+    provided = any(
+        value is not None
+        for value in (
+            grid_width,
+            grid_height,
+            max_ticks,
+            tick_rate_hz,
+            wind_x,
+            wind_y,
+            num_signals,
+            num_toxins,
+            z2_flora_species_extinction,
+            z4_predator_species_extinction,
+            z6_max_total_flora_energy,
+            z7_max_total_predator_population,
+            mycorrhizal_inter_species,
+            mycorrhizal_connection_cost,
+            mycorrhizal_growth_interval_ticks,
+            mycorrhizal_signal_velocity,
+        )
+    )
+
+    if not provided:
+        return
+
+    draft = get_draft()
+    draft_service.update_biotope(
+        draft,
+        grid_width=grid_width if grid_width is not None else draft.grid_width,
+        grid_height=grid_height if grid_height is not None else draft.grid_height,
+        max_ticks=max_ticks if max_ticks is not None else draft.max_ticks,
+        tick_rate_hz=tick_rate_hz if tick_rate_hz is not None else draft.tick_rate_hz,
+        wind_x=wind_x if wind_x is not None else draft.wind_x,
+        wind_y=wind_y if wind_y is not None else draft.wind_y,
+        num_signals=num_signals if num_signals is not None else draft.num_signals,
+        num_toxins=num_toxins if num_toxins is not None else draft.num_toxins,
+        z2_flora_species_extinction=(
+            z2_flora_species_extinction
+            if z2_flora_species_extinction is not None
+            else draft.z2_flora_species_extinction
+        ),
+        z4_predator_species_extinction=(
+            z4_predator_species_extinction
+            if z4_predator_species_extinction is not None
+            else draft.z4_predator_species_extinction
+        ),
+        z6_max_total_flora_energy=(
+            z6_max_total_flora_energy
+            if z6_max_total_flora_energy is not None
+            else draft.z6_max_total_flora_energy
+        ),
+        z7_max_total_predator_population=(
+            z7_max_total_predator_population
+            if z7_max_total_predator_population is not None
+            else draft.z7_max_total_predator_population
+        ),
+        mycorrhizal_inter_species=(
+            (mycorrhizal_inter_species or "off") == "on"
+            if mycorrhizal_inter_species is not None
+            else draft.mycorrhizal_inter_species
+        ),
+        mycorrhizal_connection_cost=(
+            mycorrhizal_connection_cost
+            if mycorrhizal_connection_cost is not None
+            else draft.mycorrhizal_connection_cost
+        ),
+        mycorrhizal_growth_interval_ticks=(
+            mycorrhizal_growth_interval_ticks
+            if mycorrhizal_growth_interval_ticks is not None
+            else draft.mycorrhizal_growth_interval_ticks
+        ),
+        mycorrhizal_signal_velocity=(
+            mycorrhizal_signal_velocity
+            if mycorrhizal_signal_velocity is not None
+            else draft.mycorrhizal_signal_velocity
+        ),
+    )
+
+
+def _apply_optional_biotope_overrides_from_form(form_data: Any) -> None:
+    """Extract known biotope fields from form-data and apply draft overrides."""
+    _apply_optional_biotope_overrides(
+        grid_width=_form_int(form_data, "grid_width"),
+        grid_height=_form_int(form_data, "grid_height"),
+        max_ticks=_form_int(form_data, "max_ticks"),
+        tick_rate_hz=_form_float(form_data, "tick_rate_hz"),
+        wind_x=_form_float(form_data, "wind_x"),
+        wind_y=_form_float(form_data, "wind_y"),
+        num_signals=_form_int(form_data, "num_signals"),
+        num_toxins=_form_int(form_data, "num_toxins"),
+        z2_flora_species_extinction=_form_int(form_data, "z2_flora_species_extinction"),
+        z4_predator_species_extinction=_form_int(form_data, "z4_predator_species_extinction"),
+        z6_max_total_flora_energy=_form_float(form_data, "z6_max_total_flora_energy"),
+        z7_max_total_predator_population=_form_int(form_data, "z7_max_total_predator_population"),
+        mycorrhizal_inter_species=_form_scalar(form_data, "mycorrhizal_inter_species"),
+        mycorrhizal_connection_cost=_form_float(form_data, "mycorrhizal_connection_cost"),
+        mycorrhizal_growth_interval_ticks=_form_int(form_data, "mycorrhizal_growth_interval_ticks"),
+        mycorrhizal_signal_velocity=_form_int(form_data, "mycorrhizal_signal_velocity"),
+    )
 
 
 @router.post("/api/scenario/load", summary="Load simulation scenario")
@@ -86,7 +238,12 @@ async def start_simulation(request: Request) -> Any:
     Raises:
         HTTPException: A terminated simulation is asked to restart without reset.
     """
+    _apply_optional_biotope_overrides_from_form(await request.form())
+
     loop = api_main._get_loop()
+    draft = get_draft()
+    loop.update_tick_rate(draft.tick_rate_hz)
+    loop.update_wind(draft.wind_x, draft.wind_y)
 
     if loop.running and not loop.paused:
         api_main.logger.info("Start requested while simulation was already running")
@@ -138,7 +295,12 @@ async def step_simulation(request: Request) -> Any:
     Raises:
         HTTPException: If the simulation is currently running or has already terminated.
     """
+    _apply_optional_biotope_overrides_from_form(await request.form())
+
     loop = api_main._get_loop()
+    draft = get_draft()
+    loop.update_tick_rate(draft.tick_rate_hz)
+    loop.update_wind(draft.wind_x, draft.wind_y)
 
     if (
         api_main._sim_task is not None
@@ -182,6 +344,8 @@ async def reset_simulation(request: Request) -> Any:
     Returns:
         Status payload or status-badge fragment for the reset state.
     """
+    _apply_optional_biotope_overrides_from_form(await request.form())
+
     loop = api_main._get_loop()
 
     if api_main._sim_task is not None and not api_main._sim_task.done():
@@ -213,11 +377,34 @@ async def simulation_status() -> SimulationStatusResponse:
     loop = api_main._get_loop()
     return SimulationStatusResponse(
         tick=loop.tick,
+        tick_rate_hz=loop.config.tick_rate_hz,
         running=loop.running,
         paused=loop.paused,
         terminated=loop.terminated,
         termination_reason=loop.termination_reason,
     )
+
+
+@router.put("/api/simulation/tick-rate", summary="Update live simulation tick speed")
+async def update_tick_rate(
+    request: Request,
+    tick_rate_hz: Annotated[float, Form()] = 10.0,
+) -> Any:
+    """Update the active simulation tick-speed in the live grid view.
+
+    Args:
+        request: Incoming HTTP request used to select JSON or HTMX fragment responses.
+        tick_rate_hz: Requested simulation ticks per second.
+
+    Returns:
+        Status payload or status-badge fragment, depending on caller context.
+    """
+    loop = api_main._get_loop()
+    applied_tick_rate = loop.update_tick_rate(tick_rate_hz)
+    api_main.logger.info("Live simulation tick rate updated via API to %.2f Hz", applied_tick_rate)
+    if api_main._is_htmx_request(request):
+        return HTMLResponse(content=api_main._render_status_badge_html())
+    return {"message": "Tick rate updated.", "tick_rate_hz": applied_tick_rate}
 
 
 @router.put("/api/simulation/wind", summary="Update wind vector")
@@ -340,6 +527,10 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
         wind_y=config.wind_y,
         num_signals=config.num_signals,
         num_toxins=config.num_toxins,
+        z2_flora_species_extinction=config.z2_flora_species_extinction,
+        z4_predator_species_extinction=config.z4_predator_species_extinction,
+        z6_max_total_flora_energy=config.z6_max_total_flora_energy,
+        z7_max_total_predator_population=config.z7_max_total_predator_population,
         mycorrhizal_inter_species=config.mycorrhizal_inter_species,
         mycorrhizal_connection_cost=config.mycorrhizal_connection_cost,
         mycorrhizal_growth_interval_ticks=config.mycorrhizal_growth_interval_ticks,
@@ -399,6 +590,8 @@ async def scenario_load_draft(request: Request) -> Any:
     Raises:
         HTTPException: Draft cannot be transformed into a valid simulation configuration.
     """
+    _apply_optional_biotope_overrides_from_form(await request.form())
+
     draft = get_draft()
     try:
         config = draft.build_sim_config()

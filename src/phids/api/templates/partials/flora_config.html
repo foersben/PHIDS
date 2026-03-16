@@ -52,63 +52,63 @@
           <td class="px-2 py-2 font-mono text-slate-400">{{ fp.species_id }}</td>
           <td class="px-2 py-2">
             <input type="text" value="{{ fp.name }}" name="name"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Display name for this flora species"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-24">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.base_energy }}" step="0.1" min="0.1" name="base_energy"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Energy added per tick during growth. Also the initial energy of a newly spawned seed."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.max_energy }}" step="0.1" min="0.1" name="max_energy"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Maximum energy cap. Plant cannot grow beyond this. A plant at Max E is brightest on the canvas and most attractive to herbivores."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.growth_rate }}" step="0.1" min="0" name="growth_rate"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Growth rate multiplier applied to logistic growth each tick. energy += base_energy × growth_rate × (1 − energy/max_energy). High values = fast fill-up."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.survival_threshold }}" step="0.1" min="0" name="survival_threshold"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Minimum energy needed to survive. Plant is culled when energy < survival_threshold. Raise to make plants die sooner when depleted by herbivores."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.reproduction_interval }}" step="1" min="1" name="reproduction_interval"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Ticks between seed dispersal events. 5 = seeds every 5 ticks. 20 = seeds every 20 ticks. Only seeds when energy > survival_threshold + seed_energy_cost."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.seed_min_dist }}" step="0.5" min="0" name="seed_min_dist"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Minimum seed distance in cells. Seeds are never placed closer than this to the parent. 0 = can seed adjacent cells."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.seed_max_dist }}" step="0.5" min="0.1" name="seed_max_dist"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
-              title="Maximum seed dispersal distance in cells. Offspring placement currently samples a random angle and a random distance between Seed d_min and Seed d_max, without wind bias. Larger values = wider colonisation."
+              title="Maximum seed dispersal distance in cells. Offspring placement samples a bounded radial launch and then applies wind-biased displacement. Larger values = wider colonisation."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
           </td>
           <td class="px-2 py-2">
             <input type="number" value="{{ fp.seed_energy_cost }}" step="0.5" min="0" name="seed_energy_cost"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="input changed delay:200ms, change"
               hx-target="#flora-config-view" hx-swap="outerHTML"
               title="Energy deducted from the parent when a seed is produced. High cost limits reproduction under stress. Too high and plants cannot reproduce at all."
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">

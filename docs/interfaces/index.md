@@ -1,12 +1,8 @@
 # Interfaces
 
-PHIDS exposes the simulator through two intentionally different surfaces:
+PHIDS exposes the simulator through two intentionally different interface families: a programmatic FastAPI and WebSocket surface for validated control and machine transport, and a server-driven UI surface built from Jinja templates and HTMX for operator-guided authoring and observation. These surfaces share schema definitions and runtime state, but they do not serve identical purposes and should not be treated as interchangeable views onto the same client-owned model.
 
-- a programmatic FastAPI + WebSocket interface, and
-- a server-driven UI built with Jinja templates and HTMX.
-
-These surfaces share schema definitions and runtime state, but they do not serve identical
-purposes.
+This section introduces the interface layer as a controlled execution boundary. Its role is not merely to serialize Python objects for external use, but to regulate how scenarios enter the system, how live state is controlled and observed, and how draft authoring remains separated from runtime mutation. The interface design therefore participates directly in PHIDS methodology: it constrains which state transitions are permitted, which ones are visible, and which ones must pass through explicit validation or promotion boundaries.
 
 ## Interface Thesis
 

@@ -1,299 +1,54 @@
 # REST and WebSocket Surfaces
 
-PHIDS exposes its runtime through two network styles with intentionally different semantics:
+PHIDS exposes two intentionally distinct network surfaces: a validated REST control plane and streaming WebSocket observation channels. The REST layer is responsible for explicit state transition requests, configuration ingress, and server-rendered HTML partials for the HTMX UI. The WebSocket layer is responsible for incremental runtime observation, with one binary protocol optimized for machine consumers and one lightweight JSON protocol optimized for browser canvas rendering.
 
-- **REST endpoints** for validated control, configuration transfer, and HTML partial rendering,
-- **WebSocket streams** for continuously changing simulation state.
+This chapter describes current behavior in `src/phids/api/main.py` and router modules under `src/phids/api/routers/`, and should be read together with the strict draft/live boundary enforced by `DraftState` and `SimulationLoop`.
 
-This chapter documents the current interface surface as implemented across
-`src/phids/api/main.py`, `src/phids/api/routers/ui.py`, and
-`src/phids/api/routers/telemetry.py`, `src/phids/api/routers/config.py`,
-`src/phids/api/routers/simulation.py`, and `src/phids/api/routers/batch.py`.
-It should be read together with the architectural
-distinction between `DraftState` and the live `SimulationLoop`.
+## Interface Ownership Model
 
-## Interface Taxonomy
+The most important boundary is the distinction between editable draft state and executable runtime state. Draft mutations are performed through `DraftService` against `DraftState`; these edits do not mutate an active simulation loop. Runtime control endpoints operate only on the currently loaded `SimulationLoop` instance. The transition from draft to runtime occurs explicitly at `POST /api/scenario/load-draft`, which compiles draft state into a validated `SimulationConfig` and commits it into a live engine instance.
 
-The current route surface falls into six families:
+```mermaid
+flowchart LR
+    A[DraftService mutates DraftState] --> B[POST /api/scenario/load-draft]
+    B --> C[Validated SimulationConfig]
+    C --> D[Live SimulationLoop]
+    D --> E[REST status and control]
+    D --> F[WebSocket streams]
+```
 
-1. **Scenario ingress and loading**
-2. **Simulation lifecycle control**
-3. **Telemetry export and polling**
-4. **UI polling and inspection helpers**
-5. **UI builder and partial-render endpoints**
-6. **WebSocket streaming**
+## Scenario Ingress and Loading
 
-Each family serves a different boundary in the overall system.
+Scenario ingress has two paths. `POST /api/scenario/load` accepts a request-body `SimulationConfig` and instantiates runtime state directly. `POST /api/scenario/load-draft` accepts no scenario payload, compiles the current server-side draft, and returns an HTML status fragment for HTMX-driven control flow. `GET /api/scenario/export` serializes the current draft through the same schema boundary used by runtime loading, and `POST /api/scenario/import` validates uploaded JSON and reconstructs draft state without automatically starting a simulation.
 
-## 1. Scenario Ingress and Loading
+Draft biotope settings include editable `Z2`, `Z4`, `Z6`, and `Z7` termination controls. These values remain draft-only until the load boundary is crossed; they become active only after compilation into the live `SimulationConfig`.
 
-| Route | Primary response | Role |
-| --- | --- | --- |
-| `POST /api/scenario/load` | JSON | Load a provided `SimulationConfig` directly into a live `SimulationLoop`. |
-| `POST /api/scenario/load-draft` | HTML status badge | Compile the current `DraftState` and commit it to the engine. |
-| `GET /api/scenario/export` | Downloaded JSON file | Export the current draft through the schema boundary. |
-| `POST /api/scenario/import` | JSON | Validate uploaded JSON as `SimulationConfig` and reconstruct draft state. |
+## Simulation Lifecycle Control
 
-### `POST /api/scenario/load`
+The lifecycle endpoints (`/api/simulation/start`, `/pause`, `/step`, `/reset`, `/status`, `PUT /api/simulation/wind`, and `PUT /api/simulation/tick-rate`) operate on the active loop only. `start` controls background execution, `pause` toggles paused state, and `step` advances exactly one deterministic tick when the loop is not actively running. `reset` recreates the active loop from the loaded baseline scenario and should be interpreted as runtime control, not draft editing. `status` exposes current loop state including termination metadata and current live tick speed. Wind and tick-rate updates mutate live runtime parameters directly.
 
-This route accepts a validated `SimulationConfig` payload and constructs a live
-`SimulationLoop`. It is the direct machine-oriented path from external JSON into the engine.
+## Telemetry Export and UI Polling
 
-### `POST /api/scenario/load-draft`
+Telemetry routes separate bulk export from UI polling. Export endpoints under `/api/telemetry/export/*` provide CSV and NDJSON outputs for external analysis and use threadpool execution paths for CPU-heavy serialization work. UI polling endpoints (`/api/ui/tick`, `/api/ui/status-badge`, `/api/telemetry`, `/api/ui/cell-details`) support incremental rendering rather than archival transport.
 
-This route does **not** accept a configuration body. Instead, it calls `DraftState.build_sim_config()`
-on the current server-side draft and uses that result to instantiate a live `SimulationLoop`.
+`GET /api/ui/cell-details` is a key interface for temporal correctness. In live mode, it resolves current ECS/environment state. In draft mode, it returns preview details synthesized from builder state. With `expected_tick`, the route can return `409 Conflict` if the simulation has advanced, making stale reads explicit instead of silently inconsistent.
 
-Unlike `POST /api/scenario/load`, the current implementation returns an HTML status fragment because
-this route is primarily driven by the HTMX control center.
+## HTMX Partial Rendering and Builder Routes
 
-This route is one of the most important interface boundaries in PHIDS because it formalizes the
-transition from:
+PHIDS UI routes are intentionally server-rendered. View endpoints return HTML fragments for tab panes and partial replacement, while builder mutation endpoints under `/api/config/*`, `/api/matrices/diet`, and placement routes mutate draft state through `DraftService` and return refreshed partials from canonical server-side state. This architecture keeps validation and canonical state ownership on the server rather than distributing draft logic across browser-local state replicas.
 
-- **editable draft state**, to
-- **validated live runtime state**.
+## WebSocket Protocol Split
 
-### `GET /api/scenario/export`
+Two WebSocket channels exist by design. `WS /ws/simulation/stream` emits binary msgpack+zlib snapshots for compact machine transport and closes with policy code `1008` when no scenario is loaded. `WS /ws/ui/stream` emits lightweight JSON payloads tuned for UI rendering and emits on meaningful signature changes so pause/resume and termination transitions remain visible even when tick count does not change.
 
-This route serializes the current draft to JSON by first building a validated `SimulationConfig`.
-It therefore exports the draft through the same schema boundary used for live execution.
+The split is architectural: binary streaming prioritizes compact runtime serialization; UI streaming prioritizes low-friction browser paint and interaction.
 
-### `POST /api/scenario/import`
+## Error and State Transparency
 
-This route ingests uploaded JSON, validates it as `SimulationConfig`, then reconstructs a new
-`DraftState` from the imported data. In other words, import does not directly start a simulation;
-it repopulates the server-side builder state.
+Interface error semantics are intentionally explicit. Current examples include validation errors during scenario import and draft compilation, policy closure when simulation stream preconditions are unmet, and stale-read conflicts for cell inspection. This explicitness aligns with the project principle that state boundaries should be visible to operators and tooling.
 
-## 2. Simulation Lifecycle Control
+## Verification Anchors
 
-The live simulation can be controlled through explicit lifecycle endpoints:
+Current behavior is corroborated by `src/phids/api/main.py`, `src/phids/api/websockets/manager.py`, `src/phids/api/routers/`, `tests/test_api_routes.py`, and `tests/test_ui_routes.py`.
 
-| Route | Primary response | Current semantics |
-| --- | --- | --- |
-| `POST /api/simulation/start` | JSON or HTML badge | Start background execution, or resume from pause. |
-| `POST /api/simulation/pause` | JSON or HTML badge | Toggle pause/resume on the active loop. |
-| `POST /api/simulation/step` | JSON or HTML badge | Advance exactly one deterministic tick when not actively running. |
-| `POST /api/simulation/reset` | JSON or HTML badge | Recreate the live loop from the currently loaded baseline config. |
-| `GET /api/simulation/status` | JSON | Report tick, running, paused, terminated, and termination reason. |
-| `PUT /api/simulation/wind` | JSON | Mutate the live environment wind vector. |
-
-These routes operate on the currently loaded `SimulationLoop`.
-
-## Lifecycle Semantics
-
-### Start and pause
-
-`start` marks the loop as running, while `pause` toggles the paused flag. The runtime remains
-single-loop oriented: PHIDS is not currently a multi-simulation orchestration service.
-
-### Step
-
-`step` advances the simulation by exactly one deterministic tick. This route is especially useful
-for controlled observation, debugging, and interface-driven inspection workflows.
-
-### Reset
-
-`reset` rebuilds the simulation from the loaded scenario baseline. It is a runtime control action,
-not a draft mutation.
-
-### Status
-
-`status` reports live runtime state such as tick, running, paused, terminated, and termination
-reason.
-
-### Wind update
-
-`PUT /api/simulation/wind` updates the wind field of the current live environment. This is a direct
-runtime mutation rather than a draft mutation.
-
-## 3. Telemetry Export and Polling Surfaces
-
-PHIDS exposes telemetry through two distinct interaction styles.
-
-For the analytics and replay semantics behind these routes, see:
-
-- [`../telemetry/analytics-and-export-formats.md`](../telemetry/analytics-and-export-formats.md)
-- [`../telemetry/replay-and-termination-semantics.md`](../telemetry/replay-and-termination-semantics.md)
-
-### Download/export routes
-
-| Route | Response | Role |
-| --- | --- | --- |
-| `GET /api/telemetry/export/csv` | Downloaded CSV | Export telemetry for external analysis. |
-| `GET /api/telemetry/export/json` | Downloaded NDJSON | Export telemetry rows as line-delimited JSON. |
-
-These routes export the current loop’s telemetry dataframe in external analysis formats.
-
-Current implementation note: heavy export serialization paths are executed via
-`run_in_threadpool` in `src/phids/api/routers/telemetry.py` so CPU-bound
-pandas/matplotlib/TikZ generation does not block the asyncio event loop that also drives control
-endpoints and WebSocket streams.
-
-## 4. UI Polling and Inspection Helpers
-
-The UI uses lighter-weight polling endpoints such as:
-
-| Route | Response | Role |
-| --- | --- | --- |
-| `GET /api/ui/tick` | Plain text | Supply the current tick for HTMX updates. |
-| `GET /api/ui/status-badge` | HTML fragment | Render the current simulation status badge. |
-| `GET /api/telemetry` | HTML fragment | Render the inline telemetry chart partial. |
-| `GET /api/ui/cell-details` | JSON | Provide live or draft-preview tooltip details for one grid cell. |
-| `GET /api/config/placements/data` | JSON | Provide placement-editor canvas data and inferred root links. |
-
-These are not bulk export routes. They exist to drive incremental interface updates and localized
-inspection inside the control center.
-
-Telemetry chart polling is intentionally bounded on the browser side. The dashboard telemetry
-script keeps Chart.js instances alive and performs in-place dataset updates with a strict rolling
-window cap, avoiding full chart teardown/recreation loops and preventing unbounded client-memory
-growth during long runs.
-
-## `GET /api/ui/cell-details`
-
-This route is especially revealing of PHIDS’s interface philosophy.
-
-- When a live simulation exists, it reports **live ECS/environment state**.
-- When no live simulation exists, it reports a **draft preview** built from the current builder
-  configuration.
-- It also supports an `expected_tick` parameter and can return `409 Conflict` if the live
-  simulation advanced before the caller retrieved tooltip details.
-- In live mode, the payload now mirrors the dashboard's visible-substance semantics: it includes
-  both plant-owned runtime substances and local signal/toxin layer fallbacks when a concentration is
-  visible in the rendered snapshot.
-
-This design makes temporal mismatch explicit rather than silently returning stale detail data.
-
-## 5. UI Builder and Partial-Render Endpoints
-
-The PHIDS control center is server-rendered and HTMX-driven. Consequently, many routes do not
-return JSON at all; they return HTML fragments that replace portions of the page.
-
-Representative route groups include:
-
-The low-risk view routes are now registered through `src/phids/api/routers/ui.py`, while
-`src/phids/api/main.py` continues to own the mutable runtime helpers consumed by those view
-fragments.
-
-Builder mutation routes (`/api/config/*`, `/api/matrices/diet`, and placement CRUD) are now
-registered through `src/phids/api/routers/config.py` and invoke `DraftService`
-(`src/phids/api/services/draft_service.py`) to mutate `DraftState` until
-`POST /api/scenario/load-draft` commits a validated configuration into the live engine.
-
-Scenario ingress and simulation lifecycle routes are now registered through
-`src/phids/api/routers/simulation.py`, while asynchronous batch orchestration routes and persisted
-batch discovery are registered through `src/phids/api/routers/batch.py`.
-
-### View partials
-
-| Route family | Purpose |
-| --- | --- |
-| `/` | Render the full control-center shell. |
-| `/ui/dashboard` | Render the live dashboard partial. |
-| `/ui/biotope` | Render biotope configuration controls. |
-| `/ui/flora` | Render flora editing table. |
-| `/ui/predators` | Render predator editing table. |
-| `/ui/substances` | Render substance-definition editor. |
-| `/ui/diet-matrix` | Render predator/flora edibility matrix. |
-| `/ui/trigger-rules` and `/ui/trigger-matrix` | Render trigger-rule editing views. |
-| `/ui/placements` | Render placement editor and placement list. |
-| `/ui/diagnostics/*` | Render model, frontend, and backend diagnostics tabs. |
-
-### Draft mutation routes
-
-Representative examples include:
-
-| Route family | Current behavior |
-| --- | --- |
-| `POST /api/config/biotope` | Clamp and persist biotope parameters into `DraftState` through `DraftService`. |
-| `/api/config/flora` | Add, update, and delete flora species while compacting dependent ids. |
-| `/api/config/predators` | Add, update, and delete predator species while compacting dependent ids. |
-| `/api/config/substances` | Add, update, and delete named signal/toxin definitions while compacting surviving substance references. |
-| `POST /api/matrices/diet` | Update the predator-to-flora diet compatibility matrix through centralized `DraftService` cell mutation. |
-| `/api/config/trigger-rules` | Add, update, and delete trigger rules. |
-| `/api/config/trigger-rules/{index}/condition/*` | Create, patch, replace, or delete activation-condition tree nodes. |
-| `/api/config/placements/*` | Add, remove, and clear draft plant/swarm placements. |
-
-These endpoints call `DraftService` mutation procedures against `DraftState` and then return a
-fresh HTML partial rendered from canonical server-side state.
-
-## 6. WebSocket Streams
-
-PHIDS currently exposes two intentionally different WebSocket protocols.
-
-Transport-loop orchestration for both protocols is implemented in
-`src/phids/api/websockets/manager.py`, while `src/phids/api/main.py` retains endpoint registration
-and runtime-state ownership.
-
-### `WS /ws/simulation/stream`
-
-This stream sends full state snapshots as:
-
-- msgpack-serialized payloads,
-- compressed with zlib,
-- transmitted as binary frames.
-
-Its role is to expose the simulation as a compact machine-readable state stream.
-
-Important current behavior:
-
-- if no scenario is loaded, the socket is closed with code `1008`,
-- frames are emitted whenever the loop tick changes,
-- when the simulation terminates, a final state frame is sent before closure.
-
-### `WS /ws/ui/stream`
-
-This stream sends lightweight JSON intended for browser rendering. It is not a duplicate of the
-binary simulation stream.
-
-According to the current route docstring and implementation, messages include data such as:
-
-- plant-energy information,
-- swarm positions and populations,
-- tick state,
-- max-energy context for visualization.
-
-The implementation also only emits when the rendered state signature changes, so pause/resume and
-termination state changes are visible even when the tick count itself is unchanged.
-
-Its role is to support the canvas-based control-center view, not to serve as a full archival or
-analysis transport.
-
-## Why Two Streams Exist
-
-The difference between these streams is architectural, not accidental:
-
-- the binary stream is optimized for compact runtime transport,
-- the UI stream is optimized for low-friction browser rendering.
-
-This keeps the operator-facing canvas workflow lightweight while preserving a richer machine-facing
-stream for other consumers.
-
-## Error and State Semantics
-
-PHIDS favors explicit stateful responses over hidden fallback behavior.
-
-Examples in the current implementation include:
-
-- policy close on `/ws/simulation/stream` when no scenario is loaded,
-- `400` errors when draft export/load cannot build a valid config,
-- `422` on invalid imported JSON,
-- `409` on stale `expected_tick` reads for cell-detail inspection.
-
-This is consistent with the project’s general design philosophy: validation and state boundaries
-should be made visible to the operator rather than absorbed silently.
-
-## Verified Current-State Evidence
-
-The following sources confirm the behavior described in this chapter:
-
-- `src/phids/api/main.py`
-- `src/phids/api/websockets/manager.py`
-- `tests/test_api_routes.py`
-- `tests/test_ui_routes.py`
-
-## Where to Read Next
-
-- For the conceptual overview of interface ownership: `docs/interfaces/index.md`
-- For the draft-to-live transition: `docs/ui/draft-state-and-load-workflow.md`
-- For the HTMX builder structure: `docs/ui/htmx-partials-and-builder-routes.md`
+For complementary material, see `docs/ui/draft-state-and-load-workflow.md`, `docs/ui/htmx-partials-and-builder-routes.md`, and `docs/interfaces/index.md`.

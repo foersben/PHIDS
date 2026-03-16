@@ -340,6 +340,10 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
         wind_y=-0.5,
         num_signals=99,
         num_toxins=0,
+        z2_flora_species_extinction=99,
+        z4_predator_species_extinction=-5,
+        z6_max_total_flora_energy=-2.0,
+        z7_max_total_predator_population=-9,
         mycorrhizal_inter_species=True,
         mycorrhizal_connection_cost=-2.0,
         mycorrhizal_growth_interval_ticks=0,
@@ -354,6 +358,10 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     assert draft.wind_y == pytest.approx(-0.5)
     assert draft.num_signals == 16
     assert draft.num_toxins == 1
+    assert draft.z2_flora_species_extinction == 15
+    assert draft.z4_predator_species_extinction == -1
+    assert draft.z6_max_total_flora_energy == pytest.approx(-1.0)
+    assert draft.z7_max_total_predator_population == -1
     assert draft.mycorrhizal_inter_species is True
     assert draft.mycorrhizal_connection_cost == pytest.approx(0.0)
     assert draft.mycorrhizal_growth_interval_ticks == 1
@@ -551,6 +559,10 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
         TriggerRule(flora_species_id=0, predator_species_id=0, substance_id=99)
     )
     draft.mycorrhizal_growth_interval_ticks = 11
+    draft.z2_flora_species_extinction = 0
+    draft.z4_predator_species_extinction = 0
+    draft.z6_max_total_flora_energy = 123.0
+    draft.z7_max_total_predator_population = 77
 
     draft_service.add_plant_placement(draft, 0, 1, 2, 7.5)
     draft_service.add_swarm_placement(draft, 0, 3, 4, 6, 12.0)
@@ -561,6 +573,10 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
 
     config = cast(SimulationConfig, draft.build_sim_config())
     assert config.mycorrhizal_growth_interval_ticks == 11
+    assert config.z2_flora_species_extinction == 0
+    assert config.z4_predator_species_extinction == 0
+    assert config.z6_max_total_flora_energy == pytest.approx(123.0)
+    assert config.z7_max_total_predator_population == 77
     assert len(config.flora_species[0].triggers) == 1
     assert config.initial_plants[0].x == 2
     assert config.initial_swarms[0].population == 4

@@ -1,10 +1,8 @@
 # Development and Documentation Standards
 
-This section governs how PHIDS should be extended without violating its scientific or
-architectural commitments.
+This section defines how PHIDS should be extended, reviewed, validated, and documented without eroding the scientific and architectural constraints that give the simulator its value. It is written for contributors who need more than a command list: it explains how repository workflow, testing policy, documentation discipline, and release practice all reinforce the same requirement of methodological integrity.
 
-It is written for contributors who need to understand not only *how to run checks*, but also *how
-to make changes without breaking the simulator’s methodological guarantees*.
+In practical terms, the development documentation translates project principles into day-to-day engineering behavior. It clarifies which changes demand benchmark attention, how draft and live state boundaries affect UI work, why strict documentation builds are part of the delivery contract, and how contributors should choose between scientific formal writing and operational prose. The goal is not only to help contributors make the repository pass checks, but to help them make changes that remain compatible with PHIDS as a reproducible scientific software system.
 
 ## Canonical Development Chapter
 

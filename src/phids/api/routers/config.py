@@ -40,6 +40,10 @@ async def config_biotope(
     wind_y: Annotated[float, Form()] = 0.0,
     num_signals: Annotated[int, Form()] = 4,
     num_toxins: Annotated[int, Form()] = 4,
+    z2_flora_species_extinction: Annotated[int, Form()] = -1,
+    z4_predator_species_extinction: Annotated[int, Form()] = -1,
+    z6_max_total_flora_energy: Annotated[float, Form()] = -1.0,
+    z7_max_total_predator_population: Annotated[int, Form()] = -1,
     mycorrhizal_inter_species: Annotated[str, Form()] = "off",
     mycorrhizal_connection_cost: Annotated[float, Form()] = 1.0,
     mycorrhizal_growth_interval_ticks: Annotated[int, Form()] = 8,
@@ -57,6 +61,11 @@ async def config_biotope(
         wind_y: Uniform wind y-component.
         num_signals: Signal layer count.
         num_toxins: Toxin layer count.
+        z2_flora_species_extinction: Flora species id for Z2 termination (-1 disables).
+        z4_predator_species_extinction: Predator species id for Z4 termination (-1 disables).
+        z6_max_total_flora_energy: Total flora energy threshold for Z6 termination (-1 disables).
+        z7_max_total_predator_population: Predator population threshold for Z7 termination
+            (-1 disables).
         mycorrhizal_inter_species: Inter-species root-link toggle.
         mycorrhizal_connection_cost: Root-link energy cost.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.
@@ -76,13 +85,17 @@ async def config_biotope(
         wind_y=wind_y,
         num_signals=num_signals,
         num_toxins=num_toxins,
+        z2_flora_species_extinction=z2_flora_species_extinction,
+        z4_predator_species_extinction=z4_predator_species_extinction,
+        z6_max_total_flora_energy=z6_max_total_flora_energy,
+        z7_max_total_predator_population=z7_max_total_predator_population,
         mycorrhizal_inter_species=mycorrhizal_inter_species == "on",
         mycorrhizal_connection_cost=mycorrhizal_connection_cost,
         mycorrhizal_growth_interval_ticks=mycorrhizal_growth_interval_ticks,
         mycorrhizal_signal_velocity=mycorrhizal_signal_velocity,
     )
     api_main.logger.debug(
-        "Draft biotope updated (grid=%dx%d, max_ticks=%d, tick_rate_hz=%.2f, wind=(%.3f, %.3f), signals=%d, toxins=%d, mycorrhiza_interval=%d)",
+        "Draft biotope updated (grid=%dx%d, max_ticks=%d, tick_rate_hz=%.2f, wind=(%.3f, %.3f), signals=%d, toxins=%d, z2=%d, z4=%d, z6=%.3f, z7=%d, mycorrhiza_interval=%d)",
         draft.grid_width,
         draft.grid_height,
         draft.max_ticks,
@@ -91,6 +104,10 @@ async def config_biotope(
         draft.wind_y,
         draft.num_signals,
         draft.num_toxins,
+        draft.z2_flora_species_extinction,
+        draft.z4_predator_species_extinction,
+        draft.z6_max_total_flora_energy,
+        draft.z7_max_total_predator_population,
         draft.mycorrhizal_growth_interval_ticks,
     )
     if values_were_clamped:
@@ -101,6 +118,17 @@ async def config_biotope(
             draft.grid_width,
             draft.grid_height,
         )
+
+    # Keep live runtime wind synchronized with draft edits when a simulation loop exists,
+    # so users can observe wind effects without forcing an explicit draft reload.
+    if api_main._sim_loop is not None:
+        api_main._sim_loop.update_wind(draft.wind_x, draft.wind_y)
+        api_main.logger.debug(
+            "Live loop wind synchronized from draft biotope update (vx=%.3f, vy=%.3f)",
+            draft.wind_x,
+            draft.wind_y,
+        )
+
     return api_main.templates.TemplateResponse(
         request,
         "partials/biotope_config.html",

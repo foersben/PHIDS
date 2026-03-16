@@ -1,9 +1,8 @@
 # Telemetry and Replay
 
-PHIDS is designed not only to execute ecological simulations but also to preserve them as
-inspectable analytical artifacts. The telemetry layer turns each completed tick into a compact
-research record: a summary metric row, a serializable environment snapshot, and an interpretable
-termination state.
+PHIDS is designed not only to execute ecological simulations but also to preserve them as inspectable analytical artifacts. The telemetry layer converts each completed tick into three complementary records: a compact summary row for comparative analysis, a serializable environment snapshot for deterministic reinspection, and a termination interpretation that explains why the run continued or stopped. Together, these records transform a simulation from an ephemeral runtime process into a structured experimental trace.
+
+This section introduces telemetry and replay as the analytical memory of PHIDS. It explains why summary metrics and state snapshots are both necessary, how their ordering inside `SimulationLoop.step()` affects interpretation, and why termination metadata belongs to the scientific outcome rather than merely to runtime control. The result is a documentation entry point for readers who need to understand not only what PHIDS computes, but also how those computations are preserved, exported, and compared across runs.
 
 ## Telemetry as a Scientific Interface
 

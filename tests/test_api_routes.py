@@ -24,6 +24,7 @@ def test_required_routes_present() -> None:
     assert "/api/simulation/pause" in paths
     assert "/api/simulation/step" in paths
     assert "/api/simulation/reset" in paths
+    assert "/api/simulation/tick-rate" in paths
     assert "/" in paths
     assert "/ui/dashboard" in paths
     assert "/ui/diagnostics/frontend" in paths

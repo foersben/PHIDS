@@ -97,8 +97,11 @@ async def test_root_returns_full_html() -> None:
     assert 'id="main-workspace"' in resp.text
     assert 'id="diagnostics-rail"' in resp.text
     assert 'id="diagnostics-content"' in resp.text
+    assert 'id="draft-save-indicator"' in resp.text
     assert "phidsUploadScenario" in resp.text
     assert "/api/scenario/load-draft" in resp.text
+    assert "/api/simulation/tick-rate" in resp.text
+    assert 'hx-include="#biotope-config-view form"' in resp.text
 
 
 @pytest.mark.asyncio
@@ -270,6 +273,10 @@ async def test_simulation_control_and_live_export_routes_cover_status_filters_an
     async with _default_client() as client:
         load_resp = await client.post("/api/scenario/load", json=config.model_dump())
         status_resp = await client.get("/api/simulation/status")
+        tick_rate_resp = await client.put(
+            "/api/simulation/tick-rate",
+            data={"tick_rate_hz": 22.5},
+        )
         wind_resp = await client.put("/api/simulation/wind", json={"wind_x": 1.25, "wind_y": -0.5})
         step_resp = await client.post("/api/simulation/step")
         csv_resp = await client.get("/api/telemetry/export/csv")
@@ -297,6 +304,9 @@ async def test_simulation_control_and_live_export_routes_cover_status_filters_an
     assert pending_load_task.cancelled()
     assert status_resp.status_code == 200
     assert status_resp.json()["tick"] == 0
+    assert status_resp.json()["tick_rate_hz"] == pytest.approx(10.0)
+    assert tick_rate_resp.status_code == 200
+    assert tick_rate_resp.json()["tick_rate_hz"] == pytest.approx(22.5)
     assert wind_resp.status_code == 200
     assert wind_resp.json()["wind_x"] == 1.25
     assert step_resp.status_code == 200
@@ -1113,6 +1123,10 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
                 "wind_y": 0.0,
                 "num_signals": 4,
                 "num_toxins": 4,
+                "z2_flora_species_extinction": 99,
+                "z4_predator_species_extinction": -3,
+                "z6_max_total_flora_energy": -9,
+                "z7_max_total_predator_population": -2,
                 "mycorrhizal_connection_cost": 1.0,
                 "mycorrhizal_growth_interval_ticks": 0,
                 "mycorrhizal_signal_velocity": 1,
@@ -1122,7 +1136,99 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
     assert resp.status_code == 200
     assert 'name="mycorrhizal_growth_interval_ticks"' in resp.text
     assert 'value="1"' in resp.text
+    assert 'name="z2_flora_species_extinction"' in resp.text
+    assert 'name="z4_predator_species_extinction"' in resp.text
+    assert 'name="z6_max_total_flora_energy"' in resp.text
+    assert 'name="z7_max_total_predator_population"' in resp.text
+    assert 'hx-trigger="input changed delay:200ms from:input, change delay:200ms"' in resp.text
     assert get_draft().mycorrhizal_growth_interval_ticks == 1
+    assert get_draft().z2_flora_species_extinction == 15
+    assert get_draft().z4_predator_species_extinction == -1
+    assert get_draft().z6_max_total_flora_energy == pytest.approx(-1.0)
+    assert get_draft().z7_max_total_predator_population == -1
+
+
+@pytest.mark.asyncio
+async def test_biotope_wind_update_auto_applies_to_loaded_live_loop() -> None:
+    """Ensures draft wind edits synchronize immediately to a loaded simulation loop."""
+    api_main._sim_loop = SimulationLoop(get_draft().build_sim_config())
+
+    async with _default_client() as client:
+        resp = await client.post(
+            "/api/config/biotope",
+            data={
+                "grid_width": 40,
+                "grid_height": 40,
+                "max_ticks": 1000,
+                "tick_rate_hz": 10.0,
+                "wind_x": 1.75,
+                "wind_y": -0.25,
+                "num_signals": 4,
+                "num_toxins": 4,
+                "z2_flora_species_extinction": -1,
+                "z4_predator_species_extinction": -1,
+                "z6_max_total_flora_energy": -1.0,
+                "z7_max_total_predator_population": -1,
+                "mycorrhizal_connection_cost": 1.0,
+                "mycorrhizal_growth_interval_ticks": 8,
+                "mycorrhizal_signal_velocity": 1,
+            },
+        )
+
+    assert resp.status_code == 200
+    assert api_main._sim_loop is not None
+    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(1.75)
+    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(-0.25)
+
+
+@pytest.mark.asyncio
+async def test_load_draft_commits_pending_biotope_form_values_from_control_request() -> None:
+    """Ensures load-draft applies included pending biotope values instead of stale draft state."""
+    async with _default_client() as client:
+        resp = await client.post(
+            "/api/scenario/load-draft",
+            headers={"HX-Request": "true"},
+            data={
+                "wind_x": 2.25,
+                "wind_y": -1.5,
+                "tick_rate_hz": 13.0,
+            },
+        )
+
+    assert resp.status_code == 200
+    assert api_main._sim_loop is not None
+    assert get_draft().wind_x == pytest.approx(2.25)
+    assert get_draft().wind_y == pytest.approx(-1.5)
+    assert get_draft().tick_rate_hz == pytest.approx(13.0)
+    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(2.25)
+    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(-1.5)
+    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(13.0)
+
+
+@pytest.mark.asyncio
+async def test_start_commits_pending_biotope_form_values_before_running() -> None:
+    """Ensures start applies included pending biotope values before entering run state."""
+    api_main._sim_loop = SimulationLoop(get_draft().build_sim_config())
+
+    async with _default_client() as client:
+        resp = await client.post(
+            "/api/simulation/start",
+            headers={"HX-Request": "true"},
+            data={
+                "wind_x": 1.1,
+                "wind_y": 0.6,
+                "tick_rate_hz": 7.5,
+            },
+        )
+
+    assert resp.status_code == 200
+    assert api_main._sim_loop is not None
+    assert get_draft().wind_x == pytest.approx(1.1)
+    assert get_draft().wind_y == pytest.approx(0.6)
+    assert get_draft().tick_rate_hz == pytest.approx(7.5)
+    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(1.1)
+    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(0.6)
+    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(7.5)
 
 
 @pytest.mark.asyncio

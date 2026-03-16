@@ -142,6 +142,8 @@ class SimulationLoop:
                 seed_min_dist=params.seed_min_dist,
                 seed_max_dist=params.seed_max_dist,
                 seed_energy_cost=params.seed_energy_cost,
+                seed_drop_height=params.seed_drop_height,
+                seed_terminal_velocity=params.seed_terminal_velocity,
                 camouflage=params.camouflage,
                 camouflage_factor=params.camouflage_factor,
             )
@@ -489,11 +491,11 @@ class SimulationLoop:
 
         The loop respects ``paused`` and sleeps to maintain ``tick_rate_hz``.
         """
-        tick_interval = 1.0 / self.config.tick_rate_hz
         self.start()
         logger.info("Simulation run loop entering background execution")
 
         while self.running and not self.terminated:
+            tick_interval = 1.0 / max(0.1, self.config.tick_rate_hz)
             if self.paused:
                 await asyncio.sleep(tick_interval)
                 continue
@@ -512,6 +514,20 @@ class SimulationLoop:
             self.terminated,
             self.termination_reason,
         )
+
+    def update_tick_rate(self, tick_rate_hz: float) -> float:
+        """Update live simulation tick speed while preserving safe lower bounds.
+
+        Args:
+            tick_rate_hz: Requested simulation ticks per second.
+
+        Returns:
+            Applied tick-rate value after clamping.
+        """
+        applied = max(0.1, float(tick_rate_hz))
+        self.config.tick_rate_hz = applied
+        logger.info("Simulation tick rate updated to %.2f Hz", applied)
+        return applied
 
     # ------------------------------------------------------------------
     # Wind update (REST API integration point)

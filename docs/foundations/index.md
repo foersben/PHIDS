@@ -1,8 +1,8 @@
 # Foundations
 
-This section frames PHIDS as a deterministic scientific model rather than only a software
-artifact. Its purpose is to define the ecological abstractions, state variables, and
-methodological constraints that shape every implementation decision.
+This section frames PHIDS as a deterministic scientific model rather than only a software artifact. Its purpose is to define the conceptual vocabulary, ecological abstractions, and methodological constraints that give the simulator interpretive coherence. In PHIDS, architecture is not separable from scientific meaning: decisions about bounded memory, spatial locality, double-buffered fields, and schema validation all shape the class of ecological phenomena the model is able to express.
+
+The foundational pages should therefore be read as the conceptual preface to the rest of the documentation corpus. They specify how terms such as scenario, live runtime, trigger rule, and double buffering are used; they explain why deterministic phase ordering is a scientific commitment rather than merely an engineering convenience; and they establish the boundary between supported interpretation and over-interpretation. Without this layer, the engine and interface chapters would remain technically correct but conceptually under-motivated.
 
 ## Current Focus
 

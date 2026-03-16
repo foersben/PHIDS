@@ -15,6 +15,10 @@ theme:
 
 plugins:
   - search
+  - kroki:
+      server_url: https://kroki.io
+      fence_prefix: ""
+      enable_mermaid: false
   - mkdocstrings:
       handlers:
         python:
@@ -25,14 +29,22 @@ markdown_extensions:
   - attr_list
   - pymdownx.highlight
   - pymdownx.inlinehilite
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 
+extra_css:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css
+
 extra_javascript:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js
   - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
+  - javascripts/katex.js
   - javascripts/mermaid.js
 
 nav:
@@ -51,6 +63,7 @@ nav:
       - Lifecycle: engine/lifecycle.md
       - Interaction: engine/interaction.md
       - Signaling and Substance Lifecycle: engine/signaling.md
+      - Formal Algorithmic Model: engine/formal-algorithmic-model.md
   - Interfaces:
       - Overview: interfaces/index.md
       - REST and WebSocket Surfaces: interfaces/rest-and-websocket-surfaces.md
@@ -71,6 +84,7 @@ nav:
   - Development:
       - Overview: development/index.md
       - Contribution Workflow and Quality Gates: development/contribution-workflow-and-quality-gates.md
+      - Scientific Authoring Workflow: development/scientific-authoring-workflow.md
       - Documentation Status and Open Work: development/documentation-status-and-open-work.md
       - GitHub Actions and Local CI Rehearsal: development/github-actions-and-local-ci.md
       - Containers and Release Automation: development/containers-and-release-automation.md

@@ -1,7 +1,8 @@
 # UI Control Center
 
-The PHIDS UI is a server-rendered control center rather than a client-side single-page
-application. This is a deliberate architectural choice.
+The PHIDS UI is a server-rendered control center rather than a client-side single-page application. This is a deliberate architectural choice that shapes not only implementation details, but also how scenarios are authored, inspected, and promoted into live execution. The interface is designed as a scientific workbench in which server-owned draft state, validated route handlers, and focused browser-side rendering cooperate without diffusing authority across multiple state replicas.
+
+This section introduces that control-center model and its major surfaces. It explains why the browser is not the source of truth, how HTMX and Jinja support incremental interaction without abandoning server authorship, and how live observation, draft editing, and diagnostics are integrated into one coherent operator workflow.
 
 ## Core Principle
 

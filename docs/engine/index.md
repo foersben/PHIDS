@@ -1,9 +1,8 @@
 # Engine
 
-The PHIDS engine is a deterministic tick machine implemented around `SimulationLoop.step()`.
-Each tick advances a shared ecological state through a fixed sequence of transformations. This
-ordered execution is the operational heart of the simulator: it is where biological assumptions,
-data-oriented constraints, and performance rules become a concrete runtime.
+The PHIDS engine is a deterministic ecological state-transition machine organized around `SimulationLoop.step()`. Its central task is to transform a coupled world of discrete organisms and continuous environmental fields through a fixed, reproducible sequence of operators. In scientific terms, the engine is the executable hypothesis layer of PHIDS: it is the place where assumptions about plant growth, trophic interaction, induced defense, diffusion, and termination are converted into explicit numerical and structural rules.
+
+This chapter serves as the architectural introduction to that runtime. It explains how `SimulationLoop`, `ECSWorld`, and `GridEnvironment` divide responsibility, why phase ordering is scientifically consequential rather than stylistic, and how the project's non-negotiable constraints—double-buffering, O(1) spatial lookups, vectorized field state, and bounded memory—shape the class of ecological behavior the simulator can express. The engine should therefore be read not as an undifferentiated code path, but as a controlled computational apparatus whose phase structure defines the causal grammar of every PHIDS experiment.
 
 ## Execution Model Overview
 

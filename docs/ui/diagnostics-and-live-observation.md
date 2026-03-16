@@ -1,10 +1,8 @@
 # Diagnostics and Live Observation
 
-The PHIDS control center provides a multi-layered observation surface for understanding the state
-of a running simulation at every level of abstraction: from coarse-grained aggregate counters to
-per-cell local inspection of chemical concentrations, mycorrhizal links, and individual swarm
-energetics. This chapter documents all runtime observation modes, the underlying endpoint semantics,
-and the architectural invariants that keep diagnostic data trustworthy even under high tick rates.
+The PHIDS control center provides a multi-layered observation surface for understanding simulation state from several complementary vantage points at once. A user can watch the global biotope evolve through canvas overlays, inspect a single cell for detailed local state, and monitor model and infrastructure health through diagnostic panels. These capabilities are not ornamental interface features; they are the practical observability layer through which a deterministic simulation becomes interpretable during execution.
+
+This chapter documents the live observation surfaces as an integrated operational system. It explains how browser-oriented WebSocket streaming differs from binary simulation transport, how cell-detail inspection guards against stale reads, how the diagnostics rail exposes model and backend status, and how draft-versus-live boundaries affect what each endpoint is allowed to report. The focus is practical clarity: an operator should be able to understand which surface answers which question, and a contributor should be able to trace those surfaces back to their governing modules and invariants.
 
 ## Observation Modes Overview
 
@@ -20,6 +18,8 @@ The control center distinguishes three operationally distinct observation modes:
 These modes are complementary. Canvas streaming answers *where* and *what is happening across the
 grid*; cell-detail inspection answers *why* at a specific location; the diagnostics rail answers
 *how healthy is the overall simulation*.
+
+Live cadence can be adjusted directly from the dashboard toolbar via the tick-speed control (`PUT /api/simulation/tick-rate`), allowing operators to slow or accelerate observation without reloading the active scenario.
 
 ---
 
