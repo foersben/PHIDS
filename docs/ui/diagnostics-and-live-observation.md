@@ -233,10 +233,11 @@ not merely operational monitoring:
 
 ## Relevant Source Modules
 
-- `src/phids/api/main.py` — all observation endpoints
-  (`_build_live_dashboard_payload`, `_build_live_cell_details`, `_build_preview_cell_details`,
-  `_build_live_summary`, `_build_energy_deficit_swarms`, `ui_diagnostics_model`,
+- `src/phids/api/main.py` — observation endpoints and runtime summaries
+  (`_build_live_summary`, `_build_energy_deficit_swarms`, `ui_diagnostics_model`,
   `ui_diagnostics_backend`, `ui_diagnostics_frontend`, `ui_stream`, `simulation_stream`)
+- `src/phids/api/presenters/dashboard.py` — dashboard/cell payload assemblers
+  (`build_live_dashboard_payload`, `build_live_cell_details`, `build_preview_cell_details`)
 - `src/phids/api/templates/partials/diagnostics_model.html`
 - `src/phids/api/templates/partials/diagnostics_backend.html`
 - `src/phids/api/templates/partials/diagnostics_frontend.html`

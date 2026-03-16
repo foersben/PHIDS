@@ -18,6 +18,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 import phids.api.main as api_main
+from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import SubstanceDefinition, get_draft
@@ -793,7 +794,7 @@ async def placement_data() -> JSONResponse:
         {"species_id": getattr(pp, "species_id", i), "name": getattr(pp, "name", f"Pred {i}")}
         for i, pp in enumerate(draft.predator_species)
     ]
-    mycorrhizal_links = api_main._build_draft_mycorrhizal_links(draft)
+    mycorrhizal_links = build_draft_mycorrhizal_links(draft)
     return JSONResponse(
         content={
             "plants": plants,

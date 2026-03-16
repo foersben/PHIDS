@@ -15,6 +15,10 @@ from starlette.requests import Request
 
 from phids.api import main as api_main
 from phids.api.main import app
+from phids.api.presenters.dashboard import (
+    build_draft_mycorrhizal_links,
+    validate_cell_coordinates,
+)
 from phids.api.services.draft_service import DraftService
 from phids.api.schemas import (
     DietCompatibilityMatrix,
@@ -199,16 +203,16 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     with pytest.raises(HTTPException):
         api_main._trigger_rule_by_index(draft, 3)
 
-    api_main._validate_cell_coordinates(1, 1, 3, 3)
+    validate_cell_coordinates(1, 1, 3, 3)
     with pytest.raises(HTTPException):
-        api_main._validate_cell_coordinates(5, 1, 3, 3)
+        validate_cell_coordinates(5, 1, 3, 3)
 
     draft.initial_plants = []
     draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
     draft_service.add_plant_placement(draft, 1, 2, 1, 10.0)
-    assert api_main._build_draft_mycorrhizal_links(draft) == []
+    assert build_draft_mycorrhizal_links(draft) == []
     draft.mycorrhizal_inter_species = True
-    assert api_main._build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
+    assert build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
 
     request = Request({"type": "http", "headers": [(b"hx-request", b"true")]})
     assert api_main._is_htmx_request(request) is True

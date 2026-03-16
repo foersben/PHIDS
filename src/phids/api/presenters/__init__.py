@@ -16,13 +16,17 @@ without requiring a running FastAPI application.
 """
 
 from phids.api.presenters.dashboard import (
+    build_draft_mycorrhizal_links,
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    validate_cell_coordinates,
 )
 
 __all__ = [
+    "build_draft_mycorrhizal_links",
     "build_live_cell_details",
     "build_live_dashboard_payload",
     "build_preview_cell_details",
+    "validate_cell_coordinates",
 ]

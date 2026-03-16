@@ -182,7 +182,7 @@ def _describe_activation_condition(
     return f"({joiner.join(rendered)})"
 
 
-def _validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
+def validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
     """Validate that (x, y) lies within the configured grid bounds.
 
     This guard is applied at the entry point of both live and draft cell-detail
@@ -210,7 +210,7 @@ def _validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
+def build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
     """Infer potential mycorrhizal root links from adjacent draft plant placements.
 
     The mycorrhizal network in PHIDS is modelled as a graph of Manhattan-adjacent
@@ -309,7 +309,7 @@ def _links_touching_cell(links: list[dict[str, Any]], x: int, y: int) -> list[di
 
     Args:
         links: Serialised link records as produced by :func:`_build_live_mycorrhizal_links`
-            or :func:`_build_draft_mycorrhizal_links`.
+            or :func:`build_draft_mycorrhizal_links`.
         x: Target column index.
         y: Target row index.
 
@@ -576,7 +576,7 @@ def build_live_cell_details(
 
     env = loop.env
     world = loop.world
-    _validate_cell_coordinates(x, y, env.width, env.height)
+    validate_cell_coordinates(x, y, env.width, env.height)
 
     flora_names = {species.species_id: species.name for species in loop.config.flora_species}
     predator_names = {species.species_id: species.name for species in loop.config.predator_species}
@@ -802,7 +802,7 @@ def build_preview_cell_details(
     Raises:
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the draft grid bounds.
     """
-    _validate_cell_coordinates(x, y, draft.grid_width, draft.grid_height)
+    validate_cell_coordinates(x, y, draft.grid_width, draft.grid_height)
 
     flora_names = {
         getattr(species, "species_id", index): getattr(species, "name", f"Flora {index}")
@@ -826,7 +826,7 @@ def build_preview_cell_details(
     for rule in draft.trigger_rules:
         rules_by_flora.setdefault(rule.flora_species_id, []).append(rule)
 
-    preview_links = _build_draft_mycorrhizal_links(draft)
+    preview_links = build_draft_mycorrhizal_links(draft)
     touching_links = _links_touching_cell(preview_links, x, y)
 
     plants: list[dict[str, Any]] = []

@@ -43,7 +43,6 @@ import pytest
 from fastapi import HTTPException
 
 from phids.api.presenters.dashboard import (
-    _build_draft_mycorrhizal_links,
     _default_substance_name,
     _describe_activation_condition,
     _fallback_live_substance_payload,
@@ -51,10 +50,11 @@ from phids.api.presenters.dashboard import (
     _links_touching_cell,
     _live_substance_state_payload,
     _serialize_live_substance,
-    _validate_cell_coordinates,
+    build_draft_mycorrhizal_links,
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    validate_cell_coordinates,
 )
 from phids.api.services.draft_service import DraftService
 from phids.api.schemas import (
@@ -146,7 +146,7 @@ def _reset_draft_state() -> None:
 
 
 # ---------------------------------------------------------------------------
-# _validate_cell_coordinates
+# validate_cell_coordinates
 # ---------------------------------------------------------------------------
 
 
@@ -157,9 +157,9 @@ def test_validate_cell_coordinates_accepts_valid_cell() -> None:
     without exception.  This invariant prevents false positives from the guard that would
     otherwise deny valid cell lookups into NumPy environmental layers.
     """
-    _validate_cell_coordinates(0, 0, 8, 8)
-    _validate_cell_coordinates(7, 7, 8, 8)
-    _validate_cell_coordinates(3, 5, 8, 8)
+    validate_cell_coordinates(0, 0, 8, 8)
+    validate_cell_coordinates(7, 7, 8, 8)
+    validate_cell_coordinates(3, 5, 8, 8)
 
 
 def test_validate_cell_coordinates_rejects_out_of_bounds() -> None:
@@ -170,14 +170,14 @@ def test_validate_cell_coordinates_rejects_out_of_bounds() -> None:
     must produce a 404 response rather than a silent NumPy index wrap or error.
     """
     with pytest.raises(HTTPException) as exc_info:
-        _validate_cell_coordinates(8, 0, 8, 8)
+        validate_cell_coordinates(8, 0, 8, 8)
     assert exc_info.value.status_code == 404
 
     with pytest.raises(HTTPException):
-        _validate_cell_coordinates(0, 8, 8, 8)
+        validate_cell_coordinates(0, 8, 8, 8)
 
     with pytest.raises(HTTPException):
-        _validate_cell_coordinates(-1, 0, 8, 8)
+        validate_cell_coordinates(-1, 0, 8, 8)
 
 
 # ---------------------------------------------------------------------------
@@ -299,7 +299,7 @@ def test_live_substance_state_payload_state_machine(
 
 
 # ---------------------------------------------------------------------------
-# _build_draft_mycorrhizal_links
+# build_draft_mycorrhizal_links
 # ---------------------------------------------------------------------------
 
 
@@ -313,7 +313,7 @@ def test_build_draft_mycorrhizal_links_empty_when_not_adjacent() -> None:
     draft = DraftState.default()
     draft_service.add_plant_placement(draft, 0, 0, 0, 10.0)
     draft_service.add_plant_placement(draft, 0, 3, 3, 10.0)
-    assert _build_draft_mycorrhizal_links(draft) == []
+    assert build_draft_mycorrhizal_links(draft) == []
 
 
 def test_build_draft_mycorrhizal_links_adjacent_same_species() -> None:
@@ -326,7 +326,7 @@ def test_build_draft_mycorrhizal_links_adjacent_same_species() -> None:
     draft = DraftState.default()
     draft_service.add_plant_placement(draft, 0, 2, 2, 10.0)
     draft_service.add_plant_placement(draft, 0, 2, 3, 10.0)
-    links = _build_draft_mycorrhizal_links(draft)
+    links = build_draft_mycorrhizal_links(draft)
     assert len(links) == 1
     assert links[0]["inter_species"] is False
 
@@ -343,10 +343,10 @@ def test_build_draft_mycorrhizal_links_inter_species_gated_by_flag() -> None:
     draft_service.add_plant_placement(draft, 1, 2, 3, 10.0)
 
     draft.mycorrhizal_inter_species = False
-    assert _build_draft_mycorrhizal_links(draft) == []
+    assert build_draft_mycorrhizal_links(draft) == []
 
     draft.mycorrhizal_inter_species = True
-    links = _build_draft_mycorrhizal_links(draft)
+    links = build_draft_mycorrhizal_links(draft)
     assert len(links) == 1
     assert links[0]["inter_species"] is True
 

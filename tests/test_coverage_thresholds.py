@@ -1,8 +1,8 @@
-"""Coverage reinforcement tests for API shims and telemetry export branches.
+"""Coverage reinforcement tests for presenter helpers and telemetry export branches.
 
 This module adds targeted regression checks for branches that are operationally important
 but historically under-exercised by broad integration tests. The hypotheses validate that
-legacy API compatibility shims in ``phids.api.main`` preserve deterministic behavior, and that
+dashboard presenter helpers preserve deterministic behavior, and that
 telemetry export endpoints handle both nominal and failure conditions with explicit HTTP
 semantics. These checks improve statistical confidence that operator-facing analytical
 surfaces remain stable under edge-case parameterizations and absent-runtime states.
@@ -16,6 +16,11 @@ from httpx import ASGITransport, AsyncClient
 
 from phids.api import main as api_main
 from phids.api.main import app
+from phids.api.presenters.dashboard import (
+    build_live_cell_details,
+    build_live_dashboard_payload,
+    build_preview_cell_details,
+)
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
@@ -132,12 +137,11 @@ def test_main_default_activation_condition_and_trigger_index_branches() -> None:
     assert not_found.value.status_code == 404
 
 
-def test_main_compatibility_shims_status_badge_and_energy_deficit() -> None:
-    """Exercise legacy presenter shims and status/energy helper branches.
+def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
+    """Exercise presenter payload helpers and status/energy helper branches.
 
-    Compatibility wrappers in ``phids.api.main`` remain public test and integration surfaces.
-    The test verifies that these wrappers return structurally valid payloads and that swarm
-    energy-deficit ranking excludes satiated swarms while retaining stressed ones.
+    The test verifies that presenter payload builders return structurally valid dictionaries
+    and that swarm energy-deficit ranking excludes satiated swarms while retaining stressed ones.
     """
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
@@ -151,9 +155,14 @@ def test_main_compatibility_shims_status_badge_and_energy_deficit() -> None:
         if swarm.x == 3 and swarm.y == 3:
             swarm.energy = 0.0
 
-    live_cell = api_main._build_live_cell_details(loop, 2, 2)
-    preview_cell = api_main._build_preview_cell_details(2, 2)
-    dashboard = api_main._build_live_dashboard_payload(loop)
+    live_cell = build_live_cell_details(loop, 2, 2, substance_names=api_main._sim_substance_names)
+    preview_cell = build_preview_cell_details(
+        2,
+        2,
+        draft=get_draft(),
+        substance_names=api_main._sim_substance_names,
+    )
+    dashboard = build_live_dashboard_payload(loop, substance_names=api_main._sim_substance_names)
 
     assert live_cell["mode"] == "live"
     assert preview_cell["mode"] == "draft"

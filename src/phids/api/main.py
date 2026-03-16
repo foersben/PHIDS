@@ -2,9 +2,8 @@
 
 This module defines the canonical PHIDS application object and the mutable singleton references that
 bind operator actions to a live ``SimulationLoop`` instance. The implementation mediates the
-transition between draft-state configuration and executable simulation state, exposes compatibility
-helpers consumed by existing test and template surfaces, and wires router modules that partition
-control, telemetry, and builder responsibilities. WebSocket transport loops are delegated to
+transition between draft-state configuration and executable simulation state, and wires router modules
+that partition control, telemetry, and builder responsibilities. WebSocket transport loops are delegated to
 dedicated manager classes, while this module retains ownership of endpoint registration and runtime
 state access.
 
@@ -18,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from functools import partial
 import json
 import logging
 import pathlib
@@ -39,6 +39,11 @@ from phids.api.schemas import (
     SimulationConfig,
 )
 from phids.api.routers.batch import router as batch_router
+from phids.api.presenters.dashboard import (
+    build_live_cell_details,
+    build_live_dashboard_payload,
+    build_preview_cell_details,
+)
 from phids.api.routers.simulation import router as simulation_router
 from phids.api.routers.config import router as config_router
 from phids.api.routers.telemetry import router as telemetry_router
@@ -214,12 +219,11 @@ def _set_simulation_substance_names(
         config: Validated simulation configuration currently associated with the live loop.
         draft: Optional draft source of canonical user-specified substance labels.
     """
-    global _sim_substance_names  # noqa: PLW0603
-
     if draft is not None:
-        _sim_substance_names = {
-            definition.substance_id: definition.name for definition in draft.substance_definitions
-        }
+        _sim_substance_names.clear()
+        _sim_substance_names.update(
+            {definition.substance_id: definition.name for definition in draft.substance_definitions}
+        )
         return
 
     derived_names: dict[int, str] = {}
@@ -232,7 +236,8 @@ def _set_simulation_substance_names(
                     is_toxin=trigger.is_toxin,
                 ),
             )
-    _sim_substance_names = derived_names
+    _sim_substance_names.clear()
+    _sim_substance_names.update(derived_names)
 
 
 def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
@@ -462,99 +467,6 @@ def _trigger_rule_by_index(draft: DraftState, index: int) -> TriggerRule:
     return draft.trigger_rules[index]
 
 
-def _validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
-    """Reject cell lookups outside the configured grid bounds.
-
-    This thin shim delegates to :func:`phids.api.presenters.dashboard._validate_cell_coordinates`
-    and is retained for backward-compatibility with existing test surfaces.
-
-    Args:
-        x: Candidate grid x-coordinate.
-        y: Candidate grid y-coordinate.
-        width: Grid width bound.
-        height: Grid height bound.
-
-    Raises:
-        HTTPException: Coordinates are outside deterministic grid bounds.
-    """
-    from phids.api.presenters.dashboard import _validate_cell_coordinates as _pres_validate
-
-    _pres_validate(x, y, width, height)
-
-
-def _build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
-    """Return potential root links implied by adjacent draft plant placements.
-
-    Delegates to the presenter layer. Retained as a backward-compatibility shim.
-
-    Args:
-        draft: Draft scenario state used for adjacency inference.
-
-    Returns:
-        Serializable link descriptors for preview rendering.
-    """
-    from phids.api.presenters.dashboard import _build_draft_mycorrhizal_links as _pres_links
-
-    return _pres_links(draft)
-
-
-# ---------------------------------------------------------------------------
-# Backward-compatibility shims for the three moved payload builders.
-# The real implementations live in phids.api.presenters.dashboard.
-# ---------------------------------------------------------------------------
-
-
-def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, Any]:
-    """Build a rich tooltip payload for one live-simulation grid cell.
-
-    Delegates to :func:`phids.api.presenters.dashboard.build_live_cell_details`.
-
-    Args:
-        loop: Active simulation loop providing live ECS/environment state.
-        x: Grid x-coordinate.
-        y: Grid y-coordinate.
-
-    Returns:
-        Tooltip payload for one live cell.
-    """
-    from phids.api.presenters.dashboard import build_live_cell_details
-
-    return build_live_cell_details(loop, x, y, substance_names=_sim_substance_names)
-
-
-def _build_preview_cell_details(x: int, y: int) -> dict[str, Any]:
-    """Build a tooltip payload for one draft/preview grid cell.
-
-    Delegates to :func:`phids.api.presenters.dashboard.build_preview_cell_details`.
-
-    Args:
-        x: Grid x-coordinate.
-        y: Grid y-coordinate.
-
-    Returns:
-        Tooltip payload for one draft-preview cell.
-    """
-    from phids.api.presenters.dashboard import build_preview_cell_details
-
-    return build_preview_cell_details(x, y, draft=get_draft(), substance_names=_sim_substance_names)
-
-
-def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
-    """Build the JSON payload used by the live dashboard canvas websocket.
-
-    Delegates to :func:`phids.api.presenters.dashboard.build_live_dashboard_payload`.
-
-    Args:
-        loop: Active simulation loop used to assemble render layers and telemetry counters.
-
-    Returns:
-        JSON-serializable dashboard payload consumed by the live canvas stream.
-    """
-    from phids.api.presenters.dashboard import build_live_dashboard_payload
-
-    return build_live_dashboard_payload(loop, substance_names=_sim_substance_names)
-
-
 def _build_live_summary() -> dict[str, Any] | None:
     """Aggregate coarse live-model counters for diagnostics surfaces.
 
@@ -696,7 +608,9 @@ def _get_loop() -> SimulationLoop:
 # ---------------------------------------------------------------------------
 
 _simulation_stream_manager = SimulationStreamManager()
-_ui_stream_manager = UIStreamManager(payload_builder=_build_live_dashboard_payload)
+_ui_stream_manager = UIStreamManager(
+    payload_builder=partial(build_live_dashboard_payload, substance_names=_sim_substance_names)
+)
 
 
 @app.websocket("/ws/simulation/stream")
@@ -786,8 +700,6 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
                 "tick": _sim_loop.tick,
             },
         )
-
-    from phids.api.presenters.dashboard import build_live_cell_details, build_preview_cell_details
 
     payload = (
         build_live_cell_details(_sim_loop, x, y, substance_names=_sim_substance_names)
