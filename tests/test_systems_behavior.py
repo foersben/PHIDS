@@ -26,6 +26,7 @@ from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
+from phids.shared.constants import SUBSTANCE_EMIT_RATE
 
 
 def _flora_params(species_id: int = 0) -> FloraSpeciesParams:
@@ -1599,6 +1600,58 @@ def test_signaling_aggregates_strongest_toxin_properties_per_substance_id() -> N
 
     assert not world.has_entity(weak_swarm_id)
     assert not world.has_entity(strong_swarm_id)
+
+
+def test_signaling_relay_splits_fixed_budget_across_air_and_roots() -> None:
+    """Signal emission is mass-conservative across airborne and root-relay targets."""
+    world = ECSWorld()
+    env = GridEnvironment(width=7, height=5, num_signals=1, num_toxins=1)
+    env.diffuse_signals = lambda: None  # type: ignore[method-assign]
+
+    source_id = _add_plant(world, 3, 2, species_id=0, energy=20.0)
+    n1 = _add_plant(world, 2, 2, species_id=0, energy=20.0)
+    n2 = _add_plant(world, 4, 2, species_id=0, energy=20.0)
+    source = world.get_entity(source_id).get_component(PlantComponent)
+    source.mycorrhizal_connections = {n1, n2}
+
+    _add_swarm(world, 3, 2, species_id=0, pop=3)
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=0,
+        synthesis_duration=1,
+        is_toxin=False,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    total_signal_mass = float(env.signal_layers[0].sum())
+    assert total_signal_mass == pytest.approx(SUBSTANCE_EMIT_RATE)
+    assert float(env.signal_layers[0, 3, 2]) == pytest.approx(SUBSTANCE_EMIT_RATE / 3.0)
+    assert float(env.signal_layers[0, 2, 2]) == pytest.approx(SUBSTANCE_EMIT_RATE / 3.0)
+    assert float(env.signal_layers[0, 4, 2]) == pytest.approx(SUBSTANCE_EMIT_RATE / 3.0)
+
+
+def test_signaling_airborne_emission_is_not_hard_capped_at_one() -> None:
+    """Airborne signal concentration can exceed unity under continuous forcing."""
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
+    env.diffuse_signals = lambda: None  # type: ignore[method-assign]
+
+    _add_plant(world, 2, 2, species_id=0, energy=20.0)
+    _add_swarm(world, 2, 2, species_id=0, pop=3)
+    env.signal_layers[0, 2, 2] = 1.2
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=0,
+        synthesis_duration=1,
+        is_toxin=False,
+    )
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    assert float(env.signal_layers[0, 2, 2]) > 1.2
 
 
 def test_repelled_swarm_performs_random_walk(monkeypatch: pytest.MonkeyPatch) -> None:

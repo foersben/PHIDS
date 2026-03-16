@@ -269,6 +269,9 @@ def _relay_signal_via_mycorrhizal(
         signal_velocity: Attenuation factor applied per hop.
         tick: Current simulation tick (unused here but provided for parity).
     """
+    del signal_velocity
+    del tick
+
     for neighbour_id in source_plant.mycorrhizal_connections:
         if not world.has_entity(neighbour_id):
             continue
@@ -278,11 +281,9 @@ def _relay_signal_via_mycorrhizal(
         neighbour: PlantComponent = neighbour_entity.get_component(PlantComponent)
         if not mycorrhizal_inter_species and neighbour.species_id != source_plant.species_id:
             continue
-        # Deposit signal at neighbour cell (scaled by velocity as simple attenuation)
+        # Deposit a per-neighbour budget share; caller enforces total budget conservation.
         if signal_id < env.num_signals:
-            env.signal_layers[signal_id, neighbour.x, neighbour.y] += amount / max(
-                1, signal_velocity
-            )
+            env.signal_layers[signal_id, neighbour.x, neighbour.y] += amount
 
 
 def run_signaling(
@@ -564,22 +565,36 @@ def run_signaling(
                     )
         else:
             if sub.substance_id < env.num_signals:
-                env.signal_layers[sub.substance_id, plant.x, plant.y] = min(
-                    1.0,
-                    float(env.signal_layers[sub.substance_id, plant.x, plant.y])
-                    + SUBSTANCE_EMIT_RATE,
+                valid_relay_targets = [
+                    neighbour_id
+                    for neighbour_id in plant.mycorrhizal_connections
+                    if world.has_entity(neighbour_id)
+                    and world.get_entity(neighbour_id).has_component(PlantComponent)
+                    and (
+                        mycorrhizal_inter_species
+                        or world.get_entity(neighbour_id).get_component(PlantComponent).species_id
+                        == plant.species_id
+                    )
+                ]
+                total_slots = 1 + len(valid_relay_targets)
+                per_slot_budget = SUBSTANCE_EMIT_RATE / total_slots
+
+                # Airborne and root-relay emission share one fixed per-tick budget.
+                env.signal_layers[sub.substance_id, plant.x, plant.y] = (
+                    float(env.signal_layers[sub.substance_id, plant.x, plant.y]) + per_slot_budget
                 )
-            # Relay via mycorrhizal network
-            _relay_signal_via_mycorrhizal(
-                plant,
-                sub.substance_id,
-                SUBSTANCE_EMIT_RATE,
-                env,
-                world,
-                mycorrhizal_inter_species,
-                signal_velocity,
-                tick,
-            )
+
+                if valid_relay_targets:
+                    _relay_signal_via_mycorrhizal(
+                        plant,
+                        sub.substance_id,
+                        per_slot_budget,
+                        env,
+                        world,
+                        mycorrhizal_inter_species,
+                        signal_velocity,
+                        tick,
+                    )
 
     for sub_id, props in active_toxin_props.items():
         _apply_toxin_to_swarms(

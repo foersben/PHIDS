@@ -70,12 +70,6 @@ def _attempt_reproduction(
     if (plant.energy - plant.seed_energy_cost) < plant.survival_threshold:
         return []
 
-    # Base radial ejection around the parent within [d_min, d_max].
-    angle = random.uniform(0, 2 * math.pi)
-    distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
-    radial_dx = distance * math.cos(angle)
-    radial_dy = distance * math.sin(angle)
-
     local_wind_x = float(env.wind_vector_x[plant.x, plant.y])
     local_wind_y = float(env.wind_vector_y[plant.x, plant.y])
     wind_speed = math.hypot(local_wind_x, local_wind_y)
@@ -83,6 +77,7 @@ def _attempt_reproduction(
     wind_dx = 0.0
     wind_dy = 0.0
     if wind_speed > 1e-9:
+        distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
         # Approximate downwind shift by flight time (drop-height / terminal velocity), then
         # apply anisotropic turbulent spread aligned with the local wind axis.
         drop_height = max(1e-3, float(getattr(plant, "seed_drop_height", SEED_DROP_HEIGHT_DEFAULT)))
@@ -101,8 +96,16 @@ def _attempt_reproduction(
         wind_dx = sampled_parallel * ux - sampled_perpendicular * uy
         wind_dy = sampled_parallel * uy + sampled_perpendicular * ux
 
-    tx = int(round(plant.x + radial_dx + wind_dx))
-    ty = int(round(plant.y + radial_dy + wind_dy))
+    if wind_speed > 1e-9:
+        # Wind-active mode uses a single anisotropic Gaussian kernel centered
+        # downwind from the parent, avoiding annulus-plus-Gaussian double shifts.
+        tx = int(round(plant.x + wind_dx))
+        ty = int(round(plant.y + wind_dy))
+    else:
+        angle = random.uniform(0, 2 * math.pi)
+        distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
+        tx = int(round(plant.x + distance * math.cos(angle)))
+        ty = int(round(plant.y + distance * math.sin(angle)))
 
     # Boundary check
     if not (0 <= tx < env.width and 0 <= ty < env.height):

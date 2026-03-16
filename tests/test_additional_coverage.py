@@ -669,6 +669,54 @@ def test_attempt_reproduction_applies_downwind_bias_when_wind_is_present(
     assert offspring[0].y == 3
 
 
+def test_attempt_reproduction_wind_mode_does_not_add_radial_offset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Wind-active dispersal samples a single downwind kernel instead of annulus-plus-wind addition."""
+    params = _config().flora_species[0]
+    params.seed_min_dist = 1.0
+    params.seed_max_dist = 1.0
+    params.seed_drop_height = 2.0
+    params.seed_terminal_velocity = 0.5
+    flora_params = {0: params}
+
+    env = GridEnvironment(width=12, height=8, num_signals=1, num_toxins=1)
+    env.set_uniform_wind(1.2, 0.0)
+    world = ECSWorld()
+    parent_entity = world.create_entity()
+    parent = PlantComponent(
+        entity_id=parent_entity.entity_id,
+        species_id=0,
+        x=3,
+        y=3,
+        energy=20.0,
+        max_energy=20.0,
+        base_energy=10.0,
+        growth_rate=5.0,
+        survival_threshold=1.0,
+        reproduction_interval=1,
+        seed_min_dist=1.0,
+        seed_max_dist=1.0,
+        seed_energy_cost=2.0,
+        seed_drop_height=params.seed_drop_height,
+        seed_terminal_velocity=params.seed_terminal_velocity,
+    )
+    parent.last_reproduction_tick = -10
+    world.add_component(parent_entity.entity_id, parent)
+    world.register_position(parent_entity.entity_id, parent.x, parent.y)
+
+    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda a, b: 1.0)
+    monkeypatch.setattr("phids.engine.systems.lifecycle.random.gauss", lambda mu, sigma: mu)
+
+    offspring = _attempt_reproduction(parent, 5, world, env, flora_params)
+    assert len(offspring) == 1
+    # mean_parallel = |wind| * (drop_height / terminal_velocity) = 1.2 * 4 = 4.8
+    # wind-only placement -> x ~= 3 + 4.8 -> round -> 8
+    # older annulus+wind behavior would produce x ~= 9.
+    assert offspring[0].x == 8
+    assert offspring[0].y == 3
+
+
 def test_run_lifecycle_culls_dead_plants_and_prunes_missing_links() -> None:
     """Validates the run lifecycle culls dead plants and prunes missing links invariant and confirms the expected biological behavior under controlled simulation conditions.
 

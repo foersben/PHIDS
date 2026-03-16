@@ -37,9 +37,11 @@ $$
 
 where $E_i$ is current plant energy, $E_{base,i}$ is species base energy, and $g_i$ is growth rate. The key modeling decision is local incremental integration rather than a global-clock reconstruction, which avoids assigning artificial age-dependent energy to newly spawned plants.
 
-Reproduction requires both temporal and energetic feasibility. A plant can attempt seed placement only when the species reproduction interval has elapsed since `last_reproduction_tick` and when paying the configured seed cost still keeps the parent at or above its survival threshold. Reproduction target selection is stochastic in angle and dispersal distance, but placement is constrained by bounds and occupancy checks. Energy is deducted only on successful placement, preventing crowded environments from inducing deterministic self-starvation through failed placement attempts.
+Reproduction requires both temporal and energetic feasibility. A plant can attempt seed placement only when the species reproduction interval has elapsed since `last_reproduction_tick` and when paying the configured seed cost still keeps the parent at or above its survival threshold. Placement is constrained by boundary and occupancy checks, and energy is deducted only on successful placement, preventing deterministic self-starvation from failed landing attempts in crowded neighborhoods.
 
-The local dispersal geometry can be interpreted as a bounded annulus around the parent position with inner and outer radii determined by species parameters:
+The dispersal kernel is mode-dependent and coupled to local wind state. Under near-zero wind, candidate placement is sampled from a bounded annulus around the parent (`seed_min_dist <= r <= seed_max_dist`) with uniformly sampled polar angle. Under non-zero wind, lifecycle switches to an anemochorous kernel: displacement is sampled directly in wind-aligned Gaussian coordinates derived from local wind magnitude, effective flight time (`seed_drop_height / seed_terminal_velocity`), and configured turbulence scales. In this wind-active regime, annulus displacement is not added to the Gaussian sample. This avoids an annulus-plus-Gaussian convolution artifact and preserves a biologically plausible downwind seed shadow anchored at the parent.
+
+The calm-mode geometry is therefore interpreted as a bounded annulus:
 
 ```mermaid
 flowchart TD
@@ -47,6 +49,16 @@ flowchart TD
     A --> C[Maximum radius r_max dispersal boundary]
     B --> D[Candidate seed sampled in annulus r_min <= r <= r_max]
     C --> D
+```
+
+Wind-active placement replaces that annulus sample with direct wind-kernel sampling:
+
+```mermaid
+flowchart TD
+    A[Parent position] --> B[Read local wind vector]
+    B --> C[Compute flight-time weighted downwind mean]
+    C --> D[Sample anisotropic Gaussian in wind frame]
+    D --> E[Candidate seed sampled without radial annulus superposition]
 ```
 
 ## Mycorrhizal Network Extension
