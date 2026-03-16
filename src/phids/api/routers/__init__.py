@@ -8,7 +8,8 @@ server-side Jinja workflow, the draft-versus-live state boundary, and the analyt
 semantics required for ecological observation and post hoc inference.
 """
 
+from .config import router as config_router
 from .telemetry import router as telemetry_router
 from .ui import router as ui_router
 
-__all__ = ["telemetry_router", "ui_router"]
+__all__ = ["config_router", "telemetry_router", "ui_router"]

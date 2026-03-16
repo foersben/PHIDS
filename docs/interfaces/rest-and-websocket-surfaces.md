@@ -7,7 +7,8 @@ PHIDS exposes its runtime through two network styles with intentionally differen
 
 This chapter documents the current interface surface as implemented across
 `src/phids/api/main.py`, `src/phids/api/routers/ui.py`, and
-`src/phids/api/routers/telemetry.py`. It should be read together with the architectural
+`src/phids/api/routers/telemetry.py`, and `src/phids/api/routers/config.py`.
+It should be read together with the architectural
 distinction between `DraftState` and the live `SimulationLoop`.
 
 ## Interface Taxonomy
@@ -172,6 +173,10 @@ Representative route groups include:
 The low-risk view routes are now registered through `src/phids/api/routers/ui.py`, while
 `src/phids/api/main.py` continues to own the mutable runtime helpers consumed by those view
 fragments.
+
+Builder mutation routes (`/api/config/*`, `/api/matrices/diet`, and placement CRUD) are now
+registered through `src/phids/api/routers/config.py` and continue to mutate only `DraftState`
+until `POST /api/scenario/load-draft` commits a validated configuration into the live engine.
 
 ### View partials
 

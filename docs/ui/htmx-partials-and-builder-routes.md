@@ -164,6 +164,7 @@ The HTMX/Jinja builder architecture has several important consequences:
 
 This chapter is grounded in:
 
+- `src/phids/api/routers/config.py`
 - `src/phids/api/main.py`
 - `src/phids/api/ui_state.py`
 - `src/phids/api/templates/partials/`

@@ -35,6 +35,7 @@ from phids.api.ui_state import (
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
+from phids.api.routers.config import config_trigger_rule_condition_node_update
 
 
 def _default_client() -> AsyncClient:
@@ -298,7 +299,7 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
     draft.add_trigger_rule(0, 0, 0)
 
     request = Request({"type": "http", "headers": []})
-    response = await api_main.config_trigger_rule_condition_node_update(
+    response = await config_trigger_rule_condition_node_update(
         request,
         0,
         path="",
