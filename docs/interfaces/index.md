@@ -88,6 +88,7 @@ product surface of the application.
 This section is grounded in the current implementation and tests, especially:
 
 - `src/phids/api/main.py`
+- `src/phids/api/routers/`
 - `src/phids/api/ui_state.py`
 - `tests/test_api_routes.py`
 - `tests/test_ui_routes.py`
@@ -96,5 +97,6 @@ This section is grounded in the current implementation and tests, especially:
 ## Key Source Modules
 
 - `src/phids/api/main.py`
+- `src/phids/api/routers/`
 - `src/phids/api/schemas.py`
 - `src/phids/api/ui_state.py`
