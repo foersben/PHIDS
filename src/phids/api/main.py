@@ -138,6 +138,9 @@ _sim_loop: SimulationLoop | None = None
 _sim_task: asyncio.Task[None] | None = None
 _sim_substance_names: dict[int, str] = {}
 _condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
+_stream_cache_loop_id: int = -1
+_stream_cache_tick: int = -1
+_stream_cache_payload: bytes = b""
 
 
 def _coerce_int(value: object, *, default: int = -1) -> int:
@@ -2006,20 +2009,30 @@ async def simulation_stream(websocket: WebSocket) -> None:
 
     loop = _sim_loop
     last_tick = -1
+    global _stream_cache_loop_id, _stream_cache_tick, _stream_cache_payload
+
+    def _encoded_snapshot_bytes() -> bytes:
+        """Return cached compressed bytes for the current loop tick."""
+        global _stream_cache_loop_id, _stream_cache_tick, _stream_cache_payload
+        loop_id = id(loop)
+        if loop_id != _stream_cache_loop_id or loop.tick != _stream_cache_tick:
+            snapshot = loop.get_state_snapshot()
+            packed = msgpack.packb(snapshot, use_bin_type=True)
+            _stream_cache_payload = zlib.compress(packed, level=1)
+            _stream_cache_loop_id = loop_id
+            _stream_cache_tick = loop.tick
+        return _stream_cache_payload
 
     try:
         while True:
             if loop.terminated:
                 # Send final state and close
-                snapshot = loop.get_state_snapshot()
-                packed = msgpack.packb(snapshot, use_bin_type=True)
-                await websocket.send_bytes(zlib.compress(packed))
+                if loop.tick != last_tick:
+                    await websocket.send_bytes(_encoded_snapshot_bytes())
                 break
 
             if loop.tick != last_tick:
-                snapshot = loop.get_state_snapshot()
-                packed = msgpack.packb(snapshot, use_bin_type=True)
-                await websocket.send_bytes(zlib.compress(packed))
+                await websocket.send_bytes(_encoded_snapshot_bytes())
                 last_tick = loop.tick
 
             await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))

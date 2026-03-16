@@ -221,3 +221,48 @@ def test_simulation_loop_terminates_when_z1_reached(caplog) -> None:
     assert loop.running is False
     assert loop.termination_reason is not None
     assert "Simulation terminated at tick" in caplog.text
+
+
+def test_get_state_snapshot_memorize_within_tick_and_refreshes_after_step() -> None:
+    """Validate that snapshot generation does not repeat expensive env serialization within one tick."""
+    loop = SimulationLoop(_base_config(max_ticks=10))
+
+    calls = {"count": 0}
+    original_to_dict = loop.env.to_dict
+
+    def _counted_to_dict() -> dict[str, object]:
+        calls["count"] += 1
+        return original_to_dict()
+
+    loop.env.to_dict = _counted_to_dict  # type: ignore[method-assign]
+
+    snap_a = loop.get_state_snapshot()
+    snap_b = loop.get_state_snapshot()
+
+    assert calls["count"] == 1
+    assert snap_a is snap_b
+
+    asyncio.run(loop.step())
+    loop.get_state_snapshot()
+    assert calls["count"] == 2
+
+
+def test_get_state_snapshot_cache_invalidates_when_wind_changes() -> None:
+    """Validate snapshot cache invalidation for same-tick environmental wind updates."""
+    loop = SimulationLoop(_base_config(max_ticks=10))
+
+    calls = {"count": 0}
+    original_to_dict = loop.env.to_dict
+
+    def _counted_to_dict() -> dict[str, object]:
+        calls["count"] += 1
+        return original_to_dict()
+
+    loop.env.to_dict = _counted_to_dict  # type: ignore[method-assign]
+
+    loop.get_state_snapshot()
+    loop.update_wind(0.25, -0.5)
+    snapshot_after_wind = loop.get_state_snapshot()
+
+    assert calls["count"] == 2
+    assert isinstance(snapshot_after_wind, dict)
