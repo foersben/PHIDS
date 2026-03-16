@@ -1,13 +1,17 @@
-"""FastAPI composition root for PHIDS runtime orchestration.
+"""FastAPI composition root governing live runtime state and API boundary coordination.
 
-This module assembles the canonical application object, owns the live single-simulation runtime, and
-defines the helper functions that bridge draft-state editing, deterministic `SimulationLoop`
-execution, telemetry summarisation, and WebSocket transport. Route registration is now partitioned:
-low-risk HTML and telemetry surfaces are delegated to dedicated router modules, while the remaining
-control, mutation, and streaming endpoints stay co-located with the shared mutable runtime they
-operate upon. This arrangement preserves the biological and computational invariants of PHIDS,
-including strict draft-versus-live separation, double-buffered environment advancement, and
-operator-facing observation of emergent plant-herbivore defence dynamics.
+This module defines the canonical PHIDS application object and the mutable singleton references that
+bind operator actions to a live ``SimulationLoop`` instance. The implementation mediates the
+transition between draft-state configuration and executable simulation state, exposes compatibility
+helpers consumed by existing test and template surfaces, and wires router modules that partition
+control, telemetry, and builder responsibilities. WebSocket transport loops are delegated to
+dedicated manager classes, while this module retains ownership of endpoint registration and runtime
+state access.
+
+The architecture enforces the central methodological invariant of the PHIDS interface layer:
+editable draft configuration remains distinct from live ecological state until explicit load
+operations occur. This separation preserves deterministic replayability of trophic interaction,
+signal propagation, and metabolic attrition trajectories.
 """
 
 from __future__ import annotations
@@ -18,17 +22,14 @@ import json
 import logging
 import pathlib
 import time
-import zlib
 from typing import Any
 
-import msgpack  # type: ignore[import-untyped]
 from pydantic import TypeAdapter, ValidationError
 from fastapi import (
     FastAPI,
     HTTPException,
     Request,
     WebSocket,
-    WebSocketDisconnect,
 )
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -47,6 +48,7 @@ from phids.api.ui_state import (
     TriggerRule,
     get_draft,
 )
+from phids.api.websockets import SimulationStreamManager, UIStreamManager
 from phids.engine.loop import SimulationLoop
 from phids.shared.logging_config import configure_logging
 
@@ -81,10 +83,19 @@ async def log_http_requests(
     request: Request,
     call_next: Callable[[Request], Awaitable[Response]],
 ) -> Response:
-    """Log API/UI request timing with low overhead.
+    """Record request-latency diagnostics for interactive API and UI surfaces.
 
-    DEBUG logging is emitted for successful API, HTMX, and UI requests.
-    WARNING logging is emitted for client/server error responses.
+    The middleware emits lightweight observability events for HTMX and REST traffic so operator
+    workflows can be correlated with backend latency and error rates. The policy is asymmetric by
+    design: client/server failures are elevated to warning level, whereas successful paths are kept
+    at debug level to avoid telemetry inflation under nominal workloads.
+
+    Args:
+        request: Incoming HTTP request object.
+        call_next: Downstream ASGI callable that resolves the response.
+
+    Returns:
+        Response returned by downstream middleware and route handling.
     """
     started = time.perf_counter()
     response = await call_next(request)
@@ -119,14 +130,23 @@ _sim_loop: SimulationLoop | None = None
 _sim_task: asyncio.Task[None] | None = None
 _sim_substance_names: dict[int, str] = {}
 _condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
-_stream_cache_loop_id: int = -1
-_stream_cache_tick: int = -1
-_stream_cache_payload: bytes = b""
 _BATCH_DIR = pathlib.Path("data") / "batches"
 
 
 def _coerce_int(value: object, *, default: int = -1) -> int:
-    """Return ``value`` coerced to ``int`` when possible, otherwise ``default``."""
+    """Coerce heterogeneous scalar inputs into deterministic integer values.
+
+    The diagnostics and compatibility surfaces accept polymorphic scalar payloads from UI controls,
+    telemetry shims, and historical fixtures. This helper stabilizes those values into canonical
+    integer form so downstream ordering and threshold logic remains reproducible.
+
+    Args:
+        value: Candidate scalar to normalize.
+        default: Fallback value used when coercion is unsafe or invalid.
+
+    Returns:
+        Normalized integer suitable for deterministic control-flow decisions.
+    """
     if isinstance(value, bool):
         return default
     if isinstance(value, int):
@@ -142,7 +162,18 @@ def _coerce_int(value: object, *, default: int = -1) -> int:
 
 
 def _coerce_float(value: object, *, default: float = 0.0) -> float:
-    """Return ``value`` coerced to ``float`` when possible, otherwise ``default``."""
+    """Coerce heterogeneous scalar inputs into deterministic floating-point values.
+
+    The helper mirrors integer coercion semantics for quantitative telemetry and rendering fields
+    where malformed values must degrade gracefully without destabilizing dashboard calculations.
+
+    Args:
+        value: Candidate scalar to normalize.
+        default: Fallback value used when coercion is unsafe or invalid.
+
+    Returns:
+        Normalized floating-point value for deterministic arithmetic paths.
+    """
     if isinstance(value, bool):
         return default
     if isinstance(value, (int, float)):
@@ -156,7 +187,15 @@ def _coerce_float(value: object, *, default: float = 0.0) -> float:
 
 
 def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
-    """Return a deterministic fallback label for a substance id."""
+    """Construct deterministic fallback nomenclature for unlabeled substances.
+
+    Args:
+        substance_id: Substance-layer identifier.
+        is_toxin: Flag distinguishing toxin and signal label prefixes.
+
+    Returns:
+        Stable human-readable fallback label.
+    """
     return f"{'Toxin' if is_toxin else 'Signal'} {substance_id}"
 
 
@@ -165,7 +204,16 @@ def _set_simulation_substance_names(
     *,
     draft: DraftState | None = None,
 ) -> None:
-    """Refresh tooltip/display labels for live-simulation substances."""
+    """Refresh display labels used by live dashboard and tooltip payload builders.
+
+    The naming map is derived either from explicit draft substance definitions or, when unavailable,
+    from trigger metadata in the validated runtime configuration. This preserves human-readable
+    chemical labels across draft-preview and live-execution contexts without mutating engine state.
+
+    Args:
+        config: Validated simulation configuration currently associated with the live loop.
+        draft: Optional draft source of canonical user-specified substance labels.
+    """
     global _sim_substance_names  # noqa: PLW0603
 
     if draft is not None:
@@ -188,7 +236,15 @@ def _set_simulation_substance_names(
 
 
 def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
-    """Return the best available display name for a substance id."""
+    """Resolve the most informative display label for one substance identifier.
+
+    Args:
+        substance_id: Substance-layer identifier.
+        is_toxin: Flag used by fallback naming when no explicit label exists.
+
+    Returns:
+        Display name suitable for diagnostics and tooltip rendering.
+    """
     return _sim_substance_names.get(
         substance_id,
         _default_substance_name(substance_id, is_toxin=is_toxin),
@@ -196,7 +252,17 @@ def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
 
 
 def _parse_activation_condition_json(raw: str | None) -> dict[str, Any] | None:
-    """Parse and validate a JSON activation-condition tree from the UI."""
+    """Parse and validate a serialized activation-condition tree from builder input.
+
+    Args:
+        raw: Raw JSON text submitted from trigger-rule editing controls.
+
+    Returns:
+        Normalized condition dictionary, or ``None`` when the input is absent/blank.
+
+    Raises:
+        HTTPException: Condition JSON is syntactically invalid or violates schema constraints.
+    """
     if raw is None:
         return None
     text = raw.strip()
@@ -220,7 +286,20 @@ def _describe_activation_condition(
     predator_names: dict[int, str] | None = None,
     substance_names: dict[int, str] | None = None,
 ) -> str:
-    """Render a human-readable summary for a nested activation-condition tree."""
+    """Render a compact textual explanation of a nested activation-condition tree.
+
+    The formatter translates discriminated condition nodes into operator-readable logic statements
+    that preserve quantitative thresholds and boolean composition. This summary is used in the
+    trigger editor to expose the biological gating semantics of toxin/signal activation.
+
+    Args:
+        condition: Parsed activation-condition node or tree.
+        predator_names: Optional species-name map for predator identifiers.
+        substance_names: Optional display-name map for substance identifiers.
+
+    Returns:
+        Human-readable logical expression describing the activation gate.
+    """
     if condition is None:
         return "unconditional"
 
@@ -268,7 +347,15 @@ def _describe_activation_condition(
 
 
 def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
-    """Build the shared template context for the trigger-rules editor."""
+    """Assemble the canonical template context for trigger-rule partial rendering.
+
+    Args:
+        draft: Active draft scenario state used as the authoritative builder source.
+
+    Returns:
+        Template context dictionary containing species registries, trigger rows, condition summaries,
+        and condition-node editing metadata.
+    """
     predator_names = {
         getattr(species, "species_id", index): getattr(species, "name", f"Predator {index}")
         for index, species in enumerate(draft.predator_species)
@@ -309,7 +396,19 @@ def _default_activation_condition_for_rule(
     rule: TriggerRule,
     node_kind: str,
 ) -> dict[str, Any]:
-    """Create a default condition node tailored to one trigger rule."""
+    """Construct a default activation-condition node compatible with a trigger rule.
+
+    Args:
+        draft: Active draft state containing species and substance registries.
+        rule: Trigger rule being edited.
+        node_kind: Requested node discriminator.
+
+    Returns:
+        Default node payload suitable for insertion into a condition tree.
+
+    Raises:
+        HTTPException: ``node_kind`` is unsupported by the condition editor.
+    """
     default_predator_species_id = rule.predator_species_id
     default_substance_id = rule.substance_id
     for definition in draft.substance_definitions:
@@ -346,7 +445,18 @@ def _default_activation_condition_for_rule(
 
 
 def _trigger_rule_by_index(draft: DraftState, index: int) -> TriggerRule:
-    """Return one trigger rule or raise 404."""
+    """Return one trigger rule from draft state with HTTP-oriented bounds checking.
+
+    Args:
+        draft: Active draft state containing trigger rules.
+        index: Positional index requested by route handlers.
+
+    Returns:
+        Trigger rule at the requested index.
+
+    Raises:
+        HTTPException: Index is outside the current trigger-rule list bounds.
+    """
     if index < 0 or index >= len(draft.trigger_rules):
         raise HTTPException(status_code=404, detail=f"Trigger rule {index} not found.")
     return draft.trigger_rules[index]
@@ -357,6 +467,15 @@ def _validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
 
     This thin shim delegates to :func:`phids.api.presenters.dashboard._validate_cell_coordinates`
     and is retained for backward-compatibility with existing test surfaces.
+
+    Args:
+        x: Candidate grid x-coordinate.
+        y: Candidate grid y-coordinate.
+        width: Grid width bound.
+        height: Grid height bound.
+
+    Raises:
+        HTTPException: Coordinates are outside deterministic grid bounds.
     """
     from phids.api.presenters.dashboard import _validate_cell_coordinates as _pres_validate
 
@@ -366,7 +485,13 @@ def _validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
 def _build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
     """Return potential root links implied by adjacent draft plant placements.
 
-    Delegates to the presenter layer.  Retained as a backward-compatibility shim.
+    Delegates to the presenter layer. Retained as a backward-compatibility shim.
+
+    Args:
+        draft: Draft scenario state used for adjacency inference.
+
+    Returns:
+        Serializable link descriptors for preview rendering.
     """
     from phids.api.presenters.dashboard import _build_draft_mycorrhizal_links as _pres_links
 
@@ -383,6 +508,14 @@ def _build_live_cell_details(loop: SimulationLoop, x: int, y: int) -> dict[str, 
     """Build a rich tooltip payload for one live-simulation grid cell.
 
     Delegates to :func:`phids.api.presenters.dashboard.build_live_cell_details`.
+
+    Args:
+        loop: Active simulation loop providing live ECS/environment state.
+        x: Grid x-coordinate.
+        y: Grid y-coordinate.
+
+    Returns:
+        Tooltip payload for one live cell.
     """
     from phids.api.presenters.dashboard import build_live_cell_details
 
@@ -393,6 +526,13 @@ def _build_preview_cell_details(x: int, y: int) -> dict[str, Any]:
     """Build a tooltip payload for one draft/preview grid cell.
 
     Delegates to :func:`phids.api.presenters.dashboard.build_preview_cell_details`.
+
+    Args:
+        x: Grid x-coordinate.
+        y: Grid y-coordinate.
+
+    Returns:
+        Tooltip payload for one draft-preview cell.
     """
     from phids.api.presenters.dashboard import build_preview_cell_details
 
@@ -403,6 +543,12 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
     """Build the JSON payload used by the live dashboard canvas websocket.
 
     Delegates to :func:`phids.api.presenters.dashboard.build_live_dashboard_payload`.
+
+    Args:
+        loop: Active simulation loop used to assemble render layers and telemetry counters.
+
+    Returns:
+        JSON-serializable dashboard payload consumed by the live canvas stream.
     """
     from phids.api.presenters.dashboard import build_live_dashboard_payload
 
@@ -410,7 +556,11 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
 
 
 def _build_live_summary() -> dict[str, Any] | None:
-    """Return coarse live-model counters for the diagnostics rail."""
+    """Aggregate coarse live-model counters for diagnostics surfaces.
+
+    Returns:
+        Summary counters when a live loop exists, otherwise ``None``.
+    """
     if _sim_loop is None:
         return None
 
@@ -443,7 +593,11 @@ def _build_live_summary() -> dict[str, Any] | None:
 
 
 def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
-    """Return swarms currently in an energy-deficit state."""
+    """Rank live swarms by metabolic energy deficit severity.
+
+    Returns:
+        Sorted stress records for swarm entities with positive energy deficits.
+    """
     if _sim_loop is None:
         return []
 
@@ -479,7 +633,11 @@ def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
 
 
 def _render_status_badge_html() -> str:
-    """Return the current simulation status badge HTML fragment."""
+    """Render the HTMX-polled simulation status badge fragment.
+
+    Returns:
+        HTML fragment encoding current lifecycle state with semantic coloring.
+    """
     if _sim_loop is None:
         label, colour = "Idle", "bg-slate-100 text-slate-500"
     elif _sim_loop.terminated:
@@ -499,11 +657,26 @@ def _render_status_badge_html() -> str:
 
 
 def _is_htmx_request(request: Request) -> bool:
-    """Return whether a request originated from HTMX."""
+    """Determine whether a request originated from HTMX transport headers.
+
+    Args:
+        request: Incoming HTTP request.
+
+    Returns:
+        ``True`` when the request was issued by HTMX.
+    """
     return request.headers.get("HX-Request", "false").lower() == "true"
 
 
 def _get_loop() -> SimulationLoop:
+    """Return the active simulation loop or raise a user-facing runtime precondition error.
+
+    Returns:
+        Active live simulation loop.
+
+    Raises:
+        HTTPException: No scenario has been loaded into live runtime state.
+    """
     if _sim_loop is None:
         logger.warning("Simulation access requested before a scenario was loaded")
         raise HTTPException(
@@ -522,57 +695,22 @@ def _get_loop() -> SimulationLoop:
 # WebSocket streaming
 # ---------------------------------------------------------------------------
 
+_simulation_stream_manager = SimulationStreamManager()
+_ui_stream_manager = UIStreamManager(payload_builder=_build_live_dashboard_payload)
+
 
 @app.websocket("/ws/simulation/stream")
 async def simulation_stream(websocket: WebSocket) -> None:
-    """Stream grid state snapshots over WebSocket at each simulation tick.
+    """Delegate binary simulation streaming to the simulation stream manager.
 
-    The state is serialised with :mod:`msgpack` and compressed with
-    :mod:`zlib` for compact binary transport. If no scenario is loaded the
-    connection is closed with code 1008 (Policy Violation).
+    Args:
+        websocket: Connected client socket endpoint.
+
+    Notes:
+        The manager enforces msgpack+zlib encoding, tick-synchronous emission, and policy-close
+        semantics when no live scenario is loaded.
     """
-    await websocket.accept()
-    logger.debug("WebSocket connected: /ws/simulation/stream")
-
-    if _sim_loop is None:
-        logger.warning("Closing /ws/simulation/stream because no scenario is loaded")
-        await websocket.close(code=1008, reason="No scenario loaded.")
-        return
-
-    loop = _sim_loop
-    last_tick = -1
-    global _stream_cache_loop_id, _stream_cache_tick, _stream_cache_payload
-
-    def _encoded_snapshot_bytes() -> bytes:
-        """Return cached compressed bytes for the current loop tick."""
-        global _stream_cache_loop_id, _stream_cache_tick, _stream_cache_payload
-        loop_id = id(loop)
-        if loop_id != _stream_cache_loop_id or loop.tick != _stream_cache_tick:
-            snapshot = loop.get_state_snapshot()
-            packed = msgpack.packb(snapshot, use_bin_type=True)
-            _stream_cache_payload = zlib.compress(packed, level=1)
-            _stream_cache_loop_id = loop_id
-            _stream_cache_tick = loop.tick
-        return _stream_cache_payload
-
-    try:
-        while True:
-            if loop.terminated:
-                # Send final state and close
-                if loop.tick != last_tick:
-                    await websocket.send_bytes(_encoded_snapshot_bytes())
-                break
-
-            if loop.tick != last_tick:
-                await websocket.send_bytes(_encoded_snapshot_bytes())
-                last_tick = loop.tick
-
-            await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
-
-    except WebSocketDisconnect:
-        logger.info("WebSocket client disconnected from /ws/simulation/stream")
-    finally:
-        await websocket.close()
+    await _simulation_stream_manager.handle_connection(websocket, _sim_loop)
 
 
 # ---------------------------------------------------------------------------
@@ -582,38 +720,16 @@ async def simulation_stream(websocket: WebSocket) -> None:
 
 @app.websocket("/ws/ui/stream")
 async def ui_stream(websocket: WebSocket) -> None:
-    """Stream lightweight JSON grid snapshots for the browser canvas.
+    """Delegate live UI JSON streaming to the UI stream manager.
 
-    Each message contains ``plant_energy`` (2-D list), ``swarms``
-    (list of ``{x, y, population}``), ``tick``, and ``max_energy``.
-    Reconnects are handled client-side with an exponential back-off.
+    Args:
+        websocket: Connected client socket endpoint.
+
+    Notes:
+        The manager polls live-loop availability, emits payloads only on state-signature change,
+        and applies tick-rate cadence constraints.
     """
-    await websocket.accept()
-    logger.debug("WebSocket connected: /ws/ui/stream")
-    last_state_signature: tuple[int, int, bool, bool, bool] | None = None
-    try:
-        while True:
-            loop = _sim_loop
-            if loop is None:
-                await asyncio.sleep(0.5)
-                continue
-
-            loop_id = id(loop)
-            state_signature = (loop_id, loop.tick, loop.running, loop.paused, loop.terminated)
-            # Send whenever the rendered state changes, including pause/resume toggles.
-            if state_signature != last_state_signature:
-                from phids.api.presenters.dashboard import build_live_dashboard_payload
-
-                payload = build_live_dashboard_payload(loop, substance_names=_sim_substance_names)
-                await websocket.send_text(json.dumps(payload))
-                last_state_signature = state_signature
-
-            await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
-
-    except WebSocketDisconnect:
-        logger.info("WebSocket client disconnected from /ws/ui/stream")
-    finally:
-        await websocket.close()
+    await _ui_stream_manager.handle_connection(websocket, lambda: _sim_loop)
 
 
 # ---------------------------------------------------------------------------
@@ -626,7 +742,7 @@ async def ui_tick() -> Response:
     """Return the current tick as plain text for HTMX innerHTML swap.
 
     Returns:
-        Response: Tick count as plain-text body.
+        Plain-text tick content for lightweight polling updates.
     """
     tick = _sim_loop.tick if _sim_loop is not None else 0
     return Response(content=str(tick), media_type="text/plain")
@@ -637,7 +753,7 @@ async def ui_status_badge() -> HTMLResponse:
     """Return a small status ``<span>`` for HTMX outerHTML swap.
 
     Returns:
-        HTMLResponse: Styled ``<span id="sim-status">`` fragment.
+        Styled ``<span id="sim-status">`` fragment.
     """
     return HTMLResponse(content=_render_status_badge_html())
 
@@ -646,8 +762,20 @@ async def ui_status_badge() -> HTMLResponse:
 async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> JSONResponse:
     """Return rich grid-cell details for dashboard tooltips.
 
-    When a live simulation exists, data is sourced from the current ECS world
-    and environment layers. Otherwise the draft placement preview is returned.
+    When a live simulation exists, data is sourced from the current ECS world and environment
+    layers. Otherwise the endpoint returns draft-preview payloads so the placement editor can expose
+    deterministic pre-runtime inspection.
+
+    Args:
+        x: Grid x-coordinate.
+        y: Grid y-coordinate.
+        expected_tick: Optional optimistic-concurrency marker from UI polling state.
+
+    Returns:
+        JSON response containing either live cell diagnostics or draft-preview details.
+
+    Raises:
+        HTTPException: Upstream presenter validation rejects out-of-bounds coordinates.
     """
     if _sim_loop is not None and expected_tick is not None and expected_tick != _sim_loop.tick:
         return JSONResponse(
@@ -680,11 +808,16 @@ def _build_telemetry_svg(df: Any) -> str:  # df is polars.DataFrame
     """Generate an inline SVG line chart from telemetry data.
 
     Args:
-        df: Polars DataFrame with columns ``tick``, ``flora_population``,
+        df: Tabular telemetry object with columns ``tick``, ``flora_population``,
             ``predator_population``, ``total_flora_energy``.
 
     Returns:
-        str: SVG markup suitable for ``innerHTML`` injection.
+        SVG markup suitable for ``innerHTML`` injection.
+
+    Notes:
+        The chart intentionally overlays flora population, predator population, and aggregate flora
+        energy on a shared temporal axis to support rapid diagnosis of trophic oscillation and
+        metabolic collapse onset.
     """
     import polars as pl
 

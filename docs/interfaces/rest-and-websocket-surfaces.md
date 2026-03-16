@@ -221,6 +221,10 @@ fresh HTML partial rendered from canonical server-side state.
 
 PHIDS currently exposes two intentionally different WebSocket protocols.
 
+Transport-loop orchestration for both protocols is implemented in
+`src/phids/api/websockets/manager.py`, while `src/phids/api/main.py` retains endpoint registration
+and runtime-state ownership.
+
 ### `WS /ws/simulation/stream`
 
 This stream sends full state snapshots as:
@@ -284,6 +288,7 @@ should be made visible to the operator rather than absorbed silently.
 The following sources confirm the behavior described in this chapter:
 
 - `src/phids/api/main.py`
+- `src/phids/api/websockets/manager.py`
 - `tests/test_api_routes.py`
 - `tests/test_ui_routes.py`
 

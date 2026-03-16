@@ -37,13 +37,17 @@ router = APIRouter()
 
 @router.post("/api/scenario/load", summary="Load simulation scenario")
 async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
-    """Initialise the live simulation loop with a validated scenario payload.
+    """Initialize live runtime state from a validated scenario payload.
+
+    The endpoint is the strict ingress boundary between static configuration and executable
+    ecological dynamics. Existing background execution is cancelled before loop replacement so
+    trophic and signaling trajectories remain single-source and deterministic.
 
     Args:
         config: Validated simulation configuration crossing the API boundary.
 
     Returns:
-        dict: Confirmation payload with loaded grid dimensions.
+        Confirmation payload containing loaded grid dimensions.
     """
     if api_main._sim_task is not None and not api_main._sim_task.done():
         api_main.logger.info(
@@ -71,7 +75,17 @@ async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
 
 @router.post("/api/simulation/start", summary="Start or resume simulation")
 async def start_simulation(request: Request) -> Any:
-    """Start live simulation execution or return current running state for HTMX callers."""
+    """Start or resume asynchronous simulation advancement for the active loop.
+
+    Args:
+        request: Incoming HTTP request used to select JSON or HTMX fragment responses.
+
+    Returns:
+        Status payload or status-badge fragment, depending on caller context.
+
+    Raises:
+        HTTPException: A terminated simulation is asked to restart without reset.
+    """
     loop = api_main._get_loop()
 
     if loop.running and not loop.paused:
@@ -100,7 +114,14 @@ async def start_simulation(request: Request) -> Any:
 
 @router.post("/api/simulation/pause", summary="Pause or resume simulation")
 async def pause_simulation(request: Request) -> Any:
-    """Toggle pause state of the active live simulation."""
+    """Toggle pause state of the active live simulation loop.
+
+    Args:
+        request: Incoming HTTP request used to select JSON or HTMX fragment responses.
+
+    Returns:
+        Status payload or status-badge fragment with updated pause state.
+    """
     loop = api_main._get_loop()
     loop.pause()
     state = "paused" if loop.paused else "resumed"
@@ -153,7 +174,14 @@ async def step_simulation(request: Request) -> Any:
 
 @router.post("/api/simulation/reset", summary="Reset simulation to the loaded scenario")
 async def reset_simulation(request: Request) -> Any:
-    """Recreate the live loop from the currently loaded baseline configuration."""
+    """Recreate live runtime state from the loaded baseline scenario.
+
+    Args:
+        request: Incoming HTTP request used to select JSON or HTMX fragment responses.
+
+    Returns:
+        Status payload or status-badge fragment for the reset state.
+    """
     loop = api_main._get_loop()
 
     if api_main._sim_task is not None and not api_main._sim_task.done():
@@ -177,7 +205,11 @@ async def reset_simulation(request: Request) -> Any:
     summary="Get simulation status",
 )
 async def simulation_status() -> SimulationStatusResponse:
-    """Return current tick and live loop lifecycle flags."""
+    """Return lifecycle status and tick position for the active simulation.
+
+    Returns:
+        Structured lifecycle state for polling and control-plane diagnostics.
+    """
     loop = api_main._get_loop()
     return SimulationStatusResponse(
         tick=loop.tick,
@@ -190,7 +222,14 @@ async def simulation_status() -> SimulationStatusResponse:
 
 @router.put("/api/simulation/wind", summary="Update wind vector")
 async def update_wind(payload: WindUpdatePayload) -> dict[str, Any]:
-    """Update the wind vector of the active live environment."""
+    """Update the uniform wind vector field of the active environment.
+
+    Args:
+        payload: Requested wind components in simulation coordinate space.
+
+    Returns:
+        Confirmation payload echoing the applied wind vector.
+    """
     loop = api_main._get_loop()
     loop.update_wind(payload.wind_x, payload.wind_y)
     api_main.logger.info(
@@ -201,7 +240,14 @@ async def update_wind(payload: WindUpdatePayload) -> dict[str, Any]:
 
 @router.get("/api/scenario/export", summary="Export draft as JSON")
 async def scenario_export() -> Response:
-    """Serialize the current draft as a downloadable configuration artifact."""
+    """Serialize draft configuration into a downloadable scenario artifact.
+
+    Returns:
+        JSON response with attachment headers for scenario persistence.
+
+    Raises:
+        HTTPException: Draft state cannot be transformed into a valid schema payload.
+    """
     draft = get_draft()
     try:
         config = draft.build_sim_config()
@@ -225,8 +271,14 @@ async def scenario_export() -> Response:
 async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
     """Parse an uploaded scenario JSON document and replace draft state.
 
+    Args:
+        file: Uploaded JSON scenario artifact.
+
+    Returns:
+        Confirmation payload with imported grid dimensions.
+
     Raises:
-        HTTPException: If uploaded JSON does not validate against the scenario schema.
+        HTTPException: Uploaded content fails JSON parsing or scenario-schema validation.
     """
     raw = await file.read()
     try:
@@ -338,8 +390,14 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
 async def scenario_load_draft(request: Request) -> Any:
     """Build a validated config from the draft and instantiate a new live loop.
 
+    Args:
+        request: Incoming request used for HTMX status-badge rendering.
+
+    Returns:
+        Updated status-badge fragment representing live runtime state.
+
     Raises:
-        HTTPException: If the draft cannot be transformed into a valid simulation configuration.
+        HTTPException: Draft cannot be transformed into a valid simulation configuration.
     """
     draft = get_draft()
     try:
