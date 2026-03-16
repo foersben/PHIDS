@@ -19,9 +19,11 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 import phids.api.main as api_main
 from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import SubstanceDefinition, get_draft
 
 router = APIRouter()
+draft_service = DraftService()
 
 
 @router.post(
@@ -63,27 +65,21 @@ async def config_biotope(
         TemplateResponse: Updated biotope configuration partial.
     """
     draft = get_draft()
-    clamped_grid_width = max(10, min(80, grid_width))
-    clamped_grid_height = max(10, min(80, grid_height))
-    clamped_max_ticks = max(1, max_ticks)
-    clamped_tick_rate_hz = max(0.1, tick_rate_hz)
-    clamped_num_signals = max(1, min(16, num_signals))
-    clamped_num_toxins = max(1, min(16, num_toxins))
-    clamped_connection_cost = max(0.0, mycorrhizal_connection_cost)
-    clamped_growth_interval = max(1, min(256, mycorrhizal_growth_interval_ticks))
-    clamped_signal_velocity = max(1, mycorrhizal_signal_velocity)
-    draft.grid_width = clamped_grid_width
-    draft.grid_height = clamped_grid_height
-    draft.max_ticks = clamped_max_ticks
-    draft.tick_rate_hz = clamped_tick_rate_hz
-    draft.wind_x = wind_x
-    draft.wind_y = wind_y
-    draft.num_signals = clamped_num_signals
-    draft.num_toxins = clamped_num_toxins
-    draft.mycorrhizal_inter_species = mycorrhizal_inter_species == "on"
-    draft.mycorrhizal_connection_cost = clamped_connection_cost
-    draft.mycorrhizal_growth_interval_ticks = clamped_growth_interval
-    draft.mycorrhizal_signal_velocity = clamped_signal_velocity
+    values_were_clamped = draft_service.update_biotope(
+        draft,
+        grid_width=grid_width,
+        grid_height=grid_height,
+        max_ticks=max_ticks,
+        tick_rate_hz=tick_rate_hz,
+        wind_x=wind_x,
+        wind_y=wind_y,
+        num_signals=num_signals,
+        num_toxins=num_toxins,
+        mycorrhizal_inter_species=mycorrhizal_inter_species == "on",
+        mycorrhizal_connection_cost=mycorrhizal_connection_cost,
+        mycorrhizal_growth_interval_ticks=mycorrhizal_growth_interval_ticks,
+        mycorrhizal_signal_velocity=mycorrhizal_signal_velocity,
+    )
     api_main.logger.debug(
         "Draft biotope updated (grid=%dx%d, max_ticks=%d, tick_rate_hz=%.2f, wind=(%.3f, %.3f), signals=%d, toxins=%d, mycorrhiza_interval=%d)",
         draft.grid_width,
@@ -96,23 +92,13 @@ async def config_biotope(
         draft.num_toxins,
         draft.mycorrhizal_growth_interval_ticks,
     )
-    if (
-        clamped_grid_width != grid_width
-        or clamped_grid_height != grid_height
-        or clamped_max_ticks != max_ticks
-        or clamped_tick_rate_hz != tick_rate_hz
-        or clamped_num_signals != num_signals
-        or clamped_num_toxins != num_toxins
-        or clamped_connection_cost != mycorrhizal_connection_cost
-        or clamped_growth_interval != mycorrhizal_growth_interval_ticks
-        or clamped_signal_velocity != mycorrhizal_signal_velocity
-    ):
+    if values_were_clamped:
         api_main.logger.warning(
             "Draft biotope values were clamped to valid ranges (requested_grid=%dx%d, applied_grid=%dx%d)",
             grid_width,
             grid_height,
-            clamped_grid_width,
-            clamped_grid_height,
+            draft.grid_width,
+            draft.grid_height,
         )
     return api_main.templates.TemplateResponse(
         request,
@@ -157,7 +143,7 @@ async def config_flora_add(
         camouflage_factor=max(0.0, min(1.0, camouflage_factor)),
         triggers=[],
     )
-    draft.add_flora(params)
+    draft_service.add_flora(draft, params)
     api_main.logger.info("Flora species added via API (species_id=%d, name=%s)", new_id, name)
     return api_main.templates.TemplateResponse(
         request,
@@ -245,7 +231,7 @@ async def config_flora_delete(species_id: int) -> HTMLResponse:
     """Remove one flora species from the draft."""
     draft = get_draft()
     try:
-        draft.remove_flora(species_id)
+        draft_service.remove_flora(draft, species_id)
     except ValueError as exc:
         api_main.logger.warning("Flora delete requested for unknown species_id=%d", species_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -281,7 +267,7 @@ async def config_predator_add(
         energy_upkeep_per_individual=energy_upkeep_per_individual,
         split_population_threshold=split_population_threshold,
     )
-    draft.add_predator(params)
+    draft_service.add_predator(draft, params)
     api_main.logger.info("Predator species added via API (species_id=%d, name=%s)", new_id, name)
     return api_main.templates.TemplateResponse(
         request,
@@ -361,7 +347,7 @@ async def config_predator_delete(species_id: int) -> HTMLResponse:
     """Remove one predator species from the draft."""
     draft = get_draft()
     try:
-        draft.remove_predator(species_id)
+        draft_service.remove_predator(draft, species_id)
     except ValueError as exc:
         api_main.logger.warning("Predator delete requested for unknown species_id=%d", species_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -388,34 +374,28 @@ async def config_substance_add(
 ) -> Any:
     """Add one substance definition to the draft and render the updated substance table."""
     draft = get_draft()
-    if len(draft.substance_definitions) >= 16:
-        api_main.logger.warning("Rule-of-16 rejected substance creation")
-        raise HTTPException(status_code=400, detail="Rule of 16: maximum substances reached.")
-    new_id = len(draft.substance_definitions)
-    toxin_flag = is_toxin.lower() in ("true", "1", "yes", "on")
-    lethal_flag = lethal.lower() in ("true", "1", "yes", "on")
-    repellent_flag = repellent.lower() in ("true", "1", "yes", "on")
-    irreversible_flag = irreversible.lower() in ("true", "1", "yes", "on")
-    draft.substance_definitions.append(
-        SubstanceDefinition(
-            substance_id=new_id,
+    try:
+        definition: SubstanceDefinition = draft_service.add_substance(
+            draft,
             name=name,
-            is_toxin=toxin_flag,
-            lethal=lethal_flag,
-            repellent=repellent_flag,
-            synthesis_duration=max(1, synthesis_duration),
-            aftereffect_ticks=max(0, aftereffect_ticks),
-            lethality_rate=max(0.0, lethality_rate),
-            repellent_walk_ticks=max(0, repellent_walk_ticks),
-            energy_cost_per_tick=max(0.0, energy_cost_per_tick),
-            irreversible=irreversible_flag,
+            is_toxin=is_toxin,
+            lethal=lethal,
+            repellent=repellent,
+            synthesis_duration=synthesis_duration,
+            aftereffect_ticks=aftereffect_ticks,
+            lethality_rate=lethality_rate,
+            repellent_walk_ticks=repellent_walk_ticks,
+            energy_cost_per_tick=energy_cost_per_tick,
+            irreversible=irreversible,
         )
-    )
+    except ValueError as exc:
+        api_main.logger.warning("Rule-of-16 rejected substance creation")
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     api_main.logger.info(
         "Substance added via API (substance_id=%d, name=%s, is_toxin=%s)",
-        new_id,
-        name,
-        toxin_flag,
+        definition.substance_id,
+        definition.name,
+        definition.is_toxin,
     )
     return api_main.templates.TemplateResponse(
         request,
@@ -443,35 +423,24 @@ async def config_substance_update(
 ) -> Any:
     """Patch one substance definition in the draft and render the updated table."""
     draft = get_draft()
-    idx = next(
-        (i for i, s in enumerate(draft.substance_definitions) if s.substance_id == substance_id),
-        None,
-    )
-    if idx is None:
+    try:
+        sd: SubstanceDefinition = draft_service.update_substance(
+            draft,
+            substance_id,
+            name=name,
+            type_label=type_label,
+            synthesis_duration=synthesis_duration,
+            aftereffect_ticks=aftereffect_ticks,
+            lethality_rate=lethality_rate,
+            repellent_walk_ticks=repellent_walk_ticks,
+            energy_cost_per_tick=energy_cost_per_tick,
+            irreversible=irreversible,
+        )
+    except ValueError as exc:
         api_main.logger.warning(
             "Substance update requested for unknown substance_id=%d", substance_id
         )
-        raise HTTPException(status_code=404, detail=f"Substance {substance_id} not found.")
-
-    sd = draft.substance_definitions[idx]
-    if name is not None:
-        sd.name = name
-    if type_label is not None:
-        sd.is_toxin = type_label in ("Lethal Toxin", "Repellent Toxin", "Toxin")
-        sd.lethal = type_label == "Lethal Toxin"
-        sd.repellent = type_label == "Repellent Toxin"
-    if synthesis_duration is not None:
-        sd.synthesis_duration = max(1, synthesis_duration)
-    if aftereffect_ticks is not None:
-        sd.aftereffect_ticks = max(0, aftereffect_ticks)
-    if lethality_rate is not None:
-        sd.lethality_rate = max(0.0, lethality_rate)
-    if repellent_walk_ticks is not None:
-        sd.repellent_walk_ticks = max(0, repellent_walk_ticks)
-    if energy_cost_per_tick is not None:
-        sd.energy_cost_per_tick = max(0.0, energy_cost_per_tick)
-    if irreversible is not None:
-        sd.irreversible = irreversible.lower() in ("true", "1", "yes", "on")
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     api_main.logger.debug(
         "Substance updated via API (substance_id=%d, name=%s)", substance_id, sd.name
     )
@@ -491,16 +460,13 @@ async def config_substance_update(
 async def config_substance_delete(substance_id: int) -> HTMLResponse:
     """Remove one substance definition from the draft."""
     draft = get_draft()
-    idx = next(
-        (i for i, s in enumerate(draft.substance_definitions) if s.substance_id == substance_id),
-        None,
-    )
-    if idx is None:
+    try:
+        draft_service.remove_substance(draft, substance_id)
+    except ValueError as exc:
         api_main.logger.warning(
             "Substance delete requested for unknown substance_id=%d", substance_id
         )
-        raise HTTPException(status_code=404, detail=f"Substance {substance_id} not found.")
-    del draft.substance_definitions[idx]
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     api_main.logger.info("Substance deleted via API (substance_id=%d)", substance_id)
     return HTMLResponse(content="")
 
@@ -514,18 +480,18 @@ async def matrix_diet(
 ) -> Any:
     """Toggle or set one diet compatibility cell in the draft matrix."""
     draft = get_draft()
-    if predator_idx < len(draft.diet_matrix) and flora_idx < len(draft.diet_matrix[predator_idx]):
-        if compatible == "toggle":
-            draft.diet_matrix[predator_idx][flora_idx] = not draft.diet_matrix[predator_idx][
-                flora_idx
-            ]
-        else:
-            draft.diet_matrix[predator_idx][flora_idx] = compatible.lower() in ("true", "1", "on")
+    updated_value = draft_service.set_diet_compatibility(
+        draft,
+        predator_idx,
+        flora_idx,
+        compatible,
+    )
+    if updated_value is not None:
         api_main.logger.debug(
             "Diet matrix updated (predator_idx=%d, flora_idx=%d, compatible=%s)",
             predator_idx,
             flora_idx,
-            draft.diet_matrix[predator_idx][flora_idx],
+            updated_value,
         )
     else:
         api_main.logger.warning(
@@ -555,7 +521,8 @@ async def config_trigger_rule_add(
 ) -> Any:
     """Add one trigger rule to the draft and render the updated trigger-rule table."""
     draft = get_draft()
-    draft.add_trigger_rule(
+    draft_service.add_trigger_rule(
+        draft,
         flora_species_id=flora_species_id,
         predator_species_id=predator_species_id,
         substance_id=substance_id,
@@ -595,7 +562,8 @@ async def config_trigger_rule_update(
         api_main.logger.warning("Trigger rule update requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=f"Trigger rule {index} not found.")
 
-    draft.update_trigger_rule(
+    draft_service.update_trigger_rule(
+        draft,
         index,
         flora_species_id=flora_species_id,
         predator_species_id=predator_species_id,
@@ -628,7 +596,8 @@ async def config_trigger_rule_condition_root(
     """Create or replace the root activation-condition node for one trigger rule."""
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
-    draft.set_trigger_rule_activation_condition(
+    draft_service.set_trigger_rule_activation_condition(
+        draft,
         index,
         api_main._default_activation_condition_for_rule(draft, rule, node_kind),
     )
@@ -654,7 +623,8 @@ async def config_trigger_rule_condition_child_add(
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
     try:
-        draft.append_trigger_rule_condition_child(
+        draft_service.append_trigger_rule_condition_child(
+            draft,
             index,
             parent_path,
             api_main._default_activation_condition_for_rule(draft, rule, node_kind),
@@ -693,7 +663,8 @@ async def config_trigger_rule_condition_node_update(
             raise HTTPException(
                 status_code=400, detail="Trigger rule has no activation condition to update."
             )
-        draft.set_trigger_rule_activation_condition(
+        draft_service.set_trigger_rule_activation_condition(
+            draft,
             index,
             api_main._default_activation_condition_for_rule(draft, rule, kind),
         )
@@ -720,7 +691,7 @@ async def config_trigger_rule_condition_node_update(
 
         if kind is not None and current_node.get("kind") != kind:
             replacement = api_main._default_activation_condition_for_rule(draft, rule, kind)
-            draft.replace_trigger_rule_condition_node(index, path, replacement)
+            draft_service.replace_trigger_rule_condition_node(draft, index, path, replacement)
         else:
             updates: dict[str, object] = {}
             if current_node.get("kind") == "enemy_presence":
@@ -740,7 +711,7 @@ async def config_trigger_rule_condition_node_update(
                 updates["kind"] = kind
 
             if updates:
-                draft.update_trigger_rule_condition_node(index, path, **updates)
+                draft_service.update_trigger_rule_condition_node(draft, index, path, **updates)
     except IndexError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -765,7 +736,7 @@ async def config_trigger_rule_condition_delete(
     draft = get_draft()
     api_main._trigger_rule_by_index(draft, index)
     try:
-        draft.delete_trigger_rule_condition_node(index, path)
+        draft_service.delete_trigger_rule_condition_node(draft, index, path)
     except IndexError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return api_main.templates.TemplateResponse(
@@ -784,7 +755,7 @@ async def config_trigger_rule_delete(request: Request, index: int) -> Any:
     """Remove one trigger rule from the draft and render the updated trigger table."""
     draft = get_draft()
     try:
-        draft.remove_trigger_rule(index)
+        draft_service.remove_trigger_rule(draft, index)
     except IndexError as exc:
         api_main.logger.warning("Trigger rule delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -850,7 +821,7 @@ async def config_placement_plant_add(
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
-    draft.add_plant_placement(species_id, x, y, max(0.1, energy))
+    draft_service.add_plant_placement(draft, species_id, x, y, max(0.1, energy))
     api_main.logger.info(
         "Plant placement added via API (species_id=%d, x=%d, y=%d)", species_id, x, y
     )
@@ -881,7 +852,14 @@ async def config_placement_swarm_add(
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
-    draft.add_swarm_placement(species_id, x, y, max(1, population), max(0.1, energy))
+    draft_service.add_swarm_placement(
+        draft,
+        species_id,
+        x,
+        y,
+        max(1, population),
+        max(0.1, energy),
+    )
     api_main.logger.info(
         "Swarm placement added via API (species_id=%d, x=%d, y=%d, population=%d)",
         species_id,
@@ -910,7 +888,7 @@ async def config_placement_plant_delete(request: Request, index: int) -> Any:
     """Remove one plant placement and render the updated placement ledger."""
     draft = get_draft()
     try:
-        draft.remove_plant_placement(index)
+        draft_service.remove_plant_placement(draft, index)
     except IndexError as exc:
         api_main.logger.warning("Plant placement delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -935,7 +913,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Any:
     """Remove one swarm placement and render the updated placement ledger."""
     draft = get_draft()
     try:
-        draft.remove_swarm_placement(index)
+        draft_service.remove_swarm_placement(draft, index)
     except IndexError as exc:
         api_main.logger.warning("Swarm placement delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -957,7 +935,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Any:
 async def config_placements_clear(request: Request) -> Any:
     """Clear all plant and swarm placements and render the updated placement ledger."""
     draft = get_draft()
-    draft.clear_placements()
+    draft_service.clear_placements(draft)
     api_main.logger.info("All draft placements cleared via API")
     return api_main.templates.TemplateResponse(
         request,

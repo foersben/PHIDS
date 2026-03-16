@@ -1,7 +1,21 @@
-"""Termination condition evaluators (Z1–Z7).
+"""Termination condition evaluators (Z1–Z7) for deterministic simulation halting.
 
-Provide checks for simulation termination conditions such as maximum ticks,
-species extinction and aggregate population/energy thresholds.
+This module implements the rule-based termination logic that determines when a PHIDS simulation
+run should end. Seven named termination conditions are supported: Z1 halts when the configured
+maximum tick count is reached; Z2 halts when a specified flora species goes extinct (zero
+remaining plant entities with that species identifier); Z3 halts when all flora entities are
+extinct; Z4 and Z5 apply the analogous extinction conditions to predator species; Z6 halts when
+total aggregate flora energy exceeds a configured upper bound (modelling uncontrolled biomass
+expansion); and Z7 halts when total aggregate predator population exceeds a configured upper
+bound (modelling herbivore outbreak conditions).
+
+All conditions are evaluated by a single pass over live ECS component queries, keeping the
+computational cost proportional to the number of living entities rather than to any grid
+dimension. Conditions with negative threshold values are disabled by convention, enabling
+selective activation of any subset of the seven rules for a given scenario. The
+:class:`TerminationResult` dataclass encodes both the terminated flag and a human-readable
+reason string, which is logged and surfaced through the REST API ``/api/simulation/status``
+endpoint when the simulation halts.
 """
 
 from __future__ import annotations

@@ -1,9 +1,24 @@
-"""Lifecycle system: plant growth, reproduction, mycorrhizal networking and death.
+"""Lifecycle system: plant growth, mycorrhizal network formation, reproduction, and death.
 
-This module implements per-tick plant updates including growth according
-to species parameters, reproduction attempts, establishment of symbiotic
-root connections, and culling of dead plants.  It should run before
-interaction and signaling phases.
+This module implements the first of three ordered per-tick simulation phases executed by the
+PHIDS ``SimulationLoop``. The lifecycle phase applies deterministic physiological dynamics to all
+registered plant entities before any predator interactions are resolved, ensuring that the energy
+state observed by the interaction and signaling phases reflects the current-tick growth outcome.
+
+Per-tick growth increments the energy reserve of each plant by ``base_energy × (growth_rate / 100)``,
+clamped to ``max_energy``. Reproduction is attempted on each tick that satisfies the
+``reproduction_interval`` constraint and leaves sufficient energy surplus above ``seed_energy_cost``;
+the seed is dispersed to a randomly sampled polar coordinate within ``[seed_min_dist, seed_max_dist]``
+from the parent, and germination is rejected if the target cell is already occupied by any plant
+entity registered in the spatial hash, preventing overcrowding without requiring dense distance
+scans. Mycorrhizal root-network formation occurs at configurable intervals (``mycorrhizal_growth_interval_ticks``),
+pairing adjacent plants (Manhattan distance 1) that share sufficient energy surplus above their
+respective survival thresholds; each connection costs both participants ``connection_cost`` energy
+units and is bidirectionally recorded in their ``PlantComponent.mycorrhizal_connections`` sets.
+Plants whose energy falls below ``survival_threshold`` are unregistered from the spatial hash,
+removed from the energy layer write buffer, and queued for bulk entity destruction via
+``ECSWorld.collect_garbage``. Per-cause death counts are accumulated in the ``plant_death_causes``
+dict for telemetry attribution.
 """
 
 from __future__ import annotations

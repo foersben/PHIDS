@@ -1,6 +1,11 @@
-"""Experimental validation suite for test replay roundtrip.
+"""Unit tests for deterministic per-tick state serialisation and msgpack roundtrip fidelity.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module validates that :func:`~phids.io.replay.serialise_state` and
+:func:`~phids.io.replay.deserialise_state` form a lossless roundtrip for representative tick
+state dictionaries. The hypothesis is that nested Python structures — including scalar
+integers, booleans, and nested lists of floating-point values representing NumPy layer data —
+are preserved byte-for-byte through the msgpack encode-decode cycle, ensuring that replay
+files can be loaded on any supported interpreter without data corruption or type coercion.
 """
 
 from __future__ import annotations
@@ -9,13 +14,11 @@ from phids.io.replay import deserialise_state, serialise_state
 
 
 def test_replay_roundtrip_msgpack() -> None:
-    """Validates the replay roundtrip msgpack invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Verifies that serialise_state and deserialise_state form a lossless msgpack roundtrip.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+    A representative tick state dict is encoded and immediately decoded. The decoded dict must
+    compare equal to the original, confirming that all field types (int, bool, nested lists)
+    survive the msgpack encode-decode cycle without type coercion or value loss.
     """
     state = {
         "tick": 10,

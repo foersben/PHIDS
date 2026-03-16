@@ -1,9 +1,15 @@
-"""
-GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
+"""GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module implements the GridEnvironment, a cellular automata biotope for PHIDS, using NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The environment employs explicit read/write double-buffering to prevent race conditions and guarantee deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired resistance, and metabolic attrition. The convolution kernel is pre-computed and truncated to eliminate subnormal floats, maintaining computational efficiency and scientific accuracy. The architectural design is tightly coupled to the ECSWorld and flow-field systems, supporting O(1) spatial hash lookups and reproducible ecological dynamics.
-
-This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the biotope's algorithmic mechanics and biological rationale.
+This module implements the :class:`GridEnvironment`, a cellular automata biotope for PHIDS using
+NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of
+16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
+environment employs explicit read/write double-buffering to prevent race conditions and guarantee
+deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired
+resistance, and metabolic attrition. The convolution kernel is pre-computed and its tails are
+truncated to eliminate subnormal floats below ``SIGNAL_EPSILON``, maintaining computational
+efficiency and scientific accuracy. The architectural design is tightly coupled to the
+:class:`~phids.engine.core.ecs.ECSWorld` and flow-field systems, supporting O(1) spatial hash
+lookups and reproducible ecological dynamics.
 """
 
 from __future__ import annotations

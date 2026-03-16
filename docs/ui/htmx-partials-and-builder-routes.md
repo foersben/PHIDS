@@ -13,7 +13,7 @@ The UI is organized around three layers:
 
 1. **Jinja templates** define the canonical HTML structure,
 2. **HTMX interactions** request updates and replace DOM regions,
-3. **FastAPI route handlers** mutate `DraftState` and then re-render the relevant partial.
+3. **FastAPI route handlers** call `DraftService` to mutate `DraftState` and then re-render the relevant partial.
 
 This means that the control center remains fully server-authored even while behaving like a highly
 interactive workbench.
@@ -53,7 +53,7 @@ These are served by routes such as:
 Most builder routes follow a common pattern:
 
 1. retrieve the active `DraftState`,
-2. apply a mutation or normalization step,
+2. apply a mutation or normalization step through `DraftService`,
 3. render a fresh partial from the updated state,
 4. return HTML for an HTMX swap.
 
@@ -71,8 +71,8 @@ The route `POST /api/config/biotope` updates global draft parameters such as:
 - signal and toxin counts,
 - mycorrhizal settings.
 
-Its current implementation also clamps submitted values to valid ranges before re-rendering the
-`partials/biotope_config.html` fragment.
+Its current implementation delegates scalar normalization to `DraftService`, which clamps submitted
+values to valid ranges before re-rendering the `partials/biotope_config.html` fragment.
 
 This is a good example of PHIDS’s backend-first validation philosophy: even interactive UI edits
 pass through explicit normalization logic.
@@ -89,6 +89,11 @@ keeping species IDs, matrix dimensions, and dependent references consistent.
 The substance builder manages a registry of named substance definitions. These definitions do not
 by themselves encode when synthesis occurs; trigger rules provide that coupling.
 
+The mutation boundary is important here. Substance add, update, and delete routes now delegate to
+`DraftService`, which not only edits the registry row but also preserves dependent invariants such
+as sequential substance identifiers, precursor remapping, trigger-rule removal for deleted products,
+and activation-condition rewrites for surviving rules.
+
 This separation gives the UI a more scientifically meaningful structure:
 
 - a substance describes *what a chemical is*,
@@ -100,7 +105,9 @@ PHIDS currently distinguishes two related but different interaction editors:
 
 ### Diet matrix
 
-The diet matrix declares which predator species can consume which flora species.
+The diet matrix declares which predator species can consume which flora species. The route layer now
+delegates cell toggles to `DraftService`, so out-of-range indices are ignored centrally rather than
+mutated ad hoc in the HTTP handler.
 
 ### Trigger rules editor
 

@@ -1,6 +1,10 @@
-"""Experimental validation suite for test namespace alias.
+"""Tests for PHIDS package namespace availability and legacy namespace removal.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module validates that the canonical ``phids.*`` package hierarchy is importable via
+:mod:`importlib` and that the legacy ``phytodynamics`` namespace alias has been removed from the
+installed distribution. These checks serve as integration-level sanity guards confirming that
+package renaming and restructuring have been completed without leaving orphaned import paths that
+could confuse downstream consumers or CI runners.
 """
 
 from __future__ import annotations

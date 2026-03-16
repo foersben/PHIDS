@@ -1,6 +1,13 @@
-"""Experimental validation suite for test ecs world.
+"""Unit tests for the PHIDS Entity-Component-System registry and spatial hash invariants.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module validates the core data-structural invariants of :class:`~phids.engine.core.ecs.ECSWorld`:
+correct entity lifecycle management (creation, destruction, component attachment and removal),
+component index consistency under entity garbage collection, and the O(1) spatial hash operations
+(``register_position``, ``move_entity``, ``entities_at``, ``unregister_position``) that underpin
+all locality-based ecological interactions in the PHIDS engine. The hypothesis under test is that
+the spatial hash provides strictly consistent membership semantics — an entity registered at
+coordinates (x, y) must appear in ``entities_at(x, y)`` and must not appear at any other
+coordinate, and must be absent from all cells after garbage collection removes it.
 """
 
 from __future__ import annotations
@@ -9,35 +16,33 @@ from phids.engine.core.ecs import ECSWorld
 
 
 class Marker:
-    """Represent Marker state used by PHIDS components and tests.
+    """Minimal test component used to verify ECS component attachment and type-based indexing.
 
-    The class encapsulates structured state required for deterministic interactions in ECS or test scaffolding contexts.
+    ``Marker`` carries a single integer payload so that test assertions can verify that the
+    correct component instance is retrieved after attachment, without depending on any production
+    component type.
 
+    Attributes:
+        value: Integer payload for assertion equality checks.
     """
 
     def __init__(self, value: int) -> None:
-        """Execute init for Marker within the PHIDS processing pipeline.
-
-        The implementation preserves deterministic control flow and maintains consistency with ECS-oriented state management.
+        """Initialise the Marker with the given integer payload.
 
         Args:
-            value: Input value used to parameterize deterministic behavior for this callable.
-
-        Returns:
-            None. Object state is initialized for subsequent deterministic operations.
-
+            value: Integer payload stored for subsequent assertion comparison.
         """
         self.value = value
 
 
 def test_spatial_hash_register_move_and_gc() -> None:
-    """Validates the spatial hash register move and gc invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Verifies that register_position, move_entity, and collect_garbage maintain consistent spatial hash membership.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+    The invariant under test is that the spatial hash provides strict bijective location tracking:
+    an entity appears in exactly one cell set at a time, is absent from its previous cell after
+    ``move_entity``, and is absent from all cells after ``collect_garbage``. This consistency is
+    required for O(1) co-location queries in the interaction and signaling phases to remain
+    correct throughout the entity lifecycle.
     """
     world = ECSWorld()
     entity = world.create_entity()

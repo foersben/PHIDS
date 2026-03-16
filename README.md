@@ -100,7 +100,8 @@ See [`docs/interfaces/rest-and-websocket-surfaces.md`](docs/interfaces/rest-and-
 - partial update routes for high-frequency operator interactions
 
 Critical boundary: the UI does not mutate live runtime state directly. Configuration first changes
-server-side `DraftState` (`src/phids/api/ui_state.py`), and only
+server-side `DraftState` (`src/phids/api/ui_state.py`) through `DraftService`
+(`src/phids/api/services/draft_service.py`), and only
 `POST /api/scenario/load-draft` commits that draft into a live `SimulationLoop`.
 
 See [`docs/ui/index.md`](docs/ui/index.md).

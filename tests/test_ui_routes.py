@@ -21,6 +21,7 @@ from phids import __main__ as phids_cli
 from phids.api import main as api_main
 from phids.api import ui_state as draft_state_module
 from phids.api.main import app
+from phids.api.services.draft_service import DraftService
 from phids.api.schemas import BatchJobState, FloraSpeciesParams, PredatorSpeciesParams
 from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft
 from phids.engine import batch as batch_engine
@@ -31,6 +32,9 @@ from phids.io import replay
 from phids.io.scenario import load_scenario_from_json
 from phids.shared import logging_config
 from phids.telemetry import export as telemetry_export
+
+
+draft_service = DraftService()
 
 
 def _default_client() -> AsyncClient:
@@ -240,8 +244,8 @@ async def test_simulation_control_and_live_export_routes_cover_status_filters_an
 ) -> None:
     """Exercises simulation control, telemetry export, and HTMX badge branches through the live API surface."""
     draft = get_draft()
-    draft.add_plant_placement(0, 2, 2, 15.0)
-    draft.add_swarm_placement(0, 2, 2, 4, 20.0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 15.0)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 20.0)
     draft.diet_matrix[0][0] = False
     config = draft.build_sim_config()
 
@@ -337,8 +341,8 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
 
     reset_draft()
     draft = get_draft()
-    draft.add_plant_placement(0, 1, 1, 12.0)
-    draft.add_swarm_placement(0, 1, 1, 4, 16.0)
+    draft_service.add_plant_placement(draft, 0, 1, 1, 12.0)
+    draft_service.add_swarm_placement(draft, 0, 1, 1, 4, 16.0)
     monkeypatch.setattr(api_main, "_BATCH_DIR", tmp_path)
 
     scheduled_tasks: list[asyncio.Task[None]] = []
@@ -572,7 +576,8 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     with pytest.raises(ValueError):
         draft_state_module._default_activation_condition_node("unsupported")
 
-    draft.add_flora(
+    draft_service.add_flora(
+        draft,
         FloraSpeciesParams(
             species_id=9,
             name="Clover",
@@ -582,29 +587,38 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
             survival_threshold=1.0,
             reproduction_interval=8,
             triggers=[],
-        )
+        ),
     )
-    draft.add_predator(
+    draft_service.add_predator(
+        draft,
         PredatorSpeciesParams(
             species_id=9,
             name="Rabbit",
             energy_min=4.0,
             velocity=1,
             consumption_rate=2.5,
-        )
+        ),
     )
     draft.substance_definitions = [
         SubstanceDefinition(substance_id=0, name="Alarm"),
         SubstanceDefinition(substance_id=1, name="Toxin", is_toxin=True, lethal=True),
     ]
-    draft.add_trigger_rule(1, 1, 1, min_predator_population=3, required_signal_ids=[0])
+    draft_service.add_trigger_rule(
+        draft,
+        1,
+        1,
+        1,
+        min_predator_population=3,
+        required_signal_ids=[0],
+    )
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "substance_active",
         "substance_id": 0,
     }
 
-    draft.update_trigger_rule(0, required_signal_ids=[0, 1])
-    draft.set_trigger_rule_activation_condition(
+    draft_service.update_trigger_rule(draft, 0, required_signal_ids=[0, 1])
+    draft_service.set_trigger_rule_activation_condition(
+        draft,
         0,
         {
             "kind": "all_of",
@@ -613,19 +627,28 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
             ],
         },
     )
-    draft.append_trigger_rule_condition_child(
-        0, "", {"kind": "substance_active", "substance_id": 1}
-    )
-    draft.replace_trigger_rule_condition_node(
+    draft_service.append_trigger_rule_condition_child(
+        draft,
         0,
-        "0",
+        "",
+        {"kind": "substance_active", "substance_id": 1},
+    )
+    draft_service.replace_trigger_rule_condition_node(
+        draft,
+        0,
+        "1",
         {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 4},
     )
-    draft.update_trigger_rule_condition_node(0, "0", min_predator_population=5)
-    draft.delete_trigger_rule_condition_node(0, "1")
+    draft_service.update_trigger_rule_condition_node(
+        draft,
+        0,
+        "0",
+        min_predator_population=5,
+    )
+    draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
     with pytest.raises(IndexError):
-        draft.replace_trigger_rule_condition_node(
-            0, "5", {"kind": "substance_active", "substance_id": 0}
+        draft_service.replace_trigger_rule_condition_node(
+            draft, 0, "9", {"kind": "substance_active", "substance_id": 0}
         )
 
     current_condition = draft.trigger_rules[0].activation_condition
@@ -662,30 +685,30 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         ],
     }
 
-    draft.add_plant_placement(1, 3, 4, 12.0)
-    draft.add_swarm_placement(1, 4, 5, 6, 18.0)
+    draft_service.add_plant_placement(draft, 1, 3, 4, 12.0)
+    draft_service.add_swarm_placement(draft, 1, 4, 5, 6, 18.0)
     config = draft.build_sim_config()
     assert len(config.flora_species) == 2
     assert len(config.predator_species) == 2
     assert len(config.initial_plants) == 1
     assert len(config.initial_swarms) == 1
 
-    draft.remove_plant_placement(0)
-    draft.remove_swarm_placement(0)
-    draft.add_plant_placement(1, 2, 2, 11.0)
-    draft.add_swarm_placement(1, 2, 2, 5, 14.0)
-    draft.remove_predator(0)
-    draft.remove_flora(0)
+    draft_service.remove_plant_placement(draft, 0)
+    draft_service.remove_swarm_placement(draft, 0)
+    draft_service.add_plant_placement(draft, 1, 2, 2, 11.0)
+    draft_service.add_swarm_placement(draft, 1, 2, 2, 5, 14.0)
+    draft_service.remove_predator(draft, 0)
+    draft_service.remove_flora(draft, 0)
     assert draft.predator_species[0].species_id == 0
     assert draft.flora_species[0].species_id == 0
-    draft.remove_trigger_rule(0)
-    draft.clear_placements()
+    draft_service.remove_trigger_rule(draft, 0)
+    draft_service.clear_placements(draft)
     assert not draft.initial_plants
     assert not draft.initial_swarms
     with pytest.raises(ValueError):
-        draft.remove_flora(99)
+        draft_service.remove_flora(draft, 99)
     with pytest.raises(ValueError):
-        draft.remove_predator(99)
+        draft_service.remove_predator(draft, 99)
 
     empty = DraftState.default()
     empty.flora_species.clear()
@@ -990,8 +1013,8 @@ async def test_batch_export_tikz_supports_survival_chart_type(
 async def test_export_route_accepts_metabolic_alias_and_returns_tikz() -> None:
     """Validates that the metabolic alias resolves to defense-economy export generation."""
     draft = get_draft()
-    draft.add_plant_placement(0, 2, 2, 20.0)
-    draft.add_swarm_placement(0, 2, 2, 5, 20.0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 20.0)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 20.0)
 
     async with _default_client() as client:
         load_resp = await client.post("/api/scenario/load-draft")
@@ -1007,8 +1030,8 @@ async def test_export_route_accepts_metabolic_alias_and_returns_tikz() -> None:
 async def test_export_route_rejects_non_positive_tick_interval() -> None:
     """Ensures telemetry export returns HTTP 400 when tick_interval is below 1."""
     draft = get_draft()
-    draft.add_plant_placement(0, 1, 1, 10.0)
-    draft.add_swarm_placement(0, 1, 1, 3, 12.0)
+    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
+    draft_service.add_swarm_placement(draft, 0, 1, 1, 3, 12.0)
 
     async with _default_client() as client:
         load_resp = await client.post("/api/scenario/load-draft")
@@ -1030,9 +1053,9 @@ async def test_placement_preview_data_includes_root_links() -> None:
     This test ensures that the placement preview endpoint returns data reflecting plant and swarm placements, including mycorrhizal links. The test supports the scientific requirement for accurate visualization and analysis of root network connectivity and population attributes in draft scenarios, facilitating reproducible ecological experimentation.
     """
     draft = get_draft()
-    draft.add_plant_placement(0, 4, 4, 12.0)
-    draft.add_plant_placement(0, 4, 5, 11.0)
-    draft.add_swarm_placement(0, 4, 4, 7, 20.0)
+    draft_service.add_plant_placement(draft, 0, 4, 4, 12.0)
+    draft_service.add_plant_placement(draft, 0, 4, 5, 11.0)
+    draft_service.add_swarm_placement(draft, 0, 4, 4, 7, 20.0)
 
     async with _default_client() as client:
         resp = await client.get("/api/config/placements/data")
@@ -1053,9 +1076,9 @@ async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza() -
     This test verifies that the cell details endpoint provides draft mode data with correct plant, swarm, and mycorrhizal connection attributes. The test supports the scientific requirement for transparent reporting of root network connectivity and population attributes in draft scenarios, facilitating rigorous ecological analysis and scenario design.
     """
     draft = get_draft()
-    draft.add_plant_placement(0, 1, 2, 15.0)
-    draft.add_plant_placement(0, 1, 3, 14.0)
-    draft.add_swarm_placement(0, 1, 2, 7, 30.0)
+    draft_service.add_plant_placement(draft, 0, 1, 2, 15.0)
+    draft_service.add_plant_placement(draft, 0, 1, 3, 14.0)
+    draft_service.add_swarm_placement(draft, 0, 1, 2, 7, 30.0)
 
     async with _default_client() as client:
         resp = await client.get("/api/ui/cell-details", params={"x": 1, "y": 2})
@@ -1102,6 +1125,100 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
 
 
 @pytest.mark.asyncio
+async def test_substance_and_diet_routes_delegate_to_service_and_compact_references() -> None:
+    """Validates that builder routes preserve compact substance indexing and diet-matrix safety invariants.
+
+    This integration experiment exercises the HTTP surface that fronts the centralized
+    ``DraftService`` mutation boundary. The assertions verify that substance creation and update
+    routes clamp operator input into bounded scientific parameters, that substance deletion removes
+    orphaned trigger rules while remapping surviving activation-condition references, and that diet
+    matrix edits mutate only valid trophic-compatibility coordinates. These route-level guarantees
+    keep the server-rendered builder aligned with the deterministic draft-state architecture.
+    """
+    draft = get_draft()
+
+    async with _default_client() as client:
+        add_alarm = await client.post("/api/config/substances", data={"name": "Alarm"})
+        add_shield = await client.post(
+            "/api/config/substances",
+            data={"name": "Shield", "is_toxin": "true", "lethal": "true"},
+        )
+        add_relay = await client.post("/api/config/substances", data={"name": "Relay"})
+
+        update_resp = await client.put(
+            "/api/config/substances/1",
+            data={
+                "name": "Shield+",
+                "type_label": "Repellent Toxin",
+                "synthesis_duration": 0,
+                "aftereffect_ticks": -2,
+                "repellent_walk_ticks": -3,
+                "energy_cost_per_tick": -5.0,
+                "irreversible": "on",
+            },
+        )
+        toggle_diet = await client.post(
+            "/api/matrices/diet",
+            data={"predator_idx": 0, "flora_idx": 0, "compatible": "toggle"},
+        )
+        invalid_diet = await client.post(
+            "/api/matrices/diet",
+            data={"predator_idx": 9, "flora_idx": 9, "compatible": "true"},
+        )
+
+        missing_update = await client.put(
+            "/api/config/substances/99",
+            data={"name": "Missing"},
+        )
+
+    assert add_alarm.status_code == 200
+    assert add_shield.status_code == 200
+    assert add_relay.status_code == 200
+    assert "Shield+" in update_resp.text
+    assert toggle_diet.status_code == 200
+    assert invalid_diet.status_code == 200
+    assert missing_update.status_code == 404
+    assert draft.diet_matrix[0][0] is False
+    assert draft.substance_definitions[1].repellent is True
+    assert draft.substance_definitions[1].aftereffect_ticks == 0
+    assert draft.substance_definitions[1].repellent_walk_ticks == 0
+    assert draft.substance_definitions[1].energy_cost_per_tick == pytest.approx(0.0)
+    assert draft.substance_definitions[1].irreversible is True
+
+    draft.substance_definitions[2].precursor_signal_id = 2
+    draft_service.add_trigger_rule(
+        draft,
+        0,
+        0,
+        1,
+        activation_condition={"kind": "substance_active", "substance_id": 1},
+    )
+    draft_service.add_trigger_rule(
+        draft,
+        0,
+        0,
+        2,
+        activation_condition={"kind": "substance_active", "substance_id": 2},
+    )
+
+    async with _default_client() as client:
+        delete_resp = await client.delete("/api/config/substances/1")
+        missing_delete = await client.delete("/api/config/substances/99")
+
+    assert delete_resp.status_code == 200
+    assert missing_delete.status_code == 404
+    assert [definition.substance_id for definition in draft.substance_definitions] == [0, 1]
+    assert draft.substance_definitions[1].name == "Relay"
+    assert draft.substance_definitions[1].precursor_signal_id == 1
+    assert len(draft.trigger_rules) == 1
+    assert draft.trigger_rules[0].substance_id == 1
+    assert draft.trigger_rules[0].activation_condition == {
+        "kind": "substance_active",
+        "substance_id": 1,
+    }
+
+
+@pytest.mark.asyncio
 async def test_live_dashboard_payload_and_cell_details_include_signals_and_links(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1116,9 +1233,9 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     )
 
     draft = get_draft()
-    draft.add_plant_placement(0, 2, 2, 18.0)
-    draft.add_plant_placement(0, 2, 3, 16.0)
-    draft.add_swarm_placement(0, 2, 2, 6, 24.0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 18.0)
+    draft_service.add_plant_placement(draft, 0, 2, 3, 16.0)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 6, 24.0)
     draft.diet_matrix[0][0] = False
     draft.mycorrhizal_growth_interval_ticks = 1
     draft.substance_definitions.append(
@@ -1130,7 +1247,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
             aftereffect_ticks=2,
         )
     )
-    draft.add_trigger_rule(0, 0, 0, min_predator_population=5)
+    draft_service.add_trigger_rule(draft, 0, 0, 0, min_predator_population=5)
 
     async with _default_client() as client:
         load_resp = await client.post("/api/scenario/load-draft", headers={"HX-Request": "true"})
@@ -1201,8 +1318,8 @@ async def test_ui_cell_details_rejects_stale_live_tick() -> None:
     This test verifies that the cell details endpoint returns a 409 status and correct tick information when the expected tick is stale, supporting the scientific requirement for deterministic state synchronization and error reporting in live simulation scenarios.
     """
     draft = get_draft()
-    draft.add_plant_placement(0, 3, 3, 20.0)
-    draft.add_swarm_placement(0, 3, 3, 5, 20.0)
+    draft_service.add_plant_placement(draft, 0, 3, 3, 20.0)
+    draft_service.add_swarm_placement(draft, 0, 3, 3, 5, 20.0)
 
     async with _default_client() as client:
         load_resp = await client.post("/api/scenario/load-draft")
@@ -1230,8 +1347,8 @@ async def test_model_diagnostics_and_telemetry_refresh_context() -> None:
     This test ensures that the diagnostics and telemetry endpoints report updated context after a simulation step, supporting the scientific requirement for transparent reporting of simulation progress, plant death diagnostics, and energy deficit watch in PHIDS.
     """
     draft = get_draft()
-    draft.add_plant_placement(0, 5, 5, 17.0)
-    draft.add_swarm_placement(0, 5, 5, 8, 32.0)
+    draft_service.add_plant_placement(draft, 0, 5, 5, 17.0)
+    draft_service.add_swarm_placement(draft, 0, 5, 5, 8, 32.0)
 
     async with _default_client() as client:
         await client.post("/api/scenario/load-draft")
@@ -1273,8 +1390,8 @@ async def test_scenario_export_and_import_round_trip_ui() -> None:
     """
     export_path = Path("/tmp/phids-ui-test.json")
     draft = get_draft()
-    draft.add_plant_placement(0, 2, 2, 10.0)
-    draft.add_swarm_placement(0, 2, 2, 5, 18.0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 10.0)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 18.0)
     draft.mycorrhizal_growth_interval_ticks = 13
 
     async with _default_client() as client:

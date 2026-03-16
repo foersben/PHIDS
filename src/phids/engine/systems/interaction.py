@@ -1,9 +1,26 @@
-"""Interaction system: swarm movement, feeding and continuous energy economy.
+"""Interaction system: swarm gradient navigation, herbivory, metabolic attrition, and mitosis.
 
-This module implements swarm behaviour including movement (gradient
-navigation or random walk), feeding using the diet compatibility matrix,
-metabolic attrition and mitosis. Spatial hash lookups provide O(1)
-co-occupancy checks.
+This module implements the second of three ordered per-tick simulation phases in the PHIDS engine.
+The interaction phase resolves all predator-flora encounters after plant lifecycle dynamics have
+been committed to the energy layers, but before chemical-defense substances are emitted and
+diffused. This ordering ensures that herbivory is computed against the most recent plant energy
+state and that toxin effects on the interaction phase's movement decisions are propagated via the
+flow-field gradient rather than through direct component access.
+
+Swarm movement is governed by probabilistic sampling over 4-connected neighbourhood candidates
+weighted by the scalar flow-field gradient. When the field is locally flat (gradient range below
+1e-6), movement inertia encoded in ``SwarmComponent.last_dx / last_dy`` is used to maintain a
+directional bias, preventing erratic Brownian behaviour in field-free zones. Tile carrying
+capacity (``TILE_CARRYING_CAPACITY``) imposes a local crowding pressure: swarms exceeding the
+tile limit enter a transient random-walk dispersal phase analogous to habitat saturation-driven
+emigration. Herbivory is applied only to stationary swarms (those that did not relocate during
+the current tick) via O(1) spatial hash lookups; the diet-compatibility matrix gates energy
+transfer between each predator–flora species pair. Metabolic attrition deducts per-individual
+upkeep energy each tick; deficits result in population casualties computed as
+``ceil(deficit / energy_min)``. Reproduction converts surplus energy above the swarm-baseline
+threshold into new individuals at cost ``energy_min × reproduction_energy_divisor``. Mitosis
+splits an oversized swarm into two equal halves and registers the offspring entity in the ECS
+world and spatial hash via ``_perform_mitosis``.
 """
 
 from __future__ import annotations

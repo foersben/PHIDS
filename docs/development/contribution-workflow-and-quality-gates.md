@@ -121,7 +121,7 @@ One of the most important contribution pitfalls is confusing the UI draft with t
 
 Practical consequence:
 
-- if a change affects how the UI edits a scenario, it usually belongs in `ui_state.py`, templates,
+- if a change affects how the UI edits a scenario, it usually belongs in `api/services/draft_service.py`, `ui_state.py`, templates,
   and builder routes,
 - if a change affects what happens once the simulation is running, it usually belongs in engine code
   and possibly the schema layer.

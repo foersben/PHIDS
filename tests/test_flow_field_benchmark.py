@@ -1,6 +1,12 @@
-"""Experimental validation suite for test flow field benchmark.
+"""Performance benchmarks for the Numba-accelerated flow-field gradient kernel.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module measures the wall-clock throughput of :func:`~phids.engine.core.flow_field.compute_flow_field`
+on a representative 40×40 grid under a realistic multi-source configuration. The benchmark
+validates not only correctness (finite output values, expected shape) but also that the Numba
+JIT-compiled iterative Jacobi propagation does not regress in throughput relative to the
+performance contract established when the kernel was introduced. Changes to diffusion iteration
+count, decay constants, or subnormal-float truncation thresholds should be accompanied by a
+re-run of this benchmark to detect performance regressions before they reach CI.
 """
 
 from __future__ import annotations
@@ -11,16 +17,17 @@ from phids.engine.core.flow_field import compute_flow_field
 
 
 def test_flow_field_generation_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
-    """Validates the flow field generation benchmark invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Benchmarks compute_flow_field throughput on a 40×40 grid with two plant attractors and one toxin repeller.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+    The benchmark uses ``pytest-benchmark`` to measure median call latency across repeated
+    invocations of the full public wrapper :func:`~phids.engine.core.flow_field.compute_flow_field`,
+    including the ``toxin_layers.sum(axis=0)`` aggregation and the final NumPy cast. Correctness
+    is verified post-benchmark: the returned array must be shaped (40, 40) and contain no
+    non-finite values, confirming that the Jacobi propagation and subnormal-float truncation
+    produce numerically stable outputs.
 
     Args:
-        benchmark: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+        benchmark: ``pytest-benchmark`` fixture controlling repeated timing invocations.
     """
     width = 40
     height = 40

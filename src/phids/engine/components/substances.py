@@ -1,7 +1,23 @@
-"""Substance ECS component dataclass.
+"""Substance ECS component dataclass encoding chemical-defense synthesis and activation state.
 
-Defines :class:`SubstanceComponent` for volatile signals and toxins emitted
-by plants in response to herbivore presence.
+This module defines :class:`SubstanceComponent`, the data container attached to substance
+entities in the PHIDS ECS world. A substance entity is associated with a single owner plant
+entity and represents either a volatile organic compound (VOC) signal emitted into airborne
+signal layers for detection by neighbouring plants, or a defensive toxin emitted into local toxin
+layers to deter, repel, or kill co-located herbivore swarms. The substance lifecycle consists of
+a configurable synthesis delay (``synthesis_duration`` ticks during which the plant invests
+metabolic resources), followed by an active emission phase, and an optional aftereffect window
+(``aftereffect_ticks``) during which emission persists after the triggering predator has
+departed.
+
+Substances are dynamically created by the signaling system when a ``TriggerConditionSchema``
+rule is satisfied, and are garbage-collected when their owner plant dies or when the aftereffect
+window expires and the trigger condition is no longer met. The ``irreversible`` flag encodes
+constitutive systemic acquired resistance: once activated, the substance remains permanently
+emitting until owner death, regardless of subsequent predator presence. The nested
+``activation_condition`` predicate tree enables compound chemical-defense cascades, such as
+alarm-chain scenarios in which a secondary toxin activates only after a primary VOC signal is
+already present, modelling coordinated multi-species defense networks.
 """
 
 from __future__ import annotations

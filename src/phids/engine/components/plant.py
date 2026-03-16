@@ -1,7 +1,21 @@
-"""Plant ECS component dataclass.
+"""Plant ECS component dataclass encoding per-entity flora runtime state.
 
-This module defines the :class:`PlantComponent` dataclass which stores the
-runtime state for a plant entity used by lifecycle and signaling systems.
+This module defines :class:`PlantComponent`, the data container attached to every flora entity in
+the PHIDS Entity-Component-System world. Each plant entity carries its own independent energy
+reserve, spatial grid coordinates, species-level growth and reproduction parameters, camouflage
+properties, and the set of identifiers of currently connected mycorrhizal partners. The strict
+separation between species-level parameters (which reside in the scenario configuration) and
+per-entity mutable state (which resides in ``PlantComponent``) is central to the data-oriented
+design: the lifecycle and signaling systems iterate over ``PlantComponent`` instances via the ECS
+query interface without requiring access to the configuration layer.
+
+The ``energy`` field encodes the biological fitness proxy E_i,j(t); its dynamics are governed by
+the growth term applied each lifecycle tick, the seed dispersal cost deducted at reproduction,
+the connection cost subtracted when a new mycorrhizal link is established, the herbivory loss
+inflicted by co-located swarms in the interaction phase, and the defense maintenance cost imposed
+by active ``SubstanceComponent`` entities in the signaling phase. A plant entity is culled when
+``energy < survival_threshold``, with the cause of terminal energy loss attributed via
+``last_energy_loss_cause`` for per-category death diagnostics.
 """
 
 from __future__ import annotations

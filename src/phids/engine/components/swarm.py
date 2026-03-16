@@ -1,7 +1,22 @@
-"""Herbivore Swarm ECS component dataclass.
+"""Herbivore swarm ECS component dataclass encoding per-entity predator runtime state.
 
-Defines :class:`SwarmComponent` storing runtime state for a herbivore
-swarm entity used by interaction and telemetry subsystems.
+This module defines :class:`SwarmComponent`, the data container attached to every herbivore
+swarm entity in the PHIDS Entity-Component-System world. Each swarm entity represents a
+spatially co-located cohort of individual herbivores sharing a common species identity, energy
+pool, and movement state. The ``population`` field tracks the integer head-count of the cohort;
+it is decremented by metabolic attrition when the swarm's energy reserve falls below the
+individual-level minimum (``energy_min``) and incremented by reproduction when sufficient surplus
+energy accumulates. When ``population`` reaches the ``split_population_threshold``, the swarm
+undergoes mitosis: the cohort is divided into two halves and a new entity carrying the offspring
+half is registered in the ECS world and spatial hash.
+
+The ``velocity`` field encodes the movement period in ticks between grid-cell relocations;
+together with ``move_cooldown``, it implements a discrete movement-frequency mechanism that
+decouples slow-moving species from the per-tick grid update cycle. Movement decisions are
+mediated by the scalar flow-field gradient, which encodes plant energy attractors and toxin
+repellers computed by the Numba-accelerated flow-field kernel. When a swarm encounters a
+repellent toxin, ``repelled`` is set and ``repelled_ticks_remaining`` governs the duration of the
+subsequent random-walk dispersal phase that overrides gradient navigation.
 """
 
 from __future__ import annotations

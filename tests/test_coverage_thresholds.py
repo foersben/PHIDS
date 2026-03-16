@@ -16,6 +16,7 @@ from httpx import ASGITransport, AsyncClient
 
 from phids.api import main as api_main
 from phids.api.main import app
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
@@ -24,6 +25,8 @@ from phids.api.ui_state import (
 )
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
+
+draft_service = DraftService()
 
 
 @pytest.fixture(autouse=True)
@@ -51,8 +54,8 @@ def _build_loaded_loop() -> SimulationLoop:
         The initialized simulation loop bound to ``api_main._sim_loop``.
     """
     draft = get_draft()
-    draft.add_plant_placement(0, 2, 2, 12.0)
-    draft.add_swarm_placement(0, 2, 2, 4, 8.0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
     loop = SimulationLoop(draft.build_sim_config())
     api_main._sim_loop = loop
     return loop
@@ -85,8 +88,12 @@ def test_main_default_activation_condition_and_trigger_index_branches() -> None:
     node labels. The index accessor must raise a 404 sentinel for out-of-range references.
     """
     draft = DraftState.default()
-    draft.add_trigger_rule(
-        flora_species_id=0, predator_species_id=0, substance_id=0, min_predator_population=2
+    draft_service.add_trigger_rule(
+        draft,
+        flora_species_id=0,
+        predator_species_id=0,
+        substance_id=0,
+        min_predator_population=2,
     )
     draft.substance_definitions.append(
         SubstanceDefinition(
@@ -133,9 +140,9 @@ def test_main_compatibility_shims_status_badge_and_energy_deficit() -> None:
     energy-deficit ranking excludes satiated swarms while retaining stressed ones.
     """
     draft = get_draft()
-    draft.add_plant_placement(0, 2, 2, 12.0)
-    draft.add_swarm_placement(0, 2, 2, 4, 30.0)
-    draft.add_swarm_placement(0, 3, 3, 4, 1.0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 30.0)
+    draft_service.add_swarm_placement(draft, 0, 3, 3, 4, 1.0)
     loop = SimulationLoop(draft.build_sim_config())
     api_main._sim_loop = loop
 

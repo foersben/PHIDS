@@ -1,6 +1,11 @@
-"""Experimental validation suite for test spatial hash benchmark.
+"""Performance benchmarks for the O(1) spatial hash entity-at-cell query.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module measures the wall-clock latency of ``ECSWorld.entities_at(x, y)`` under a 2000-entity
+population distributed across a 40×40 grid. The benchmark validates the spatial hash's O(1)
+amortised lookup contract, which is a core performance invariant of the PHIDS engine: the
+interaction and signaling phases invoke ``entities_at`` for every swarm movement step and every
+predator-presence evaluation in the trigger-condition tree, so any regression in hash lookup
+latency directly impacts tick throughput at biologically meaningful entity densities.
 """
 
 from __future__ import annotations
@@ -9,16 +14,16 @@ from phids.engine.core.ecs import ECSWorld
 
 
 def test_spatial_hash_query_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
-    """Validates the spatial hash query benchmark invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Benchmarks ECSWorld.entities_at throughput under a 2000-entity, 40×40-grid population.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
+    2000 entities are registered across grid cells using modular coordinate arithmetic to achieve
+    a representative occupancy density. The benchmark then repeatedly queries the hot cell (10, 10)
+    to measure steady-state hash lookup latency. The correctness assertion verifies that the
+    returned count is non-negative, confirming that the hash table remains internally consistent
+    after bulk registration.
 
     Args:
-        benchmark: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+        benchmark: ``pytest-benchmark`` fixture controlling repeated timing invocations.
     """
     world = ECSWorld()
 

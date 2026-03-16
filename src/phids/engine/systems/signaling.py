@@ -1,9 +1,27 @@
-"""Signaling system: substance synthesis, activation and local toxin effects.
+"""Signaling system: substance synthesis, activation, emission, diffusion, and toxin effects.
 
-This module manages the lifecycle of VOC signals and defensive toxins,
-including trigger evaluation via the spatial hash, synthesis countdowns,
-delegation of airborne signal diffusion to :class:`GridEnvironment`,
-mycorrhizal signal relays and application of toxin effects to swarms.
+This module implements the third and final per-tick simulation phase of the PHIDS engine,
+governing the full lifecycle of volatile organic compound (VOC) signals and defensive toxins.
+The signaling phase is executed after both the lifecycle and interaction phases have committed
+their energy mutations, ensuring that plant survival status and predator co-location data reflect
+the current tick's resolved state before chemical-defense decisions are made.
+
+The phase proceeds through six ordered sub-steps. First, orphaned substance entities whose owner
+plants were destroyed in earlier phases are garbage-collected. Second, trigger-condition trees are
+evaluated for each living plant against the per-cell predator census index
+(``_build_swarm_population_index``): direct predator co-presence (``enemy_presence`` nodes) or
+indirect conditions (``substance_active``, ``environmental_signal``, ``all_of``, ``any_of``
+composites) can independently satisfy a trigger. Third, synthesis countdown timers are decremented
+for triggered substances; substances with zero remaining countdown and satisfied activation
+conditions are transitioned to ``active`` state. Fourth, active substances emit concentration
+increments (``SUBSTANCE_EMIT_RATE``) into signal or toxin environment layers, deduct
+``energy_cost_per_tick`` from the owner plant, relay VOC signals through mycorrhizal root
+networks, and record toxin property aggregates for batch application. Fifth, toxin effects
+(lethality and repellency) are applied to all co-located swarms via ``_apply_toxin_to_swarms``,
+with immediate spatial-hash deregistration and garbage collection of swarms annihilated by
+chemical defense. Sixth, Gaussian diffusion is delegated to ``GridEnvironment.diffuse_signals``,
+which convolves each airborne signal layer with the pre-computed kernel and applies the
+``SIGNAL_EPSILON`` sparsity threshold to eliminate subnormal tail values.
 """
 
 from __future__ import annotations
@@ -47,8 +65,28 @@ def _check_activation_condition(
 ) -> bool:
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
-    Args:
+    Recursively traverses the condition tree rooted at ``activation_condition``, evaluating
+    ``enemy_presence`` leaves against the per-cell predator census index, ``substance_active``
+    leaves against the owner's active substance set, ``environmental_signal`` leaves against
+    the current signal-layer concentration at the plant's coordinates, and ``all_of`` / ``any_of``
+    composites using short-circuit Boolean logic.
 
+    Args:
+        plant: The plant entity whose grid coordinates are used for spatial condition checks.
+        owner_plant_id: Entity identifier of the owning plant, used to look up currently active
+            substances in ``active_substance_ids_by_owner``.
+        activation_condition: JSON-serialisable condition node dictionary, or ``None`` for
+            unconditional activation.
+        env: ``GridEnvironment`` providing read access to signal-layer concentrations for
+            ``environmental_signal`` predicates.
+        swarm_population_by_cell_species: Pre-built census index mapping
+            ``(x, y, species_id)`` to aggregate swarm population; used for ``enemy_presence``
+            evaluations without additional ECS world queries.
+        active_substance_ids_by_owner: Mapping from plant entity id to its set of currently
+            active substance layer indices; used for ``substance_active`` leaf evaluation.
+
+    Returns:
+        ``True`` when the condition tree evaluates to true; ``False`` otherwise.
     """
     if activation_condition is None:
         return True

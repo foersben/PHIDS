@@ -1,8 +1,20 @@
-"""Replay I/O for deterministic simulations.
+"""Deterministic per-tick state serialisation for PHIDS replay and re-simulation.
 
-This module provides compact binary serialisation of per-tick state
-snapshots using :mod:`msgpack`. Each tick is stored as a discrete frame to
-support deterministic re-simulation and on-disk replay files.
+This module implements the binary frame store used to record and replay ``SimulationLoop`` state
+snapshots. Each tick's state dictionary — containing grid dimensions, plant energy layers, signal
+layers, toxin layers, flow-field gradients, and wind vectors — is encoded as a compact msgpack
+frame and appended to an in-memory :class:`ReplayBuffer`. The frame format prefixes each payload
+with a 4-byte little-endian length field to enable sequential reading from arbitrarily long replay
+files without scanning for frame boundaries.
+
+The :class:`ReplayBuffer` is intentionally append-only in the forward direction: frames are
+accumulated during a live simulation run and may be serialised to disk via :meth:`ReplayBuffer.save`
+for post-hoc analysis, deterministic re-simulation seeding, or WebSocket replay streaming. The
+``msgpack`` encoding is chosen for its byte-efficiency relative to JSON and its absence of any
+Python-specific serialisation assumptions, making replay files portable across interpreter
+versions. Nested NumPy arrays are serialised as nested Python lists by ``SimulationLoop.get_state_snapshot``
+before being passed to this module; the replay module itself has no NumPy dependency, preserving
+its role as a pure I/O boundary.
 """
 
 from __future__ import annotations

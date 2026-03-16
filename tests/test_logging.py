@@ -1,6 +1,14 @@
-"""Experimental validation suite for test logging.
+"""Tests for PHIDS structured logging, in-memory log buffer, and simulation debug interval configuration.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module validates the observability infrastructure of the PHIDS runtime. The primary
+hypotheses are: (1) ``configure_logging`` is idempotent — repeated calls do not add duplicate
+handlers or alter the effective log level; (2) ``InMemoryLogHandler`` accumulates structured
+entries in FIFO order up to the configured capacity and returns them newest-first from
+``get_recent_logs``; (3) ``get_simulation_debug_interval`` correctly reads and validates the
+``PHIDS_LOG_SIM_DEBUG_INTERVAL`` environment variable, falling back to the default when the
+variable is absent or malformed; and (4) ``SimulationLoop`` emits at least one INFO-level log
+entry during construction, confirming that the logging pipeline is active by the time the engine
+initialises.
 """
 
 from __future__ import annotations

@@ -1,7 +1,25 @@
-"""Pydantic schemas for ECS components, configuration payloads, and REST API models.
+"""Pydantic v2 schemas for ECS components, species parameters, scenario configuration, and API models.
 
-This module defines payload and response models used by the REST API as well
-as schemata representing ECS components and species parameters.
+This module constitutes the validated ingress boundary for all externally supplied data entering
+the PHIDS runtime. It defines two categories of models: structural schemas that mirror ECS
+component state (``PlantComponentSchema``, ``SwarmComponentSchema``, ``SubstanceComponentSchema``)
+for serialisation and inspection endpoints, and configuration schemas (``FloraSpeciesParams``,
+``PredatorSpeciesParams``, ``DietCompatibilityMatrix``, ``SimulationConfig``) that parameterise
+``SimulationLoop`` construction. The former category supports REST and WebSocket state queries;
+the latter is validated once at ingress and then passed directly to the engine without further
+mutation.
+
+The activation-condition sub-schema forms a recursive algebraic type tree composed of
+``EnemyPresenceConditionSchema``, ``SubstanceActiveConditionSchema``,
+``EnvironmentalSignalConditionSchema``, ``AllOfConditionSchema``, and ``AnyOfConditionSchema``
+nodes, discriminated by the ``kind`` literal field. This tree is evaluated at runtime by the
+signaling system to support compound chemical-defense cascades — for example, alarm-chain
+scenarios in which a secondary toxin activates only after a primary VOC signal is already present.
+
+``SimulationConfig`` is the authoritative configuration container; its ``model_validator`` enforces
+cross-field reference integrity between placement species identifiers and the declared species
+lists before any engine state is allocated. The ``DietCompatibilityMatrix`` validator enforces
+Rule-of-16 shape bounds on both dimensions of the predator-flora edibility matrix.
 """
 
 from __future__ import annotations

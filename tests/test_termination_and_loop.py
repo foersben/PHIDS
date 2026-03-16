@@ -1,6 +1,15 @@
-"""Experimental validation suite for test termination and loop.
+"""Integration tests for SimulationLoop determinism, termination conditions, and tick ordering.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module validates the end-to-end behaviour of :class:`~phids.engine.loop.SimulationLoop`
+under a range of configured termination conditions (Z1 max-ticks, Z3 total flora extinction, Z4
+predator species extinction) and under boundary scenarios such as empty placement lists and
+single-species configurations. The core hypotheses are: (1) the loop terminates at exactly
+``max_ticks`` when no ecological stopping condition fires first; (2) the loop terminates
+immediately upon total flora extinction, reflecting the biological collapse of the primary
+producer trophic layer; (3) all five ordered phases (flow field, lifecycle, interaction,
+signaling, telemetry) advance the ECS world state deterministically across multiple ticks without
+raising exceptions; and (4) the telemetry recorder accumulates exactly one row per completed tick,
+preserving a correct accounting of Lotka-Volterra population dynamics.
 """
 
 from __future__ import annotations

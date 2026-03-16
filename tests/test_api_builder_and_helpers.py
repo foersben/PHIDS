@@ -15,6 +15,7 @@ from starlette.requests import Request
 
 from phids.api import main as api_main
 from phids.api.main import app
+from phids.api.services.draft_service import DraftService
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
@@ -36,6 +37,8 @@ from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
 from phids.api.routers.config import config_trigger_rule_condition_node_update
+
+draft_service = DraftService()
 
 
 def _default_client() -> AsyncClient:
@@ -201,8 +204,8 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
         api_main._validate_cell_coordinates(5, 1, 3, 3)
 
     draft.initial_plants = []
-    draft.add_plant_placement(0, 1, 1, 10.0)
-    draft.add_plant_placement(1, 2, 1, 10.0)
+    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
+    draft_service.add_plant_placement(draft, 1, 2, 1, 10.0)
     assert api_main._build_draft_mycorrhizal_links(draft) == []
     draft.mycorrhizal_inter_species = True
     assert api_main._build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
@@ -296,7 +299,7 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
     """
     draft = get_draft()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Signal A")]
-    draft.add_trigger_rule(0, 0, 0)
+    draft_service.add_trigger_rule(draft, 0, 0, 0)
 
     request = Request({"type": "http", "headers": []})
     response = await config_trigger_rule_condition_node_update(

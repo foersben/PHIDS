@@ -47,7 +47,8 @@ The API provides:
 The most important interface-level distinction in PHIDS is this:
 
 - the **live runtime** is the active `SimulationLoop`, and
-- the **editable UI state** is `DraftState` in `phids.api.ui_state`.
+- the **editable UI state** is `DraftState` in `phids.api.ui_state`, mutated via
+  `DraftService` in `phids.api.services.draft_service`.
 
 The UI mutates draft configuration first. Only an explicit load action turns that draft into a
 live simulation.
@@ -100,3 +101,4 @@ This section is grounded in the current implementation and tests, especially:
 - `src/phids/api/routers/`
 - `src/phids/api/schemas.py`
 - `src/phids/api/ui_state.py`
+- `src/phids/api/services/draft_service.py`

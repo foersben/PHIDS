@@ -176,8 +176,9 @@ The low-risk view routes are now registered through `src/phids/api/routers/ui.py
 fragments.
 
 Builder mutation routes (`/api/config/*`, `/api/matrices/diet`, and placement CRUD) are now
-registered through `src/phids/api/routers/config.py` and continue to mutate only `DraftState`
-until `POST /api/scenario/load-draft` commits a validated configuration into the live engine.
+registered through `src/phids/api/routers/config.py` and invoke `DraftService`
+(`src/phids/api/services/draft_service.py`) to mutate `DraftState` until
+`POST /api/scenario/load-draft` commits a validated configuration into the live engine.
 
 Scenario ingress and simulation lifecycle routes are now registered through
 `src/phids/api/routers/simulation.py`, while asynchronous batch orchestration routes and persisted
@@ -204,17 +205,17 @@ Representative examples include:
 
 | Route family | Current behavior |
 | --- | --- |
-| `POST /api/config/biotope` | Clamp and persist biotope parameters into `DraftState`. |
+| `POST /api/config/biotope` | Clamp and persist biotope parameters into `DraftState` through `DraftService`. |
 | `/api/config/flora` | Add, update, and delete flora species while compacting dependent ids. |
 | `/api/config/predators` | Add, update, and delete predator species while compacting dependent ids. |
-| `/api/config/substances` | Add, update, and delete named signal/toxin definitions. |
-| `POST /api/matrices/diet` | Update the predator-to-flora diet compatibility matrix. |
+| `/api/config/substances` | Add, update, and delete named signal/toxin definitions while compacting surviving substance references. |
+| `POST /api/matrices/diet` | Update the predator-to-flora diet compatibility matrix through centralized `DraftService` cell mutation. |
 | `/api/config/trigger-rules` | Add, update, and delete trigger rules. |
 | `/api/config/trigger-rules/{index}/condition/*` | Create, patch, replace, or delete activation-condition tree nodes. |
 | `/api/config/placements/*` | Add, remove, and clear draft plant/swarm placements. |
 
-These endpoints mutate `DraftState` and then return a fresh HTML partial rendered from canonical
-server-side state.
+These endpoints call `DraftService` mutation procedures against `DraftState` and then return a
+fresh HTML partial rendered from canonical server-side state.
 
 ## 6. WebSocket Streams
 

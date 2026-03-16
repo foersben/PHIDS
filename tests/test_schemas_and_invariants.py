@@ -1,6 +1,17 @@
-"""Experimental validation suite for test schemas and invariants.
+"""Pydantic schema validation and SimulationConfig invariant tests.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module validates the correctness of PHIDS Pydantic v2 schema constraints at the API ingress
+boundary. The primary hypotheses are: (1) ``SimulationConfig`` raises ``ValidationError`` when
+species placement identifiers reference undeclared flora or predator species, preventing
+reference-integrity violations before any engine state is allocated; (2) ``DietCompatibilityMatrix``
+rejects row counts and column counts exceeding the Rule-of-16 bounds; (3) the activation-condition
+schema tree correctly validates ``all_of``, ``any_of``, ``enemy_presence``, and
+``substance_active`` nodes and rejects structurally invalid compositions; (4)
+``TriggerConditionSchema`` correctly migrates legacy ``precursor_signal_id`` fields into the
+unified ``activation_condition`` tree via its ``model_validator``; and (5) ``GridEnvironment``
+raises ``ValueError`` for width, height, signal, and toxin layer counts outside their valid
+ranges, confirming that defensive bounds checking is present at the engine level independently
+of the API schema layer.
 """
 
 from __future__ import annotations
