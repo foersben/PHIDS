@@ -5,9 +5,10 @@ PHIDS exposes its runtime through two network styles with intentionally differen
 - **REST endpoints** for validated control, configuration transfer, and HTML partial rendering,
 - **WebSocket streams** for continuously changing simulation state.
 
-This chapter documents the current interface surface as implemented in `src/phids/api/main.py`.
-It should be read together with the architectural distinction between `DraftState` and the live
-`SimulationLoop`.
+This chapter documents the current interface surface as implemented across
+`src/phids/api/main.py`, `src/phids/api/routers/ui.py`, and
+`src/phids/api/routers/telemetry.py`. It should be read together with the architectural
+distinction between `DraftState` and the live `SimulationLoop`.
 
 ## Interface Taxonomy
 
@@ -122,8 +123,9 @@ For the analytics and replay semantics behind these routes, see:
 These routes export the current loop’s telemetry dataframe in external analysis formats.
 
 Current implementation note: heavy export serialization paths are executed via
-`run_in_threadpool` in `src/phids/api/main.py` so CPU-bound pandas/matplotlib/TikZ generation
-does not block the asyncio event loop that also drives control endpoints and WebSocket streams.
+`run_in_threadpool` in `src/phids/api/routers/telemetry.py` so CPU-bound
+pandas/matplotlib/TikZ generation does not block the asyncio event loop that also drives control
+endpoints and WebSocket streams.
 
 ## 4. UI Polling and Inspection Helpers
 
@@ -166,6 +168,10 @@ The PHIDS control center is server-rendered and HTMX-driven. Consequently, many 
 return JSON at all; they return HTML fragments that replace portions of the page.
 
 Representative route groups include:
+
+The low-risk view routes are now registered through `src/phids/api/routers/ui.py`, while
+`src/phids/api/main.py` continues to own the mutable runtime helpers consumed by those view
+fragments.
 
 ### View partials
 

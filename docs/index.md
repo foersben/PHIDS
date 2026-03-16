@@ -87,6 +87,7 @@ If you are new to the project, a practical reading order is:
 This documentation set is organized around the current implementation and test surfaces, especially:
 
 - `src/phids/api/main.py`
+- `src/phids/api/routers/`
 - `src/phids/api/ui_state.py`
 - `src/phids/engine/loop.py`
 - `src/phids/engine/core/`

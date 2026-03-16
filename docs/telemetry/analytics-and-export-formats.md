@@ -167,7 +167,7 @@ The API route docstrings and helper names make this explicit.
 
 ## API Export Surface
 
-The telemetry export routes in `src/phids/api/main.py` are:
+The telemetry export routes in `src/phids/api/routers/telemetry.py` are:
 
 - `GET /api/telemetry/export/csv`
 - `GET /api/telemetry/export/json`
@@ -187,6 +187,10 @@ PHIDS also exposes telemetry in a separate UI-oriented form through:
 
 This route does not return raw tabular data. Instead, it builds an SVG chart fragment and associated
 summary context for the HTMX-polled dashboard.
+
+The router extraction is intentionally conservative. `src/phids/api/routers/telemetry.py`
+registers the analytical endpoints, while `src/phids/api/main.py` remains the owner of the live
+`SimulationLoop`, shared telemetry-summary helpers, and WebSocket transport state.
 
 This is an important current distinction:
 

@@ -81,6 +81,7 @@ and canonical state transformations remain server-side.
 
 This section is grounded in:
 
+- `src/phids/api/routers/ui.py`
 - `src/phids/api/ui_state.py`
 - `src/phids/api/main.py`
 - `src/phids/api/templates/`

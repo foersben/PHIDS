@@ -1,9 +1,13 @@
-"""
-FastAPI application exposing REST endpoints and WebSocket streaming for PHIDS ecosystem simulation.
+"""FastAPI composition root for PHIDS runtime orchestration.
 
-This module implements the FastAPI application for PHIDS, providing REST endpoints for scenario loading, simulation lifecycle control, environmental parameter updates, and telemetry export. A WebSocket endpoint streams per-tick grid snapshots, supporting real-time visualization and analysis. The application also serves a browser-oriented surface via Jinja2-rendered HTML under / and /ui/*, together with HTMX-driven config endpoints that mutate the server-side DraftState before committing scenarios to the engine. The architectural design ensures deterministic simulation, reproducibility, and scientific integrity, supporting rigorous validation, double-buffered state management, and compliance with the Rule of 16 and O(1) spatial hash invariants. The module is central to the API and UI’s ability to model complex ecological dynamics and emergent behaviors with maximal biological fidelity.
-
-This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the application's architectural role, algorithmic mechanics, and biological rationale.
+This module assembles the canonical application object, owns the live single-simulation runtime, and
+defines the helper functions that bridge draft-state editing, deterministic `SimulationLoop`
+execution, telemetry summarisation, and WebSocket transport. Route registration is now partitioned:
+low-risk HTML and telemetry surfaces are delegated to dedicated router modules, while the remaining
+control, mutation, and streaming endpoints stay co-located with the shared mutable runtime they
+operate upon. This arrangement preserves the biological and computational invariants of PHIDS,
+including strict draft-versus-live separation, double-buffered environment advancement, and
+operator-facing observation of emergent plant-herbivore defence dynamics.
 """
 
 from __future__ import annotations
@@ -17,7 +21,7 @@ import logging
 import pathlib
 import time
 import zlib
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 
 import msgpack  # type: ignore[import-untyped]
 from pydantic import TypeAdapter, ValidationError
@@ -34,8 +38,6 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.concurrency import run_in_threadpool
-
 from phids.api.schemas import (
     ConditionNode,
     FloraSpeciesParams,
@@ -46,6 +48,8 @@ from phids.api.schemas import (
     BatchJobState,
     BatchStartPayload,
 )
+from phids.api.routers.telemetry import router as telemetry_router
+from phids.api.routers.ui import router as ui_router
 from phids.api.ui_state import (
     DraftState,
     PlacedPlant,
@@ -56,18 +60,8 @@ from phids.api.ui_state import (
     set_draft,
 )
 from phids.engine.loop import SimulationLoop
-from phids.telemetry.export import (
-    decimate_dataframe,
-    export_bytes_csv,
-    export_bytes_json,
-    filter_dataframe_columns,
-    filter_telemetry_rows,
-    generate_png_bytes,
-    generate_tikz_str,
-    export_bytes_tex_table,
-    telemetry_to_dataframe,
-)
-from phids.shared.logging_config import configure_logging, get_recent_logs
+from phids.telemetry.export import decimate_dataframe, filter_dataframe_columns, generate_tikz_str
+from phids.shared.logging_config import configure_logging
 
 configure_logging()
 
@@ -1339,317 +1333,6 @@ async def update_wind(payload: WindUpdatePayload) -> dict[str, Any]:
     return {"message": "Wind updated.", "wind_x": payload.wind_x, "wind_y": payload.wind_y}
 
 
-@app.get("/api/telemetry/export/csv", summary="Export telemetry as CSV")
-async def export_telemetry_csv() -> Response:
-    """Stream Lotka-Volterra analytics as a downloadable CSV file.
-
-    Returns:
-        Response: FastAPI response containing CSV bytes and headers.
-    """
-    loop = _get_loop()
-
-    def _build_csv_payload() -> tuple[bytes, int]:
-        df = loop.telemetry.dataframe
-        return export_bytes_csv(df), int(df.height)
-
-    data, rows = await run_in_threadpool(_build_csv_payload)
-    logger.info("Telemetry exported as CSV (%d rows)", rows)
-    return Response(
-        content=data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=telemetry.csv"},
-    )
-
-
-@app.get("/api/telemetry/export/json", summary="Export telemetry as JSON")
-async def export_telemetry_json() -> Response:
-    """Stream Lotka-Volterra analytics as a downloadable NDJSON file.
-
-    Returns:
-        Response: FastAPI response containing NDJSON bytes and headers.
-    """
-    loop = _get_loop()
-
-    def _build_json_payload() -> tuple[bytes, int]:
-        df = loop.telemetry.dataframe
-        return export_bytes_json(df), int(df.height)
-
-    data, rows = await run_in_threadpool(_build_json_payload)
-    logger.info("Telemetry exported as NDJSON (%d rows)", rows)
-    return Response(
-        content=data,
-        media_type="application/x-ndjson",
-        headers={"Content-Disposition": "attachment; filename=telemetry.ndjson"},
-    )
-
-
-@app.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
-async def telemetry_chartjs_data() -> JSONResponse:
-    """Return per-species population and energy series as a Chart.js-compatible JSON payload.
-
-    Iterates over raw telemetry rows to extract per-species population and energy
-    time series keyed by ``species_id``. The response is consumed by the
-    ``telemetry_tabs.html`` partial to populate line datasets and the Lotka-Volterra
-    phase-space scatter canvas without additional server round-trips.
-
-    Returns:
-        JSONResponse: Dict with keys ``labels``, ``flora_ids``, ``predator_ids``,
-        ``flora_names``, ``predator_names``, and ``series``.
-    """
-    if _sim_loop is None:
-        return JSONResponse({"labels": [], "flora_ids": [], "predator_ids": [], "series": {}})
-
-    rows = _sim_loop.telemetry._rows
-    species = _sim_loop.telemetry.get_species_ids()
-    flora_ids = species["flora_ids"]
-    predator_ids = species["predator_ids"]
-
-    flora_names = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
-    predator_names = {sp.species_id: sp.name for sp in _sim_loop.config.predator_species}
-
-    labels = [r["tick"] for r in rows]
-    series: dict[str, list[float]] = {
-        "flora_population": [float(r.get("flora_population", 0)) for r in rows],
-        "predator_population": [float(r.get("predator_population", 0)) for r in rows],
-        "total_flora_energy": [float(r.get("total_flora_energy", 0.0)) for r in rows],
-    }
-    for fid in flora_ids:
-        series[f"plant_{fid}_pop"] = [
-            float(r.get("plant_pop_by_species", {}).get(fid, 0)) for r in rows
-        ]
-        series[f"plant_{fid}_energy"] = [
-            float(r.get("plant_energy_by_species", {}).get(fid, 0.0)) for r in rows
-        ]
-        series[f"defense_cost_{fid}"] = [
-            float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows
-        ]
-    for pid in predator_ids:
-        series[f"swarm_{pid}_pop"] = [
-            float(r.get("swarm_pop_by_species", {}).get(pid, 0)) for r in rows
-        ]
-
-    return JSONResponse(
-        {
-            "labels": labels,
-            "flora_ids": flora_ids,
-            "predator_ids": predator_ids,
-            "flora_names": {str(k): v for k, v in flora_names.items()},
-            "predator_names": {str(k): v for k, v in predator_names.items()},
-            "series": series,
-        }
-    )
-
-
-@app.get(
-    "/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview"
-)
-async def telemetry_table_preview(
-    request: Request,
-    columns: str | None = None,
-    flora_ids: str | None = None,
-    predator_ids: str | None = None,
-    tick_interval: int = 1,
-    limit: int = 200,
-) -> Any:
-    """Render an HTMX table preview aligned with current telemetry visibility filters.
-
-    Args:
-        request: FastAPI request object.
-        columns: Optional comma-delimited DataFrame columns to include.
-        flora_ids: Optional comma-delimited flora species ids to include.
-        predator_ids: Optional comma-delimited predator species ids to include.
-        limit: Maximum preview rows for UI responsiveness.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/telemetry_table_preview.html`` fragment.
-    """
-    if _sim_loop is None:
-        return templates.TemplateResponse(
-            request,
-            "partials/telemetry_table_preview.html",
-            {"table_html": "", "empty_message": "No telemetry data available."},
-        )
-
-    rows = filter_telemetry_rows(
-        _sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids
-    )
-    df = telemetry_to_dataframe(rows)
-    df = filter_dataframe_columns(df, columns)
-    df = decimate_dataframe(df, tick_interval)
-
-    limit = max(1, min(limit, 1000))
-    df = df.tail(limit)
-
-    if df.empty:
-        context = {"table_html": "", "empty_message": "No rows match current table filters."}
-    else:
-        table_html = df.to_html(
-            index=False,
-            classes="min-w-full text-[11px]",
-            border=0,
-            justify="left",
-            float_format=lambda value: f"{value:.2f}",
-        )
-        context = {"table_html": table_html, "empty_message": ""}
-    return templates.TemplateResponse(request, "partials/telemetry_table_preview.html", context)
-
-
-@app.get(
-    "/api/export/{data_type}",
-    summary="Export telemetry data in academic formats",
-)
-async def export_telemetry_format(
-    data_type: str,
-    format: str = "csv",  # noqa: A002
-    prey_species_id: int = 0,
-    predator_species_id: int = 0,
-    columns: str | None = None,
-    flora_ids: str | None = None,
-    predator_ids: str | None = None,
-    title: str | None = None,
-    x_label: str | None = None,
-    y_label: str | None = None,
-    x_max: float | None = None,
-    y_max: float | None = None,
-    tick_interval: int = 1,
-) -> Response:
-    """Export telemetry data as CSV, LaTeX table, PGFPlots TikZ source, or PNG.
-
-    Supported ``data_type`` values are ``timeseries`` (per-species population
-    time series), ``phasespace`` (Lotka-Volterra phase-space trajectory),
-    ``defense_economy`` (defense-cost to energy ratio), and ``biomass_stack``
-    (stacked flora biomass proxy).
-    Supported ``format`` values are ``csv``, ``tex_table``, ``tex_tikz``, and
-    ``png``. All export formats are generated server-side using the headless
-    matplotlib Agg backend and the PGFPlots template generator; no LaTeX
-    installation is required on the server for TikZ export.
-
-    Args:
-        data_type: Chart type — ``timeseries`` or ``phasespace``.
-        format: Output format — ``csv``, ``tex_table``, ``tex_tikz``, or ``png``.
-        prey_species_id: Flora species id for phase-space x-axis.
-        predator_species_id: Predator species id for phase-space y-axis.
-
-    Returns:
-        Response: File download response with appropriate Content-Type and
-        Content-Disposition headers.
-
-    Raises:
-        HTTPException: 404 if no simulation is loaded; 400 if format is unknown.
-    """
-    if _sim_loop is None:
-        raise HTTPException(status_code=404, detail="No simulation loaded.")
-
-    normalized_data_type = "defense_economy" if data_type == "metabolic" else data_type
-    if normalized_data_type not in {"timeseries", "phasespace", "defense_economy", "biomass_stack"}:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, defense_economy, biomass_stack, or metabolic."
-            ),
-        )
-
-    if tick_interval < 1:
-        raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
-
-    rows = _sim_loop.telemetry._rows
-    flora_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
-    predator_names: dict[int, str] = {
-        sp.species_id: sp.name for sp in _sim_loop.config.predator_species
-    }
-    filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, predator_ids=predator_ids)
-
-    if format == "csv":
-
-        def _build_export_csv() -> bytes:
-            df = telemetry_to_dataframe(filtered_rows)
-            df = filter_dataframe_columns(df, columns)
-            df = decimate_dataframe(df, tick_interval)
-            csv_text = cast(str, df.to_csv(index=False))
-            return csv_text.encode("utf-8")
-
-        data = await run_in_threadpool(_build_export_csv)
-        filename = f"phids_{normalized_data_type}.csv"
-        media_type = "text/csv"
-    elif format == "tex_table":
-
-        def _build_export_tex_table() -> bytes:
-            return export_bytes_tex_table(
-                rows,
-                columns=columns,
-                include_flora_ids=flora_ids,
-                include_predator_ids=predator_ids,
-                tick_interval=tick_interval,
-            )
-
-        data = await run_in_threadpool(_build_export_tex_table)
-        filename = f"phids_{normalized_data_type}_table.tex"
-        media_type = "text/plain"
-    elif format == "tex_tikz":
-        try:
-
-            def _build_export_tikz() -> str:
-                return generate_tikz_str(
-                    filtered_rows,
-                    normalized_data_type,
-                    flora_names=flora_names,
-                    predator_names=predator_names,
-                    prey_species_id=prey_species_id,
-                    predator_species_id=predator_species_id,
-                    include_flora_ids=flora_ids,
-                    include_predator_ids=predator_ids,
-                    title=title,
-                    x_label=x_label,
-                    y_label=y_label,
-                    x_max=x_max,
-                    y_max=y_max,
-                )
-
-            tikz = await run_in_threadpool(_build_export_tikz)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        data = tikz.encode("utf-8")
-        filename = f"phids_{normalized_data_type}.tex"
-        media_type = "text/plain"
-    elif format == "png":
-        try:
-
-            def _build_export_png() -> bytes:
-                return generate_png_bytes(
-                    filtered_rows,
-                    normalized_data_type,
-                    flora_names=flora_names,
-                    predator_names=predator_names,
-                    prey_species_id=prey_species_id,
-                    predator_species_id=predator_species_id,
-                    include_flora_ids=flora_ids,
-                    include_predator_ids=predator_ids,
-                    title=title,
-                    x_label=x_label,
-                    y_label=y_label,
-                    x_max=x_max,
-                    y_max=y_max,
-                )
-
-            data = await run_in_threadpool(_build_export_png)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        filename = f"phids_{normalized_data_type}.png"
-        media_type = "image/png"
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown format '{format}'. Use csv, tex_table, tex_tikz, or png.",
-        )
-
-    logger.info("Export (%s/%s): %d bytes", normalized_data_type, format, len(data))
-    return Response(
-        content=data,
-        media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
 # ---------------------------------------------------------------------------
 # Batch processing routes
 # ---------------------------------------------------------------------------
@@ -1694,19 +1377,6 @@ def _discover_persisted_batches() -> list[BatchJobState]:
             )
         )
     return discovered
-
-
-@app.get("/ui/batch", response_class=HTMLResponse, summary="Batch runner dashboard")
-async def ui_batch_dashboard(request: Request) -> Any:
-    """Render the Monte Carlo batch runner dashboard partial.
-
-    Args:
-        request: FastAPI request object.
-
-    Returns:
-        TemplateResponse: Rendered ``batch_dashboard.html`` partial.
-    """
-    return templates.TemplateResponse(request, "batch_dashboard.html")
 
 
 @app.post("/api/batch/start", summary="Start a Monte Carlo batch simulation job")
@@ -2133,193 +1803,6 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
     return JSONResponse(content=payload)
 
 
-@app.get("/ui/diagnostics/model", response_class=HTMLResponse, summary="Diagnostics model tab")
-async def ui_diagnostics_model(request: Request) -> Any:
-    """Render live model counters, telemetry, and energy-deficit watch."""
-    return templates.TemplateResponse(
-        request,
-        "partials/diagnostics_model.html",
-        {
-            "draft": get_draft(),
-            "live_summary": _build_live_summary(),
-            "latest_metrics": _sim_loop.telemetry.get_latest_metrics()
-            if _sim_loop is not None
-            else None,
-            "energy_deficit_swarms": _build_energy_deficit_swarms(),
-        },
-    )
-
-
-@app.get(
-    "/ui/diagnostics/frontend", response_class=HTMLResponse, summary="Diagnostics frontend tab"
-)
-async def ui_diagnostics_frontend(request: Request) -> Any:
-    """Render the client-side diagnostics tab shell."""
-    return templates.TemplateResponse(request, "partials/diagnostics_frontend.html")
-
-
-@app.get("/ui/diagnostics/backend", response_class=HTMLResponse, summary="Diagnostics backend tab")
-async def ui_diagnostics_backend(request: Request) -> Any:
-    """Render structured recent backend logs for the diagnostics rail."""
-    return templates.TemplateResponse(
-        request,
-        "partials/diagnostics_backend.html",
-        {"recent_logs": get_recent_logs(limit=120)},
-    )
-
-
-# ---------------------------------------------------------------------------
-# HTML page routes
-# ---------------------------------------------------------------------------
-
-
-@app.get("/", response_class=HTMLResponse, summary="Main UI")
-async def root(request: Request) -> Any:
-    """Render the PHIDS Control Centre root page.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``index.html`` with dashboard content.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {"scenario_name": draft.scenario_name},
-    )
-
-
-@app.get("/ui/dashboard", response_class=HTMLResponse, summary="Dashboard partial")
-async def ui_dashboard(request: Request) -> Any:
-    """Return the dashboard HTMX partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/dashboard.html``.
-    """
-    return templates.TemplateResponse(request, "partials/dashboard.html")
-
-
-@app.get("/ui/biotope", response_class=HTMLResponse, summary="Biotope config partial")
-async def ui_biotope(request: Request) -> Any:
-    """Return the biotope configuration form partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/biotope_config.html``.
-    """
-    return templates.TemplateResponse(
-        request,
-        "partials/biotope_config.html",
-        {"draft": get_draft()},
-    )
-
-
-@app.get("/ui/flora", response_class=HTMLResponse, summary="Flora config partial")
-async def ui_flora(request: Request) -> Any:
-    """Return the flora species table partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/flora_config.html``.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request,
-        "partials/flora_config.html",
-        {"flora_species": draft.flora_species},
-    )
-
-
-@app.get("/ui/predators", response_class=HTMLResponse, summary="Predator config partial")
-async def ui_predators(request: Request) -> Any:
-    """Return the predator species table partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/predator_config.html``.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request,
-        "partials/predator_config.html",
-        {"predator_species": draft.predator_species},
-    )
-
-
-@app.get("/ui/substances", response_class=HTMLResponse, summary="Substance config partial")
-async def ui_substances(request: Request) -> Any:
-    """Return the substance definitions table partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/substance_config.html``.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request,
-        "partials/substance_config.html",
-        {"substances": draft.substance_definitions},
-    )
-
-
-@app.get("/ui/diet-matrix", response_class=HTMLResponse, summary="Diet matrix partial")
-async def ui_diet_matrix(request: Request) -> Any:
-    """Return the diet compatibility matrix partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/diet_matrix.html``.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request,
-        "partials/diet_matrix.html",
-        {
-            "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
-            "diet_matrix": draft.diet_matrix,
-        },
-    )
-
-
-@app.get("/ui/trigger-rules", response_class=HTMLResponse, summary="Trigger rules partial")
-async def ui_trigger_rules(request: Request) -> Any:
-    """Return the trigger rules editor partial.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/trigger_rules.html``.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request, "partials/trigger_rules.html", _trigger_rules_template_context(draft)
-    )
-
-
-# Keep legacy URL for backward compat
-@app.get("/ui/trigger-matrix", response_class=HTMLResponse, summary="Trigger rules (legacy URL)")
-async def ui_trigger_matrix_legacy(request: Request) -> Any:
-    """Redirect-compatible alias for the trigger rules page."""
-    return await ui_trigger_rules(request)
-
-
 # ---------------------------------------------------------------------------
 # Telemetry chart (HTMX-polled SVG)
 # ---------------------------------------------------------------------------
@@ -2381,39 +1864,6 @@ def _build_telemetry_svg(df: Any) -> str:  # df is polars.DataFrame
         f'<path d="{pp_path}" stroke="#ef4444" stroke-width="2" fill="none"/>'
         f'<path d="{fe_path}" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-dasharray="4 2"/>'
         f"</svg>"
-    )
-
-
-@app.get("/api/telemetry", summary="Telemetry SVG chart partial")
-async def telemetry_chart(request: Request) -> Any:
-    """Return an SVG chart fragment for the HTMX polling target.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/telemetry_chart.html``.
-    """
-    if _sim_loop is None:
-        svg = _build_telemetry_svg(None)
-        legend = False
-        latest_metrics = None
-        live_summary = None
-    else:
-        svg = _build_telemetry_svg(_sim_loop.telemetry.dataframe)
-        legend = True
-        latest_metrics = _sim_loop.telemetry.get_latest_metrics()
-        live_summary = _build_live_summary()
-
-    return templates.TemplateResponse(
-        request,
-        "partials/telemetry_chart.html",
-        {
-            "svg_content": svg,
-            "legend": legend,
-            "latest_metrics": latest_metrics,
-            "live_summary": live_summary,
-        },
     )
 
 
@@ -3391,30 +2841,6 @@ async def config_trigger_rule_delete(request: Request, index: int) -> Any:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/ui/placements", response_class=HTMLResponse, summary="Placement editor partial")
-async def ui_placements(request: Request) -> Any:
-    """Return the placement editor partial with interactive grid canvas.
-
-    Args:
-        request: FastAPI/Starlette request object.
-
-    Returns:
-        TemplateResponse: Rendered ``partials/placement_editor.html``.
-    """
-    draft = get_draft()
-    return templates.TemplateResponse(
-        request,
-        "partials/placement_editor.html",
-        {
-            "draft": draft,
-            "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
-            "initial_plants": draft.initial_plants,
-            "initial_swarms": draft.initial_swarms,
-        },
-    )
-
-
 @app.get("/api/config/placements/data", summary="Get placement data as JSON")
 async def placement_data() -> JSONResponse:
     """Return current plant and swarm placements as JSON for canvas rendering.
@@ -3832,3 +3258,7 @@ async def scenario_load_draft(request: Request) -> Any:
         len(config.predator_species),
     )
     return HTMLResponse(content=_render_status_badge_html())
+
+
+app.include_router(telemetry_router)
+app.include_router(ui_router)
