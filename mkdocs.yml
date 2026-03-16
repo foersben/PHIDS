@@ -57,6 +57,7 @@ nav:
       - UI Control Center: ui/index.md
       - Draft State and Load Workflow: ui/draft-state-and-load-workflow.md
       - HTMX Partials and Builder Routes: ui/htmx-partials-and-builder-routes.md
+      - Batch Runner and Aggregate Analysis: ui/batch-runner-and-aggregate-analysis.md
       - Diagnostics and Live Observation: ui/diagnostics-and-live-observation.md
   - Scenarios:
       - Overview: scenarios/index.md
@@ -73,6 +74,7 @@ nav:
       - Documentation Status and Open Work: development/documentation-status-and-open-work.md
       - GitHub Actions and Local CI Rehearsal: development/github-actions-and-local-ci.md
       - Containers and Release Automation: development/containers-and-release-automation.md
+      - Release Checklist: development/release-checklist.md
       - Documentation Standards: development/documentation-standards.md
       - Testing Strategy and Benchmark Policy: development/testing-strategy-and-benchmark-policy.md
   - Reference:

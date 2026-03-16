@@ -338,6 +338,7 @@ class DraftState:
         substance_definitions: Named substance registry indexed by substance_id.
         initial_plants: Plants placed on the grid before simulation start.
         initial_swarms: Swarms placed on the grid before simulation start.
+        active_batch_jobs: Registry of batch simulation jobs keyed by job_id.
     """
 
     scenario_name: str = _DEFAULT_SCENARIO_NAME
@@ -360,6 +361,7 @@ class DraftState:
     substance_definitions: list[SubstanceDefinition] = dataclasses.field(default_factory=list)
     initial_plants: list[PlacedPlant] = dataclasses.field(default_factory=list)
     initial_swarms: list[PlacedSwarm] = dataclasses.field(default_factory=list)
+    active_batch_jobs: dict[str, object] = dataclasses.field(default_factory=dict)
 
     # ------------------------------------------------------------------
     # Matrix resize helpers (diet_matrix only now)

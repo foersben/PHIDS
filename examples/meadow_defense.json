@@ -34,20 +34,20 @@
     {
       "species_id": 1,
       "name": "White Clover",
-      "base_energy": 11.0,
-      "max_energy": 92.0,
-      "growth_rate": 5.3,
-      "survival_threshold": 1.4,
+      "base_energy": 12.2,
+      "max_energy": 108.0,
+      "growth_rate": 6.1,
+      "survival_threshold": 1.1,
       "reproduction_interval": 8,
       "seed_min_dist": 0.8,
       "seed_max_dist": 2.3,
-      "seed_energy_cost": 3.8,
+      "seed_energy_cost": 3.1,
       "camouflage": false,
       "camouflage_factor": 1.0,
       "triggers": [
         {
           "predator_species_id": 0,
-          "min_predator_population": 4,
+          "min_predator_population": 3,
           "substance_id": 0,
           "synthesis_duration": 1,
           "is_toxin": false,
@@ -57,9 +57,19 @@
           "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
-            "kind": "enemy_presence",
-            "predator_species_id": 0,
-            "min_predator_population": 4
+            "kind": "any_of",
+            "conditions": [
+              {
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 3
+              },
+              {
+                "kind": "environmental_signal",
+                "signal_id": 0,
+                "min_concentration": 0.05
+              }
+            ]
           },
           "energy_cost_per_tick": 0.4,
           "irreversible": false
@@ -69,9 +79,9 @@
     {
       "species_id": 2,
       "name": "Yarrow",
-      "base_energy": 9.8,
-      "max_energy": 86.0,
-      "growth_rate": 4.2,
+      "base_energy": 10.4,
+      "max_energy": 94.0,
+      "growth_rate": 4.8,
       "survival_threshold": 1.8,
       "reproduction_interval": 11,
       "seed_min_dist": 1.0,
@@ -153,15 +163,15 @@
       "name": "Aphid Cluster",
       "energy_min": 2.1,
       "velocity": 1,
-      "consumption_rate": 3.8,
-      "reproduction_energy_divisor": 0.85
+      "consumption_rate": 2.4,
+      "reproduction_energy_divisor": 1.1
     }
   ],
   "diet_matrix": {
     "rows": [
       [
         true,
-        true,
+          false,
         false
       ],
       [
@@ -256,7 +266,7 @@
       "species_id": 0,
       "x": 20,
       "y": 22,
-      "population": 5,
+      "population": 4,
       "energy": 38.0
     },
     {
@@ -270,14 +280,14 @@
       "species_id": 1,
       "x": 32,
       "y": 12,
-      "population": 5,
+      "population": 3,
       "energy": 18.0
     },
     {
       "species_id": 1,
       "x": 24,
       "y": 23,
-      "population": 3,
+      "population": 2,
       "energy": 14.0
     }
   ]

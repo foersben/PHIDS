@@ -21,22 +21,29 @@ from phids.shared.constants import SUBSTANCE_EMIT_RATE
 def _is_substance_active_for_owner(
     owner_plant_id: int,
     substance_id: int,
-    world: ECSWorld,
+    active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     """Return whether a given substance is currently active on the owner plant."""
-    for entity in world.query(SubstanceComponent):
-        sub: SubstanceComponent = entity.get_component(SubstanceComponent)
-        if sub.owner_plant_id == owner_plant_id and sub.substance_id == substance_id and sub.active:
-            return True
-    return False
+    return substance_id in active_substance_ids_by_owner.get(owner_plant_id, set())
+
+
+def _build_swarm_population_index(world: ECSWorld) -> dict[tuple[int, int, int], int]:
+    """Return a per-cell, per-species swarm-population index for one signaling tick."""
+    populations: dict[tuple[int, int, int], int] = {}
+    for entity in world.query(SwarmComponent):
+        swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        key = (swarm.x, swarm.y, swarm.species_id)
+        populations[key] = populations.get(key, 0) + swarm.population
+    return populations
 
 
 def _check_activation_condition(
     plant: PlantComponent,
     owner_plant_id: int,
     activation_condition: dict[str, Any] | None,
-    world: ECSWorld,
     env: GridEnvironment,
+    swarm_population_by_cell_species: dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
@@ -51,13 +58,17 @@ def _check_activation_condition(
         predator_species_id = int(activation_condition.get("predator_species_id", -1))
         min_predator_population = int(activation_condition.get("min_predator_population", 1))
         return (
-            _co_located_swarm_population(world, plant.x, plant.y, predator_species_id)
+            swarm_population_by_cell_species.get((plant.x, plant.y, predator_species_id), 0)
             >= min_predator_population
         )
 
     if kind == "substance_active":
         substance_id = int(activation_condition.get("substance_id", -1))
-        return _is_substance_active_for_owner(owner_plant_id, substance_id, world)
+        return _is_substance_active_for_owner(
+            owner_plant_id,
+            substance_id,
+            active_substance_ids_by_owner,
+        )
 
     if kind == "environmental_signal":
         signal_id = int(activation_condition.get("signal_id", -1))
@@ -69,7 +80,14 @@ def _check_activation_condition(
     if kind == "all_of":
         conditions = activation_condition.get("conditions", [])
         return bool(conditions) and all(
-            _check_activation_condition(plant, owner_plant_id, child, world, env)
+            _check_activation_condition(
+                plant,
+                owner_plant_id,
+                child,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+            )
             for child in conditions
             if isinstance(child, dict)
         )
@@ -77,7 +95,14 @@ def _check_activation_condition(
     if kind == "any_of":
         conditions = activation_condition.get("conditions", [])
         return any(
-            _check_activation_condition(plant, owner_plant_id, child, world, env)
+            _check_activation_condition(
+                plant,
+                owner_plant_id,
+                child,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+            )
             for child in conditions
             if isinstance(child, dict)
         )
@@ -86,7 +111,11 @@ def _check_activation_condition(
 
 
 def _apply_toxin_to_swarms(
-    sub: SubstanceComponent,
+    sub_id: int,
+    lethal: bool,
+    lethality_rate: float,
+    repellent: bool,
+    repellent_walk_ticks: int,
     env: GridEnvironment,
     world: ECSWorld,
 ) -> None:
@@ -107,8 +136,11 @@ def _apply_toxin_to_swarms(
     confounding predator-presence evaluations in ``_check_activation_condition``.
 
     Args:
-        sub: Substance component representing the emitted toxin, providing lethality and
-            repellency parameters.
+        sub_id: Toxin layer index.
+        lethal: Whether the toxin can kill individuals.
+        lethality_rate: Lethal attrition factor.
+        repellent: Whether the toxin marks swarms as repelled.
+        repellent_walk_ticks: Duration of repelled random-walk behavior.
         env: GridEnvironment providing per-cell toxin concentrations via
             ``env.toxin_layers``.
         world: ECSWorld to iterate swarms, update the spatial hash, and execute GC.
@@ -117,17 +149,21 @@ def _apply_toxin_to_swarms(
 
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
-        toxin_val = float(env.toxin_layers[sub.substance_id, swarm.x, swarm.y])
+        toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
         if toxin_val <= 0.0:
             continue
 
-        if sub.lethal and sub.lethality_rate > 0.0:
-            casualties = int(sub.lethality_rate * toxin_val * swarm.population)
-            swarm.population = max(0, swarm.population - casualties)
+        if lethal and lethality_rate > 0.0:
+            casualties = int(lethality_rate * toxin_val * swarm.population)
+            if casualties > 0:
+                swarm.population = max(0, swarm.population - casualties)
+                # Remove the energetic mass of dead individuals; survivors cannot inherit it.
+                energy_loss = casualties * swarm.energy_min
+                swarm.energy = max(0.0, swarm.energy - energy_loss)
 
-        if sub.repellent and not swarm.repelled:
+        if repellent and not swarm.repelled:
             swarm.repelled = True
-            swarm.repelled_ticks_remaining = sub.repellent_walk_ticks
+            swarm.repelled_ticks_remaining = repellent_walk_ticks
 
         # Immediate localised GC: a swarm annihilated by chemical defense must not
         # linger as a ghost entity in the spatial hash until the next interaction tick.
@@ -241,13 +277,27 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 0. Garbage-collect orphaned substances before any trigger checks
     # ------------------------------------------------------------------
-    for entity in list(world.query(SubstanceComponent)):
+    substance_entities = list(world.query(SubstanceComponent))
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if not world.has_entity(sub.owner_plant_id):
             dead_substances.append(entity.entity_id)
 
     world.collect_garbage(dead_substances)
     dead_substances.clear()
+    substance_entities = list(world.query(SubstanceComponent))
+
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent] = {}
+    active_substance_ids_by_owner: dict[int, set[int]] = {}
+    for entity in substance_entities:
+        sub = entity.get_component(SubstanceComponent)
+        owner_substance_by_key[(sub.owner_plant_id, sub.substance_id)] = sub
+        if sub.active:
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
+                sub.substance_id
+            )
+
+    swarm_population_by_cell_species = _build_swarm_population_index(world)
 
     # Toxins are rebuilt from currently active emitters each signaling pass
     # and remain local to living plant tissue. Non-triggered toxins remain
@@ -256,7 +306,7 @@ def run_signaling(
     env.toxin_layers[:] = 0.0
     env._toxin_layers_write[:] = 0.0
 
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         sub.triggered_this_tick = False
 
@@ -272,30 +322,36 @@ def run_signaling(
                 continue
             trig: TriggerConditionSchema = trig_raw
 
-            # Check for predator presence at this cell via spatial hash
-            triggered = (
-                _co_located_swarm_population(
-                    world,
-                    plant.x,
-                    plant.y,
-                    trig.predator_species_id,
+            # Check for predator presence at this cell via spatial hash.
+            predator_present = (
+                swarm_population_by_cell_species.get(
+                    (plant.x, plant.y, trig.predator_species_id), 0
                 )
                 >= trig.min_predator_population
             )
+
+            # Evaluate optional condition trees as an alternative trigger path.
+            # This enables alarm-chain behavior where a plant reacts to an
+            # already-active internal condition without requiring direct
+            # predator co-location on the same cell.
+            condition_met = False
+            if trig.activation_condition is not None:
+                condition_met = _check_activation_condition(
+                    plant,
+                    plant.entity_id,
+                    trig.activation_condition.model_dump(mode="json"),
+                    env,
+                    swarm_population_by_cell_species,
+                    active_substance_ids_by_owner,
+                )
+
+            triggered = predator_present or condition_met
 
             if not triggered:
                 continue
 
             # Ensure a substance entity exists for this (plant, substance_id) pair
-            existing_sub = None
-            for sub_entity in world.query(SubstanceComponent):
-                candidate_sub: SubstanceComponent = sub_entity.get_component(SubstanceComponent)
-                if (
-                    candidate_sub.owner_plant_id == plant.entity_id
-                    and candidate_sub.substance_id == trig.substance_id
-                ):
-                    existing_sub = candidate_sub
-                    break
+            existing_sub = owner_substance_by_key.get((plant.entity_id, trig.substance_id))
 
             if existing_sub is None:
                 # Spawn new substance entity with full properties from trigger
@@ -326,6 +382,7 @@ def run_signaling(
                     trigger_min_predator_population=trig.min_predator_population,
                 )
                 world.add_component(new_entity.entity_id, existing_sub)
+                owner_substance_by_key[(plant.entity_id, trig.substance_id)] = existing_sub
             else:
                 if (
                     not existing_sub.active
@@ -356,11 +413,19 @@ def run_signaling(
             sub.synthesis_remaining -= 1
         if sub.synthesis_remaining <= 0:
             if not _check_activation_condition(
-                plant, sub.owner_plant_id, sub.activation_condition, world, env
+                plant,
+                sub.owner_plant_id,
+                sub.activation_condition,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
             ):
                 continue
             sub.active = True
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
+                sub.substance_id
+            )
 
     # ------------------------------------------------------------------
     # 2b. Irreversible induced defense lock
@@ -373,7 +438,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 3. Emit active signals / toxins into environment layers
     # ------------------------------------------------------------------
-    active_toxin_types: dict[int, SubstanceComponent] = {}
+    active_toxin_props: dict[int, dict[str, Any]] = {}
 
     for entity in list(world.query(SubstanceComponent)):
         sub = entity.get_component(SubstanceComponent)
@@ -383,6 +448,9 @@ def run_signaling(
         if not sub.triggered_this_tick:
             if not sub.irreversible and sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
+                    sub.substance_id
+                )
                 continue
 
         owner_entity = (
@@ -395,6 +463,7 @@ def run_signaling(
         plant = owner_entity.get_component(PlantComponent)
         if plant.entity_id in dead_plant_ids:
             sub.active = False
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
             dead_substances.append(entity.entity_id)
             continue
 
@@ -407,6 +476,7 @@ def run_signaling(
         ):
             sub.active = False
             sub.aftereffect_remaining_ticks = 0
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
             continue
 
         if sub.energy_cost_per_tick > 0.0:
@@ -423,6 +493,9 @@ def run_signaling(
                 dead_plants.append(plant.entity_id)
                 dead_plant_ids.add(plant.entity_id)
                 sub.active = False
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
+                    sub.substance_id
+                )
                 dead_substances.append(entity.entity_id)
                 continue
 
@@ -433,7 +506,24 @@ def run_signaling(
                     float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
                     + SUBSTANCE_EMIT_RATE,
                 )
-                active_toxin_types.setdefault(sub.substance_id, sub)
+                if sub.substance_id not in active_toxin_props:
+                    active_toxin_props[sub.substance_id] = {
+                        "lethal": sub.lethal,
+                        "lethality_rate": sub.lethality_rate,
+                        "repellent": sub.repellent,
+                        "repellent_walk_ticks": sub.repellent_walk_ticks,
+                    }
+                else:
+                    props = active_toxin_props[sub.substance_id]
+                    props["lethal"] = bool(props["lethal"] or sub.lethal)
+                    props["lethality_rate"] = max(
+                        float(props["lethality_rate"]), sub.lethality_rate
+                    )
+                    props["repellent"] = bool(props["repellent"] or sub.repellent)
+                    props["repellent_walk_ticks"] = max(
+                        int(props["repellent_walk_ticks"]),
+                        sub.repellent_walk_ticks,
+                    )
         else:
             if sub.substance_id < env.num_signals:
                 env.signal_layers[sub.substance_id, plant.x, plant.y] = min(
@@ -453,8 +543,16 @@ def run_signaling(
                 tick,
             )
 
-    for sub in active_toxin_types.values():
-        _apply_toxin_to_swarms(sub, env, world)
+    for sub_id, props in active_toxin_props.items():
+        _apply_toxin_to_swarms(
+            sub_id,
+            bool(props["lethal"]),
+            float(props["lethality_rate"]),
+            bool(props["repellent"]),
+            int(props["repellent_walk_ticks"]),
+            env,
+            world,
+        )
 
     # ------------------------------------------------------------------
     # 4. Check aftereffects and deactivate expired substances
@@ -473,6 +571,7 @@ def run_signaling(
         plant = owner_entity.get_component(PlantComponent)
         if plant.entity_id in dead_plant_ids:
             sub.active = False
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
             dead_substances.append(entity.entity_id)
             continue
 
@@ -487,8 +586,12 @@ def run_signaling(
             sub.aftereffect_remaining_ticks -= 1
             if sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
+                    sub.substance_id
+                )
         else:
             sub.active = False
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
 
     # ------------------------------------------------------------------
     # 5. Diffusion (delegated to GridEnvironment)

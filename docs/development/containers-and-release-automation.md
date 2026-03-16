@@ -100,7 +100,7 @@ Typical resulting image names follow this pattern:
 ```text
 ghcr.io/<owner>/phids:latest
 ghcr.io/<owner>/phids:<git-sha>
-ghcr.io/<owner>/phids:v0.2.0
+ghcr.io/<owner>/phids:v0.4.0
 ```
 
 The workflow runs on:
@@ -145,12 +145,15 @@ The release bundle depends on:
 For a normal release:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git checkout main
+git pull --ff-only origin main
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 Expected behavior:
 
+- changes merged into `main` trigger `docs-pages.yml` and deploy the current documentation site,
 - the version tag publishes the GHCR image with release tags,
 - the same version tag publishes the bundled archives to the GitHub release,
 - a manual workflow dispatch is available if you need to rehearse the container build without

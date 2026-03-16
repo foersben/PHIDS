@@ -11,12 +11,13 @@ from __future__ import annotations
 import asyncio
 import contextlib
 from collections.abc import Awaitable, Callable
+import datetime
 import json
 import logging
 import pathlib
 import time
 import zlib
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import msgpack  # type: ignore[import-untyped]
 from pydantic import TypeAdapter, ValidationError
@@ -33,6 +34,7 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 
 from phids.api.schemas import (
     ConditionNode,
@@ -41,6 +43,8 @@ from phids.api.schemas import (
     SimulationConfig,
     SimulationStatusResponse,
     WindUpdatePayload,
+    BatchJobState,
+    BatchStartPayload,
 )
 from phids.api.ui_state import (
     DraftState,
@@ -52,7 +56,17 @@ from phids.api.ui_state import (
     set_draft,
 )
 from phids.engine.loop import SimulationLoop
-from phids.telemetry.export import export_bytes_csv, export_bytes_json
+from phids.telemetry.export import (
+    decimate_dataframe,
+    export_bytes_csv,
+    export_bytes_json,
+    filter_dataframe_columns,
+    filter_telemetry_rows,
+    generate_png_bytes,
+    generate_tikz_str,
+    export_bytes_tex_table,
+    telemetry_to_dataframe,
+)
 from phids.shared.logging_config import configure_logging, get_recent_logs
 
 configure_logging()
@@ -73,7 +87,7 @@ app = FastAPI(
         "Visual discrete-event simulator modelling ecological dynamics between "
         "plants and herbivores on a spatial grid."
     ),
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # Mount static files only if the directory exists
@@ -124,6 +138,9 @@ _sim_loop: SimulationLoop | None = None
 _sim_task: asyncio.Task[None] | None = None
 _sim_substance_names: dict[int, str] = {}
 _condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
+_stream_cache_loop_id: int = -1
+_stream_cache_tick: int = -1
+_stream_cache_payload: bytes = b""
 
 
 def _coerce_int(value: object, *, default: int = -1) -> int:
@@ -243,6 +260,15 @@ def _describe_activation_condition(
             else _default_substance_name(substance_id, is_toxin=False)
         )
         return f"{substance_label} active"
+    if kind == "environmental_signal":
+        signal_id = _coerce_int(condition.get("signal_id", -1), default=-1)
+        min_conc = float(condition.get("min_concentration", 0.01))
+        signal_label = (
+            substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False))
+            if substance_names is not None
+            else _default_substance_name(signal_id, is_toxin=False)
+        )
+        return f"{signal_label} concentration ≥ {min_conc:.2f}"
 
     children = [child for child in condition.get("conditions", []) if isinstance(child, dict)]
     joiner = " AND " if kind == "all_of" else " OR "
@@ -288,7 +314,11 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
             for index, rule in enumerate(draft.trigger_rules)
         },
         "condition_group_kinds": ["all_of", "any_of"],
-        "condition_leaf_kinds": ["enemy_presence", "substance_active"],
+        "condition_leaf_kinds": [
+            "enemy_presence",
+            "substance_active",
+            "environmental_signal",
+        ],
     }
 
 
@@ -313,6 +343,12 @@ def _default_activation_condition_for_rule(
         }
     if node_kind == "substance_active":
         return {"kind": "substance_active", "substance_id": default_substance_id}
+    if node_kind == "environmental_signal":
+        return {
+            "kind": "environmental_signal",
+            "signal_id": rule.substance_id,
+            "min_concentration": 0.01,
+        }
     if node_kind in {"all_of", "any_of"}:
         return {
             "kind": node_kind,
@@ -950,9 +986,25 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
         )
     )
 
+    live_flora_species_ids = {
+        species_id
+        for species_id in (_coerce_int(plant.get("species_id", -1), default=-1) for plant in plants)
+        if species_id >= 0
+    }
+    all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []
     for species in loop.config.flora_species:
         species_id = species.species_id
+        is_extinct = species_id not in live_flora_species_ids
+        all_flora_species.append(
+            {
+                "species_id": species_id,
+                "name": species.name,
+                "extinct": is_extinct,
+            }
+        )
+        if is_extinct:
+            continue
         if species_id < env.plant_energy_by_species.shape[0]:
             species_energy.append(
                 {
@@ -961,12 +1013,23 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
                     "layer": env.plant_energy_by_species[species_id].tolist(),
                 }
             )
+        else:
+            # Defensive fallback: species_id outside pre-allocated layer bounds.
+            species_energy.append(
+                {
+                    "species_id": species_id,
+                    "name": species.name,
+                    "layer": [[0.0] * env.height for _ in range(env.width)],
+                }
+            )
 
     return {
         "tick": loop.tick,
+        "grid_width": env.width,
+        "grid_height": env.height,
         "max_energy": max_e,
-        "plant_energy": env.plant_energy_layer.tolist(),
         "species_energy": species_energy,
+        "all_flora_species": all_flora_species,
         "signal_overlay": signal_overlay.tolist() if signal_overlay is not None else [],
         "toxin_overlay": toxin_overlay.tolist() if toxin_overlay is not None else [],
         "max_signal": float(signal_overlay.max()) if signal_overlay is not None else 0.0,
@@ -1284,8 +1347,13 @@ async def export_telemetry_csv() -> Response:
         Response: FastAPI response containing CSV bytes and headers.
     """
     loop = _get_loop()
-    data = export_bytes_csv(loop.telemetry.dataframe)
-    logger.info("Telemetry exported as CSV (%d rows)", loop.telemetry.dataframe.height)
+
+    def _build_csv_payload() -> tuple[bytes, int]:
+        df = loop.telemetry.dataframe
+        return export_bytes_csv(df), int(df.height)
+
+    data, rows = await run_in_threadpool(_build_csv_payload)
+    logger.info("Telemetry exported as CSV (%d rows)", rows)
     return Response(
         content=data,
         media_type="text/csv",
@@ -1301,12 +1369,620 @@ async def export_telemetry_json() -> Response:
         Response: FastAPI response containing NDJSON bytes and headers.
     """
     loop = _get_loop()
-    data = export_bytes_json(loop.telemetry.dataframe)
-    logger.info("Telemetry exported as NDJSON (%d rows)", loop.telemetry.dataframe.height)
+
+    def _build_json_payload() -> tuple[bytes, int]:
+        df = loop.telemetry.dataframe
+        return export_bytes_json(df), int(df.height)
+
+    data, rows = await run_in_threadpool(_build_json_payload)
+    logger.info("Telemetry exported as NDJSON (%d rows)", rows)
     return Response(
         content=data,
         media_type="application/x-ndjson",
         headers={"Content-Disposition": "attachment; filename=telemetry.ndjson"},
+    )
+
+
+@app.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
+async def telemetry_chartjs_data() -> JSONResponse:
+    """Return per-species population and energy series as a Chart.js-compatible JSON payload.
+
+    Iterates over raw telemetry rows to extract per-species population and energy
+    time series keyed by ``species_id``. The response is consumed by the
+    ``telemetry_tabs.html`` partial to populate line datasets and the Lotka-Volterra
+    phase-space scatter canvas without additional server round-trips.
+
+    Returns:
+        JSONResponse: Dict with keys ``labels``, ``flora_ids``, ``predator_ids``,
+        ``flora_names``, ``predator_names``, and ``series``.
+    """
+    if _sim_loop is None:
+        return JSONResponse({"labels": [], "flora_ids": [], "predator_ids": [], "series": {}})
+
+    rows = _sim_loop.telemetry._rows
+    species = _sim_loop.telemetry.get_species_ids()
+    flora_ids = species["flora_ids"]
+    predator_ids = species["predator_ids"]
+
+    flora_names = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
+    predator_names = {sp.species_id: sp.name for sp in _sim_loop.config.predator_species}
+
+    labels = [r["tick"] for r in rows]
+    series: dict[str, list[float]] = {
+        "flora_population": [float(r.get("flora_population", 0)) for r in rows],
+        "predator_population": [float(r.get("predator_population", 0)) for r in rows],
+        "total_flora_energy": [float(r.get("total_flora_energy", 0.0)) for r in rows],
+    }
+    for fid in flora_ids:
+        series[f"plant_{fid}_pop"] = [
+            float(r.get("plant_pop_by_species", {}).get(fid, 0)) for r in rows
+        ]
+        series[f"plant_{fid}_energy"] = [
+            float(r.get("plant_energy_by_species", {}).get(fid, 0.0)) for r in rows
+        ]
+        series[f"defense_cost_{fid}"] = [
+            float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows
+        ]
+    for pid in predator_ids:
+        series[f"swarm_{pid}_pop"] = [
+            float(r.get("swarm_pop_by_species", {}).get(pid, 0)) for r in rows
+        ]
+
+    return JSONResponse(
+        {
+            "labels": labels,
+            "flora_ids": flora_ids,
+            "predator_ids": predator_ids,
+            "flora_names": {str(k): v for k, v in flora_names.items()},
+            "predator_names": {str(k): v for k, v in predator_names.items()},
+            "series": series,
+        }
+    )
+
+
+@app.get(
+    "/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview"
+)
+async def telemetry_table_preview(
+    request: Request,
+    columns: str | None = None,
+    flora_ids: str | None = None,
+    predator_ids: str | None = None,
+    tick_interval: int = 1,
+    limit: int = 200,
+) -> Any:
+    """Render an HTMX table preview aligned with current telemetry visibility filters.
+
+    Args:
+        request: FastAPI request object.
+        columns: Optional comma-delimited DataFrame columns to include.
+        flora_ids: Optional comma-delimited flora species ids to include.
+        predator_ids: Optional comma-delimited predator species ids to include.
+        limit: Maximum preview rows for UI responsiveness.
+
+    Returns:
+        TemplateResponse: Rendered ``partials/telemetry_table_preview.html`` fragment.
+    """
+    if _sim_loop is None:
+        return templates.TemplateResponse(
+            request,
+            "partials/telemetry_table_preview.html",
+            {"table_html": "", "empty_message": "No telemetry data available."},
+        )
+
+    rows = filter_telemetry_rows(
+        _sim_loop.telemetry._rows, flora_ids=flora_ids, predator_ids=predator_ids
+    )
+    df = telemetry_to_dataframe(rows)
+    df = filter_dataframe_columns(df, columns)
+    df = decimate_dataframe(df, tick_interval)
+
+    limit = max(1, min(limit, 1000))
+    df = df.tail(limit)
+
+    if df.empty:
+        context = {"table_html": "", "empty_message": "No rows match current table filters."}
+    else:
+        table_html = df.to_html(
+            index=False,
+            classes="min-w-full text-[11px]",
+            border=0,
+            justify="left",
+            float_format=lambda value: f"{value:.2f}",
+        )
+        context = {"table_html": table_html, "empty_message": ""}
+    return templates.TemplateResponse(request, "partials/telemetry_table_preview.html", context)
+
+
+@app.get(
+    "/api/export/{data_type}",
+    summary="Export telemetry data in academic formats",
+)
+async def export_telemetry_format(
+    data_type: str,
+    format: str = "csv",  # noqa: A002
+    prey_species_id: int = 0,
+    predator_species_id: int = 0,
+    columns: str | None = None,
+    flora_ids: str | None = None,
+    predator_ids: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
+    x_max: float | None = None,
+    y_max: float | None = None,
+    tick_interval: int = 1,
+) -> Response:
+    """Export telemetry data as CSV, LaTeX table, PGFPlots TikZ source, or PNG.
+
+    Supported ``data_type`` values are ``timeseries`` (per-species population
+    time series), ``phasespace`` (Lotka-Volterra phase-space trajectory),
+    ``defense_economy`` (defense-cost to energy ratio), and ``biomass_stack``
+    (stacked flora biomass proxy).
+    Supported ``format`` values are ``csv``, ``tex_table``, ``tex_tikz``, and
+    ``png``. All export formats are generated server-side using the headless
+    matplotlib Agg backend and the PGFPlots template generator; no LaTeX
+    installation is required on the server for TikZ export.
+
+    Args:
+        data_type: Chart type — ``timeseries`` or ``phasespace``.
+        format: Output format — ``csv``, ``tex_table``, ``tex_tikz``, or ``png``.
+        prey_species_id: Flora species id for phase-space x-axis.
+        predator_species_id: Predator species id for phase-space y-axis.
+
+    Returns:
+        Response: File download response with appropriate Content-Type and
+        Content-Disposition headers.
+
+    Raises:
+        HTTPException: 404 if no simulation is loaded; 400 if format is unknown.
+    """
+    if _sim_loop is None:
+        raise HTTPException(status_code=404, detail="No simulation loaded.")
+
+    normalized_data_type = "defense_economy" if data_type == "metabolic" else data_type
+    if normalized_data_type not in {"timeseries", "phasespace", "defense_economy", "biomass_stack"}:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, defense_economy, biomass_stack, or metabolic."
+            ),
+        )
+
+    if tick_interval < 1:
+        raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
+
+    rows = _sim_loop.telemetry._rows
+    flora_names: dict[int, str] = {sp.species_id: sp.name for sp in _sim_loop.config.flora_species}
+    predator_names: dict[int, str] = {
+        sp.species_id: sp.name for sp in _sim_loop.config.predator_species
+    }
+    filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, predator_ids=predator_ids)
+
+    if format == "csv":
+
+        def _build_export_csv() -> bytes:
+            df = telemetry_to_dataframe(filtered_rows)
+            df = filter_dataframe_columns(df, columns)
+            df = decimate_dataframe(df, tick_interval)
+            csv_text = cast(str, df.to_csv(index=False))
+            return csv_text.encode("utf-8")
+
+        data = await run_in_threadpool(_build_export_csv)
+        filename = f"phids_{normalized_data_type}.csv"
+        media_type = "text/csv"
+    elif format == "tex_table":
+
+        def _build_export_tex_table() -> bytes:
+            return export_bytes_tex_table(
+                rows,
+                columns=columns,
+                include_flora_ids=flora_ids,
+                include_predator_ids=predator_ids,
+                tick_interval=tick_interval,
+            )
+
+        data = await run_in_threadpool(_build_export_tex_table)
+        filename = f"phids_{normalized_data_type}_table.tex"
+        media_type = "text/plain"
+    elif format == "tex_tikz":
+        try:
+
+            def _build_export_tikz() -> str:
+                return generate_tikz_str(
+                    filtered_rows,
+                    normalized_data_type,
+                    flora_names=flora_names,
+                    predator_names=predator_names,
+                    prey_species_id=prey_species_id,
+                    predator_species_id=predator_species_id,
+                    include_flora_ids=flora_ids,
+                    include_predator_ids=predator_ids,
+                    title=title,
+                    x_label=x_label,
+                    y_label=y_label,
+                    x_max=x_max,
+                    y_max=y_max,
+                )
+
+            tikz = await run_in_threadpool(_build_export_tikz)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        data = tikz.encode("utf-8")
+        filename = f"phids_{normalized_data_type}.tex"
+        media_type = "text/plain"
+    elif format == "png":
+        try:
+
+            def _build_export_png() -> bytes:
+                return generate_png_bytes(
+                    filtered_rows,
+                    normalized_data_type,
+                    flora_names=flora_names,
+                    predator_names=predator_names,
+                    prey_species_id=prey_species_id,
+                    predator_species_id=predator_species_id,
+                    include_flora_ids=flora_ids,
+                    include_predator_ids=predator_ids,
+                    title=title,
+                    x_label=x_label,
+                    y_label=y_label,
+                    x_max=x_max,
+                    y_max=y_max,
+                )
+
+            data = await run_in_threadpool(_build_export_png)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        filename = f"phids_{normalized_data_type}.png"
+        media_type = "image/png"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown format '{format}'. Use csv, tex_table, tex_tikz, or png.",
+        )
+
+    logger.info("Export (%s/%s): %d bytes", normalized_data_type, format, len(data))
+    return Response(
+        content=data,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Batch processing routes
+# ---------------------------------------------------------------------------
+
+_BATCH_DIR = pathlib.Path("data") / "batches"
+
+
+def _discover_persisted_batches() -> list[BatchJobState]:
+    """Discover persisted batch summaries from disk and map them to UI job rows.
+
+    Returns:
+        list[BatchJobState]: Jobs reconstructed from ``*_summary.json`` files.
+    """
+    if not _BATCH_DIR.exists():
+        return []
+
+    discovered: list[BatchJobState] = []
+    for summary_path in sorted(_BATCH_DIR.glob("*_summary.json")):
+        job_id = summary_path.stem.removesuffix("_summary")
+        try:
+            with summary_path.open(encoding="utf-8") as fp:
+                aggregate = json.load(fp)
+        except Exception:
+            logger.warning("Skipping unreadable batch summary file: %s", summary_path)
+            continue
+
+        runs_completed = int(aggregate.get("runs_completed", 1) or 1)
+        ticks = aggregate.get("ticks", [])
+        started_at = datetime.datetime.fromtimestamp(
+            summary_path.stat().st_mtime, tz=datetime.timezone.utc
+        )
+        discovered.append(
+            BatchJobState(
+                job_id=job_id,
+                status="done",
+                completed=runs_completed,
+                total=runs_completed,
+                scenario_name=f"persisted_{job_id}",
+                started_at=started_at.isoformat(),
+                finished_at=started_at.isoformat(),
+                max_ticks=len(ticks),
+            )
+        )
+    return discovered
+
+
+@app.get("/ui/batch", response_class=HTMLResponse, summary="Batch runner dashboard")
+async def ui_batch_dashboard(request: Request) -> Any:
+    """Render the Monte Carlo batch runner dashboard partial.
+
+    Args:
+        request: FastAPI request object.
+
+    Returns:
+        TemplateResponse: Rendered ``batch_dashboard.html`` partial.
+    """
+    return templates.TemplateResponse(request, "batch_dashboard.html")
+
+
+@app.post("/api/batch/start", summary="Start a Monte Carlo batch simulation job")
+async def batch_start(
+    payload: BatchStartPayload,
+) -> JSONResponse:
+    """Enqueue a Monte Carlo batch simulation job for asynchronous execution.
+
+    Validates the current server-side draft scenario, creates a
+    :class:`~phids.api.schemas.BatchJobState` record, inserts it into the
+    draft's ``active_batch_jobs`` registry, and dispatches a background
+    :class:`asyncio.Task` that drives the
+    :class:`~phids.engine.batch.BatchRunner` in a
+    :class:`concurrent.futures.ProcessPoolExecutor`. The HTTP response returns
+    immediately with the ``job_id`` so the client can begin polling the status
+    endpoint.
+
+    Args:
+        payload: Batch execution parameters (runs, max_ticks, scenario_name).
+
+    Returns:
+        JSONResponse: ``{"job_id": str}`` upon successful enqueue.
+
+    Raises:
+        HTTPException: 400 if the current draft cannot produce a valid
+            :class:`~phids.api.schemas.SimulationConfig`.
+    """
+    import datetime
+    import uuid
+
+    draft = get_draft()
+    try:
+        config = draft.build_sim_config()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid draft: {exc}") from exc
+
+    job_id = str(uuid.uuid4())[:8]
+    scenario_name = payload.scenario_name or draft.scenario_name
+    job = BatchJobState(
+        job_id=job_id,
+        status="queued",
+        completed=0,
+        total=payload.runs,
+        scenario_name=scenario_name,
+        started_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+        max_ticks=payload.max_ticks,
+    )
+    draft.active_batch_jobs[job_id] = job
+    logger.info(
+        "Batch job %s enqueued (runs=%d, max_ticks=%d)", job_id, payload.runs, payload.max_ticks
+    )
+
+    scenario_dict = config.model_dump()
+
+    async def _run_batch() -> None:
+        from phids.engine.batch import BatchRunner
+
+        job.status = "running"
+        try:
+            _BATCH_DIR.mkdir(parents=True, exist_ok=True)
+            runner = BatchRunner()
+
+            loop = asyncio.get_event_loop()
+
+            def _progress(completed: int) -> None:
+                job.completed = completed
+                logger.debug("Batch job %s progress: %d/%d", job_id, completed, payload.runs)
+
+            await loop.run_in_executor(
+                None,
+                lambda: runner.execute_batch(
+                    scenario_dict,
+                    payload.runs,
+                    payload.max_ticks,
+                    job_id,
+                    _BATCH_DIR,
+                    _progress,
+                ),
+            )
+            job.status = "done"
+            job.completed = payload.runs
+        except Exception:
+            logger.exception("Batch job %s failed", job_id)
+            job.status = "failed"
+        finally:
+            import datetime as dt
+
+            job.finished_at = dt.datetime.now(tz=dt.timezone.utc).isoformat()
+
+    asyncio.create_task(_run_batch())
+    return JSONResponse({"job_id": job_id})
+
+
+@app.get("/api/batch/status/{job_id}", response_class=HTMLResponse, summary="Batch job status row")
+async def batch_status(request: Request, job_id: str) -> Any:
+    """Return an HTMX HTML fragment for a single batch job progress row.
+
+    Args:
+        request: FastAPI request object.
+        job_id: Unique batch job identifier.
+
+    Returns:
+        TemplateResponse: Rendered ``partials/batch_job_row.html`` fragment.
+
+    Raises:
+        HTTPException: 404 if ``job_id`` is not found.
+    """
+    draft = get_draft()
+    job = draft.active_batch_jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
+    return templates.TemplateResponse(
+        request,
+        "partials/batch_job_row.html",
+        {"job": job},
+    )
+
+
+@app.get("/api/batch/ledger", response_class=HTMLResponse, summary="Batch job ledger")
+async def batch_ledger(request: Request) -> Any:
+    """Return an HTMX HTML fragment listing all batch jobs.
+
+    Args:
+        request: FastAPI request object.
+
+    Returns:
+        TemplateResponse: Rendered ``partials/batch_ledger.html`` fragment.
+    """
+    draft = get_draft()
+    jobs = list(draft.active_batch_jobs.values())
+    return templates.TemplateResponse(
+        request,
+        "partials/batch_ledger.html",
+        {"jobs": jobs},
+    )
+
+
+@app.post("/api/batch/load-persisted", summary="Load persisted batch summaries into the UI ledger")
+async def batch_load_persisted() -> JSONResponse:
+    """Load persisted batch summaries from disk into draft ``active_batch_jobs``.
+
+    Returns:
+        JSONResponse: Number of jobs loaded into memory.
+    """
+    draft = get_draft()
+    loaded = 0
+    for job in _discover_persisted_batches():
+        if job.job_id not in draft.active_batch_jobs:
+            draft.active_batch_jobs[job.job_id] = job
+            loaded += 1
+    logger.info("Loaded %d persisted batch jobs into UI ledger", loaded)
+    return JSONResponse({"loaded": loaded, "total": len(draft.active_batch_jobs)})
+
+
+@app.get("/api/batch/view/{job_id}", response_class=HTMLResponse, summary="Batch aggregate view")
+async def batch_view(request: Request, job_id: str) -> Any:
+    """Return an HTMX fragment showing aggregate statistics for a completed batch job.
+
+    Reads the persisted ``{job_id}_summary.json`` from disk and renders the
+    aggregate mean±σ chart data. If the file does not exist (e.g., job still
+    running), a placeholder message is returned.
+
+    Args:
+        request: FastAPI request object.
+        job_id: Unique batch job identifier.
+
+    Returns:
+        TemplateResponse: Rendered ``partials/batch_view.html`` fragment.
+    """
+    import json as _json
+
+    draft = get_draft()
+    job = draft.active_batch_jobs.get(job_id)
+    summary_path = _BATCH_DIR / f"{job_id}_summary.json"
+    aggregate: dict[str, Any] = {}
+    if summary_path.exists():
+        with summary_path.open(encoding="utf-8") as fp:
+            aggregate = _json.load(fp)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/batch_view.html",
+        {"job": job, "aggregate": aggregate, "job_id": job_id},
+    )
+
+
+@app.get(
+    "/api/batch/export/{job_id}",
+    summary="Export batch aggregate in academic formats",
+)
+async def batch_export(
+    job_id: str,
+    format: str = "csv",  # noqa: A002
+    tick_interval: int = 1,
+    columns: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
+    chart_type: str = "timeseries",
+) -> Response:
+    """Export a batch aggregate summary as CSV, LaTeX table, or PGFPlots TikZ source.
+
+    Args:
+        job_id: Unique batch job identifier.
+        format: Output format — ``csv``, ``tex_table``, or ``tex_tikz``.
+
+    Returns:
+        Response: File download with appropriate Content-Type headers.
+
+    Raises:
+        HTTPException: 404 if the summary file for ``job_id`` does not exist.
+    """
+    import json as _json
+
+    summary_path = _BATCH_DIR / f"{job_id}_summary.json"
+    if not summary_path.exists():
+        raise HTTPException(status_code=404, detail=f"No summary found for job '{job_id}'.")
+
+    with summary_path.open(encoding="utf-8") as fp:
+        aggregate: dict[str, Any] = _json.load(fp)
+
+    from phids.telemetry.export import aggregate_to_dataframe
+
+    df = aggregate_to_dataframe(aggregate)
+    if tick_interval < 1:
+        raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
+    df = filter_dataframe_columns(df, columns)
+    df = decimate_dataframe(df, tick_interval)
+
+    if format == "csv":
+        data = df.to_csv(index=False).encode("utf-8")
+        filename = f"phids_batch_{job_id}.csv"
+        media_type = "text/csv"
+    elif format == "tex_table":
+        latex: str = df.to_latex(index=False, float_format="%.2f")
+        data = latex.encode("utf-8")
+        filename = f"phids_batch_{job_id}_table.tex"
+        media_type = "text/plain"
+    elif format == "tex_tikz":
+        # Build simplified export rows from aggregate mean and survival series.
+        rows_agg: list[dict[str, Any]] = []
+        ticks = aggregate.get("ticks", [])
+        flora_mean = aggregate.get("flora_population_mean", [])
+        pred_mean = aggregate.get("predator_population_mean", [])
+        survival = aggregate.get("survival_probability_curve", [])
+        for i, t in enumerate(ticks):
+            rows_agg.append(
+                {
+                    "tick": t,
+                    "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
+                    "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
+                    "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
+                }
+            )
+        normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
+        tikz = generate_tikz_str(
+            rows_agg,
+            normalized_chart_type,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+        )
+        data = tikz.encode("utf-8")
+        filename = f"phids_batch_{job_id}.tex"
+        media_type = "text/plain"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown format '{format}'. Use csv, tex_table, or tex_tikz.",
+        )
+
+    logger.info("Batch export job=%s format=%s size=%d", job_id, format, len(data))
+    return Response(
+        content=data,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -1333,20 +2009,30 @@ async def simulation_stream(websocket: WebSocket) -> None:
 
     loop = _sim_loop
     last_tick = -1
+    global _stream_cache_loop_id, _stream_cache_tick, _stream_cache_payload
+
+    def _encoded_snapshot_bytes() -> bytes:
+        """Return cached compressed bytes for the current loop tick."""
+        global _stream_cache_loop_id, _stream_cache_tick, _stream_cache_payload
+        loop_id = id(loop)
+        if loop_id != _stream_cache_loop_id or loop.tick != _stream_cache_tick:
+            snapshot = loop.get_state_snapshot()
+            packed = msgpack.packb(snapshot, use_bin_type=True)
+            _stream_cache_payload = zlib.compress(packed, level=1)
+            _stream_cache_loop_id = loop_id
+            _stream_cache_tick = loop.tick
+        return _stream_cache_payload
 
     try:
         while True:
             if loop.terminated:
                 # Send final state and close
-                snapshot = loop.get_state_snapshot()
-                packed = msgpack.packb(snapshot, use_bin_type=True)
-                await websocket.send_bytes(zlib.compress(packed))
+                if loop.tick != last_tick:
+                    await websocket.send_bytes(_encoded_snapshot_bytes())
                 break
 
             if loop.tick != last_tick:
-                snapshot = loop.get_state_snapshot()
-                packed = msgpack.packb(snapshot, use_bin_type=True)
-                await websocket.send_bytes(zlib.compress(packed))
+                await websocket.send_bytes(_encoded_snapshot_bytes())
                 last_tick = loop.tick
 
             await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
@@ -2067,7 +2753,7 @@ async def config_predator_add(
         energy_min=energy_min,
         velocity=velocity,
         consumption_rate=consumption_rate,
-        reproduction_energy_divisor=reproduction_energy_divisor,
+        reproduction_energy_divisor=max(1.0, reproduction_energy_divisor),
         energy_upkeep_per_individual=energy_upkeep_per_individual,
         split_population_threshold=split_population_threshold,
     )
@@ -2143,7 +2829,7 @@ async def config_predator_update(
     if consumption_rate is not None:
         updates["consumption_rate"] = consumption_rate
     if reproduction_energy_divisor is not None:
-        updates["reproduction_energy_divisor"] = reproduction_energy_divisor
+        updates["reproduction_energy_divisor"] = max(1.0, reproduction_energy_divisor)
     if energy_upkeep_per_individual is not None:
         updates["energy_upkeep_per_individual"] = energy_upkeep_per_individual
     if split_population_threshold is not None:
@@ -2583,6 +3269,8 @@ async def config_trigger_rule_condition_node_update(
     predator_species_id: Annotated[int | None, Form()] = None,
     min_predator_population: Annotated[int | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
+    signal_id: Annotated[int | None, Form()] = None,
+    min_concentration: Annotated[float | None, Form()] = None,
 ) -> Any:
     """Update or replace a node in a trigger-rule activation-condition tree."""
     draft = get_draft()
@@ -2629,6 +3317,11 @@ async def config_trigger_rule_condition_node_update(
             elif current_node.get("kind") == "substance_active":
                 if substance_id is not None:
                     updates["substance_id"] = substance_id
+            elif current_node.get("kind") == "environmental_signal":
+                if signal_id is not None:
+                    updates["signal_id"] = signal_id
+                if min_concentration is not None:
+                    updates["min_concentration"] = max(0.0, min_concentration)
             elif current_node.get("kind") in {"all_of", "any_of"} and kind is not None:
                 updates["kind"] = kind
 

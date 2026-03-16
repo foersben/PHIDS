@@ -1,0 +1,34 @@
+{% if empty_message %}
+<div class="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+  {{ empty_message }}
+</div>
+{% else %}
+<div class="max-h-72 overflow-auto rounded border border-slate-200">
+  <style>
+    #telemetry-table-preview table.dataframe {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    #telemetry-table-preview table.dataframe thead th {
+      position: sticky;
+      top: 0;
+      background: #f1f5f9;
+      color: #475569;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.35rem 0.5rem;
+      white-space: nowrap;
+    }
+    #telemetry-table-preview table.dataframe tbody td {
+      border-bottom: 1px solid #f1f5f9;
+      padding: 0.25rem 0.5rem;
+      white-space: nowrap;
+    }
+    #telemetry-table-preview table.dataframe tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+  </style>
+  {{ table_html | safe }}
+</div>
+{% endif %}

@@ -7,6 +7,8 @@ data-oriented engine core, strict state invariants, and reproducible telemetry s
 scenario outcomes can be interpreted as traceable computational experiments rather than opaque
 animation artifacts.
 
+Current release line: `v0.4.0`.
+
 Live documentation: <https://foersben.github.io/PHIDS/>
 
 ---
@@ -102,6 +104,34 @@ server-side `DraftState` (`src/phids/api/ui_state.py`), and only
 `POST /api/scenario/load-draft` commits that draft into a live `SimulationLoop`.
 
 See [`docs/ui/index.md`](docs/ui/index.md).
+
+### Batch evaluation control center
+
+The batch surface (`/ui/batch`) is designed for post-hoc statistical analysis rather than
+live-grid rendering. The operational flow is:
+
+1. run `N` seeded trajectories from a validated draft;
+2. persist aggregate outputs to `data/batches/{job_id}_summary.json`;
+3. inspect completed jobs in a chart/data-grid detail view;
+4. export decimated, publication-oriented aggregate artifacts.
+
+The batch detail pane exposes:
+
+- `Charts` tab with mean±sigma trajectory overlays and survival-probability curve;
+- `Data Grid` tab with column projection and tick-stride decimation controls;
+- explicit `Apply Chart Settings` and `Apply Table Settings` actions for deterministic UI state transitions;
+- chart presets (`Balanced overview`, `Collapse risk focus`, `Predator pressure focus`, `Survival probability only`) for rapid comparative evaluation;
+- export controls for `CSV`, `LaTeX table`, and `TikZ` with metadata overrides (including survival-focused TikZ export when the survival preset is active).
+
+Telemetry retention is intentionally bounded (`MAX_TELEMETRY_TICKS = 10000`) and table previews
+show a decimated recent-tail window to keep both backend memory and browser DOM usage stable under
+long-running observations.
+
+Previously computed batches can be rehydrated into the in-memory ledger using the
+`Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).
+
+Reference chapter:
+[`docs/ui/batch-runner-and-aggregate-analysis.md`](docs/ui/batch-runner-and-aggregate-analysis.md).
 
 ---
 
@@ -212,6 +242,12 @@ Release and packaging policy:
 
 ## ✅ Testing, benchmarks, and CI behavior
 
+Current verified state (local full-suite run):
+
+- `196 passed`
+- repository-wide coverage: `89.65%`
+- all currently reported runtime modules in `src/phids/*` are at `>=80%` coverage
+
 Focused checks:
 
 ```bash
@@ -220,10 +256,28 @@ uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py 
 uv run pytest tests/test_flow_field_benchmark.py tests/test_spatial_hash_benchmark.py -q
 ```
 
+Coverage-uplift regression checks (entrypoint + batch orchestration):
+
+```bash
+uv run pytest tests/test_cli_main.py tests/test_batch_runner.py -q
+```
+
+If you want to list only modules below 80% after a full run:
+
+```bash
+uv run pytest tests/ --no-header 2>&1 | awk '/^src\/phids\// {gsub("%","",$4); if (($4+0) < 80) print $0}'
+```
+
 Representative route/system smoke slice:
 
 ```bash
 uv run pytest -o addopts='' tests/test_api_routes.py tests/test_ui_routes.py tests/test_systems_behavior.py tests/test_example_scenarios.py -q
+```
+
+Focused batch/UI smoke slice:
+
+```bash
+uv run pytest tests/test_ui_routes.py tests/test_api_routes.py -q
 ```
 
 Scripted local CI:
@@ -265,6 +319,34 @@ The repository includes:
 - `Dockerfile` and `docker-compose.yml` for container workflows
 - `.github/workflows/docker-publish.yml` for GHCR publication policy
 - `.github/workflows/release-binaries.yml` for bundled Linux/Windows/macOS artifacts
+
+### v0.4.0 release highlights
+
+- Engine thermodynamic invariants hardened in toxin lethality, starvation attrition, and reproduction-cost handling.
+- API export routes remain async-safe under load via threadpool offloading of heavy serialization paths.
+- Telemetry visualization now uses bounded in-place Chart.js updates, preventing long-run client memory growth.
+- Batch summaries persist strict JSON payloads (non-finite values normalized) for robust browser parsing.
+
+### Release runbook (main + tag)
+
+The canonical automated release flow is:
+
+1. merge `develop` into `main` through a reviewed PR,
+2. push a semantic tag from `main` (for example `v0.4.0`),
+3. allow GitHub Actions to publish all release artifacts.
+
+```bash
+git checkout main
+git pull --ff-only origin main
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+Expected automation outcomes:
+
+- `Docs Pages` workflow publishes updated documentation to GitHub Pages,
+- `Build and Publish Release Binaries` workflow attaches OS-specific bundles to the GitHub release,
+- `Build and Publish Docker Image` workflow publishes multi-arch GHCR images for the release tag.
 
 ---
 

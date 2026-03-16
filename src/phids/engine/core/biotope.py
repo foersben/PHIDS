@@ -183,6 +183,9 @@ class GridEnvironment:
 
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
+            if not np.any(layer >= SIGNAL_EPSILON):
+                self._signal_layers_write[s].fill(0.0)
+                continue
             convolved: npt.NDArray[np.float64] = convolve2d(
                 layer, DIFFUSION_KERNEL, mode="same", boundary="fill", fillvalue=0.0
             )

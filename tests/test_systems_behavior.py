@@ -333,7 +333,7 @@ def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     assert plant.energy == pytest.approx(initial_energy)
-    assert swarm.energy == pytest.approx(0.0)
+    assert swarm.energy == pytest.approx(0.375)
     assert swarm.population < 5
 
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
@@ -403,6 +403,49 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient(
         "choices",
         lambda seq, weights, k: [seq[weights.index(max(weights))]],
     )
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    assert (swarm.x, swarm.y) == (2, 0)
+    assert (swarm.last_dx, swarm.last_dy) == (1, 0)
+
+
+def test_interaction_flat_gradient_uses_momentum_inertia(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Validates momentum-biased movement on flat gradients to avoid circular random walks.
+
+    When the local flow field is flat, no biological gradient is available to guide directed motion.
+    The interaction system should therefore reuse the swarm's last displacement vector as inertial
+    memory, producing a sweeping foraging trajectory rather than isotropic local circling. This test
+    fixes the prior heading and asserts that the weighted choice receives the momentum target as its
+    dominant option.
+
+    Args:
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+    """
+    world = ECSWorld()
+    env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
+    env.flow_field[:, 0] = 0.0
+
+    sid = _add_swarm(world, 1, 0, species_id=0, pop=4)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.last_dx = 1
+    swarm.last_dy = 0
+    swarm.energy_upkeep_per_individual = 0.0
+
+    def _weighted_argmax(
+        seq: list[tuple[int, int]],
+        weights: list[float],
+        k: int,
+    ) -> list[tuple[int, int]]:
+        del k
+        return [seq[weights.index(max(weights))]]
+
+    monkeypatch.setattr(random, "choices", _weighted_argmax)
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
@@ -1263,6 +1306,100 @@ def test_signaling_precursor_gate_blocks_activation() -> None:
     assert sub.active is False
 
 
+def test_signaling_allows_condition_only_trigger_without_local_predator() -> None:
+    """Activation-condition trees can trigger signaling even without co-located predators."""
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    plant_id = _add_plant(world, 2, 2, species_id=0, energy=12.0)
+
+    # Seed an already-active prerequisite substance for the same owner plant.
+    seeded_entity = world.create_entity()
+    world.add_component(
+        seeded_entity.entity_id,
+        SubstanceComponent(
+            entity_id=seeded_entity.entity_id,
+            substance_id=0,
+            owner_plant_id=plant_id,
+            is_toxin=False,
+            active=True,
+            synthesis_duration=1,
+            synthesis_remaining=0,
+            aftereffect_ticks=2,
+            aftereffect_remaining_ticks=2,
+        ),
+    )
+
+    # No swarms are present, so predator_presence is false. Trigger must occur
+    # through activation_condition evaluation only.
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        activation_condition=SubstanceActiveConditionSchema(substance_id=0),
+    )
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
+    )
+
+    by_id = {
+        sub.substance_id: sub
+        for sub in (
+            entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent)
+        )
+    }
+    assert 1 in by_id
+    assert by_id[1].active is True
+
+
+def test_signaling_environmental_signal_condition_triggers_without_predator() -> None:
+    """Ambient signal concentration can trigger activation without direct herbivore co-location."""
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=12.0)
+    env.signal_layers[0, 2, 2] = 0.2
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=5,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        activation_condition={
+            "kind": "environmental_signal",
+            "signal_id": 0,
+            "min_concentration": 0.1,
+        },
+    )
+
+    run_signaling(
+        world,
+        env,
+        trigger_conditions={0: [trigger]},
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
+    )
+
+    by_id = {
+        sub.substance_id: sub
+        for sub in (
+            entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent)
+        )
+    }
+    assert 1 in by_id
+    assert by_id[1].active is True
+
+
 def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_predicates() -> None:
     """Validates the signaling all of gate supports mixed enemy and substance predicates invariant and confirms the expected biological behavior under controlled simulation conditions.
 
@@ -1401,6 +1538,69 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately() -> Non
     )
 
 
+def test_signaling_toxin_casualties_deduct_swarm_energy_mass() -> None:
+    """Lethal toxin casualties remove both population and corresponding swarm energetic mass."""
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=2)
+
+    _add_plant(world, 2, 2, species_id=0, energy=20.0)
+    swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=10)
+    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
+    swarm.energy_min = 2.0
+    swarm.energy = 50.0
+
+    trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        lethal=True,
+        lethality_rate=2.0,
+    )
+
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+
+    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
+    assert swarm.population == 8
+    assert swarm.energy == pytest.approx(46.0)
+
+
+def test_signaling_aggregates_strongest_toxin_properties_per_substance_id() -> None:
+    """Shared toxin IDs aggregate strongest effects instead of taking only the first emitter's properties."""
+    world = ECSWorld()
+    env = GridEnvironment(width=8, height=4, num_signals=1, num_toxins=2)
+
+    _add_plant(world, 1, 1, species_id=0, energy=20.0)
+    _add_plant(world, 6, 1, species_id=1, energy=20.0)
+    weak_swarm_id = _add_swarm(world, 1, 1, species_id=0, pop=10)
+    strong_swarm_id = _add_swarm(world, 6, 1, species_id=0, pop=10)
+
+    weak_trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        lethal=True,
+        lethality_rate=1.0,
+    )
+    strong_trigger = TriggerConditionSchema(
+        predator_species_id=0,
+        min_predator_population=1,
+        substance_id=1,
+        synthesis_duration=1,
+        is_toxin=True,
+        lethal=True,
+        lethality_rate=100.0,
+    )
+
+    run_signaling(world, env, {0: [weak_trigger], 1: [strong_trigger]}, False, 1, 0)
+
+    assert not world.has_entity(weak_swarm_id)
+    assert not world.has_entity(strong_swarm_id)
+
+
 def test_repelled_swarm_performs_random_walk(monkeypatch: pytest.MonkeyPatch) -> None:
     """Validates the repelled swarm performs random walk invariant and confirms the expected biological behavior under controlled simulation conditions.
 
@@ -1426,3 +1626,42 @@ def test_repelled_swarm_performs_random_walk(monkeypatch: pytest.MonkeyPatch) ->
 
     assert (swarm.x, swarm.y) != (2, 2)
     assert swarm.repelled_ticks_remaining == 1
+
+
+def test_interaction_starvation_preserves_thermodynamic_remainder() -> None:
+    """Starvation converts deficit to casualties while preserving the non-negative energy remainder."""
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
+
+    sid = _add_swarm(world, 1, 1, species_id=0, pop=10)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.energy_min = 2.0
+    swarm.energy_upkeep_per_individual = 0.1
+    swarm.energy = 0.5
+    swarm.move_cooldown = 1
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    assert swarm.population == 9
+    assert swarm.energy == pytest.approx(0.5)
+
+
+def test_interaction_reproduction_cost_never_below_energy_min() -> None:
+    """Reproduction cannot mint individuals cheaper than energy_min even for divisors below 1."""
+    world = ECSWorld()
+    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
+
+    sid = _add_swarm(world, 1, 1, species_id=0, pop=10, reproduction_divisor=0.25)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.energy_min = 2.0
+    swarm.energy = 24.0
+    swarm.energy_upkeep_per_individual = 0.0
+    swarm.move_cooldown = 1
+    swarm.initial_population = 100
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    assert swarm.population == 12
+    assert swarm.energy == pytest.approx(20.0)

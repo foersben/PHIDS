@@ -22,9 +22,23 @@ from phids.engine.core.ecs import ECSWorld
 TILE_CARRYING_CAPACITY = 500
 
 
-def _choose_neighbour_by_flow_probability(
+def _accumulate_tile_population(
+    tile_populations: dict[tuple[int, int], int],
     x: int,
     y: int,
+    delta: int,
+) -> None:
+    """Apply a signed population delta to one tile-population cache entry."""
+    pos = (x, y)
+    next_population = tile_populations.get(pos, 0) + delta
+    if next_population > 0:
+        tile_populations[pos] = next_population
+    else:
+        tile_populations.pop(pos, None)
+
+
+def _choose_neighbour_by_flow_probability(
+    swarm: SwarmComponent,
     flow_field: npt.NDArray[np.float64],
     width: int,
     height: int,
@@ -33,8 +47,7 @@ def _choose_neighbour_by_flow_probability(
     """Choose a 4-connected neighbour (or current cell) from flow-weighted probabilities.
 
     Args:
-        x: Current X coordinate.
-        y: Current Y coordinate.
+        swarm: Swarm component containing current coordinates and movement inertia.
         flow_field: Scalar attraction field.
         width: Grid width.
         height: Grid height.
@@ -43,6 +56,7 @@ def _choose_neighbour_by_flow_probability(
     Returns:
         tuple[int, int]: Selected (nx, ny) cell to move to.
     """
+    x, y = swarm.x, swarm.y
     candidates: list[tuple[int, int]] = [(x, y)]
     if x > 0:
         candidates.append((x - 1, y))
@@ -56,6 +70,24 @@ def _choose_neighbour_by_flow_probability(
     scores = [
         float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates
     ]
+    max_score = max(scores)
+    min_score = min(scores)
+
+    # Flat fields provide no directional signal; preserve prior heading as inertia.
+    if max_score - min_score < 1e-6:
+        if swarm.last_dx == 0 and swarm.last_dy == 0:
+            return random.choice(candidates)
+
+        target_x = x + swarm.last_dx
+        target_y = y + swarm.last_dy
+        weights: list[float] = []
+        for candidate_x, candidate_y in candidates:
+            if candidate_x == target_x and candidate_y == target_y:
+                weights.append(10.0)
+            else:
+                weights.append(1.0)
+        return random.choices(candidates, weights=weights, k=1)[0]
+
     adjusted_scores = [-score for score in scores] if invert else scores
     min_score = min(adjusted_scores)
     weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
@@ -171,6 +203,16 @@ def run_interaction(
         plant_death_causes: Mapping of death causes to their respective counts.
     """
     dead_swarms: list[int] = []
+    tile_populations: dict[tuple[int, int], int] = {}
+    for entity in world.query(SwarmComponent):
+        indexed_swarm = entity.get_component(SwarmComponent)
+        _accumulate_tile_population(
+            tile_populations,
+            indexed_swarm.x,
+            indexed_swarm.y,
+            indexed_swarm.population,
+        )
+
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
         has_moved = False
@@ -188,7 +230,7 @@ def run_interaction(
 
             if (
                 not swarm.repelled
-                and _co_located_swarm_population(world, swarm.x, swarm.y) > TILE_CARRYING_CAPACITY
+                and tile_populations.get((swarm.x, swarm.y), 0) > TILE_CARRYING_CAPACITY
             ):
                 swarm.repelled = True
                 swarm.repelled_ticks_remaining = 1
@@ -200,8 +242,7 @@ def run_interaction(
                     swarm.repelled = False
             else:
                 nx, ny = _choose_neighbour_by_flow_probability(
-                    swarm.x,
-                    swarm.y,
+                    swarm,
                     env.flow_field,
                     env.width,
                     env.height,
@@ -209,7 +250,11 @@ def run_interaction(
 
             if (nx, ny) != (old_x, old_y):
                 world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
+                _accumulate_tile_population(tile_populations, old_x, old_y, -swarm.population)
+                _accumulate_tile_population(tile_populations, nx, ny, swarm.population)
                 swarm.x, swarm.y = nx, ny
+                swarm.last_dx = nx - old_x
+                swarm.last_dy = ny - old_y
                 has_moved = True
 
             swarm.move_cooldown = swarm.velocity - 1
@@ -259,12 +304,21 @@ def run_interaction(
         swarm.energy -= metabolic_cost
 
         if swarm.energy < 0.0 and swarm.population > 0:
+            previous_population = swarm.population
             deficit = -swarm.energy
             casualties = int(deficit // swarm.energy_min)
             if casualties * swarm.energy_min < deficit:
                 casualties += 1
             swarm.population = max(0, swarm.population - casualties)
-            swarm.energy = 0.0
+            _accumulate_tile_population(
+                tile_populations,
+                swarm.x,
+                swarm.y,
+                swarm.population - previous_population,
+            )
+            total_casualty_energy = casualties * swarm.energy_min
+            leftover_energy = total_casualty_energy - deficit
+            swarm.energy = max(0.0, leftover_energy)
 
         # ----------------------------------------------------------------
         # 5. Death check
@@ -280,11 +334,21 @@ def run_interaction(
         baseline_energy = swarm.population * swarm.energy_min
         if swarm.energy > baseline_energy:
             surplus = swarm.energy - baseline_energy
-            cost_per_offspring = swarm.energy_min * swarm.reproduction_energy_divisor
+            cost_per_offspring = max(
+                swarm.energy_min,
+                swarm.energy_min * swarm.reproduction_energy_divisor,
+            )
 
             new_individuals = int(surplus // cost_per_offspring)
             if new_individuals > 0:
+                previous_population = swarm.population
                 swarm.population += new_individuals
+                _accumulate_tile_population(
+                    tile_populations,
+                    swarm.x,
+                    swarm.y,
+                    swarm.population - previous_population,
+                )
                 swarm.energy -= new_individuals * cost_per_offspring
 
         # ----------------------------------------------------------------
@@ -296,7 +360,19 @@ def run_interaction(
             else 2 * swarm.initial_population
         )
         if swarm.population >= split_threshold:
-            _perform_mitosis(swarm, world, env)
+            pre_split_population = swarm.population
+            offspring = _perform_mitosis(swarm, world, env)
+            _accumulate_tile_population(
+                tile_populations,
+                swarm.x,
+                swarm.y,
+                swarm.population - pre_split_population,
+            )
+            _accumulate_tile_population(
+                tile_populations,
+                offspring.x,
+                offspring.y,
+                offspring.population,
+            )
 
     world.collect_garbage(dead_swarms)
-    env.rebuild_energy_layer()

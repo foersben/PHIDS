@@ -56,6 +56,8 @@ class SimulationLoop:
         self.termination_reason: str | None = None
         self._lock: asyncio.Lock = asyncio.Lock()
         self._debug_tick_interval: int = get_simulation_debug_interval()
+        self._cached_snapshot_tick: int = -1
+        self._cached_snapshot: dict[str, Any] | None = None
 
         # Build environment
         self.env = GridEnvironment(
@@ -501,6 +503,9 @@ class SimulationLoop:
             vy: Wind Y component.
         """
         self.env.set_uniform_wind(vx, vy)
+        # Wind can change snapshot content without advancing ticks.
+        self._cached_snapshot_tick = -1
+        self._cached_snapshot = None
         logger.info("Simulation wind updated to (vx=%.3f, vy=%.3f)", vx, vy)
 
     # ------------------------------------------------------------------
@@ -514,9 +519,15 @@ class SimulationLoop:
             dict[str, Any]: Snapshot containing tick, termination state and
             environment dictionary (from :meth:`GridEnvironment.to_dict`).
         """
-        return {
+        if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
+            return self._cached_snapshot
+
+        snapshot = {
             "tick": self.tick,
             "terminated": self.terminated,
             "termination_reason": self.termination_reason,
             **self.env.to_dict(),
         }
+        self._cached_snapshot_tick = self.tick
+        self._cached_snapshot = snapshot
+        return snapshot

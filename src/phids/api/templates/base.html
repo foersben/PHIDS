@@ -6,6 +6,7 @@
   <title>PHIDS – Control Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body class="h-screen w-full flex bg-slate-50 text-slate-900 overflow-hidden">
 
@@ -37,6 +38,12 @@
             <button hx-get="/ui/biotope" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
               🌍 Biotope Config
+            </button>
+          </li>
+          <li>
+            <button hx-get="/ui/batch" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
+              🧬 Batch Runner
             </button>
           </li>
         </ul>

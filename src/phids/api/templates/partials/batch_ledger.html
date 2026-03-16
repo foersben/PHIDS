@@ -1,0 +1,65 @@
+<!-- Batch job ledger table fragment -->
+{% if jobs %}
+<div class="overflow-x-auto">
+  <table class="w-full text-xs text-left border-collapse">
+    <thead>
+      <tr class="border-b border-slate-200 text-slate-500 font-medium">
+        <th class="py-1.5 pr-3">ID</th>
+        <th class="py-1.5 pr-3">Scenario</th>
+        <th class="py-1.5 pr-3">Status</th>
+        <th class="py-1.5 pr-3">Progress</th>
+        <th class="py-1.5 pr-3">Started</th>
+        <th class="py-1.5">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for job in jobs %}
+      <tr class="hover:bg-slate-50 cursor-pointer"
+        hx-get="/api/batch/view/{{ job.job_id }}"
+        hx-target="#batch-detail"
+        hx-swap="innerHTML"
+        onclick="document.getElementById('batch-detail').classList.remove('hidden')">
+        <td class="py-1.5 pr-3 font-mono text-slate-700">{{ job.job_id }}</td>
+        <td class="py-1.5 pr-3 text-slate-600 max-w-[120px] truncate">{{ job.scenario_name }}</td>
+        <td class="py-1.5 pr-3">
+          <span class="rounded-full px-2 py-0.5 font-medium text-[10px]
+            {% if job.status == 'done' %}bg-emerald-100 text-emerald-700
+            {% elif job.status == 'running' %}bg-indigo-100 text-indigo-700
+            {% elif job.status == 'failed' %}bg-red-100 text-red-700
+            {% else %}bg-slate-100 text-slate-500{% endif %}">
+            {{ job.status }}
+          </span>
+        </td>
+        <td class="py-1.5 pr-3">
+          <div class="flex items-center gap-2">
+            <div class="w-20 bg-slate-200 rounded-full h-1.5">
+              <div class="bg-indigo-500 h-1.5 rounded-full transition-all"
+                style="width: {{ ((job.completed / job.total) * 100)|int if job.total > 0 else 0 }}%"></div>
+            </div>
+            <span class="text-slate-500">{{ job.completed }}/{{ job.total }}</span>
+          </div>
+        </td>
+        <td class="py-1.5 pr-3 text-slate-400">{{ job.started_at[:16] if job.started_at else '—' }}</td>
+        <td class="py-1.5">
+          {% if job.status == 'done' %}
+          <div class="flex gap-1" onclick="event.stopPropagation()">
+            <a href="/api/batch/export/{{ job.job_id }}?format=csv"
+              class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+              download>CSV</a>
+            <a href="/api/batch/export/{{ job.job_id }}?format=tex_table"
+              class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+              download>LaTeX</a>
+            <a href="/api/batch/export/{{ job.job_id }}?format=tex_tikz"
+              class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+              download>TikZ</a>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-slate-400 text-xs text-center py-4">No batch jobs yet. Configure and start one above.</p>
+{% endif %}

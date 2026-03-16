@@ -1,0 +1,312 @@
+<!-- Batch aggregate result view fragment -->
+<div class="space-y-4">
+{% if job %}
+  <div class="flex flex-wrap items-center gap-3">
+    <h2 class="text-base font-semibold text-slate-700">
+      Job <code class="font-mono text-indigo-600">{{ job.job_id }}</code> — {{ job.scenario_name }}
+    </h2>
+    <span class="rounded-full px-2 py-0.5 text-[11px] font-medium
+      {% if job.status == 'done' %}bg-emerald-100 text-emerald-700
+      {% elif job.status == 'running' %}bg-indigo-100 text-indigo-700
+      {% elif job.status == 'failed' %}bg-red-100 text-red-700
+      {% else %}bg-slate-100 text-slate-500{% endif %}">
+      {{ job.status }}
+    </span>
+  </div>
+{% endif %}
+
+{% if aggregate %}
+  <div class="flex flex-wrap gap-3 text-xs">
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Runs completed: <strong>{{ aggregate.runs_completed }}</strong></span>
+    <span class="rounded-full px-2 py-0.5 {% if aggregate.extinction_probability > 0.5 %}bg-red-100 text-red-700{% elif aggregate.extinction_probability > 0.1 %}bg-amber-100 text-amber-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
+      Flora extinction P = <strong>{{ "%.1f"|format(aggregate.extinction_probability * 100) }}%</strong>
+    </span>
+    {% if aggregate.ticks %}
+    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Ticks (aligned): <strong>{{ aggregate.ticks|length }}</strong></span>
+    {% endif %}
+  </div>
+
+  <div class="flex gap-1 border-b border-slate-200 pb-0">
+    <button id="batch-tab-chart-btn" onclick="phidsBatchTab('chart')" class="px-3 py-1 text-xs font-medium rounded-t-md border border-b-0 border-slate-200 bg-white text-indigo-600">📈 Charts</button>
+    <button id="batch-tab-table-btn" onclick="phidsBatchTab('table')" class="px-3 py-1 text-xs font-medium rounded-t-md border border-b-0 border-transparent text-slate-500 hover:text-slate-700">🧾 Data Grid</button>
+  </div>
+
+  <div id="batch-panel-chart" class="space-y-3">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs text-slate-600">
+      <label>Preset
+        <select id="batch-chart-preset" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]">
+          <option value="balanced" selected>Balanced overview</option>
+          <option value="collapse_risk">Collapse risk focus</option>
+          <option value="predator_pressure">Predator pressure focus</option>
+          <option value="survival_only">Survival probability only</option>
+        </select>
+      </label>
+      <label>Chart title
+        <input id="batch-chart-title" type="text" placeholder="Batch aggregate dynamics" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>X-axis label
+        <input id="batch-x-label" type="text" placeholder="Tick" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label>Population axis label
+        <input id="batch-y-label" type="text" placeholder="Population (mean ± sigma)" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+    </div>
+    <div class="flex gap-2 text-xs">
+      <button id="batch-apply-chart" type="button" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white">Apply Chart Settings</button>
+      <span class="text-[11px] text-slate-500 self-center">Preset and labels are applied only after clicking the button.</span>
+    </div>
+
+    <div><canvas id="batch-agg-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas></div>
+    <div id="batch-survival-wrap"><canvas id="batch-survival-chart" height="180" style="display:block;width:100%;max-height:200px;"></canvas></div>
+  </div>
+
+  <div id="batch-panel-table" class="space-y-3 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-600">
+      <label class="text-[11px]">Export tick interval
+        <input id="batch-export-stride" type="number" min="1" step="1" value="1" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
+      </label>
+      <label class="text-[11px]">Columns
+        <select id="batch-columns" multiple size="5" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]">
+          <option value="tick" selected>tick</option>
+          <option value="flora_population_mean" selected>flora_population_mean</option>
+          <option value="flora_population_std" selected>flora_population_std</option>
+          <option value="predator_population_mean" selected>predator_population_mean</option>
+          <option value="predator_population_std" selected>predator_population_std</option>
+        </select>
+      </label>
+      <div class="text-[11px] text-slate-500 self-end">Hold <code>Ctrl</code>/<code>Cmd</code> to select multiple columns.</div>
+    </div>
+    <div class="flex gap-2 text-xs">
+      <button id="batch-apply-table" type="button" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white">Apply Table Settings</button>
+      <span class="text-[11px] text-slate-500 self-center">Tick decimation and columns update after clicking the button.</span>
+    </div>
+    <div id="batch-table-preview" class="max-h-72 overflow-auto rounded border border-slate-200"></div>
+  </div>
+
+  <div class="flex flex-wrap gap-2 text-xs">
+    <span class="text-slate-400 text-[11px] self-center">Export aggregate:</span>
+    <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>CSV</a>
+    <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>LaTeX Table</a>
+    <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>TikZ</a>
+  </div>
+
+  <script id="batch-aggregate-data" type="application/json">{{ aggregate | tojson }}</script>
+  <script>
+  (function () {
+    window.phidsBatchTab = function (tab) {
+      const isChart = tab === 'chart';
+      document.getElementById('batch-panel-chart').classList.toggle('hidden', !isChart);
+      document.getElementById('batch-panel-table').classList.toggle('hidden', isChart);
+      const chartBtn = document.getElementById('batch-tab-chart-btn');
+      const tableBtn = document.getElementById('batch-tab-table-btn');
+      [chartBtn, tableBtn].forEach((btn) => {
+        btn.classList.add('text-slate-500', 'border-transparent');
+        btn.classList.remove('text-indigo-600', 'bg-white', 'border-slate-200');
+      });
+      if (isChart) {
+        chartBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
+        chartBtn.classList.remove('text-slate-500', 'border-transparent');
+      } else {
+        tableBtn.classList.add('text-indigo-600', 'bg-white', 'border-slate-200');
+        tableBtn.classList.remove('text-slate-500', 'border-transparent');
+      }
+    };
+
+    const aggRaw = document.getElementById('batch-aggregate-data');
+    const agg = aggRaw ? JSON.parse(aggRaw.textContent || '{}') : null;
+    if (!agg || !agg.ticks || agg.ticks.length === 0) return;
+
+    const labels = agg.ticks;
+    const floraMean = agg.flora_population_mean || [];
+    const floraStd = agg.flora_population_std || [];
+    const predMean = agg.predator_population_mean || [];
+    const predStd = agg.predator_population_std || [];
+    const survivalSeries = (agg.survival_probability_curve || []).map((v) => 100.0 * v);
+
+    const ctx = document.getElementById('batch-agg-chart');
+    const survivalCtx = document.getElementById('batch-survival-chart');
+    const survivalWrap = document.getElementById('batch-survival-wrap');
+    if (!ctx || !survivalCtx || !survivalWrap) return;
+    if (ctx._batchChart) ctx._batchChart.destroy();
+    if (survivalCtx._batchSurvivalChart) survivalCtx._batchSurvivalChart.destroy();
+
+    const floraUpper = floraMean.map((v, i) => v + (floraStd[i] || 0));
+    const floraLower = floraMean.map((v, i) => v - (floraStd[i] || 0));
+    const predUpper = predMean.map((v, i) => v + (predStd[i] || 0));
+    const predLower = predMean.map((v, i) => v - (predStd[i] || 0));
+
+    ctx._batchChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Flora mean', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0 },
+          { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Predator mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
+          { label: 'Predator +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Predator -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+        ],
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            labels: {
+              font: { size: 10 },
+              filter: (item) => !item.text.includes('sigma'),
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Tick', font: { size: 10 } } },
+          y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Population (mean ± sigma)', font: { size: 10 } }, min: 0 },
+        },
+      },
+    });
+
+    survivalCtx._batchSurvivalChart = new Chart(survivalCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{ label: 'Survival probability', data: survivalSeries, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 2, pointRadius: 0, fill: true, stepped: 'before' }],
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { labels: { font: { size: 10 } } } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+          y: { ticks: { font: { size: 10 } }, min: 0, max: 100, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Simulations alive (%)', font: { size: 10 } } },
+        },
+      },
+    });
+
+    const strideInput = document.getElementById('batch-export-stride');
+    const colsSelect = document.getElementById('batch-columns');
+    const chartPreset = document.getElementById('batch-chart-preset');
+    const chartTitleInput = document.getElementById('batch-chart-title');
+    const xLabelInput = document.getElementById('batch-x-label');
+    const yLabelInput = document.getElementById('batch-y-label');
+    const applyChartBtn = document.getElementById('batch-apply-chart');
+    const applyTableBtn = document.getElementById('batch-apply-table');
+    const tablePreview = document.getElementById('batch-table-preview');
+    const csvExport = document.getElementById('batch-export-csv');
+    const texExport = document.getElementById('batch-export-tex');
+    const tikzExport = document.getElementById('batch-export-tikz');
+
+    function selectedColumnsCsv() {
+      const selected = Array.from(colsSelect.options).filter((opt) => opt.selected).map((opt) => opt.value);
+      if (!selected.includes('tick')) selected.unshift('tick');
+      return selected.join(',');
+    }
+
+    function syncExportLinks() {
+      const stride = Math.max(1, parseInt(strideInput.value || '1', 10) || 1);
+      const cols = encodeURIComponent(selectedColumnsCsv());
+      const title = encodeURIComponent(chartTitleInput.value || '');
+      const xLabel = encodeURIComponent(xLabelInput.value || '');
+      const yLabel = encodeURIComponent(yLabelInput.value || '');
+      const chartType = chartPreset.value === 'survival_only' ? 'survival' : 'timeseries';
+      csvExport.href = `/api/batch/export/{{ job_id }}?format=csv&tick_interval=${stride}&columns=${cols}`;
+      texExport.href = `/api/batch/export/{{ job_id }}?format=tex_table&tick_interval=${stride}&columns=${cols}`;
+      tikzExport.href = `/api/batch/export/{{ job_id }}?format=tex_tikz&chart_type=${chartType}&tick_interval=${stride}&title=${title}&x_label=${xLabel}&y_label=${yLabel}`;
+    }
+
+    function buildTablePreview() {
+      const stride = Math.max(1, parseInt(strideInput.value || '1', 10) || 1);
+      const selectedColumns = selectedColumnsCsv().split(',');
+      const headerMap = {
+        tick: 'Tick',
+        flora_population_mean: 'Flora mean',
+        flora_population_std: 'Flora std',
+        predator_population_mean: 'Predator mean',
+        predator_population_std: 'Predator std',
+      };
+      let html = '<table class="min-w-full text-[11px]">';
+      html += '<thead class="sticky top-0 bg-slate-100 text-slate-600"><tr>';
+      selectedColumns.forEach((col) => { html += `<th class="px-2 py-1 text-left border-b border-slate-200">${headerMap[col] || col}</th>`; });
+      html += '<th class="px-2 py-1 text-left border-b border-slate-200">Survival %</th>';
+      html += '</tr></thead><tbody>';
+      for (let i = 0; i < labels.length; i += stride) {
+        const surv = 100.0 * ((agg.survival_probability_curve || [])[i] || 0.0);
+        html += '<tr class="odd:bg-white even:bg-slate-50">';
+        selectedColumns.forEach((col) => {
+          let v = '';
+          if (col === 'tick') v = String(labels[i]);
+          if (col === 'flora_population_mean') v = (floraMean[i] || 0).toFixed(2);
+          if (col === 'flora_population_std') v = (floraStd[i] || 0).toFixed(2);
+          if (col === 'predator_population_mean') v = (predMean[i] || 0).toFixed(2);
+          if (col === 'predator_population_std') v = (predStd[i] || 0).toFixed(2);
+          html += `<td class="px-2 py-1 border-b border-slate-100">${v}</td>`;
+        });
+        html += `<td class="px-2 py-1 border-b border-slate-100">${surv.toFixed(1)}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      tablePreview.innerHTML = html;
+    }
+
+    function applyChartSettings() {
+      const preset = chartPreset.value;
+      const chart = ctx._batchChart;
+      chart.options.plugins.title = {
+        display: (chartTitleInput.value || '').trim() !== '',
+        text: chartTitleInput.value || '',
+        font: { size: 11 },
+      };
+      chart.options.scales.x.title = { display: true, text: xLabelInput.value || 'Tick', font: { size: 10 } };
+      chart.options.scales.y.title = { display: true, text: yLabelInput.value || 'Population (mean ± sigma)', font: { size: 10 } };
+
+      // reset visibility
+      chart.data.datasets.forEach((ds) => { ds.hidden = false; });
+      survivalWrap.classList.remove('hidden');
+      if (preset === 'collapse_risk') {
+        // hide predator series, keep flora and survival
+        chart.data.datasets[3].hidden = true;
+        chart.data.datasets[4].hidden = true;
+        chart.data.datasets[5].hidden = true;
+      }
+      if (preset === 'predator_pressure') {
+        // keep means only
+        chart.data.datasets[1].hidden = true;
+        chart.data.datasets[2].hidden = true;
+        chart.data.datasets[4].hidden = true;
+        chart.data.datasets[5].hidden = true;
+      }
+      if (preset === 'survival_only') {
+        chart.data.datasets.forEach((ds) => { ds.hidden = true; });
+        survivalWrap.classList.remove('hidden');
+      }
+      if (preset === 'balanced') {
+        survivalWrap.classList.remove('hidden');
+      }
+      chart.update();
+      syncExportLinks();
+    }
+
+    function applyTableSettings() {
+      buildTablePreview();
+      syncExportLinks();
+    }
+
+    applyChartBtn.addEventListener('click', applyChartSettings);
+    applyTableBtn.addEventListener('click', applyTableSettings);
+
+    phidsBatchTab('chart');
+    applyChartSettings();
+    applyTableSettings();
+  })();
+  </script>
+{% else %}
+  <p class="text-slate-400 text-sm">
+    {% if job and job.status in ('running', 'queued') %}
+    Aggregation not yet available — job is still running ({{ job.completed }}/{{ job.total }}).
+    {% else %}
+    No aggregate data found for this job.
+    {% endif %}
+  </p>
+{% endif %}
+</div>

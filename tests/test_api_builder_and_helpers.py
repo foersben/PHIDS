@@ -133,6 +133,13 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
         "predator_species_id": 0,
         "min_predator_population": 3,
     }
+    assert api_main._parse_activation_condition_json(
+        '{"kind":"environmental_signal","signal_id":0,"min_concentration":0.2}'
+    ) == {
+        "kind": "environmental_signal",
+        "signal_id": 0,
+        "min_concentration": 0.2,
+    }
     with pytest.raises(HTTPException):
         api_main._parse_activation_condition_json("{bad json")
     with pytest.raises(HTTPException):
@@ -152,6 +159,13 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
             substance_names={7: "Alarm"},
         )
         == "Alarm active"
+    )
+    assert (
+        api_main._describe_activation_condition(
+            {"kind": "environmental_signal", "signal_id": 0, "min_concentration": 0.25},
+            substance_names={0: "Alarm"},
+        )
+        == "Alarm concentration ≥ 0.25"
     )
     assert (
         api_main._describe_activation_condition({"kind": "all_of", "conditions": []})
@@ -432,6 +446,37 @@ async def test_builder_route_rule_of_16_branches() -> None:
 
 
 @pytest.mark.asyncio
+async def test_predator_routes_clamp_reproduction_divisor_to_physical_minimum() -> None:
+    """Predator add/update routes clamp reproduction divisor to avoid discounted offspring creation."""
+    async with _default_client() as client:
+        add_resp = await client.post(
+            "/api/config/predators",
+            data={
+                "name": "ClampBug",
+                "energy_min": 2.0,
+                "velocity": 1,
+                "consumption_rate": 1.0,
+                "reproduction_energy_divisor": 0.25,
+            },
+        )
+
+        update_resp = await client.put(
+            "/api/config/predators/1",
+            data={"reproduction_energy_divisor": 0.1},
+        )
+
+    assert add_resp.status_code == 200
+    assert update_resp.status_code == 200
+    draft = get_draft()
+    predator = next(
+        p
+        for p in draft.predator_species
+        if isinstance(p, PredatorSpeciesParams) and p.species_id == 1
+    )
+    assert predator.reproduction_energy_divisor == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
 async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_error_paths() -> None:
     """Validates the trigger rule placement and scenario routes cover success and error paths invariant and confirms the expected biological behavior under controlled simulation conditions.
 
@@ -590,5 +635,6 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     with client.websocket_connect("/ws/ui/stream") as websocket:
         payload = json.loads(websocket.receive_text())
     assert payload["tick"] == 0
-    assert len(payload["plant_energy"]) == 8
-    assert len(payload["plant_energy"][0]) == 8
+    assert payload["grid_width"] == 8
+    assert payload["grid_height"] == 8
+    assert payload["all_flora_species"]

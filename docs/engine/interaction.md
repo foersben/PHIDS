@@ -33,8 +33,8 @@ The interaction system operates on `SwarmComponent`, which currently stores:
 - `energy_upkeep_per_individual`,
 - `split_population_threshold`,
 - repelled-state flags,
-- `target_plant_id`,
-- `move_cooldown`.
+- `move_cooldown`,
+- inertial movement state (`last_dx`, `last_dy`).
 
 This is the phase in which most of those fields change over time.
 
@@ -50,7 +50,7 @@ In its current implementation, `run_interaction()` performs the following tasks:
 6. convert stored energy into new individuals,
 7. trigger mitosis when the population threshold is met,
 8. garbage-collect dead swarms,
-9. rebuild the plant-energy layer.
+9. defer plant-energy layer commit to the loop-level synchronization point.
 
 ## Movement Model
 
@@ -67,11 +67,12 @@ This means velocity is represented as a movement period in ticks rather than as 
 ### Crowding-induced dispersal
 
 Before selecting a movement target, the interaction system evaluates aggregate population pressure
-at the swarm's current cell via `_co_located_swarm_population(world, x, y)`.
+at the swarm's current cell from a per-tick tile-population cache.
 
-This helper sums the `population` attribute of every `SwarmComponent` occupying a given cell,
-performing an O(N)-over-occupants scan via the spatial hash rather than a global O(N²) scan over all
-swarms. The result is compared against the module-level carrying-capacity constant:
+The cache is built once from all swarms at the beginning of the phase and updated during movement,
+attrition, reproduction, and mitosis. This avoids repeated per-swarm co-location rescans and keeps
+crowding checks O(1) at read time. The cached value is compared against the module-level
+carrying-capacity constant:
 
 - `TILE_CARRYING_CAPACITY = 500`
 
@@ -99,6 +100,14 @@ Implementation details:
 - this allows co-located swarms to naturally de-phase over subsequent ticks instead of remaining
   permanently lockstepped.
 
+### Momentum fallback in flat fields
+
+When all local candidate flow values are effectively equal, the flow field provides no directional
+information. In this case, interaction applies momentum (directional inertia): the swarm stores the
+last successful movement vector (`last_dx`, `last_dy`) and weights continuation in that direction
+more heavily than alternative steps. This transforms isotropic local milling into a sweeping
+foraging trajectory that increases the probability of intercepting distant non-zero gradients.
+
 This is the interaction phase’s principal dependence on the global flow field.
 
 ### Repelled random walk
@@ -110,7 +119,7 @@ Current behavior:
 
 - a random valid adjacent cell is chosen,
 - the repelled timer decreases,
-- once the timer expires, `repelled` is cleared and `target_plant_id` is reset.
+- once the timer expires, `repelled` is cleared.
 
 This gives PHIDS a local fleeing behavior without requiring a separate pathfinding subsystem.
 
@@ -245,14 +254,17 @@ thresholds.
 
 The interaction phase follows the current hybrid PHIDS model.
 
-It mutates swarm and plant components in place, but it synchronizes plant-energy field visibility
-through `GridEnvironment` helpers such as:
+It mutates swarm and plant components in place and writes plant-energy deltas through
+`GridEnvironment` helpers such as:
 
 - `env.set_plant_energy(...)`
 - `env.clear_plant_energy(...)`
-- `env.rebuild_energy_layer()`
 
-Thus interaction is not purely entity-local; it is a coordinated entity-plus-field phase.
+The aggregate plant-energy commit (`env.rebuild_energy_layer()`) is executed once per tick in
+`SimulationLoop.step` after lifecycle, interaction, and signaling have written their deltas.
+
+Thus interaction is not purely entity-local; it is a coordinated entity-plus-field phase whose writes
+are materialized at the loop-level synchronization boundary.
 
 ## Ordering Nuances
 
