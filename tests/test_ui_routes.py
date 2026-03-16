@@ -1112,7 +1112,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     """
     monkeypatch.setattr(
         "phids.engine.systems.interaction._choose_neighbour_by_flow_probability",
-        lambda x, y, flow_field, width, height, invert=False: (x, y),
+        lambda swarm, flow_field, width, height, invert=False: (swarm.x, swarm.y),
     )
 
     draft = get_draft()

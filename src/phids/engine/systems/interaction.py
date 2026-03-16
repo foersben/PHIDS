@@ -38,8 +38,7 @@ def _accumulate_tile_population(
 
 
 def _choose_neighbour_by_flow_probability(
-    x: int,
-    y: int,
+    swarm: SwarmComponent,
     flow_field: npt.NDArray[np.float64],
     width: int,
     height: int,
@@ -48,8 +47,7 @@ def _choose_neighbour_by_flow_probability(
     """Choose a 4-connected neighbour (or current cell) from flow-weighted probabilities.
 
     Args:
-        x: Current X coordinate.
-        y: Current Y coordinate.
+        swarm: Swarm component containing current coordinates and movement inertia.
         flow_field: Scalar attraction field.
         width: Grid width.
         height: Grid height.
@@ -58,6 +56,7 @@ def _choose_neighbour_by_flow_probability(
     Returns:
         tuple[int, int]: Selected (nx, ny) cell to move to.
     """
+    x, y = swarm.x, swarm.y
     candidates: list[tuple[int, int]] = [(x, y)]
     if x > 0:
         candidates.append((x - 1, y))
@@ -71,6 +70,24 @@ def _choose_neighbour_by_flow_probability(
     scores = [
         float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates
     ]
+    max_score = max(scores)
+    min_score = min(scores)
+
+    # Flat fields provide no directional signal; preserve prior heading as inertia.
+    if max_score - min_score < 1e-6:
+        if swarm.last_dx == 0 and swarm.last_dy == 0:
+            return random.choice(candidates)
+
+        target_x = x + swarm.last_dx
+        target_y = y + swarm.last_dy
+        weights: list[float] = []
+        for candidate_x, candidate_y in candidates:
+            if candidate_x == target_x and candidate_y == target_y:
+                weights.append(10.0)
+            else:
+                weights.append(1.0)
+        return random.choices(candidates, weights=weights, k=1)[0]
+
     adjusted_scores = [-score for score in scores] if invert else scores
     min_score = min(adjusted_scores)
     weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
@@ -225,8 +242,7 @@ def run_interaction(
                     swarm.repelled = False
             else:
                 nx, ny = _choose_neighbour_by_flow_probability(
-                    swarm.x,
-                    swarm.y,
+                    swarm,
                     env.flow_field,
                     env.width,
                     env.height,
@@ -237,6 +253,8 @@ def run_interaction(
                 _accumulate_tile_population(tile_populations, old_x, old_y, -swarm.population)
                 _accumulate_tile_population(tile_populations, nx, ny, swarm.population)
                 swarm.x, swarm.y = nx, ny
+                swarm.last_dx = nx - old_x
+                swarm.last_dy = ny - old_y
                 has_moved = True
 
             swarm.move_cooldown = swarm.velocity - 1

@@ -29,6 +29,8 @@ class SwarmComponent:
         repelled: Whether the swarm is currently repelled by toxin.
         repelled_ticks_remaining: Remaining ticks of repelled behavior.
         move_cooldown: Ticks remaining until the next movement.
+        last_dx: Last movement delta on the x-axis (-1, 0, 1).
+        last_dy: Last movement delta on the y-axis (-1, 0, 1).
     """
 
     entity_id: int
@@ -47,3 +49,5 @@ class SwarmComponent:
     repelled: bool = False
     repelled_ticks_remaining: int = 0
     move_cooldown: int = 0
+    last_dx: int = 0
+    last_dy: int = 0

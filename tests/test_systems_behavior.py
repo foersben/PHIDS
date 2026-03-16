@@ -407,6 +407,49 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient(
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
     assert (swarm.x, swarm.y) == (2, 0)
+    assert (swarm.last_dx, swarm.last_dy) == (1, 0)
+
+
+def test_interaction_flat_gradient_uses_momentum_inertia(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Validates momentum-biased movement on flat gradients to avoid circular random walks.
+
+    When the local flow field is flat, no biological gradient is available to guide directed motion.
+    The interaction system should therefore reuse the swarm's last displacement vector as inertial
+    memory, producing a sweeping foraging trajectory rather than isotropic local circling. This test
+    fixes the prior heading and asserts that the weighted choice receives the momentum target as its
+    dominant option.
+
+    Args:
+        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
+
+    Returns:
+        None. The function verifies invariant compliance through assertions rather than data return.
+    """
+    world = ECSWorld()
+    env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
+    env.flow_field[:, 0] = 0.0
+
+    sid = _add_swarm(world, 1, 0, species_id=0, pop=4)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.last_dx = 1
+    swarm.last_dy = 0
+    swarm.energy_upkeep_per_individual = 0.0
+
+    def _weighted_argmax(
+        seq: list[tuple[int, int]],
+        weights: list[float],
+        k: int,
+    ) -> list[tuple[int, int]]:
+        del k
+        return [seq[weights.index(max(weights))]]
+
+    monkeypatch.setattr(random, "choices", _weighted_argmax)
+
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+
+    assert (swarm.x, swarm.y) == (2, 0)
 
 
 def test_interaction_moved_swarm_does_not_feed_in_same_tick(
