@@ -213,7 +213,7 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
         if len(live_species) <= 1:
             break
 
-    payload = api_main._build_live_dashboard_payload(loop)
+    payload = api_main._build_live_dashboard_payload(loop)  # backward-compat shim → presenter
     payload_species = {int(spec["species_id"]) for spec in payload["species_energy"]}
     legend_species = {int(spec["species_id"]) for spec in payload["all_flora_species"]}
     configured_species = {species.species_id for species in loop.config.flora_species}
@@ -1139,7 +1139,9 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         step_resp = await client.post("/api/simulation/step")
         assert step_resp.status_code == 200
 
-        dashboard_payload = api_main._build_live_dashboard_payload(api_main._sim_loop)
+        dashboard_payload = api_main._build_live_dashboard_payload(
+            api_main._sim_loop
+        )  # backward-compat shim → presenter
         details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
 
         from phids.engine.components.swarm import SwarmComponent
