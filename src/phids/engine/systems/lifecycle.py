@@ -266,4 +266,3 @@ def run_lifecycle(
         )
 
     world.collect_garbage(dead)
-    env.rebuild_energy_layer()

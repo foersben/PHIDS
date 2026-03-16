@@ -635,5 +635,6 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     with client.websocket_connect("/ws/ui/stream") as websocket:
         payload = json.loads(websocket.receive_text())
     assert payload["tick"] == 0
-    assert len(payload["plant_energy"]) == 8
-    assert len(payload["plant_energy"][0]) == 8
+    assert payload["grid_width"] == 8
+    assert payload["grid_height"] == 8
+    assert payload["all_flora_species"]

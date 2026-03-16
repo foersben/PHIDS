@@ -22,6 +22,21 @@ from phids.engine.core.ecs import ECSWorld
 TILE_CARRYING_CAPACITY = 500
 
 
+def _accumulate_tile_population(
+    tile_populations: dict[tuple[int, int], int],
+    x: int,
+    y: int,
+    delta: int,
+) -> None:
+    """Apply a signed population delta to one tile-population cache entry."""
+    pos = (x, y)
+    next_population = tile_populations.get(pos, 0) + delta
+    if next_population > 0:
+        tile_populations[pos] = next_population
+    else:
+        tile_populations.pop(pos, None)
+
+
 def _choose_neighbour_by_flow_probability(
     x: int,
     y: int,
@@ -171,6 +186,16 @@ def run_interaction(
         plant_death_causes: Mapping of death causes to their respective counts.
     """
     dead_swarms: list[int] = []
+    tile_populations: dict[tuple[int, int], int] = {}
+    for entity in world.query(SwarmComponent):
+        indexed_swarm = entity.get_component(SwarmComponent)
+        _accumulate_tile_population(
+            tile_populations,
+            indexed_swarm.x,
+            indexed_swarm.y,
+            indexed_swarm.population,
+        )
+
     for entity in list(world.query(SwarmComponent)):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
         has_moved = False
@@ -188,7 +213,7 @@ def run_interaction(
 
             if (
                 not swarm.repelled
-                and _co_located_swarm_population(world, swarm.x, swarm.y) > TILE_CARRYING_CAPACITY
+                and tile_populations.get((swarm.x, swarm.y), 0) > TILE_CARRYING_CAPACITY
             ):
                 swarm.repelled = True
                 swarm.repelled_ticks_remaining = 1
@@ -209,6 +234,8 @@ def run_interaction(
 
             if (nx, ny) != (old_x, old_y):
                 world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
+                _accumulate_tile_population(tile_populations, old_x, old_y, -swarm.population)
+                _accumulate_tile_population(tile_populations, nx, ny, swarm.population)
                 swarm.x, swarm.y = nx, ny
                 has_moved = True
 
@@ -259,11 +286,18 @@ def run_interaction(
         swarm.energy -= metabolic_cost
 
         if swarm.energy < 0.0 and swarm.population > 0:
+            previous_population = swarm.population
             deficit = -swarm.energy
             casualties = int(deficit // swarm.energy_min)
             if casualties * swarm.energy_min < deficit:
                 casualties += 1
             swarm.population = max(0, swarm.population - casualties)
+            _accumulate_tile_population(
+                tile_populations,
+                swarm.x,
+                swarm.y,
+                swarm.population - previous_population,
+            )
             total_casualty_energy = casualties * swarm.energy_min
             leftover_energy = total_casualty_energy - deficit
             swarm.energy = max(0.0, leftover_energy)
@@ -289,7 +323,14 @@ def run_interaction(
 
             new_individuals = int(surplus // cost_per_offspring)
             if new_individuals > 0:
+                previous_population = swarm.population
                 swarm.population += new_individuals
+                _accumulate_tile_population(
+                    tile_populations,
+                    swarm.x,
+                    swarm.y,
+                    swarm.population - previous_population,
+                )
                 swarm.energy -= new_individuals * cost_per_offspring
 
         # ----------------------------------------------------------------
@@ -301,7 +342,19 @@ def run_interaction(
             else 2 * swarm.initial_population
         )
         if swarm.population >= split_threshold:
-            _perform_mitosis(swarm, world, env)
+            pre_split_population = swarm.population
+            offspring = _perform_mitosis(swarm, world, env)
+            _accumulate_tile_population(
+                tile_populations,
+                swarm.x,
+                swarm.y,
+                swarm.population - pre_split_population,
+            )
+            _accumulate_tile_population(
+                tile_populations,
+                offspring.x,
+                offspring.y,
+                offspring.population,
+            )
 
     world.collect_garbage(dead_swarms)
-    env.rebuild_energy_layer()

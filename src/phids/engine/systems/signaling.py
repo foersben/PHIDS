@@ -21,22 +21,29 @@ from phids.shared.constants import SUBSTANCE_EMIT_RATE
 def _is_substance_active_for_owner(
     owner_plant_id: int,
     substance_id: int,
-    world: ECSWorld,
+    active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     """Return whether a given substance is currently active on the owner plant."""
-    for entity in world.query(SubstanceComponent):
-        sub: SubstanceComponent = entity.get_component(SubstanceComponent)
-        if sub.owner_plant_id == owner_plant_id and sub.substance_id == substance_id and sub.active:
-            return True
-    return False
+    return substance_id in active_substance_ids_by_owner.get(owner_plant_id, set())
+
+
+def _build_swarm_population_index(world: ECSWorld) -> dict[tuple[int, int, int], int]:
+    """Return a per-cell, per-species swarm-population index for one signaling tick."""
+    populations: dict[tuple[int, int, int], int] = {}
+    for entity in world.query(SwarmComponent):
+        swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        key = (swarm.x, swarm.y, swarm.species_id)
+        populations[key] = populations.get(key, 0) + swarm.population
+    return populations
 
 
 def _check_activation_condition(
     plant: PlantComponent,
     owner_plant_id: int,
     activation_condition: dict[str, Any] | None,
-    world: ECSWorld,
     env: GridEnvironment,
+    swarm_population_by_cell_species: dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
@@ -51,13 +58,17 @@ def _check_activation_condition(
         predator_species_id = int(activation_condition.get("predator_species_id", -1))
         min_predator_population = int(activation_condition.get("min_predator_population", 1))
         return (
-            _co_located_swarm_population(world, plant.x, plant.y, predator_species_id)
+            swarm_population_by_cell_species.get((plant.x, plant.y, predator_species_id), 0)
             >= min_predator_population
         )
 
     if kind == "substance_active":
         substance_id = int(activation_condition.get("substance_id", -1))
-        return _is_substance_active_for_owner(owner_plant_id, substance_id, world)
+        return _is_substance_active_for_owner(
+            owner_plant_id,
+            substance_id,
+            active_substance_ids_by_owner,
+        )
 
     if kind == "environmental_signal":
         signal_id = int(activation_condition.get("signal_id", -1))
@@ -69,7 +80,14 @@ def _check_activation_condition(
     if kind == "all_of":
         conditions = activation_condition.get("conditions", [])
         return bool(conditions) and all(
-            _check_activation_condition(plant, owner_plant_id, child, world, env)
+            _check_activation_condition(
+                plant,
+                owner_plant_id,
+                child,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+            )
             for child in conditions
             if isinstance(child, dict)
         )
@@ -77,7 +95,14 @@ def _check_activation_condition(
     if kind == "any_of":
         conditions = activation_condition.get("conditions", [])
         return any(
-            _check_activation_condition(plant, owner_plant_id, child, world, env)
+            _check_activation_condition(
+                plant,
+                owner_plant_id,
+                child,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+            )
             for child in conditions
             if isinstance(child, dict)
         )
@@ -252,13 +277,27 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 0. Garbage-collect orphaned substances before any trigger checks
     # ------------------------------------------------------------------
-    for entity in list(world.query(SubstanceComponent)):
+    substance_entities = list(world.query(SubstanceComponent))
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if not world.has_entity(sub.owner_plant_id):
             dead_substances.append(entity.entity_id)
 
     world.collect_garbage(dead_substances)
     dead_substances.clear()
+    substance_entities = list(world.query(SubstanceComponent))
+
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent] = {}
+    active_substance_ids_by_owner: dict[int, set[int]] = {}
+    for entity in substance_entities:
+        sub = entity.get_component(SubstanceComponent)
+        owner_substance_by_key[(sub.owner_plant_id, sub.substance_id)] = sub
+        if sub.active:
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
+                sub.substance_id
+            )
+
+    swarm_population_by_cell_species = _build_swarm_population_index(world)
 
     # Toxins are rebuilt from currently active emitters each signaling pass
     # and remain local to living plant tissue. Non-triggered toxins remain
@@ -267,7 +306,7 @@ def run_signaling(
     env.toxin_layers[:] = 0.0
     env._toxin_layers_write[:] = 0.0
 
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         sub.triggered_this_tick = False
 
@@ -285,11 +324,8 @@ def run_signaling(
 
             # Check for predator presence at this cell via spatial hash.
             predator_present = (
-                _co_located_swarm_population(
-                    world,
-                    plant.x,
-                    plant.y,
-                    trig.predator_species_id,
+                swarm_population_by_cell_species.get(
+                    (plant.x, plant.y, trig.predator_species_id), 0
                 )
                 >= trig.min_predator_population
             )
@@ -304,8 +340,9 @@ def run_signaling(
                     plant,
                     plant.entity_id,
                     trig.activation_condition.model_dump(mode="json"),
-                    world,
                     env,
+                    swarm_population_by_cell_species,
+                    active_substance_ids_by_owner,
                 )
 
             triggered = predator_present or condition_met
@@ -314,15 +351,7 @@ def run_signaling(
                 continue
 
             # Ensure a substance entity exists for this (plant, substance_id) pair
-            existing_sub = None
-            for sub_entity in world.query(SubstanceComponent):
-                candidate_sub: SubstanceComponent = sub_entity.get_component(SubstanceComponent)
-                if (
-                    candidate_sub.owner_plant_id == plant.entity_id
-                    and candidate_sub.substance_id == trig.substance_id
-                ):
-                    existing_sub = candidate_sub
-                    break
+            existing_sub = owner_substance_by_key.get((plant.entity_id, trig.substance_id))
 
             if existing_sub is None:
                 # Spawn new substance entity with full properties from trigger
@@ -353,6 +382,7 @@ def run_signaling(
                     trigger_min_predator_population=trig.min_predator_population,
                 )
                 world.add_component(new_entity.entity_id, existing_sub)
+                owner_substance_by_key[(plant.entity_id, trig.substance_id)] = existing_sub
             else:
                 if (
                     not existing_sub.active
@@ -383,11 +413,19 @@ def run_signaling(
             sub.synthesis_remaining -= 1
         if sub.synthesis_remaining <= 0:
             if not _check_activation_condition(
-                plant, sub.owner_plant_id, sub.activation_condition, world, env
+                plant,
+                sub.owner_plant_id,
+                sub.activation_condition,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
             ):
                 continue
             sub.active = True
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
+                sub.substance_id
+            )
 
     # ------------------------------------------------------------------
     # 2b. Irreversible induced defense lock
@@ -410,6 +448,9 @@ def run_signaling(
         if not sub.triggered_this_tick:
             if not sub.irreversible and sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
+                    sub.substance_id
+                )
                 continue
 
         owner_entity = (
@@ -422,6 +463,7 @@ def run_signaling(
         plant = owner_entity.get_component(PlantComponent)
         if plant.entity_id in dead_plant_ids:
             sub.active = False
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
             dead_substances.append(entity.entity_id)
             continue
 
@@ -434,6 +476,7 @@ def run_signaling(
         ):
             sub.active = False
             sub.aftereffect_remaining_ticks = 0
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
             continue
 
         if sub.energy_cost_per_tick > 0.0:
@@ -450,6 +493,9 @@ def run_signaling(
                 dead_plants.append(plant.entity_id)
                 dead_plant_ids.add(plant.entity_id)
                 sub.active = False
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
+                    sub.substance_id
+                )
                 dead_substances.append(entity.entity_id)
                 continue
 
@@ -525,6 +571,7 @@ def run_signaling(
         plant = owner_entity.get_component(PlantComponent)
         if plant.entity_id in dead_plant_ids:
             sub.active = False
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
             dead_substances.append(entity.entity_id)
             continue
 
@@ -539,8 +586,12 @@ def run_signaling(
             sub.aftereffect_remaining_ticks -= 1
             if sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
+                    sub.substance_id
+                )
         else:
             sub.active = False
+            active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
 
     # ------------------------------------------------------------------
     # 5. Diffusion (delegated to GridEnvironment)

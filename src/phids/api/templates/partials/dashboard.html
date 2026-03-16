@@ -233,8 +233,12 @@
     return Number(value).toFixed(digits);
   }
 
+  function hasLiveSimData(data) {
+    return !!data && typeof data.tick === 'number' && Array.isArray(data.plants) && Array.isArray(data.swarms);
+  }
+
   function currentGridData() {
-    return simData && simData.plant_energy ? simData : placementData;
+    return hasLiveSimData(simData) ? simData : placementData;
   }
 
   function gridDims(gridData) {
@@ -700,6 +704,8 @@
         }
       }
       updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
+    } else if (Array.isArray(data.all_flora_species) && data.all_flora_species.length > 0) {
+      updateSpeciesBars(data.all_flora_species, data.species_energy || [], maxE);
     } else if (data.plant_energy) {
       for (let x = 0; x < gW; x++) {
         for (let y = 0; y < gH; y++) {
@@ -809,7 +815,7 @@
 
   function draw() {
     if (!isActiveCanvas()) return;
-    const data = simData && simData.plant_energy ? simData : null;
+    const data = hasLiveSimData(simData) ? simData : null;
     if (data) {
       drawSim(data);
       return;
@@ -1026,7 +1032,7 @@
   }
 
   function tooltipVersion() {
-    if (simData && simData.plant_energy) return `live:${simData.tick ?? 0}`;
+    if (hasLiveSimData(simData)) return `live:${simData.tick ?? 0}`;
     if (placementData) return `preview:${previewRevision}`;
     return 'none';
   }
@@ -1040,7 +1046,7 @@
     const requestKey = tooltipRequestKeyFor(hoveredCell);
     if (!force && lastDetailKey === requestKey) return;
     lastDetailKey = requestKey;
-    const liveTick = simData && simData.plant_energy ? Number(simData.tick ?? 0) : null;
+    const liveTick = hasLiveSimData(simData) ? Number(simData.tick ?? 0) : null;
 
     try {
       const params = new URLSearchParams({
@@ -1093,7 +1099,7 @@
     const cachedPayload = tooltipCache.get(tooltipRequestKeyFor(cell));
     if (cachedPayload) {
       renderTooltip(cachedPayload);
-    } else if (simData && simData.plant_energy) {
+    } else if (hasLiveSimData(simData)) {
       const snapshotPayload = buildLiveSnapshotTooltip(cell);
       if (snapshotPayload) renderTooltip(snapshotPayload);
     }

@@ -1022,8 +1022,9 @@ def _build_live_dashboard_payload(loop: SimulationLoop) -> dict[str, Any]:
 
     return {
         "tick": loop.tick,
+        "grid_width": env.width,
+        "grid_height": env.height,
         "max_energy": max_e,
-        "plant_energy": env.plant_energy_layer.tolist(),
         "species_energy": species_energy,
         "all_flora_species": all_flora_species,
         "signal_overlay": signal_overlay.tolist() if signal_overlay is not None else [],
