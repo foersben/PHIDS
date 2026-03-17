@@ -1,6 +1,6 @@
 # Biotope and Double-Buffering
 
-`oGridEnvironment` is the canonical owner of PHIDS field state and the principal implementation site of explicit double-buffering. The module `src/phids/engine/core/biotope.py` couples vectorized lattice storage, Gaussian signal transport, wind-driven advection, and buffered visibility boundaries so that ecological fields remain deterministic under multi-phase updates.
+`GridEnvironment` is the canonical owner of PHIDS field state and the principal implementation site of explicit double-buffering. The module `src/phids/engine/core/biotope.py` couples vectorized lattice storage, Gaussian signal transport, wind-driven advection, and buffered visibility boundaries so that ecological fields remain deterministic under multi-phase updates.
 
 In architectural terms, the engine separates discrete entities (`ECSWorld`) from continuous or aggregate fields (`GridEnvironment`). Plant energy, airborne signals, toxin concentration, wind vectors, and the interaction flow field are all represented as preallocated NumPy layers. This preallocation is constrained by `GRID_W_MAX`, `GRID_H_MAX`, and Rule-of-16 species caps, preventing dynamic resizing during the simulation loop.
 
@@ -26,16 +26,17 @@ flowchart TD
 
 ## Signal Diffusion and Wind Advection
 
-Signal transport is implemented by directional advection-diffusion through a wind-biased convolution kernel whose principal axis is aligned with the mean wind vector. This formulation replaces rigid integer-cell translation and yields anisotropic plume elongation along the downwind axis while preserving one-pass vectorized field updates. After decay (`SIGNAL_DECAY_FACTOR`), values below `SIGNAL_EPSILON` are zeroed. This truncation is a computational invariant that suppresses subnormal floating tails and preserves sparse-field efficiency.
+Signal transport is implemented as a two-stage local advection-diffusion operator. First, each destination cell samples concentration from an upwind source coordinate using semi-Lagrangian backtracing with the local wind vector field. Second, the advected field is convolved with an isotropic Gaussian diffusion kernel and multiplied by decay (`SIGNAL_DECAY_FACTOR`). After decay, values below `SIGNAL_EPSILON` are zeroed to preserve numerical sparsity and eliminate subnormal tails.
 
-The layer update can be interpreted as
+The per-layer update is
 
 $$
-S^{t+1} = (\mathcal{K}_{\bar{v}} * S^t)\cdot\gamma,
-\qquad S^{t+1}[S^{t+1}<\varepsilon]=0,
+	ilde{S}^{t}(x,y)=S^t\!\left(x-u_x(x,y),\ y-u_y(x,y)\right),
+\qquad
+S^{t+1}=\gamma\,(\mathcal{K}_{iso}*\tilde{S}^{t}),
 $$
 
-where $\mathcal{K}_{\bar{v}}$ is a wind-oriented anisotropic kernel derived from mean wind vector $\bar{v}$, $\gamma$ is decay, and $\varepsilon=\texttt{SIGNAL\_EPSILON}$.
+followed by the sparsity clamp $S^{t+1}[S^{t+1}<\varepsilon]=0$. This formulation preserves local wind heterogeneity; opposing flow regions no longer collapse into a single mean-vector plume.
 
 ## Toxin Locality
 
@@ -61,6 +62,6 @@ flowchart LR
 
 ## Validation Anchors and Current Limits
 
-Behavioral evidence is anchored in `tests/test_biotope_diffusion.py` and `tests/test_schemas_and_invariants.py`, which verify threshold truncation, dimension guards, directional plume anisotropy under wind forcing, write-visibility boundaries after rebuild, and non-negative energy clamping. Current model limits remain explicit: diffusion is layer-based rather than particle-resolved, wind coupling is mean-field anisotropic rather than full CFD, toxins are rebuilt locally by signaling, and double-buffering is field-centric rather than full-world duplication.
+Behavioral evidence is anchored in `tests/test_biotope_diffusion.py` and `tests/test_schemas_and_invariants.py`, which verify threshold truncation, dimension guards, local-wind plume displacement under heterogeneous wind forcing, write-visibility boundaries after rebuild, and non-negative energy clamping. Current model limits remain explicit: diffusion is layer-based rather than particle-resolved, advection is semi-Lagrangian without higher-order flux limiting, toxins are rebuilt locally by signaling, and double-buffering is field-centric rather than full-world duplication.
 
 For cross-phase context, see `docs/engine/flow-field.md`, `docs/engine/signaling.md`, and `docs/engine/index.md`.

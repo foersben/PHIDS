@@ -39,7 +39,8 @@ Primary state owners:
 
 - `src/phids/engine/core/ecs.py` (`ECSWorld`) — discrete entities and O(1) spatial hash queries
 - `src/phids/engine/core/biotope.py` (`GridEnvironment`) — vectorized field layers with
-  read/write buffering for diffusion-sensitive state
+  read/write buffering for diffusion-sensitive state, including local-wind
+  semi-Lagrangian signal advection
 - `src/phids/telemetry/analytics.py` and `src/phids/io/replay.py` — per-tick analytical and
   replay outputs
 
@@ -53,6 +54,10 @@ Simulation tick phase order:
 
 This ordering is a semantic contract. Observable state at each phase boundary is defined by this
 sequence, not by ad-hoc update interleavings.
+
+Recent engine refinements ensure that heterogeneous wind fields now influence signal transport
+locally (rather than through global wind averaging), and lifecycle enforces same-pass viability
+cleanup for edge-case mycorrhizal connection costs to preserve causal telemetry attribution.
 
 For the canonical architecture chapter, see
 [`docs/architecture/index.md`](docs/architecture/index.md).

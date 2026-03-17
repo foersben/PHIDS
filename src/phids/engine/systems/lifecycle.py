@@ -161,7 +161,7 @@ def _establish_mycorrhizal_connections(
     inter_species: bool,
     excluded_entity_ids: set[int] | None = None,
     plant_death_causes: dict[str, int] | None = None,
-) -> bool:
+) -> tuple[bool, list[int]]:
     """Establish bidirectional root connections between adjacent plants.
 
     Plants located at Manhattan distance 1 may form symbiotic root
@@ -180,7 +180,10 @@ def _establish_mycorrhizal_connections(
             marked for removal in the current lifecycle pass).
 
     Returns:
-        bool: ``True`` when a new connection was created.
+        tuple[bool, list[int]]: ``(made_connection, dead_entity_ids)`` where
+        ``dead_entity_ids`` contains plants that crossed the survival threshold
+        due to connection costs and were removed from spatial registration and
+        energy layers in this same lifecycle pass.
     """
     excluded = excluded_entity_ids or set()
     plants: list[PlantComponent] = [
@@ -196,9 +199,13 @@ def _establish_mycorrhizal_connections(
         pos_index.setdefault((p.x, p.y), []).append(p)
 
     formed_this_tick: set[int] = set()
+    dead_entities: list[int] = []
+    dead_entity_ids: set[int] = set()
     made_connection = False
 
     for plant in plants:
+        if plant.entity_id in dead_entity_ids:
+            continue
         if plant.entity_id in formed_this_tick:
             continue
         if (plant.energy - connection_cost) < plant.survival_threshold:
@@ -210,6 +217,8 @@ def _establish_mycorrhizal_connections(
             if not (0 <= nx < env.width and 0 <= ny < env.height):
                 continue
             for neighbour in pos_index.get((nx, ny), []):
+                if neighbour.entity_id in dead_entity_ids:
+                    continue
                 if neighbour.entity_id == plant.entity_id:
                     continue
                 if neighbour.entity_id in formed_this_tick:
@@ -238,7 +247,21 @@ def _establish_mycorrhizal_connections(
         env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
         made_connection = True
 
-    return made_connection
+        for participant in (plant, neighbour):
+            if participant.entity_id in dead_entity_ids:
+                continue
+            if participant.energy >= participant.survival_threshold:
+                continue
+
+            cause_key = participant.last_energy_loss_cause or "death_background_deficit"
+            if plant_death_causes is not None:
+                plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
+            env.clear_plant_energy(participant.x, participant.y, participant.species_id)
+            world.unregister_position(participant.entity_id, participant.x, participant.y)
+            dead_entity_ids.add(participant.entity_id)
+            dead_entities.append(participant.entity_id)
+
+    return made_connection, dead_entities
 
 
 def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) -> bool:
@@ -305,7 +328,7 @@ def run_lifecycle(
 
     # Establish new mycorrhizal root connections between adjacent plants
     if _should_attempt_mycorrhizal_growth(tick, mycorrhizal_growth_interval_ticks):
-        _establish_mycorrhizal_connections(
+        _, mycorrhiza_dead = _establish_mycorrhizal_connections(
             world,
             env,
             mycorrhizal_connection_cost,
@@ -313,5 +336,6 @@ def run_lifecycle(
             excluded_entity_ids=set(dead),
             plant_death_causes=plant_death_causes,
         )
+        dead.extend(mycorrhiza_dead)
 
     world.collect_garbage(dead)

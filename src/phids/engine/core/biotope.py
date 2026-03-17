@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
+from scipy.ndimage import map_coordinates  # type: ignore[import-untyped]
 from scipy.signal import convolve2d  # type: ignore[import-untyped]
 
 from phids.shared.constants import (
@@ -32,12 +33,6 @@ from phids.shared.constants import (
 # ---------------------------------------------------------------------------
 _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.8
-
-# Wind anisotropy controls for directional-kernel diffusion.
-_ANISOTROPY_GAIN: float = 0.55
-_ANISOTROPY_MIN_RATIO: float = 0.45
-_ADVECTIVE_KERNEL_SHIFT_GAIN: float = 0.6
-_ADVECTIVE_KERNEL_SHIFT_CLAMP: float = 1.5
 
 
 def _make_gaussian_kernel(
@@ -60,46 +55,6 @@ def _make_gaussian_kernel(
 
 
 DIFFUSION_KERNEL: npt.NDArray[np.float64] = _make_gaussian_kernel()
-
-
-def _make_wind_biased_kernel(vx: float, vy: float) -> npt.NDArray[np.float64]:
-    """Return a normalized anisotropic kernel aligned with the supplied wind vector.
-
-    The kernel stretches along the wind axis and applies a bounded mean shift in
-    the downwind direction, approximating advection-diffusion coupling without
-    introducing additional per-cell interpolation passes.
-    """
-    speed = float(np.hypot(vx, vy))
-    if speed <= 1e-9:
-        return DIFFUSION_KERNEL
-
-    ux = vx / speed
-    uy = vy / speed
-    sigma_parallel = _SIGMA * (1.0 + _ANISOTROPY_GAIN * speed)
-    sigma_perpendicular = max(_SIGMA * _ANISOTROPY_MIN_RATIO, _SIGMA / (1.0 + 0.3 * speed))
-    mean_parallel = float(
-        np.clip(
-            _ADVECTIVE_KERNEL_SHIFT_GAIN * speed,
-            -_ADVECTIVE_KERNEL_SHIFT_CLAMP,
-            _ADVECTIVE_KERNEL_SHIFT_CLAMP,
-        )
-    )
-
-    ax = np.arange(-(_KERNEL_SIZE // 2), _KERNEL_SIZE // 2 + 1, dtype=np.float64)
-    xx, yy = np.meshgrid(ax, ax)
-    parallel = xx * ux + yy * uy
-    perpendicular = -xx * uy + yy * ux
-    exponent = ((parallel - mean_parallel) ** 2) / (2.0 * sigma_parallel**2) + (
-        perpendicular**2
-    ) / (2.0 * sigma_perpendicular**2)
-    kernel = np.exp(-exponent)
-
-    # Preserve sparsity and avoid subnormal tails from entering convolution updates.
-    kernel[kernel < SIGNAL_EPSILON] = 0.0
-    total = float(kernel.sum())
-    if total <= 0.0:
-        return DIFFUSION_KERNEL
-    return np.asarray(kernel / total, dtype=np.float64)
 
 
 # ---------------------------------------------------------------------------
@@ -225,22 +180,33 @@ class GridEnvironment:
     def diffuse_signals(self) -> None:
         """Compute one diffusion tick for all signal layers.
 
-        This applies a directional advection-diffusion approximation through a
-        wind-biased convolution kernel and then zeros sub-threshold values to
-        preserve matrix sparsity.
+        This applies local semi-Lagrangian advection using per-cell wind vectors,
+        followed by isotropic Gaussian diffusion and decay. The transport update
+        respects heterogeneous wind fields across the grid and avoids global-mean
+        wind averaging artefacts.
         """
-        mean_vx = float(self.wind_vector_x.mean())
-        mean_vy = float(self.wind_vector_y.mean())
-        kernel = _make_wind_biased_kernel(mean_vx, mean_vy)
+        x_coords, y_coords = np.mgrid[0 : self.width, 0 : self.height]
+        upwind_x = x_coords.astype(np.float64) - self.wind_vector_x
+        upwind_y = y_coords.astype(np.float64) - self.wind_vector_y
 
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
             if not np.any(layer >= SIGNAL_EPSILON):
                 self._signal_layers_write[s].fill(0.0)
                 continue
-            convolved = convolve2d(
+
+            advected = map_coordinates(
                 layer,
-                kernel,
+                [upwind_x, upwind_y],
+                order=1,
+                mode="constant",
+                cval=0.0,
+                prefilter=False,
+            )
+
+            convolved = convolve2d(
+                advected,
+                DIFFUSION_KERNEL,
                 mode="same",
                 boundary="fill",
                 fillvalue=0.0,

@@ -65,7 +65,7 @@ flowchart TD
 
 Lifecycle is the sole phase that forms new mycorrhizal edges in the current runtime. Growth attempts are interval-gated and deterministic in candidate ordering. Plants are sorted by stable coordinates and identifiers, and only forward neighbors are evaluated to avoid duplicate pair enumeration. During an eligible tick, multiple links may form, but each plant can participate in at most one new edge, and participating pairs must be disjoint within that pass.
 
-Both plants in a candidate pair must be able to pay connection cost while remaining above survival thresholds after payment. When link formation succeeds, energy is deducted symmetrically and the bidirectional connection is written immediately. When inter-species linking is disabled, cross-species candidates are rejected before energy checks.
+Both plants in a candidate pair must be able to pay connection cost while remaining above survival thresholds after payment. When link formation succeeds, energy is deducted symmetrically and the bidirectional connection is written immediately. The implementation additionally performs an immediate post-connection viability check and same-pass removal for any participant that becomes non-viable due to numerical edge effects or externally modified thresholds; this prevents one-tick ghost residency in the ECS and preserves death-cause telemetry fidelity for mycorrhiza-induced attrition. When inter-species linking is disabled, cross-species candidates are rejected before energy checks.
 
 ## Survival Threshold Culling and Telemetry Coupling
 
