@@ -55,7 +55,7 @@
         {% endfor %}
       </div>
     </div>
-    {% elif kind == 'enemy_presence' %}
+    {% elif kind == 'herbivore_presence' %}
     <form hx-put="/api/config/trigger-rules/{{ rule_index }}/condition/node"
           hx-target="#trigger-rules-view" hx-swap="outerHTML"
           class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -108,7 +108,7 @@
         <strong>substance</strong>. Multiple rules per (plant, herbivore) pair are allowed —
         they fire simultaneously. Advanced activation gates are configured visually
         as nested trees with <strong>all_of</strong> / <strong>any_of</strong> groups over
-        <strong>enemy_presence</strong> and <strong>substance_active</strong> predicates.
+        <strong>herbivore_presence</strong> and <strong>substance_active</strong> predicates.
       </p>
     </div>
   </div>
@@ -189,7 +189,7 @@
           Activation Gate
         </label>
         <div class="rounded-lg border border-dashed border-indigo-300 bg-white/70 px-3 py-2 text-xs text-slate-500">
-          New rules start <strong>unconditional</strong>. After creating a rule, use the visual nested builder in the table below to add AND/OR groups, enemy requirements, and required active substances.
+          New rules start <strong>unconditional</strong>. After creating a rule, use the visual nested builder in the table below to add AND/OR groups, herbivore requirements, and required active substances.
         </div>
       </div>
 
@@ -327,7 +327,7 @@
     <strong>How it works:</strong> Each tick, the engine checks every plant's cell for herbivores.
     If a matching herbivore swarm meets the minimum population, synthesis begins.
     Synthesis takes N ticks (from the Substance config). Once synthesised, the
-    optional activation gate is evaluated. Gates can mix enemy and substance predicates
+    optional activation gate is evaluated. Gates can mix herbivore and substance predicates
     visually through nested <em>all_of</em>/<em>any_of</em> groups.
     Multiple rules on the same (plant, herbivore) pair fire simultaneously and independently.
   </p>

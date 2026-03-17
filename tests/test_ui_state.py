@@ -106,11 +106,11 @@ def test_condition_helper_utilities_and_type_labels() -> None:
     assert _parse_condition_path("0.1.2") == [0, 1, 2]
 
     assert _default_activation_condition_node(
-        "enemy_presence",
+        "herbivore_presence",
         herbivore_species_id=3,
         min_herbivore_population=0,
     ) == {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 3,
         "min_herbivore_population": 1,
     }
@@ -148,13 +148,17 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
     root = {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 2},
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 1,
+                "min_herbivore_population": 2,
+            },
             {
                 "kind": "any_of",
                 "conditions": [
                     {"kind": "substance_active", "substance_id": 3},
                     {
-                        "kind": "enemy_presence",
+                        "kind": "herbivore_presence",
                         "herbivore_species_id": 2,
                         "min_herbivore_population": 4,
                     },
@@ -166,7 +170,7 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
     assert _condition_node_at_path(root, [1, 0])["substance_id"] == 3
 
     with pytest.raises(IndexError):
-        _condition_node_at_path({"kind": "enemy_presence"}, [0])
+        _condition_node_at_path({"kind": "herbivore_presence"}, [0])
     with pytest.raises(IndexError):
         _condition_node_at_path({"kind": "all_of", "conditions": []}, [0])
     with pytest.raises(IndexError):
@@ -204,7 +208,7 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
                 "conditions": [
                     {"kind": "substance_active", "substance_id": 2},
                     {
-                        "kind": "enemy_presence",
+                        "kind": "herbivore_presence",
                         "herbivore_species_id": 1,
                         "min_herbivore_population": 4,
                     },
@@ -214,7 +218,11 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
     }
     assert (
         _remap_condition_references(
-            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 1},
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 1,
+            },
             removed_herbivore_id=0,
         )
         is None
@@ -253,7 +261,7 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
                 herbivore_species_id=1,
                 substance_id=0,
                 activation_condition={
-                    "kind": "enemy_presence",
+                    "kind": "herbivore_presence",
                     "herbivore_species_id": 1,
                     "min_herbivore_population": 2,
                 },
@@ -276,7 +284,7 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
     assert draft.diet_matrix == [[True]]
     assert draft.trigger_rules[0].herbivore_species_id == 0
     assert draft.trigger_rules[0].activation_condition == {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 0,
         "min_herbivore_population": 2,
     }
@@ -469,7 +477,11 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
         {
             "kind": "all_of",
             "conditions": [
-                {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 2}
+                {
+                    "kind": "herbivore_presence",
+                    "herbivore_species_id": 0,
+                    "min_herbivore_population": 2,
+                }
             ],
         },
     )
@@ -484,13 +496,21 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
         draft,
         0,
         "1",
-        {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 4},
+        {"kind": "herbivore_presence", "herbivore_species_id": 0, "min_herbivore_population": 4},
     )
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 3},
-            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 4},
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 3,
+            },
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 4,
+            },
         ],
     }
 
@@ -498,7 +518,7 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 3}
+            {"kind": "herbivore_presence", "herbivore_species_id": 0, "min_herbivore_population": 3}
         ],
     }
     draft_service.delete_trigger_rule_condition_node(draft, 0, "")
@@ -550,7 +570,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
         0,
         min_herbivore_population=5,
         activation_condition={
-            "kind": "enemy_presence",
+            "kind": "herbivore_presence",
             "herbivore_species_id": 0,
             "min_herbivore_population": 5,
         },

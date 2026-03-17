@@ -42,7 +42,7 @@
           "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
-            "kind": "enemy_presence",
+            "kind": "herbivore_presence",
             "herbivore_species_id": 0,
             "min_herbivore_population": 4
           },
@@ -84,7 +84,7 @@
                 "substance_id": 0
               },
               {
-                "kind": "enemy_presence",
+                "kind": "herbivore_presence",
                 "herbivore_species_id": 1,
                 "min_herbivore_population": 3
               }
@@ -121,7 +121,7 @@
           "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
-            "kind": "enemy_presence",
+            "kind": "herbivore_presence",
             "herbivore_species_id": 1,
             "min_herbivore_population": 4
           },
@@ -147,7 +147,7 @@
                 "substance_id": 1
               },
               {
-                "kind": "enemy_presence",
+                "kind": "herbivore_presence",
                 "herbivore_species_id": 0,
                 "min_herbivore_population": 2
               }

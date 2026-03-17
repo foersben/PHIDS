@@ -121,7 +121,7 @@ def _describe_activation_condition(
     """Render a concise human-readable summary of a nested activation-condition tree.
 
     Activation conditions follow a recursive tree schema with leaf kinds
-    ``enemy_presence``, ``substance_active``, and ``environmental_signal``, and
+    ``herbivore_presence``, ``substance_active``, and ``environmental_signal``, and
     combinator kinds ``all_of`` and ``any_of``.  The function traverses the tree
     depth-first and assembles a parenthesised natural-language description suitable
     for operator-facing tooltips and the trigger-rules configuration panel.
@@ -130,7 +130,7 @@ def _describe_activation_condition(
         condition: A deserialized condition node dictionary, or ``None`` for
             unconditional triggering.
         herbivore_names: Optional mapping from herbivore species identifier to display
-            name.  Used to resolve ``enemy_presence`` leaf labels.
+            name.  Used to resolve ``herbivore_presence`` leaf labels.
         substance_names: Optional mapping from substance identifier to display name.
             Used to resolve ``substance_active`` and ``environmental_signal`` leaf labels.
 
@@ -142,7 +142,7 @@ def _describe_activation_condition(
         return "unconditional"
 
     kind = condition.get("kind")
-    if kind == "enemy_presence":
+    if kind == "herbivore_presence":
         herbivore_species_id = _coerce_int(condition.get("herbivore_species_id", -1), default=-1)
         min_population = _coerce_int(condition.get("min_herbivore_population", 1), default=1)
         herbivore_label = (

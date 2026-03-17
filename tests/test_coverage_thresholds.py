@@ -119,7 +119,7 @@ def test_main_default_activation_condition_and_trigger_index_branches() -> None:
 
     any_of = api_main._default_activation_condition_for_rule(draft, rule, "any_of")
     assert any_of["kind"] == "any_of"
-    assert any_of["conditions"][0]["kind"] == "enemy_presence"
+    assert any_of["conditions"][0]["kind"] == "herbivore_presence"
 
     substance_active = api_main._default_activation_condition_for_rule(
         draft,

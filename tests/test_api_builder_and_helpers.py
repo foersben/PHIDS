@@ -135,9 +135,9 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     assert api_main._parse_activation_condition_json(None) is None
     assert api_main._parse_activation_condition_json("   ") is None
     assert api_main._parse_activation_condition_json(
-        '{"kind":"enemy_presence","herbivore_species_id":0,"min_herbivore_population":3}'
+        '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
     ) == {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 0,
         "min_herbivore_population": 3,
     }
@@ -156,7 +156,11 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     assert api_main._describe_activation_condition(None) == "unconditional"
     assert (
         api_main._describe_activation_condition(
-            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 4},
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 1,
+                "min_herbivore_population": 4,
+            },
             herbivore_names={1: "Beetles"},
         )
         == "Beetles ≥ 4"
@@ -185,7 +189,7 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
                 "kind": "any_of",
                 "conditions": [
                     {
-                        "kind": "enemy_presence",
+                        "kind": "herbivore_presence",
                         "herbivore_species_id": 0,
                         "min_herbivore_population": 2,
                     },
@@ -310,7 +314,7 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
         request,
         0,
         path="",
-        kind="enemy_presence",
+        kind="herbivore_presence",
         herbivore_species_id=0,
         min_herbivore_population=2,
         substance_id=None,
@@ -318,7 +322,7 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
 
     assert response.status_code == 200
     assert draft.trigger_rules[0].activation_condition == {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 0,
         "min_herbivore_population": 5,
     }
@@ -508,7 +512,7 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
                 "herbivore_species_id": 0,
                 "substance_id": 0,
                 "min_herbivore_population": 0,
-                "activation_condition_json": '{"kind":"enemy_presence","herbivore_species_id":0,"min_herbivore_population":3}',
+                "activation_condition_json": '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
             },
         )
         update_rule = await client.put(
@@ -537,7 +541,7 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
         )
         bad_child = await client.post(
             "/api/config/trigger-rules/0/condition/child",
-            data={"node_kind": "enemy_presence", "parent_path": "0"},
+            data={"node_kind": "herbivore_presence", "parent_path": "0"},
         )
         delete_rule = await client.delete("/api/config/trigger-rules/0")
         delete_rule_missing = await client.delete("/api/config/trigger-rules/9")
@@ -598,7 +602,7 @@ async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
     """
     payload = _config_with_trigger().model_dump(mode="json")
     payload["flora_species"][0]["triggers"][0]["activation_condition"] = {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 0,
         "min_herbivore_population": 3,
     }
@@ -615,7 +619,7 @@ async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
     assert draft.mycorrhizal_growth_interval_ticks == 6
     assert len(draft.trigger_rules) == 1
     assert draft.trigger_rules[0].activation_condition == {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 0,
         "min_herbivore_population": 3,
     }

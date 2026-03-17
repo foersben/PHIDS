@@ -13,7 +13,7 @@ where $\mathcal{E}_t$ is the ECS state, $\mathcal{G}_t$ is the grid environment,
 
 ## Trigger Evaluation and Materialization
 
-Trigger evaluation is locality constrained and spatial-hash backed. For each plant entity, the phase evaluates configured trigger rules against co-located swarm populations and optional condition-tree predicates. Implemented predicate families include direct enemy presence, same-plant substance activity, and environmental signal threshold checks. The environmental-signal predicate is biologically important because it allows ambient signal exposure to prime or activate defensive pathways without requiring direct herbivore contact at the same tick.
+Trigger evaluation is locality constrained and spatial-hash backed. For each plant entity, the phase evaluates configured trigger rules against co-located swarm populations and optional condition-tree predicates. Implemented predicate families include direct herbivore presence, same-plant substance activity, and environmental signal threshold checks. The environmental-signal predicate is biologically important because it allows ambient signal exposure to prime or activate defensive pathways without requiring direct herbivore contact at the same tick.
 
 When a `(plant, substance_id)` rule fires and no runtime entity exists, a new `SubstanceComponent` is instantiated from schema parameters. Consequently, trigger rules in PHIDS are generative templates: they do not merely toggle booleans, they allocate persistent defensive state with explicit synthesis and persistence semantics.
 
@@ -63,7 +63,7 @@ flowchart LR
     A[Plant entity] -->|trigger| B[Substance entity]
     B -->|emit| C[Signal/Toxin layers]
     C -->|exposure| D[Swarm entity]
-    D -->|enemy presence| A
+    D -->|herbivore presence| A
 ```
 
 ## Verification Anchors

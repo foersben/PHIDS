@@ -96,17 +96,17 @@ PHIDS currently supports nested activation-condition trees through the discrimin
 
 Supported node kinds are:
 
-- `enemy_presence`
+- `herbivore_presence`
 - `substance_active`
 - `all_of`
 - `any_of`
 
 This allows scenarios to encode multi-stage defensive logic such as:
 
-- emit a signal only when a threshold enemy population is present,
+- emit a signal only when a threshold herbivore population is present,
 - emit a toxin only after another signal is active,
 - allow activation through one of several ecological pathways,
-- require conjunctions of enemy presence and precursor substances.
+- require conjunctions of herbivore presence and precursor substances.
 
 ## Legacy Precursors and Normalization
 
@@ -205,7 +205,7 @@ The current curated examples illustrate different authoring styles.
 This scenario shows a comparatively compact trigger structure in which:
 
 - one signal acts as an initial warning layer,
-- toxins can depend on signal activity plus enemy context,
+- toxins can depend on signal activity plus herbivore context,
 - wind exists but mycorrhizal networking is conservative.
 
 ### `root_network_alarm_chain`
@@ -223,7 +223,7 @@ This scenario emphasizes atmospheric transport and compound gating. It includes:
 
 - stronger wind,
 - multiple herbivore species,
-- nested logic in which repellent and lethal toxins depend on intermediate signal states and enemy
+- nested logic in which repellent and lethal toxins depend on intermediate signal states and herbivore
   combinations.
 
 ## Current Curated-Example Policy on SAR-like Mode

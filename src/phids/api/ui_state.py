@@ -138,7 +138,7 @@ class TriggerRule:
     herbivore species *herbivore_species_id* with at least
     *min_herbivore_population* individuals, synthesise substance
     *substance_id*. Optional nested activation conditions can additionally
-    require active substances and/or other enemy presences via explicit
+    require active substances and/or other herbivore presences via explicit
     ``all_of`` / ``any_of`` predicate trees. ``None`` = unconditional."
 
     Multiple rules may share the same (flora, herbivore) pair to express
@@ -185,9 +185,9 @@ def _default_activation_condition_node(
     min_herbivore_population: int = 1,
 ) -> dict[str, object]:
     """Create a default activation-condition node of the requested kind."""
-    if node_kind == "enemy_presence":
+    if node_kind == "herbivore_presence":
         return {
-            "kind": "enemy_presence",
+            "kind": "herbivore_presence",
             "herbivore_species_id": herbivore_species_id,
             "min_herbivore_population": max(1, min_herbivore_population),
         }
@@ -198,7 +198,7 @@ def _default_activation_condition_node(
             "kind": node_kind,
             "conditions": [
                 _default_activation_condition_node(
-                    "enemy_presence",
+                    "herbivore_presence",
                     herbivore_species_id=herbivore_species_id,
                     min_herbivore_population=min_herbivore_population,
                 )
@@ -272,7 +272,7 @@ def _remap_condition_references(
         return default
 
     kind = condition.get("kind")
-    if kind == "enemy_presence":
+    if kind == "herbivore_presence":
         herbivore_species_id = _int_from_condition("herbivore_species_id")
         if removed_herbivore_id is not None:
             if herbivore_species_id == removed_herbivore_id:

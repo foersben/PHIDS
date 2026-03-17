@@ -13,7 +13,7 @@ deeper reading.
 
 A JSON-structured predicate tree evaluated during the signaling phase to determine whether a
 `SubstanceComponent` that has completed synthesis may transition to the active state. Supported node
-kinds are `enemy_presence`, `substance_active`, `environmental_signal`, `all_of`, and `any_of`.
+kinds are `herbivore_presence`, `substance_active`, `environmental_signal`, `all_of`, and `any_of`.
 Activation conditions allow composite, multi-factor trigger logic beyond a simple herbivore-count
 threshold.
 

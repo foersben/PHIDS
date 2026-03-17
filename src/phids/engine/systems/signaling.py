@@ -9,7 +9,7 @@ the current tick's resolved state before chemical-defense decisions are made.
 The phase proceeds through six ordered sub-steps. First, orphaned substance entities whose owner
 plants were destroyed in earlier phases are garbage-collected. Second, trigger-condition trees are
 evaluated for each living plant against the per-cell herbivore census index
-(``_build_swarm_population_index``): direct herbivore co-presence (``enemy_presence`` nodes) or
+(``_build_swarm_population_index``): direct herbivore co-presence (``herbivore_presence`` nodes) or
 indirect conditions (``substance_active``, ``environmental_signal``, ``all_of``, ``any_of``
 composites) can independently satisfy a trigger. Third, synthesis countdown timers are decremented
 for triggered substances; substances with zero remaining countdown and satisfied activation
@@ -66,7 +66,7 @@ def _check_activation_condition(
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
     Recursively traverses the condition tree rooted at ``activation_condition``, evaluating
-    ``enemy_presence`` leaves against the per-cell herbivore census index, ``substance_active``
+    ``herbivore_presence`` leaves against the per-cell herbivore census index, ``substance_active``
     leaves against the owner's active substance set, ``environmental_signal`` leaves against
     the current signal-layer concentration at the plant's coordinates, and ``all_of`` / ``any_of``
     composites using short-circuit Boolean logic.
@@ -80,7 +80,7 @@ def _check_activation_condition(
         env: ``GridEnvironment`` providing read access to signal-layer concentrations for
             ``environmental_signal`` predicates.
         swarm_population_by_cell_species: Pre-built census index mapping
-            ``(x, y, species_id)`` to aggregate swarm population; used for ``enemy_presence``
+            ``(x, y, species_id)`` to aggregate swarm population; used for ``herbivore_presence``
             evaluations without additional ECS world queries.
         active_substance_ids_by_owner: Mapping from plant entity id to its set of currently
             active substance layer indices; used for ``substance_active`` leaf evaluation.
@@ -92,7 +92,7 @@ def _check_activation_condition(
         return True
 
     kind = activation_condition.get("kind")
-    if kind == "enemy_presence":
+    if kind == "herbivore_presence":
         herbivore_species_id = int(activation_condition.get("herbivore_species_id", -1))
         min_herbivore_population = int(activation_condition.get("min_herbivore_population", 1))
         return (

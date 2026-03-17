@@ -731,15 +731,15 @@ def test_describe_activation_condition_unconditional_for_none() -> None:
     assert _describe_activation_condition(None) == "unconditional"
 
 
-def test_describe_activation_condition_enemy_presence_leaf() -> None:
-    """Verifies correct rendering of an enemy_presence leaf node with a named herbivore.
+def test_describe_activation_condition_herbivore_presence_leaf() -> None:
+    """Verifies correct rendering of an herbivore_presence leaf node with a named herbivore.
 
     The rendered string must include the herbivore display name and the population
     threshold, as both fields are semantically significant for operator comprehension
     of the defensive triggering logic.
     """
     result = _describe_activation_condition(
-        {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 5},
+        {"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 5},
         herbivore_names={1: "Aphids"},
     )
     assert result == "Aphids ≥ 5"
@@ -748,7 +748,7 @@ def test_describe_activation_condition_enemy_presence_leaf() -> None:
 def test_describe_activation_condition_nested_any_of() -> None:
     """Verifies correct rendering of a nested any_of combinator with two leaf conditions.
 
-    Compound conditions that combine multiple threat-detection criteria (e.g., enemy
+    Compound conditions that combine multiple threat-detection criteria (e.g., herbivore
     presence OR an ambient signal) must be rendered with correct parenthesisation and
     OR-join so that operators can unambiguously interpret the triggering logic.
     """
@@ -757,7 +757,7 @@ def test_describe_activation_condition_nested_any_of() -> None:
             "kind": "any_of",
             "conditions": [
                 {
-                    "kind": "enemy_presence",
+                    "kind": "herbivore_presence",
                     "herbivore_species_id": 0,
                     "min_herbivore_population": 2,
                 },
@@ -788,7 +788,7 @@ def test_describe_activation_condition_environmental_signal_leaf() -> None:
 def test_describe_activation_condition_all_of_combinator() -> None:
     """Verifies correct rendering of an all_of combinator with AND-join between child conditions.
 
-    When multiple conditions must all be satisfied simultaneously (e.g., enemy presence AND
+    When multiple conditions must all be satisfied simultaneously (e.g., herbivore presence AND
     an active signal), the rendered string must use an AND-join with correct parenthesisation
     to distinguish compound-AND logic from OR-based alternatives.
     """
@@ -797,7 +797,7 @@ def test_describe_activation_condition_all_of_combinator() -> None:
             "kind": "all_of",
             "conditions": [
                 {
-                    "kind": "enemy_presence",
+                    "kind": "herbivore_presence",
                     "herbivore_species_id": 0,
                     "min_herbivore_population": 1,
                 },
@@ -1155,7 +1155,7 @@ def test_serialize_live_substance_activation_condition_summary_rendered() -> Non
         substance_id=0,
         owner_plant_id=0,
         activation_condition={
-            "kind": "enemy_presence",
+            "kind": "herbivore_presence",
             "herbivore_species_id": 0,
             "min_herbivore_population": 4,
         },
@@ -1196,7 +1196,11 @@ def test_build_preview_cell_details_trigger_rule_with_activation_condition() -> 
     condition = {
         "kind": "any_of",
         "conditions": [
-            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 3},
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 3,
+            },
             {"kind": "substance_active", "substance_id": 0},
         ],
     }

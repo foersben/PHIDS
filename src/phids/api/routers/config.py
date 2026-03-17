@@ -725,7 +725,7 @@ async def config_trigger_rule_condition_node_update(
             draft_service.replace_trigger_rule_condition_node(draft, index, path, replacement)
         else:
             updates: dict[str, object] = {}
-            if current_node.get("kind") == "enemy_presence":
+            if current_node.get("kind") == "herbivore_presence":
                 if herbivore_species_id is not None:
                     updates["herbivore_species_id"] = herbivore_species_id
                 if min_herbivore_population is not None:

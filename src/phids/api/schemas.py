@@ -142,7 +142,7 @@ class SubstanceComponentSchema(BaseModel):
 class HerbivorePresenceConditionSchema(BaseModel):
     """Leaf predicate requiring a herbivore species at the owner's cell."""
 
-    kind: Literal["enemy_presence"] = "enemy_presence"
+    kind: Literal["herbivore_presence"] = "herbivore_presence"
     herbivore_species_id: HerbivoreId
     min_herbivore_population: int = Field(
         default=1,
@@ -257,7 +257,7 @@ class TriggerConditionSchema(BaseModel):
         default=None,
         description=(
             "Optional nested predicate tree controlling whether the configured substance may activate. "
-            "Supports explicit all_of/any_of composition over enemy_presence and substance_active leaves."
+            "Supports explicit all_of/any_of composition over herbivore_presence and substance_active leaves."
         ),
     )
     energy_cost_per_tick: float = Field(

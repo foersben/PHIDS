@@ -309,7 +309,7 @@ def _describe_activation_condition(
         return "unconditional"
 
     kind = condition.get("kind")
-    if kind == "enemy_presence":
+    if kind == "herbivore_presence":
         herbivore_species_id = _coerce_int(condition.get("herbivore_species_id", -1), default=-1)
         min_population = _coerce_int(condition.get("min_herbivore_population", 1), default=1)
         herbivore_label = (
@@ -389,7 +389,7 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
         },
         "condition_group_kinds": ["all_of", "any_of"],
         "condition_leaf_kinds": [
-            "enemy_presence",
+            "herbivore_presence",
             "substance_active",
             "environmental_signal",
         ],
@@ -421,9 +421,9 @@ def _default_activation_condition_for_rule(
             default_substance_id = definition.substance_id
             break
 
-    if node_kind == "enemy_presence":
+    if node_kind == "herbivore_presence":
         return {
-            "kind": "enemy_presence",
+            "kind": "herbivore_presence",
             "herbivore_species_id": default_herbivore_species_id,
             "min_herbivore_population": max(1, rule.min_herbivore_population),
         }
@@ -440,7 +440,7 @@ def _default_activation_condition_for_rule(
             "kind": node_kind,
             "conditions": [
                 {
-                    "kind": "enemy_presence",
+                    "kind": "herbivore_presence",
                     "herbivore_species_id": default_herbivore_species_id,
                     "min_herbivore_population": max(1, rule.min_herbivore_population),
                 }

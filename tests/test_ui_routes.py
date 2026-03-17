@@ -579,9 +579,9 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     }
     assert draft_state_module._parse_condition_path("0.1.2") == [0, 1, 2]
     assert draft_state_module._default_activation_condition_node(
-        "enemy_presence", herbivore_species_id=2, min_herbivore_population=0
+        "herbivore_presence", herbivore_species_id=2, min_herbivore_population=0
     ) == {
-        "kind": "enemy_presence",
+        "kind": "herbivore_presence",
         "herbivore_species_id": 2,
         "min_herbivore_population": 1,
     }
@@ -635,7 +635,11 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         {
             "kind": "all_of",
             "conditions": [
-                {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 3}
+                {
+                    "kind": "herbivore_presence",
+                    "herbivore_species_id": 1,
+                    "min_herbivore_population": 3,
+                }
             ],
         },
     )
@@ -649,7 +653,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         draft,
         0,
         "1",
-        {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 4},
+        {"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 4},
     )
     draft_service.update_trigger_rule_condition_node(
         draft,
@@ -667,7 +671,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     assert current_condition == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}
+            {"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}
         ],
     }
     assert (
@@ -683,7 +687,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
             "kind": "all_of",
             "conditions": [
                 {
-                    "kind": "enemy_presence",
+                    "kind": "herbivore_presence",
                     "herbivore_species_id": 2,
                     "min_herbivore_population": 2,
                 },
@@ -696,7 +700,11 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     assert remapped == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 2},
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 1,
+                "min_herbivore_population": 2,
+            },
             {"kind": "substance_active", "substance_id": 1},
         ],
     }

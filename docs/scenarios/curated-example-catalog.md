@@ -135,7 +135,7 @@ The canonical wind-dominated orchard example.
 
 - stronger wind than the other curated scenarios,
 - multiple herbivore species interacting with different flora,
-- compound activation logic that depends on signals and alternative enemy pathways,
+- compound activation logic that depends on signals and alternative herbivore pathways,
 - both repellent and lethal toxin strategies in an orchard-style layout.
 
 ### Good for studying

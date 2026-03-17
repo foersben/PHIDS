@@ -1401,8 +1401,8 @@ def test_signaling_environmental_signal_condition_triggers_without_herbivore() -
     assert by_id[1].active is True
 
 
-def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_herbivore() -> None:
-    """Validates the signaling all of gate supports mixed enemy and substance predicates invariant and confirms the expected biological behavior under controlled simulation conditions.
+def test_signaling_all_of_gate_supports_mixed_herbivore_and_substance_herbivore() -> None:
+    """Validates the signaling all of gate supports mixed herbivore and substance predicates invariant and confirms the expected biological behavior under controlled simulation conditions.
 
     The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
 
@@ -1452,8 +1452,8 @@ def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_herbivore() ->
     assert substances[1].active is True
 
 
-def test_signaling_any_of_gate_allows_alternative_enemy_or_substance_paths() -> None:
-    """Validates the signaling any of gate allows alternative enemy or substance paths invariant and confirms the expected biological behavior under controlled simulation conditions.
+def test_signaling_any_of_gate_allows_alternative_herbivore_or_substance_paths() -> None:
+    """Validates the signaling any of gate allows alternative herbivore or substance paths invariant and confirms the expected biological behavior under controlled simulation conditions.
 
     The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
 

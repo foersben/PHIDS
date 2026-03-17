@@ -60,7 +60,7 @@
             "kind": "any_of",
             "conditions": [
               {
-                "kind": "enemy_presence",
+                "kind": "herbivore_presence",
                 "herbivore_species_id": 0,
                 "min_herbivore_population": 3
               },
@@ -109,7 +109,7 @@
                 "substance_id": 0
               },
               {
-                "kind": "enemy_presence",
+                "kind": "herbivore_presence",
                 "herbivore_species_id": 0,
                 "min_herbivore_population": 5
               }
@@ -137,7 +137,7 @@
                 "substance_id": 0
               },
               {
-                "kind": "enemy_presence",
+                "kind": "herbivore_presence",
                 "herbivore_species_id": 1,
                 "min_herbivore_population": 6
               }

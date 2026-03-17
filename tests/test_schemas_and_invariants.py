@@ -5,7 +5,7 @@ boundary. The primary hypotheses are: (1) ``SimulationConfig`` raises ``Validati
 species placement identifiers reference undeclared flora or herbivore species, preventing
 reference-integrity violations before any engine state is allocated; (2) ``DietCompatibilityMatrix``
 rejects row counts and column counts exceeding the Rule-of-16 bounds; (3) the activation-condition
-schema tree correctly validates ``all_of``, ``any_of``, ``enemy_presence``, and
+schema tree correctly validates ``all_of``, ``any_of``, ``herbivore_presence``, and
 ``substance_active`` nodes and rejects structurally invalid compositions; (4)
 ``TriggerConditionSchema`` correctly migrates legacy ``precursor_signal_id`` fields into the
 unified ``activation_condition`` tree via its ``model_validator``; and (5) ``GridEnvironment``
