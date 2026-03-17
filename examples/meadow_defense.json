@@ -12,9 +12,9 @@
   "mycorrhizal_growth_interval_ticks": 8,
   "mycorrhizal_signal_velocity": 1,
   "z2_flora_species_extinction": -1,
-  "z4_predator_species_extinction": -1,
+  "z4_herbivore_species_extinction": -1,
   "z6_max_total_flora_energy": -1.0,
-  "z7_max_total_predator_population": -1,
+  "z7_max_total_herbivore_population": -1,
   "flora_species": [
     {
       "species_id": 0,
@@ -46,8 +46,8 @@
       "camouflage_factor": 1.0,
       "triggers": [
         {
-          "predator_species_id": 0,
-          "min_predator_population": 3,
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 3,
           "substance_id": 0,
           "synthesis_duration": 1,
           "is_toxin": false,
@@ -61,8 +61,8 @@
             "conditions": [
               {
                 "kind": "enemy_presence",
-                "predator_species_id": 0,
-                "min_predator_population": 3
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 3
               },
               {
                 "kind": "environmental_signal",
@@ -91,8 +91,8 @@
       "camouflage_factor": 0.55,
       "triggers": [
         {
-          "predator_species_id": 0,
-          "min_predator_population": 5,
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 5,
           "substance_id": 2,
           "synthesis_duration": 2,
           "is_toxin": true,
@@ -110,8 +110,8 @@
               },
               {
                 "kind": "enemy_presence",
-                "predator_species_id": 0,
-                "min_predator_population": 5
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 5
               }
             ]
           },
@@ -119,8 +119,8 @@
           "irreversible": false
         },
         {
-          "predator_species_id": 1,
-          "min_predator_population": 4,
+          "herbivore_species_id": 1,
+          "min_herbivore_population": 4,
           "substance_id": 3,
           "synthesis_duration": 2,
           "is_toxin": true,
@@ -138,8 +138,8 @@
               },
               {
                 "kind": "enemy_presence",
-                "predator_species_id": 1,
-                "min_predator_population": 6
+                "herbivore_species_id": 1,
+                "min_herbivore_population": 6
               }
             ]
           },
@@ -149,7 +149,7 @@
       ]
     }
   ],
-  "predator_species": [
+  "herbivore_species": [
     {
       "species_id": 0,
       "name": "Rabbit Browsers",

@@ -58,7 +58,7 @@ A more classic meadow-style defense scenario with layered plant strategies.
 
 - one flora species carries no triggers and acts as a baseline resource,
 - one clover-like species provides signal behavior,
-- yarrow-like defense combines camouflage and multi-predator toxin logic,
+- yarrow-like defense combines camouflage and multi-herbivore toxin logic,
 - both repellent and lethal toxins are represented.
 
 ### Good for studying
@@ -103,7 +103,7 @@ A more corridor-like or lane-like spatial setup with multiple confrontation zone
 ### Good for studying
 
 - spatially separated local battles,
-- repeated predator–flora engagement patterns,
+- repeated herbivore–flora engagement patterns,
 - how localized geometry affects conflict propagation.
 
 ## 5. `root_network_alarm_chain`
@@ -134,7 +134,7 @@ The canonical wind-dominated orchard example.
 ### Architectural emphasis
 
 - stronger wind than the other curated scenarios,
-- multiple predator species interacting with different flora,
+- multiple herbivore species interacting with different flora,
 - compound activation logic that depends on signals and alternative enemy pathways,
 - both repellent and lethal toxin strategies in an orchard-style layout.
 

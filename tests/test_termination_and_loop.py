@@ -2,7 +2,7 @@
 
 This module validates the end-to-end behaviour of :class:`~phids.engine.loop.SimulationLoop`
 under a range of configured termination conditions (Z1 max-ticks, Z3 total flora extinction, Z4
-predator species extinction) and under boundary scenarios such as empty placement lists and
+herbivore species extinction) and under boundary scenarios such as empty placement lists and
 single-species configurations. The core hypotheses are: (1) the loop terminates at exactly
 ``max_ticks`` when no ecological stopping condition fires first; (2) the loop terminates
 immediately upon total flora extinction, reflecting the biological collapse of the primary
@@ -22,7 +22,7 @@ from phids.api.schemas import (
     FloraSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    PredatorSpeciesParams,
+    HerbivoreSpeciesParams,
     SimulationConfig,
 )
 from phids.engine.components.plant import PlantComponent
@@ -57,10 +57,10 @@ def _base_config(max_ticks: int = 20) -> SimulationConfig:
                 triggers=[],
             )
         ],
-        predator_species=[
-            PredatorSpeciesParams(
+        herbivore_species=[
+            HerbivoreSpeciesParams(
                 species_id=0,
-                name="pred-0",
+                name="herbivore-0",
                 energy_min=1.0,
                 velocity=1,
                 consumption_rate=1.0,
@@ -72,7 +72,7 @@ def _base_config(max_ticks: int = 20) -> SimulationConfig:
     )
 
 
-def _world_with_counts(plant_species: list[int], predator_species: list[int]) -> ECSWorld:
+def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:
     world = ECSWorld()
     for idx, sp in enumerate(plant_species):
         e = world.create_entity()
@@ -93,7 +93,7 @@ def _world_with_counts(plant_species: list[int], predator_species: list[int]) ->
         )
         world.add_component(e.entity_id, p)
 
-    for idx, sp in enumerate(predator_species):
+    for idx, sp in enumerate(herbivore_species):
         e = world.create_entity()
         s = SwarmComponent(
             entity_id=e.entity_id,
@@ -142,7 +142,7 @@ def test_termination_z2_and_z4_specific_species_extinction() -> None:
     assert z2.terminated is True
     assert "Z2" in z2.reason
 
-    z4 = check_termination(world, tick=0, max_ticks=100, z4_predator_species=1)
+    z4 = check_termination(world, tick=0, max_ticks=100, z4_herbivore_species=1)
     assert z4.terminated is True
     assert "Z4" in z4.reason
 
@@ -178,7 +178,7 @@ def test_termination_z6_z7_thresholds() -> None:
     assert z6.terminated is True
     assert "Z6" in z6.reason
 
-    z7 = check_termination(world, tick=0, max_ticks=100, z7_max_predator_population=1)
+    z7 = check_termination(world, tick=0, max_ticks=100, z7_max_total_herbivore_population=1)
     assert z7.terminated is True
     assert "Z7" in z7.reason
 

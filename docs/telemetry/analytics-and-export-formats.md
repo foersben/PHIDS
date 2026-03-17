@@ -6,7 +6,7 @@ Within `SimulationLoop.step()`, recording occurs after flow-field generation, li
 
 ## Metric Model and Interpretation
 
-The aggregate metrics include tick index, total flora energy, flora entity count, predator cluster count, and total predator population. The same row also carries immediate per-tick plant death diagnostics (`death_reproduction`, `death_mycorrhiza`, `death_defense_maintenance`, `death_herbivore_feeding`, `death_background_deficit`) accumulated across lifecycle, interaction, and signaling.
+The aggregate metrics include tick index, total flora energy, flora entity count, herbivore cluster count, and total herbivore population. The same row also carries immediate per-tick plant death diagnostics (`death_reproduction`, `death_mycorrhiza`, `death_defense_maintenance`, `death_herbivore_feeding`, `death_background_deficit`) accumulated across lifecycle, interaction, and signaling.
 
 In compact notation, the recorder computes a map
 

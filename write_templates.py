@@ -297,14 +297,14 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
 </div>
 """)
 
-# ── partials/predator_config.html ──────────────────────────────────────────
-(PARTIALS / "predator_config.html").write_text("""\
-<div id="predator-config-view">
+# ── partials/herbivore_config.html ─────────────────────────────────────────
+(PARTIALS / "herbivore_config.html").write_text("""\
+<div id="herbivore-config-view">
   <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-semibold text-slate-800">🐛 Predator Species</h2>
-    {% if predator_species|length < 16 %}
-    <button hx-post="/api/config/predators" hx-target="#predator-config-view" hx-swap="outerHTML"
-      hx-vals='{"name":"NewPredator","energy_min":"5","velocity":"2","consumption_rate":"10"}'
+    <h2 class="text-xl font-semibold text-slate-800">🐛 Herbivore Species</h2>
+    {% if herbivore_species|length < 16 %}
+    <button hx-post="/api/config/herbivores" hx-target="#herbivore-config-view" hx-swap="outerHTML"
+      hx-vals='{"name":"NewHerbivore","energy_min":"5","velocity":"2","consumption_rate":"10"}'
       class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
       + Add Species
     </button>
@@ -329,42 +329,42 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
-        {% for pp in predator_species %}
-        <tr id="predator-row-{{ pp.species_id }}">
+        {% for pp in herbivore_species %}
+        <tr id="herbivore-row-{{ pp.species_id }}">
           <td class="px-3 py-2 font-mono text-slate-400">{{ pp.species_id }}</td>
           <td class="px-3 py-2">
             <input type="text" value="{{ pp.name }}" name="name"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
-              hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
+              hx-put="/api/config/herbivores/{{ pp.species_id }}" hx-trigger="change"
+              hx-target="#herbivore-row-{{ pp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-32">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ pp.energy_min }}" step="0.1" min="0.1" name="energy_min"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
-              hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
+              hx-put="/api/config/herbivores/{{ pp.species_id }}" hx-trigger="change"
+              hx-target="#herbivore-row-{{ pp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ pp.velocity }}" step="1" min="1" name="velocity"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
-              hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
+              hx-put="/api/config/herbivores/{{ pp.species_id }}" hx-trigger="change"
+              hx-target="#herbivore-row-{{ pp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ pp.consumption_rate }}" step="0.1" min="0.1" name="consumption_rate"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
-              hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
+              hx-put="/api/config/herbivores/{{ pp.species_id }}" hx-trigger="change"
+              hx-target="#herbivore-row-{{ pp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ pp.reproduction_energy_divisor }}" step="0.1" min="0.1" name="reproduction_energy_divisor"
-              hx-put="/api/config/predators/{{ pp.species_id }}" hx-trigger="change"
-              hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML"
+              hx-put="/api/config/herbivores/{{ pp.species_id }}" hx-trigger="change"
+              hx-target="#herbivore-row-{{ pp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
-            <button hx-delete="/api/config/predators/{{ pp.species_id }}"
-              hx-target="#predator-row-{{ pp.species_id }}" hx-swap="outerHTML swap:0.5s"
+            <button hx-delete="/api/config/herbivores/{{ pp.species_id }}"
+              hx-target="#herbivore-row-{{ pp.species_id }}" hx-swap="outerHTML swap:0.5s"
               hx-confirm="Delete {{ pp.name }}?"
               class="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
               Delete
@@ -374,7 +374,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
         {% else %}
         <tr>
           <td colspan="7" class="px-3 py-6 text-center text-slate-400">
-            No predator species defined yet.
+            No herbivore species defined yet.
           </td>
         </tr>
         {% endfor %}
@@ -391,7 +391,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
     <h2 class="text-xl font-semibold text-slate-800">🧪 Substance Definitions</h2>
     {% if substances|length < 16 %}
     <button hx-post="/api/config/substances" hx-target="#substance-config-view" hx-swap="outerHTML"
-      hx-vals='{"name":"Signal","is_toxin":"false","lethal":"false","repellent":"false","synthesis_duration":"3","aftereffect_ticks":"0","lethality_rate":"0","repellent_walk_ticks":"3","energy_cost_per_tick":"1","min_predator_population":"5"}'
+      hx-vals='{"name":"Signal","is_toxin":"false","lethal":"false","repellent":"false","synthesis_duration":"3","aftereffect_ticks":"0","lethality_rate":"0","repellent_walk_ticks":"3","energy_cost_per_tick":"1","min_herbivore_population":"5"}'
       class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
       + Add Substance
     </button>
@@ -456,7 +456,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
           </td>
           <td class="px-3 py-2">
-            <input type="number" value="{{ sub.min_predator_population }}" min="1" step="1" name="min_predator_population"
+            <input type="number" value="{{ sub.min_herbivore_population }}" min="1" step="1" name="min_herbivore_population"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-row-{{ sub.substance_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16">
@@ -481,7 +481,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
     </table>
   </div>
   <p class="mt-3 text-xs text-slate-400">
-    Assign substances to (Flora, Predator) pairs in the ⚡ Trigger Matrix.
+    Assign substances to (Flora, Herbivore) pairs in the ⚡ Trigger Matrix.
   </p>
 </div>
 """)
@@ -491,13 +491,13 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
 <div id="diet-matrix-view">
   <h2 class="text-xl font-semibold text-slate-800 mb-4">🍽️ Diet Compatibility Matrix</h2>
   <p class="text-sm text-slate-500 mb-4">
-    Rows = Predator species (E<sub>i</sub>), Columns = Flora species (P<sub>j</sub>).
-    ✅ = predator can consume that flora.
+    Rows = Herbivore species (E<sub>i</sub>), Columns = Flora species (P<sub>j</sub>).
+    ✅ = herbivore can consume that flora.
   </p>
 
-  {% if not flora_species or not predator_species %}
+  {% if not flora_species or not herbivore_species %}
   <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm">
-    Define at least one flora species and one predator species first.
+    Define at least one flora species and one herbivore species first.
   </div>
   {% else %}
   <div class="bg-white rounded-xl shadow-sm border overflow-auto">
@@ -505,7 +505,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
       <thead class="bg-slate-50">
         <tr>
           <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">
-            Predator \\ Flora
+            Herbivore \\ Flora
           </th>
           {% for fp in flora_species %}
           <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase">
@@ -515,7 +515,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
-        {% for pp in predator_species %}
+        {% for pp in herbivore_species %}
         <tr>
           <td class="px-4 py-3 font-medium text-slate-700">{{ pp.name }}</td>
           {% for fp in flora_species %}
@@ -523,7 +523,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
             <input type="checkbox"
               {% if diet_matrix[loop.parent.index0][loop.index0] %}checked{% endif %}
               hx-post="/api/matrices/diet"
-              hx-vals='{"predator_idx": {{ loop.parent.index0 }}, "flora_idx": {{ loop.index0 }}, "compatible": "toggle"}'
+              hx-vals='{"herbivore_idx": {{ loop.parent.index0 }}, "flora_idx": {{ loop.index0 }}, "compatible": "toggle"}'
               hx-trigger="change"
               hx-target="#diet-matrix-view" hx-swap="outerHTML"
               class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
@@ -543,13 +543,13 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
 <div id="trigger-matrix-view">
   <h2 class="text-xl font-semibold text-slate-800 mb-4">⚡ Substance Trigger Matrix</h2>
   <p class="text-sm text-slate-500 mb-4">
-    Rows = Flora species (P<sub>j</sub>), Columns = Predator attacker (E<sub>i</sub>).
-    Select the substance synthesised when that predator attacks that plant.
+    Rows = Flora species (P<sub>j</sub>), Columns = Herbivore attacker (E<sub>i</sub>).
+    Select the substance synthesised when that herbivore attacks that plant.
   </p>
 
-  {% if not flora_species or not predator_species %}
+  {% if not flora_species or not herbivore_species %}
   <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm">
-    Define at least one flora species and one predator species first.
+    Define at least one flora species and one herbivore species first.
   </div>
   {% else %}
   <div class="bg-white rounded-xl shadow-sm border overflow-auto">
@@ -557,9 +557,9 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
       <thead class="bg-slate-50">
         <tr>
           <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">
-            Flora \\ Predator
+            Flora \\ Herbivore
           </th>
-          {% for pp in predator_species %}
+          {% for pp in herbivore_species %}
           <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase">
             {{ pp.name }}
           </th>
@@ -570,11 +570,11 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
         {% for fp in flora_species %}
         <tr>
           <td class="px-4 py-3 font-medium text-slate-700">{{ fp.name }}</td>
-          {% for pp in predator_species %}
+          {% for pp in herbivore_species %}
           <td class="px-4 py-3 text-center">
             <select
               hx-post="/api/matrices/trigger"
-              hx-vals='{"flora_idx": {{ loop.parent.index0 }}, "predator_idx": {{ loop.index0 }}}'
+              hx-vals='{"flora_idx": {{ loop.parent.index0 }}, "herbivore_idx": {{ loop.index0 }}}'
               hx-trigger="change"
               hx-target="#trigger-matrix-view" hx-swap="outerHTML"
               hx-include="this"
@@ -611,7 +611,7 @@ PARTIALS.mkdir(parents=True, exist_ok=True)
     <span class="inline-block w-4 h-1 bg-green-500 rounded"></span> Flora population
   </span>
   <span class="flex items-center gap-1">
-    <span class="inline-block w-4 h-1 bg-red-500 rounded"></span> Predator population
+    <span class="inline-block w-4 h-1 bg-red-500 rounded"></span> Herbivore population
   </span>
   <span class="flex items-center gap-1">
     <span class="inline-block w-4 h-1 bg-blue-400 rounded"></span> Flora energy (×0.1)

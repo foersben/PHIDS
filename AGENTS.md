@@ -37,7 +37,7 @@
 - Pydantic v2 is the API boundary; validate at ingress, then operate on trusted internal state.
 - System modules often use local imports to avoid circular dependencies—follow that pattern instead of “fixing” it globally.
 - UI changes usually require touching both route handlers and partial templates; `tests/test_ui_routes.py` is the fastest regression net.
-- Trigger logic is rule-based now: `DraftState.trigger_rules` allows multiple substance rules per `(flora, predator)` pair.
+- Trigger logic is rule-based now: `DraftState.trigger_rules` allows multiple substance rules per `(flora, herbivore)` pair.
 - WebSocket surfaces differ intentionally: `/ws/simulation/stream` sends msgpack+zlib bytes, `/ws/ui/stream` sends lightweight JSON for canvas rendering.
 
 ## Common pitfalls

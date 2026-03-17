@@ -732,7 +732,7 @@
       color: species.extinct ? '#94a3b8' : FLORA_COLORS[species.species_id % FLORA_COLORS.length],
     }));
     const swarmLegend = (data.swarms || []).map(swarm => ({
-      name: swarm.name || `Predator ${swarm.species_id}`,
+      name: swarm.name || `Herbivore ${swarm.species_id}`,
       color: SWARM_COLORS[swarm.species_id % SWARM_COLORS.length],
     }));
     const extras = [];
@@ -784,9 +784,9 @@
         name: flora.name,
         color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
       })),
-      (preview.predator_species || []).map(predator => ({
-        name: predator.name,
-        color: SWARM_COLORS[predator.species_id % SWARM_COLORS.length],
+      (preview.herbivore_species || []).map(herbivore => ({
+        name: herbivore.name,
+        color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
       }))
     );
     if ((preview.mycorrhizal_links || []).length > 0) {
@@ -795,9 +795,9 @@
           name: flora.name,
           color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
         })),
-        (preview.predator_species || []).map(predator => ({
-          name: predator.name,
-          color: SWARM_COLORS[predator.species_id % SWARM_COLORS.length],
+        (preview.herbivore_species || []).map(herbivore => ({
+          name: herbivore.name,
+          color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
         })),
         [{ name: 'Potential root link', color: '#60a5fa' }]
       );
@@ -926,7 +926,7 @@
       <ul class="mt-1 space-y-1">
         ${rules.map(rule => `
           <li class="rounded bg-slate-900/60 px-2 py-1">
-            <div>${escapeHtml(rule.substance_name)} ← ${escapeHtml(rule.predator_name)} ≥ ${escapeHtml(rule.min_predator_population)}</div>
+            <div>${escapeHtml(rule.substance_name)} ← ${escapeHtml(rule.herbivore_name)} ≥ ${escapeHtml(rule.min_herbivore_population)}</div>
             <div class="text-[10px] text-slate-400 mt-1">gate ${escapeHtml(rule.activation_condition_summary || 'unconditional')}</div>
           </li>`).join('')}
       </ul>`;

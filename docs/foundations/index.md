@@ -23,7 +23,7 @@ The following terms are used consistently across the current PHIDS documentation
 - **Scenario** — a validated `SimulationConfig` describing one executable experiment.
 - **Draft state** — the mutable `DraftState` edited through the HTMX/Jinja UI before live loading.
 - **Live runtime** — the active `SimulationLoop` currently stepping or paused in memory.
-- **Trigger rule** — a `(flora, predator) -> substance` defense rule, optionally gated by a nested
+- **Trigger rule** — a `(flora, herbivore) -> substance` defense rule, optionally gated by a nested
   activation-condition tree.
 - **Substance definition** — the physical/biological behavior of one signal or toxin layer as edited
   in `DraftState` and compiled into flora trigger payloads.

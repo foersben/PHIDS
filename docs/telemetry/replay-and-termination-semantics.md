@@ -21,7 +21,7 @@ The distinction between replay and `WS /ws/simulation/stream` remains critical. 
 
 ## Termination Logic and Experimental Meaning
 
-Termination evaluation is implemented in `src/phids/telemetry/conditions.py` through `check_termination()` and `TerminationResult`. The active condition family spans `Z1` through `Z7`, covering max-tick completion, targeted or global species extinction, and upper-bound threshold crossings for aggregate flora energy or predator population.
+Termination evaluation is implemented in `src/phids/telemetry/conditions.py` through `check_termination()` and `TerminationResult`. The active condition family spans `Z1` through `Z7`, covering max-tick completion, targeted or global species extinction, and upper-bound threshold crossings for aggregate flora energy or herbivore population.
 
 Let $\tau(\mathcal{X}_t)$ denote the termination predicate family over state $\mathcal{X}_t$. The loop applies
 
@@ -30,7 +30,7 @@ $$
 	exttt{terminated}=\texttt{True},\ \texttt{running}=\texttt{False},\ \texttt{termination\_reason}=r_t.
 $$
 
-Because termination metadata is embedded in replay snapshots and status surfaces, the reason string is analytically meaningful when comparing scenario outcomes such as bounded completion (`Z1`), flora collapse (`Z3`), predator collapse (`Z5`), or runaway overshoot regimes (`Z6`, `Z7`).
+Because termination metadata is embedded in replay snapshots and status surfaces, the reason string is analytically meaningful when comparing scenario outcomes such as bounded completion (`Z1`), flora collapse (`Z3`), herbivore collapse (`Z5`), or runaway overshoot regimes (`Z6`, `Z7`).
 
 ## Snapshot Geometry and Field Coverage
 

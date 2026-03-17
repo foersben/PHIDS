@@ -3,13 +3,13 @@
 This module implements the third and final per-tick simulation phase of the PHIDS engine,
 governing the full lifecycle of volatile organic compound (VOC) signals and defensive toxins.
 The signaling phase is executed after both the lifecycle and interaction phases have committed
-their energy mutations, ensuring that plant survival status and predator co-location data reflect
+their energy mutations, ensuring that plant survival status and herbivore co-location data reflect
 the current tick's resolved state before chemical-defense decisions are made.
 
 The phase proceeds through six ordered sub-steps. First, orphaned substance entities whose owner
 plants were destroyed in earlier phases are garbage-collected. Second, trigger-condition trees are
-evaluated for each living plant against the per-cell predator census index
-(``_build_swarm_population_index``): direct predator co-presence (``enemy_presence`` nodes) or
+evaluated for each living plant against the per-cell herbivore census index
+(``_build_swarm_population_index``): direct herbivore co-presence (``enemy_presence`` nodes) or
 indirect conditions (``substance_active``, ``environmental_signal``, ``all_of``, ``any_of``
 composites) can independently satisfy a trigger. Third, synthesis countdown timers are decremented
 for triggered substances; substances with zero remaining countdown and satisfied activation
@@ -66,7 +66,7 @@ def _check_activation_condition(
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
     Recursively traverses the condition tree rooted at ``activation_condition``, evaluating
-    ``enemy_presence`` leaves against the per-cell predator census index, ``substance_active``
+    ``enemy_presence`` leaves against the per-cell herbivore census index, ``substance_active``
     leaves against the owner's active substance set, ``environmental_signal`` leaves against
     the current signal-layer concentration at the plant's coordinates, and ``all_of`` / ``any_of``
     composites using short-circuit Boolean logic.
@@ -93,11 +93,11 @@ def _check_activation_condition(
 
     kind = activation_condition.get("kind")
     if kind == "enemy_presence":
-        predator_species_id = int(activation_condition.get("predator_species_id", -1))
-        min_predator_population = int(activation_condition.get("min_predator_population", 1))
+        herbivore_species_id = int(activation_condition.get("herbivore_species_id", -1))
+        min_herbivore_population = int(activation_condition.get("min_herbivore_population", 1))
         return (
-            swarm_population_by_cell_species.get((plant.x, plant.y, predator_species_id), 0)
-            >= min_predator_population
+            swarm_population_by_cell_species.get((plant.x, plant.y, herbivore_species_id), 0)
+            >= min_herbivore_population
         )
 
     if kind == "substance_active":
@@ -171,7 +171,7 @@ def _apply_toxin_to_swarms(
     bulk destruction via ``world.collect_garbage``. Without this step, zero-population
     swarm entities would persist as "ghost" entries in the spatial hash until the interaction
     phase of the following tick purged them, thereby corrupting O(1) spatial-hash lookups and
-    confounding predator-presence evaluations in ``_check_activation_condition``.
+    confounding herbivore-presence evaluations in ``_check_activation_condition``.
 
     Args:
         sub_id: Toxin layer index.
@@ -217,15 +217,15 @@ def _co_located_swarm_population(
     world: ECSWorld,
     x: int,
     y: int,
-    predator_species_id: int,
+    herbivore_species_id: int,
 ) -> int:
-    """Return total population of a predator species at one grid cell.
+    """Return total population of a herbivore species at one grid cell.
 
     Args:
         world: ECSWorld used for spatial hash lookup.
         x: Grid x-coordinate.
         y: Grid y-coordinate.
-        predator_species_id: Predator species to aggregate.
+        herbivore_species_id: Herbivore species to aggregate.
 
     Returns:
         int: Sum of populations for matching swarms at ``(x, y)``.
@@ -238,7 +238,7 @@ def _co_located_swarm_population(
         if not co_entity.has_component(SwarmComponent):
             continue
         swarm: SwarmComponent = co_entity.get_component(SwarmComponent)
-        if swarm.species_id == predator_species_id:
+        if swarm.species_id == herbivore_species_id:
             total_population += swarm.population
     return total_population
 
@@ -347,18 +347,18 @@ def run_signaling(
                 continue
             trig: TriggerConditionSchema = trig_raw
 
-            # Check for predator presence at this cell via spatial hash.
-            predator_present = (
+            # Check for herbivore presence at this cell via spatial hash.
+            herbivore_present = (
                 swarm_population_by_cell_species.get(
-                    (plant.x, plant.y, trig.predator_species_id), 0
+                    (plant.x, plant.y, trig.herbivore_species_id), 0
                 )
-                >= trig.min_predator_population
+                >= trig.min_herbivore_population
             )
 
             # Evaluate optional condition trees as an alternative trigger path.
             # This enables alarm-chain behavior where a plant reacts to an
             # already-active internal condition without requiring direct
-            # predator co-location on the same cell.
+            # herbivore co-location on the same cell.
             condition_met = False
             if trig.activation_condition is not None:
                 condition_met = _check_activation_condition(
@@ -370,7 +370,7 @@ def run_signaling(
                     active_substance_ids_by_owner,
                 )
 
-            triggered = predator_present or condition_met
+            triggered = herbivore_present or condition_met
 
             if not triggered:
                 continue
@@ -403,9 +403,9 @@ def run_signaling(
                     ),
                     energy_cost_per_tick=trig.energy_cost_per_tick,
                     irreversible=trig.irreversible,
-                    trigger_predator_species_id=trig.predator_species_id,
-                    trigger_min_predator_population=trig.min_predator_population,
                 )
+                existing_sub.trigger_herbivore_species_id = trig.herbivore_species_id
+                existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
                 world.add_component(new_entity.entity_id, existing_sub)
                 owner_substance_by_key[(plant.entity_id, trig.substance_id)] = existing_sub
             else:

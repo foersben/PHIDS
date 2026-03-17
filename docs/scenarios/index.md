@@ -30,7 +30,7 @@ It defines what may be executed, what may be reproduced, and what may be exporte
 The current documentation and tests establish that scenarios encode:
 
 - grid dimensions and environmental parameters,
-- flora and predator species definitions,
+- flora and herbivore species definitions,
 - diet compatibility and trigger-rule encoding,
 - initial placement semantics,
 - mycorrhizal-network parameters,
@@ -61,7 +61,7 @@ This means scenario work in PHIDS is a compilation flow:
 Substance behavior is currently expressed across two authoring layers:
 
 - `SubstanceDefinition` in the draft describes the behavior of a signal or toxin,
-- trigger rules bind that substance to specific flora/predator interactions,
+- trigger rules bind that substance to specific flora/herbivore interactions,
 - `build_sim_config()` compiles the combined result into flora `triggers` entries inside the
   exported `SimulationConfig`.
 

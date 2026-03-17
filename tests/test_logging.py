@@ -19,9 +19,9 @@ import logging
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
+    HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    PredatorSpeciesParams,
     SimulationConfig,
 )
 from phids.api.ui_state import DraftState
@@ -54,10 +54,10 @@ def _base_config(max_ticks: int = 20) -> SimulationConfig:
                 triggers=[],
             )
         ],
-        predator_species=[
-            PredatorSpeciesParams(
+        herbivore_species=[
+            HerbivoreSpeciesParams(
                 species_id=0,
-                name="pred-0",
+                name="herbivore-0",
                 energy_min=1.0,
                 velocity=1,
                 consumption_rate=1.0,
@@ -103,7 +103,7 @@ def test_draft_build_logs_missing_species_warning(caplog) -> None:
         None. The function verifies invariant compliance through assertions rather than data return.
 
     """
-    draft = DraftState(flora_species=[], predator_species=[])
+    draft = DraftState(flora_species=[], herbivore_species=[])
 
     with caplog.at_level(logging.WARNING, logger="phids.api.ui_state"):
         try:

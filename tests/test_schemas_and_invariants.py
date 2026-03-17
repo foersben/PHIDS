@@ -2,7 +2,7 @@
 
 This module validates the correctness of PHIDS Pydantic v2 schema constraints at the API ingress
 boundary. The primary hypotheses are: (1) ``SimulationConfig`` raises ``ValidationError`` when
-species placement identifiers reference undeclared flora or predator species, preventing
+species placement identifiers reference undeclared flora or herbivore species, preventing
 reference-integrity violations before any engine state is allocated; (2) ``DietCompatibilityMatrix``
 rejects row counts and column counts exceeding the Rule-of-16 bounds; (3) the activation-condition
 schema tree correctly validates ``all_of``, ``any_of``, ``enemy_presence``, and
@@ -22,11 +22,11 @@ from pydantic import ValidationError
 from phids.api.schemas import (
     AllOfConditionSchema,
     DietCompatibilityMatrix,
-    EnemyPresenceConditionSchema,
+    HerbivorePresenceConditionSchema,
     FloraSpeciesParams,
+    HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    PredatorSpeciesParams,
     SimulationConfig,
     SubstanceActiveConditionSchema,
     TriggerConditionSchema,
@@ -52,10 +52,10 @@ def _flora(species_id: int = 0) -> FloraSpeciesParams:
     )
 
 
-def _predator(species_id: int = 0) -> PredatorSpeciesParams:
-    return PredatorSpeciesParams(
+def _herbivore(species_id: int = 0) -> HerbivoreSpeciesParams:
+    return HerbivoreSpeciesParams(
         species_id=species_id,
-        name=f"predator-{species_id}",
+        name=f"herbivore-{species_id}",
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
@@ -72,8 +72,8 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
 
     """
     trig = TriggerConditionSchema(
-        predator_species_id=1,
-        min_predator_population=3,
+        herbivore_species_id=1,
+        min_herbivore_population=3,
         substance_id=2,
         synthesis_duration=4,
         is_toxin=True,
@@ -85,7 +85,9 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
         activation_condition=AllOfConditionSchema(
             conditions=[
                 SubstanceActiveConditionSchema(substance_id=1),
-                EnemyPresenceConditionSchema(predator_species_id=2, min_predator_population=4),
+                HerbivorePresenceConditionSchema(
+                    herbivore_species_id=2, min_herbivore_population=4
+                ),
             ]
         ),
         energy_cost_per_tick=0.6,
@@ -124,12 +126,12 @@ def test_simulation_config_rejects_unknown_species_placements() -> None:
 
     """
     flora = [_flora(0)]
-    predator = [_predator(0)]
+    herbivore = [_herbivore(0)]
 
     with pytest.raises(ValidationError):
         SimulationConfig(
             flora_species=flora,
-            predator_species=predator,
+            herbivore_species=herbivore,
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
             initial_plants=[InitialPlantPlacement(species_id=1, x=0, y=0, energy=5.0)],
         )
@@ -137,7 +139,7 @@ def test_simulation_config_rejects_unknown_species_placements() -> None:
     with pytest.raises(ValidationError):
         SimulationConfig(
             flora_species=flora,
-            predator_species=predator,
+            herbivore_species=herbivore,
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
             initial_swarms=[
                 InitialSwarmPlacement(species_id=1, x=0, y=0, population=2, energy=4.0)
@@ -155,19 +157,19 @@ def test_simulation_config_validates_mycorrhizal_growth_interval_bounds() -> Non
 
     """
     flora = [_flora(0)]
-    predator = [_predator(0)]
+    herbivore = [_herbivore(0)]
 
     with pytest.raises(ValidationError):
         SimulationConfig(
             flora_species=flora,
-            predator_species=predator,
+            herbivore_species=herbivore,
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
             mycorrhizal_growth_interval_ticks=0,
         )
 
     config = SimulationConfig(
         flora_species=flora,
-        predator_species=predator,
+        herbivore_species=herbivore,
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
         mycorrhizal_growth_interval_ticks=12,
     )

@@ -96,9 +96,9 @@ def test_main_default_activation_condition_and_trigger_index_branches() -> None:
     draft_service.add_trigger_rule(
         draft,
         flora_species_id=0,
-        predator_species_id=0,
+        herbivore_species_id=0,
         substance_id=0,
-        min_predator_population=2,
+        min_herbivore_population=2,
     )
     draft.substance_definitions.append(
         SubstanceDefinition(
@@ -195,7 +195,12 @@ async def test_telemetry_chartjs_and_table_preview_empty_branches() -> None:
     async with _default_client() as client:
         no_loop_chart = await client.get("/api/telemetry/chartjs-data")
     assert no_loop_chart.status_code == 200
-    assert no_loop_chart.json() == {"labels": [], "flora_ids": [], "predator_ids": [], "series": {}}
+    assert no_loop_chart.json() == {
+        "labels": [],
+        "flora_ids": [],
+        "herbivore_ids": [],
+        "series": {},
+    }
 
     loop = _build_loaded_loop()
     loop.telemetry._rows = []

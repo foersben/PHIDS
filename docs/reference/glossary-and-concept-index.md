@@ -14,7 +14,7 @@ deeper reading.
 A JSON-structured predicate tree evaluated during the signaling phase to determine whether a
 `SubstanceComponent` that has completed synthesis may transition to the active state. Supported node
 kinds are `enemy_presence`, `substance_active`, `environmental_signal`, `all_of`, and `any_of`.
-Activation conditions allow composite, multi-factor trigger logic beyond a simple predator-count
+Activation conditions allow composite, multi-factor trigger logic beyond a simple herbivore-count
 threshold.
 
 See: [`engine/signaling.md`](../engine/signaling.md)
@@ -99,8 +99,8 @@ See: [`architecture/index.md`](../architecture/index.md), [`engine/ecs-and-spati
 
 ### Diet Matrix
 
-A two-dimensional boolean compatibility matrix indexed by `[predator_species_id][flora_species_id]`.
-A `True` entry permits the corresponding predator species to feed on the corresponding flora species
+A two-dimensional boolean compatibility matrix indexed by `[herbivore_species_id][flora_species_id]`.
+A `True` entry permits the corresponding herbivore species to feed on the corresponding flora species
 during the interaction phase. The matrix is loaded from `SimulationConfig.diet_matrix` and cached
 in `SimulationLoop._diet_matrix`.
 
@@ -298,7 +298,7 @@ See: [`engine/interaction.md`](../engine/interaction.md), [`engine/signaling.md`
 
 ### Rule of 16
 
-The project-wide pre-allocation invariant: flora species, predator species, and substance types are
+The project-wide pre-allocation invariant: flora species, herbivore species, and substance types are
 bounded to a maximum of 16 each, as defined in `phids.shared.constants`. NumPy arrays are
 pre-allocated to these maximum dimensions at simulation start, eliminating dynamic array resizing
 (`np.append`) during the simulation loop and ensuring memory stability at hot-path boundaries.
@@ -383,7 +383,7 @@ See: [`engine/signaling.md`](../engine/signaling.md)
 ### Telemetry Recorder (`TelemetryRecorder`)
 
 The per-tick metric accumulator in `phids.telemetry.analytics`. It records aggregate flora energy,
-flora and predator population counts, active substance counts, and per-category plant death causes
+flora and herbivore population counts, active substance counts, and per-category plant death causes
 after each tick. Metrics are exposed via REST (`GET /api/telemetry`) and polled by the UI
 diagnostics rail.
 
@@ -399,10 +399,10 @@ currently implemented conditions are:
 | Z1   | Maximum tick count reached |
 | Z2   | Extinction of a configured flora species |
 | Z3   | Extinction of all flora |
-| Z4   | Extinction of a configured predator species |
-| Z5   | Extinction of all predators |
+| Z4   | Extinction of a configured herbivore species |
+| Z5   | Extinction of all herbivores |
 | Z6   | Total flora energy exceeds a maximum threshold |
-| Z7   | Total predator population exceeds a maximum threshold |
+| Z7   | Total herbivore population exceeds a maximum threshold |
 
 See: [`telemetry/replay-and-termination-semantics.md`](../telemetry/replay-and-termination-semantics.md)
 
@@ -413,7 +413,7 @@ See [Carrying Capacity](#carrying-capacity-tile_carrying_capacity).
 ### Trigger Rule
 
 A JSON-encoded rule attached to a flora species that specifies the predicate under which a given
-`SubstanceComponent` is materialized and kept synthesizing. A trigger rule encodes a predator
+`SubstanceComponent` is materialized and kept synthesizing. A trigger rule encodes a herbivore
 species ID, a minimum population threshold, an optional nested activation condition, and the
 substance parameters that should be instantiated. Multiple trigger rules per `(flora, substance)`
 pair are supported.

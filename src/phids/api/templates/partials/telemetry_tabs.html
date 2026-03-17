@@ -79,8 +79,8 @@
           class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5"></select>
       </label>
       <label>
-        Predator (y):
-        <select id="ps-pred" onchange="phidsTelemetryRedrawPS()"
+        Herbivore (y):
+        <select id="ps-herbivore" onchange="phidsTelemetryRedrawPS()"
           class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5"></select>
       </label>
     </div>
@@ -96,7 +96,7 @@
           class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
       </label>
       <label>Y Label
-        <input id="ps-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Predator population"
+        <input id="ps-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Herbivore population"
           class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
       </label>
     </div>
@@ -154,7 +154,7 @@
 
   // Colour palettes
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
-  const PREDATOR_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
+  const HERBIVORE_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
   const ENERGY_COLOUR    = '#60a5fa';
   const MAX_TELEMETRY_POINTS = 300;
 
@@ -172,10 +172,10 @@
   function _buildColumnSelection(data) {
     const cols = ['tick'];
     const floraIds = [];
-    const predIds = [];
+    const herbivoreIds = [];
 
     if (_isVisible('flora_total')) cols.push('flora_population');
-    if (_isVisible('pred_total')) cols.push('predator_population');
+    if (_isVisible('herbivore_total')) cols.push('herbivore_population');
     if (_isVisible('energy')) cols.push('total_flora_energy');
 
     (data.flora_ids || []).forEach(fid => {
@@ -186,29 +186,33 @@
         cols.push('defense_cost_' + fid);
       }
     });
-    (data.predator_ids || []).forEach(pid => {
+    (data.herbivore_ids || []).forEach(pid => {
       if (_isVisible('swarm_' + pid)) {
-        predIds.push(String(pid));
+        herbivoreIds.push(String(pid));
         cols.push('swarm_' + pid + '_pop');
       }
     });
 
-    return { columns: cols.join(','), floraIds: floraIds.join(','), predIds: predIds.join(',') };
+    return {
+      columns: cols.join(','),
+      floraIds: floraIds.join(','),
+      herbivoreIds: herbivoreIds.join(','),
+    };
   }
 
   function _selectedPhaseSpecies(data) {
     const preyEl = document.getElementById('ps-prey');
-    const predEl = document.getElementById('ps-pred');
+    const herbivoreEl = document.getElementById('ps-herbivore');
     const floraIds = data.flora_ids || [];
-    const predIds = data.predator_ids || [];
+    const herbivoreIds = data.herbivore_ids || [];
 
     const prey = preyEl && floraIds.includes(parseInt(preyEl.value, 10))
       ? parseInt(preyEl.value, 10)
       : (floraIds.length > 0 ? floraIds[0] : 0);
-    const pred = predEl && predIds.includes(parseInt(predEl.value, 10))
-      ? parseInt(predEl.value, 10)
-      : (predIds.length > 0 ? predIds[0] : 0);
-    return { prey, pred };
+    const herbivore = herbivoreEl && herbivoreIds.includes(parseInt(herbivoreEl.value, 10))
+      ? parseInt(herbivoreEl.value, 10)
+      : (herbivoreIds.length > 0 ? herbivoreIds[0] : 0);
+    return { prey, herbivore };
   }
 
   function _encodeParams(params) {
@@ -240,7 +244,7 @@
     const tsParams = _encodeParams({
       columns: sel.columns,
       flora_ids: sel.floraIds,
-      predator_ids: sel.predIds,
+      herbivore_ids: sel.herbivoreIds,
       title: tsTitle,
       x_label: tsX,
       y_label: tsY,
@@ -248,9 +252,9 @@
     });
     const psParams = _encodeParams({
       prey_species_id: species.prey,
-      predator_species_id: species.pred,
+      herbivore_species_id: species.herbivore,
       flora_ids: sel.floraIds,
-      predator_ids: sel.predIds,
+      herbivore_ids: sel.herbivoreIds,
       title: psTitle,
       x_label: psX,
       y_label: psY,
@@ -286,7 +290,7 @@
     const params = _encodeParams({
       columns: sel.columns,
       flora_ids: sel.floraIds,
-      predator_ids: sel.predIds,
+      herbivore_ids: sel.herbivoreIds,
       tick_interval: tickInterval,
     });
     fetch('/api/telemetry/table_preview?' + params)
@@ -448,23 +452,23 @@
       });
     });
 
-    // Aggregate predators
+    // Aggregate herbivores
     datasets.push({
-      label: 'Predators (total)',
-      data: data.series.predator_population || [],
+      label: 'Herbivores (total)',
+      data: data.series.herbivore_population || [],
       borderColor: '#ef4444', backgroundColor: 'transparent',
       borderWidth: 2, pointRadius: 0, borderDash: [4, 2],
-      hidden: _visible['pred_total'] === false, _key: 'pred_total',
+      hidden: _visible['herbivore_total'] === false, _key: 'herbivore_total',
     });
 
-    // Per-species predators
-    (data.predator_ids || []).forEach((pid, i) => {
+    // Per-species herbivores
+    (data.herbivore_ids || []).forEach((pid, i) => {
       const key = 'swarm_' + pid;
-      const name = (data.predator_names || {})[pid] || ('Predator ' + pid);
+      const name = (data.herbivore_names || {})[pid] || ('Herbivore ' + pid);
       datasets.push({
         label: name + ' pop',
         data: data.series['swarm_' + pid + '_pop'] || [],
-        borderColor: PREDATOR_COLOURS[i % PREDATOR_COLOURS.length],
+        borderColor: HERBIVORE_COLOURS[i % HERBIVORE_COLOURS.length],
         backgroundColor: 'transparent',
         borderWidth: 1.5, pointRadius: 0, borderDash: [3, 2],
         hidden: _visible[key] === false, _key: key,
@@ -628,20 +632,20 @@
   // ---------------------------------------------------------------------------
   function _populateDropdowns(data) {
     const preyEl = document.getElementById('ps-prey');
-    const predEl = document.getElementById('ps-pred');
-    if (!preyEl || !predEl) return;
+    const herbivoreEl = document.getElementById('ps-herbivore');
+    if (!preyEl || !herbivoreEl) return;
 
     const prevPrey = preyEl.value;
-    const prevPred = predEl.value;
+    const prevHerbivore = herbivoreEl.value;
 
     preyEl.innerHTML = (data.flora_ids || []).map(fid => {
       const name = (data.flora_names || {})[fid] || ('Flora ' + fid);
       return `<option value="${fid}" ${String(fid) === prevPrey ? 'selected' : ''}>${name}</option>`;
     }).join('');
 
-    predEl.innerHTML = (data.predator_ids || []).map(pid => {
-      const name = (data.predator_names || {})[pid] || ('Predator ' + pid);
-      return `<option value="${pid}" ${String(pid) === prevPred ? 'selected' : ''}>${name}</option>`;
+    herbivoreEl.innerHTML = (data.herbivore_ids || []).map(pid => {
+      const name = (data.herbivore_names || {})[pid] || ('Herbivore ' + pid);
+      return `<option value="${pid}" ${String(pid) === prevHerbivore ? 'selected' : ''}>${name}</option>`;
     }).join('');
   }
 
@@ -652,24 +656,25 @@
     _populateDropdowns(data);
 
     const preyEl = document.getElementById('ps-prey');
-    const predEl = document.getElementById('ps-pred');
+    const herbivoreEl = document.getElementById('ps-herbivore');
     const species = _selectedPhaseSpecies(data);
     if (preyEl) preyEl.value = String(species.prey);
-    if (predEl) predEl.value = String(species.pred);
+    if (herbivoreEl) herbivoreEl.value = String(species.herbivore);
     const preyId = species.prey;
-    const predId = species.pred;
+    const herbivoreId = species.herbivore;
 
     const preyKey = 'plant_' + preyId + '_pop';
-    const predKey = 'swarm_' + predId + '_pop';
+    const herbivoreKey = 'swarm_' + herbivoreId + '_pop';
     const xVals = data.series[preyKey] || data.series.flora_population || [];
-    const yVals = data.series[predKey] || data.series.predator_population || [];
+    const yVals = data.series[herbivoreKey] || data.series.herbivore_population || [];
 
     const n = Math.min(xVals.length, yVals.length);
     const points = [];
     for (let i = 0; i < n; i++) { points.push({ x: xVals[i], y: yVals[i] }); }
 
     const preyName = (data.flora_names || {})[preyId] || ('Flora ' + preyId);
-    const predName = (data.predator_names || {})[predId] || ('Predator ' + predId);
+    const herbivoreName =
+      (data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId);
 
     if (!_psChart) {
       _psChart = new Chart(ctx, {
@@ -709,7 +714,7 @@
       _key: 'end',
     }]);
     _psChart.options.scales.x.title.text = preyName + ' population';
-    _psChart.options.scales.y.title.text = predName + ' population';
+    _psChart.options.scales.y.title.text = herbivoreName + ' population';
     _psChart.update('none');
 
     _updateStabilityStatus(points);
@@ -739,7 +744,7 @@
     const latestTick = labels.length > 0 ? labels[labels.length - 1] : -1;
     const speciesSignature = JSON.stringify({
       flora: view.flora_ids || [],
-      predators: view.predator_ids || [],
+      herbivores: view.herbivore_ids || [],
     });
     if ((_lastTickSeen >= 0 && latestTick >= 0 && latestTick < _lastTickSeen) ||
       (_lastSpeciesSignature && speciesSignature !== _lastSpeciesSignature)) {

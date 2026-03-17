@@ -48,7 +48,7 @@ To preclude race conditions and guarantee mathematical determinism during synchr
 
 3.2 Memory Allocation Constraints (The "Rule of 16")
 
-Dynamic array resizing during the simulation loop is computationally prohibitive. The architecture dictates a hard configuration limit: a maximum of 16 distinct entity classifications per type (16 flora species, 16 predator species, 16 substance types). The engine must pre-allocate all primary interaction matrices (e.g., shape (16, 16) for the Diet Compatibility Matrix and Trigger Matrix) based on these bounds during system initialization.
+Dynamic array resizing during the simulation loop is computationally prohibitive. The architecture dictates a hard configuration limit: a maximum of 16 distinct entity classifications per type (16 flora species, 16 herbivore species, 16 substance types). The engine must pre-allocate all primary interaction matrices (e.g., shape (16, 16) for the Diet Compatibility Matrix and Trigger Matrix) based on these bounds during system initialization.
 
 3.3 ECS Garbage Collection
 

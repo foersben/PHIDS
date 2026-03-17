@@ -171,22 +171,22 @@ async def ui_flora(request: Request) -> Any:
     )
 
 
-@router.get("/ui/predators", response_class=HTMLResponse, summary="Predator config partial")
-async def ui_predators(request: Request) -> Any:
-    """Render the predator-species editor table.
+@router.get("/ui/herbivores", response_class=HTMLResponse, summary="Herbivore config partial")
+async def ui_herbivores(request: Request) -> Any:
+    """Render the herbivore-species editor table.
 
     Args:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/predator_config.html` fragment with all configured
-        predator species rows.
+        TemplateResponse: Rendered `partials/herbivore_config.html` fragment with all configured
+        herbivore species rows.
     """
     draft = get_draft()
     return api_main.templates.TemplateResponse(
         request,
-        "partials/predator_config.html",
-        {"predator_species": draft.predator_species},
+        "partials/herbivore_config.html",
+        {"herbivore_species": draft.herbivore_species},
     )
 
 
@@ -211,7 +211,7 @@ async def ui_substances(request: Request) -> Any:
 
 @router.get("/ui/diet-matrix", response_class=HTMLResponse, summary="Diet matrix partial")
 async def ui_diet_matrix(request: Request) -> Any:
-    """Render the predator-to-flora compatibility matrix.
+    """Render the herbivore-to-flora compatibility matrix.
 
     Args:
         request: FastAPI request object used by the template renderer.
@@ -226,7 +226,7 @@ async def ui_diet_matrix(request: Request) -> Any:
         "partials/diet_matrix.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "diet_matrix": draft.diet_matrix,
         },
     )
@@ -282,7 +282,7 @@ async def ui_placements(request: Request) -> Any:
         {
             "draft": draft,
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "initial_plants": draft.initial_plants,
             "initial_swarms": draft.initial_swarms,
         },

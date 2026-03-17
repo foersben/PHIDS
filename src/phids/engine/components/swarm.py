@@ -1,4 +1,4 @@
-"""Herbivore swarm ECS component dataclass encoding per-entity predator runtime state.
+"""Herbivore swarm ECS component dataclass encoding per-entity herbivore runtime state.
 
 This module defines :class:`SwarmComponent`, the data container attached to every herbivore
 swarm entity in the PHIDS Entity-Component-System world. Each swarm entity represents a
@@ -30,7 +30,7 @@ class SwarmComponent:
 
     Attributes:
         entity_id: ECS entity identifier.
-        species_id: Predator species index.
+        species_id: Herbivore species index.
         x, y: Current grid coordinates.
         population: Current swarm head-count.
         initial_population: Head-count at spawn; used for mitosis checks.

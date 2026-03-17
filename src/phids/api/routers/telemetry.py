@@ -93,20 +93,20 @@ async def telemetry_chartjs_data() -> JSONResponse:
         numeric series extracted from the live telemetry buffer.
     """
     if api_main._sim_loop is None:
-        return JSONResponse({"labels": [], "flora_ids": [], "predator_ids": [], "series": {}})
+        return JSONResponse({"labels": [], "flora_ids": [], "herbivore_ids": [], "series": {}})
 
     rows = api_main._sim_loop.telemetry._rows
     species = api_main._sim_loop.telemetry.get_species_ids()
     flora_ids = species["flora_ids"]
-    predator_ids = species["predator_ids"]
+    herbivore_ids = species["herbivore_ids"]
 
     flora_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.flora_species}
-    predator_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.predator_species}
+    herbivore_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.herbivore_species}
 
     labels = [r["tick"] for r in rows]
     series: dict[str, list[float]] = {
         "flora_population": [float(r.get("flora_population", 0)) for r in rows],
-        "predator_population": [float(r.get("predator_population", 0)) for r in rows],
+        "herbivore_population": [float(r.get("herbivore_population", 0)) for r in rows],
         "total_flora_energy": [float(r.get("total_flora_energy", 0.0)) for r in rows],
     }
     for fid in flora_ids:
@@ -119,18 +119,18 @@ async def telemetry_chartjs_data() -> JSONResponse:
         series[f"defense_cost_{fid}"] = [
             float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows
         ]
-    for pid in predator_ids:
-        series[f"swarm_{pid}_pop"] = [
-            float(r.get("swarm_pop_by_species", {}).get(pid, 0)) for r in rows
+    for hid in herbivore_ids:
+        series[f"swarm_{hid}_pop"] = [
+            float(r.get("swarm_pop_by_species", {}).get(hid, 0)) for r in rows
         ]
 
     return JSONResponse(
         {
             "labels": labels,
             "flora_ids": flora_ids,
-            "predator_ids": predator_ids,
+            "herbivore_ids": herbivore_ids,
             "flora_names": {str(k): v for k, v in flora_names.items()},
-            "predator_names": {str(k): v for k, v in predator_names.items()},
+            "herbivore_names": {str(k): v for k, v in herbivore_names.items()},
             "series": series,
         }
     )
@@ -143,7 +143,7 @@ async def telemetry_table_preview(
     request: Request,
     columns: str | None = None,
     flora_ids: str | None = None,
-    predator_ids: str | None = None,
+    herbivore_ids: str | None = None,
     tick_interval: int = 1,
     limit: int = 200,
 ) -> Any:
@@ -153,7 +153,7 @@ async def telemetry_table_preview(
         request: FastAPI request object used by the template renderer.
         columns: Optional comma-delimited dataframe columns to retain.
         flora_ids: Optional comma-delimited flora species identifiers used for row filtering.
-        predator_ids: Optional comma-delimited predator species identifiers used for row filtering.
+        herbivore_ids: Optional comma-delimited herbivore species identifiers used for row filtering.
         tick_interval: Positive decimation factor applied before preview rendering.
         limit: Maximum number of recent rows retained to prevent DOM overload.
 
@@ -170,7 +170,7 @@ async def telemetry_table_preview(
     rows = filter_telemetry_rows(
         api_main._sim_loop.telemetry._rows,
         flora_ids=flora_ids,
-        predator_ids=predator_ids,
+        herbivore_ids=herbivore_ids,
     )
     df = telemetry_to_dataframe(rows)
     df = filter_dataframe_columns(df, columns)
@@ -202,10 +202,10 @@ async def export_telemetry_format(
     data_type: str,
     format: str = "csv",  # noqa: A002
     prey_species_id: int = 0,
-    predator_species_id: int = 0,
+    herbivore_species_id: int = 0,
     columns: str | None = None,
     flora_ids: str | None = None,
-    predator_ids: str | None = None,
+    herbivore_ids: str | None = None,
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
@@ -219,10 +219,10 @@ async def export_telemetry_format(
         data_type: Analytical projection to export, including time series and phase-space views.
         format: Output artifact encoding.
         prey_species_id: Flora species identifier used on the phase-space x-axis.
-        predator_species_id: Predator species identifier used on the phase-space y-axis.
+        herbivore_species_id: Herbivore species identifier used on the phase-space y-axis.
         columns: Optional comma-delimited dataframe column subset.
         flora_ids: Optional comma-delimited flora species subset.
-        predator_ids: Optional comma-delimited predator species subset.
+        herbivore_ids: Optional comma-delimited herbivore species subset.
         title: Optional plot title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
@@ -257,10 +257,10 @@ async def export_telemetry_format(
     flora_names: dict[int, str] = {
         sp.species_id: sp.name for sp in api_main._sim_loop.config.flora_species
     }
-    predator_names: dict[int, str] = {
-        sp.species_id: sp.name for sp in api_main._sim_loop.config.predator_species
+    herbivore_names: dict[int, str] = {
+        sp.species_id: sp.name for sp in api_main._sim_loop.config.herbivore_species
     }
-    filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, predator_ids=predator_ids)
+    filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
     if format == "csv":
 
@@ -281,7 +281,7 @@ async def export_telemetry_format(
                 rows,
                 columns=columns,
                 include_flora_ids=flora_ids,
-                include_predator_ids=predator_ids,
+                include_herbivore_ids=herbivore_ids,
                 tick_interval=tick_interval,
             )
 
@@ -296,11 +296,11 @@ async def export_telemetry_format(
                     filtered_rows,
                     normalized_data_type,
                     flora_names=flora_names,
-                    predator_names=predator_names,
+                    herbivore_names=herbivore_names,
                     prey_species_id=prey_species_id,
-                    predator_species_id=predator_species_id,
+                    herbivore_species_id=herbivore_species_id,
                     include_flora_ids=flora_ids,
-                    include_predator_ids=predator_ids,
+                    include_herbivore_ids=herbivore_ids,
                     title=title,
                     x_label=x_label,
                     y_label=y_label,
@@ -322,11 +322,11 @@ async def export_telemetry_format(
                     filtered_rows,
                     normalized_data_type,
                     flora_names=flora_names,
-                    predator_names=predator_names,
+                    herbivore_names=herbivore_names,
                     prey_species_id=prey_species_id,
-                    predator_species_id=predator_species_id,
+                    herbivore_species_id=herbivore_species_id,
                     include_flora_ids=flora_ids,
-                    include_predator_ids=predator_ids,
+                    include_herbivore_ids=herbivore_ids,
                     title=title,
                     x_label=x_label,
                     y_label=y_label,

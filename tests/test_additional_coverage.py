@@ -23,7 +23,7 @@ from phids.api.schemas import (
     FloraSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    PredatorSpeciesParams,
+    HerbivoreSpeciesParams,
     SimulationConfig,
 )
 from phids.engine.components.plant import PlantComponent
@@ -86,8 +86,8 @@ def _config(max_ticks: int = 5) -> SimulationConfig:
                 triggers=[],
             )
         ],
-        predator_species=[
-            PredatorSpeciesParams(
+        herbivore_species=[
+            HerbivoreSpeciesParams(
                 species_id=0,
                 name="herbivore",
                 energy_min=1.0,
@@ -252,7 +252,7 @@ async def test_scenario_import_export_endpoints_roundtrip(_client: AsyncClient) 
         assert export_resp.status_code == 200
         exported = json.loads(export_resp.text)
         assert exported["grid_width"] == config.grid_width
-        assert exported["predator_species"][0]["name"] == "herbivore"
+        assert exported["herbivore_species"][0]["name"] == "herbivore"
 
 
 @pytest.mark.asyncio

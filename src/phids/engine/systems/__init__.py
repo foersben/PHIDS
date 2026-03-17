@@ -9,13 +9,13 @@ interaction system (``run_interaction``) navigates herbivore swarms along the sc
 gradient using O(1) spatial hash co-occupancy lookups, applies diet-matrix-gated herbivory,
 enforces metabolic attrition proportional to individual-level energy demands, and triggers mitosis
 when swarm population exceeds the configured split threshold. The signaling system
-(``run_signaling``) evaluates nested activation-condition trees against per-cell predator census
+(``run_signaling``) evaluates nested activation-condition trees against per-cell herbivore census
 data, advances substance synthesis timers, emits volatile signals and defensive toxins into
 environmental layers, relays signals through mycorrhizal networks, applies toxin-induced lethality
 and repellency to co-located swarms, and delegates Gaussian diffusion to
 ``GridEnvironment.diffuse_signals``.
 
 The systems are always invoked in the canonical order lifecycle → interaction → signaling to
-preserve causal ordering: plant state is established before predators act, and chemical defenses
+preserve causal ordering: plant state is established before herbivores act, and chemical defenses
 are resolved after herbivory has already been applied.
 """

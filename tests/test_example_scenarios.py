@@ -31,7 +31,7 @@ def test_example_scenarios_validate(path: Path) -> None:
     """
     Validates scenario configuration invariants for curated PHIDS example scenarios.
 
-    This test function ensures that each curated scenario adheres to deterministic placement rules, including the presence of initial plant and herbivore placements, and enforces the Rule of 16 entity caps for flora and predator species. The validation supports reproducible ecological simulation and prevents configuration errors that could compromise emergent dynamics or violate architectural constraints fundamental to PHIDS.
+    This test function ensures that each curated scenario adheres to deterministic placement rules, including the presence of initial plant and herbivore placements, and enforces the Rule of 16 entity caps for flora and herbivore species. The validation supports reproducible ecological simulation and prevents configuration errors that could compromise emergent dynamics or violate architectural constraints fundamental to PHIDS.
 
     Args:
         path: The absolute path to the scenario JSON file. The parameter is used to load scenario configuration and validate placement and entity caps.
@@ -47,7 +47,7 @@ def test_example_scenarios_validate(path: Path) -> None:
     assert config.initial_plants, f"{path.name} should include plant placements"
     assert config.initial_swarms, f"{path.name} should include herbivore placements"
     assert len(config.flora_species) <= 16
-    assert len(config.predator_species) <= 16
+    assert len(config.herbivore_species) <= 16
 
 
 @pytest.mark.asyncio
@@ -106,17 +106,17 @@ def test_example_pack_mixes_mycorrhizal_and_non_mycorrhizal_scenarios() -> None:
     assert any(not config.mycorrhizal_inter_species for config in configs)
 
 
-def test_dry_shrubland_cycles_preserves_predator_reproduction_divisors() -> None:
+def test_dry_shrubland_cycles_preserves_herbivore_reproduction_divisors() -> None:
     """
-    Validates preservation of predator reproduction energy divisors in the 'dry_shrubland_cycles' scenario.
+    Validates preservation of herbivore reproduction energy divisors in the 'dry_shrubland_cycles' scenario.
 
-    This test function confirms that the scenario configuration maintains the intended reproduction energy divisors for predator entities, ensuring deterministic reproduction thresholds and supporting the scientific accuracy of metabolic attrition and population dynamics within the PHIDS simulation framework.
+    This test function confirms that the scenario configuration maintains the intended reproduction energy divisors for herbivore entities, ensuring deterministic reproduction thresholds and supporting the scientific accuracy of metabolic attrition and population dynamics within the PHIDS simulation framework.
 
     Args:
         None
 
     Returns:
-        None. Asserts preservation of predator reproduction divisors.
+        None. Asserts preservation of herbivore reproduction divisors.
 
     Raises:
         AssertionError: If divisors are not preserved, ensuring scientific and architectural correctness.

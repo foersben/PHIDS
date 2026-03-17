@@ -4,13 +4,13 @@ This module constitutes the validated ingress boundary for all externally suppli
 the PHIDS runtime. It defines two categories of models: structural schemas that mirror ECS
 component state (``PlantComponentSchema``, ``SwarmComponentSchema``, ``SubstanceComponentSchema``)
 for serialisation and inspection endpoints, and configuration schemas (``FloraSpeciesParams``,
-``PredatorSpeciesParams``, ``DietCompatibilityMatrix``, ``SimulationConfig``) that parameterise
+``HerbivoreSpeciesParams``, ``DietCompatibilityMatrix``, ``SimulationConfig``) that parameterise
 ``SimulationLoop`` construction. The former category supports REST and WebSocket state queries;
 the latter is validated once at ingress and then passed directly to the engine without further
 mutation.
 
 The activation-condition sub-schema forms a recursive algebraic type tree composed of
-``EnemyPresenceConditionSchema``, ``SubstanceActiveConditionSchema``,
+``HerbivorePresenceConditionSchema``, ``SubstanceActiveConditionSchema``,
 ``EnvironmentalSignalConditionSchema``, ``AllOfConditionSchema``, and ``AnyOfConditionSchema``
 nodes, discriminated by the ``kind`` literal field. This tree is evaluated at runtime by the
 signaling system to support compound chemical-defense cascades — for example, alarm-chain
@@ -19,7 +19,7 @@ scenarios in which a secondary toxin activates only after a primary VOC signal i
 ``SimulationConfig`` is the authoritative configuration container; its ``model_validator`` enforces
 cross-field reference integrity between placement species identifiers and the declared species
 lists before any engine state is allocated. The ``DietCompatibilityMatrix`` validator enforces
-Rule-of-16 shape bounds on both dimensions of the predator-flora edibility matrix.
+Rule-of-16 shape bounds on both dimensions of the herbivore-flora edibility matrix.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from phids.shared.constants import (
     MAX_FLORA_SPECIES,
-    MAX_PREDATOR_SPECIES,
+    MAX_HERBIVORE_SPECIES,
     MAX_SUBSTANCE_TYPES,
     SEED_DROP_HEIGHT_DEFAULT,
     SEED_TERMINAL_VELOCITY_DEFAULT,
@@ -40,7 +40,7 @@ from phids.shared.constants import (
 # Helpers
 # ---------------------------------------------------------------------------
 SpeciesId = Annotated[int, Field(ge=0, lt=MAX_FLORA_SPECIES)]
-PredatorId = Annotated[int, Field(ge=0, lt=MAX_PREDATOR_SPECIES)]
+HerbivoreId = Annotated[int, Field(ge=0, lt=MAX_HERBIVORE_SPECIES)]
 SubstanceId = Annotated[int, Field(ge=0, lt=MAX_SUBSTANCE_TYPES)]
 
 
@@ -78,8 +78,8 @@ class SwarmComponentSchema(BaseModel):
     """Pydantic schema for the Herbivore Swarm ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
-    species_id: PredatorId = Field(
-        ..., description="Predator species index [0, MAX_PREDATOR_SPECIES)."
+    species_id: HerbivoreId = Field(
+        ..., description="Herbivore species index [0, MAX_HERBIVORE_SPECIES)."
     )
     x: int = Field(..., ge=0, description="Grid x-coordinate.")
     y: int = Field(..., ge=0, description="Grid y-coordinate.")
@@ -139,15 +139,15 @@ class SubstanceComponentSchema(BaseModel):
     )
 
 
-class EnemyPresenceConditionSchema(BaseModel):
-    """Leaf predicate requiring a predator species at the owner's cell."""
+class HerbivorePresenceConditionSchema(BaseModel):
+    """Leaf predicate requiring a herbivore species at the owner's cell."""
 
     kind: Literal["enemy_presence"] = "enemy_presence"
-    predator_species_id: PredatorId
-    min_predator_population: int = Field(
+    herbivore_species_id: HerbivoreId
+    min_herbivore_population: int = Field(
         default=1,
         gt=0,
-        description="Minimum co-located predator population required for this predicate.",
+        description="Minimum co-located herbivore population required for this predicate.",
     )
 
 
@@ -197,7 +197,7 @@ class AnyOfConditionSchema(BaseModel):
 
 
 ConditionNode: TypeAlias = Annotated[
-    EnemyPresenceConditionSchema
+    HerbivorePresenceConditionSchema
     | SubstanceActiveConditionSchema
     | EnvironmentalSignalConditionSchema
     | AllOfConditionSchema
@@ -217,13 +217,13 @@ AnyOfConditionSchema.model_rebuild()
 class TriggerConditionSchema(BaseModel):
     """Trigger condition for substance synthesis (Interaction Matrix entry).
 
-    Maps a (plant species, predator species) pair to the substance that should
+    Maps a (plant species, herbivore species) pair to the substance that should
     be synthesised when the trigger conditions are met, together with all
     behavioural properties of the resulting substance.
     """
 
-    predator_species_id: PredatorId
-    min_predator_population: int = Field(
+    herbivore_species_id: HerbivoreId
+    min_herbivore_population: int = Field(
         ..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis."
     )
     substance_id: SubstanceId = Field(..., description="Substance to synthesise.")
@@ -333,10 +333,10 @@ class FloraSpeciesParams(BaseModel):
     triggers: list[TriggerConditionSchema] = Field(default_factory=list)
 
 
-class PredatorSpeciesParams(BaseModel):
-    """Per-species parameters for predators (herbivore swarms)."""
+class HerbivoreSpeciesParams(BaseModel):
+    """Per-species parameters for herbivore swarms."""
 
-    species_id: PredatorId
+    species_id: HerbivoreId
     name: str
     energy_min: float = Field(..., gt=0.0)
     velocity: int = Field(..., gt=0)
@@ -364,22 +364,22 @@ class PredatorSpeciesParams(BaseModel):
 
 
 class DietCompatibilityMatrix(BaseModel):
-    """Boolean matrix [predator_species, flora_species] indicating edibility."""
+    """Boolean matrix [herbivore_species, flora_species] indicating edibility."""
 
     rows: list[list[bool]] = Field(
         ...,
         description=(
-            "Outer index = predator species id, inner index = flora species id. "
-            "True means the predator can consume that flora species."
+            "Outer index = herbivore species id, inner index = flora species id. "
+            "True means the herbivore can consume that flora species."
         ),
     )
 
     @model_validator(mode="after")
     def _validate_shape(self) -> DietCompatibilityMatrix:
-        n_pred = len(self.rows)
-        if n_pred > MAX_PREDATOR_SPECIES:
+        n_herbivore = len(self.rows)
+        if n_herbivore > MAX_HERBIVORE_SPECIES:
             raise ValueError(
-                f"DietCompatibilityMatrix has {n_pred} rows, max is {MAX_PREDATOR_SPECIES}."
+                f"DietCompatibilityMatrix has {n_herbivore} rows, max is {MAX_HERBIVORE_SPECIES}."
             )
         for row in self.rows:
             if len(row) > MAX_FLORA_SPECIES:
@@ -406,7 +406,7 @@ class InitialPlantPlacement(BaseModel):
 class InitialSwarmPlacement(BaseModel):
     """Single swarm to place at simulation start."""
 
-    species_id: PredatorId
+    species_id: HerbivoreId
     x: int = Field(..., ge=0)
     y: int = Field(..., ge=0)
     population: int = Field(..., gt=0)
@@ -433,8 +433,8 @@ class SimulationConfig(BaseModel):
     wind_y: float = Field(default=0.0, description="Initial wind vector y-component.")
 
     flora_species: list[FloraSpeciesParams] = Field(..., min_length=1, max_length=MAX_FLORA_SPECIES)
-    predator_species: list[PredatorSpeciesParams] = Field(
-        ..., min_length=1, max_length=MAX_PREDATOR_SPECIES
+    herbivore_species: list[HerbivoreSpeciesParams] = Field(
+        ..., min_length=1, max_length=MAX_HERBIVORE_SPECIES
     )
     diet_matrix: DietCompatibilityMatrix
 
@@ -465,22 +465,22 @@ class SimulationConfig(BaseModel):
     z2_flora_species_extinction: int = Field(
         default=-1, description="Halt when this flora species id goes extinct (-1 = disabled)."
     )
-    z4_predator_species_extinction: int = Field(
+    z4_herbivore_species_extinction: int = Field(
         default=-1,
-        description="Halt when this predator species id goes extinct (-1 = disabled).",
+        description="Halt when this herbivore species id goes extinct (-1 = disabled).",
     )
     z6_max_total_flora_energy: float = Field(
         default=-1.0, description="Halt when total flora energy exceeds this value (-1 = disabled)."
     )
-    z7_max_total_predator_population: int = Field(
+    z7_max_total_herbivore_population: int = Field(
         default=-1,
-        description="Halt when total predator population exceeds this value (-1 = disabled).",
+        description="Halt when total herbivore population exceeds this value (-1 = disabled).",
     )
 
     @model_validator(mode="after")
     def _validate_species_ids(self) -> SimulationConfig:
         flora_ids = {s.species_id for s in self.flora_species}
-        predator_ids = {s.species_id for s in self.predator_species}
+        herbivore_ids = {s.species_id for s in self.herbivore_species}
         for plant_placement in self.initial_plants:
             if plant_placement.species_id not in flora_ids:
                 raise ValueError(
@@ -488,9 +488,9 @@ class SimulationConfig(BaseModel):
                     f"flora species {plant_placement.species_id}."
                 )
         for swarm_placement in self.initial_swarms:
-            if swarm_placement.species_id not in predator_ids:
+            if swarm_placement.species_id not in herbivore_ids:
                 raise ValueError(
-                    f"InitialSwarmPlacement references unknown predator species "
+                    f"InitialSwarmPlacement references unknown herbivore species "
                     f"{swarm_placement.species_id}."
                 )
         return self

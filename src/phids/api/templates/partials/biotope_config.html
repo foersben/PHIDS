@@ -104,11 +104,11 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1"
-          title="Z4 termination: stop when this predator species id goes extinct. Set -1 to disable.">
-          Z4 Predator Extinction Species ID
+          title="Z4 termination: stop when this herbivore species id goes extinct. Set -1 to disable.">
+          Z4 Herbivore Extinction Species ID
         </label>
-        <input type="number" name="z4_predator_species_extinction" min="-1" max="15" step="1"
-          value="{{ draft.z4_predator_species_extinction }}"
+        <input type="number" name="z4_herbivore_species_extinction" min="-1" max="15" step="1"
+          value="{{ draft.z4_herbivore_species_extinction }}"
           class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
 
@@ -123,11 +123,11 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1"
-          title="Z7 termination: stop when total predator population exceeds this threshold. Set -1 to disable.">
-          Z7 Max Total Predator Population
+          title="Z7 termination: stop when total herbivore population exceeds this threshold. Set -1 to disable.">
+          Z7 Max Total Herbivore Population
         </label>
-        <input type="number" name="z7_max_total_predator_population" min="-1" step="1"
-          value="{{ draft.z7_max_total_predator_population }}"
+        <input type="number" name="z7_max_total_herbivore_population" min="-1" step="1"
+          value="{{ draft.z7_max_total_herbivore_population }}"
           class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
 

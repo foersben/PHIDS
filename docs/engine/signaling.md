@@ -1,6 +1,6 @@
 # Signaling and Substance Lifecycle
 
-The signaling phase in PHIDS converts local ecological pressure into dynamic chemical state transitions by coupling trigger logic in `src/phids/engine/systems/signaling.py` to double-buffered environmental fields in `src/phids/engine/core/biotope.py`. The phase executes after lifecycle and interaction, so it observes post-feeding plant energy, current predator co-location, and any interaction-induced movement patterns before writing defensive emissions.
+The signaling phase in PHIDS converts local ecological pressure into dynamic chemical state transitions by coupling trigger logic in `src/phids/engine/systems/signaling.py` to double-buffered environmental fields in `src/phids/engine/core/biotope.py`. The phase executes after lifecycle and interaction, so it observes post-feeding plant energy, current herbivore co-location, and any interaction-induced movement patterns before writing defensive emissions.
 
 The state transition can be expressed as an operator on ecological entities and field layers:
 

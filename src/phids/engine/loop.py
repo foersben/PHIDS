@@ -93,11 +93,11 @@ class SimulationLoop:
         # Spawn initial entities
         self._spawn_initial_entities()
         logger.info(
-            "SimulationLoop initialised (grid=%dx%d, flora_species=%d, predator_species=%d, signals=%d, toxins=%d, tick_rate_hz=%.2f)",
+            "SimulationLoop initialised (grid=%dx%d, flora_species=%d, herbivore_species=%d, signals=%d, toxins=%d, tick_rate_hz=%.2f)",
             config.grid_width,
             config.grid_height,
             len(config.flora_species),
-            len(config.predator_species),
+            len(config.herbivore_species),
             config.num_signals,
             config.num_toxins,
             config.tick_rate_hz,
@@ -167,16 +167,16 @@ class SimulationLoop:
                 population=swarm_placement.population,
                 initial_population=swarm_placement.population,
                 energy=swarm_placement.energy,
-                energy_min=self._get_predator_energy_min(swarm_placement.species_id),
-                velocity=self._get_predator_velocity(swarm_placement.species_id),
-                consumption_rate=self._get_predator_consumption_rate(swarm_placement.species_id),
-                reproduction_energy_divisor=self._get_predator_reproduction_divisor(
+                energy_min=self._get_herbivore_energy_min(swarm_placement.species_id),
+                velocity=self._get_herbivore_velocity(swarm_placement.species_id),
+                consumption_rate=self._get_herbivore_consumption_rate(swarm_placement.species_id),
+                reproduction_energy_divisor=self._get_herbivore_reproduction_divisor(
                     swarm_placement.species_id
                 ),
-                energy_upkeep_per_individual=self._get_predator_energy_upkeep(
+                energy_upkeep_per_individual=self._get_herbivore_energy_upkeep(
                     swarm_placement.species_id
                 ),
-                split_population_threshold=self._get_predator_split_threshold(
+                split_population_threshold=self._get_herbivore_split_threshold(
                     swarm_placement.species_id
                 ),
             )
@@ -191,88 +191,88 @@ class SimulationLoop:
             spawned_swarms,
         )
 
-    def _get_predator_energy_min(self, species_id: int) -> float:
-        """Return the configured minimum energy for a predator species.
+    def _get_herbivore_energy_min(self, species_id: int) -> float:
+        """Return the configured minimum energy for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             float: Configured minimum energy if found, otherwise a sensible
             default of 1.0.
         """
-        for sp in self.config.predator_species:
+        for sp in self.config.herbivore_species:
             if sp.species_id == species_id:
                 return sp.energy_min
         return 1.0
 
-    def _get_predator_velocity(self, species_id: int) -> int:
-        """Return the configured movement period (velocity) for a predator.
+    def _get_herbivore_velocity(self, species_id: int) -> int:
+        """Return the configured movement period (velocity) for a herbivore.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             int: Movement period in ticks; defaults to 1 when not found.
         """
-        for sp in self.config.predator_species:
+        for sp in self.config.herbivore_species:
             if sp.species_id == species_id:
                 return sp.velocity
         return 1
 
-    def _get_predator_consumption_rate(self, species_id: int) -> float:
-        """Return the per-tick consumption rate for a predator species.
+    def _get_herbivore_consumption_rate(self, species_id: int) -> float:
+        """Return the per-tick consumption rate for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             float: Consumption rate if present, otherwise 1.0 by default.
         """
-        for sp in self.config.predator_species:
+        for sp in self.config.herbivore_species:
             if sp.species_id == species_id:
                 return sp.consumption_rate
         return 1.0
 
-    def _get_predator_reproduction_divisor(self, species_id: int) -> float:
-        """Return the configured reproduction divisor for a predator species.
+    def _get_herbivore_reproduction_divisor(self, species_id: int) -> float:
+        """Return the configured reproduction divisor for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             float: Reproduction divisor if present, otherwise 1.0.
         """
-        for sp in self.config.predator_species:
+        for sp in self.config.herbivore_species:
             if sp.species_id == species_id:
                 return sp.reproduction_energy_divisor
         return 1.0
 
-    def _get_predator_energy_upkeep(self, species_id: int) -> float:
-        """Return the configured per-individual metabolic upkeep scalar for a predator species.
+    def _get_herbivore_energy_upkeep(self, species_id: int) -> float:
+        """Return the configured per-individual metabolic upkeep scalar for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
         """
-        for sp in self.config.predator_species:
+        for sp in self.config.herbivore_species:
             if sp.species_id == species_id:
                 return sp.energy_upkeep_per_individual
         return 0.05
 
-    def _get_predator_split_threshold(self, species_id: int) -> int:
-        """Return the configured explicit mitosis population threshold for a predator species.
+    def _get_herbivore_split_threshold(self, species_id: int) -> int:
+        """Return the configured explicit mitosis population threshold for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             Configured split threshold if found; otherwise 0, which causes the interaction
             system to apply the legacy initial-population-based mitosis rule.
         """
-        for sp in self.config.predator_species:
+        for sp in self.config.herbivore_species:
             if sp.species_id == species_id:
                 return sp.split_population_threshold
         return 0
@@ -327,13 +327,13 @@ class SimulationLoop:
         logger.debug(
             (
                 "Tick summary (tick=%d, flora_energy=%.3f, flora_population=%d, "
-                "predator_clusters=%d, predator_population=%d, replay_frames=%d, "
+                "herbivore_clusters=%d, herbivore_population=%d, replay_frames=%d, "
                 "phase_timings_ms=%s)"
             ),
             self.tick,
             float(latest_metrics.get("total_flora_energy", 0.0)) if latest_metrics else 0.0,
             int(latest_metrics.get("flora_population", 0)) if latest_metrics else 0,
-            int(latest_metrics.get("predator_clusters", 0)) if latest_metrics else 0,
+            int(latest_metrics.get("herbivore_clusters", 0)) if latest_metrics else 0,
             swarm_population,
             len(self.replay),
             phase_timings_ms,
@@ -464,9 +464,9 @@ class SimulationLoop:
                 self.tick,
                 max_ticks=self.config.max_ticks,
                 z2_flora_species=self.config.z2_flora_species_extinction,
-                z4_predator_species=self.config.z4_predator_species_extinction,
+                z4_herbivore_species=self.config.z4_herbivore_species_extinction,
                 z6_max_flora_energy=self.config.z6_max_total_flora_energy,
-                z7_max_predator_population=self.config.z7_max_total_predator_population,
+                z7_max_total_herbivore_population=self.config.z7_max_total_herbivore_population,
             )
             if debug_summary:
                 phase_timings_ms["termination"] = (time.perf_counter() - phase_started) * 1000.0

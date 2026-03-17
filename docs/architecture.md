@@ -152,7 +152,7 @@ distinguishing between trigger presence and active defense, which are not synony
 
 ```mermaid
 flowchart TD
-    A([Tick Start]) --> B{Predator at plant cell?<br/>via Spatial Hash O1}
+    A([Tick Start]) --> B{Herbivore at plant cell?<br/>via Spatial Hash O1}
     B -- No --> END([No synthesis])
     B -- Yes --> C{population ≥ n_i,min?}
     C -- No --> END
@@ -182,7 +182,7 @@ flowchart TD
 ```
 
 The key architectural message is that chemical behavior remains rule-bound and spatially localized.
-Predator presence is evaluated through the spatial hash, synthesis is attached to a specific owning
+Herbivore presence is evaluated through the spatial hash, synthesis is attached to a specific owning
 plant, and post-activation effects are governed by explicit persistence logic. In other words, the
 diagram describes not merely a feature but a mechanistic chain of evidence from threat to response.
 

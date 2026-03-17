@@ -36,7 +36,7 @@ PAYLOAD = {
             "triggers": [],
         }
     ],
-    "predator_species": [
+    "herbivore_species": [
         {
             "species_id": 0,
             "name": "Herbivore",

@@ -80,21 +80,21 @@ The simulation halts when a configured flora species ID is no longer present.
 
 The simulation halts when no living flora remain.
 
-### `Z4` — Target predator species extinct
+### `Z4` — Target herbivore species extinct
 
-The simulation halts when a configured predator species ID is no longer present.
+The simulation halts when a configured herbivore species ID is no longer present.
 
-### `Z5` — All predators extinct
+### `Z5` — All herbivores extinct
 
-The simulation halts when no living predator swarms remain.
+The simulation halts when no living herbivore swarms remain.
 
 ### `Z6` — Flora energy overshoot
 
 The simulation halts when aggregate flora energy exceeds a configured upper threshold.
 
-### `Z7` — Predator population overshoot
+### `Z7` — Herbivore population overshoot
 
-The simulation halts when aggregate predator population exceeds a configured upper threshold.
+The simulation halts when aggregate herbivore population exceeds a configured upper threshold.
 
 ## Interpreting Termination Scientifically
 
@@ -104,7 +104,7 @@ runtime control signal.
 For example:
 
 - `Z3` may represent ecological collapse of the flora layer,
-- `Z5` may represent complete predator extinction,
+- `Z5` may represent complete herbivore extinction,
 - `Z6` and `Z7` may represent runaway regimes in which a configured quantity exceeds acceptable
   analysis bounds,
 - `Z1` marks a censored but intentionally time-bounded run.

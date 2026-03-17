@@ -22,13 +22,13 @@ import numpy as np
 
 
 def _minimal_scenario() -> dict:
-    """Return a JSON-serialisable SimulationConfig dict for a 4×4 grid with one flora and one predator."""
+    """Return a JSON-serialisable SimulationConfig dict for a 4×4 grid with one flora and one herbivore."""
     from phids.api.schemas import (
         DietCompatibilityMatrix,
         FloraSpeciesParams,
+        HerbivoreSpeciesParams,
         InitialPlantPlacement,
         InitialSwarmPlacement,
-        PredatorSpeciesParams,
         SimulationConfig,
     )
 
@@ -49,8 +49,8 @@ def _minimal_scenario() -> dict:
                 reproduction_interval=20,
             )
         ],
-        predator_species=[
-            PredatorSpeciesParams(
+        herbivore_species=[
+            HerbivoreSpeciesParams(
                 species_id=0,
                 name="TestBug",
                 energy_min=1.0,
@@ -100,22 +100,22 @@ class TestRunSingleHeadless:
         rows = _run_single_headless(_minimal_scenario(), max_ticks=3, seed=7)
         for row in rows:
             assert "flora_population" in row
-            assert "predator_population" in row
+            assert "herbivore_population" in row
 
 
 class TestAggregateBatchTelemetry:
     """Validates statistical aggregation of Monte Carlo run ensembles."""
 
-    def _make_rows(self, n_ticks: int, flora_val: int, pred_val: int) -> list[dict]:
+    def _make_rows(self, n_ticks: int, flora_val: int, herbivore_val: int) -> list[dict]:
         """Build synthetic uniform telemetry rows for a single run."""
         return [
             {
                 "tick": t,
                 "flora_population": flora_val,
-                "predator_population": pred_val,
+                "herbivore_population": herbivore_val,
                 "total_flora_energy": float(flora_val * 10),
                 "plant_pop_by_species": {0: flora_val},
-                "swarm_pop_by_species": {0: pred_val},
+                "swarm_pop_by_species": {0: herbivore_val},
             }
             for t in range(n_ticks)
         ]
@@ -127,7 +127,7 @@ class TestAggregateBatchTelemetry:
         runs = [self._make_rows(5, 10, 3) for _ in range(4)]
         agg = aggregate_batch_telemetry(runs)
         assert abs(agg["flora_population_mean"][0] - 10.0) < 1e-6
-        assert abs(agg["predator_population_mean"][0] - 3.0) < 1e-6
+        assert abs(agg["herbivore_population_mean"][0] - 3.0) < 1e-6
 
     def test_std_of_identical_runs_is_zero(self) -> None:
         """Standard deviation across identical runs is zero for all ticks."""
@@ -197,7 +197,7 @@ class TestAggregateBatchTelemetry:
             {
                 "tick": 0,
                 "flora_population": 6,
-                "predator_population": 2,
+                "herbivore_population": 2,
                 "total_flora_energy": 60.0,
                 "plant_pop_by_species": {0: 6},
                 "swarm_pop_by_species": {0: 2},
@@ -205,7 +205,7 @@ class TestAggregateBatchTelemetry:
             {
                 "tick": 1,
                 "flora_population": 0,
-                "predator_population": 1,
+                "herbivore_population": 1,
                 "total_flora_energy": 0.0,
                 "plant_pop_by_species": {0: 0},
                 "swarm_pop_by_species": {0: 1},
@@ -213,7 +213,7 @@ class TestAggregateBatchTelemetry:
             {
                 "tick": 2,
                 "flora_population": 0,
-                "predator_population": 1,
+                "herbivore_population": 1,
                 "total_flora_energy": 0.0,
                 "plant_pop_by_species": {0: 0},
                 "swarm_pop_by_species": {0: 1},
@@ -221,7 +221,7 @@ class TestAggregateBatchTelemetry:
             {
                 "tick": 3,
                 "flora_population": 0,
-                "predator_population": 1,
+                "herbivore_population": 1,
                 "total_flora_energy": 0.0,
                 "plant_pop_by_species": {0: 0},
                 "swarm_pop_by_species": {0: 1},
@@ -263,7 +263,7 @@ def test_run_and_save_delegates_to_single_runner(monkeypatch) -> None:
     """Wrapper delegates argument tuple unpacking to the headless runner."""
     from phids.engine import batch as batch_mod
 
-    expected_rows = [{"tick": 0, "flora_population": 1, "predator_population": 0}]
+    expected_rows = [{"tick": 0, "flora_population": 1, "herbivore_population": 0}]
 
     def _fake_single(_scenario: dict, _max_ticks: int, _seed: int) -> list[dict]:
         return expected_rows
@@ -283,7 +283,7 @@ def test_run_single_headless_breaks_when_termination_detected(monkeypatch) -> No
         terminated = True
 
     class _FakeTelemetry:
-        _rows = [{"tick": 0, "flora_population": 0, "predator_population": 0}]
+        _rows = [{"tick": 0, "flora_population": 0, "herbivore_population": 0}]
 
     class _FakeLoop:
         def __init__(self, _config: object) -> None:
@@ -296,7 +296,7 @@ def test_run_single_headless_breaks_when_termination_detected(monkeypatch) -> No
     monkeypatch.setattr(loop_mod, "SimulationLoop", _FakeLoop)
 
     rows = batch_mod._run_single_headless(_minimal_scenario(), max_ticks=5, seed=123)
-    assert rows == [{"tick": 0, "flora_population": 0, "predator_population": 0}]
+    assert rows == [{"tick": 0, "flora_population": 0, "herbivore_population": 0}]
 
 
 def test_execute_batch_handles_success_and_failure_and_writes_strict_json(
@@ -330,7 +330,7 @@ def test_execute_batch_handles_success_and_failure_and_writes_strict_json(
             self._submitted += 1
             if self._submitted == 1:
                 return _FakeFuture(
-                    payload=[{"tick": 0, "flora_population": 2, "predator_population": 1}]
+                    payload=[{"tick": 0, "flora_population": 2, "herbivore_population": 1}]
                 )
             return _FakeFuture(exc=RuntimeError("worker failed"))
 

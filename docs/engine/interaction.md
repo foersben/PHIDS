@@ -8,7 +8,7 @@ $$
 (\mathcal{W}_{t+1}, \mathcal{P}_{t+1}) = \mathcal{I}(\mathcal{W}_t, \mathcal{P}_t, F_t, D, \Theta),
 $$
 
-where $F_t$ is the current flow field, $D$ is the predator-flora diet matrix, and $\Theta$ collects species-level parameters such as consumption rates, upkeep rates, and split thresholds.
+where $F_t$ is the current flow field, $D$ is the herbivore-flora diet matrix, and $\Theta$ collects species-level parameters such as consumption rates, upkeep rates, and split thresholds.
 
 ## Movement Dynamics with Capacity Pressure and Anchoring
 
@@ -30,7 +30,7 @@ flowchart TD
 
 ## Feeding and Behavioral Refinements
 
-Feeding is locality constrained: only co-located plants returned by `world.entities_at(x, y)` are considered, and each candidate is validated by `world.has_entity(...)` before component access to prevent stale-reference failures during in-phase garbage collection. Diet compatibility is then applied through the predator-flora matrix.
+Feeding is locality constrained: only co-located plants returned by `world.entities_at(x, y)` are considered, and each candidate is validated by `world.has_entity(...)` before component access to prevent stale-reference failures during in-phase garbage collection. Diet compatibility is then applied through the herbivore-flora matrix.
 
 Energy transfer from eligible plant $j$ to swarm $i$ is computed as
 

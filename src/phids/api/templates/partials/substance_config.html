@@ -15,95 +15,97 @@
     {% endif %}
   </div>
 
-  <div class="bg-white rounded-xl shadow-sm border overflow-auto">
-    <table class="w-full divide-y divide-slate-200 text-sm">
+  <div class="bg-white rounded-xl shadow-sm border overflow-x-auto w-full">
+    <table class="w-full table-auto divide-y divide-slate-200 text-sm">
       <thead class="bg-slate-50">
         <tr>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Substance layer index. Signal substances occupy signal_layers[id], toxins occupy toxin_layers[id]. Must be < num_signals or num_toxins set in Biotope Config.">ID</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Display name for this substance.">Name</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
-            title="Signal: airborne VOC that diffuses and warns neighbouring plants via mycorrhiza. Lethal Toxin: kills herbivores proportional to lethality_rate. Repellent Toxin: triggers random walk away from plant. Toxin: generic toxin without lethal/repellent effect.">Type</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Signal: airborne VOC that diffuses and warns neighbouring plants via mycorrhiza. Toxin: non-lethal baseline toxin retained for precursor-condition chains and legacy scenario compatibility. Lethal Toxin: causes casualties proportional to lethality_rate. Repellent Toxin: triggers random walk away from plant.">Type</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Synthesis Duration T(s): number of ticks from trigger to activation. During this window the substance is synthesising but not yet active. Mimics biochemical production delay.">Synth.</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
-            title="Aftereffect Ticks T_k: after the triggering predator leaves, the substance stays active for this many extra ticks before deactivating. 0 = deactivates immediately when threat leaves.">Aftereff.</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
-            title="Lethality Rate β: for Lethal Toxins, population_casualties = β × toxin_concentration × population each tick. 0 = no lethal effect. Typical values: 0.5–3.0.">Lethal β</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
-            title="Repellent Walk k: for Repellent Toxins, swarm enters random walk for this many ticks after contact. Effectively chases the herbivore away temporarily.">Walk k</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Aftereffect Ticks T_k: after the triggering herbivore leaves, the substance stays active for this many extra ticks before deactivating. 0 = deactivates immediately when threat leaves.">Aftereff.</th>
+          <th data-col="lethal_rate" class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Lethality Rate β: for Lethal Toxins, population_casualties = β × toxin_concentration × population each tick. 0 = no lethal effect. Typical values: 0.5–3.0.">Lethality β (Lethal only)</th>
+          <th data-col="repellent_walk" class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Repellent Walk k: for Repellent Toxins, swarm enters random walk for this many ticks after contact. Effectively displaces herbivores away from defended foliage.">Repel Walk k (Repellent only)</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Energy per Tick: energy drained from the plant per tick while this substance is active. Represents the metabolic cost of defence. 0 = free defence.">E/tick</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Irreversible (SAR-like): once activated, this substance remains active until owner death.">SAR</th>
-          <th class="px-2 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Actions</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
         {% for sub in substances %}
         <tr id="substance-row-{{ sub.substance_id }}">
-          <td class="px-2 py-2 font-mono text-slate-400">{{ sub.substance_id }}</td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 font-mono text-slate-400 whitespace-nowrap">{{ sub.substance_id }}</td>
+          <td class="px-3 py-2 min-w-[11rem]">
             <input type="text" value="{{ sub.name }}" name="name"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-24">
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-full">
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[12rem]">
             <select name="type_label"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 text-sm">
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 text-sm w-full">
               <option value="Signal" {% if sub.type_label == 'Signal' %}selected{% endif %}>Signal</option>
               <option value="Lethal Toxin" {% if sub.type_label == 'Lethal Toxin' %}selected{% endif %}>Lethal Toxin</option>
               <option value="Repellent Toxin" {% if sub.type_label == 'Repellent Toxin' %}selected{% endif %}>Repellent Toxin</option>
-              <option value="Toxin" {% if sub.type_label == 'Toxin' %}selected{% endif %}>Toxin</option>
+              {% if sub.type_label == 'Toxin' %}
+              <option value="Toxin" selected hidden>Legacy Toxin</option>
+              {% endif %}
             </select>
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[7rem]">
             <input type="number" value="{{ sub.synthesis_duration }}" min="1" step="1" name="synthesis_duration"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-full">
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[7rem]">
             <input type="number" value="{{ sub.aftereffect_ticks }}" min="0" step="1" name="aftereffect_ticks"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-full">
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[8rem]" data-col="lethal_rate">
             <input type="number" value="{{ sub.lethality_rate }}" min="0" step="0.01" name="lethality_rate"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14">
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-full">
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[9rem]" data-col="repellent_walk">
             <input type="number" value="{{ sub.repellent_walk_ticks }}" min="0" step="1" name="repellent_walk_ticks"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-full"
               title="Random-walk duration k when repelling swarms">
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[8rem]">
             <input type="number" value="{{ sub.energy_cost_per_tick }}" min="0" step="0.1" name="energy_cost_per_tick"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-full"
               title="Energy drained from the plant per active tick">
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 min-w-[6rem]">
             <select name="irreversible"
               hx-put="/api/config/substances/{{ sub.substance_id }}" hx-trigger="change"
               hx-target="#substance-config-view" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 text-sm"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 text-sm w-full"
               title="When true, activation remains on permanently once synthesis completes.">
               <option value="false" {% if not sub.irreversible %}selected{% endif %}>no</option>
               <option value="true" {% if sub.irreversible %}selected{% endif %}>yes</option>
             </select>
           </td>
-          <td class="px-2 py-2">
+          <td class="px-3 py-2 whitespace-nowrap">
             <button hx-delete="/api/config/substances/{{ sub.substance_id }}"
               hx-target="#substance-row-{{ sub.substance_id }}" hx-swap="outerHTML swap:0.5s"
               hx-confirm="Delete {{ sub.name }}?"
@@ -122,12 +124,63 @@
       </tbody>
     </table>
   </div>
-  <p class="mt-3 text-xs text-slate-400">
-    <strong>Synth.</strong>: ticks to complete synthesis.
-    <strong>Aftereff.</strong>: ticks substance lingers after emission ceases.
-    <strong>SAR</strong>: irreversible activation mode.
-    <strong>Walk k</strong>: random-walk duration on repel.
-    <strong>E/tick</strong>: energy drained from the plant per active tick.
-    Activation gates mixing enemies and precursor substances are configured per rule in the ⚡ Trigger Rules editor.
-  </p>
+  <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 space-y-2">
+    <p class="font-semibold text-slate-700">Field interpretation for substance definitions</p>
+    <p>
+      <strong>ID</strong> indexes the simulation layer. <strong>Name</strong> is the operator-facing label. <strong>Type</strong>
+      determines whether the entry is an airborne signal or a toxin mode. Signals diffuse in the biotope,
+      while toxin effects are applied locally at defended plant cells.
+    </p>
+    <p>
+      <strong>Synth.</strong> is the synthesis latency in ticks before activation. <strong>Aftereff.</strong> is the post-trigger
+      persistence window in ticks once the activating condition is no longer true.
+    </p>
+    <p>
+      <strong>Lethality β</strong> applies only to <em>Lethal Toxin</em> and controls per-tick casualty pressure as a function
+      of local toxin intensity. <strong>Repel Walk k</strong> applies only to <em>Repellent Toxin</em> and sets the forced random-walk
+      duration used to displace swarms from the defended location.
+    </p>
+    <p>
+      <strong>E/tick</strong> is the metabolic maintenance cost paid by the plant while the substance remains active.
+      <strong>SAR</strong> enables irreversible activation (systemic acquired resistance mode), so the defense persists once
+      initiated. <strong>Actions</strong> remove a definition and trigger dependent reference compaction.
+    </p>
+    <p>
+      Multi-factor activation logic (enemy thresholds, precursor substances, and composite condition trees)
+      is configured in the ⚡ Trigger Rules editor.
+    </p>
+  </div>
+  <script>
+    (function () {
+      const root = document.getElementById('substance-config-view');
+      if (!root) return;
+
+      function applyTypeDependentFields(row) {
+        const typeSelect = row.querySelector('select[name="type_label"]');
+        if (!typeSelect) return;
+        const type = typeSelect.value;
+        const lethalCell = row.querySelector('[data-col="lethal_rate"]');
+        const repelCell = row.querySelector('[data-col="repellent_walk"]');
+        const lethalInput = row.querySelector('input[name="lethality_rate"]');
+        const repelInput = row.querySelector('input[name="repellent_walk_ticks"]');
+        if (!lethalCell || !repelCell || !lethalInput || !repelInput) return;
+
+        const showLethal = type === 'Lethal Toxin';
+        const showRepel = type === 'Repellent Toxin';
+
+        lethalCell.classList.toggle('opacity-40', !showLethal);
+        repelCell.classList.toggle('opacity-40', !showRepel);
+        lethalInput.disabled = !showLethal;
+        repelInput.disabled = !showRepel;
+      }
+
+      root.querySelectorAll('tr[id^="substance-row-"]').forEach((row) => {
+        applyTypeDependentFields(row);
+        const select = row.querySelector('select[name="type_label"]');
+        if (select) {
+          select.addEventListener('change', () => applyTypeDependentFields(row));
+        }
+      });
+    })();
+  </script>
 </div>

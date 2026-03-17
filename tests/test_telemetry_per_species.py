@@ -99,7 +99,7 @@ class TestPerSpeciesTelemetry:
         assert abs(row["plant_energy_by_species"][0] - 60.0) < 1e-6
 
     def test_swarm_population_by_species(self) -> None:
-        """Per-species predator headcounts accumulate all individuals across all clusters."""
+        """Per-species herbivore headcounts accumulate all individuals across all clusters."""
         world = ECSWorld()
         e1 = world.create_entity()
         e2 = world.create_entity()

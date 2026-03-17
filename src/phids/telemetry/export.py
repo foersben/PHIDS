@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 # Palette for per-species Chart.js / matplotlib series
 # ---------------------------------------------------------------------------
 _FLORA_COLOURS = ["#22c55e", "#84cc16", "#10b981", "#4ade80", "#a3e635"]
-_PREDATOR_COLOURS = ["#ef4444", "#f97316", "#ec4899", "#f43f5e", "#fb923c"]
+_HERBIVORE_COLOURS = ["#ef4444", "#f97316", "#ec4899", "#f43f5e", "#fb923c"]
 
 
 def _append_species_id(csv_ids: str | None, species_id: int) -> str:
@@ -107,21 +107,21 @@ def filter_telemetry_rows(
     rows: list[dict[str, Any]],
     *,
     flora_ids: str | None = None,
-    predator_ids: str | None = None,
+    herbivore_ids: str | None = None,
 ) -> list[dict[str, Any]]:
     """Filter per-species nested telemetry dictionaries by id.
 
     Args:
         rows: Raw telemetry rows.
         flora_ids: Optional CSV flora species-id list.
-        predator_ids: Optional CSV predator species-id list.
+        herbivore_ids: Optional CSV herbivore species-id list.
 
     Returns:
         list[dict[str, Any]]: Row list with filtered species dictionaries.
     """
     flora_keep = _parse_species_ids(flora_ids)
-    predator_keep = _parse_species_ids(predator_ids)
-    if flora_keep is None and predator_keep is None:
+    herbivore_keep = _parse_species_ids(herbivore_ids)
+    if flora_keep is None and herbivore_keep is None:
         return rows
 
     filtered: list[dict[str, Any]] = []
@@ -143,11 +143,11 @@ def filter_telemetry_rows(
                 for sid, val in row.get("defense_cost_by_species", {}).items()
                 if int(sid) in flora_keep
             }
-        if predator_keep is not None:
+        if herbivore_keep is not None:
             clone["swarm_pop_by_species"] = {
                 sid: val
                 for sid, val in row.get("swarm_pop_by_species", {}).items()
-                if int(sid) in predator_keep
+                if int(sid) in herbivore_keep
             }
         filtered.append(clone)
     return filtered
@@ -276,7 +276,7 @@ def telemetry_to_dataframe(rows: list[dict[str, Any]]) -> "pd.DataFrame":
         flat_rows.append(flat)
 
     logger.debug(
-        "telemetry_to_dataframe: %d rows, %d flora species, %d predator species",
+        "telemetry_to_dataframe: %d rows, %d flora species, %d herbivore species",
         len(rows),
         len(all_flora_ids),
         len(all_swarm_ids),
@@ -294,11 +294,11 @@ def generate_png_bytes(
     plot_type: str = "timeseries",
     *,
     flora_names: dict[int, str] | None = None,
-    predator_names: dict[int, str] | None = None,
+    herbivore_names: dict[int, str] | None = None,
     prey_species_id: int = 0,
-    predator_species_id: int = 0,
+    herbivore_species_id: int = 0,
     include_flora_ids: str | None = None,
-    include_predator_ids: str | None = None,
+    include_herbivore_ids: str | None = None,
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
@@ -310,12 +310,12 @@ def generate_png_bytes(
 
     Supports five ``plot_type`` modes:
 
-    * ``"timeseries"`` — Overlaid line chart with one series per flora and predator
+    * ``"timeseries"`` — Overlaid line chart with one series per flora and herbivore
       species, sharing a common tick x-axis and a left y-axis for population counts.
       Total flora energy is plotted on a secondary y-axis.
     * ``"phasespace"`` — Lotka-Volterra phase-space scatter with ``showLine=True``
       semantics, plotting the aggregate population of ``prey_species_id`` flora on
-      the x-axis and the aggregate population of ``predator_species_id`` herbivores
+      the x-axis and the aggregate population of ``herbivore_species_id`` herbivores
       on the y-axis as a connected trajectory through time, revealing orbital cycles.
     * ``"defense_economy"`` — Per-species ratio of defense maintenance cost to
       per-species stored plant energy.
@@ -332,9 +332,9 @@ def generate_png_bytes(
             ``"defense_economy"``, ``"biomass_stack"``, or
             ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
-        predator_names: Optional display names keyed by predator species id.
+        herbivore_names: Optional display names keyed by herbivore species id.
         prey_species_id: Flora species id for phase-space x-axis.
-        predator_species_id: Predator species id for phase-space y-axis.
+        herbivore_species_id: Herbivore species id for phase-space y-axis.
         dpi: Output resolution in dots per inch.
 
     Returns:
@@ -349,11 +349,11 @@ def generate_png_bytes(
     import matplotlib.pyplot as plt
 
     flora_filter = include_flora_ids
-    predator_filter = include_predator_ids
+    herbivore_filter = include_herbivore_ids
     if plot_type == "phasespace":
         flora_filter = _append_species_id(flora_filter, prey_species_id)
-        predator_filter = _append_species_id(predator_filter, predator_species_id)
-    plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, predator_ids=predator_filter)
+        herbivore_filter = _append_species_id(herbivore_filter, herbivore_species_id)
+    plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, herbivore_ids=herbivore_filter)
     fig, ax = plt.subplots(figsize=(10, 5), dpi=dpi)
 
     if not plot_rows:
@@ -371,7 +371,7 @@ def generate_png_bytes(
             plot_rows,
             ticks,
             flora_names=flora_names,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             title=title,
             x_label=x_label,
             y_label=y_label,
@@ -381,9 +381,9 @@ def generate_png_bytes(
             ax,
             plot_rows,
             prey_species_id=prey_species_id,
-            predator_species_id=predator_species_id,
+            herbivore_species_id=herbivore_species_id,
             flora_names=flora_names,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             title=title,
             x_label=x_label,
             y_label=y_label,
@@ -442,7 +442,7 @@ def _plot_timeseries(
     ticks: list[int],
     *,
     flora_names: dict[int, str] | None,
-    predator_names: dict[int, str] | None,
+    herbivore_names: dict[int, str] | None,
     title: str | None,
     x_label: str | None,
     y_label: str | None,
@@ -454,7 +454,7 @@ def _plot_timeseries(
         rows: Raw telemetry rows.
         ticks: Tick index list aligned with ``rows``.
         flora_names: Optional display names for flora species.
-        predator_names: Optional display names for predator species.
+        herbivore_names: Optional display names for herbivore species.
     """
     all_flora: set[int] = set()
     all_pred: set[int] = set()
@@ -469,8 +469,8 @@ def _plot_timeseries(
         ax.plot(ticks, y, color=colour, linewidth=1.5, label=name)
 
     for i, pid in enumerate(sorted(all_pred)):
-        colour = _PREDATOR_COLOURS[i % len(_PREDATOR_COLOURS)]
-        name = (predator_names or {}).get(pid, f"Predator {pid}")
+        colour = _HERBIVORE_COLOURS[i % len(_HERBIVORE_COLOURS)]
+        name = (herbivore_names or {}).get(pid, f"Herbivore {pid}")
         y = [r.get("swarm_pop_by_species", {}).get(pid, 0) for r in rows]
         ax.plot(ticks, y, color=colour, linewidth=1.5, linestyle="--", label=name)
 
@@ -486,9 +486,9 @@ def _plot_phasespace(
     rows: list[dict[str, Any]],
     *,
     prey_species_id: int,
-    predator_species_id: int,
+    herbivore_species_id: int,
     flora_names: dict[int, str] | None,
-    predator_names: dict[int, str] | None,
+    herbivore_names: dict[int, str] | None,
     title: str | None,
     x_label: str | None,
     y_label: str | None,
@@ -501,15 +501,18 @@ def _plot_phasespace(
         ax: Matplotlib Axes instance.
         rows: Raw telemetry rows.
         prey_species_id: Flora species id to use as x-axis.
-        predator_species_id: Predator species id to use as y-axis.
+        herbivore_species_id: Herbivore species id to use as y-axis.
         flora_names: Optional display names for flora species.
-        predator_names: Optional display names for predator species.
+        herbivore_names: Optional display names for herbivore species.
     """
     x = [r.get("plant_pop_by_species", {}).get(prey_species_id, 0) for r in rows]
-    y = [r.get("swarm_pop_by_species", {}).get(predator_species_id, 0) for r in rows]
+    y = [r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0) for r in rows]
 
     prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
-    pred_name = (predator_names or {}).get(predator_species_id, f"Predator {predator_species_id}")
+    herbivore_name = (herbivore_names or {}).get(
+        herbivore_species_id,
+        f"Herbivore {herbivore_species_id}",
+    )
 
     n = len(x)
     if n > 0:
@@ -520,7 +523,7 @@ def _plot_phasespace(
         ax.plot(x[-1], y[-1], "rs", markersize=8, label="End", zorder=4)
 
     ax.set_xlabel(x_label or f"Population - {prey_name}")
-    ax.set_ylabel(y_label or f"Population - {pred_name}")
+    ax.set_ylabel(y_label or f"Population - {herbivore_name}")
     ax.set_title(title or "PHIDS - Lotka-Volterra Phase Space")
     if x_max is not None and x_max > 0:
         ax.set_xlim(0, float(x_max))
@@ -658,11 +661,11 @@ def generate_tikz_str(
     plot_type: str = "timeseries",
     *,
     flora_names: dict[int, str] | None = None,
-    predator_names: dict[int, str] | None = None,
+    herbivore_names: dict[int, str] | None = None,
     prey_species_id: int = 0,
-    predator_species_id: int = 0,
+    herbivore_species_id: int = 0,
     include_flora_ids: str | None = None,
-    include_predator_ids: str | None = None,
+    include_herbivore_ids: str | None = None,
     title: str | None = None,
     x_label: str | None = None,
     y_label: str | None = None,
@@ -687,9 +690,9 @@ def generate_tikz_str(
             ``"defense_economy"``, ``"biomass_stack"``, or
             ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
-        predator_names: Optional display names keyed by predator species id.
+        herbivore_names: Optional display names keyed by herbivore species id.
         prey_species_id: Flora species id for phase-space x-axis.
-        predator_species_id: Predator species id for phase-space y-axis.
+        herbivore_species_id: Herbivore species id for phase-space y-axis.
 
     Returns:
         str: LaTeX source code for a complete ``tikzpicture`` environment.
@@ -698,16 +701,16 @@ def generate_tikz_str(
         ValueError: If ``plot_type`` is not a supported chart mode.
     """
     flora_filter = include_flora_ids
-    predator_filter = include_predator_ids
+    herbivore_filter = include_herbivore_ids
     if plot_type == "phasespace":
         flora_filter = _append_species_id(flora_filter, prey_species_id)
-        predator_filter = _append_species_id(predator_filter, predator_species_id)
-    plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, predator_ids=predator_filter)
+        herbivore_filter = _append_species_id(herbivore_filter, herbivore_species_id)
+    plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, herbivore_ids=herbivore_filter)
     if plot_type == "timeseries":
         return _tikz_timeseries(
             plot_rows,
             flora_names=flora_names,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             title=title,
             x_label=x_label,
             y_label=y_label,
@@ -716,9 +719,9 @@ def generate_tikz_str(
         return _tikz_phasespace(
             plot_rows,
             prey_species_id=prey_species_id,
-            predator_species_id=predator_species_id,
+            herbivore_species_id=herbivore_species_id,
             flora_names=flora_names,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             title=title,
             x_label=x_label,
             y_label=y_label,
@@ -760,7 +763,7 @@ def _tikz_timeseries(
     rows: list[dict[str, Any]],
     *,
     flora_names: dict[int, str] | None,
-    predator_names: dict[int, str] | None,
+    herbivore_names: dict[int, str] | None,
     title: str | None,
     x_label: str | None,
     y_label: str | None,
@@ -770,19 +773,25 @@ def _tikz_timeseries(
     Args:
         rows: Raw telemetry rows.
         flora_names: Optional display names for flora species.
-        predator_names: Optional display names for predator species.
+        herbivore_names: Optional display names for herbivore species.
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
     """
     all_flora: set[int] = set()
-    all_pred: set[int] = set()
+    all_herbivores: set[int] = set()
     for r in rows:
         all_flora.update(r.get("plant_pop_by_species", {}).keys())
-        all_pred.update(r.get("swarm_pop_by_species", {}).keys())
+        all_herbivores.update(r.get("swarm_pop_by_species", {}).keys())
 
     flora_colours = ["green!60!black", "lime!80!black", "teal", "green!40!black", "olive"]
-    pred_colours = ["red!70!black", "orange!80!black", "magenta!60!black", "pink!60!black", "brown"]
+    herbivore_colours = [
+        "red!70!black",
+        "orange!80!black",
+        "magenta!60!black",
+        "pink!60!black",
+        "brown",
+    ]
 
     plots = []
     for i, fid in enumerate(sorted(all_flora)):
@@ -796,9 +805,9 @@ def _tikz_timeseries(
             f"    \\addlegendentry{{{name}}}"
         )
 
-    for i, pid in enumerate(sorted(all_pred)):
-        colour = pred_colours[i % len(pred_colours)]
-        name = (predator_names or {}).get(pid, f"Predator {pid}")
+    for i, pid in enumerate(sorted(all_herbivores)):
+        colour = herbivore_colours[i % len(herbivore_colours)]
+        name = (herbivore_names or {}).get(pid, f"Herbivore {pid}")
         coords = " ".join(
             f"({r['tick']},{r.get('swarm_pop_by_species', {}).get(pid, 0)})" for r in rows
         )
@@ -825,9 +834,9 @@ def _tikz_phasespace(
     rows: list[dict[str, Any]],
     *,
     prey_species_id: int,
-    predator_species_id: int,
+    herbivore_species_id: int,
     flora_names: dict[int, str] | None,
-    predator_names: dict[int, str] | None,
+    herbivore_names: dict[int, str] | None,
     title: str | None,
     x_label: str | None,
     y_label: str | None,
@@ -839,19 +848,22 @@ def _tikz_phasespace(
     Args:
         rows: Raw telemetry rows.
         prey_species_id: Flora species id for x-axis.
-        predator_species_id: Predator species id for y-axis.
+        herbivore_species_id: Herbivore species id for y-axis.
         flora_names: Optional display names for flora species.
-        predator_names: Optional display names for predator species.
+        herbivore_names: Optional display names for herbivore species.
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
     """
     prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
-    pred_name = (predator_names or {}).get(predator_species_id, f"Predator {predator_species_id}")
+    herbivore_name = (herbivore_names or {}).get(
+        herbivore_species_id,
+        f"Herbivore {herbivore_species_id}",
+    )
 
     coords = " ".join(
         f"({r.get('plant_pop_by_species', {}).get(prey_species_id, 0)},"
-        f"{r.get('swarm_pop_by_species', {}).get(predator_species_id, 0)})"
+        f"{r.get('swarm_pop_by_species', {}).get(herbivore_species_id, 0)})"
         for r in rows
     )
 
@@ -862,7 +874,7 @@ def _tikz_phasespace(
         "\\begin{tikzpicture}\n"
         "\\begin{axis}[\n"
         f"    xlabel={{{x_label or (prey_name + ' Population')}}},\n"
-        f"    ylabel={{{y_label or (pred_name + ' Population')}}},\n"
+        f"    ylabel={{{y_label or (herbivore_name + ' Population')}}},\n"
         f"    title={{{title or 'PHIDS -- Lotka-Volterra Phase Space'}}},\n"
         + x_bound
         + y_bound
@@ -1028,7 +1040,7 @@ def export_bytes_tex_table(
     *,
     columns: str | None = None,
     include_flora_ids: str | None = None,
-    include_predator_ids: str | None = None,
+    include_herbivore_ids: str | None = None,
     tick_interval: int = 1,
 ) -> bytes:
     """Render the telemetry rows as a booktabs LaTeX tabular environment.
@@ -1046,7 +1058,7 @@ def export_bytes_tex_table(
         bytes: UTF-8 encoded LaTeX ``tabular`` source.
     """
     filtered_rows = filter_telemetry_rows(
-        rows, flora_ids=include_flora_ids, predator_ids=include_predator_ids
+        rows, flora_ids=include_flora_ids, herbivore_ids=include_herbivore_ids
     )
     df = telemetry_to_dataframe(filtered_rows)
     df = filter_dataframe_columns(df, columns)
@@ -1066,7 +1078,7 @@ def aggregate_to_dataframe(
     aggregate: dict[str, Any],
     *,
     flora_names: dict[int, str] | None = None,
-    predator_names: dict[int, str] | None = None,
+    herbivore_names: dict[int, str] | None = None,
 ) -> "pd.DataFrame":
     """Convert a batch aggregate summary dict to a wide pandas DataFrame.
 
@@ -1076,10 +1088,10 @@ def aggregate_to_dataframe(
 
     Args:
         aggregate: Dict with keys ``ticks``, ``flora_population_mean``,
-            ``flora_population_std``, ``predator_population_mean``,
-            ``predator_population_std``, and optionally per-species series.
+            ``flora_population_std``, ``herbivore_population_mean``,
+            ``herbivore_population_std``, and optionally per-species series.
         flora_names: Optional display name mapping for flora species.
-        predator_names: Optional display name mapping for predator species.
+        herbivore_names: Optional display name mapping for herbivore species.
 
     Returns:
         pd.DataFrame: Wide-format DataFrame ready for export.
@@ -1093,8 +1105,10 @@ def aggregate_to_dataframe(
     data: dict[str, Any] = {"tick": ticks}
     data["flora_population_mean"] = aggregate.get("flora_population_mean", [0.0] * len(ticks))
     data["flora_population_std"] = aggregate.get("flora_population_std", [0.0] * len(ticks))
-    data["predator_population_mean"] = aggregate.get("predator_population_mean", [0.0] * len(ticks))
-    data["predator_population_std"] = aggregate.get("predator_population_std", [0.0] * len(ticks))
+    data["herbivore_population_mean"] = aggregate.get(
+        "herbivore_population_mean", [0.0] * len(ticks)
+    )
+    data["herbivore_population_std"] = aggregate.get("herbivore_population_std", [0.0] * len(ticks))
 
     for fid, series_mean in aggregate.get("per_flora_pop_mean", {}).items():
         name = (flora_names or {}).get(int(fid), f"flora_{fid}")
@@ -1102,10 +1116,10 @@ def aggregate_to_dataframe(
         series_std = aggregate.get("per_flora_pop_std", {}).get(fid, [0.0] * len(ticks))
         data[f"{name}_pop_std"] = series_std
 
-    for pid, series_mean in aggregate.get("per_predator_pop_mean", {}).items():
-        name = (predator_names or {}).get(int(pid), f"predator_{pid}")
+    for pid, series_mean in aggregate.get("per_herbivore_pop_mean", {}).items():
+        name = (herbivore_names or {}).get(int(pid), f"herbivore_{pid}")
         data[f"{name}_pop_mean"] = series_mean
-        series_std = aggregate.get("per_predator_pop_std", {}).get(pid, [0.0] * len(ticks))
+        series_std = aggregate.get("per_herbivore_pop_std", {}).get(pid, [0.0] * len(ticks))
         data[f"{name}_pop_std"] = series_std
 
     return pd.DataFrame(data)

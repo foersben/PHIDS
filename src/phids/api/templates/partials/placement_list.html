@@ -40,8 +40,8 @@
         ({{ s.x }},{{ s.y }})
       </span>
       <span class="text-slate-600 ml-1">
-        {% for pp in predator_species %}
-          {% if pp.species_id == s.species_id %}{{ pp.name }}{% endif %}
+        {% for hp in herbivore_species %}
+          {% if hp.species_id == s.species_id %}{{ hp.name }}{% endif %}
         {% endfor %}
       </span>
       <span class="text-slate-400 ml-1">n={{ s.population }} E={{ s.energy }}</span>

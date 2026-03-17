@@ -35,7 +35,7 @@ Fixed-precision float formatting in table exports keeps output widths stable for
 
 ## Interpreting Aggregate Outputs
 
-Timeseries outputs combine mean trajectories for flora and predators with standard-deviation envelopes. Survival outputs represent per-tick persistence probability and are best interpreted as time-local collapse risk, not only terminal extinction count. This distinction helps differentiate early fragile regimes from late-run instability under the same final outcome class.
+Timeseries outputs combine mean trajectories for flora and herbivores with standard-deviation envelopes. Survival outputs represent per-tick persistence probability and are best interpreted as time-local collapse risk, not only terminal extinction count. This distinction helps differentiate early fragile regimes from late-run instability under the same final outcome class.
 
 ## Verification Anchors
 

@@ -12,7 +12,7 @@ from typing import cast
 import pytest
 
 from phids.api.services.draft_service import DraftService
-from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams, SimulationConfig
+from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams, SimulationConfig
 from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
@@ -47,10 +47,10 @@ def _flora(species_id: int, name: str | None = None) -> FloraSpeciesParams:
     )
 
 
-def _predator(species_id: int, name: str | None = None) -> PredatorSpeciesParams:
-    return PredatorSpeciesParams(
+def _herbivore(species_id: int, name: str | None = None) -> HerbivoreSpeciesParams:
+    return HerbivoreSpeciesParams(
         species_id=species_id,
-        name=name or f"predator-{species_id}",
+        name=name or f"herbivore-{species_id}",
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.5,
@@ -107,12 +107,12 @@ def test_condition_helper_utilities_and_type_labels() -> None:
 
     assert _default_activation_condition_node(
         "enemy_presence",
-        predator_species_id=3,
-        min_predator_population=0,
+        herbivore_species_id=3,
+        min_herbivore_population=0,
     ) == {
         "kind": "enemy_presence",
-        "predator_species_id": 3,
-        "min_predator_population": 1,
+        "herbivore_species_id": 3,
+        "min_herbivore_population": 1,
     }
     assert _default_activation_condition_node("substance_active", substance_id=7) == {
         "kind": "substance_active",
@@ -120,10 +120,10 @@ def test_condition_helper_utilities_and_type_labels() -> None:
     }
     group_node = cast(
         dict[str, object],
-        _default_activation_condition_node("all_of", predator_species_id=2),
+        _default_activation_condition_node("all_of", herbivore_species_id=2),
     )
     group_conditions = cast(list[dict[str, object]], group_node["conditions"])
-    assert group_conditions[0]["predator_species_id"] == 2
+    assert group_conditions[0]["herbivore_species_id"] == 2
     assert _default_activation_condition_node("any_of")["kind"] == "any_of"
 
     with pytest.raises(ValueError):
@@ -148,15 +148,15 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
     root = {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 2},
+            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 2},
             {
                 "kind": "any_of",
                 "conditions": [
                     {"kind": "substance_active", "substance_id": 3},
                     {
                         "kind": "enemy_presence",
-                        "predator_species_id": 2,
-                        "min_predator_population": 4,
+                        "herbivore_species_id": 2,
+                        "min_herbivore_population": 4,
                     },
                 ],
             },
@@ -193,7 +193,7 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
 
     remapped = _remap_condition_references(
         deepcopy(root),
-        removed_predator_id=1,
+        removed_herbivore_id=1,
         removed_substance_id=2,
     )
     assert remapped == {
@@ -205,8 +205,8 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
                     {"kind": "substance_active", "substance_id": 2},
                     {
                         "kind": "enemy_presence",
-                        "predator_species_id": 1,
-                        "min_predator_population": 4,
+                        "herbivore_species_id": 1,
+                        "min_herbivore_population": 4,
                     },
                 ],
             }
@@ -214,8 +214,8 @@ def test_condition_tree_navigation_pruning_and_remap() -> None:
     }
     assert (
         _remap_condition_references(
-            {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 1},
-            removed_predator_id=0,
+            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 1},
+            removed_herbivore_id=0,
         )
         is None
     )
@@ -241,21 +241,21 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
         None. Asserts correctness of species mutation, rule compaction, and diet matrix resizing.
 
     Raises:
-        ValueError: If removal is attempted for non-existent flora or predator species, validating architectural error handling for mutation operations.
+        ValueError: If removal is attempted for non-existent flora or herbivore species, validating architectural error handling for mutation operations.
     """
     draft = DraftState(
         flora_species=[_flora(0, "A"), _flora(1, "B")],
-        predator_species=[_predator(0, "P0"), _predator(1, "P1")],
+        herbivore_species=[_herbivore(0, "H0"), _herbivore(1, "H1")],
         diet_matrix=[[True, False], [False, True]],
         trigger_rules=[
             TriggerRule(
                 flora_species_id=1,
-                predator_species_id=1,
+                herbivore_species_id=1,
                 substance_id=0,
                 activation_condition={
                     "kind": "enemy_presence",
-                    "predator_species_id": 1,
-                    "min_predator_population": 2,
+                    "herbivore_species_id": 1,
+                    "min_herbivore_population": 2,
                 },
             )
         ],
@@ -269,22 +269,22 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
     assert draft.diet_matrix == [[False], [True]]
     assert draft.trigger_rules[0].flora_species_id == 0
 
-    draft_service.remove_predator(draft, 0)
+    draft_service.remove_herbivore(draft, 0)
     assert [
-        cast(PredatorSpeciesParams, predator).species_id for predator in draft.predator_species
+        cast(HerbivoreSpeciesParams, herbivore).species_id for herbivore in draft.herbivore_species
     ] == [0]
     assert draft.diet_matrix == [[True]]
-    assert draft.trigger_rules[0].predator_species_id == 0
+    assert draft.trigger_rules[0].herbivore_species_id == 0
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "enemy_presence",
-        "predator_species_id": 0,
-        "min_predator_population": 2,
+        "herbivore_species_id": 0,
+        "min_herbivore_population": 2,
     }
 
     with pytest.raises(ValueError):
         draft_service.remove_flora(draft, 99)
     with pytest.raises(ValueError):
-        draft_service.remove_predator(draft, 99)
+        draft_service.remove_herbivore(draft, 99)
 
 
 def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> None:
@@ -293,7 +293,7 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
 
     This experiment verifies the architectural boundary now concentrated in ``DraftService`` for
     three previously scattered mutation families: scalar biotope normalization, bounded chemical
-    registry editing, and predator-flora edibility toggles. The assertions ensure that Rule-of-16
+    registry editing, and herbivore-flora edibility toggles. The assertions ensure that Rule-of-16
     substance ceilings remain enforced, deleted substance identifiers are compacted deterministically,
     precursor and activation-condition references are remapped consistently, and diet toggles mutate
     only valid matrix coordinates. The resulting invariants preserve a coherent draft-to-schema
@@ -341,9 +341,9 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
         num_signals=99,
         num_toxins=0,
         z2_flora_species_extinction=99,
-        z4_predator_species_extinction=-5,
+        z4_herbivore_species_extinction=-5,
         z6_max_total_flora_energy=-2.0,
-        z7_max_total_predator_population=-9,
+        z7_max_total_herbivore_population=-9,
         mycorrhizal_inter_species=True,
         mycorrhizal_connection_cost=-2.0,
         mycorrhizal_growth_interval_ticks=0,
@@ -359,9 +359,9 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     assert draft.num_signals == 16
     assert draft.num_toxins == 1
     assert draft.z2_flora_species_extinction == 15
-    assert draft.z4_predator_species_extinction == -1
+    assert draft.z4_herbivore_species_extinction == -1
     assert draft.z6_max_total_flora_energy == pytest.approx(-1.0)
-    assert draft.z7_max_total_predator_population == -1
+    assert draft.z7_max_total_herbivore_population == -1
     assert draft.mycorrhizal_inter_species is True
     assert draft.mycorrhizal_connection_cost == pytest.approx(0.0)
     assert draft.mycorrhizal_growth_interval_ticks == 1
@@ -453,11 +453,11 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
         draft,
         0,
         substance_id=1,
-        min_predator_population=7,
+        min_herbivore_population=7,
         required_signal_ids=[1],
     )
     assert draft.trigger_rules[0].substance_id == 1
-    assert draft.trigger_rules[0].min_predator_population == 7
+    assert draft.trigger_rules[0].min_herbivore_population == 7
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "substance_active",
         "substance_id": 1,
@@ -469,7 +469,7 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
         {
             "kind": "all_of",
             "conditions": [
-                {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 2}
+                {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 2}
             ],
         },
     )
@@ -479,18 +479,18 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
         "",
         {"kind": "substance_active", "substance_id": 1},
     )
-    draft_service.update_trigger_rule_condition_node(draft, 0, "0", min_predator_population=3)
+    draft_service.update_trigger_rule_condition_node(draft, 0, "0", min_herbivore_population=3)
     draft_service.replace_trigger_rule_condition_node(
         draft,
         0,
         "1",
-        {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 4},
+        {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 4},
     )
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 3},
-            {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 4},
+            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 3},
+            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 4},
         ],
     }
 
@@ -498,7 +498,7 @@ def test_draft_trigger_rule_tree_mutators_cover_error_paths() -> None:
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 3}
+            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 3}
         ],
     }
     draft_service.delete_trigger_rule_condition_node(draft, 0, "")
@@ -537,7 +537,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     Raises:
         ValueError: If config building is attempted with empty species lists, validating architectural error handling for scenario construction.
     """
-    empty_draft = DraftState(flora_species=[], predator_species=[])
+    empty_draft = DraftState(flora_species=[], herbivore_species=[])
     with pytest.raises(ValueError):
         empty_draft.build_sim_config()
 
@@ -548,21 +548,21 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
         0,
         0,
         0,
-        min_predator_population=5,
+        min_herbivore_population=5,
         activation_condition={
             "kind": "enemy_presence",
-            "predator_species_id": 0,
-            "min_predator_population": 5,
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 5,
         },
     )
     draft.trigger_rules.append(
-        TriggerRule(flora_species_id=0, predator_species_id=0, substance_id=99)
+        TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=99)
     )
     draft.mycorrhizal_growth_interval_ticks = 11
     draft.z2_flora_species_extinction = 0
-    draft.z4_predator_species_extinction = 0
+    draft.z4_herbivore_species_extinction = 0
     draft.z6_max_total_flora_energy = 123.0
-    draft.z7_max_total_predator_population = 77
+    draft.z7_max_total_herbivore_population = 77
 
     draft_service.add_plant_placement(draft, 0, 1, 2, 7.5)
     draft_service.add_swarm_placement(draft, 0, 3, 4, 6, 12.0)
@@ -574,9 +574,9 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     config = cast(SimulationConfig, draft.build_sim_config())
     assert config.mycorrhizal_growth_interval_ticks == 11
     assert config.z2_flora_species_extinction == 0
-    assert config.z4_predator_species_extinction == 0
+    assert config.z4_herbivore_species_extinction == 0
     assert config.z6_max_total_flora_energy == pytest.approx(123.0)
-    assert config.z7_max_total_predator_population == 77
+    assert config.z7_max_total_herbivore_population == 77
     assert len(config.flora_species[0].triggers) == 1
     assert config.initial_plants[0].x == 2
     assert config.initial_swarms[0].population == 4

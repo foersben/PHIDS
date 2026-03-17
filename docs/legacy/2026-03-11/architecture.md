@@ -111,7 +111,7 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A([Tick Start]) --> B{Predator at plant cell?<br/>via Spatial Hash O1}
+    A([Tick Start]) --> B{Herbivore at plant cell?<br/>via Spatial Hash O1}
     B -- No --> END([No synthesis])
     B -- Yes --> C{population ≥ n_i,min?}
     C -- No --> END

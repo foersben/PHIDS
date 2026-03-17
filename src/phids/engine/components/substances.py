@@ -7,14 +7,14 @@ signal layers for detection by neighbouring plants, or a defensive toxin emitted
 layers to deter, repel, or kill co-located herbivore swarms. The substance lifecycle consists of
 a configurable synthesis delay (``synthesis_duration`` ticks during which the plant invests
 metabolic resources), followed by an active emission phase, and an optional aftereffect window
-(``aftereffect_ticks``) during which emission persists after the triggering predator has
+(``aftereffect_ticks``) during which emission persists after the triggering herbivore has
 departed.
 
 Substances are dynamically created by the signaling system when a ``TriggerConditionSchema``
 rule is satisfied, and are garbage-collected when their owner plant dies or when the aftereffect
 window expires and the trigger condition is no longer met. The ``irreversible`` flag encodes
 constitutive systemic acquired resistance: once activated, the substance remains permanently
-emitting until owner death, regardless of subsequent predator presence. The nested
+emitting until owner death, regardless of subsequent herbivore presence. The nested
 ``activation_condition`` predicate tree enables compound chemical-defense cascades, such as
 alarm-chain scenarios in which a secondary toxin activates only after a primary VOC signal is
 already present, modelling coordinated multi-species defense networks.
@@ -74,6 +74,6 @@ class SubstanceComponent:
     activation_condition: dict[str, object] | None = None
     energy_cost_per_tick: float = 0.0
     irreversible: bool = False
-    trigger_predator_species_id: int = -1
-    trigger_min_predator_population: int = 0
+    trigger_herbivore_species_id: int = -1
+    trigger_min_herbivore_population: int = 0
     triggered_this_tick: bool = False

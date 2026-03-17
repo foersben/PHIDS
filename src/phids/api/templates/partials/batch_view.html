@@ -37,7 +37,7 @@
         <select id="batch-chart-preset" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]">
           <option value="balanced" selected>Balanced overview</option>
           <option value="collapse_risk">Collapse risk focus</option>
-          <option value="predator_pressure">Predator pressure focus</option>
+          <option value="herbivore_pressure">Herbivore pressure focus</option>
           <option value="survival_only">Survival probability only</option>
         </select>
       </label>
@@ -70,8 +70,8 @@
           <option value="tick" selected>tick</option>
           <option value="flora_population_mean" selected>flora_population_mean</option>
           <option value="flora_population_std" selected>flora_population_std</option>
-          <option value="predator_population_mean" selected>predator_population_mean</option>
-          <option value="predator_population_std" selected>predator_population_std</option>
+          <option value="herbivore_population_mean" selected>herbivore_population_mean</option>
+          <option value="herbivore_population_std" selected>herbivore_population_std</option>
         </select>
       </label>
       <div class="text-[11px] text-slate-500 self-end">Hold <code>Ctrl</code>/<code>Cmd</code> to select multiple columns.</div>
@@ -119,8 +119,8 @@
     const labels = agg.ticks;
     const floraMean = agg.flora_population_mean || [];
     const floraStd = agg.flora_population_std || [];
-    const predMean = agg.predator_population_mean || [];
-    const predStd = agg.predator_population_std || [];
+    const predMean = agg.herbivore_population_mean || [];
+    const predStd = agg.herbivore_population_std || [];
     const survivalSeries = (agg.survival_probability_curve || []).map((v) => 100.0 * v);
 
     const ctx = document.getElementById('batch-agg-chart');
@@ -143,9 +143,9 @@
           { label: 'Flora mean', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0 },
           { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
           { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Predator mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
-          { label: 'Predator +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Predator -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Herbivore mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
+          { label: 'Herbivore +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Herbivore -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
         ],
       },
       options: {
@@ -223,8 +223,8 @@
         tick: 'Tick',
         flora_population_mean: 'Flora mean',
         flora_population_std: 'Flora std',
-        predator_population_mean: 'Predator mean',
-        predator_population_std: 'Predator std',
+        herbivore_population_mean: 'Herbivore mean',
+        herbivore_population_std: 'Herbivore std',
       };
       let html = '<table class="min-w-full text-[11px]">';
       html += '<thead class="sticky top-0 bg-slate-100 text-slate-600"><tr>';
@@ -239,8 +239,8 @@
           if (col === 'tick') v = String(labels[i]);
           if (col === 'flora_population_mean') v = (floraMean[i] || 0).toFixed(2);
           if (col === 'flora_population_std') v = (floraStd[i] || 0).toFixed(2);
-          if (col === 'predator_population_mean') v = (predMean[i] || 0).toFixed(2);
-          if (col === 'predator_population_std') v = (predStd[i] || 0).toFixed(2);
+          if (col === 'herbivore_population_mean') v = (predMean[i] || 0).toFixed(2);
+          if (col === 'herbivore_population_std') v = (predStd[i] || 0).toFixed(2);
           html += `<td class="px-2 py-1 border-b border-slate-100">${v}</td>`;
         });
         html += `<td class="px-2 py-1 border-b border-slate-100">${surv.toFixed(1)}</td></tr>`;
@@ -264,12 +264,12 @@
       chart.data.datasets.forEach((ds) => { ds.hidden = false; });
       survivalWrap.classList.remove('hidden');
       if (preset === 'collapse_risk') {
-        // hide predator series, keep flora and survival
+        // hide herbivore series, keep flora and survival
         chart.data.datasets[3].hidden = true;
         chart.data.datasets[4].hidden = true;
         chart.data.datasets[5].hidden = true;
       }
-      if (preset === 'predator_pressure') {
+      if (preset === 'herbivore_pressure') {
         // keep means only
         chart.data.datasets[1].hidden = true;
         chart.data.datasets[2].hidden = true;

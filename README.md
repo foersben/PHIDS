@@ -75,7 +75,7 @@ follows explicit structural rules:
   are not accepted for grid math.
 - **Buffered environmental updates**: field-level read/write discipline is enforced where diffusion
   and field aggregation require deterministic visibility.
-- **Rule of 16 caps**: flora, predators, and substances are bounded to pre-allocated maximum
+- **Rule of 16 caps**: flora, herbivores, and substances are bounded to pre-allocated maximum
   dimensions (`src/phids/shared/constants.py`).
 - **O(1) locality checks**: interaction and signaling must use spatial hash lookups rather than
   O(N^2) global scans.
@@ -126,7 +126,7 @@ The batch detail pane exposes:
 - `Charts` tab with mean±sigma trajectory overlays and survival-probability curve;
 - `Data Grid` tab with column projection and tick-stride decimation controls;
 - explicit `Apply Chart Settings` and `Apply Table Settings` actions for deterministic UI state transitions;
-- chart presets (`Balanced overview`, `Collapse risk focus`, `Predator pressure focus`, `Survival probability only`) for rapid comparative evaluation;
+- chart presets (`Balanced overview`, `Collapse risk focus`, `Herbivore pressure focus`, `Survival probability only`) for rapid comparative evaluation;
 - export controls for `CSV`, `LaTeX table`, and `TikZ` with metadata overrides (including survival-focused TikZ export when the survival preset is active).
 
 Telemetry retention is intentionally bounded (`MAX_TELEMETRY_TICKS = 10000`) and table previews

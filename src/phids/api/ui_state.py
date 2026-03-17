@@ -33,7 +33,7 @@ class SubstanceDefinition:
     """Named substance with physical/biological properties.
 
     A substance definition captures how a chemical behaves once produced.
-    The trigger matrix separately records *which* (flora, predator) pair
+    The trigger matrix separately records *which* (flora, herbivore) pair
     activates synthesis.
 
     Args:
@@ -50,7 +50,7 @@ class SubstanceDefinition:
         energy_cost_per_tick: Energy drained from the plant per active tick.
         irreversible: Keep the substance active permanently once activated.
         precursor_signal_id: Signal id required before activation (−1 = none).
-        min_predator_population: Minimum swarm size to trigger synthesis.
+        min_herbivore_population: Minimum swarm size to trigger synthesis.
     """
 
     substance_id: int
@@ -65,7 +65,7 @@ class SubstanceDefinition:
     energy_cost_per_tick: float = 1.0
     irreversible: bool = False
     precursor_signal_id: int = -1
-    min_predator_population: int = 5
+    min_herbivore_population: int = 5
 
     @property
     def type_label(self) -> str:
@@ -111,7 +111,7 @@ class PlacedSwarm:
     """A herbivore swarm placed on the grid before the simulation starts.
 
     Args:
-        species_id: Predator species index.
+        species_id: Herbivore species index.
         x: Grid x-coordinate.
         y: Grid y-coordinate.
         population: Initial swarm population.
@@ -135,27 +135,27 @@ class TriggerRule:
     """One explicit chemical-defense trigger rule.
 
     A rule says: "when flora species *flora_species_id* is attacked by
-    predator species *predator_species_id* with at least
-    *min_predator_population* individuals, synthesise substance
+    herbivore species *herbivore_species_id* with at least
+    *min_herbivore_population* individuals, synthesise substance
     *substance_id*. Optional nested activation conditions can additionally
     require active substances and/or other enemy presences via explicit
     ``all_of`` / ``any_of`` predicate trees. ``None`` = unconditional."
 
-    Multiple rules may share the same (flora, predator) pair to express
+    Multiple rules may share the same (flora, herbivore) pair to express
     production of different substances simultaneously.
 
     Args:
         flora_species_id: Flora species index (0-based).
-        predator_species_id: Predator species index (0-based).
+        herbivore_species_id: Herbivore species index (0-based).
         substance_id: Substance layer index to synthesise.
-        min_predator_population: Minimum swarm size to trigger this rule.
+        min_herbivore_population: Minimum swarm size to trigger this rule.
         activation_condition: Optional JSON-serialisable predicate tree.
     """
 
     flora_species_id: int
-    predator_species_id: int
+    herbivore_species_id: int
     substance_id: int
-    min_predator_population: int = 5
+    min_herbivore_population: int = 5
     activation_condition: dict[str, object] | None = None
 
 
@@ -180,16 +180,16 @@ def _parse_condition_path(path: str) -> list[int]:
 def _default_activation_condition_node(
     node_kind: str,
     *,
-    predator_species_id: int = 0,
+    herbivore_species_id: int = 0,
     substance_id: int = 0,
-    min_predator_population: int = 1,
+    min_herbivore_population: int = 1,
 ) -> dict[str, object]:
     """Create a default activation-condition node of the requested kind."""
     if node_kind == "enemy_presence":
         return {
             "kind": "enemy_presence",
-            "predator_species_id": predator_species_id,
-            "min_predator_population": max(1, min_predator_population),
+            "herbivore_species_id": herbivore_species_id,
+            "min_herbivore_population": max(1, min_herbivore_population),
         }
     if node_kind == "substance_active":
         return {"kind": "substance_active", "substance_id": substance_id}
@@ -199,8 +199,8 @@ def _default_activation_condition_node(
             "conditions": [
                 _default_activation_condition_node(
                     "enemy_presence",
-                    predator_species_id=predator_species_id,
-                    min_predator_population=min_predator_population,
+                    herbivore_species_id=herbivore_species_id,
+                    min_herbivore_population=min_herbivore_population,
                 )
             ],
         }
@@ -253,7 +253,7 @@ def _prune_empty_condition_groups(condition: dict[str, object] | None) -> dict[s
 def _remap_condition_references(
     condition: dict[str, object] | None,
     *,
-    removed_predator_id: int | None = None,
+    removed_herbivore_id: int | None = None,
     removed_substance_id: int | None = None,
 ) -> dict[str, object] | None:
     """Compact/remove nested condition references after entity deletion."""
@@ -273,12 +273,12 @@ def _remap_condition_references(
 
     kind = condition.get("kind")
     if kind == "enemy_presence":
-        predator_species_id = _int_from_condition("predator_species_id")
-        if removed_predator_id is not None:
-            if predator_species_id == removed_predator_id:
+        herbivore_species_id = _int_from_condition("herbivore_species_id")
+        if removed_herbivore_id is not None:
+            if herbivore_species_id == removed_herbivore_id:
                 return None
-            if predator_species_id > removed_predator_id:
-                condition["predator_species_id"] = predator_species_id - 1
+            if herbivore_species_id > removed_herbivore_id:
+                condition["herbivore_species_id"] = herbivore_species_id - 1
         return condition
     if kind == "substance_active":
         substance_id = _int_from_condition("substance_id")
@@ -300,7 +300,7 @@ def _remap_condition_references(
             for pruned in [
                 _remap_condition_references(
                     child,
-                    removed_predator_id=removed_predator_id,
+                    removed_herbivore_id=removed_herbivore_id,
                     removed_substance_id=removed_substance_id,
                 )
             ]
@@ -332,19 +332,19 @@ class DraftState:
         num_signals: Number of airborne signal layers.
         num_toxins: Number of toxin layers.
         z2_flora_species_extinction: Halt when this flora species goes extinct (-1 disables).
-        z4_predator_species_extinction: Halt when this predator species goes extinct (-1 disables).
+        z4_herbivore_species_extinction: Halt when this herbivore species goes extinct (-1 disables).
         z6_max_total_flora_energy: Halt when total flora energy exceeds this threshold (-1 disables).
-        z7_max_total_predator_population: Halt when predator population exceeds this threshold
+        z7_max_total_herbivore_population: Halt when herbivore population exceeds this threshold
             (-1 disables).
         mycorrhizal_inter_species: Allow root connections across species.
         mycorrhizal_connection_cost: Energy to establish a root link.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.
         mycorrhizal_signal_velocity: Signal hops per tick through roots.
         flora_species: Flora species parameter list (species_id == index).
-        predator_species: Predator species parameter list (species_id == index).
-        diet_matrix: Boolean matrix ``[pred_idx][flora_idx]`` for edibility.
+        herbivore_species: Herbivore species parameter list (species_id == index).
+        diet_matrix: Boolean matrix ``[herbivore_idx][flora_idx]`` for edibility.
         trigger_rules: List of explicit chemical-defense trigger rules.
-            Multiple rules per (flora, predator) pair are allowed.
+            Multiple rules per (flora, herbivore) pair are allowed.
         substance_definitions: Named substance registry indexed by substance_id.
         initial_plants: Plants placed on the grid before simulation start.
         initial_swarms: Swarms placed on the grid before simulation start.
@@ -361,15 +361,15 @@ class DraftState:
     num_signals: int = 4
     num_toxins: int = 4
     z2_flora_species_extinction: int = -1
-    z4_predator_species_extinction: int = -1
+    z4_herbivore_species_extinction: int = -1
     z6_max_total_flora_energy: float = -1.0
-    z7_max_total_predator_population: int = -1
+    z7_max_total_herbivore_population: int = -1
     mycorrhizal_inter_species: bool = False
     mycorrhizal_connection_cost: float = 1.0
     mycorrhizal_growth_interval_ticks: int = 8
     mycorrhizal_signal_velocity: int = 1
     flora_species: list[object] = dataclasses.field(default_factory=list)
-    predator_species: list[object] = dataclasses.field(default_factory=list)
+    herbivore_species: list[object] = dataclasses.field(default_factory=list)
     diet_matrix: list[list[bool]] = dataclasses.field(default_factory=list)
     trigger_rules: list[TriggerRule] = dataclasses.field(default_factory=list)
     substance_definitions: list[SubstanceDefinition] = dataclasses.field(default_factory=list)
@@ -388,25 +388,25 @@ class DraftState:
             SimulationConfig: Validated simulation configuration.
 
         Raises:
-            ValueError: If no flora or predator species defined.
+            ValueError: If no flora or herbivore species defined.
         """
         from phids.api.schemas import (
             DietCompatibilityMatrix,
             FloraSpeciesParams,
             InitialPlantPlacement,
             InitialSwarmPlacement,
-            PredatorSpeciesParams,
+            HerbivoreSpeciesParams,
             SimulationConfig,
             TriggerConditionSchema,
         )
 
-        if not self.flora_species or not self.predator_species:
+        if not self.flora_species or not self.herbivore_species:
             logger.warning(
-                "Draft build rejected because required species are missing (flora=%d, predators=%d)",
+                "Draft build rejected because required species are missing (flora=%d, herbivores=%d)",
                 len(self.flora_species),
-                len(self.predator_species),
+                len(self.herbivore_species),
             )
-            raise ValueError("At least one flora and one predator species are required.")
+            raise ValueError("At least one flora and one herbivore species are required.")
 
         subs_by_id: dict[int, SubstanceDefinition] = {
             sd.substance_id: sd for sd in self.substance_definitions
@@ -418,16 +418,16 @@ class DraftState:
             sd = subs_by_id.get(rule.substance_id)
             if sd is None:
                 logger.warning(
-                    "Skipping trigger rule with missing substance definition (flora_species_id=%d, predator_species_id=%d, substance_id=%d)",
+                    "Skipping trigger rule with missing substance definition (flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)",
                     rule.flora_species_id,
-                    rule.predator_species_id,
+                    rule.herbivore_species_id,
                     rule.substance_id,
                 )
                 continue
             triggers_by_flora.setdefault(rule.flora_species_id, []).append(
                 TriggerConditionSchema(
-                    predator_species_id=rule.predator_species_id,
-                    min_predator_population=rule.min_predator_population,
+                    herbivore_species_id=rule.herbivore_species_id,
+                    min_herbivore_population=rule.min_herbivore_population,
                     substance_id=rule.substance_id,
                     synthesis_duration=sd.synthesis_duration,
                     is_toxin=sd.is_toxin,
@@ -449,11 +449,11 @@ class DraftState:
             triggers = triggers_by_flora.get(fp.species_id, [])
             flora_with_triggers.append(fp.model_copy(update={"triggers": triggers}))
 
-        n_pred = len(self.predator_species)
+        n_herbivore = len(self.herbivore_species)
         n_flora = len(flora_with_triggers)
         diet_rows = [
             (self.diet_matrix[pi][:n_flora] if pi < len(self.diet_matrix) else [False] * n_flora)
-            for pi in range(n_pred)
+            for pi in range(n_herbivore)
         ]
 
         plant_placements = [
@@ -481,8 +481,8 @@ class DraftState:
             wind_x=self.wind_x,
             wind_y=self.wind_y,
             flora_species=flora_with_triggers,
-            predator_species=[
-                pp for pp in self.predator_species if isinstance(pp, PredatorSpeciesParams)
+            herbivore_species=[
+                pp for pp in self.herbivore_species if isinstance(pp, HerbivoreSpeciesParams)
             ],
             diet_matrix=DietCompatibilityMatrix(rows=diet_rows),
             initial_plants=plant_placements,
@@ -492,16 +492,16 @@ class DraftState:
             mycorrhizal_growth_interval_ticks=self.mycorrhizal_growth_interval_ticks,
             mycorrhizal_signal_velocity=self.mycorrhizal_signal_velocity,
             z2_flora_species_extinction=self.z2_flora_species_extinction,
-            z4_predator_species_extinction=self.z4_predator_species_extinction,
+            z4_herbivore_species_extinction=self.z4_herbivore_species_extinction,
             z6_max_total_flora_energy=self.z6_max_total_flora_energy,
-            z7_max_total_predator_population=self.z7_max_total_predator_population,
+            z7_max_total_herbivore_population=self.z7_max_total_herbivore_population,
         )
         logger.info(
-            "Draft converted to SimulationConfig (grid=%dx%d, flora=%d, predators=%d, trigger_rules=%d, plants=%d, swarms=%d)",
+            "Draft converted to SimulationConfig (grid=%dx%d, flora=%d, herbivores=%d, trigger_rules=%d, plants=%d, swarms=%d)",
             self.grid_width,
             self.grid_height,
             len(flora_with_triggers),
-            len(self.predator_species),
+            len(self.herbivore_species),
             len(self.trigger_rules),
             len(self.initial_plants),
             len(self.initial_swarms),
@@ -511,7 +511,7 @@ class DraftState:
     @classmethod
     def default(cls) -> DraftState:
         """Create the built-in default draft state."""
-        from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams
+        from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 
         state = cls(
             flora_species=[
@@ -529,8 +529,8 @@ class DraftState:
                     triggers=[],
                 )
             ],
-            predator_species=[
-                PredatorSpeciesParams(
+            herbivore_species=[
+                HerbivoreSpeciesParams(
                     species_id=0,
                     name="Herbivore",
                     energy_min=5.0,
@@ -576,10 +576,10 @@ def set_draft(state: DraftState) -> None:
     global _draft  # noqa: PLW0603
     _draft = state
     logger.info(
-        "Draft state replaced (scenario_name=%s, flora=%d, predators=%d, substances=%d)",
+        "Draft state replaced (scenario_name=%s, flora=%d, herbivores=%d, substances=%d)",
         state.scenario_name,
         len(state.flora_species),
-        len(state.predator_species),
+        len(state.herbivore_species),
         len(state.substance_definitions),
     )
 

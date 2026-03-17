@@ -1,13 +1,13 @@
 <div id="trigger-matrix-view">
   <h2 class="text-xl font-semibold text-slate-800 mb-4">⚡ Substance Trigger Matrix</h2>
   <p class="text-sm text-slate-500 mb-4">
-    Rows = Flora species (P<sub>j</sub>), Columns = Predator attacker (E<sub>i</sub>).
-    Select the substance synthesised when that predator attacks that plant.
+    Rows = Flora species (P<sub>j</sub>), Columns = Herbivore attacker (E<sub>i</sub>).
+    Select the substance synthesised when that herbivore attacks that plant.
   </p>
 
-  {% if not flora_species or not predator_species %}
+  {% if not flora_species or not herbivore_species %}
   <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm">
-    Define at least one flora species and one predator species first.
+    Define at least one flora species and one herbivore species first.
   </div>
   {% else %}
   <div class="bg-white rounded-xl shadow-sm border overflow-auto">
@@ -15,9 +15,9 @@
       <thead class="bg-slate-50">
         <tr>
           <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase min-w-[120px]">
-            Flora \ Predator
+            Flora \ Herbivore
           </th>
-          {% for pp in predator_species %}
+          {% for pp in herbivore_species %}
           <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase">
             {{ pp.name }}
           </th>
@@ -29,23 +29,23 @@
         {% set fl_idx = loop.index0 %}
         <tr>
           <td class="px-4 py-3 font-medium text-slate-700">{{ fp.name }}</td>
-          {% for pp in predator_species %}
-          {% set pred_idx = loop.index0 %}
+          {% for pp in herbivore_species %}
+          {% set herb_idx = loop.index0 %}
           <td class="px-4 py-3 text-center">
             <select name="substance_id"
               hx-post="/api/matrices/trigger"
               hx-trigger="change"
               hx-target="#trigger-matrix-view" hx-swap="outerHTML"
-              hx-vals='{"flora_idx": {{ fl_idx }}, "predator_idx": {{ pred_idx }}}'
+              hx-vals='{"flora_idx": {{ fl_idx }}, "herbivore_idx": {{ herb_idx }}}'
               hx-include="this"
               class="border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
               <option value="-1"
-                {% if trigger_matrix[fl_idx][pred_idx] == -1 %}selected{% endif %}>
+                {% if trigger_matrix[fl_idx][herb_idx] == -1 %}selected{% endif %}>
                 — none —
               </option>
               {% for sub in substances %}
               <option value="{{ sub.substance_id }}"
-                {% if trigger_matrix[fl_idx][pred_idx] == sub.substance_id %}selected{% endif %}>
+                {% if trigger_matrix[fl_idx][herb_idx] == sub.substance_id %}selected{% endif %}>
                 {{ sub.name }}
               </option>
               {% endfor %}

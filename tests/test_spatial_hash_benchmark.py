@@ -4,7 +4,7 @@ This module measures the wall-clock latency of ``ECSWorld.entities_at(x, y)`` un
 population distributed across a 40×40 grid. The benchmark validates the spatial hash's O(1)
 amortised lookup contract, which is a core performance invariant of the PHIDS engine: the
 interaction and signaling phases invoke ``entities_at`` for every swarm movement step and every
-predator-presence evaluation in the trigger-condition tree, so any regression in hash lookup
+herbivore-presence evaluation in the trigger-condition tree, so any regression in hash lookup
 latency directly impacts tick throughput at biologically meaningful entity densities.
 """
 

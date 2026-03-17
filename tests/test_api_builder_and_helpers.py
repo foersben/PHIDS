@@ -25,7 +25,7 @@ from phids.api.schemas import (
     FloraSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    PredatorSpeciesParams,
+    HerbivoreSpeciesParams,
     SimulationConfig,
     TriggerConditionSchema,
 )
@@ -65,10 +65,10 @@ def _flora(species_id: int) -> FloraSpeciesParams:
     )
 
 
-def _predator(species_id: int) -> PredatorSpeciesParams:
-    return PredatorSpeciesParams(
+def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
+    return HerbivoreSpeciesParams(
         species_id=species_id,
-        name=f"predator-{species_id}",
+        name=f"herbivore-{species_id}",
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
@@ -78,8 +78,8 @@ def _predator(species_id: int) -> PredatorSpeciesParams:
 
 def _config_with_trigger() -> SimulationConfig:
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=3,
+        herbivore_species_id=0,
+        min_herbivore_population=3,
         substance_id=0,
         synthesis_duration=1,
         is_toxin=False,
@@ -94,7 +94,7 @@ def _config_with_trigger() -> SimulationConfig:
         num_signals=2,
         num_toxins=2,
         flora_species=[_flora(0).model_copy(update={"triggers": [trigger]})],
-        predator_species=[_predator(0)],
+        herbivore_species=[_herbivore(0)],
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
         initial_plants=[InitialPlantPlacement(species_id=0, x=2, y=2, energy=10.0)],
         initial_swarms=[InitialSwarmPlacement(species_id=0, x=2, y=2, population=4, energy=5.0)],
@@ -135,11 +135,11 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     assert api_main._parse_activation_condition_json(None) is None
     assert api_main._parse_activation_condition_json("   ") is None
     assert api_main._parse_activation_condition_json(
-        '{"kind":"enemy_presence","predator_species_id":0,"min_predator_population":3}'
+        '{"kind":"enemy_presence","herbivore_species_id":0,"min_herbivore_population":3}'
     ) == {
         "kind": "enemy_presence",
-        "predator_species_id": 0,
-        "min_predator_population": 3,
+        "herbivore_species_id": 0,
+        "min_herbivore_population": 3,
     }
     assert api_main._parse_activation_condition_json(
         '{"kind":"environmental_signal","signal_id":0,"min_concentration":0.2}'
@@ -156,8 +156,8 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     assert api_main._describe_activation_condition(None) == "unconditional"
     assert (
         api_main._describe_activation_condition(
-            {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 4},
-            predator_names={1: "Beetles"},
+            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 4},
+            herbivore_names={1: "Beetles"},
         )
         == "Beetles ≥ 4"
     )
@@ -186,19 +186,19 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
                 "conditions": [
                     {
                         "kind": "enemy_presence",
-                        "predator_species_id": 0,
-                        "min_predator_population": 2,
+                        "herbivore_species_id": 0,
+                        "min_herbivore_population": 2,
                     },
                     {"kind": "substance_active", "substance_id": 1},
                 ],
             },
-            predator_names={0: "Moths"},
+            herbivore_names={0: "Moths"},
             substance_names={1: "VOC"},
         )
         == "(Moths ≥ 2 OR VOC active)"
     )
 
-    draft.trigger_rules = [TriggerRule(flora_species_id=0, predator_species_id=0, substance_id=0)]
+    draft.trigger_rules = [TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=0)]
     assert api_main._trigger_rule_by_index(draft, 0).substance_id == 0
     with pytest.raises(HTTPException):
         api_main._trigger_rule_by_index(draft, 3)
@@ -311,22 +311,22 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
         0,
         path="",
         kind="enemy_presence",
-        predator_species_id=0,
-        min_predator_population=2,
+        herbivore_species_id=0,
+        min_herbivore_population=2,
         substance_id=None,
     )
 
     assert response.status_code == 200
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "enemy_presence",
-        "predator_species_id": 0,
-        "min_predator_population": 5,
+        "herbivore_species_id": 0,
+        "min_herbivore_population": 5,
     }
 
 
 @pytest.mark.asyncio
-async def test_builder_crud_routes_cover_flora_predators_substances_and_diet_matrix() -> None:
-    """Validates the builder crud routes cover flora predators substances and diet matrix invariant and confirms the expected biological behavior under controlled simulation conditions.
+async def test_builder_crud_routes_cover_flora_herbivores_substances_and_diet_matrix() -> None:
+    """Validates the builder crud routes cover flora herbivores substances and diet matrix invariant and confirms the expected biological behavior under controlled simulation conditions.
 
     The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
 
@@ -358,16 +358,16 @@ async def test_builder_crud_routes_cover_flora_predators_substances_and_diet_mat
         flora_delete = await client.delete("/api/config/flora/1")
         flora_delete_missing = await client.delete("/api/config/flora/99")
 
-        predator_add = await client.post(
-            "/api/config/predators",
+        herbivore_add = await client.post(
+            "/api/config/herbivores",
             data={"name": "Locust", "energy_min": 2.0, "velocity": 2, "consumption_rate": 3.5},
         )
-        predator_update = await client.put(
-            "/api/config/predators/1",
+        herbivore_update = await client.put(
+            "/api/config/herbivores/1",
             data={"name": "Locust Updated", "velocity": 3},
         )
-        predator_delete = await client.delete("/api/config/predators/1")
-        predator_delete_missing = await client.delete("/api/config/predators/99")
+        herbivore_delete = await client.delete("/api/config/herbivores/1")
+        herbivore_delete_missing = await client.delete("/api/config/herbivores/99")
 
         substance_add = await client.post(
             "/api/config/substances",
@@ -394,15 +394,15 @@ async def test_builder_crud_routes_cover_flora_predators_substances_and_diet_mat
         )
         matrix_toggle = await client.post(
             "/api/matrices/diet",
-            data={"predator_idx": 0, "flora_idx": 0, "compatible": "toggle"},
+            data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "toggle"},
         )
         matrix_set = await client.post(
             "/api/matrices/diet",
-            data={"predator_idx": 0, "flora_idx": 0, "compatible": "false"},
+            data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "false"},
         )
         matrix_out_of_range = await client.post(
             "/api/matrices/diet",
-            data={"predator_idx": 9, "flora_idx": 9, "compatible": "true"},
+            data={"herbivore_idx": 9, "flora_idx": 9, "compatible": "true"},
         )
         substance_delete = await client.delete("/api/config/substances/0")
         substance_delete_missing = await client.delete("/api/config/substances/99")
@@ -412,10 +412,10 @@ async def test_builder_crud_routes_cover_flora_predators_substances_and_diet_mat
     assert flora_update.status_code == 200
     assert flora_delete.status_code == 200
     assert flora_delete_missing.status_code == 404
-    assert predator_add.status_code == 200
-    assert predator_update.status_code == 200
-    assert predator_delete.status_code == 200
-    assert predator_delete_missing.status_code == 404
+    assert herbivore_add.status_code == 200
+    assert herbivore_update.status_code == 200
+    assert herbivore_delete.status_code == 200
+    assert herbivore_delete_missing.status_code == 404
     assert substance_add.status_code == 200
     assert substance_update.status_code == 200
     assert matrix_toggle.status_code == 200
@@ -438,27 +438,27 @@ async def test_builder_route_rule_of_16_branches() -> None:
     """
     draft = get_draft()
     draft.flora_species = [_flora(i) for i in range(16)]
-    draft.predator_species = [_predator(i) for i in range(16)]
+    draft.herbivore_species = [_herbivore(i) for i in range(16)]
     draft.substance_definitions = [
         SubstanceDefinition(substance_id=i, name=f"s{i}") for i in range(16)
     ]
 
     async with _default_client() as client:
         flora_resp = await client.post("/api/config/flora", data={"name": "Overflow"})
-        predator_resp = await client.post("/api/config/predators", data={"name": "Overflow"})
+        herbivore_resp = await client.post("/api/config/herbivores", data={"name": "Overflow"})
         substance_resp = await client.post("/api/config/substances", data={"name": "Overflow"})
 
     assert flora_resp.status_code == 400
-    assert predator_resp.status_code == 400
+    assert herbivore_resp.status_code == 400
     assert substance_resp.status_code == 400
 
 
 @pytest.mark.asyncio
-async def test_predator_routes_clamp_reproduction_divisor_to_physical_minimum() -> None:
-    """Predator add/update routes clamp reproduction divisor to avoid discounted offspring creation."""
+async def test_herbivore_routes_clamp_reproduction_divisor_to_physical_minimum() -> None:
+    """Herbivore add/update routes clamp reproduction divisor to avoid discounted offspring creation."""
     async with _default_client() as client:
         add_resp = await client.post(
-            "/api/config/predators",
+            "/api/config/herbivores",
             data={
                 "name": "ClampBug",
                 "energy_min": 2.0,
@@ -469,19 +469,19 @@ async def test_predator_routes_clamp_reproduction_divisor_to_physical_minimum() 
         )
 
         update_resp = await client.put(
-            "/api/config/predators/1",
+            "/api/config/herbivores/1",
             data={"reproduction_energy_divisor": 0.1},
         )
 
     assert add_resp.status_code == 200
     assert update_resp.status_code == 200
     draft = get_draft()
-    predator = next(
+    herbivore = next(
         p
-        for p in draft.predator_species
-        if isinstance(p, PredatorSpeciesParams) and p.species_id == 1
+        for p in draft.herbivore_species
+        if isinstance(p, HerbivoreSpeciesParams) and p.species_id == 1
     )
-    assert predator.reproduction_energy_divisor == pytest.approx(1.0)
+    assert herbivore.reproduction_energy_divisor == pytest.approx(1.0)
 
 
 @pytest.mark.asyncio
@@ -505,15 +505,15 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
             "/api/config/trigger-rules",
             data={
                 "flora_species_id": 0,
-                "predator_species_id": 0,
+                "herbivore_species_id": 0,
                 "substance_id": 0,
-                "min_predator_population": 0,
-                "activation_condition_json": '{"kind":"enemy_presence","predator_species_id":0,"min_predator_population":3}',
+                "min_herbivore_population": 0,
+                "activation_condition_json": '{"kind":"enemy_presence","herbivore_species_id":0,"min_herbivore_population":3}',
             },
         )
         update_rule = await client.put(
             "/api/config/trigger-rules/0",
-            data={"substance_id": 1, "min_predator_population": 7},
+            data={"substance_id": 1, "min_herbivore_population": 7},
         )
         update_rule_missing = await client.put(
             "/api/config/trigger-rules/9",
@@ -556,7 +556,7 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
         swarm_delete_missing = await client.delete("/api/config/placements/swarm/0")
         clear_resp = await client.post("/api/config/placements/clear")
 
-        set_draft(DraftState(flora_species=[], predator_species=[]))
+        set_draft(DraftState(flora_species=[], herbivore_species=[]))
         export_invalid = await client.get("/api/scenario/export")
         load_invalid = await client.post("/api/scenario/load-draft")
         import_invalid = await client.post(
@@ -599,8 +599,8 @@ async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
     payload = _config_with_trigger().model_dump(mode="json")
     payload["flora_species"][0]["triggers"][0]["activation_condition"] = {
         "kind": "enemy_presence",
-        "predator_species_id": 0,
-        "min_predator_population": 3,
+        "herbivore_species_id": 0,
+        "min_herbivore_population": 3,
     }
     content = json.dumps(payload).encode("utf-8")
 
@@ -616,8 +616,8 @@ async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
     assert len(draft.trigger_rules) == 1
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "enemy_presence",
-        "predator_species_id": 0,
-        "min_predator_population": 3,
+        "herbivore_species_id": 0,
+        "min_herbivore_population": 3,
     }
     assert draft.substance_definitions[0].name == "Substance 0"
 

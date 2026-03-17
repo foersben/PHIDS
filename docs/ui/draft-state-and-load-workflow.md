@@ -27,7 +27,7 @@ This design centralizes:
 - scenario metadata,
 - biotope dimensions and global parameters,
 - mycorrhizal settings,
-- flora and predator species lists,
+- flora and herbivore species lists,
 - diet compatibility matrix,
 - trigger rules,
 - substance definitions,
@@ -54,13 +54,13 @@ The current UI workflow can be summarized as follows:
 
 ```mermaid
 flowchart TD
-	A[Operator edits builder controls] --> B[Route calls DraftService]
-	B --> C[Server renders updated HTML partial]
-	C --> D[Operator continues editing / previewing]
-	D --> E[POST /api/scenario/load-draft]
-	E --> F[DraftState.build_sim_config()]
-	F --> G[Validated SimulationConfig]
-	G --> H[SimulationLoop(config)]
+    n1["Operator edits builder controls"] --> n2["Route calls DraftService"]
+    n2 --> n3["Server renders updated HTML partial"]
+    n3 --> n4["Operator continues editing and previewing"]
+    n4 --> n5["POST /api/scenario/load-draft"]
+    n5 --> n6["DraftState.build_sim_config()"]
+    n6 --> n7["Validated SimulationConfig"]
+    n7 --> n8["SimulationLoop(config)"]
 ```
 
 The key transition occurs at `POST /api/scenario/load-draft`: prior to that point, the UI is
@@ -73,7 +73,7 @@ mutation procedures that preserve structural consistency.
 
 ### Species, substances, and matrix maintenance
 
-When flora, predator, or substance registries are edited, `DraftService` performs coordinated
+When flora, herbivore, or substance registries are edited, `DraftService` performs coordinated
 maintenance of:
 
 - sequential species IDs,
@@ -91,7 +91,7 @@ eliminate orphaned trigger rules and renumber surviving chemical references so s
 ### Trigger rule accumulation
 
 Trigger rules are stored explicitly as `TriggerRule` objects rather than embedded only in table
-cells. This supports multiple substance rules per `(flora, predator)` pair and allows nested
+cells. This supports multiple substance rules per `(flora, herbivore)` pair and allows nested
 activation-condition trees to be edited and preserved.
 
 ### Placement accumulation
@@ -105,7 +105,7 @@ The method `DraftState.build_sim_config()` is the critical transformation step.
 
 It currently:
 
-- rejects drafts with no flora or no predator species,
+- rejects drafts with no flora or no herbivore species,
 - reconstructs trigger information by combining trigger rules with substance definitions,
 - injects trigger lists into flora species entries,
 - compacts diet-matrix rows to the active species dimensions,

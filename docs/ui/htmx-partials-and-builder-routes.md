@@ -18,7 +18,7 @@ flowchart LR
 
 ## View Partials and Route Families
 
-UI view routes expose server-rendered fragments for dashboard, biotope, flora, predators, substances, diet matrix, trigger rules, placements, diagnostics tabs, and telemetry chart surfaces. The operational model is intentionally split between view routes that render fragments and config routes that mutate draft state before returning those fragments.
+UI view routes expose server-rendered fragments for dashboard, biotope, flora, herbivores, substances, diet matrix, trigger rules, placements, diagnostics tabs, and telemetry chart surfaces. The operational model is intentionally split between view routes that render fragments and config routes that mutate draft state before returning those fragments.
 
 This split keeps responsibility boundaries clear: UI routes manage presentation composition, while config routes enforce mutation rules and invariants through service-layer logic.
 
@@ -28,11 +28,11 @@ This split keeps responsibility boundaries clear: UI routes manage presentation 
 
 The same biotope surface now exposes draft-level termination controls for `Z2`, `Z4`, `Z6`, and `Z7`. These values are edited in the builder and compiled into `SimulationConfig` when the draft is loaded. The disabled sentinel remains `-1`, preserving previous default behavior unless an operator explicitly enables a threshold.
 
-Flora and predator routes apply CRUD operations while preserving dependent structures such as matrix dimensions and compact species identifiers. Substance routes similarly maintain registry consistency and dependent trigger references, including precursor remapping and activation-condition updates for surviving rules.
+Flora and herbivore routes apply CRUD operations while preserving dependent structures such as matrix dimensions and compact species identifiers. Substance routes similarly maintain registry consistency and dependent trigger references, including precursor remapping and activation-condition updates for surviving rules.
 
 ## Matrix and Trigger Editors
 
-Diet-matrix edits update predator-flora compatibility through service-layer cell mutation, which centralizes out-of-range handling and prevents ad hoc route-level mutation logic. Trigger-rule editing is intentionally more expressive than the legacy one-cell trigger model: multiple rules per `(flora, predator)` pair are supported, and activation conditions can be expressed as nested condition trees.
+Diet-matrix edits update herbivore-flora compatibility through service-layer cell mutation, which centralizes out-of-range handling and prevents ad hoc route-level mutation logic. Trigger-rule editing is intentionally more expressive than the legacy one-cell trigger model: multiple rules per `(flora, herbivore)` pair are supported, and activation conditions can be expressed as nested condition trees.
 
 ## Placement and Preview Workflows
 

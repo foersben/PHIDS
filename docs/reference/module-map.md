@@ -43,7 +43,7 @@ Key symbols:
 - `SimulationConfig`
 - `TriggerConditionSchema`
 - `FloraSpeciesParams`
-- `PredatorSpeciesParams`
+- `HerbivoreSpeciesParams`
 - `DietCompatibilityMatrix`
 - `SimulationStatusResponse`
 - `WindUpdatePayload`
@@ -267,7 +267,7 @@ Primary responsibility:
 Key constants:
 
 - `MAX_FLORA_SPECIES`
-- `MAX_PREDATOR_SPECIES`
+- `MAX_HERBIVORE_SPECIES`
 - `MAX_SUBSTANCE_TYPES`
 - `GRID_W_MAX`
 - `GRID_H_MAX`

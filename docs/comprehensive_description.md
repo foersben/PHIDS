@@ -12,9 +12,9 @@ These defense mechanisms range from constitutive defenses, which are permanent a
 
 The legacy OOP architecture suffered from severe CPU bottlenecks resulting from $O(N \times M)$ spatial distance evaluations and memory-heavy object instantiations. The PHIDS architecture decouples data from logic via an ECS framework.
 
-To circumvent the computational overhead associated with dynamic array resizing, the system enforces strict memory bounds designated as the "Rule of 16". The simulation is mathematically constrained to a maximum of 16 flora species, 16 predator species, and 16 distinct substance types. Implementations must pre-allocate fixed-size matrices (e.g., shape (16, 16) for interaction triggers) during system initialization.
+To circumvent the computational overhead associated with dynamic array resizing, the system enforces strict memory bounds designated as the "Rule of 16". The simulation is mathematically constrained to a maximum of 16 flora species, 16 herbivore species, and 16 distinct substance types. Implementations must pre-allocate fixed-size matrices (e.g., shape (16, 16) for interaction triggers) during system initialization.
 
-Furthermore, to ensure optimal memory efficiency during runtime, the ECS must implement rigorous Garbage Collection. Entities whose biological parameters fall below survival thresholds (e.g., flora energy $E_{i,j}(t) < B_{i,j}$ or predator population $n \le 0$) must be systematically despawned and purged from memory.
+Furthermore, to ensure optimal memory efficiency during runtime, the ECS must implement rigorous Garbage Collection. Entities whose biological parameters fall below survival thresholds (e.g., flora energy $E_{i,j}(t) < B_{i,j}$ or herbivore population $n \le 0$) must be systematically despawned and purged from memory.
 
 2.2 Double-Buffering and Deterministic Execution
 
@@ -44,7 +44,7 @@ Crucially, to mitigate the severe computational degradation resulting from subno
 
 3.3 Spatial Occupancy and O(1) Hashing
 
-The grid architecture must explicitly permit the concurrent occupation of a singular spatial coordinate $(x, y)$ by multiple, distinct predator clusters. To determine localized interactions (e.g., assessing predator presence to trigger a toxin) without resorting to $O(N^2)$ Euclidean distance checks, the ECS relies on a Spatial Hash or Grid Cell Roster, achieving $O(1)$ temporal complexity for interaction queries.
+The grid architecture must explicitly permit the concurrent occupation of a singular spatial coordinate $(x, y)$ by multiple, distinct herbivore clusters. To determine localized interactions (e.g., assessing herbivore presence to trigger a toxin) without resorting to $O(N^2)$ Euclidean distance checks, the ECS relies on a Spatial Hash or Grid Cell Roster, achieving $O(1)$ temporal complexity for interaction queries.
 
 4. Flora Lifecycle and Symbiotic Networking
 
@@ -64,7 +64,7 @@ Individual Breadth-First Search (BFS) algorithms are entirely replaced by a sing
 
 5.2 Diet Compatibility, Starvation, and Reproduction
 
-Diet Compatibility Matrix: A cluster consumes $\min(\eta(C_i), E_{i,j}(t))$ energy units per time step. This is rigidly regulated by a biological Diet Compatibility Matrix, defining the permissible consumption of flora species $p_j$ by predator species $e_i$.
+Diet Compatibility Matrix: A cluster consumes $\min(\eta(C_i), E_{i,j}(t))$ energy units per time step. This is rigidly regulated by a biological Diet Compatibility Matrix, defining the permissible consumption of flora species $p_j$ by herbivore species $e_i$.
 
 Starvation: Populations deprived of requisite caloric intake undergo progressive starvation, resulting in an attritional reduction of cluster size.
 
@@ -78,7 +78,7 @@ Defense strategies are categorized as either Constitutive (e.g., morphological c
 
 6.1 The Trigger Matrix
 
-Induced substance synthesis is contingent upon the localized presence of a predator species $e_i$ maintaining a minimum population size $n_{i,min}$. The deployment of localized toxins additionally necessitates the prior activation of a specific precursor signal $s_k$.
+Induced substance synthesis is contingent upon the localized presence of a herbivore species $e_i$ maintaining a minimum population size $n_{i,min}$. The deployment of localized toxins additionally necessitates the prior activation of a specific precursor signal $s_k$.
 
 6.2 Repellent Pathfinding Resolution
 
@@ -92,7 +92,7 @@ Production Time ($T(s_x)$): Substances require a specified temporal duration to 
 
 Aftereffects ($T_k$): Airborne signaling compounds exhibit a defined aftereffect duration, lingering in the biotope even after initial emission ceases. Conversely, localized toxins dissipate instantaneously upon the cessation of triggering stimuli.
 
-Lethality Rate ($\beta$): Lethal toxins actively eliminate predator populations. This attrition is calculated via a specific elimination rate $\beta(s_x, C_i)$, which dictates the precise number of individuals eradicated per time step.
+Lethality Rate ($\beta$): Lethal toxins actively eliminate herbivore populations. This attrition is calculated via a specific elimination rate $\beta(s_x, C_i)$, which dictates the precise number of individuals eradicated per time step.
 
 7. Simulation Control, Web API, and Telemetry
 
@@ -102,13 +102,13 @@ To ensure utility as both an academic tool and a high-performance backend, PHIDS
 
 Simulation initialization and execution are managed via explicit network endpoints:
 
-REST Endpoints: The system exposes routes such as /api/scenario/load (for the ingestion of the Global Configuration Payload), /api/simulation/start, and /api/simulation/pause. The Configuration Payload—validated via pydantic—explicitly defines grid topography, the Diet Compatibility Matrix, and the mathematically mapped Interaction Matrix ((Plant Species, Predator Species) -> Substance Trigger Conditions).
+REST Endpoints: The system exposes routes such as /api/scenario/load (for the ingestion of the Global Configuration Payload), /api/simulation/start, and /api/simulation/pause. The Configuration Payload—validated via pydantic—explicitly defines grid topography, the Diet Compatibility Matrix, and the mathematically mapped Interaction Matrix ((Plant Species, Herbivore Species) -> Substance Trigger Conditions).
 
 WebSocket Streaming: A dedicated endpoint (/ws/simulation/stream) facilitates the continuous, asynchronous transmission of the two-dimensional state matrices to the visual frontend at a constant tick rate.
 
 7.2 Telemetry and Serialization
 
-Lotka-Volterra Analytics: Key metrics (total flora energy, flora population count, predator cluster size, and predator population count) are aggregated per tick utilizing polars DataFrames, optimizing memory and facilitating CSV/JSON export.
+Lotka-Volterra Analytics: Key metrics (total flora energy, flora population count, herbivore cluster size, and herbivore population count) are aggregated per tick utilizing polars DataFrames, optimizing memory and facilitating CSV/JSON export.
 
 Serialization & Re-Simulation: The state buffer is serialized at each time step into a compact binary format (msgpack or flatbuffers), enabling deterministic re-simulation and robust event logging.
 
@@ -124,10 +124,10 @@ $Z_2$: Extinction of a specifically designated flora species.
 
 $Z_3$: Total extinction of all flora species within the biotope.
 
-$Z_4$: Extinction of a specifically designated predator species.
+$Z_4$: Extinction of a specifically designated herbivore species.
 
-$Z_5$: Total extinction of all predator species.
+$Z_5$: Total extinction of all herbivore species.
 
 $Z_6$: The aggregate energy of all flora exceeds a predetermined upper threshold.
 
-$Z_7$: The total population of predator individuals exceeds a predefined limit.
+$Z_7$: The total population of herbivore individuals exceeds a predefined limit.

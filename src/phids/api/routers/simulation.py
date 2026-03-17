@@ -72,9 +72,9 @@ def _apply_optional_biotope_overrides(
     num_signals: int | None,
     num_toxins: int | None,
     z2_flora_species_extinction: int | None,
-    z4_predator_species_extinction: int | None,
+    z4_herbivore_species_extinction: int | None,
     z6_max_total_flora_energy: float | None,
-    z7_max_total_predator_population: int | None,
+    z7_max_total_herbivore_population: int | None,
     mycorrhizal_inter_species: str | None,
     mycorrhizal_connection_cost: float | None,
     mycorrhizal_growth_interval_ticks: int | None,
@@ -98,9 +98,9 @@ def _apply_optional_biotope_overrides(
             num_signals,
             num_toxins,
             z2_flora_species_extinction,
-            z4_predator_species_extinction,
+            z4_herbivore_species_extinction,
             z6_max_total_flora_energy,
-            z7_max_total_predator_population,
+            z7_max_total_herbivore_population,
             mycorrhizal_inter_species,
             mycorrhizal_connection_cost,
             mycorrhizal_growth_interval_ticks,
@@ -127,20 +127,20 @@ def _apply_optional_biotope_overrides(
             if z2_flora_species_extinction is not None
             else draft.z2_flora_species_extinction
         ),
-        z4_predator_species_extinction=(
-            z4_predator_species_extinction
-            if z4_predator_species_extinction is not None
-            else draft.z4_predator_species_extinction
+        z4_herbivore_species_extinction=(
+            z4_herbivore_species_extinction
+            if z4_herbivore_species_extinction is not None
+            else draft.z4_herbivore_species_extinction
         ),
         z6_max_total_flora_energy=(
             z6_max_total_flora_energy
             if z6_max_total_flora_energy is not None
             else draft.z6_max_total_flora_energy
         ),
-        z7_max_total_predator_population=(
-            z7_max_total_predator_population
-            if z7_max_total_predator_population is not None
-            else draft.z7_max_total_predator_population
+        z7_max_total_herbivore_population=(
+            z7_max_total_herbivore_population
+            if z7_max_total_herbivore_population is not None
+            else draft.z7_max_total_herbivore_population
         ),
         mycorrhizal_inter_species=(
             (mycorrhizal_inter_species or "off") == "on"
@@ -177,9 +177,12 @@ def _apply_optional_biotope_overrides_from_form(form_data: Any) -> None:
         num_signals=_form_int(form_data, "num_signals"),
         num_toxins=_form_int(form_data, "num_toxins"),
         z2_flora_species_extinction=_form_int(form_data, "z2_flora_species_extinction"),
-        z4_predator_species_extinction=_form_int(form_data, "z4_predator_species_extinction"),
+        z4_herbivore_species_extinction=_form_int(form_data, "z4_herbivore_species_extinction"),
         z6_max_total_flora_energy=_form_float(form_data, "z6_max_total_flora_energy"),
-        z7_max_total_predator_population=_form_int(form_data, "z7_max_total_predator_population"),
+        z7_max_total_herbivore_population=_form_int(
+            form_data,
+            "z7_max_total_herbivore_population",
+        ),
         mycorrhizal_inter_species=_form_scalar(form_data, "mycorrhizal_inter_species"),
         mycorrhizal_connection_cost=_form_float(form_data, "mycorrhizal_connection_cost"),
         mycorrhizal_growth_interval_ticks=_form_int(form_data, "mycorrhizal_growth_interval_ticks"),
@@ -212,11 +215,11 @@ async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
     api_main._sim_loop = SimulationLoop(config)
     api_main._set_simulation_substance_names(config)
     api_main.logger.info(
-        "Scenario loaded: %dx%d grid, %d flora species, %d predator species",
+        "Scenario loaded: %dx%d grid, %d flora species, %d herbivore species",
         config.grid_width,
         config.grid_height,
         len(config.flora_species),
-        len(config.predator_species),
+        len(config.herbivore_species),
     )
     return {
         "message": "Scenario loaded.",
@@ -483,9 +486,9 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
             imported_trigger_rules.append(
                 TriggerRule(
                     flora_species_id=flora_spec.species_id,
-                    predator_species_id=trig.predator_species_id,
+                    herbivore_species_id=trig.herbivore_species_id,
                     substance_id=trig.substance_id,
-                    min_predator_population=trig.min_predator_population,
+                    min_herbivore_population=trig.min_herbivore_population,
                     activation_condition=(
                         trig.activation_condition.model_dump(mode="json")
                         if trig.activation_condition is not None
@@ -513,7 +516,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
                             if len(trig.precursor_signal_ids) == 1
                             else trig.precursor_signal_id
                         ),
-                        min_predator_population=trig.min_predator_population,
+                        min_herbivore_population=trig.min_herbivore_population,
                     )
                 )
 
@@ -528,15 +531,15 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
         num_signals=config.num_signals,
         num_toxins=config.num_toxins,
         z2_flora_species_extinction=config.z2_flora_species_extinction,
-        z4_predator_species_extinction=config.z4_predator_species_extinction,
+        z4_herbivore_species_extinction=config.z4_herbivore_species_extinction,
         z6_max_total_flora_energy=config.z6_max_total_flora_energy,
-        z7_max_total_predator_population=config.z7_max_total_predator_population,
+        z7_max_total_herbivore_population=config.z7_max_total_herbivore_population,
         mycorrhizal_inter_species=config.mycorrhizal_inter_species,
         mycorrhizal_connection_cost=config.mycorrhizal_connection_cost,
         mycorrhizal_growth_interval_ticks=config.mycorrhizal_growth_interval_ticks,
         mycorrhizal_signal_velocity=config.mycorrhizal_signal_velocity,
         flora_species=list(config.flora_species),
-        predator_species=list(config.predator_species),
+        herbivore_species=list(config.herbivore_species),
         diet_matrix=[list(row) for row in config.diet_matrix.rows],
         trigger_rules=imported_trigger_rules,
         substance_definitions=imported_substances,
@@ -557,12 +560,12 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
     )
     set_draft(new_draft)
     api_main.logger.info(
-        "Scenario imported into draft (file=%s, grid=%dx%d, flora=%d, predators=%d)",
+        "Scenario imported into draft (file=%s, grid=%dx%d, flora=%d, herbivores=%d)",
         file.filename,
         config.grid_width,
         config.grid_height,
         len(config.flora_species),
-        len(config.predator_species),
+        len(config.herbivore_species),
     )
     return JSONResponse(
         content={
@@ -609,10 +612,10 @@ async def scenario_load_draft(request: Request) -> Any:
     api_main._sim_task = None
     api_main._set_simulation_substance_names(config, draft=draft)
     api_main.logger.info(
-        "Draft loaded: %dx%d grid, %d flora, %d predators",
+        "Draft loaded: %dx%d grid, %d flora, %d herbivores",
         config.grid_width,
         config.grid_height,
         len(config.flora_species),
-        len(config.predator_species),
+        len(config.herbivore_species),
     )
     return HTMLResponse(content=api_main._render_status_badge_html())

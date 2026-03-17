@@ -288,7 +288,7 @@ def _parse_activation_condition_json(raw: str | None) -> dict[str, Any] | None:
 def _describe_activation_condition(
     condition: dict[str, Any] | None,
     *,
-    predator_names: dict[int, str] | None = None,
+    herbivore_names: dict[int, str] | None = None,
     substance_names: dict[int, str] | None = None,
 ) -> str:
     """Render a compact textual explanation of a nested activation-condition tree.
@@ -299,7 +299,7 @@ def _describe_activation_condition(
 
     Args:
         condition: Parsed activation-condition node or tree.
-        predator_names: Optional species-name map for predator identifiers.
+        herbivore_names: Optional species-name map for herbivore identifiers.
         substance_names: Optional display-name map for substance identifiers.
 
     Returns:
@@ -310,14 +310,14 @@ def _describe_activation_condition(
 
     kind = condition.get("kind")
     if kind == "enemy_presence":
-        predator_species_id = _coerce_int(condition.get("predator_species_id", -1), default=-1)
-        min_population = _coerce_int(condition.get("min_predator_population", 1), default=1)
-        predator_label = (
-            predator_names.get(predator_species_id, f"Predator {predator_species_id}")
-            if predator_names is not None
-            else f"Predator {predator_species_id}"
+        herbivore_species_id = _coerce_int(condition.get("herbivore_species_id", -1), default=-1)
+        min_population = _coerce_int(condition.get("min_herbivore_population", 1), default=1)
+        herbivore_label = (
+            herbivore_names.get(herbivore_species_id, f"Herbivore {herbivore_species_id}")
+            if herbivore_names is not None
+            else f"Herbivore {herbivore_species_id}"
         )
-        return f"{predator_label} ≥ {min_population}"
+        return f"{herbivore_label} ≥ {min_population}"
     if kind == "substance_active":
         substance_id = _coerce_int(condition.get("substance_id", -1), default=-1)
         substance_label = (
@@ -343,7 +343,7 @@ def _describe_activation_condition(
     rendered = [
         _describe_activation_condition(
             child,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             substance_names=substance_names,
         )
         for child in children
@@ -361,16 +361,16 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
         Template context dictionary containing species registries, trigger rows, condition summaries,
         and condition-node editing metadata.
     """
-    predator_names = {
-        getattr(species, "species_id", index): getattr(species, "name", f"Predator {index}")
-        for index, species in enumerate(draft.predator_species)
+    herbivore_names = {
+        getattr(species, "species_id", index): getattr(species, "name", f"Herbivore {index}")
+        for index, species in enumerate(draft.herbivore_species)
     }
     substance_names = {
         definition.substance_id: definition.name for definition in draft.substance_definitions
     }
     return {
         "flora_species": draft.flora_species,
-        "predator_species": draft.predator_species,
+        "herbivore_species": draft.herbivore_species,
         "trigger_rules": draft.trigger_rules,
         "substances": draft.substance_definitions,
         "trigger_rule_condition_json": {
@@ -382,7 +382,7 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
         "trigger_rule_condition_summary": {
             index: _describe_activation_condition(
                 rule.activation_condition,
-                predator_names=predator_names,
+                herbivore_names=herbivore_names,
                 substance_names=substance_names,
             )
             for index, rule in enumerate(draft.trigger_rules)
@@ -414,7 +414,7 @@ def _default_activation_condition_for_rule(
     Raises:
         HTTPException: ``node_kind`` is unsupported by the condition editor.
     """
-    default_predator_species_id = rule.predator_species_id
+    default_herbivore_species_id = rule.herbivore_species_id
     default_substance_id = rule.substance_id
     for definition in draft.substance_definitions:
         if definition.substance_id != rule.substance_id:
@@ -424,8 +424,8 @@ def _default_activation_condition_for_rule(
     if node_kind == "enemy_presence":
         return {
             "kind": "enemy_presence",
-            "predator_species_id": default_predator_species_id,
-            "min_predator_population": max(1, rule.min_predator_population),
+            "herbivore_species_id": default_herbivore_species_id,
+            "min_herbivore_population": max(1, rule.min_herbivore_population),
         }
     if node_kind == "substance_active":
         return {"kind": "substance_active", "substance_id": default_substance_id}
@@ -441,8 +441,8 @@ def _default_activation_condition_for_rule(
             "conditions": [
                 {
                     "kind": "enemy_presence",
-                    "predator_species_id": default_predator_species_id,
-                    "min_predator_population": max(1, rule.min_predator_population),
+                    "herbivore_species_id": default_herbivore_species_id,
+                    "min_herbivore_population": max(1, rule.min_herbivore_population),
                 }
             ],
         }
@@ -515,8 +515,8 @@ def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
 
     from phids.engine.components.swarm import SwarmComponent
 
-    predator_names = {
-        species.species_id: species.name for species in _sim_loop.config.predator_species
+    herbivore_names = {
+        species.species_id: species.name for species in _sim_loop.config.herbivore_species
     }
     energy_stressed: list[dict[str, Any]] = []
     for entity in _sim_loop.world.query(SwarmComponent):
@@ -527,7 +527,7 @@ def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
         energy_stressed.append(
             {
                 "entity_id": swarm.entity_id,
-                "name": predator_names.get(swarm.species_id, f"Predator {swarm.species_id}"),
+                "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
                 "population": swarm.population,
                 "energy_deficit": energy_deficit,
                 "x": swarm.x,
@@ -721,13 +721,13 @@ def _build_telemetry_svg(df: Any) -> str:  # df is polars.DataFrame
 
     Args:
         df: Tabular telemetry object with columns ``tick``, ``flora_population``,
-            ``predator_population``, ``total_flora_energy``.
+            ``herbivore_population``, ``total_flora_energy``.
 
     Returns:
         SVG markup suitable for ``innerHTML`` injection.
 
     Notes:
-        The chart intentionally overlays flora population, predator population, and aggregate flora
+        The chart intentionally overlays flora population, herbivore population, and aggregate flora
         energy on a shared temporal axis to support rapid diagnosis of trophic oscillation and
         metabolic collapse onset.
     """
@@ -744,11 +744,11 @@ def _build_telemetry_svg(df: Any) -> str:  # df is polars.DataFrame
     W, H, pad = 800, 160, 30
     ticks: list[int] = df["tick"].to_list()
     flora_pop: list[int] = df["flora_population"].to_list()
-    pred_pop: list[int] = df["predator_population"].to_list()
+    herbivore_pop: list[int] = df["herbivore_population"].to_list()
     flora_e: list[float] = df["total_flora_energy"].to_list()
 
     max_tick = max(ticks) or 1
-    max_pop = max(max(flora_pop, default=1), max(pred_pop, default=1)) or 1
+    max_pop = max(max(flora_pop, default=1), max(herbivore_pop, default=1)) or 1
     max_energy = max(flora_e, default=1.0) or 1.0
 
     def sx(t: int) -> float:
@@ -765,7 +765,8 @@ def _build_telemetry_svg(df: Any) -> str:  # df is polars.DataFrame
         f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(flora_pop[i]):.1f}" for i in range(n)
     )
     pp_path = " ".join(
-        f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(pred_pop[i]):.1f}" for i in range(n)
+        f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(herbivore_pop[i]):.1f}"
+        for i in range(n)
     )
     fe_path = " ".join(
         f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_e(flora_e[i]):.1f}" for i in range(n)

@@ -115,7 +115,7 @@ def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
 def _describe_activation_condition(
     condition: dict[str, Any] | None,
     *,
-    predator_names: dict[int, str] | None = None,
+    herbivore_names: dict[int, str] | None = None,
     substance_names: dict[int, str] | None = None,
 ) -> str:
     """Render a concise human-readable summary of a nested activation-condition tree.
@@ -129,7 +129,7 @@ def _describe_activation_condition(
     Args:
         condition: A deserialized condition node dictionary, or ``None`` for
             unconditional triggering.
-        predator_names: Optional mapping from predator species identifier to display
+        herbivore_names: Optional mapping from herbivore species identifier to display
             name.  Used to resolve ``enemy_presence`` leaf labels.
         substance_names: Optional mapping from substance identifier to display name.
             Used to resolve ``substance_active`` and ``environmental_signal`` leaf labels.
@@ -143,14 +143,14 @@ def _describe_activation_condition(
 
     kind = condition.get("kind")
     if kind == "enemy_presence":
-        predator_species_id = _coerce_int(condition.get("predator_species_id", -1), default=-1)
-        min_population = _coerce_int(condition.get("min_predator_population", 1), default=1)
-        predator_label = (
-            predator_names.get(predator_species_id, f"Predator {predator_species_id}")
-            if predator_names is not None
-            else f"Predator {predator_species_id}"
+        herbivore_species_id = _coerce_int(condition.get("herbivore_species_id", -1), default=-1)
+        min_population = _coerce_int(condition.get("min_herbivore_population", 1), default=1)
+        herbivore_label = (
+            herbivore_names.get(herbivore_species_id, f"Herbivore {herbivore_species_id}")
+            if herbivore_names is not None
+            else f"Herbivore {herbivore_species_id}"
         )
-        return f"{predator_label} ≥ {min_population}"
+        return f"{herbivore_label} ≥ {min_population}"
     if kind == "substance_active":
         substance_id = _coerce_int(condition.get("substance_id", -1), default=-1)
         substance_label = (
@@ -175,7 +175,7 @@ def _describe_activation_condition(
         return "unconditional"
     rendered = [
         _describe_activation_condition(
-            child, predator_names=predator_names, substance_names=substance_names
+            child, herbivore_names=herbivore_names, substance_names=substance_names
         )
         for child in children
     ]
@@ -405,7 +405,7 @@ def _live_substance_state_payload(
 def _serialize_live_substance(
     substance: Any,
     *,
-    predator_names: dict[int, str],
+    herbivore_names: dict[int, str],
     substance_names: dict[int, str],
 ) -> dict[str, Any]:
     """Serialise a single live runtime substance component into a dashboard-ready dictionary.
@@ -419,8 +419,8 @@ def _serialize_live_substance(
     Args:
         substance: A live :class:`~phids.engine.components.substances.SubstanceComponent`
             instance.
-        predator_names: Mapping from predator species identifier to display name, used to
-            resolve the ``trigger_predator_name`` field.
+        herbivore_names: Mapping from herbivore species identifier to display name, used to
+            resolve the ``trigger_herbivore_name`` field.
         substance_names: Mapping from substance identifier to display name, used to resolve
             the ``name`` and ``activation_condition_summary`` fields.
 
@@ -453,18 +453,18 @@ def _serialize_live_substance(
         "repellent": substance.repellent,
         "lethality_rate": float(substance.lethality_rate),
         "repellent_walk_ticks": substance.repellent_walk_ticks,
-        "trigger_predator_species_id": substance.trigger_predator_species_id,
-        "trigger_predator_name": predator_names.get(
-            substance.trigger_predator_species_id,
-            f"Predator {substance.trigger_predator_species_id}",
+        "trigger_herbivore_species_id": substance.trigger_herbivore_species_id,
+        "trigger_herbivore_name": herbivore_names.get(
+            substance.trigger_herbivore_species_id,
+            f"Herbivore {substance.trigger_herbivore_species_id}",
         )
-        if substance.trigger_predator_species_id >= 0
+        if substance.trigger_herbivore_species_id >= 0
         else None,
-        "trigger_min_predator_population": substance.trigger_min_predator_population,
+        "trigger_min_herbivore_population": substance.trigger_min_herbivore_population,
         "activation_condition": substance.activation_condition,
         "activation_condition_summary": _describe_activation_condition(
             substance.activation_condition,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             substance_names=substance_names,
         ),
     }
@@ -520,9 +520,9 @@ def _fallback_live_substance_payload(
         "repellent": False,
         "lethality_rate": 0.0,
         "repellent_walk_ticks": 0,
-        "trigger_predator_species_id": -1,
-        "trigger_predator_name": None,
-        "trigger_min_predator_population": 0,
+        "trigger_herbivore_species_id": -1,
+        "trigger_herbivore_name": None,
+        "trigger_min_herbivore_population": 0,
         "activation_condition": None,
         "activation_condition_summary": "visible on rendered live snapshot",
     }
@@ -579,7 +579,9 @@ def build_live_cell_details(
     validate_cell_coordinates(x, y, env.width, env.height)
 
     flora_names = {species.species_id: species.name for species in loop.config.flora_species}
-    predator_names = {species.species_id: species.name for species in loop.config.predator_species}
+    herbivore_names = {
+        species.species_id: species.name for species in loop.config.herbivore_species
+    }
 
     owned_substances: dict[int, list[SubstanceComponent]] = {}
     for entity in world.query(SubstanceComponent):
@@ -618,7 +620,7 @@ def build_live_cell_details(
             visible_substances = [
                 _serialize_live_substance(
                     substance,
-                    predator_names=predator_names,
+                    herbivore_names=herbivore_names,
                     substance_names=substance_names,
                 )
                 for substance in plant_substances
@@ -693,7 +695,7 @@ def build_live_cell_details(
                 {
                     "entity_id": swarm.entity_id,
                     "species_id": swarm.species_id,
-                    "name": predator_names.get(swarm.species_id, f"Predator {swarm.species_id}"),
+                    "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
                     "population": swarm.population,
                     "initial_population": swarm.initial_population,
                     "energy": float(swarm.energy),
@@ -808,9 +810,9 @@ def build_preview_cell_details(
         getattr(species, "species_id", index): getattr(species, "name", f"Flora {index}")
         for index, species in enumerate(draft.flora_species)
     }
-    predator_names = {
-        getattr(species, "species_id", index): getattr(species, "name", f"Predator {index}")
-        for index, species in enumerate(draft.predator_species)
+    herbivore_names = {
+        getattr(species, "species_id", index): getattr(species, "name", f"Herbivore {index}")
+        for index, species in enumerate(draft.herbivore_species)
     }
     substances = {definition.substance_id: definition for definition in draft.substance_definitions}
     # Build effective substance_names from draft definitions when no explicit mapping is provided.
@@ -865,16 +867,16 @@ def build_preview_cell_details(
                             if rule.substance_id in substances
                             else _default_substance_name(rule.substance_id, is_toxin=False)
                         ),
-                        "predator_species_id": rule.predator_species_id,
-                        "predator_name": predator_names.get(
-                            rule.predator_species_id,
-                            f"Predator {rule.predator_species_id}",
+                        "herbivore_species_id": rule.herbivore_species_id,
+                        "herbivore_name": herbivore_names.get(
+                            rule.herbivore_species_id,
+                            f"Herbivore {rule.herbivore_species_id}",
                         ),
-                        "min_predator_population": rule.min_predator_population,
+                        "min_herbivore_population": rule.min_herbivore_population,
                         "activation_condition": rule.activation_condition,
                         "activation_condition_summary": _describe_activation_condition(
                             rule.activation_condition,
-                            predator_names=predator_names,
+                            herbivore_names=herbivore_names,
                             substance_names=effective_substance_names,
                         ),
                     }
@@ -887,7 +889,7 @@ def build_preview_cell_details(
         {
             "index": index,
             "species_id": swarm.species_id,
-            "name": predator_names.get(swarm.species_id, f"Predator {swarm.species_id}"),
+            "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
             "population": swarm.population,
             "energy": float(swarm.energy),
         }
@@ -979,7 +981,9 @@ def build_live_dashboard_payload(
     toxin_overlay = env.toxin_layers.max(axis=0) if env.num_toxins > 0 else None
 
     flora_names = {species.species_id: species.name for species in loop.config.flora_species}
-    predator_names = {species.species_id: species.name for species in loop.config.predator_species}
+    herbivore_names = {
+        species.species_id: species.name for species in loop.config.herbivore_species
+    }
 
     owned_substances: dict[int, list[SubstanceComponent]] = {}
     for entity in world.query(SubstanceComponent):
@@ -1049,7 +1053,7 @@ def build_live_dashboard_payload(
                 "y": swarm.y,
                 "population": swarm.population,
                 "species_id": swarm.species_id,
-                "name": predator_names.get(swarm.species_id, f"Predator {swarm.species_id}"),
+                "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
                 "energy": float(swarm.energy),
                 "energy_deficit": max(
                     0.0,

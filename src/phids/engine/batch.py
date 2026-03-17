@@ -18,7 +18,7 @@ native code.
 
 Statistical aggregation is performed by :func:`aggregate_batch_telemetry`, which aligns
 the per-run telemetry row lists to the minimum observed tick count, stacks them into NumPy
-arrays, and computes per-tick mean and standard deviation for flora population, predator
+arrays, and computes per-tick mean and standard deviation for flora population, herbivore
 population, and per-species sub-populations. The resulting ``aggregate`` dictionary is
 serialised to ``{output_dir}/{job_id}_summary.json`` for persistent retrieval and
 Chart.js rendering of confidence bands in the batch dashboard.
@@ -189,12 +189,12 @@ def aggregate_batch_telemetry(
     Returns:
         dict[str, Any]: Aggregate summary with keys ``ticks``,
         ``flora_population_mean``, ``flora_population_std``,
-        ``predator_population_mean``, ``predator_population_std``,
+        ``herbivore_population_mean``, ``herbivore_population_std``,
         ``total_flora_energy_mean``, ``total_flora_energy_std``,
         ``extinction_probability``, ``runs_completed``,
         ``survival_probability_curve``,
         ``per_flora_pop_mean``, ``per_flora_pop_std``,
-        ``per_predator_pop_mean``, ``per_predator_pop_std``.
+        ``per_herbivore_pop_mean``, ``per_herbivore_pop_std``.
     """
     if not per_run:
         return {}
@@ -208,8 +208,8 @@ def aggregate_batch_telemetry(
     flora_pop = np.array(
         [[r["flora_population"] for r in run] for run in aligned], dtype=np.float64
     )
-    pred_pop = np.array(
-        [[r["predator_population"] for r in run] for run in aligned], dtype=np.float64
+    herb_pop = np.array(
+        [[r["herbivore_population"] for r in run] for run in aligned], dtype=np.float64
     )
     flora_energy = np.array(
         [[r["total_flora_energy"] for r in run] for run in aligned], dtype=np.float64
@@ -222,11 +222,11 @@ def aggregate_batch_telemetry(
 
     # Collect all per-species ids seen
     all_flora_ids: set[int] = set()
-    all_pred_ids: set[int] = set()
+    all_herb_ids: set[int] = set()
     for run in aligned:
         for row in run:
             all_flora_ids.update(row.get("plant_pop_by_species", {}).keys())
-            all_pred_ids.update(row.get("swarm_pop_by_species", {}).keys())
+            all_herb_ids.update(row.get("swarm_pop_by_species", {}).keys())
 
     per_flora_pop_mean: dict[int, list[float]] = {}
     per_flora_pop_std: dict[int, list[float]] = {}
@@ -238,22 +238,22 @@ def aggregate_batch_telemetry(
         per_flora_pop_mean[fid] = arr.mean(axis=0).tolist()
         per_flora_pop_std[fid] = arr.std(axis=0).tolist()
 
-    per_pred_pop_mean: dict[int, list[float]] = {}
-    per_pred_pop_std: dict[int, list[float]] = {}
-    for pid in sorted(all_pred_ids):
+    per_herb_pop_mean: dict[int, list[float]] = {}
+    per_herb_pop_std: dict[int, list[float]] = {}
+    for pid in sorted(all_herb_ids):
         arr = np.array(
             [[r.get("swarm_pop_by_species", {}).get(pid, 0) for r in run] for run in aligned],
             dtype=np.float64,
         )
-        per_pred_pop_mean[pid] = arr.mean(axis=0).tolist()
-        per_pred_pop_std[pid] = arr.std(axis=0).tolist()
+        per_herb_pop_mean[pid] = arr.mean(axis=0).tolist()
+        per_herb_pop_std[pid] = arr.std(axis=0).tolist()
 
     result: dict[str, Any] = {
         "ticks": ticks,
         "flora_population_mean": flora_pop.mean(axis=0).tolist(),
         "flora_population_std": flora_pop.std(axis=0).tolist(),
-        "predator_population_mean": pred_pop.mean(axis=0).tolist(),
-        "predator_population_std": pred_pop.std(axis=0).tolist(),
+        "herbivore_population_mean": herb_pop.mean(axis=0).tolist(),
+        "herbivore_population_std": herb_pop.std(axis=0).tolist(),
         "total_flora_energy_mean": flora_energy.mean(axis=0).tolist(),
         "total_flora_energy_std": flora_energy.std(axis=0).tolist(),
         "extinction_probability": extinction_probability,
@@ -261,8 +261,8 @@ def aggregate_batch_telemetry(
         "runs_completed": len(per_run),
         "per_flora_pop_mean": {str(k): v for k, v in per_flora_pop_mean.items()},
         "per_flora_pop_std": {str(k): v for k, v in per_flora_pop_std.items()},
-        "per_predator_pop_mean": {str(k): v for k, v in per_pred_pop_mean.items()},
-        "per_predator_pop_std": {str(k): v for k, v in per_pred_pop_std.items()},
+        "per_herbivore_pop_mean": {str(k): v for k, v in per_herb_pop_mean.items()},
+        "per_herbivore_pop_std": {str(k): v for k, v in per_herb_pop_std.items()},
     }
     logger.info(
         "Batch aggregation complete (runs=%d, min_len=%d, extinction_prob=%.3f)",
@@ -326,6 +326,7 @@ class BatchRunner:
         job_id: str,
         output_dir: Path | None = None,
         on_progress: Callable[[int], None] | None = None,
+        scenario_name: str | None = None,
     ) -> BatchResult:
         """Execute ``runs`` independent simulation trajectories in parallel.
 
@@ -342,6 +343,8 @@ class BatchRunner:
             output_dir: Directory for output files; defaults to ``data/batches``.
             on_progress: Optional callback invoked with completed count as each
                 future resolves.
+            scenario_name: Optional display label persisted into the summary so
+                restored ledgers can retain operator-selected names.
 
         Returns:
             BatchResult: Completed result with all per-run telemetry and aggregate.
@@ -384,6 +387,10 @@ class BatchRunner:
                     on_progress(completed)
 
         aggregate = aggregate_batch_telemetry(per_run_telemetry)
+        persisted_scenario_name = (
+            scenario_name or str(scenario_dict.get("scenario_name", ""))
+        ).strip()
+        aggregate["scenario_name"] = persisted_scenario_name or "unnamed"
         aggregate = _sanitize_for_json(aggregate)
 
         summary_path = save_dir / f"{job_id}_summary.json"

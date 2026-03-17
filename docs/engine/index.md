@@ -179,7 +179,7 @@ appends a serialized snapshot of the current environment state.
 The order matters: replay and telemetry are intended to describe the post-phase state of the
 completed tick, not an intermediate partial state.
 
-Current telemetry includes not only aggregate flora/predator measures, but also per-tick plant death
+Current telemetry includes not only aggregate flora/herbivore measures, but also per-tick plant death
 diagnostics distinguishing herbivore feeding, defense maintenance, reproduction, mycorrhizal growth,
 and background deficit culling.
 
@@ -192,10 +192,10 @@ The currently implemented conditions are:
 - `Z1` — maximum tick count reached,
 - `Z2` — extinction of a configured flora species,
 - `Z3` — extinction of all flora,
-- `Z4` — extinction of a configured predator species,
-- `Z5` — extinction of all predators,
+- `Z4` — extinction of a configured herbivore species,
+- `Z5` — extinction of all herbivores,
 - `Z6` — total flora energy exceeds a threshold,
-- `Z7` — total predator population exceeds a threshold.
+- `Z7` — total herbivore population exceeds a threshold.
 
 The tick counter is incremented after the termination check has been computed for the current
 state.

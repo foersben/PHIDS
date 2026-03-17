@@ -10,8 +10,8 @@
       <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.flora_species|length }}</div>
     </div>
     <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <div class="text-slate-500">Draft predators</div>
-      <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.predator_species|length }}</div>
+      <div class="text-slate-500">Draft herbivores</div>
+      <div class="mt-1 text-lg font-semibold text-slate-700">{{ draft.herbivore_species|length }}</div>
     </div>
     <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
       <div class="text-slate-500">Placed plants</div>
@@ -60,8 +60,8 @@
     <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
       <dt>flora energy</dt><dd class="text-right">{{ '%.2f'|format(latest_metrics.total_flora_energy) }}</dd>
       <dt>flora population</dt><dd class="text-right">{{ latest_metrics.flora_population }}</dd>
-      <dt>predator clusters</dt><dd class="text-right">{{ latest_metrics.predator_clusters }}</dd>
-      <dt>predator population</dt><dd class="text-right">{{ latest_metrics.predator_population }}</dd>
+      <dt>herbivore clusters</dt><dd class="text-right">{{ latest_metrics.herbivore_clusters }}</dd>
+      <dt>herbivore population</dt><dd class="text-right">{{ latest_metrics.herbivore_population }}</dd>
     </dl>
     <div class="grid grid-cols-2 gap-2 pt-1">
       <div class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-2">
@@ -70,7 +70,7 @@
       </div>
       <div class="rounded-lg bg-rose-50 border border-rose-100 px-2 py-2">
         <div class="text-[10px] uppercase tracking-wide text-rose-600">avg swarm size</div>
-        <div class="mt-1 font-mono text-slate-700">{{ '%.2f'|format((latest_metrics.predator_population / [1, latest_metrics.predator_clusters]|max)) }}</div>
+        <div class="mt-1 font-mono text-slate-700">{{ '%.2f'|format((latest_metrics.herbivore_population / [1, latest_metrics.herbivore_clusters]|max)) }}</div>
       </div>
     </div>
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">

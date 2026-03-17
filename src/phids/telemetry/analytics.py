@@ -3,7 +3,7 @@
 The :class:`TelemetryRecorder` accumulates per-tick population and energy metrics into an
 in-memory row buffer and exposes a lazily-constructed :class:`polars.DataFrame` for
 downstream export, Chart.js serialisation, and statistical aggregation. Each recorded tick
-captures both aggregate scalars (total flora energy, total predator population) and
+captures both aggregate scalars (total flora energy, total herbivore population) and
 granular per-species dictionaries (population and aggregate energy keyed by
 ``species_id``), thereby enabling precise Lotka-Volterra phase-space visualisation and
 Monte Carlo batch evaluation.
@@ -53,7 +53,7 @@ class TelemetryRecorder:
     The recorder appends one row per tick and materialises a lazily-built Polars
     DataFrame containing aggregate scalars together with per-species flat columns.
     Aggregate fields comprise ``tick``, ``total_flora_energy``, ``flora_population``,
-    ``predator_clusters``, ``predator_population``, and the five per-tick plant death
+    ``herbivore_clusters``, ``herbivore_population``, and the five per-tick plant death
     cause counts (``death_reproduction``, ``death_mycorrhiza``,
     ``death_defense_maintenance``, ``death_herbivore_feeding``,
     ``death_background_deficit``). Per-species breakdowns are exposed as typed Polars
@@ -107,14 +107,14 @@ class TelemetryRecorder:
             plant_pop_by_species[plant.species_id] += 1
             plant_energy_by_species[plant.species_id] += plant.energy
 
-        predator_clusters = 0
-        predator_population = 0
+        herbivore_clusters = 0
+        herbivore_population = 0
         swarm_pop_by_species: dict[int, int] = defaultdict(int)
 
         for entity in world.query(SwarmComponent):
             swarm: SwarmComponent = entity.get_component(SwarmComponent)
-            predator_clusters += 1
-            predator_population += swarm.population
+            herbivore_clusters += 1
+            herbivore_population += swarm.population
             swarm_pop_by_species[swarm.species_id] += swarm.population
 
         defense_cost_by_species: dict[int, float] = defaultdict(float)
@@ -148,8 +148,8 @@ class TelemetryRecorder:
             "tick": tick,
             "total_flora_energy": total_flora_energy,
             "flora_population": flora_population,
-            "predator_clusters": predator_clusters,
-            "predator_population": predator_population,
+            "herbivore_clusters": herbivore_clusters,
+            "herbivore_population": herbivore_population,
             **death_counts,
             # Per-species flat columns
             "plant_pop_by_species": dict(plant_pop_by_species),
@@ -164,10 +164,10 @@ class TelemetryRecorder:
             del self._rows[:overflow]
         self._df = None  # invalidate cache
         logger.debug(
-            "Telemetry row recorded (tick=%d, flora=%d, predators=%d, flora_energy=%.2f)",
+            "Telemetry row recorded (tick=%d, flora=%d, herbivores=%d, flora_energy=%.2f)",
             tick,
             flora_population,
-            predator_population,
+            herbivore_population,
             total_flora_energy,
         )
 
@@ -182,7 +182,7 @@ class TelemetryRecorder:
         return self._rows[-1]
 
     def get_species_ids(self) -> dict[str, list[int]]:
-        """Return the union of all flora and predator species ids seen so far.
+        """Return the union of all flora and herbivore species ids seen so far.
 
         Scans all accumulated rows to collect every species id that has
         appeared at least once in the simulation history, enabling Chart.js
@@ -190,17 +190,17 @@ class TelemetryRecorder:
         extinct mid-simulation.
 
         Returns:
-            dict[str, list[int]]: Keys ``"flora_ids"`` and ``"predator_ids"``
+            dict[str, list[int]]: Keys ``"flora_ids"`` and ``"herbivore_ids"``
             each mapping to a sorted list of integer species identifiers.
         """
         flora_ids: set[int] = set()
-        predator_ids: set[int] = set()
+        herbivore_ids: set[int] = set()
         for row in self._rows:
             flora_ids.update(row.get("plant_pop_by_species", {}).keys())
-            predator_ids.update(row.get("swarm_pop_by_species", {}).keys())
+            herbivore_ids.update(row.get("swarm_pop_by_species", {}).keys())
         return {
             "flora_ids": sorted(flora_ids),
-            "predator_ids": sorted(predator_ids),
+            "herbivore_ids": sorted(herbivore_ids),
         }
 
     @property
@@ -272,8 +272,8 @@ class TelemetryRecorder:
                         "tick": pl.Series([], dtype=pl.Int64),
                         "total_flora_energy": pl.Series([], dtype=pl.Float64),
                         "flora_population": pl.Series([], dtype=pl.Int64),
-                        "predator_clusters": pl.Series([], dtype=pl.Int64),
-                        "predator_population": pl.Series([], dtype=pl.Int64),
+                        "herbivore_clusters": pl.Series([], dtype=pl.Int64),
+                        "herbivore_population": pl.Series([], dtype=pl.Int64),
                         "death_reproduction": pl.Series([], dtype=pl.Int64),
                         "death_mycorrhiza": pl.Series([], dtype=pl.Int64),
                         "death_defense_maintenance": pl.Series([], dtype=pl.Int64),

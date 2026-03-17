@@ -13,7 +13,7 @@ import pytest
 from phids.api.schemas import (
     AllOfConditionSchema,
     AnyOfConditionSchema,
-    EnemyPresenceConditionSchema,
+    HerbivorePresenceConditionSchema,
     FloraSpeciesParams,
     SubstanceActiveConditionSchema,
     TriggerConditionSchema,
@@ -757,8 +757,8 @@ def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
     _add_swarm(world, 2, 2, species_id=0, pop=10)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -809,8 +809,8 @@ def test_signaling_aggregates_co_located_swarm_population_for_trigger_threshold(
     _add_swarm(world, 2, 2, species_id=0, pop=3)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -847,8 +847,8 @@ def test_signaling_toxin_deactivates_when_trigger_species_is_gone() -> None:
     _add_swarm(world, 2, 2, species_id=1, pop=10)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -897,8 +897,8 @@ def test_signaling_toxin_lingers_for_aftereffect_then_deactivates() -> None:
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -935,8 +935,8 @@ def test_signaling_irreversible_toxin_stays_active_after_trigger_loss() -> None:
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -971,8 +971,8 @@ def test_signaling_signal_lingers_for_aftereffect_then_deactivates() -> None:
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=False,
@@ -1016,8 +1016,8 @@ def test_signaling_signal_with_zero_aftereffect_stops_emitting_next_tick() -> No
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=False,
@@ -1039,8 +1039,8 @@ def test_signaling_signal_with_zero_aftereffect_stops_emitting_next_tick() -> No
     assert float(env.signal_layers[1].max()) == 0.0
 
 
-def test_signaling_aftereffect_does_not_starve_plant_without_predator() -> None:
-    """Validates the signaling aftereffect does not starve plant without predator invariant and confirms the expected biological behavior under controlled simulation conditions.
+def test_signaling_aftereffect_does_not_starve_plant_without_herbivore() -> None:
+    """Validates the signaling aftereffect does not starve plant without herbivore invariant and confirms the expected biological behavior under controlled simulation conditions.
 
     The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
 
@@ -1055,8 +1055,8 @@ def test_signaling_aftereffect_does_not_starve_plant_without_predator() -> None:
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=False,
@@ -1100,8 +1100,8 @@ def test_signaling_owner_death_stops_emission_and_existing_signal_decays() -> No
     _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=False,
@@ -1172,8 +1172,8 @@ def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> N
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=False,
@@ -1211,8 +1211,8 @@ def test_signaling_applies_toxin_damage_once_per_active_layer() -> None:
     swarm_b_id = _add_swarm(world, 4, 4, species_id=0, pop=10)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1246,8 +1246,8 @@ def test_signaling_toxins_remain_local_and_do_not_diffuse() -> None:
     swarm_id = _add_swarm(world, 2, 2, species_id=0, pop=6)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1286,8 +1286,8 @@ def test_signaling_precursor_gate_blocks_activation() -> None:
     _add_swarm(world, 1, 1, species_id=0, pop=10)
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1307,8 +1307,8 @@ def test_signaling_precursor_gate_blocks_activation() -> None:
     assert sub.active is False
 
 
-def test_signaling_allows_condition_only_trigger_without_local_predator() -> None:
-    """Activation-condition trees can trigger signaling even without co-located predators."""
+def test_signaling_allows_condition_only_trigger_without_local_herbivore() -> None:
+    """Activation-condition trees can trigger signaling even without co-located herbivores."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1331,11 +1331,11 @@ def test_signaling_allows_condition_only_trigger_without_local_predator() -> Non
         ),
     )
 
-    # No swarms are present, so predator_presence is false. Trigger must occur
+    # No swarms are present, so herbivore_presence is false. Trigger must occur
     # through activation_condition evaluation only.
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1361,7 +1361,7 @@ def test_signaling_allows_condition_only_trigger_without_local_predator() -> Non
     assert by_id[1].active is True
 
 
-def test_signaling_environmental_signal_condition_triggers_without_predator() -> None:
+def test_signaling_environmental_signal_condition_triggers_without_herbivore() -> None:
     """Ambient signal concentration can trigger activation without direct herbivore co-location."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
@@ -1370,8 +1370,8 @@ def test_signaling_environmental_signal_condition_triggers_without_predator() ->
     env.signal_layers[0, 2, 2] = 0.2
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1401,7 +1401,7 @@ def test_signaling_environmental_signal_condition_triggers_without_predator() ->
     assert by_id[1].active is True
 
 
-def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_predicates() -> None:
+def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_herbivore() -> None:
     """Validates the signaling all of gate supports mixed enemy and substance predicates invariant and confirms the expected biological behavior under controlled simulation conditions.
 
     The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
@@ -1418,22 +1418,25 @@ def test_signaling_all_of_gate_supports_mixed_enemy_and_substance_predicates() -
     _add_swarm(world, 2, 2, species_id=1, pop=3)
 
     signal_trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=0,
         synthesis_duration=1,
         is_toxin=False,
     )
     toxin_trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
         activation_condition=AllOfConditionSchema(
             conditions=[
                 SubstanceActiveConditionSchema(substance_id=0),
-                EnemyPresenceConditionSchema(predator_species_id=1, min_predator_population=2),
+                HerbivorePresenceConditionSchema(
+                    herbivore_species_id=1,
+                    min_herbivore_population=2,
+                ),
             ]
         ),
     )
@@ -1466,15 +1469,18 @@ def test_signaling_any_of_gate_allows_alternative_enemy_or_substance_paths() -> 
     _add_swarm(world, 2, 2, species_id=1, pop=2)
 
     toxin_trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=5,
+        herbivore_species_id=0,
+        min_herbivore_population=5,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
         activation_condition=AnyOfConditionSchema(
             conditions=[
                 SubstanceActiveConditionSchema(substance_id=0),
-                EnemyPresenceConditionSchema(predator_species_id=1, min_predator_population=2),
+                HerbivorePresenceConditionSchema(
+                    herbivore_species_id=1,
+                    min_herbivore_population=2,
+                ),
             ]
         ),
     )
@@ -1493,7 +1499,7 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately() -> Non
     unregistered from the spatial hash and destroyed via ``world.collect_garbage`` within
     the same signaling tick. Without this localised garbage collection, the zero-population
     entity would persist as an invisible ghost entry, corrupting subsequent O(1) spatial-hash
-    lookups and confounding predator-presence evaluations in ``_check_activation_condition``
+    lookups and confounding herbivore-presence evaluations in ``_check_activation_condition``
     until Phase 3 (interaction) of the following tick purged it.
 
     The test configures a single plant-swarm pair with a lethal toxin whose ``lethality_rate``
@@ -1515,8 +1521,8 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately() -> Non
     # lethality_rate=1.0 and toxin concentration will be SUBSTANCE_EMIT_RATE (≈0.1)
     # casualties = int(1.0 * emit_rate * 5) may be 0 for low rates, so use a very high rate
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1551,8 +1557,8 @@ def test_signaling_toxin_casualties_deduct_swarm_energy_mass() -> None:
     swarm.energy = 50.0
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1578,8 +1584,8 @@ def test_signaling_aggregates_strongest_toxin_properties_per_substance_id() -> N
     strong_swarm_id = _add_swarm(world, 6, 1, species_id=0, pop=10)
 
     weak_trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1587,8 +1593,8 @@ def test_signaling_aggregates_strongest_toxin_properties_per_substance_id() -> N
         lethality_rate=1.0,
     )
     strong_trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=1,
         synthesis_duration=1,
         is_toxin=True,
@@ -1616,8 +1622,8 @@ def test_signaling_relay_splits_fixed_budget_across_air_and_roots() -> None:
 
     _add_swarm(world, 3, 2, species_id=0, pop=3)
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=0,
         synthesis_duration=1,
         is_toxin=False,
@@ -1643,8 +1649,8 @@ def test_signaling_airborne_emission_is_not_hard_capped_at_one() -> None:
     env.signal_layers[0, 2, 2] = 1.2
 
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=0,
         synthesis_duration=1,
         is_toxin=False,

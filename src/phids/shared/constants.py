@@ -2,7 +2,7 @@
 
 This module centralises all numeric sentinels, hard upper limits, and physical simulation
 parameters that must remain consistent across the engine core, API schemas, and telemetry
-sub-packages. The Rule-of-16 caps (``MAX_FLORA_SPECIES``, ``MAX_PREDATOR_SPECIES``,
+sub-packages. The Rule-of-16 caps (``MAX_FLORA_SPECIES``, ``MAX_HERBIVORE_SPECIES``,
 ``MAX_SUBSTANCE_TYPES``) govern the maximum cardinality of pre-allocated NumPy matrices in the
 ``GridEnvironment`` and ECS world; exceeding these limits during scenario construction is
 intercepted by Pydantic validation at the API ingress boundary and is never permitted to reach
@@ -23,7 +23,7 @@ from __future__ import annotations
 # Rule of 16 – hard upper limits for pre-allocated matrices
 # ---------------------------------------------------------------------------
 MAX_FLORA_SPECIES: int = 16
-MAX_PREDATOR_SPECIES: int = 16
+MAX_HERBIVORE_SPECIES: int = 16
 MAX_SUBSTANCE_TYPES: int = 16
 
 # ---------------------------------------------------------------------------

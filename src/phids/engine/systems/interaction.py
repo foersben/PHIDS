@@ -1,7 +1,7 @@
 """Interaction system: swarm gradient navigation, herbivory, metabolic attrition, and mitosis.
 
 This module implements the second of three ordered per-tick simulation phases in the PHIDS engine.
-The interaction phase resolves all predator–flora encounters after plant lifecycle dynamics have
+The interaction phase resolves all herbivore–flora encounters after plant lifecycle dynamics have
 been committed to the energy layers, but before chemical-defense substances are emitted and
 diffused. This ordering is a deliberate architectural invariant: herbivory must operate against
 the most current plant-energy state produced by the lifecycle phase, while the chemical-signaling
@@ -22,7 +22,7 @@ the ceiling enter a transient random-walk dispersal phase, modelling the habitat
 saturation-driven emigration documented in colonial insect foragers. Herbivory is applied
 exclusively to stationary swarms (those that did not relocate during the current tick) via O(1)
 spatial hash lookups; a species-pair diet-compatibility matrix gates energy transfer between each
-predator–flora combination, ensuring phylogenetic dietary specificity. Metabolic attrition
+herbivore–flora combination, ensuring phylogenetic dietary specificity. Metabolic attrition
 deducts per-individual upkeep energy each tick; energy deficits are resolved as population
 casualties computed by ⌈deficit / energy_min⌉, converting energetic debt directly into
 individual mortality. Surplus energy above the swarm-baseline threshold is converted into new
@@ -322,7 +322,7 @@ def run_interaction(
     """Execute one complete interaction tick, advancing all swarm entities through seven ordered phases.
 
     This function is the primary entry point for the interaction system and orchestrates the full
-    predator–flora encounter resolution cycle for a single simulation tick. The seven sequential
+    herbivore–flora encounter resolution cycle for a single simulation tick. The seven sequential
     sub-phases — movement cooldown, gradient-directed navigation with anchoring, herbivorous
     feeding, metabolic attrition, mortality evaluation, net-assimilation reproduction, and colony
     fission — are applied atomically to each swarm entity in sequence. The ordering is a strict
@@ -369,8 +369,8 @@ def run_interaction(
             component access, entity creation, and garbage collection.
         env: Grid environment instance supplying the flow-field scalar array, toxin layers,
             grid dimensions, and plant-energy mutation methods.
-        diet_matrix: Boolean compatibility matrix indexed as ``[predator_species_id][flora_species_id]``;
-            a ``True`` entry at position ``[i][j]`` indicates that predator species ``i`` is able
+        diet_matrix: Boolean compatibility matrix indexed as ``[herbivore_species_id][flora_species_id]``;
+            a ``True`` entry at position ``[i][j]`` indicates that herbivore species ``i`` is able
             to consume flora species ``j``.
         tick: Current simulation tick index; reserved for future tick-conditional logic and
             diagnostic instrumentation.
@@ -427,12 +427,12 @@ def run_interaction(
                     if not co_entity.has_component(PlantComponent):
                         continue
                     anchor_plant = co_entity.get_component(PlantComponent)
-                    pred_row = (
+                    herbivore_row = (
                         diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
                     )
                     if (
-                        anchor_plant.species_id < len(pred_row)
-                        and pred_row[anchor_plant.species_id]
+                        anchor_plant.species_id < len(herbivore_row)
+                        and herbivore_row[anchor_plant.species_id]
                         and anchor_plant.energy > 0
                     ):
                         is_anchored = True
@@ -477,11 +477,12 @@ def run_interaction(
                 target_plant: PlantComponent = co_entity.get_component(PlantComponent)
 
                 # Diet compatibility check
-                pred_row = (
+                herbivore_row = (
                     diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
                 )
                 if not (
-                    target_plant.species_id < len(pred_row) and pred_row[target_plant.species_id]
+                    target_plant.species_id < len(herbivore_row)
+                    and herbivore_row[target_plant.species_id]
                 ):
                     on_incompatible_plant = True
                     continue

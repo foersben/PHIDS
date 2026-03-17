@@ -23,7 +23,7 @@ from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api import ui_state as draft_state_module
 from phids.api.main import app
 from phids.api.services.draft_service import DraftService
-from phids.api.schemas import BatchJobState, FloraSpeciesParams, PredatorSpeciesParams
+from phids.api.schemas import BatchJobState, FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft
 from phids.engine import batch as batch_engine
 from phids.engine.components.plant import PlantComponent
@@ -43,12 +43,12 @@ def _default_client() -> AsyncClient:
 
 
 def _sample_telemetry_rows() -> list[dict[str, object]]:
-    """Return compact telemetry rows spanning flora, predator, defense, and batch fields."""
+    """Return compact telemetry rows spanning flora, herbivore, defense, and batch fields."""
     return [
         {
             "tick": 0,
             "flora_population": 10,
-            "predator_population": 4,
+            "herbivore_population": 4,
             "total_flora_energy": 100.0,
             "plant_pop_by_species": {0: 6, 1: 4},
             "plant_energy_by_species": {0: 60.0, 1: 40.0},
@@ -59,7 +59,7 @@ def _sample_telemetry_rows() -> list[dict[str, object]]:
         {
             "tick": 1,
             "flora_population": 8,
-            "predator_population": 5,
+            "herbivore_population": 5,
             "total_flora_energy": 88.0,
             "plant_pop_by_species": {0: 5, 1: 3},
             "plant_energy_by_species": {0: 50.0, 1: 38.0},
@@ -112,7 +112,7 @@ async def test_root_returns_full_html() -> None:
         ("/ui/placements", "placement-canvas"),
         ("/ui/biotope", "biotope-config-view"),
         ("/ui/flora", "flora-config-view"),
-        ("/ui/predators", "predator-config-view"),
+        ("/ui/herbivores", "herbivore-config-view"),
         ("/ui/substances", "substance-config-view"),
         ("/ui/diet-matrix", "diet-matrix-view"),
         ("/ui/trigger-rules", "trigger-rules-view"),
@@ -123,7 +123,7 @@ async def test_ui_partials_render(path: str, marker: str) -> None:
     """
     Verifies that each UI partial endpoint renders the expected canvas or configuration view.
 
-    This test suite systematically checks the rendering of dashboard and configuration views for biotope, flora, predators, substances, diet matrix, and trigger rules. The presence of specific markers in the HTML response confirms that the UI correctly exposes the configuration and visualization surfaces necessary for deterministic scenario editing and ecological simulation, supporting rigorous scientific experimentation.
+    This test suite systematically checks the rendering of dashboard and configuration views for biotope, flora, herbivores, substances, diet matrix, and trigger rules. The presence of specific markers in the HTML response confirms that the UI correctly exposes the configuration and visualization surfaces necessary for deterministic scenario editing and ecological simulation, supporting rigorous scientific experimentation.
     """
     async with _default_client() as client:
         resp = await client.get(path)
@@ -339,7 +339,7 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
     reset_draft()
     invalid_draft = get_draft()
     invalid_draft.flora_species.clear()
-    invalid_draft.predator_species.clear()
+    invalid_draft.herbivore_species.clear()
 
     async with _default_client() as client:
         invalid_resp = await client.post(
@@ -372,6 +372,7 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
         job_id: str,
         output_dir: Path,
         on_progress: object | None = None,
+        scenario_name: str | None = None,
     ) -> batch_engine.BatchResult:
         if callable(on_progress):
             on_progress(1)
@@ -380,15 +381,15 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
             "ticks": [0, 1],
             "flora_population_mean": [10.0, 8.0],
             "flora_population_std": [0.0, 1.0],
-            "predator_population_mean": [4.0, 5.0],
-            "predator_population_std": [0.0, 1.0],
+            "herbivore_population_mean": [4.0, 5.0],
+            "herbivore_population_std": [0.0, 1.0],
             "survival_probability_curve": [1.0, 0.5],
             "extinction_probability": 0.25,
             "runs_completed": runs,
             "per_flora_pop_mean": {"0": [10.0, 8.0]},
             "per_flora_pop_std": {"0": [0.0, 1.0]},
-            "per_predator_pop_mean": {"0": [4.0, 5.0]},
-            "per_predator_pop_std": {"0": [0.0, 1.0]},
+            "per_herbivore_pop_mean": {"0": [4.0, 5.0]},
+            "per_herbivore_pop_std": {"0": [0.0, 1.0]},
         }
         (output_dir / f"{job_id}_summary.json").write_text(json.dumps(aggregate), encoding="utf-8")
         return batch_engine.BatchResult(
@@ -456,7 +457,7 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
     assert telemetry_export._parse_species_ids(" 1, bad, 2 ,, ") == {1, 2}
     assert telemetry_export._parse_species_ids(None) is None
 
-    filtered_rows = telemetry_export.filter_telemetry_rows(rows, flora_ids="1", predator_ids="1")
+    filtered_rows = telemetry_export.filter_telemetry_rows(rows, flora_ids="1", herbivore_ids="1")
     assert filtered_rows[0]["plant_pop_by_species"] == {1: 4}
     assert filtered_rows[1]["swarm_pop_by_species"] == {1: 2}
 
@@ -487,7 +488,7 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
     assert telemetry_export.export_bytes_tex_table([], tick_interval=1) == b"% No telemetry data\n"
 
     flora_names = {0: "Grass", 1: "Clover"}
-    predator_names = {0: "Aphid", 1: "Rabbit"}
+    herbivore_names = {0: "Aphid", 1: "Rabbit"}
     for plot_type in (
         "timeseries",
         "phasespace",
@@ -499,9 +500,9 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
             rows,
             plot_type,
             flora_names=flora_names,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             prey_species_id=1,
-            predator_species_id=1,
+            herbivore_species_id=1,
             title="Coverage",
             x_label="Tick",
             y_label="Value",
@@ -513,9 +514,9 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
             rows,
             plot_type,
             flora_names=flora_names,
-            predator_names=predator_names,
+            herbivore_names=herbivore_names,
             prey_species_id=1,
-            predator_species_id=1,
+            herbivore_species_id=1,
             title="Coverage",
             x_label="Tick",
             y_label="Value",
@@ -536,15 +537,15 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
             "ticks": [0, 1],
             "flora_population_mean": [10.0, 8.0],
             "flora_population_std": [0.0, 1.0],
-            "predator_population_mean": [4.0, 5.0],
-            "predator_population_std": [0.0, 1.0],
+            "herbivore_population_mean": [4.0, 5.0],
+            "herbivore_population_std": [0.0, 1.0],
             "per_flora_pop_mean": {"0": [6.0, 5.0]},
             "per_flora_pop_std": {"0": [0.0, 1.0]},
-            "per_predator_pop_mean": {"1": [1.0, 2.0]},
-            "per_predator_pop_std": {"1": [0.0, 1.0]},
+            "per_herbivore_pop_mean": {"1": [1.0, 2.0]},
+            "per_herbivore_pop_std": {"1": [0.0, 1.0]},
         },
         flora_names=flora_names,
-        predator_names=predator_names,
+        herbivore_names=herbivore_names,
     )
     assert not aggregate_frame.empty
     assert {"Grass_pop_mean", "Rabbit_pop_std"}.issubset(aggregate_frame.columns)
@@ -578,11 +579,11 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     }
     assert draft_state_module._parse_condition_path("0.1.2") == [0, 1, 2]
     assert draft_state_module._default_activation_condition_node(
-        "enemy_presence", predator_species_id=2, min_predator_population=0
+        "enemy_presence", herbivore_species_id=2, min_herbivore_population=0
     ) == {
         "kind": "enemy_presence",
-        "predator_species_id": 2,
-        "min_predator_population": 1,
+        "herbivore_species_id": 2,
+        "min_herbivore_population": 1,
     }
     with pytest.raises(ValueError):
         draft_state_module._default_activation_condition_node("unsupported")
@@ -600,9 +601,9 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
             triggers=[],
         ),
     )
-    draft_service.add_predator(
+    draft_service.add_herbivore(
         draft,
-        PredatorSpeciesParams(
+        HerbivoreSpeciesParams(
             species_id=9,
             name="Rabbit",
             energy_min=4.0,
@@ -619,7 +620,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         1,
         1,
         1,
-        min_predator_population=3,
+        min_herbivore_population=3,
         required_signal_ids=[0],
     )
     assert draft.trigger_rules[0].activation_condition == {
@@ -634,7 +635,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         {
             "kind": "all_of",
             "conditions": [
-                {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 3}
+                {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 3}
             ],
         },
     )
@@ -648,13 +649,13 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         draft,
         0,
         "1",
-        {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 4},
+        {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 4},
     )
     draft_service.update_trigger_rule_condition_node(
         draft,
         0,
         "0",
-        min_predator_population=5,
+        min_herbivore_population=5,
     )
     draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
     with pytest.raises(IndexError):
@@ -666,7 +667,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     assert current_condition == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 5}
+            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}
         ],
     }
     assert (
@@ -681,17 +682,21 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         {
             "kind": "all_of",
             "conditions": [
-                {"kind": "enemy_presence", "predator_species_id": 2, "min_predator_population": 2},
+                {
+                    "kind": "enemy_presence",
+                    "herbivore_species_id": 2,
+                    "min_herbivore_population": 2,
+                },
                 {"kind": "substance_active", "substance_id": 2},
             ],
         },
-        removed_predator_id=1,
+        removed_herbivore_id=1,
         removed_substance_id=1,
     )
     assert remapped == {
         "kind": "all_of",
         "conditions": [
-            {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 2},
+            {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 2},
             {"kind": "substance_active", "substance_id": 1},
         ],
     }
@@ -700,7 +705,7 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     draft_service.add_swarm_placement(draft, 1, 4, 5, 6, 18.0)
     config = draft.build_sim_config()
     assert len(config.flora_species) == 2
-    assert len(config.predator_species) == 2
+    assert len(config.herbivore_species) == 2
     assert len(config.initial_plants) == 1
     assert len(config.initial_swarms) == 1
 
@@ -708,9 +713,9 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     draft_service.remove_swarm_placement(draft, 0)
     draft_service.add_plant_placement(draft, 1, 2, 2, 11.0)
     draft_service.add_swarm_placement(draft, 1, 2, 2, 5, 14.0)
-    draft_service.remove_predator(draft, 0)
+    draft_service.remove_herbivore(draft, 0)
     draft_service.remove_flora(draft, 0)
-    assert draft.predator_species[0].species_id == 0
+    assert draft.herbivore_species[0].species_id == 0
     assert draft.flora_species[0].species_id == 0
     draft_service.remove_trigger_rule(draft, 0)
     draft_service.clear_placements(draft)
@@ -719,11 +724,11 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     with pytest.raises(ValueError):
         draft_service.remove_flora(draft, 99)
     with pytest.raises(ValueError):
-        draft_service.remove_predator(draft, 99)
+        draft_service.remove_herbivore(draft, 99)
 
     empty = DraftState.default()
     empty.flora_species.clear()
-    empty.predator_species.clear()
+    empty.herbivore_species.clear()
     with pytest.raises(ValueError):
         empty.build_sim_config()
     reset_draft()
@@ -890,8 +895,8 @@ async def test_batch_view_renders_survival_chart_when_summary_exists(
         "ticks": [0, 1, 2, 3],
         "flora_population_mean": [10.0, 8.0, 6.0, 4.0],
         "flora_population_std": [0.0, 0.5, 0.5, 1.0],
-        "predator_population_mean": [2.0, 3.0, 4.0, 5.0],
-        "predator_population_std": [0.0, 0.5, 0.5, 1.0],
+        "herbivore_population_mean": [2.0, 3.0, 4.0, 5.0],
+        "herbivore_population_std": [0.0, 0.5, 0.5, 1.0],
         "survival_probability_curve": [1.0, 1.0, 0.5, 0.5],
         "extinction_probability": 0.5,
         "runs_completed": 2,
@@ -929,8 +934,8 @@ async def test_load_persisted_batches_populates_ledger(
                 "ticks": [0, 1],
                 "flora_population_mean": [5.0, 4.0],
                 "flora_population_std": [0.0, 0.1],
-                "predator_population_mean": [2.0, 2.0],
-                "predator_population_std": [0.0, 0.1],
+                "herbivore_population_mean": [2.0, 2.0],
+                "herbivore_population_std": [0.0, 0.1],
                 "survival_probability_curve": [1.0, 1.0],
                 "extinction_probability": 0.0,
                 "runs_completed": 3,
@@ -961,8 +966,8 @@ async def test_batch_export_csv_respects_tick_interval_decimation(
         "ticks": [0, 1, 2, 3, 4, 5],
         "flora_population_mean": [10, 9, 8, 7, 6, 5],
         "flora_population_std": [0, 0, 0, 0, 0, 0],
-        "predator_population_mean": [1, 1, 2, 2, 3, 3],
-        "predator_population_std": [0, 0, 0, 0, 0, 0],
+        "herbivore_population_mean": [1, 1, 2, 2, 3, 3],
+        "herbivore_population_std": [0, 0, 0, 0, 0, 0],
         "survival_probability_curve": [1, 1, 1, 0.8, 0.8, 0.6],
         "extinction_probability": 0.4,
         "runs_completed": 5,
@@ -999,8 +1004,8 @@ async def test_batch_export_tikz_supports_survival_chart_type(
         "ticks": [0, 1, 2],
         "flora_population_mean": [10, 8, 6],
         "flora_population_std": [0, 1, 1],
-        "predator_population_mean": [2, 3, 4],
-        "predator_population_std": [0, 1, 1],
+        "herbivore_population_mean": [2, 3, 4],
+        "herbivore_population_std": [0, 1, 1],
         "survival_probability_curve": [1.0, 0.8, 0.5],
         "extinction_probability": 0.5,
         "runs_completed": 3,
@@ -1124,9 +1129,9 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
                 "num_signals": 4,
                 "num_toxins": 4,
                 "z2_flora_species_extinction": 99,
-                "z4_predator_species_extinction": -3,
+                "z4_herbivore_species_extinction": -3,
                 "z6_max_total_flora_energy": -9,
-                "z7_max_total_predator_population": -2,
+                "z7_max_total_herbivore_population": -2,
                 "mycorrhizal_connection_cost": 1.0,
                 "mycorrhizal_growth_interval_ticks": 0,
                 "mycorrhizal_signal_velocity": 1,
@@ -1137,15 +1142,15 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
     assert 'name="mycorrhizal_growth_interval_ticks"' in resp.text
     assert 'value="1"' in resp.text
     assert 'name="z2_flora_species_extinction"' in resp.text
-    assert 'name="z4_predator_species_extinction"' in resp.text
+    assert 'name="z4_herbivore_species_extinction"' in resp.text
     assert 'name="z6_max_total_flora_energy"' in resp.text
-    assert 'name="z7_max_total_predator_population"' in resp.text
+    assert 'name="z7_max_total_herbivore_population"' in resp.text
     assert 'hx-trigger="input changed delay:200ms from:input, change delay:200ms"' in resp.text
     assert get_draft().mycorrhizal_growth_interval_ticks == 1
     assert get_draft().z2_flora_species_extinction == 15
-    assert get_draft().z4_predator_species_extinction == -1
+    assert get_draft().z4_herbivore_species_extinction == -1
     assert get_draft().z6_max_total_flora_energy == pytest.approx(-1.0)
-    assert get_draft().z7_max_total_predator_population == -1
+    assert get_draft().z7_max_total_herbivore_population == -1
 
 
 @pytest.mark.asyncio
@@ -1166,9 +1171,9 @@ async def test_biotope_wind_update_auto_applies_to_loaded_live_loop() -> None:
                 "num_signals": 4,
                 "num_toxins": 4,
                 "z2_flora_species_extinction": -1,
-                "z4_predator_species_extinction": -1,
+                "z4_herbivore_species_extinction": -1,
                 "z6_max_total_flora_energy": -1.0,
-                "z7_max_total_predator_population": -1,
+                "z7_max_total_herbivore_population": -1,
                 "mycorrhizal_connection_cost": 1.0,
                 "mycorrhizal_growth_interval_ticks": 8,
                 "mycorrhizal_signal_velocity": 1,
@@ -1266,11 +1271,11 @@ async def test_substance_and_diet_routes_delegate_to_service_and_compact_referen
         )
         toggle_diet = await client.post(
             "/api/matrices/diet",
-            data={"predator_idx": 0, "flora_idx": 0, "compatible": "toggle"},
+            data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "toggle"},
         )
         invalid_diet = await client.post(
             "/api/matrices/diet",
-            data={"predator_idx": 9, "flora_idx": 9, "compatible": "true"},
+            data={"herbivore_idx": 9, "flora_idx": 9, "compatible": "true"},
         )
 
         missing_update = await client.put(
@@ -1354,7 +1359,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
             aftereffect_ticks=2,
         )
     )
-    draft_service.add_trigger_rule(draft, 0, 0, 0, min_predator_population=5)
+    draft_service.add_trigger_rule(draft, 0, 0, 0, min_herbivore_population=5)
 
     async with _default_client() as client:
         load_resp = await client.post("/api/scenario/load-draft", headers={"HX-Request": "true"})

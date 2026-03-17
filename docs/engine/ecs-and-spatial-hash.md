@@ -26,7 +26,7 @@ flowchart LR
     C --> E["signaling trigger checks"]
 ```
 
-This locality structure is central to PHIDS biological semantics. Feeding in interaction, predator-presence aggregation in signaling, and occupancy-aware cleanup across phases all rely on cell-level lookups rather than distance-wide scans.
+This locality structure is central to PHIDS biological semantics. Feeding in interaction, herbivore-presence aggregation in signaling, and occupancy-aware cleanup across phases all rely on cell-level lookups rather than distance-wide scans.
 
 ## Movement, Destruction, and Garbage Collection
 

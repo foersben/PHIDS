@@ -18,7 +18,7 @@ It defines the minimum complete specification necessary to instantiate a live `S
 - tick and streaming parameters,
 - signal and toxin layer counts,
 - wind fields,
-- flora and predator species definitions,
+- flora and herbivore species definitions,
 - diet compatibility,
 - initial placements,
 - mycorrhizal settings,
@@ -42,9 +42,9 @@ Each `FloraSpeciesParams` entry defines:
 This means flora species carry both baseline biological parameters and their encoded defensive
 response repertoire.
 
-### Predator species
+### Herbivore species
 
-Each `PredatorSpeciesParams` entry defines:
+Each `HerbivoreSpeciesParams` entry defines:
 
 - `energy_min`,
 - `velocity`,
@@ -55,7 +55,7 @@ These values shape the swarm behavior later consumed by the interaction phase.
 
 ### Diet matrix
 
-The `DietCompatibilityMatrix` is indexed by predator species first and flora species second. It is a
+The `DietCompatibilityMatrix` is indexed by herbivore species first and flora species second. It is a
 bounded boolean edibility relation rather than a continuous preference model.
 
 ### Initial placements
@@ -72,8 +72,8 @@ substance behavior* will result from that response.
 
 A trigger currently includes:
 
-- `predator_species_id`
-- `min_predator_population`
+- `herbivore_species_id`
+- `min_herbivore_population`
 - `substance_id`
 - `synthesis_duration`
 - `is_toxin`
@@ -142,7 +142,7 @@ validated scenario schema.
 
 It currently:
 
-- rejects drafts without at least one flora and one predator species,
+- rejects drafts without at least one flora and one herbivore species,
 - reconstructs trigger lists per flora species,
 - joins trigger rules with substance definitions,
 - trims diet-matrix rows to active dimensions,
@@ -172,17 +172,17 @@ In the current PHIDS design, scenario authors should think in layers.
 
 ### 1. Define the ecological cast
 
-Choose flora and predator species with bounded IDs and explicit interaction roles.
+Choose flora and herbivore species with bounded IDs and explicit interaction roles.
 
 ### 2. Define who can eat whom
 
-Use the diet matrix to determine which predator–flora pairings are biologically active.
+Use the diet matrix to determine which herbivore–flora pairings are biologically active.
 
 ### 3. Define defensive responses
 
 Use trigger rules to specify:
 
-- which predator species trigger a response,
+- which herbivore species trigger a response,
 - what population threshold matters,
 - whether the response is a signal or toxin,
 - how long synthesis takes,
@@ -222,7 +222,7 @@ This scenario is the clearest example of chained activation logic and mycorrhiza
 This scenario emphasizes atmospheric transport and compound gating. It includes:
 
 - stronger wind,
-- multiple predator species,
+- multiple herbivore species,
 - nested logic in which repellent and lethal toxins depend on intermediate signal states and enemy
   combinations.
 
@@ -240,7 +240,7 @@ for every trigger rule.
 
 At runtime, the signaling system consumes these trigger schemas by:
 
-- evaluating co-located predator thresholds,
+- evaluating co-located herbivore thresholds,
 - spawning `SubstanceComponent` entities when necessary,
 - advancing synthesis timers,
 - evaluating activation-condition trees,

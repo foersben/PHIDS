@@ -2,7 +2,7 @@
 
 This module implements the first of three ordered per-tick simulation phases executed by the
 PHIDS ``SimulationLoop``. The lifecycle phase applies deterministic physiological dynamics to all
-registered plant entities before any predator interactions are resolved, ensuring that the energy
+registered plant entities before any herbivore interactions are resolved, ensuring that the energy
 state observed by the interaction and signaling phases reflects the current-tick growth outcome.
 
 Per-tick growth increments the energy reserve of each plant by ``base_energy × (growth_rate / 100)``,

@@ -15,7 +15,7 @@ It defines, in a single validated object:
 - wind parameters,
 - signal and toxin layer counts,
 - flora species definitions,
-- predator species definitions,
+- herbivore species definitions,
 - diet compatibility,
 - initial placements,
 - mycorrhizal configuration,
@@ -84,7 +84,7 @@ competition rather than degenerate one-sided dynamics.
 The example tests also verify that scenario species counts remain within the bounded architecture:
 
 - at most 16 flora species,
-- at most 16 predator species.
+- at most 16 herbivore species.
 
 ## Curated Example Pack
 

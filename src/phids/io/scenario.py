@@ -42,11 +42,11 @@ def load_scenario_from_dict(data: dict[str, Any]) -> SimulationConfig:
     """
     config = SimulationConfig.model_validate(data)
     logger.debug(
-        "Scenario validated from mapping (grid=%dx%d, flora=%d, predators=%d)",
+        "Scenario validated from mapping (grid=%dx%d, flora=%d, herbivores=%d)",
         config.grid_width,
         config.grid_height,
         len(config.flora_species),
-        len(config.predator_species),
+        len(config.herbivore_species),
     )
     return config
 

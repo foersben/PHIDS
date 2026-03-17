@@ -62,7 +62,7 @@ from phids.api.schemas import (
     FloraSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    PredatorSpeciesParams,
+    HerbivoreSpeciesParams,
     SimulationConfig,
     TriggerConditionSchema,
 )
@@ -98,11 +98,11 @@ def _flora(
     )
 
 
-def _predator(species_id: int) -> PredatorSpeciesParams:
-    """Construct a minimal :class:`PredatorSpeciesParams` fixture for testing."""
-    return PredatorSpeciesParams(
+def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
+    """Construct a minimal :class:`HerbivoreSpeciesParams` fixture for testing."""
+    return HerbivoreSpeciesParams(
         species_id=species_id,
-        name=f"predator-{species_id}",
+        name=f"herbivore-{species_id}",
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
@@ -127,7 +127,7 @@ def _minimal_config(
         num_signals=num_signals,
         num_toxins=num_toxins,
         flora_species=[_flora(0, triggers=triggers)],
-        predator_species=[_predator(0)],
+        herbivore_species=[_herbivore(0)],
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
         initial_plants=[InitialPlantPlacement(species_id=0, x=x, y=y, energy=10.0)],
         initial_swarms=[InitialSwarmPlacement(species_id=0, x=x, y=y, population=4, energy=5.0)],
@@ -420,8 +420,8 @@ def test_build_live_cell_details_substance_name_injection() -> None:
     eliminating reliance on module-level mutable state.
     """
     trigger = TriggerConditionSchema(
-        predator_species_id=0,
-        min_predator_population=1,
+        herbivore_species_id=0,
+        min_herbivore_population=1,
         substance_id=0,
         synthesis_duration=1,
         is_toxin=False,
@@ -519,9 +519,9 @@ def test_build_preview_cell_details_includes_trigger_rules() -> None:
     draft_service.add_trigger_rule(
         draft,
         flora_species_id=0,
-        predator_species_id=0,
+        herbivore_species_id=0,
         substance_id=0,
-        min_predator_population=2,
+        min_herbivore_population=2,
     )
 
     payload = build_preview_cell_details(3, 3, draft=draft)
@@ -726,21 +726,21 @@ def test_describe_activation_condition_unconditional_for_none() -> None:
     """Verifies that a None condition tree renders as 'unconditional'.
 
     The 'unconditional' label is the canonical representation of a trigger that fires
-    on every applicable predator presence without an additional gating constraint.
+    on every applicable herbivore presence without an additional gating constraint.
     """
     assert _describe_activation_condition(None) == "unconditional"
 
 
 def test_describe_activation_condition_enemy_presence_leaf() -> None:
-    """Verifies correct rendering of an enemy_presence leaf node with a named predator.
+    """Verifies correct rendering of an enemy_presence leaf node with a named herbivore.
 
-    The rendered string must include the predator display name and the population
+    The rendered string must include the herbivore display name and the population
     threshold, as both fields are semantically significant for operator comprehension
     of the defensive triggering logic.
     """
     result = _describe_activation_condition(
-        {"kind": "enemy_presence", "predator_species_id": 1, "min_predator_population": 5},
-        predator_names={1: "Aphids"},
+        {"kind": "enemy_presence", "herbivore_species_id": 1, "min_herbivore_population": 5},
+        herbivore_names={1: "Aphids"},
     )
     assert result == "Aphids ≥ 5"
 
@@ -756,11 +756,15 @@ def test_describe_activation_condition_nested_any_of() -> None:
         {
             "kind": "any_of",
             "conditions": [
-                {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 2},
+                {
+                    "kind": "enemy_presence",
+                    "herbivore_species_id": 0,
+                    "min_herbivore_population": 2,
+                },
                 {"kind": "substance_active", "substance_id": 1},
             ],
         },
-        predator_names={0: "Beetles"},
+        herbivore_names={0: "Beetles"},
         substance_names={1: "Alarm VOC"},
     )
     assert result == "(Beetles ≥ 2 OR Alarm VOC active)"
@@ -792,11 +796,15 @@ def test_describe_activation_condition_all_of_combinator() -> None:
         {
             "kind": "all_of",
             "conditions": [
-                {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 1},
+                {
+                    "kind": "enemy_presence",
+                    "herbivore_species_id": 0,
+                    "min_herbivore_population": 1,
+                },
                 {"kind": "substance_active", "substance_id": 0},
             ],
         },
-        predator_names={0: "Caterpillar"},
+        herbivore_names={0: "Caterpillar"},
         substance_names={0: "VOC"},
     )
     assert result == "(Caterpillar ≥ 1 AND VOC active)"
@@ -907,7 +915,7 @@ def test_is_live_substance_visible_triggered_this_tick_returns_true() -> None:
     """Verifies that a substance triggered in the current tick is immediately visible.
 
     The triggered state is the initiation moment of the defense response — the tick on
-    which the predator-presence condition first satisfies the trigger rule.  Immediate
+    which the herbivore-presence condition first satisfies the trigger rule.  Immediate
     visibility ensures the operator sees the defense response at the earliest possible
     moment.
     """
@@ -1012,13 +1020,13 @@ def test_serialize_live_substance_active_signal_structural_contract() -> None:
         repellent=True,
         lethality_rate=0.0,
         repellent_walk_ticks=4,
-        trigger_predator_species_id=1,
-        trigger_min_predator_population=3,
+        trigger_herbivore_species_id=1,
+        trigger_min_herbivore_population=3,
         activation_condition=None,
     )
     payload = _serialize_live_substance(
         substance,
-        predator_names={1: "Aphids"},
+        herbivore_names={1: "Aphids"},
         substance_names={0: "JA-Ile"},
     )
 
@@ -1037,9 +1045,9 @@ def test_serialize_live_substance_active_signal_structural_contract() -> None:
         "repellent",
         "lethality_rate",
         "repellent_walk_ticks",
-        "trigger_predator_species_id",
-        "trigger_predator_name",
-        "trigger_min_predator_population",
+        "trigger_herbivore_species_id",
+        "trigger_herbivore_name",
+        "trigger_min_herbivore_population",
         "activation_condition",
         "activation_condition_summary",
     }
@@ -1058,7 +1066,7 @@ def test_serialize_live_substance_name_resolved_via_injection() -> None:
     substance = SubstanceComponent(entity_id=11, substance_id=2, owner_plant_id=0, active=True)
     payload = _serialize_live_substance(
         substance,
-        predator_names={},
+        herbivore_names={},
         substance_names={2: "Ethylene"},
     )
     assert payload["name"] == "Ethylene"
@@ -1085,7 +1093,7 @@ def test_serialize_live_substance_toxin_kind_field() -> None:
     )
     payload = _serialize_live_substance(
         substance,
-        predator_names={},
+        herbivore_names={},
         substance_names={1: "Solanine"},
     )
     assert payload["kind"] == "toxin"
@@ -1093,10 +1101,10 @@ def test_serialize_live_substance_toxin_kind_field() -> None:
     assert payload["lethality_rate"] == pytest.approx(0.25)
 
 
-def test_serialize_live_substance_trigger_predator_name_fallback() -> None:
-    """Verifies that an unlisted predator id generates a deterministic fallback label.
+def test_serialize_live_substance_trigger_herbivore_name_fallback() -> None:
+    """Verifies that an unlisted herbivore id generates a deterministic fallback label.
 
-    When the injected ``predator_names`` mapping has no entry for the trigger predator,
+    When the injected ``herbivore_names`` mapping has no entry for the trigger herbivore,
     the serialiser must produce a stable fallback string rather than raising a KeyError
     or returning None, ensuring tooltip entries remain informative even for incomplete
     name registries.
@@ -1107,17 +1115,17 @@ def test_serialize_live_substance_trigger_predator_name_fallback() -> None:
         entity_id=13,
         substance_id=0,
         owner_plant_id=0,
-        trigger_predator_species_id=7,
+        trigger_herbivore_species_id=7,
     )
-    payload = _serialize_live_substance(substance, predator_names={}, substance_names={})
-    assert payload["trigger_predator_name"] == "Predator 7"
+    payload = _serialize_live_substance(substance, herbivore_names={}, substance_names={})
+    assert payload["trigger_herbivore_name"] == "Herbivore 7"
 
 
-def test_serialize_live_substance_no_predator_when_id_negative() -> None:
-    """Verifies that trigger_predator_name is None when no predator is configured.
+def test_serialize_live_substance_no_herbivore_when_id_negative() -> None:
+    """Verifies that trigger_herbivore_name is None when no herbivore is configured.
 
-    A trigger_predator_species_id of -1 signals that the substance has no explicit
-    predator-specific trigger.  The serialised payload must carry None for the predator
+    A trigger_herbivore_species_id of -1 signals that the substance has no explicit
+    herbivore-specific trigger.  The serialised payload must carry None for the herbivore
     name field to allow the tooltip template to conditionally hide the trigger row.
     """
     from phids.engine.components.substances import SubstanceComponent
@@ -1126,10 +1134,10 @@ def test_serialize_live_substance_no_predator_when_id_negative() -> None:
         entity_id=14,
         substance_id=0,
         owner_plant_id=0,
-        trigger_predator_species_id=-1,
+        trigger_herbivore_species_id=-1,
     )
-    payload = _serialize_live_substance(substance, predator_names={}, substance_names={})
-    assert payload["trigger_predator_name"] is None
+    payload = _serialize_live_substance(substance, herbivore_names={}, substance_names={})
+    assert payload["trigger_herbivore_name"] is None
 
 
 def test_serialize_live_substance_activation_condition_summary_rendered() -> None:
@@ -1148,13 +1156,13 @@ def test_serialize_live_substance_activation_condition_summary_rendered() -> Non
         owner_plant_id=0,
         activation_condition={
             "kind": "enemy_presence",
-            "predator_species_id": 0,
-            "min_predator_population": 4,
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 4,
         },
     )
     payload = _serialize_live_substance(
         substance,
-        predator_names={0: "Locusts"},
+        herbivore_names={0: "Locusts"},
         substance_names={},
     )
     assert payload["activation_condition_summary"] == "Locusts ≥ 4"
@@ -1188,15 +1196,15 @@ def test_build_preview_cell_details_trigger_rule_with_activation_condition() -> 
     condition = {
         "kind": "any_of",
         "conditions": [
-            {"kind": "enemy_presence", "predator_species_id": 0, "min_predator_population": 3},
+            {"kind": "enemy_presence", "herbivore_species_id": 0, "min_herbivore_population": 3},
             {"kind": "substance_active", "substance_id": 0},
         ],
     }
     rule = TriggerRule(
         flora_species_id=0,
-        predator_species_id=0,
+        herbivore_species_id=0,
         substance_id=0,
-        min_predator_population=3,
+        min_herbivore_population=3,
         activation_condition=condition,
     )
     draft.trigger_rules.append(rule)

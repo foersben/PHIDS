@@ -318,7 +318,7 @@ versa.
 
 ### Forgetting dependent compaction
 
-Deleting flora, predator, or substance definitions usually requires cleanup of:
+Deleting flora, herbivore, or substance definitions usually requires cleanup of:
 
 - IDs,
 - matrices,

@@ -31,9 +31,9 @@ def _sample_rows() -> list[dict]:
         {
             "tick": 0,
             "flora_population": 10,
-            "predator_population": 3,
+            "herbivore_population": 3,
             "total_flora_energy": 500.0,
-            "predator_clusters": 1,
+            "herbivore_clusters": 1,
             "death_reproduction": 0,
             "death_mycorrhiza": 0,
             "death_defense_maintenance": 0,
@@ -48,9 +48,9 @@ def _sample_rows() -> list[dict]:
         {
             "tick": 1,
             "flora_population": 9,
-            "predator_population": 4,
+            "herbivore_population": 4,
             "total_flora_energy": 480.0,
-            "predator_clusters": 1,
+            "herbivore_clusters": 1,
             "death_reproduction": 1,
             "death_mycorrhiza": 0,
             "death_defense_maintenance": 0,
@@ -99,9 +99,9 @@ class TestTelemetryToDataframe:
                 "swarm_pop_by_species": {},
                 "defense_cost_by_species": {},
                 "flora_population": 5,
-                "predator_population": 0,
+                "herbivore_population": 0,
                 "total_flora_energy": 100.0,
-                "predator_clusters": 0,
+                "herbivore_clusters": 0,
                 "death_reproduction": 0,
                 "death_mycorrhiza": 0,
                 "death_defense_maintenance": 0,
@@ -115,9 +115,9 @@ class TestTelemetryToDataframe:
                 "swarm_pop_by_species": {},
                 "defense_cost_by_species": {},
                 "flora_population": 5,
-                "predator_population": 0,
+                "herbivore_population": 0,
                 "total_flora_energy": 100.0,
-                "predator_clusters": 0,
+                "herbivore_clusters": 0,
                 "death_reproduction": 0,
                 "death_mycorrhiza": 0,
                 "death_defense_maintenance": 0,
@@ -242,9 +242,9 @@ class TestGenerateTikzStr:
             _sample_rows(),
             "phasespace",
             prey_species_id=1,
-            predator_species_id=0,
+            herbivore_species_id=0,
             include_flora_ids="0",
-            include_predator_ids="0",
+            include_herbivore_ids="0",
         )
         # plant species 1 has x=4 at both sample ticks; if dropped, this becomes x=0.
         assert "(4,3)" in s
@@ -275,7 +275,7 @@ class TestExportBytesTexTable:
         data = export_bytes_tex_table(_sample_rows(), columns="tick,plant_0_pop")
         latex = data.decode("utf-8")
         assert "plant_0_pop" in latex
-        assert "predator_population" not in latex
+        assert "herbivore_population" not in latex
 
     def test_tick_interval_decimates_rows(self) -> None:
         """Tick-interval decimation reduces exported LaTeX row count as expected."""

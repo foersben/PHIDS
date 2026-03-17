@@ -74,17 +74,17 @@ class DraftService:
         )
 
     def _resize_diet_matrix(self, draft: DraftState) -> None:
-        """Resize the diet matrix to match current predator and flora list lengths.
+        """Resize the diet matrix to match current herbivore and flora list lengths.
 
         Args:
             draft: Draft state whose matrix dimensions are compacted or extended.
         """
-        n_pred = len(draft.predator_species)
+        n_herbivore = len(draft.herbivore_species)
         n_flora = len(draft.flora_species)
 
-        while len(draft.diet_matrix) < n_pred:
+        while len(draft.diet_matrix) < n_herbivore:
             draft.diet_matrix.append([False] * n_flora)
-        draft.diet_matrix = draft.diet_matrix[:n_pred]
+        draft.diet_matrix = draft.diet_matrix[:n_herbivore]
         for row in draft.diet_matrix:
             while len(row) < n_flora:
                 row.append(False)
@@ -96,17 +96,17 @@ class DraftService:
         Args:
             draft: Draft state whose species collections require index compaction.
         """
-        from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams
+        from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 
         draft.flora_species = [
             fp.model_copy(update={"species_id": i})
             for i, fp in enumerate(draft.flora_species)
             if isinstance(fp, FloraSpeciesParams)
         ]
-        draft.predator_species = [
+        draft.herbivore_species = [
             pp.model_copy(update={"species_id": i})
-            for i, pp in enumerate(draft.predator_species)
-            if isinstance(pp, PredatorSpeciesParams)
+            for i, pp in enumerate(draft.herbivore_species)
+            if isinstance(pp, HerbivoreSpeciesParams)
         ]
 
     def update_biotope(
@@ -122,9 +122,9 @@ class DraftService:
         num_signals: int,
         num_toxins: int,
         z2_flora_species_extinction: int,
-        z4_predator_species_extinction: int,
+        z4_herbivore_species_extinction: int,
         z6_max_total_flora_energy: float,
-        z7_max_total_predator_population: int,
+        z7_max_total_herbivore_population: int,
         mycorrhizal_inter_species: bool,
         mycorrhizal_connection_cost: float,
         mycorrhizal_growth_interval_ticks: int,
@@ -143,9 +143,9 @@ class DraftService:
             num_signals: Requested number of signal layers.
             num_toxins: Requested number of toxin layers.
             z2_flora_species_extinction: Requested species-specific flora-extinction termination rule.
-            z4_predator_species_extinction: Requested species-specific predator-extinction rule.
+            z4_herbivore_species_extinction: Requested species-specific herbivore-extinction rule.
             z6_max_total_flora_energy: Requested upper bound for total flora energy termination.
-            z7_max_total_predator_population: Requested upper bound for predator population
+            z7_max_total_herbivore_population: Requested upper bound for herbivore population
                 termination.
             mycorrhizal_inter_species: Requested root-link species policy.
             mycorrhizal_connection_cost: Requested root-link establishment cost.
@@ -162,9 +162,9 @@ class DraftService:
         clamped_num_signals = max(1, min(16, num_signals))
         clamped_num_toxins = max(1, min(16, num_toxins))
         clamped_z2 = max(-1, min(15, z2_flora_species_extinction))
-        clamped_z4 = max(-1, min(15, z4_predator_species_extinction))
+        clamped_z4 = max(-1, min(15, z4_herbivore_species_extinction))
         clamped_z6 = max(-1.0, z6_max_total_flora_energy)
-        clamped_z7 = max(-1, z7_max_total_predator_population)
+        clamped_z7 = max(-1, z7_max_total_herbivore_population)
         clamped_connection_cost = max(0.0, mycorrhizal_connection_cost)
         clamped_growth_interval = max(1, min(256, mycorrhizal_growth_interval_ticks))
         clamped_signal_velocity = max(1, mycorrhizal_signal_velocity)
@@ -178,9 +178,9 @@ class DraftService:
         draft.num_signals = clamped_num_signals
         draft.num_toxins = clamped_num_toxins
         draft.z2_flora_species_extinction = clamped_z2
-        draft.z4_predator_species_extinction = clamped_z4
+        draft.z4_herbivore_species_extinction = clamped_z4
         draft.z6_max_total_flora_energy = clamped_z6
-        draft.z7_max_total_predator_population = clamped_z7
+        draft.z7_max_total_herbivore_population = clamped_z7
         draft.mycorrhizal_inter_species = mycorrhizal_inter_species
         draft.mycorrhizal_connection_cost = clamped_connection_cost
         draft.mycorrhizal_growth_interval_ticks = clamped_growth_interval
@@ -195,9 +195,9 @@ class DraftService:
                 clamped_num_signals != num_signals,
                 clamped_num_toxins != num_toxins,
                 clamped_z2 != z2_flora_species_extinction,
-                clamped_z4 != z4_predator_species_extinction,
+                clamped_z4 != z4_herbivore_species_extinction,
                 clamped_z6 != z6_max_total_flora_energy,
-                clamped_z7 != z7_max_total_predator_population,
+                clamped_z7 != z7_max_total_herbivore_population,
                 clamped_connection_cost != mycorrhizal_connection_cost,
                 clamped_growth_interval != mycorrhizal_growth_interval_ticks,
                 clamped_signal_velocity != mycorrhizal_signal_velocity,
@@ -268,59 +268,59 @@ class DraftService:
             len(draft.trigger_rules),
         )
 
-    def add_predator(self, draft: DraftState, params: object) -> None:
-        """Append one predator species and expand dependent matrix state.
+    def add_herbivore(self, draft: DraftState, params: object) -> None:
+        """Append one herbivore species and expand dependent matrix state.
 
         Args:
             draft: Draft state mutated in place.
-            params: Predator species parameter object.
+            params: Herbivore species parameter object.
         """
-        draft.predator_species.append(params)
+        draft.herbivore_species.append(params)
         self.rebuild_species_ids(draft)
         self._resize_diet_matrix(draft)
         logger.debug(
-            "Draft predator added (species_id=%s, total_predators=%d)",
+            "Draft herbivore added (species_id=%s, total_herbivores=%d)",
             getattr(params, "species_id", "?"),
-            len(draft.predator_species),
+            len(draft.herbivore_species),
         )
 
-    def remove_predator(self, draft: DraftState, species_id: int) -> None:
-        """Remove one predator species and compact all dependent references.
+    def remove_herbivore(self, draft: DraftState, species_id: int) -> None:
+        """Remove one herbivore species and compact all dependent references.
 
         Args:
             draft: Draft state mutated in place.
-            species_id: Predator species identifier to remove.
+            species_id: Herbivore species identifier to remove.
 
         Raises:
-            ValueError: No predator species with the requested identifier exists.
+            ValueError: No herbivore species with the requested identifier exists.
         """
-        from phids.api.schemas import PredatorSpeciesParams
+        from phids.api.schemas import HerbivoreSpeciesParams
 
         idx = next(
             (
                 i
-                for i, pp in enumerate(draft.predator_species)
-                if isinstance(pp, PredatorSpeciesParams) and pp.species_id == species_id
+                for i, pp in enumerate(draft.herbivore_species)
+                if isinstance(pp, HerbivoreSpeciesParams) and pp.species_id == species_id
             ),
             None,
         )
         if idx is None:
-            raise ValueError(f"Predator species_id {species_id} not found.")
+            raise ValueError(f"Herbivore species_id {species_id} not found.")
 
-        del draft.predator_species[idx]
+        del draft.herbivore_species[idx]
         if idx < len(draft.diet_matrix):
             del draft.diet_matrix[idx]
 
         new_rules: list[TriggerRule] = []
         for rule in draft.trigger_rules:
-            if rule.predator_species_id == species_id:
+            if rule.herbivore_species_id == species_id:
                 continue
             new_rule = dataclasses.replace(rule)
-            if new_rule.predator_species_id > species_id:
-                new_rule.predator_species_id -= 1
+            if new_rule.herbivore_species_id > species_id:
+                new_rule.herbivore_species_id -= 1
             new_rule.activation_condition = _remap_condition_references(
                 deepcopy(new_rule.activation_condition),
-                removed_predator_id=species_id,
+                removed_herbivore_id=species_id,
             )
             new_rules.append(new_rule)
         draft.trigger_rules = new_rules
@@ -329,9 +329,9 @@ class DraftService:
         self.rebuild_species_ids(draft)
         self._resize_diet_matrix(draft)
         logger.debug(
-            "Draft predator removed (species_id=%d, total_predators=%d, remaining_trigger_rules=%d)",
+            "Draft herbivore removed (species_id=%d, total_herbivores=%d, remaining_trigger_rules=%d)",
             species_id,
-            len(draft.predator_species),
+            len(draft.herbivore_species),
             len(draft.trigger_rules),
         )
 
@@ -439,9 +439,14 @@ class DraftService:
         if name is not None:
             definition.name = name
         if type_label is not None:
-            definition.is_toxin = type_label in ("Lethal Toxin", "Repellent Toxin", "Toxin")
+            definition.is_toxin = type_label in (
+                "Lethal Toxin",
+                "Repellent Toxin",
+                "Repelling Toxin",
+                "Toxin",
+            )
             definition.lethal = type_label == "Lethal Toxin"
-            definition.repellent = type_label == "Repellent Toxin"
+            definition.repellent = type_label in ("Repellent Toxin", "Repelling Toxin")
         if synthesis_duration is not None:
             definition.synthesis_duration = max(1, synthesis_duration)
         if aftereffect_ticks is not None:
@@ -512,41 +517,41 @@ class DraftService:
     def set_diet_compatibility(
         self,
         draft: DraftState,
-        predator_idx: int,
+        herbivore_idx: int,
         flora_idx: int,
         compatible: str = "toggle",
     ) -> bool | None:
-        """Toggle or assign one predator-flora edibility matrix cell.
+        """Toggle or assign one herbivore-flora edibility matrix cell.
 
         Args:
             draft: Draft state mutated in place.
-            predator_idx: Predator row index.
+            herbivore_idx: Herbivore row index.
             flora_idx: Flora column index.
             compatible: Requested boolean state or the literal ``"toggle"``.
 
         Returns:
             The updated boolean cell value, or ``None`` when the indices are out of range.
         """
-        if predator_idx >= len(draft.diet_matrix) or predator_idx < 0:
+        if herbivore_idx >= len(draft.diet_matrix) or herbivore_idx < 0:
             return None
-        if flora_idx >= len(draft.diet_matrix[predator_idx]) or flora_idx < 0:
+        if flora_idx >= len(draft.diet_matrix[herbivore_idx]) or flora_idx < 0:
             return None
 
         if compatible == "toggle":
-            draft.diet_matrix[predator_idx][flora_idx] = not draft.diet_matrix[predator_idx][
+            draft.diet_matrix[herbivore_idx][flora_idx] = not draft.diet_matrix[herbivore_idx][
                 flora_idx
             ]
         else:
-            draft.diet_matrix[predator_idx][flora_idx] = self._is_truthy_flag(compatible)
-        return draft.diet_matrix[predator_idx][flora_idx]
+            draft.diet_matrix[herbivore_idx][flora_idx] = self._is_truthy_flag(compatible)
+        return draft.diet_matrix[herbivore_idx][flora_idx]
 
     def add_trigger_rule(
         self,
         draft: DraftState,
         flora_species_id: int,
-        predator_species_id: int,
+        herbivore_species_id: int,
         substance_id: int,
-        min_predator_population: int = 5,
+        min_herbivore_population: int = 5,
         activation_condition: dict[str, object] | None = None,
         required_signal_ids: list[int] | None = None,
     ) -> None:
@@ -555,18 +560,18 @@ class DraftService:
         Args:
             draft: Draft state mutated in place.
             flora_species_id: Flora species identifier.
-            predator_species_id: Predator species identifier.
+            herbivore_species_id: Herbivore species identifier.
             substance_id: Substance identifier synthesized by the rule.
-            min_predator_population: Minimum predator population threshold.
+            min_herbivore_population: Minimum herbivore population threshold.
             activation_condition: Optional nested activation-condition tree.
             required_signal_ids: Optional legacy shorthand converted into tree form.
         """
         draft.trigger_rules.append(
             TriggerRule(
                 flora_species_id=flora_species_id,
-                predator_species_id=predator_species_id,
+                herbivore_species_id=herbivore_species_id,
                 substance_id=substance_id,
-                min_predator_population=min_predator_population,
+                min_herbivore_population=min_herbivore_population,
                 activation_condition=deepcopy(
                     activation_condition
                     if activation_condition is not None
@@ -575,9 +580,9 @@ class DraftService:
             )
         )
         logger.debug(
-            "Draft trigger rule added (flora_species_id=%d, predator_species_id=%d, substance_id=%d, total_rules=%d)",
+            "Draft trigger rule added (flora_species_id=%d, herbivore_species_id=%d, substance_id=%d, total_rules=%d)",
             flora_species_id,
-            predator_species_id,
+            herbivore_species_id,
             substance_id,
             len(draft.trigger_rules),
         )
@@ -595,10 +600,10 @@ class DraftService:
         removed = draft.trigger_rules[index]
         del draft.trigger_rules[index]
         logger.debug(
-            "Draft trigger rule removed (index=%d, flora_species_id=%d, predator_species_id=%d, substance_id=%d, total_rules=%d)",
+            "Draft trigger rule removed (index=%d, flora_species_id=%d, herbivore_species_id=%d, substance_id=%d, total_rules=%d)",
             index,
             removed.flora_species_id,
-            removed.predator_species_id,
+            removed.herbivore_species_id,
             removed.substance_id,
             len(draft.trigger_rules),
         )
@@ -609,9 +614,9 @@ class DraftService:
         index: int,
         *,
         flora_species_id: int | None = None,
-        predator_species_id: int | None = None,
+        herbivore_species_id: int | None = None,
         substance_id: int | None = None,
-        min_predator_population: int | None = None,
+        min_herbivore_population: int | None = None,
         activation_condition: dict[str, object] | None = None,
         required_signal_ids: list[int] | None = None,
     ) -> None:
@@ -621,9 +626,9 @@ class DraftService:
             draft: Draft state mutated in place.
             index: Trigger-rule index in the draft list.
             flora_species_id: Optional replacement flora species identifier.
-            predator_species_id: Optional replacement predator species identifier.
+            herbivore_species_id: Optional replacement herbivore species identifier.
             substance_id: Optional replacement substance identifier.
-            min_predator_population: Optional replacement threshold.
+            min_herbivore_population: Optional replacement threshold.
             activation_condition: Optional replacement condition tree.
             required_signal_ids: Optional legacy shorthand converted into tree form.
 
@@ -633,12 +638,12 @@ class DraftService:
         rule = draft.trigger_rules[index]
         if flora_species_id is not None:
             rule.flora_species_id = flora_species_id
-        if predator_species_id is not None:
-            rule.predator_species_id = predator_species_id
+        if herbivore_species_id is not None:
+            rule.herbivore_species_id = herbivore_species_id
         if substance_id is not None:
             rule.substance_id = substance_id
-        if min_predator_population is not None:
-            rule.min_predator_population = min_predator_population
+        if min_herbivore_population is not None:
+            rule.min_herbivore_population = min_herbivore_population
         if activation_condition is not None:
             rule.activation_condition = deepcopy(activation_condition)
         elif required_signal_ids is not None:
@@ -646,10 +651,10 @@ class DraftService:
                 required_signal_ids
             )
         logger.debug(
-            "Draft trigger rule updated (index=%d, flora_species_id=%d, predator_species_id=%d, substance_id=%d)",
+            "Draft trigger rule updated (index=%d, flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)",
             index,
             rule.flora_species_id,
-            rule.predator_species_id,
+            rule.herbivore_species_id,
             rule.substance_id,
         )
 
@@ -833,7 +838,7 @@ class DraftService:
 
         Args:
             draft: Draft state mutated in place.
-            species_id: Predator species identifier.
+            species_id: Herbivore species identifier.
             x: Grid x-coordinate.
             y: Grid y-coordinate.
             population: Initial swarm population.

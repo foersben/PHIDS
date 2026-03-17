@@ -14,7 +14,7 @@ Mermaid should be used to communicate operator ordering, causal dependencies, an
 
 ```mermaid
 flowchart TD
-    A[Predator presence at tick t] --> B{Trigger rule evaluation}
+    A[Herbivore presence at tick t] --> B{Trigger rule evaluation}
     B -->|active| C[Substance synthesis countdown]
     C --> D[Signal or toxin emission]
     D --> E[Diffusion update on write buffer]
@@ -33,7 +33,7 @@ $$
 The same page may include matrix notation when documenting diet compatibility, coupling structure, or transfer operators:
 
 $$
-\mathbf{A}_{\mathrm{flora,pred}} =
+\mathbf{A}_{\mathrm{flora,herbivore}} =
 \begin{bmatrix}
 1 & 0 & 1 \\
 0 & 1 & 1 \\

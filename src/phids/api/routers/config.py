@@ -1,7 +1,7 @@
 """Configuration router for draft-state builder mutation routes.
 
 This module defines the HTMX-driven configuration endpoints that mutate `DraftState` during
-scenario construction. The routes cover biotope parameters, flora and predator species CRUD,
+scenario construction. The routes cover biotope parameters, flora and herbivore species CRUD,
 substance definitions, diet-matrix compatibility toggles, trigger-rule condition trees, and
 placement-editor operations. The computational purpose is to maintain a rigorously validated draft
 representation before any transition into a live deterministic `SimulationLoop`. The biological
@@ -19,7 +19,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
-from phids.api.schemas import FloraSpeciesParams, PredatorSpeciesParams
+from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import SubstanceDefinition, get_draft
 
@@ -41,9 +41,9 @@ async def config_biotope(
     num_signals: Annotated[int, Form()] = 4,
     num_toxins: Annotated[int, Form()] = 4,
     z2_flora_species_extinction: Annotated[int, Form()] = -1,
-    z4_predator_species_extinction: Annotated[int, Form()] = -1,
+    z4_herbivore_species_extinction: Annotated[int, Form()] = -1,
     z6_max_total_flora_energy: Annotated[float, Form()] = -1.0,
-    z7_max_total_predator_population: Annotated[int, Form()] = -1,
+    z7_max_total_herbivore_population: Annotated[int, Form()] = -1,
     mycorrhizal_inter_species: Annotated[str, Form()] = "off",
     mycorrhizal_connection_cost: Annotated[float, Form()] = 1.0,
     mycorrhizal_growth_interval_ticks: Annotated[int, Form()] = 8,
@@ -62,9 +62,9 @@ async def config_biotope(
         num_signals: Signal layer count.
         num_toxins: Toxin layer count.
         z2_flora_species_extinction: Flora species id for Z2 termination (-1 disables).
-        z4_predator_species_extinction: Predator species id for Z4 termination (-1 disables).
+        z4_herbivore_species_extinction: Herbivore species id for Z4 termination (-1 disables).
         z6_max_total_flora_energy: Total flora energy threshold for Z6 termination (-1 disables).
-        z7_max_total_predator_population: Predator population threshold for Z7 termination
+        z7_max_total_herbivore_population: Herbivore population threshold for Z7 termination
             (-1 disables).
         mycorrhizal_inter_species: Inter-species root-link toggle.
         mycorrhizal_connection_cost: Root-link energy cost.
@@ -86,9 +86,9 @@ async def config_biotope(
         num_signals=num_signals,
         num_toxins=num_toxins,
         z2_flora_species_extinction=z2_flora_species_extinction,
-        z4_predator_species_extinction=z4_predator_species_extinction,
+        z4_herbivore_species_extinction=z4_herbivore_species_extinction,
         z6_max_total_flora_energy=z6_max_total_flora_energy,
-        z7_max_total_predator_population=z7_max_total_predator_population,
+        z7_max_total_herbivore_population=z7_max_total_herbivore_population,
         mycorrhizal_inter_species=mycorrhizal_inter_species == "on",
         mycorrhizal_connection_cost=mycorrhizal_connection_cost,
         mycorrhizal_growth_interval_ticks=mycorrhizal_growth_interval_ticks,
@@ -105,9 +105,9 @@ async def config_biotope(
         draft.num_signals,
         draft.num_toxins,
         draft.z2_flora_species_extinction,
-        draft.z4_predator_species_extinction,
+        draft.z4_herbivore_species_extinction,
         draft.z6_max_total_flora_energy,
-        draft.z7_max_total_predator_population,
+        draft.z7_max_total_herbivore_population,
         draft.mycorrhizal_growth_interval_ticks,
     )
     if values_were_clamped:
@@ -268,11 +268,11 @@ async def config_flora_delete(species_id: int) -> HTMLResponse:
 
 
 @router.post(
-    "/api/config/predators", response_class=HTMLResponse, summary="Add predator species to draft"
+    "/api/config/herbivores", response_class=HTMLResponse, summary="Add herbivore species to draft"
 )
-async def config_predator_add(
+async def config_herbivore_add(
     request: Request,
-    name: Annotated[str, Form()] = "NewPredator",
+    name: Annotated[str, Form()] = "NewHerbivore",
     energy_min: Annotated[float, Form()] = 5.0,
     velocity: Annotated[int, Form()] = 2,
     consumption_rate: Annotated[float, Form()] = 10.0,
@@ -280,13 +280,15 @@ async def config_predator_add(
     energy_upkeep_per_individual: Annotated[float, Form()] = 0.05,
     split_population_threshold: Annotated[int, Form()] = 0,
 ) -> Any:
-    """Add one predator species to the draft and render the updated predator table."""
+    """Add one herbivore species to the draft and render the updated herbivore table."""
     draft = get_draft()
-    if len(draft.predator_species) >= 16:
-        api_main.logger.warning("Rule-of-16 rejected predator creation")
-        raise HTTPException(status_code=400, detail="Rule of 16: maximum predator species reached.")
-    new_id = len(draft.predator_species)
-    params = PredatorSpeciesParams(
+    if len(draft.herbivore_species) >= 16:
+        api_main.logger.warning("Rule-of-16 rejected herbivore creation")
+        raise HTTPException(
+            status_code=400, detail="Rule of 16: maximum herbivore species reached."
+        )
+    new_id = len(draft.herbivore_species)
+    params = HerbivoreSpeciesParams(
         species_id=new_id,
         name=name,
         energy_min=energy_min,
@@ -296,21 +298,21 @@ async def config_predator_add(
         energy_upkeep_per_individual=energy_upkeep_per_individual,
         split_population_threshold=split_population_threshold,
     )
-    draft_service.add_predator(draft, params)
-    api_main.logger.info("Predator species added via API (species_id=%d, name=%s)", new_id, name)
+    draft_service.add_herbivore(draft, params)
+    api_main.logger.info("Herbivore species added via API (species_id=%d, name=%s)", new_id, name)
     return api_main.templates.TemplateResponse(
         request,
-        "partials/predator_config.html",
-        {"predator_species": draft.predator_species},
+        "partials/herbivore_config.html",
+        {"herbivore_species": draft.herbivore_species},
     )
 
 
 @router.put(
-    "/api/config/predators/{species_id}",
+    "/api/config/herbivores/{species_id}",
     response_class=HTMLResponse,
-    summary="Update predator species row",
+    summary="Update herbivore species row",
 )
-async def config_predator_update(
+async def config_herbivore_update(
     request: Request,
     species_id: int,
     name: Annotated[str | None, Form()] = None,
@@ -321,24 +323,24 @@ async def config_predator_update(
     energy_upkeep_per_individual: Annotated[float | None, Form()] = None,
     split_population_threshold: Annotated[int | None, Form()] = None,
 ) -> Any:
-    """Patch one predator species in the draft and render the updated predator table."""
+    """Patch one herbivore species in the draft and render the updated herbivore table."""
     draft = get_draft()
     idx = next(
         (
             i
-            for i, pp in enumerate(draft.predator_species)
-            if isinstance(pp, PredatorSpeciesParams) and pp.species_id == species_id
+            for i, pp in enumerate(draft.herbivore_species)
+            if isinstance(pp, HerbivoreSpeciesParams) and pp.species_id == species_id
         ),
         None,
     )
     if idx is None:
-        api_main.logger.warning("Predator update requested for unknown species_id=%d", species_id)
-        raise HTTPException(status_code=404, detail=f"Predator species {species_id} not found.")
+        api_main.logger.warning("Herbivore update requested for unknown species_id=%d", species_id)
+        raise HTTPException(status_code=404, detail=f"Herbivore species {species_id} not found.")
 
-    pp = draft.predator_species[idx]
-    if not isinstance(pp, PredatorSpeciesParams):
+    pp = draft.herbivore_species[idx]
+    if not isinstance(pp, HerbivoreSpeciesParams):
         raise HTTPException(
-            status_code=400, detail="Invalid predator species entry in draft state."
+            status_code=400, detail="Invalid herbivore species entry in draft state."
         )
     updates: dict[str, Any] = {}
     if name is not None:
@@ -356,29 +358,29 @@ async def config_predator_update(
     if split_population_threshold is not None:
         updates["split_population_threshold"] = split_population_threshold
 
-    draft.predator_species[idx] = pp.model_copy(update=updates)
+    draft.herbivore_species[idx] = pp.model_copy(update=updates)
     api_main.logger.debug(
-        "Predator species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates)
+        "Herbivore species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates)
     )
     return api_main.templates.TemplateResponse(
         request,
-        "partials/predator_config.html",
-        {"predator_species": draft.predator_species},
+        "partials/herbivore_config.html",
+        {"herbivore_species": draft.herbivore_species},
     )
 
 
 @router.delete(
-    "/api/config/predators/{species_id}",
+    "/api/config/herbivores/{species_id}",
     response_class=HTMLResponse,
-    summary="Delete predator species",
+    summary="Delete herbivore species",
 )
-async def config_predator_delete(species_id: int) -> HTMLResponse:
-    """Remove one predator species from the draft."""
+async def config_herbivore_delete(species_id: int) -> HTMLResponse:
+    """Remove one herbivore species from the draft."""
     draft = get_draft()
     try:
-        draft_service.remove_predator(draft, species_id)
+        draft_service.remove_herbivore(draft, species_id)
     except ValueError as exc:
-        api_main.logger.warning("Predator delete requested for unknown species_id=%d", species_id)
+        api_main.logger.warning("Herbivore delete requested for unknown species_id=%d", species_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return HTMLResponse(content="")
 
@@ -503,7 +505,7 @@ async def config_substance_delete(substance_id: int) -> HTMLResponse:
 @router.post("/api/matrices/diet", response_class=HTMLResponse, summary="Toggle diet matrix cell")
 async def matrix_diet(
     request: Request,
-    predator_idx: Annotated[int, Form()],
+    herbivore_idx: Annotated[int, Form()],
     flora_idx: Annotated[int, Form()],
     compatible: Annotated[str, Form()] = "toggle",
 ) -> Any:
@@ -511,21 +513,21 @@ async def matrix_diet(
     draft = get_draft()
     updated_value = draft_service.set_diet_compatibility(
         draft,
-        predator_idx,
+        herbivore_idx,
         flora_idx,
         compatible,
     )
     if updated_value is not None:
         api_main.logger.debug(
-            "Diet matrix updated (predator_idx=%d, flora_idx=%d, compatible=%s)",
-            predator_idx,
+            "Diet matrix updated (herbivore_idx=%d, flora_idx=%d, compatible=%s)",
+            herbivore_idx,
             flora_idx,
             updated_value,
         )
     else:
         api_main.logger.warning(
-            "Diet matrix update ignored for out-of-range indices (predator_idx=%d, flora_idx=%d)",
-            predator_idx,
+            "Diet matrix update ignored for out-of-range indices (herbivore_idx=%d, flora_idx=%d)",
+            herbivore_idx,
             flora_idx,
         )
     return api_main.templates.TemplateResponse(
@@ -533,7 +535,7 @@ async def matrix_diet(
         "partials/diet_matrix.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "diet_matrix": draft.diet_matrix,
         },
     )
@@ -543,9 +545,9 @@ async def matrix_diet(
 async def config_trigger_rule_add(
     request: Request,
     flora_species_id: Annotated[int, Form()],
-    predator_species_id: Annotated[int, Form()],
+    herbivore_species_id: Annotated[int, Form()],
     substance_id: Annotated[int, Form()],
-    min_predator_population: Annotated[int, Form()] = 5,
+    min_herbivore_population: Annotated[int, Form()] = 5,
     activation_condition_json: Annotated[str, Form()] = "",
 ) -> Any:
     """Add one trigger rule to the draft and render the updated trigger-rule table."""
@@ -553,15 +555,15 @@ async def config_trigger_rule_add(
     draft_service.add_trigger_rule(
         draft,
         flora_species_id=flora_species_id,
-        predator_species_id=predator_species_id,
+        herbivore_species_id=herbivore_species_id,
         substance_id=substance_id,
-        min_predator_population=max(1, min_predator_population),
+        min_herbivore_population=max(1, min_herbivore_population),
         activation_condition=api_main._parse_activation_condition_json(activation_condition_json),
     )
     api_main.logger.info(
-        "Trigger rule added via API (flora_species_id=%d, predator_species_id=%d, substance_id=%d)",
+        "Trigger rule added via API (flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)",
         flora_species_id,
-        predator_species_id,
+        herbivore_species_id,
         substance_id,
     )
     return api_main.templates.TemplateResponse(
@@ -580,9 +582,9 @@ async def config_trigger_rule_update(
     request: Request,
     index: int,
     flora_species_id: Annotated[int | None, Form()] = None,
-    predator_species_id: Annotated[int | None, Form()] = None,
+    herbivore_species_id: Annotated[int | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
-    min_predator_population: Annotated[int | None, Form()] = None,
+    min_herbivore_population: Annotated[int | None, Form()] = None,
     activation_condition_json: Annotated[str | None, Form()] = None,
 ) -> Any:
     """Update one trigger rule in the draft and render the updated trigger-rule table."""
@@ -595,9 +597,9 @@ async def config_trigger_rule_update(
         draft,
         index,
         flora_species_id=flora_species_id,
-        predator_species_id=predator_species_id,
+        herbivore_species_id=herbivore_species_id,
         substance_id=substance_id,
-        min_predator_population=min_predator_population,
+        min_herbivore_population=min_herbivore_population,
         activation_condition=(
             api_main._parse_activation_condition_json(activation_condition_json)
             if activation_condition_json is not None
@@ -677,8 +679,8 @@ async def config_trigger_rule_condition_node_update(
     index: int,
     path: Annotated[str, Form()],
     kind: Annotated[str | None, Form()] = None,
-    predator_species_id: Annotated[int | None, Form()] = None,
-    min_predator_population: Annotated[int | None, Form()] = None,
+    herbivore_species_id: Annotated[int | None, Form()] = None,
+    min_herbivore_population: Annotated[int | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
     signal_id: Annotated[int | None, Form()] = None,
     min_concentration: Annotated[float | None, Form()] = None,
@@ -724,10 +726,10 @@ async def config_trigger_rule_condition_node_update(
         else:
             updates: dict[str, object] = {}
             if current_node.get("kind") == "enemy_presence":
-                if predator_species_id is not None:
-                    updates["predator_species_id"] = predator_species_id
-                if min_predator_population is not None:
-                    updates["min_predator_population"] = max(1, min_predator_population)
+                if herbivore_species_id is not None:
+                    updates["herbivore_species_id"] = herbivore_species_id
+                if min_herbivore_population is not None:
+                    updates["min_herbivore_population"] = max(1, min_herbivore_population)
             elif current_node.get("kind") == "substance_active":
                 if substance_id is not None:
                     updates["substance_id"] = substance_id
@@ -818,9 +820,12 @@ async def placement_data() -> JSONResponse:
         {"species_id": getattr(fp, "species_id", i), "name": getattr(fp, "name", f"Flora {i}")}
         for i, fp in enumerate(draft.flora_species)
     ]
-    predators = [
-        {"species_id": getattr(pp, "species_id", i), "name": getattr(pp, "name", f"Pred {i}")}
-        for i, pp in enumerate(draft.predator_species)
+    herbivores = [
+        {
+            "species_id": getattr(hp, "species_id", i),
+            "name": getattr(hp, "name", f"Herb {i}"),
+        }
+        for i, hp in enumerate(draft.herbivore_species)
     ]
     mycorrhizal_links = build_draft_mycorrhizal_links(draft)
     return JSONResponse(
@@ -830,7 +835,7 @@ async def placement_data() -> JSONResponse:
             "grid_width": draft.grid_width,
             "grid_height": draft.grid_height,
             "flora_species": flora,
-            "predator_species": predators,
+            "herbivore_species": herbivores,
             "mycorrhizal_links": mycorrhizal_links,
         }
     )
@@ -859,7 +864,7 @@ async def config_placement_plant_add(
         "partials/placement_list.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "initial_plants": draft.initial_plants,
             "initial_swarms": draft.initial_swarms,
         },
@@ -901,7 +906,7 @@ async def config_placement_swarm_add(
         "partials/placement_list.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "initial_plants": draft.initial_plants,
             "initial_swarms": draft.initial_swarms,
         },
@@ -926,7 +931,7 @@ async def config_placement_plant_delete(request: Request, index: int) -> Any:
         "partials/placement_list.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "initial_plants": draft.initial_plants,
             "initial_swarms": draft.initial_swarms,
         },
@@ -951,7 +956,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Any:
         "partials/placement_list.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "initial_plants": draft.initial_plants,
             "initial_swarms": draft.initial_swarms,
         },
@@ -971,7 +976,7 @@ async def config_placements_clear(request: Request) -> Any:
         "partials/placement_list.html",
         {
             "flora_species": draft.flora_species,
-            "predator_species": draft.predator_species,
+            "herbivore_species": draft.herbivore_species,
             "initial_plants": draft.initial_plants,
             "initial_swarms": draft.initial_swarms,
         },

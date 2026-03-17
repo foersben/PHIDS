@@ -58,7 +58,7 @@ def _discover_persisted_batches() -> list[BatchJobState]:
                 status="done",
                 completed=runs_completed,
                 total=runs_completed,
-                scenario_name=f"persisted_{job_id}",
+                scenario_name=str(aggregate.get("scenario_name") or f"persisted_{job_id}"),
                 started_at=started_at.isoformat(),
                 finished_at=started_at.isoformat(),
                 max_ticks=len(ticks),
@@ -135,6 +135,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
                     job_id,
                     api_main._BATCH_DIR,
                     _progress,
+                    scenario_name=scenario_name,
                 ),
             )
             job.status = "done"
@@ -263,14 +264,16 @@ async def batch_export(
         rows_agg: list[dict[str, Any]] = []
         ticks = aggregate.get("ticks", [])
         flora_mean = aggregate.get("flora_population_mean", [])
-        pred_mean = aggregate.get("predator_population_mean", [])
+        herbivore_mean = aggregate.get("herbivore_population_mean", [])
         survival = aggregate.get("survival_probability_curve", [])
         for i, t in enumerate(ticks):
             rows_agg.append(
                 {
                     "tick": t,
                     "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
-                    "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
+                    "swarm_pop_by_species": {
+                        0: herbivore_mean[i] if i < len(herbivore_mean) else 0
+                    },
                     "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
                 }
             )
