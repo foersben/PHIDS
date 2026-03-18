@@ -68,7 +68,7 @@ broader gates before considering the work complete.
 
 Representative file:
 
-- `tests/test_api_routes.py`
+- `tests/integration/api/test_api_routes.py`
 
 Use this when you need to confirm that expected route surfaces still exist.
 
@@ -76,9 +76,9 @@ Use this when you need to confirm that expected route surfaces still exist.
 
 Representative files:
 
-- `tests/test_ui_routes.py`
-- `tests/test_ui_state.py`
-- `tests/test_api_builder_and_helpers.py`
+- `tests/integration/api/test_ui_routes.py`
+- `tests/unit/api/test_ui_state.py`
+- `tests/integration/api/test_api_builder_and_helpers.py`
 
 These protect:
 
@@ -93,8 +93,8 @@ These protect:
 
 Representative files:
 
-- `tests/test_systems_behavior.py`
-- `tests/test_termination_and_loop.py`
+- `tests/integration/systems/test_systems_behavior.py`
+- `tests/integration/systems/test_termination_and_loop.py`
 
 These protect:
 
@@ -109,10 +109,10 @@ These protect:
 
 Representative files:
 
-- `tests/test_schemas_and_invariants.py`
-- `tests/test_biotope_diffusion.py`
-- `tests/test_ecs_world.py`
-- `tests/test_flow_field.py`
+- `tests/unit/api/test_schemas_and_invariants.py`
+- `tests/unit/engine/core/test_biotope_diffusion.py`
+- `tests/unit/engine/core/test_ecs_world.py`
+- `tests/unit/engine/core/test_flow_field.py`
 
 These protect:
 
@@ -127,7 +127,7 @@ These protect:
 
 Representative file:
 
-- `tests/test_example_scenarios.py`
+- `tests/e2e/scenarios/test_example_scenarios.py`
 
 This protects the curated example pack as both a validation and runtime-compatibility surface.
 
@@ -139,9 +139,9 @@ To keep module-level coverage robust under repository growth, PHIDS now includes
 targeted regression tests for two historically under-covered operational paths:
 
 - CLI launcher orchestration in `src/phids/__main__.py` via
-  `tests/test_cli_main.py`.
+  `tests/unit/cli/test_cli_main.py`.
 - Batch executor orchestration in `src/phids/engine/batch.py` via
-  additional tests in `tests/test_batch_runner.py` that cover:
+  additional tests in `tests/integration/systems/test_batch_runner.py` that cover:
   - `_run_and_save` tuple-unpacking delegation,
   - `_run_single_headless` early-termination break semantics,
   - `BatchRunner.execute_batch` success/failure future collection,
@@ -150,7 +150,7 @@ targeted regression tests for two historically under-covered operational paths:
 Recommended fast verification command for this specific coverage surface:
 
 ```bash
-uv run pytest -o addopts='' tests/test_cli_main.py tests/test_batch_runner.py -q
+uv run pytest -o addopts='' tests/unit/cli/test_cli_main.py tests/integration/systems/test_batch_runner.py -q
 ```
 
 To audit whether any runtime module dropped below 80% in a full run, use:
@@ -172,7 +172,7 @@ When editing:
 start with:
 
 ```bash
-uv run pytest -o addopts='' tests/test_ui_routes.py tests/test_ui_state.py tests/test_api_builder_and_helpers.py -q
+uv run pytest -o addopts='' tests/integration/api/test_ui_routes.py tests/unit/api/test_ui_state.py tests/integration/api/test_api_builder_and_helpers.py -q
 ```
 
 ### Engine system changes
@@ -185,7 +185,7 @@ When editing:
 start with:
 
 ```bash
-uv run pytest -o addopts='' tests/test_systems_behavior.py tests/test_termination_and_loop.py -q
+uv run pytest -o addopts='' tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q
 ```
 
 ### Schema and scenario-language changes
@@ -199,7 +199,7 @@ When editing:
 start with:
 
 ```bash
-uv run pytest -o addopts='' tests/test_schemas_and_invariants.py tests/test_example_scenarios.py tests/test_ui_state.py -q
+uv run pytest -o addopts='' tests/unit/api/test_schemas_and_invariants.py tests/e2e/scenarios/test_example_scenarios.py tests/unit/api/test_ui_state.py -q
 ```
 
 ### Replay, telemetry, and export changes
@@ -212,7 +212,7 @@ When editing:
 start with:
 
 ```bash
-uv run pytest -o addopts='' tests/test_termination_and_loop.py tests/test_replay_roundtrip.py tests/test_additional_coverage.py -q
+uv run pytest -o addopts='' tests/integration/systems/test_termination_and_loop.py tests/e2e/replay_and_io/test_replay_roundtrip.py tests/test_additional_coverage.py -q
 ```
 
 ## Benchmark Policy
@@ -222,8 +222,8 @@ performance-sensitive expectations for core runtime surfaces.
 
 ### Current dedicated benchmark files
 
-- `tests/test_flow_field_benchmark.py`
-- `tests/test_spatial_hash_benchmark.py`
+- `tests/benchmarks/test_flow_field_benchmark.py`
+- `tests/benchmarks/test_spatial_hash_benchmark.py`
 
 ### What they currently cover
 
@@ -247,7 +247,7 @@ project expectations.
 Use:
 
 ```bash
-uv run pytest -o addopts='' tests/test_flow_field_benchmark.py tests/test_spatial_hash_benchmark.py -q
+uv run pytest -o addopts='' tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q
 ```
 
 For CI-parity whole-suite benchmarking, the repository-level `uv run pytest` remains the canonical

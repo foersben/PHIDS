@@ -62,6 +62,6 @@ flowchart LR
 
 ## Validation Anchors and Current Limits
 
-Behavioral evidence is anchored in `tests/test_biotope_diffusion.py` and `tests/test_schemas_and_invariants.py`, which verify threshold truncation, dimension guards, local-wind plume displacement under heterogeneous wind forcing, write-visibility boundaries after rebuild, and non-negative energy clamping. Current model limits remain explicit: diffusion is layer-based rather than particle-resolved, advection is semi-Lagrangian without higher-order flux limiting, toxins are rebuilt locally by signaling, and double-buffering is field-centric rather than full-world duplication.
+Behavioral evidence is anchored in `tests/unit/engine/core/test_biotope_diffusion.py` and `tests/unit/api/test_schemas_and_invariants.py`, which verify threshold truncation, dimension guards, local-wind plume displacement under heterogeneous wind forcing, write-visibility boundaries after rebuild, and non-negative energy clamping. Current model limits remain explicit: diffusion is layer-based rather than particle-resolved, advection is semi-Lagrangian without higher-order flux limiting, toxins are rebuilt locally by signaling, and double-buffering is field-centric rather than full-world duplication.
 
 For cross-phase context, see `docs/engine/flow-field.md`, `docs/engine/signaling.md`, and `docs/engine/index.md`.

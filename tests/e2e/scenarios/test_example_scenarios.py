@@ -14,7 +14,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
 
-EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
+EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "examples"
 EXAMPLE_PATHS = sorted(EXAMPLES_DIR.glob("*.json"))
 CURATED_EXAMPLE_STEMS = {
     "dry_shrubland_cycles",

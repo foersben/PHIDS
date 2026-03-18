@@ -35,7 +35,7 @@ class Marker:
         self.value = value
 
 
-def test_spatial_hash_register_move_and_gc() -> None:
+def test_spatial_hash_register_move_and_gc(empty_world: ECSWorld) -> None:
     """Verifies that register_position, move_entity, and collect_garbage maintain consistent spatial hash membership.
 
     The invariant under test is that the spatial hash provides strict bijective location tracking:
@@ -44,7 +44,7 @@ def test_spatial_hash_register_move_and_gc() -> None:
     required for O(1) co-location queries in the interaction and signaling phases to remain
     correct throughout the entity lifecycle.
     """
-    world = ECSWorld()
+    world = empty_world
     entity = world.create_entity()
     world.add_component(entity.entity_id, Marker(1))
 
