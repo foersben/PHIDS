@@ -43,6 +43,7 @@ SIGNAL_DECAY_FACTOR: float = 0.85  # per-tick airborne signal retention after di
 # ---------------------------------------------------------------------------
 EMPTY_CELL: int = -1
 MAX_TELEMETRY_TICKS: int = 10_000
+MAX_REPLAY_FRAMES: int = 2_000
 
 # ---------------------------------------------------------------------------
 # Seed dispersal defaults (global, species-overridable)

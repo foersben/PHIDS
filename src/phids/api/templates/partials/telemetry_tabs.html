@@ -141,6 +141,24 @@
 
 <script>
 (function () {
+  const POLLER_KEY = '__phidsTelemetryPoller';
+  const _poller = window[POLLER_KEY] || {
+    intervalId: null,
+    inFlight: false,
+    requestSeq: 0,
+    latestAppliedSeq: 0,
+    abortController: null,
+  };
+  if (_poller.intervalId) {
+    clearInterval(_poller.intervalId);
+    _poller.intervalId = null;
+  }
+  if (_poller.abortController) {
+    _poller.abortController.abort();
+    _poller.abortController = null;
+  }
+  window[POLLER_KEY] = _poller;
+
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
@@ -348,14 +366,103 @@
     const labels = _tailWindow(data.labels || [], MAX_TELEMETRY_POINTS);
     const series = {};
     const srcSeries = data.series || {};
+    const targetLen = labels.length;
     Object.keys(srcSeries).forEach((key) => {
-      series[key] = _tailWindow(srcSeries[key], labels.length);
+      let values = _tailWindow(srcSeries[key], targetLen).map((value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : 0;
+      });
+      if (values.length < targetLen) {
+        const padding = new Array(targetLen - values.length).fill(0);
+        values = padding.concat(values);
+      }
+      series[key] = values;
     });
     return {
       ...data,
       labels,
       series,
     };
+  }
+
+  function _mergeTelemetryData(existing, incoming) {
+    if (!existing) return incoming;
+
+    const existingLabels = (existing.labels || []).map((tick) => Number(tick));
+    const incomingLabels = (incoming.labels || []).map((tick) => Number(tick));
+
+    const labelToIndex = new Map();
+    const labels = [];
+    existingLabels.forEach((tick) => {
+      if (!Number.isFinite(tick) || labelToIndex.has(tick)) return;
+      labelToIndex.set(tick, labels.length);
+      labels.push(tick);
+    });
+    incomingLabels.forEach((tick) => {
+      if (!Number.isFinite(tick) || labelToIndex.has(tick)) return;
+      labelToIndex.set(tick, labels.length);
+      labels.push(tick);
+    });
+
+    const allSeriesKeys = new Set([
+      ...Object.keys(existing.series || {}),
+      ...Object.keys(incoming.series || {}),
+    ]);
+    const series = {};
+    allSeriesKeys.forEach((key) => {
+      series[key] = new Array(labels.length).fill(0);
+    });
+
+    const fillSeries = (payload) => {
+      const payloadLabels = payload.labels || [];
+      const payloadSeries = payload.series || {};
+      payloadLabels.forEach((rawTick, i) => {
+        const tick = Number(rawTick);
+        if (!Number.isFinite(tick)) return;
+        const targetIndex = labelToIndex.get(tick);
+        if (targetIndex === undefined) return;
+        allSeriesKeys.forEach((key) => {
+          const values = payloadSeries[key] || [];
+          const value = Number(values[i]);
+          series[key][targetIndex] = Number.isFinite(value) ? value : 0;
+        });
+      });
+    };
+
+    fillSeries(existing);
+    fillSeries(incoming);
+
+    return {
+      labels,
+      series,
+      flora_ids: Array.from(new Set([...(existing.flora_ids || []), ...(incoming.flora_ids || [])])),
+      herbivore_ids: Array.from(
+        new Set([...(existing.herbivore_ids || []), ...(incoming.herbivore_ids || [])]),
+      ),
+      flora_names: { ...(existing.flora_names || {}), ...(incoming.flora_names || {}) },
+      herbivore_names: { ...(existing.herbivore_names || {}), ...(incoming.herbivore_names || {}) },
+    };
+  }
+
+  function _speciesSignature(data) {
+    return JSON.stringify({
+      flora: data.flora_ids || [],
+      herbivores: data.herbivore_ids || [],
+    });
+  }
+
+  function _shouldResetSeries(existing, incoming) {
+    if (!existing) return false;
+    if (_speciesSignature(existing) !== _speciesSignature(incoming)) return true;
+
+    const existingLabels = existing.labels || [];
+    const incomingLabels = incoming.labels || [];
+    if (existingLabels.length === 0 || incomingLabels.length === 0) return false;
+
+    const lastExisting = Number(existingLabels[existingLabels.length - 1]);
+    const firstIncoming = Number(incomingLabels[0]);
+    if (!Number.isFinite(lastExisting) || !Number.isFinite(firstIncoming)) return false;
+    return firstIncoming <= lastExisting;
   }
 
   // ---------------------------------------------------------------------------
@@ -525,7 +632,8 @@
       const ratio = [];
       for (let idx = 0; idx < n; idx++) {
         const denom = energy[idx] || 0;
-        ratio.push(denom > 0 ? defense[idx] / denom : 0.0);
+        const value = denom > 0 ? defense[idx] / denom : 0.0;
+        ratio.push(Number.isFinite(value) ? value : 0.0);
       }
       datasets.push({
         label: name + ' defense/energy',
@@ -739,13 +847,33 @@
   // Polling / update entry point
   // ---------------------------------------------------------------------------
   window.phidsTelemetryUpdate = function (data) {
-    const view = _windowData(data);
+    if (_lastData) {
+      const existingLabels = _lastData.labels || [];
+      const incomingLabels = data.labels || [];
+      if (existingLabels.length > 0 && incomingLabels.length > 0) {
+        const lastExistingTick = Number(existingLabels[existingLabels.length - 1]);
+        const incomingMaxTick = Math.max(...incomingLabels.map((tick) => Number(tick)));
+        if (
+          Number.isFinite(lastExistingTick)
+          && Number.isFinite(incomingMaxTick)
+          && incomingMaxTick < lastExistingTick
+          && _speciesSignature(_lastData) === _speciesSignature(data)
+        ) {
+          return;
+        }
+      }
+    }
+
+    const shouldReset = _shouldResetSeries(_lastData, data);
+    if (shouldReset) {
+      _resetTelemetryUiState();
+    }
+
+    const merged = _mergeTelemetryData(shouldReset ? null : _lastData, data);
+    const view = _windowData(merged);
     const labels = view.labels || [];
     const latestTick = labels.length > 0 ? labels[labels.length - 1] : -1;
-    const speciesSignature = JSON.stringify({
-      flora: view.flora_ids || [],
-      herbivores: view.herbivore_ids || [],
-    });
+    const speciesSignature = _speciesSignature(view);
     if ((_lastTickSeen >= 0 && latestTick >= 0 && latestTick < _lastTickSeen) ||
       (_lastSpeciesSignature && speciesSignature !== _lastSpeciesSignature)) {
       _resetTelemetryUiState();
@@ -762,21 +890,55 @@
 
   // Periodic polling (every 2 s while visible)
   function _poll() {
-    fetch('/api/telemetry/chartjs-data')
+    if (_poller.inFlight) {
+      return;
+    }
+
+    _poller.inFlight = true;
+    _poller.requestSeq += 1;
+    const requestSeq = _poller.requestSeq;
+    const params = new URLSearchParams();
+    if (_lastTickSeen >= 0) {
+      params.set('since_tick', String(_lastTickSeen));
+    }
+    const query = params.toString();
+    const url = query ? `/api/telemetry/chartjs-data?${query}` : '/api/telemetry/chartjs-data';
+
+    const abortController = new AbortController();
+    _poller.abortController = abortController;
+
+    fetch(url, { signal: abortController.signal })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d && d.labels && d.labels.length > 0) phidsTelemetryUpdate(d); })
-      .catch(() => {});
+      .then(d => {
+        if (requestSeq < _poller.latestAppliedSeq) return;
+        if (!d) return;
+        if (Array.isArray(d.labels) && d.labels.length === 0 && _lastData) return;
+        phidsTelemetryUpdate(d);
+        _poller.latestAppliedSeq = requestSeq;
+      })
+      .catch((err) => {
+        if (err && err.name === 'AbortError') return;
+        console.error('Telemetry poll failed', err);
+      })
+      .finally(() => {
+        if (requestSeq === _poller.requestSeq) {
+          _poller.inFlight = false;
+        }
+      });
   }
 
   // Start polling once DOM is ready
+  const _startPolling = function () {
+    _poll();
+    _poller.intervalId = setInterval(_poll, 2000);
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      _poll();
-      setInterval(_poll, 2000);
+      _startPolling();
     });
   } else {
-    _poll();
-    setInterval(_poll, 2000);
+    _startPolling();
   }
 })();
 </script>

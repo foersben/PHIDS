@@ -335,6 +335,27 @@ def test_replay_buffer_save_load_and_truncated_file_warning(
     assert "ended mid-frame" in caplog.text
 
 
+def test_replay_buffer_spills_old_frames_to_disk_and_retrieves_on_demand(
+    tmp_path: Path,
+) -> None:
+    """Validates that replay spilling preserves random frame access while bounding RAM residency."""
+    spill_path = tmp_path / "spilled_frames.bin"
+    replay = ReplayBuffer(max_frames=2, spill_to_disk=True, spill_path=spill_path)
+    for tick in range(5):
+        replay.append({"tick": tick, "value": tick * 2})
+
+    assert len(replay) == 5
+    assert spill_path.exists()
+    assert replay.get_frame(0)["value"] == 0
+    assert replay.get_frame(4)["value"] == 8
+
+    saved_path = tmp_path / "merged.replay"
+    replay.save(saved_path)
+    loaded = ReplayBuffer.load(saved_path)
+    assert len(loaded) == 5
+    assert loaded.get_frame(2)["tick"] == 2
+
+
 def test_telemetry_export_helpers_write_files_and_bytes(tmp_path: Path) -> None:
     """Validates the telemetry export helpers write files and bytes invariant and confirms the expected biological behavior under controlled simulation conditions.
 

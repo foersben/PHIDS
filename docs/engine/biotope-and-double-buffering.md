@@ -31,7 +31,7 @@ Signal transport is implemented as a two-stage local advection-diffusion operato
 The per-layer update is
 
 $$
-	ilde{S}^{t}(x,y)=S^t\!\left(x-u_x(x,y),\ y-u_y(x,y)\right),
+\tilde{S}^{t}(x,y)=S^t\!\left(x-u_x(x,y),\ y-u_y(x,y)\right),
 \qquad
 S^{t+1}=\gamma\,(\mathcal{K}_{iso}*\tilde{S}^{t}),
 $$

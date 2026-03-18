@@ -477,6 +477,13 @@ class SimulationConfig(BaseModel):
         description="Halt when total herbivore population exceeds this value (-1 = disabled).",
     )
 
+    # Replay backend selection
+    replay_backend: str = Field(
+        default="msgpack",
+        description="Replay storage backend: 'msgpack' (legacy) or 'zarr' (optimized chunked).",
+        pattern="^(msgpack|zarr)$",
+    )
+
     @model_validator(mode="after")
     def _validate_species_ids(self) -> SimulationConfig:
         flora_ids = {s.species_id for s in self.flora_species}

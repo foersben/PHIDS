@@ -56,8 +56,8 @@
       <span class="text-[11px] text-slate-500 self-center">Preset and labels are applied only after clicking the button.</span>
     </div>
 
-    <div><canvas id="batch-agg-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas></div>
-    <div id="batch-survival-wrap"><canvas id="batch-survival-chart" height="180" style="display:block;width:100%;max-height:200px;"></canvas></div>
+    <div style="position:relative;height:220px;width:100%;"><canvas id="batch-agg-chart" style="display:block;"></canvas></div>
+    <div id="batch-survival-wrap" style="position:relative;height:200px;width:100%;"><canvas id="batch-survival-chart" style="display:block;"></canvas></div>
   </div>
 
   <div id="batch-panel-table" class="space-y-3 hidden">
@@ -127,15 +127,29 @@
     const survivalCtx = document.getElementById('batch-survival-chart');
     const survivalWrap = document.getElementById('batch-survival-wrap');
     if (!ctx || !survivalCtx || !survivalWrap) return;
-    if (ctx._batchChart) ctx._batchChart.destroy();
-    if (survivalCtx._batchSurvivalChart) survivalCtx._batchSurvivalChart.destroy();
+
+    function lockCanvasSize(canvasEl, targetHeight) {
+      const parentWidth = canvasEl.parentElement ? canvasEl.parentElement.clientWidth : 0;
+      canvasEl.width = Math.max(640, parentWidth || 800);
+      canvasEl.height = targetHeight;
+    }
+
+    lockCanvasSize(ctx, 220);
+    lockCanvasSize(survivalCtx, 200);
+
+    if (window.__phidsBatchViewController && typeof window.__phidsBatchViewController.destroy === 'function') {
+      window.__phidsBatchViewController.destroy();
+    }
+
+    let aggChart = null;
+    let survivalChart = null;
 
     const floraUpper = floraMean.map((v, i) => v + (floraStd[i] || 0));
     const floraLower = floraMean.map((v, i) => v - (floraStd[i] || 0));
     const predUpper = predMean.map((v, i) => v + (predStd[i] || 0));
     const predLower = predMean.map((v, i) => v - (predStd[i] || 0));
 
-    ctx._batchChart = new Chart(ctx, {
+    aggChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels,
@@ -150,8 +164,8 @@
       },
       options: {
         animation: false,
-        responsive: true,
-        maintainAspectRatio: true,
+        responsive: false,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             labels: {
@@ -167,7 +181,7 @@
       },
     });
 
-    survivalCtx._batchSurvivalChart = new Chart(survivalCtx, {
+    survivalChart = new Chart(survivalCtx, {
       type: 'line',
       data: {
         labels,
@@ -175,8 +189,8 @@
       },
       options: {
         animation: false,
-        responsive: true,
-        maintainAspectRatio: true,
+        responsive: false,
+        maintainAspectRatio: false,
         plugins: { legend: { labels: { font: { size: 10 } } } },
         scales: {
           x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
@@ -251,7 +265,8 @@
 
     function applyChartSettings() {
       const preset = chartPreset.value;
-      const chart = ctx._batchChart;
+      const chart = aggChart;
+      if (!chart) return;
       chart.options.plugins.title = {
         display: (chartTitleInput.value || '').trim() !== '',
         text: chartTitleInput.value || '',
@@ -284,6 +299,7 @@
         survivalWrap.classList.remove('hidden');
       }
       chart.update();
+      if (survivalChart) survivalChart.update('none');
       syncExportLinks();
     }
 
@@ -294,6 +310,21 @@
 
     applyChartBtn.addEventListener('click', applyChartSettings);
     applyTableBtn.addEventListener('click', applyTableSettings);
+
+    window.__phidsBatchViewController = {
+      destroy() {
+        applyChartBtn.removeEventListener('click', applyChartSettings);
+        applyTableBtn.removeEventListener('click', applyTableSettings);
+        if (aggChart) {
+          aggChart.destroy();
+          aggChart = null;
+        }
+        if (survivalChart) {
+          survivalChart.destroy();
+          survivalChart = null;
+        }
+      },
+    };
 
     phidsBatchTab('chart');
     applyChartSettings();

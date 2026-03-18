@@ -15,10 +15,7 @@
     <tbody class="divide-y divide-slate-100">
       {% for job in jobs %}
       <tr class="hover:bg-slate-50 cursor-pointer"
-        hx-get="/api/batch/view/{{ job.job_id }}"
-        hx-target="#batch-detail"
-        hx-swap="innerHTML"
-        onclick="document.getElementById('batch-detail').classList.remove('hidden')">
+        onclick="phidsBatchOpenJob('{{ job.job_id }}')">
         <td class="py-1.5 pr-3 font-mono text-slate-700">{{ job.job_id }}</td>
         <td class="py-1.5 pr-3 text-slate-600 max-w-[120px] truncate">{{ job.scenario_name }}</td>
         <td class="py-1.5 pr-3">

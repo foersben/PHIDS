@@ -11,6 +11,7 @@ perturb deterministic engine advancement or the biological semantics encoded in 
 
 from __future__ import annotations
 
+import math
 from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException, Request
@@ -31,6 +32,17 @@ from phids.telemetry.export import (
 )
 
 router = APIRouter()
+
+
+def _safe_float(value: Any) -> float:
+    """Return a finite float representation for telemetry serialization."""
+    try:
+        candidate = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if math.isfinite(candidate):
+        return candidate
+    return 0.0
 
 
 @router.get("/api/telemetry/export/csv", summary="Export telemetry as CSV")
@@ -85,7 +97,7 @@ async def export_telemetry_json() -> Response:
 
 
 @router.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
-async def telemetry_chartjs_data() -> JSONResponse:
+async def telemetry_chartjs_data(since_tick: int | None = None) -> JSONResponse:
     """Return per-species population and energy time series for browser charts.
 
     Returns:
@@ -96,6 +108,12 @@ async def telemetry_chartjs_data() -> JSONResponse:
         return JSONResponse({"labels": [], "flora_ids": [], "herbivore_ids": [], "series": {}})
 
     rows = api_main._sim_loop.telemetry._rows
+    if since_tick is not None and rows:
+        latest_tick = int(rows[-1].get("tick", -1))
+        # When the simulation was reset, client-side since_tick can be ahead of
+        # the current run; return full rows so chart state can re-synchronize.
+        if latest_tick > since_tick:
+            rows = [row for row in rows if int(row.get("tick", -1)) > since_tick]
     species = api_main._sim_loop.telemetry.get_species_ids()
     flora_ids = species["flora_ids"]
     herbivore_ids = species["herbivore_ids"]
@@ -105,23 +123,23 @@ async def telemetry_chartjs_data() -> JSONResponse:
 
     labels = [r["tick"] for r in rows]
     series: dict[str, list[float]] = {
-        "flora_population": [float(r.get("flora_population", 0)) for r in rows],
-        "herbivore_population": [float(r.get("herbivore_population", 0)) for r in rows],
-        "total_flora_energy": [float(r.get("total_flora_energy", 0.0)) for r in rows],
+        "flora_population": [_safe_float(r.get("flora_population", 0)) for r in rows],
+        "herbivore_population": [_safe_float(r.get("herbivore_population", 0)) for r in rows],
+        "total_flora_energy": [_safe_float(r.get("total_flora_energy", 0.0)) for r in rows],
     }
     for fid in flora_ids:
         series[f"plant_{fid}_pop"] = [
-            float(r.get("plant_pop_by_species", {}).get(fid, 0)) for r in rows
+            _safe_float(r.get("plant_pop_by_species", {}).get(fid, 0)) for r in rows
         ]
         series[f"plant_{fid}_energy"] = [
-            float(r.get("plant_energy_by_species", {}).get(fid, 0.0)) for r in rows
+            _safe_float(r.get("plant_energy_by_species", {}).get(fid, 0.0)) for r in rows
         ]
         series[f"defense_cost_{fid}"] = [
-            float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows
+            _safe_float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows
         ]
     for hid in herbivore_ids:
         series[f"swarm_{hid}_pop"] = [
-            float(r.get("swarm_pop_by_species", {}).get(hid, 0)) for r in rows
+            _safe_float(r.get("swarm_pop_by_species", {}).get(hid, 0)) for r in rows
         ]
 
     return JSONResponse(

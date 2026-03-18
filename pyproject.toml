@@ -23,6 +23,7 @@ dependencies = [
     "jinja2>=3.1.6",
     "pandas>=2.2",
     "matplotlib>=3.9",
+    "zarr>=3.0",
 ]
 
 [project.scripts]

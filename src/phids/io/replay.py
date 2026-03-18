@@ -19,7 +19,10 @@ its role as a pure I/O boundary.
 
 from __future__ import annotations
 
+import atexit
 import logging
+import tempfile
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -61,12 +64,35 @@ class ReplayBuffer:
     deterministic re-simulation.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        max_frames: int | None = None,
+        *,
+        spill_to_disk: bool = False,
+        spill_path: str | Path | None = None,
+    ) -> None:
         """Create an empty replay buffer.
 
         The buffer stores msgpack-serialised frames in an append-only list.
+
+        Args:
+            max_frames: Optional upper bound on retained frames. When set,
+                the oldest frames are discarded first after appends when
+                ``spill_to_disk`` is disabled. When ``spill_to_disk`` is
+                enabled, this value defines the in-memory cache size while
+                older frames are written to disk.
+            spill_to_disk: When ``True``, frames that age out of the in-memory
+                cache are persisted to disk and remain addressable via
+                :meth:`get_frame`.
+            spill_path: Optional explicit path for the spill file. If omitted,
+                a temporary file path is allocated lazily.
         """
         self._frames: list[bytes] = []
+        self._max_frames = max_frames if max_frames is None else max(1, int(max_frames))
+        self._spill_to_disk = spill_to_disk
+        self._spilled_index: list[tuple[int, int]] = []
+        self._spill_path: Path | None = Path(spill_path) if spill_path is not None else None
+        self._owns_spill_file = spill_path is None
 
     def append(self, state: dict[str, Any]) -> None:
         """Serialize and append a tick state to the buffer.
@@ -75,10 +101,17 @@ class ReplayBuffer:
             state: Tick state mapping to serialize and store.
         """
         self._frames.append(serialise_state(state))
+        if self._max_frames is not None and len(self._frames) > self._max_frames:
+            overflow = len(self._frames) - self._max_frames
+            if self._spill_to_disk:
+                for _ in range(overflow):
+                    self._spill_frame(self._frames.pop(0))
+            else:
+                del self._frames[:overflow]
 
     def __len__(self) -> int:
         """Return number of stored frames."""
-        return len(self._frames)
+        return len(self._spilled_index) + len(self._frames)
 
     def get_frame(self, tick: int) -> dict[str, Any]:
         """Return the deserialised state for the specified tick index.
@@ -89,7 +122,52 @@ class ReplayBuffer:
         Returns:
             dict[str, Any]: Decoded state mapping for the requested tick.
         """
-        return deserialise_state(self._frames[tick])
+        if tick < 0 or tick >= len(self):
+            raise IndexError(f"Replay frame index out of range: {tick}")
+
+        spilled_count = len(self._spilled_index)
+        if tick < spilled_count:
+            return deserialise_state(self._read_spilled_frame(tick))
+        return deserialise_state(self._frames[tick - spilled_count])
+
+    def _spill_frame(self, frame: bytes) -> None:
+        """Persist one frame into the spill file and record its byte location."""
+        spill_path = self._ensure_spill_path()
+        with spill_path.open("ab") as fp:
+            record_start = fp.tell()
+            fp.write(len(frame).to_bytes(4, "little"))
+            fp.write(frame)
+        self._spilled_index.append((record_start + 4, len(frame)))
+
+    def _read_spilled_frame(self, spilled_index: int) -> bytes:
+        """Load a spilled frame payload by absolute spilled-frame index."""
+        if self._spill_path is None:
+            raise IndexError("Spill file is not available for requested frame")
+        payload_offset, payload_length = self._spilled_index[spilled_index]
+        with self._spill_path.open("rb") as fp:
+            fp.seek(payload_offset)
+            payload = fp.read(payload_length)
+        if len(payload) != payload_length:
+            raise IndexError("Spill frame could not be read completely")
+        return payload
+
+    def _ensure_spill_path(self) -> Path:
+        """Create and return a spill file path if spilling is enabled."""
+        if self._spill_path is None:
+            temp_dir = Path(tempfile.gettempdir())
+            self._spill_path = temp_dir / f"phids_replay_{uuid.uuid4().hex}.bin"
+            if self._owns_spill_file:
+                atexit.register(self._cleanup_spill_file)
+        return self._spill_path
+
+    def _cleanup_spill_file(self) -> None:
+        """Remove owned spill file on interpreter shutdown when present."""
+        if self._spill_path is None or not self._owns_spill_file:
+            return
+        try:
+            self._spill_path.unlink(missing_ok=True)
+        except OSError:
+            logger.debug("Replay spill cleanup skipped for %s", self._spill_path)
 
     def save(self, path: str | Path) -> None:
         """Write all frames to a binary replay file.
@@ -103,6 +181,8 @@ class ReplayBuffer:
         """
         destination = Path(path)
         with destination.open("wb") as fp:
+            if self._spill_path is not None and self._spill_path.exists() and self._spilled_index:
+                fp.write(self._spill_path.read_bytes())
             for frame in self._frames:
                 length = len(frame).to_bytes(4, "little")
                 fp.write(length)

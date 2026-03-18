@@ -215,6 +215,47 @@ async def test_telemetry_chartjs_and_table_preview_empty_branches() -> None:
 
 
 @pytest.mark.asyncio
+async def test_telemetry_chartjs_since_tick_ahead_of_current_run_returns_full_rows() -> None:
+    """Validate chartjs polling resilience when client cursor is ahead after reset.
+
+    The browser polls ``/api/telemetry/chartjs-data`` with ``since_tick`` from the previous
+    run. After a reset, this cursor can exceed the latest tick of the new run. In that state,
+    the endpoint must return full rows rather than an empty delta so charts can resynchronize.
+    """
+    loop = _build_loaded_loop()
+    loop.telemetry._rows = [
+        {
+            "tick": 0,
+            "flora_population": 1,
+            "herbivore_population": 1,
+            "total_flora_energy": 10.0,
+            "plant_pop_by_species": {0: 1},
+            "plant_energy_by_species": {0: 10.0},
+            "defense_cost_by_species": {0: 0.0},
+            "swarm_pop_by_species": {0: 1},
+        },
+        {
+            "tick": 1,
+            "flora_population": 1,
+            "herbivore_population": 1,
+            "total_flora_energy": 9.5,
+            "plant_pop_by_species": {0: 1},
+            "plant_energy_by_species": {0: 9.5},
+            "defense_cost_by_species": {0: 0.2},
+            "swarm_pop_by_species": {0: 1},
+        },
+    ]
+
+    async with _default_client() as client:
+        response = await client.get("/api/telemetry/chartjs-data", params={"since_tick": 99})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["labels"] == [0, 1]
+    assert payload["series"]["flora_population"] == [1.0, 1.0]
+
+
+@pytest.mark.asyncio
 async def test_export_route_error_and_format_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     """Validate export error semantics and multi-format response branches.
 
