@@ -7,10 +7,16 @@ preserving deterministic state isolation per test invocation.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import asyncio
+import contextlib
+from collections.abc import AsyncGenerator, Callable
 
 import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 
+from phids.api import main as api_main
+from phids.api.main import app
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
@@ -19,10 +25,36 @@ from phids.api.schemas import (
     InitialSwarmPlacement,
     SimulationConfig,
 )
+from phids.api.ui_state import reset_draft
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def safe_global_reset() -> AsyncGenerator[None, None]:
+    """Reset global API state and cancel dangling simulation tasks around each test."""
+    reset_draft()
+    yield
+    task = api_main._sim_task
+    if task is not None and not task.done():
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+    api_main._sim_task = None
+    api_main._sim_loop = None
+    api_main._sim_substance_names = {}
+
+
+@pytest_asyncio.fixture
+async def api_client() -> AsyncGenerator[AsyncClient, None]:
+    """Provide a shared AsyncClient bound to the in-process FastAPI application."""
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+    try:
+        yield client
+    finally:
+        await client.aclose()
 
 
 @pytest.fixture

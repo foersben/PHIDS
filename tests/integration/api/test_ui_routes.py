@@ -17,13 +17,12 @@ from typing import Any, cast
 import numpy as np
 import polars as pl
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from phids import __main__ as phids_cli
 from phids.api import main as api_main
 from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api import ui_state as draft_state_module
-from phids.api.main import app
 from phids.api.services.draft_service import DraftService
 from phids.api.schemas import BatchJobState, FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft
@@ -38,10 +37,6 @@ from phids.telemetry import export as telemetry_export
 
 
 draft_service = DraftService()
-
-
-def _default_client() -> AsyncClient:
-    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
 def _sample_telemetry_rows() -> list[dict[str, object]]:
@@ -72,29 +67,16 @@ def _sample_telemetry_rows() -> list[dict[str, object]]:
     ]
 
 
-@pytest.fixture(autouse=True)
-def _reset_state() -> None:
-    """
-    Resets the draft and live simulation loop state between UI tests to ensure deterministic reproducibility.
-
-    This fixture enforces a clean simulation environment for each test, preventing cross-test contamination of mutable draft state and live simulation loop. By resetting the draft and nullifying the simulation loop and task, the fixture guarantees that each test operates on a pristine state, thereby upholding the scientific rigor required for reproducible validation of emergent ecological dynamics and UI interactions in PHIDS.
-    """
-    reset_draft()
-    api_main._sim_loop = None
-    api_main._sim_task = None
-
-
 @pytest.mark.asyncio
-async def test_root_returns_full_html() -> None:
+async def test_root_returns_full_html(api_client: AsyncClient) -> None:
     """
     Validates that the root endpoint returns a complete HTML workspace for the PHIDS UI.
 
     This test ensures that the main workspace, diagnostics rail, and upload scenario elements are present in the HTML response, confirming the integrity of the HTMX-driven UI. The presence of these elements is critical for user interaction, scenario management, and diagnostics, supporting the scientific workflow of ecosystem simulation and analysis.
     """
-    async with _default_client() as client:
-        resp = await client.get("/")
+    resp = await api_client.get("/")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "text/html" in resp.headers["content-type"]
     assert 'id="main-workspace"' in resp.text
     assert 'id="diagnostics-rail"' in resp.text
@@ -121,16 +103,20 @@ async def test_root_returns_full_html() -> None:
         ("/ui/batch", "Monte Carlo Batch Runner", "Load Persisted Batches"),
     ],
 )
-async def test_ui_partials_render(path: str, marker: str, extra_marker: str | None) -> None:
+async def test_ui_partials_render(
+    api_client: AsyncClient,
+    path: str,
+    marker: str,
+    extra_marker: str | None,
+) -> None:
     """
     Verifies that each UI partial endpoint renders the expected canvas or configuration view.
 
     This test suite systematically checks the rendering of dashboard and configuration views for biotope, flora, herbivores, substances, diet matrix, and trigger rules. The presence of specific markers in the HTML response confirms that the UI correctly exposes the configuration and visualization surfaces necessary for deterministic scenario editing and ecological simulation, supporting rigorous scientific experimentation.
     """
-    async with _default_client() as client:
-        resp = await client.get(path)
+    resp = await api_client.get(path)
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert marker in resp.text
     if extra_marker is not None:
         assert extra_marker in resp.text
@@ -145,56 +131,54 @@ async def test_ui_partials_render(path: str, marker: str, extra_marker: str | No
         "/ui/diagnostics/backend",
     ],
 )
-async def test_diagnostics_tabs_render(path: str) -> None:
+async def test_diagnostics_tabs_render(api_client: AsyncClient, path: str) -> None:
     """
     Ensures that diagnostics tab endpoints render the diagnostics content for model, frontend, and backend.
 
     This test validates the accessibility and rendering of diagnostics views, which are essential for monitoring simulation health, model correctness, and backend/frontend integration. The presence of diagnostics content in the response supports the scientific requirement for transparent telemetry and error reporting in PHIDS.
     """
-    async with _default_client() as client:
-        resp = await client.get(path)
+    resp = await api_client.get(path)
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "diagnostics" in resp.text.lower()
 
 
 @pytest.mark.asyncio
-async def test_ui_status_helpers_render_without_loaded_simulation() -> None:
+async def test_ui_status_helpers_render_without_loaded_simulation(api_client: AsyncClient) -> None:
     """
     Confirms that UI status helpers render correctly when no simulation is loaded.
 
     This test checks the tick, status badge, and telemetry endpoints for correct responses in the absence of a loaded simulation. The test ensures that the UI accurately reflects the idle state, supporting the scientific principle of deterministic state reporting and user feedback in ecosystem simulation workflows.
     """
-    async with _default_client() as client:
-        tick_resp = await client.get("/api/ui/tick")
-        status_resp = await client.get("/api/ui/status-badge")
-        telemetry_resp = await client.get("/api/telemetry")
+    tick_resp = await api_client.get("/api/ui/tick")
+    status_resp = await api_client.get("/api/ui/status-badge")
+    telemetry_resp = await api_client.get("/api/telemetry")
 
-    assert tick_resp.status_code == 200
+    assert tick_resp.status_code == 200, tick_resp.text
     assert tick_resp.text == "0"
-    assert status_resp.status_code == 200
+    assert status_resp.status_code == 200, status_resp.text
     assert "Idle" in status_resp.text
-    assert telemetry_resp.status_code == 200
+    assert telemetry_resp.status_code == 200, telemetry_resp.text
     assert "No telemetry data yet" in telemetry_resp.text
 
 
 @pytest.mark.asyncio
-async def test_table_preview_route_renders_empty_state_without_loaded_simulation() -> None:
+async def test_table_preview_route_renders_empty_state_without_loaded_simulation(
+    api_client: AsyncClient,
+) -> None:
     """Confirms telemetry table preview fragment reports an informative empty-state message."""
-    async with _default_client() as client:
-        resp = await client.get("/api/telemetry/table_preview")
+    resp = await api_client.get("/api/telemetry/table_preview")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "No telemetry data available" in resp.text
 
 
 @pytest.mark.asyncio
-async def test_dashboard_contains_extended_telemetry_canvases() -> None:
+async def test_dashboard_contains_extended_telemetry_canvases(api_client: AsyncClient) -> None:
     """Ensures the dashboard partial exposes defense and biomass telemetry canvases."""
-    async with _default_client() as client:
-        resp = await client.get("/ui/dashboard")
+    resp = await api_client.get("/ui/dashboard")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert 'id="ts-chart"' in resp.text
     assert 'id="defense-chart"' in resp.text
     assert 'id="biomass-chart"' in resp.text
@@ -245,7 +229,10 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
 
 
 @pytest.mark.asyncio
-async def test_simulation_load_cancels_pending_task(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_simulation_load_cancels_pending_task(
+    api_client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify loading a scenario cancels an already-scheduled simulation task before replacing the loop."""
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 2, 2, 15.0)
@@ -255,47 +242,47 @@ async def test_simulation_load_cancels_pending_task(monkeypatch: pytest.MonkeyPa
     pending_load_task = asyncio.create_task(asyncio.sleep(60))
     api_main._sim_task = pending_load_task
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.post("/api/scenario/load", json=draft.build_sim_config().model_dump())
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert pending_load_task.cancelled()
 
 
 @pytest.mark.asyncio
-async def test_simulation_status_and_tick_rate_routes() -> None:
+async def test_simulation_status_and_tick_rate_routes(api_client: AsyncClient) -> None:
     """Verify status reflects loaded defaults and tick-rate updates are persisted."""
-    async with _default_client() as client:
+    async with api_client as client:
         await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
         status_resp = await client.get("/api/simulation/status")
         tick_rate_resp = await client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 22.5})
 
-    assert status_resp.status_code == 200
+    assert status_resp.status_code == 200, status_resp.text
     assert status_resp.json()["tick"] == 0
     assert status_resp.json()["tick_rate_hz"] == pytest.approx(10.0)
-    assert tick_rate_resp.status_code == 200
+    assert tick_rate_resp.status_code == 200, tick_rate_resp.text
     assert tick_rate_resp.json()["tick_rate_hz"] == pytest.approx(22.5)
 
 
 @pytest.mark.asyncio
-async def test_simulation_step_and_wind_routes() -> None:
+async def test_simulation_step_and_wind_routes(api_client: AsyncClient) -> None:
     """Verify step increments tick and wind updates are returned with the requested vector."""
-    async with _default_client() as client:
+    async with api_client as client:
         await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
         wind_resp = await client.put("/api/simulation/wind", json={"wind_x": 1.25, "wind_y": -0.5})
         step_resp = await client.post("/api/simulation/step")
 
-    assert wind_resp.status_code == 200
+    assert wind_resp.status_code == 200, wind_resp.text
     assert wind_resp.json()["wind_x"] == 1.25
     assert wind_resp.json()["wind_y"] == -0.5
-    assert step_resp.status_code == 200
+    assert step_resp.status_code == 200, step_resp.text
     assert step_resp.json()["tick"] == 1
 
 
 @pytest.mark.asyncio
-async def test_live_telemetry_export_and_chart_routes() -> None:
+async def test_live_telemetry_export_and_chart_routes(api_client: AsyncClient) -> None:
     """Verify live telemetry endpoints return CSV/NDJSON/chart/table payloads after at least one tick."""
-    async with _default_client() as client:
+    async with api_client as client:
         await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
         await client.post("/api/simulation/step")
         csv_resp = await client.get("/api/telemetry/export/csv")
@@ -311,20 +298,23 @@ async def test_live_telemetry_export_and_chart_routes() -> None:
             },
         )
 
-    assert csv_resp.status_code == 200
+    assert csv_resp.status_code == 200, csv_resp.text
     assert csv_resp.text.startswith("tick,")
-    assert ndjson_resp.status_code == 200
+    assert ndjson_resp.status_code == 200, ndjson_resp.text
     assert '"tick":' in ndjson_resp.text
-    assert chart_resp.status_code == 200
+    assert chart_resp.status_code == 200, chart_resp.text
     chart_payload = chart_resp.json()
     assert chart_payload["labels"] == [0]
     assert "flora_population" in chart_payload["series"]
-    assert table_resp.status_code == 200
+    assert table_resp.status_code == 200, table_resp.text
     assert "<th>tick</th>" in table_resp.text
 
 
 @pytest.mark.asyncio
-async def test_simulation_start_pause_reset_htmx_badges(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_simulation_start_pause_reset_htmx_badges(
+    api_client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify HTMX control routes return badge fragments and reset cancels a pending simulation task."""
 
     class _CompletedTask:
@@ -341,7 +331,7 @@ async def test_simulation_start_pause_reset_htmx_badges(monkeypatch: pytest.Monk
 
     real_create_task = asyncio.create_task
 
-    async with _default_client() as client:
+    async with api_client as client:
         await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
         monkeypatch.setattr(api_main.asyncio, "create_task", _close_coro_task)
         start_resp = await client.post("/api/simulation/start", headers={"HX-Request": "true"})
@@ -351,30 +341,30 @@ async def test_simulation_start_pause_reset_htmx_badges(monkeypatch: pytest.Monk
         api_main._sim_task = pending_reset_task
         reset_resp = await client.post("/api/simulation/reset", headers={"HX-Request": "true"})
 
-    assert start_resp.status_code == 200
+    assert start_resp.status_code == 200, start_resp.text
     assert "Running" in start_resp.text
-    assert pause_resp.status_code == 200
+    assert pause_resp.status_code == 200, pause_resp.text
     assert "Paused" in pause_resp.text
-    assert reset_resp.status_code == 200
+    assert reset_resp.status_code == 200, reset_resp.text
     assert pending_reset_task.cancelled()
     assert "Loaded" in reset_resp.text
 
 
 @pytest.mark.asyncio
-async def test_batch_start_rejects_invalid_draft() -> None:
+async def test_batch_start_rejects_invalid_draft(api_client: AsyncClient) -> None:
     """Verify batch start returns 400 when the draft lacks both flora and herbivore species."""
     reset_draft()
     invalid_draft = get_draft()
     invalid_draft.flora_species.clear()
     invalid_draft.herbivore_species.clear()
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.post(
             "/api/batch/start",
             json={"runs": 1, "max_ticks": 2, "scenario_name": "invalid"},
         )
 
-    assert resp.status_code == 400
+    assert resp.status_code == 400, resp.text
     assert "Invalid draft" in resp.text
 
 
@@ -439,18 +429,19 @@ def _patch_completed_batch_execution(
 
 @pytest.mark.asyncio
 async def test_batch_status_ledger_and_view_routes_for_completed_job(
+    api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """Verify completed batch jobs are visible in status, ledger, and aggregate view endpoints."""
     scheduled_tasks = _patch_completed_batch_execution(monkeypatch, tmp_path)
 
-    async with _default_client() as client:
+    async with api_client as client:
         start_resp = await client.post(
             "/api/batch/start",
             json={"runs": 2, "max_ticks": 3, "scenario_name": "coverage batch"},
         )
-        assert start_resp.status_code == 200
+        assert start_resp.status_code == 200, start_resp.text
         job_id = start_resp.json()["job_id"]
 
         await asyncio.gather(*scheduled_tasks)
@@ -458,11 +449,11 @@ async def test_batch_status_ledger_and_view_routes_for_completed_job(
         ledger_resp = await client.get("/api/batch/ledger")
         view_resp = await client.get(f"/api/batch/view/{job_id}")
 
-    assert status_resp.status_code == 200
+    assert status_resp.status_code == 200, status_resp.text
     assert "coverage batch" in status_resp.text
-    assert ledger_resp.status_code == 200
+    assert ledger_resp.status_code == 200, ledger_resp.text
     assert job_id in ledger_resp.text
-    assert view_resp.status_code == 200
+    assert view_resp.status_code == 200, view_resp.text
     assert "batch-survival-chart" in view_resp.text
 
 
@@ -482,6 +473,7 @@ async def test_batch_status_ledger_and_view_routes_for_completed_job(
 )
 @pytest.mark.asyncio
 async def test_batch_export_routes_support_csv_table_and_tikz(
+    api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     params: dict[str, str | int],
@@ -490,18 +482,18 @@ async def test_batch_export_routes_support_csv_table_and_tikz(
     """Verify completed batches export expected CSV, TeX table, and TikZ chart payloads."""
     scheduled_tasks = _patch_completed_batch_execution(monkeypatch, tmp_path)
 
-    async with _default_client() as client:
+    async with api_client as client:
         start_resp = await client.post(
             "/api/batch/start",
             json={"runs": 2, "max_ticks": 3, "scenario_name": "coverage batch"},
         )
-        assert start_resp.status_code == 200
+        assert start_resp.status_code == 200, start_resp.text
         job_id = start_resp.json()["job_id"]
 
         await asyncio.gather(*scheduled_tasks)
         resp = await client.get(f"/api/batch/export/{job_id}", params=params)
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert expected_fragment in resp.text
 
 
@@ -516,6 +508,7 @@ async def test_batch_export_routes_support_csv_table_and_tikz(
 )
 @pytest.mark.asyncio
 async def test_batch_routes_return_errors_for_missing_job_and_invalid_export_params(
+    api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     path_template: str,
@@ -525,19 +518,19 @@ async def test_batch_routes_return_errors_for_missing_job_and_invalid_export_par
     """Verify missing jobs and invalid export parameters return documented 404/400 responses."""
     scheduled_tasks = _patch_completed_batch_execution(monkeypatch, tmp_path)
 
-    async with _default_client() as client:
+    async with api_client as client:
         start_resp = await client.post(
             "/api/batch/start",
             json={"runs": 2, "max_ticks": 3, "scenario_name": "coverage batch"},
         )
-        assert start_resp.status_code == 200
+        assert start_resp.status_code == 200, start_resp.text
         job_id = start_resp.json()["job_id"]
 
         await asyncio.gather(*scheduled_tasks)
         path = path_template.format(job_id=job_id)
         response = await client.get(path, params=params)
 
-    assert response.status_code == expected_status
+    assert response.status_code == expected_status, response.text
 
 
 def test_export_helper_parses_species_ids_and_filters_rows() -> None:
@@ -1093,6 +1086,7 @@ def test_cli_parser_and_main_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.asyncio
 async def test_batch_view_renders_survival_chart_when_summary_exists(
+    api_client: AsyncClient,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1124,10 +1118,10 @@ async def test_batch_view_renders_survival_chart_when_summary_exists(
     (batch_dir / f"{job_id}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
     monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.get(f"/api/batch/view/{job_id}")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "batch-survival-chart" in resp.text
     assert "batch-table-preview" in resp.text
     assert "batch-export-stride" in resp.text
@@ -1140,6 +1134,7 @@ async def test_batch_view_renders_survival_chart_when_summary_exists(
 
 @pytest.mark.asyncio
 async def test_load_persisted_batches_populates_ledger(
+    api_client: AsyncClient,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1163,18 +1158,19 @@ async def test_load_persisted_batches_populates_ledger(
     )
     monkeypatch.setattr(api_main, "_BATCH_DIR", summary_path)
 
-    async with _default_client() as client:
+    async with api_client as client:
         load_resp = await client.post("/api/batch/load-persisted")
         ledger_resp = await client.get("/api/batch/ledger")
 
-    assert load_resp.status_code == 200
+    assert load_resp.status_code == 200, load_resp.text
     assert load_resp.json()["loaded"] == 1
-    assert ledger_resp.status_code == 200
+    assert ledger_resp.status_code == 200, ledger_resp.text
     assert "persisted01" in ledger_resp.text
 
 
 @pytest.mark.asyncio
 async def test_batch_export_csv_respects_tick_interval_decimation(
+    api_client: AsyncClient,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1195,7 +1191,7 @@ async def test_batch_export_csv_respects_tick_interval_decimation(
     (batch_dir / f"{job_id}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
     monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
 
-    async with _default_client() as client:
+    async with api_client as client:
         full_resp = await client.get(
             f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 1}
         )
@@ -1203,8 +1199,8 @@ async def test_batch_export_csv_respects_tick_interval_decimation(
             f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 2}
         )
 
-    assert full_resp.status_code == 200
-    assert decimated_resp.status_code == 200
+    assert full_resp.status_code == 200, full_resp.text
+    assert decimated_resp.status_code == 200, decimated_resp.text
     full_lines = [line for line in full_resp.text.splitlines() if line.strip()]
     decimated_lines = [line for line in decimated_resp.text.splitlines() if line.strip()]
     # Both include header; decimated export must contain fewer data rows.
@@ -1213,6 +1209,7 @@ async def test_batch_export_csv_respects_tick_interval_decimation(
 
 @pytest.mark.asyncio
 async def test_batch_export_tikz_supports_survival_chart_type(
+    api_client: AsyncClient,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1233,54 +1230,51 @@ async def test_batch_export_tikz_supports_survival_chart_type(
     (batch_dir / f"{job_id}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
     monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.get(
             f"/api/batch/export/{job_id}",
             params={"format": "tex_tikz", "chart_type": "survival", "title": "Survival"},
         )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "Simulations alive (%)" in resp.text
 
 
 @pytest.mark.asyncio
-async def test_export_route_accepts_metabolic_alias_and_returns_tikz() -> None:
+async def test_export_route_accepts_metabolic_alias_and_returns_tikz(
+    api_client: AsyncClient,
+) -> None:
     """Validates that the metabolic alias resolves to defense-economy export generation."""
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 2, 2, 20.0)
     draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 20.0)
 
-    async with _default_client() as client:
+    async with api_client as client:
         load_resp = await client.post("/api/scenario/load-draft")
-        assert load_resp.status_code == 200
+        assert load_resp.status_code == 200, load_resp.text
         await client.post("/api/simulation/step")
         resp = await client.get("/api/export/metabolic", params={"format": "tex_tikz"})
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "Metabolic Defense Economy" in resp.text
 
 
 @pytest.mark.asyncio
-async def test_export_route_rejects_non_positive_tick_interval() -> None:
-    """Ensures telemetry export returns HTTP 400 when tick_interval is below 1."""
-    draft = get_draft()
-    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
-    draft_service.add_swarm_placement(draft, 0, 1, 1, 3, 12.0)
+async def test_export_route_rejects_non_positive_tick_interval(api_client: AsyncClient) -> None:
+    # ...existing setup...
+    load_resp = await api_client.post("/api/scenario/load-draft")
+    assert load_resp.status_code == 200, load_resp.text
+    resp = await api_client.get(
+        "/api/export/timeseries",
+        params={"format": "csv", "tick_interval": 0},
+    )
 
-    async with _default_client() as client:
-        load_resp = await client.post("/api/scenario/load-draft")
-        assert load_resp.status_code == 200
-        resp = await client.get(
-            "/api/export/timeseries",
-            params={"format": "csv", "tick_interval": 0},
-        )
-
-    assert resp.status_code == 400
+    assert resp.status_code == 400, resp.text
     assert "tick_interval" in resp.text
 
 
 @pytest.mark.asyncio
-async def test_placement_preview_data_includes_root_links() -> None:
+async def test_placement_preview_data_includes_root_links(api_client: AsyncClient) -> None:
     """
     Validates that placement preview data includes mycorrhizal root links and correct plant/swarm attributes.
 
@@ -1291,10 +1285,10 @@ async def test_placement_preview_data_includes_root_links() -> None:
     draft_service.add_plant_placement(draft, 0, 4, 5, 11.0)
     draft_service.add_swarm_placement(draft, 0, 4, 4, 7, 20.0)
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.get("/api/config/placements/data")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     payload = resp.json()
     assert payload["plants"][0]["x"] == 4
     assert payload["swarms"][0]["population"] == 7
@@ -1303,7 +1297,9 @@ async def test_placement_preview_data_includes_root_links() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza() -> None:
+async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza(
+    api_client: AsyncClient,
+) -> None:
     """
     Ensures that cell details endpoint returns draft preview payload including mycorrhizal connections.
 
@@ -1314,10 +1310,10 @@ async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza() -
     draft_service.add_plant_placement(draft, 0, 1, 3, 14.0)
     draft_service.add_swarm_placement(draft, 0, 1, 2, 7, 30.0)
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.get("/api/ui/cell-details", params={"x": 1, "y": 2})
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     data = resp.json()
     assert data["mode"] == "draft"
     assert data["plants"][0]["name"] == "Grass"
@@ -1328,13 +1324,15 @@ async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza() -
 
 
 @pytest.mark.asyncio
-async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -> None:
+async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval(
+    api_client: AsyncClient,
+) -> None:
     """
     Validates that biotope configuration updates clamp mycorrhizal growth interval to minimum value.
 
     This test ensures that the biotope configuration endpoint enforces a minimum value for mycorrhizal growth interval ticks, supporting the scientific requirement for deterministic parameter validation and ecological realism in simulation configuration.
     """
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.post(
             "/api/config/biotope",
             data={
@@ -1356,7 +1354,7 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
             },
         )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert 'name="mycorrhizal_growth_interval_ticks"' in resp.text
     assert 'value="1"' in resp.text
     assert 'name="z2_flora_species_extinction"' in resp.text
@@ -1372,11 +1370,13 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval() -
 
 
 @pytest.mark.asyncio
-async def test_biotope_wind_update_auto_applies_to_loaded_live_loop() -> None:
+async def test_biotope_wind_update_auto_applies_to_loaded_live_loop(
+    api_client: AsyncClient,
+) -> None:
     """Ensures draft wind edits synchronize immediately to a loaded simulation loop."""
     api_main._sim_loop = SimulationLoop(get_draft().build_sim_config())
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.post(
             "/api/config/biotope",
             data={
@@ -1398,7 +1398,7 @@ async def test_biotope_wind_update_auto_applies_to_loaded_live_loop() -> None:
             },
         )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert api_main._sim_loop is not None
     assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(1.75)
     assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(-0.25)
@@ -1413,6 +1413,7 @@ async def test_biotope_wind_update_auto_applies_to_loaded_live_loop() -> None:
 )
 @pytest.mark.asyncio
 async def test_control_routes_commit_pending_biotope_form_values(
+    api_client: AsyncClient,
     route: str,
     preload_loop: bool,
     wind_x: float,
@@ -1423,14 +1424,14 @@ async def test_control_routes_commit_pending_biotope_form_values(
     if preload_loop:
         api_main._sim_loop = SimulationLoop(get_draft().build_sim_config())
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.post(
             route,
             headers={"HX-Request": "true"},
             data={"wind_x": wind_x, "wind_y": wind_y, "tick_rate_hz": tick_rate_hz},
         )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert api_main._sim_loop is not None
     assert get_draft().wind_x == pytest.approx(wind_x)
     assert get_draft().wind_y == pytest.approx(wind_y)
@@ -1441,7 +1442,9 @@ async def test_control_routes_commit_pending_biotope_form_values(
 
 
 @pytest.mark.asyncio
-async def test_substance_and_diet_routes_delegate_to_service_and_compact_references() -> None:
+async def test_substance_and_diet_routes_delegate_to_service_and_compact_references(
+    api_client: AsyncClient,
+) -> None:
     """Validates that builder routes preserve compact substance indexing and diet-matrix safety invariants.
 
     This integration experiment exercises the HTTP surface that fronts the centralized
@@ -1453,47 +1456,46 @@ async def test_substance_and_diet_routes_delegate_to_service_and_compact_referen
     """
     draft = get_draft()
 
-    async with _default_client() as client:
-        add_alarm = await client.post("/api/config/substances", data={"name": "Alarm"})
-        add_shield = await client.post(
-            "/api/config/substances",
-            data={"name": "Shield", "is_toxin": "true", "lethal": "true"},
-        )
-        add_relay = await client.post("/api/config/substances", data={"name": "Relay"})
+    add_alarm = await api_client.post("/api/config/substances", data={"name": "Alarm"})
+    add_shield = await api_client.post(
+        "/api/config/substances",
+        data={"name": "Shield", "is_toxin": "true", "lethal": "true"},
+    )
+    add_relay = await api_client.post("/api/config/substances", data={"name": "Relay"})
 
-        update_resp = await client.put(
-            "/api/config/substances/1",
-            data={
-                "name": "Shield+",
-                "type_label": "Repellent Toxin",
-                "synthesis_duration": 0,
-                "aftereffect_ticks": -2,
-                "repellent_walk_ticks": -3,
-                "energy_cost_per_tick": -5.0,
-                "irreversible": "on",
-            },
-        )
-        toggle_diet = await client.post(
-            "/api/matrices/diet",
-            data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "toggle"},
-        )
-        invalid_diet = await client.post(
-            "/api/matrices/diet",
-            data={"herbivore_idx": 9, "flora_idx": 9, "compatible": "true"},
-        )
+    update_resp = await api_client.put(
+        "/api/config/substances/1",
+        data={
+            "name": "Shield+",
+            "type_label": "Repellent Toxin",
+            "synthesis_duration": 0,
+            "aftereffect_ticks": -2,
+            "repellent_walk_ticks": -3,
+            "energy_cost_per_tick": -5.0,
+            "irreversible": "on",
+        },
+    )
+    toggle_diet = await api_client.post(
+        "/api/matrices/diet",
+        data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "toggle"},
+    )
+    invalid_diet = await api_client.post(
+        "/api/matrices/diet",
+        data={"herbivore_idx": 9, "flora_idx": 9, "compatible": "true"},
+    )
 
-        missing_update = await client.put(
-            "/api/config/substances/99",
-            data={"name": "Missing"},
-        )
+    missing_update = await api_client.put(
+        "/api/config/substances/99",
+        data={"name": "Missing"},
+    )
 
-    assert add_alarm.status_code == 200
-    assert add_shield.status_code == 200
-    assert add_relay.status_code == 200
+    assert add_alarm.status_code == 200, add_alarm.text
+    assert add_shield.status_code == 200, add_shield.text
+    assert add_relay.status_code == 200, add_relay.text
     assert "Shield+" in update_resp.text
-    assert toggle_diet.status_code == 200
-    assert invalid_diet.status_code == 200
-    assert missing_update.status_code == 404
+    assert toggle_diet.status_code == 200, toggle_diet.text
+    assert invalid_diet.status_code == 200, invalid_diet.text
+    assert missing_update.status_code == 404, missing_update.text
     assert draft.diet_matrix[0][0] is False
     assert draft.substance_definitions[1].repellent is True
     assert draft.substance_definitions[1].aftereffect_ticks == 0
@@ -1517,12 +1519,11 @@ async def test_substance_and_diet_routes_delegate_to_service_and_compact_referen
         activation_condition={"kind": "substance_active", "substance_id": 2},
     )
 
-    async with _default_client() as client:
-        delete_resp = await client.delete("/api/config/substances/1")
-        missing_delete = await client.delete("/api/config/substances/99")
+    delete_resp = await api_client.delete("/api/config/substances/1")
+    missing_delete = await api_client.delete("/api/config/substances/99")
 
-    assert delete_resp.status_code == 200
-    assert missing_delete.status_code == 404
+    assert delete_resp.status_code == 200, delete_resp.text
+    assert missing_delete.status_code == 404, missing_delete.text
     assert [definition.substance_id for definition in draft.substance_definitions] == [0, 1]
     assert draft.substance_definitions[1].name == "Relay"
     assert draft.substance_definitions[1].precursor_signal_id == 1
@@ -1536,6 +1537,7 @@ async def test_substance_and_diet_routes_delegate_to_service_and_compact_referen
 
 @pytest.mark.asyncio
 async def test_live_dashboard_payload_and_cell_details_include_signals_and_links(
+    api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -1565,12 +1567,12 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     )
     draft_service.add_trigger_rule(draft, 0, 0, 0, min_herbivore_population=5)
 
-    async with _default_client() as client:
+    async with api_client as client:
         load_resp = await client.post("/api/scenario/load-draft", headers={"HX-Request": "true"})
-        assert load_resp.status_code == 200
+        assert load_resp.status_code == 200, load_resp.text
 
         step_resp = await client.post("/api/simulation/step")
-        assert step_resp.status_code == 200
+        assert step_resp.status_code == 200, step_resp.text
 
         dashboard_payload = build_live_dashboard_payload(
             api_main._sim_loop,
@@ -1589,13 +1591,13 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         swarm.y = 0
 
         second_step_resp = await client.post("/api/simulation/step")
-        assert second_step_resp.status_code == 200
+        assert second_step_resp.status_code == 200, second_step_resp.text
         aftereffect_details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
 
     assert dashboard_payload["tick"] == 1
     assert any(0 in plant["active_signal_ids"] for plant in dashboard_payload["plants"])
     assert dashboard_payload["mycorrhizal_links"]
-    assert details_resp.status_code == 200
+    assert details_resp.status_code == 200, details_resp.text
     details = details_resp.json()
     assert details["mode"] == "live"
     assert details["tick"] == 1
@@ -1610,7 +1612,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     assert details["mycorrhiza"]["link_count"] == 1
     assert details["swarms"][0]["population"] >= 6
 
-    assert aftereffect_details_resp.status_code == 200
+    assert aftereffect_details_resp.status_code == 200, aftereffect_details_resp.text
     aftereffect_details = aftereffect_details_resp.json()
     assert aftereffect_details["tick"] == 2
     assert aftereffect_details["signal_concentrations"]
@@ -1628,7 +1630,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
 
 
 @pytest.mark.asyncio
-async def test_ui_cell_details_rejects_stale_live_tick() -> None:
+async def test_ui_cell_details_rejects_stale_live_tick(api_client: AsyncClient) -> None:
     """
     Ensures that cell details endpoint rejects requests with stale expected tick in live mode.
 
@@ -1638,26 +1640,26 @@ async def test_ui_cell_details_rejects_stale_live_tick() -> None:
     draft_service.add_plant_placement(draft, 0, 3, 3, 20.0)
     draft_service.add_swarm_placement(draft, 0, 3, 3, 5, 20.0)
 
-    async with _default_client() as client:
+    async with api_client as client:
         load_resp = await client.post("/api/scenario/load-draft")
-        assert load_resp.status_code == 200
+        assert load_resp.status_code == 200, load_resp.text
 
         step_resp = await client.post("/api/simulation/step")
-        assert step_resp.status_code == 200
+        assert step_resp.status_code == 200, step_resp.text
 
         resp = await client.get(
             "/api/ui/cell-details",
             params={"x": 3, "y": 3, "expected_tick": 0},
         )
 
-    assert resp.status_code == 409
+    assert resp.status_code == 409, resp.text
     data = resp.json()
     assert data["expected_tick"] == 0
     assert data["tick"] == 1
 
 
 @pytest.mark.asyncio
-async def test_model_diagnostics_and_telemetry_refresh_context() -> None:
+async def test_model_diagnostics_and_telemetry_refresh_context(api_client: AsyncClient) -> None:
     """
     Validates that model diagnostics and telemetry endpoints refresh context after simulation step.
 
@@ -1667,22 +1669,22 @@ async def test_model_diagnostics_and_telemetry_refresh_context() -> None:
     draft_service.add_plant_placement(draft, 0, 5, 5, 17.0)
     draft_service.add_swarm_placement(draft, 0, 5, 5, 8, 32.0)
 
-    async with _default_client() as client:
+    async with api_client as client:
         await client.post("/api/scenario/load-draft")
         await client.post("/api/simulation/step")
         model_resp = await client.get("/ui/diagnostics/model")
         telemetry_resp = await client.get("/api/telemetry")
 
-    assert model_resp.status_code == 200
+    assert model_resp.status_code == 200, model_resp.text
     assert "Latest telemetry" in model_resp.text
     assert "Plant death diagnostics" in model_resp.text
     assert "Energy deficit watch" in model_resp.text
-    assert telemetry_resp.status_code == 200
+    assert telemetry_resp.status_code == 200, telemetry_resp.text
     assert "tick 1" in telemetry_resp.text
 
 
 @pytest.mark.asyncio
-async def test_backend_diagnostics_shows_recent_logs() -> None:
+async def test_backend_diagnostics_shows_recent_logs(api_client: AsyncClient) -> None:
     """
     Ensures that backend diagnostics endpoint displays recent logs for UI diagnostics.
 
@@ -1690,16 +1692,16 @@ async def test_backend_diagnostics_shows_recent_logs() -> None:
     """
     api_main.logger.info("UI diagnostics backend smoke test")
 
-    async with _default_client() as client:
+    async with api_client as client:
         resp = await client.get("/ui/diagnostics/backend")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.text
     assert "Recent logs" in resp.text
     assert "UI diagnostics backend smoke test" in resp.text
 
 
 @pytest.mark.asyncio
-async def test_scenario_export_and_import_round_trip_ui() -> None:
+async def test_scenario_export_and_import_round_trip_ui(api_client: AsyncClient) -> None:
     """
     Validates scenario export and import round-trip functionality via the UI endpoints.
 
@@ -1711,9 +1713,9 @@ async def test_scenario_export_and_import_round_trip_ui() -> None:
     draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 18.0)
     draft.mycorrhizal_growth_interval_ticks = 13
 
-    async with _default_client() as client:
+    async with api_client as client:
         export_resp = await client.get("/api/scenario/export")
-        assert export_resp.status_code == 200
+        assert export_resp.status_code == 200, export_resp.text
         export_path.write_bytes(export_resp.content)
 
         with export_path.open("rb") as fh:
@@ -1722,6 +1724,6 @@ async def test_scenario_export_and_import_round_trip_ui() -> None:
                 files={"file": ("roundtrip.json", fh, "application/json")},
             )
 
-    assert import_resp.status_code == 200
+    assert import_resp.status_code == 200, import_resp.text
     assert import_resp.json()["message"] == "Scenario imported."
     assert get_draft().mycorrhizal_growth_interval_ticks == 13

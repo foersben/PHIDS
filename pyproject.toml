@@ -67,6 +67,9 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "benchmark: performance benchmark tests; deselect with -m 'not benchmark'",
+]
 addopts = [
     "--cov=src/phids",
     "--cov-report=term-missing",

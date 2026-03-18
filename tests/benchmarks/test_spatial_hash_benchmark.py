@@ -10,9 +10,12 @@ latency directly impacts tick throughput at biologically meaningful entity densi
 
 from __future__ import annotations
 
+import pytest
+
 from phids.engine.core.ecs import ECSWorld
 
 
+@pytest.mark.benchmark
 def test_spatial_hash_query_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
     """Benchmarks ECSWorld.entities_at throughput under a 2000-entity, 40×40-grid population.
 

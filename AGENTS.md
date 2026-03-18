@@ -34,6 +34,10 @@
   `uv run pytest tests/integration/api/test_ui_routes.py -q`
   `uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q`
   `uv run pytest tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q`
+- Fast local loop (skip benchmark suite):
+  `uv run pytest -m 'not benchmark' -q`
+- If repo-level `addopts` interfere with targeted debugging, use:
+  `uv run pytest -o addopts='' <path-or-node> -q`
 
 ## Repo-specific patterns
 - Pydantic v2 is the API boundary; validate at ingress, then operate on trusted internal state.
@@ -48,6 +52,7 @@
 - When deleting species/substances, compact IDs and clean dependent matrices, trigger rules, and placements.
 - If you change diffusion, flow-field logic, or spatial hashing, run the benchmark tests, not just unit tests.
 - Keep docstrings in Google style; docs are built with MkDocs + mkdocstrings from `docs/`.
+- Do not reintroduce file-local `AsyncClient` factories in API integration tests; use shared fixtures from `tests/conftest.py`.
 
 ## Test Docstring Hygiene (Required)
 - Do not generate boilerplate pytest docstrings like "Validates the ... invariant".
@@ -60,6 +65,16 @@
 - Avoid "God tests" that chain many unrelated endpoint calls; split by one state transition/invariant per test.
 - Prefer `pytest.mark.parametrize` for branch matrices and coercion helpers so each row reports independently.
 - Reuse shared builders/fixtures from `tests/conftest.py` (`config_builder`, `loop_config_builder`, `add_plant`, `add_swarm`) before introducing file-local setup helpers.
+
+## Test Harness Conventions (Required)
+- Global state isolation is centralized in `tests/conftest.py::safe_global_reset` (autouse). It resets draft state each test, cancels dangling `api_main._sim_task`, and clears `_sim_loop`/`_sim_substance_names` after each test.
+- API integration tests must use `tests/conftest.py::api_client` (`AsyncClient` bound to in-process `ASGITransport`) instead of creating ad-hoc clients.
+- In async route tests, either direct fixture calls (`await api_client.get(...)`) or `async with api_client as client` are acceptable; do not mix in `_default_client` helpers.
+- HTTP status assertions must include response diagnostics so failures are actionable:
+  `assert resp.status_code == 200, resp.text`
+  `assert resp.status_code == 400, resp.text`
+- Keep benchmark tests explicitly marked with `@pytest.mark.benchmark` in `tests/benchmarks/*` so selection via `-m 'not benchmark'` remains deterministic.
+- Prefer small route tests that verify one endpoint contract plus one invariant, especially in `tests/integration/api/test_ui_routes.py`.
 
 ## Documentation & Writing Style
 When writing docstrings, comments, or markdown documentation, you MUST adhere to a rigorous,

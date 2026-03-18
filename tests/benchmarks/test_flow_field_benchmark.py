@@ -12,10 +12,12 @@ re-run of this benchmark to detect performance regressions before they reach CI.
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from phids.engine.core.flow_field import compute_flow_field
 
 
+@pytest.mark.benchmark
 def test_flow_field_generation_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
     """Benchmarks compute_flow_field throughput on a 40×40 grid with two plant attractors and one toxin repeller.
 

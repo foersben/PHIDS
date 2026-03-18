@@ -12,10 +12,9 @@ from __future__ import annotations
 
 import pytest
 from fastapi import HTTPException
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from phids.api import main as api_main
-from phids.api.main import app
 from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
@@ -26,30 +25,11 @@ from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
     get_draft,
-    reset_draft,
 )
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
 
 draft_service = DraftService()
-
-
-@pytest.fixture(autouse=True)
-def _reset_global_state() -> None:
-    """Reset mutable API singletons between tests.
-
-    The API layer maintains process-global references for the draft state and active simulation
-    loop. Resetting these references before each test preserves deterministic reproducibility and
-    prevents cross-test leakage in route behavior.
-    """
-    reset_draft()
-    api_main._sim_loop = None
-    api_main._sim_task = None
-
-
-def _default_client() -> AsyncClient:
-    """Create an in-process HTTP client bound to the FastAPI application."""
-    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
 def _build_loaded_loop() -> SimulationLoop:
@@ -271,6 +251,7 @@ def test_render_status_badge_loaded_loop_states(
 )
 @pytest.mark.asyncio
 async def test_telemetry_empty_response_branches(
+    api_client: AsyncClient,
     setup_mode: str,
     path: str,
     params: dict[str, str | int] | None,
@@ -282,10 +263,9 @@ async def test_telemetry_empty_response_branches(
         loop = _build_loaded_loop()
         loop.telemetry._rows = []
 
-    async with _default_client() as client:
-        response = await client.get(path, params=params)
+    response = await api_client.get(path, params=params)
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     if expected_json is not None:
         assert response.json() == expected_json
     if expected_text is not None:
@@ -293,7 +273,9 @@ async def test_telemetry_empty_response_branches(
 
 
 @pytest.mark.asyncio
-async def test_telemetry_chartjs_since_tick_ahead_of_current_run_returns_full_rows() -> None:
+async def test_telemetry_chartjs_since_tick_ahead_of_current_run_returns_full_rows(
+    api_client: AsyncClient,
+) -> None:
     """Validate chartjs polling resilience when client cursor is ahead after reset.
 
     The browser polls ``/api/telemetry/chartjs-data`` with ``since_tick`` from the previous
@@ -324,21 +306,19 @@ async def test_telemetry_chartjs_since_tick_ahead_of_current_run_returns_full_ro
         },
     ]
 
-    async with _default_client() as client:
-        response = await client.get("/api/telemetry/chartjs-data", params={"since_tick": 99})
+    response = await api_client.get("/api/telemetry/chartjs-data", params={"since_tick": 99})
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["labels"] == [0, 1]
     assert payload["series"]["flora_population"] == [1.0, 1.0]
 
 
 @pytest.mark.asyncio
-async def test_export_route_returns_404_without_loaded_loop() -> None:
+async def test_export_route_returns_404_without_loaded_loop(api_client: AsyncClient) -> None:
     """Validate export endpoints reject requests when no simulation loop is loaded."""
-    async with _default_client() as client:
-        no_loop = await client.get("/api/export/timeseries", params={"format": "csv"})
-    assert no_loop.status_code == 404
+    no_loop = await api_client.get("/api/export/timeseries", params={"format": "csv"})
+    assert no_loop.status_code == 404, no_loop.text
 
 
 @pytest.mark.parametrize(
@@ -351,6 +331,7 @@ async def test_export_route_returns_404_without_loaded_loop() -> None:
 )
 @pytest.mark.asyncio
 async def test_export_route_invalid_request_branches(
+    api_client: AsyncClient,
     path: str,
     params: dict[str, str | int],
     expected_status: int,
@@ -360,8 +341,7 @@ async def test_export_route_invalid_request_branches(
     loop = _build_loaded_loop()
     await loop.step()
 
-    async with _default_client() as client:
-        response = await client.get(path, params=params)
+    response = await api_client.get(path, params=params)
 
     assert response.status_code == expected_status
     if expected_text is not None:
@@ -387,6 +367,7 @@ async def test_export_route_invalid_request_branches(
 )
 @pytest.mark.asyncio
 async def test_export_route_success_format_branches(
+    api_client: AsyncClient,
     path: str,
     params: dict[str, str],
     content_type_fragment: str,
@@ -396,10 +377,9 @@ async def test_export_route_success_format_branches(
     loop = _build_loaded_loop()
     await loop.step()
 
-    async with _default_client() as client:
-        response = await client.get(path, params=params)
+    response = await api_client.get(path, params=params)
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     assert content_type_fragment in response.headers["content-type"]
     assert disposition_fragment in response.headers["content-disposition"]
 
@@ -410,6 +390,7 @@ async def test_export_route_success_format_branches(
 )
 @pytest.mark.asyncio
 async def test_export_route_backend_failure_branches(
+    api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
     format_name: str,
     expected_message: str,
@@ -427,10 +408,9 @@ async def test_export_route_backend_failure_branches(
     monkeypatch.setattr("phids.api.routers.telemetry.generate_tikz_str", _raise_tikz)
     monkeypatch.setattr("phids.api.routers.telemetry.generate_png_bytes", _raise_png)
 
-    async with _default_client() as client:
-        response = await client.get("/api/export/timeseries", params={"format": format_name})
+    response = await api_client.get("/api/export/timeseries", params={"format": format_name})
 
-    assert response.status_code == 400
+    assert response.status_code == 400, response.text
     assert expected_message in response.text
 
 
