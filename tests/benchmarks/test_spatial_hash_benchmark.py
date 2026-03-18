@@ -22,8 +22,6 @@ def test_spatial_hash_query_benchmark(benchmark) -> None:  # type: ignore[no-unt
     returned count is non-negative, confirming that the hash table remains internally consistent
     after bulk registration.
 
-    Args:
-        benchmark: ``pytest-benchmark`` fixture controlling repeated timing invocations.
     """
     world = ECSWorld()
 

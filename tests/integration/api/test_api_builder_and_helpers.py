@@ -110,15 +110,8 @@ def _reset_state() -> None:
     api_main._sim_substance_names = {}
 
 
-def test_main_helper_functions_cover_condition_and_status_logic() -> None:
-    """Validates the main helper functions cover condition and status logic invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+def test_main_substance_name_helpers_default_and_draft_overrides() -> None:
+    """Verify substance naming helpers use defaults and honor draft-provided override labels."""
     assert api_main._default_substance_name(2, is_toxin=False) == "Signal 2"
     assert api_main._default_substance_name(3, is_toxin=True) == "Toxin 3"
 
@@ -132,59 +125,73 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     api_main._set_simulation_substance_names(config, draft=draft)
     assert api_main._substance_name(0, is_toxin=False) == "Alarm"
 
-    assert api_main._parse_activation_condition_json(None) is None
-    assert api_main._parse_activation_condition_json("   ") is None
-    assert api_main._parse_activation_condition_json(
-        '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
-    ) == {
-        "kind": "herbivore_presence",
-        "herbivore_species_id": 0,
-        "min_herbivore_population": 3,
-    }
-    assert api_main._parse_activation_condition_json(
-        '{"kind":"environmental_signal","signal_id":0,"min_concentration":0.2}'
-    ) == {
-        "kind": "environmental_signal",
-        "signal_id": 0,
-        "min_concentration": 0.2,
-    }
-    with pytest.raises(HTTPException):
-        api_main._parse_activation_condition_json("{bad json")
-    with pytest.raises(HTTPException):
-        api_main._parse_activation_condition_json('{"kind":"substance_active"}')
 
-    assert api_main._describe_activation_condition(None) == "unconditional"
-    assert (
-        api_main._describe_activation_condition(
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (None, None),
+        ("   ", None),
+        (
+            '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 3,
+            },
+        ),
+        (
+            '{"kind":"environmental_signal","signal_id":0,"min_concentration":0.2}',
+            {
+                "kind": "environmental_signal",
+                "signal_id": 0,
+                "min_concentration": 0.2,
+            },
+        ),
+    ],
+)
+def test_main_activation_condition_json_parser_valid_cases(
+    raw: str | None,
+    expected: dict[str, object] | None,
+) -> None:
+    """Verify activation-condition parser returns normalized dicts for valid inputs."""
+    assert api_main._parse_activation_condition_json(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["{bad json", '{"kind":"substance_active"}'])
+def test_main_activation_condition_json_parser_invalid_cases(raw: str) -> None:
+    """Verify activation-condition parser raises on malformed JSON and invalid schemas."""
+    with pytest.raises(HTTPException):
+        api_main._parse_activation_condition_json(raw)
+
+
+@pytest.mark.parametrize(
+    ("condition", "herbivore_names", "substance_names", "expected"),
+    [
+        (None, None, None, "unconditional"),
+        (
             {
                 "kind": "herbivore_presence",
                 "herbivore_species_id": 1,
                 "min_herbivore_population": 4,
             },
-            herbivore_names={1: "Beetles"},
-        )
-        == "Beetles ≥ 4"
-    )
-    assert (
-        api_main._describe_activation_condition(
+            {1: "Beetles"},
+            None,
+            "Beetles ≥ 4",
+        ),
+        (
             {"kind": "substance_active", "substance_id": 7},
-            substance_names={7: "Alarm"},
-        )
-        == "Alarm active"
-    )
-    assert (
-        api_main._describe_activation_condition(
+            None,
+            {7: "Alarm"},
+            "Alarm active",
+        ),
+        (
             {"kind": "environmental_signal", "signal_id": 0, "min_concentration": 0.25},
-            substance_names={0: "Alarm"},
-        )
-        == "Alarm concentration ≥ 0.25"
-    )
-    assert (
-        api_main._describe_activation_condition({"kind": "all_of", "conditions": []})
-        == "unconditional"
-    )
-    assert (
-        api_main._describe_activation_condition(
+            None,
+            {0: "Alarm"},
+            "Alarm concentration ≥ 0.25",
+        ),
+        ({"kind": "all_of", "conditions": []}, None, None, "unconditional"),
+        (
             {
                 "kind": "any_of",
                 "conditions": [
@@ -196,21 +203,70 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
                     {"kind": "substance_active", "substance_id": 1},
                 ],
             },
-            herbivore_names={0: "Moths"},
-            substance_names={1: "VOC"},
+            {0: "Moths"},
+            {1: "VOC"},
+            "(Moths ≥ 2 OR VOC active)",
+        ),
+    ],
+)
+def test_main_activation_condition_descriptions(
+    condition: dict[str, object] | None,
+    herbivore_names: dict[int, str] | None,
+    substance_names: dict[int, str] | None,
+    expected: str,
+) -> None:
+    """Verify activation-condition description rendering for supported condition kinds."""
+    assert (
+        api_main._describe_activation_condition(
+            condition,
+            herbivore_names=herbivore_names,
+            substance_names=substance_names,
         )
-        == "(Moths ≥ 2 OR VOC active)"
+        == expected
     )
 
+
+def test_main_trigger_rule_lookup_valid_and_missing_index() -> None:
+    """Verify trigger-rule lookup returns existing entries and raises for missing indices."""
+    draft = DraftState.default()
     draft.trigger_rules = [TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=0)]
     assert api_main._trigger_rule_by_index(draft, 0).substance_id == 0
     with pytest.raises(HTTPException):
         api_main._trigger_rule_by_index(draft, 3)
 
-    validate_cell_coordinates(1, 1, 3, 3)
-    with pytest.raises(HTTPException):
-        validate_cell_coordinates(5, 1, 3, 3)
 
+@pytest.mark.parametrize(
+    ("x", "y", "width", "height", "should_raise"),
+    [(1, 1, 3, 3, False), (5, 1, 3, 3, True)],
+)
+def test_main_validate_cell_coordinates_cases(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    should_raise: bool,
+) -> None:
+    """Verify coordinate validation accepts in-bounds cells and rejects out-of-bounds cells."""
+    if should_raise:
+        with pytest.raises(HTTPException):
+            validate_cell_coordinates(x, y, width, height)
+        return
+    validate_cell_coordinates(x, y, width, height)
+
+
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [([(b"hx-request", b"true")], True), ([], False)],
+)
+def test_main_is_htmx_request_cases(headers: list[tuple[bytes, bytes]], expected: bool) -> None:
+    """Verify HTMX request detection for header-present and header-absent request scopes."""
+    request = Request({"type": "http", "headers": headers})
+    assert api_main._is_htmx_request(request) is expected
+
+
+def test_main_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
+    """Verify draft link presenter marks inter-species links only when the feature flag is enabled."""
+    draft = DraftState.default()
     draft.initial_plants = []
     draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
     draft_service.add_plant_placement(draft, 1, 2, 1, 10.0)
@@ -218,33 +274,43 @@ def test_main_helper_functions_cover_condition_and_status_logic() -> None:
     draft.mycorrhizal_inter_species = True
     assert build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
 
-    request = Request({"type": "http", "headers": [(b"hx-request", b"true")]})
-    assert api_main._is_htmx_request(request) is True
-    assert api_main._is_htmx_request(Request({"type": "http", "headers": []})) is False
 
-    with pytest.raises(HTTPException):
-        api_main._get_loop()
-
-    assert "Idle" in api_main._render_status_badge_html()
+@pytest.mark.parametrize(
+    ("running", "paused", "terminated", "expected_label"),
+    [
+        (False, False, False, "Loaded"),
+        (True, False, False, "Running"),
+        (True, True, False, "Paused"),
+        (False, False, True, "Terminated"),
+    ],
+)
+def test_main_render_status_badge_states(
+    running: bool,
+    paused: bool,
+    terminated: bool,
+    expected_label: str,
+) -> None:
+    """Verify status badge labels map correctly to loaded-loop runtime flags."""
     loop = SimulationLoop(_config_with_trigger())
     api_main._sim_loop = loop
-    assert "Loaded" in api_main._render_status_badge_html()
-    loop.running = True
-    assert "Running" in api_main._render_status_badge_html()
-    loop.paused = True
-    assert "Paused" in api_main._render_status_badge_html()
-    loop.terminated = True
-    assert "Terminated" in api_main._render_status_badge_html()
+    loop.running = running
+    loop.paused = paused
+    loop.terminated = terminated
+    assert expected_label in api_main._render_status_badge_html()
+
+
+def test_main_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
+    """Verify unloaded-loop helpers raise and render the Idle status badge."""
+    with pytest.raises(HTTPException):
+        api_main._get_loop()
+    assert "Idle" in api_main._render_status_badge_html()
 
 
 def test_main_live_summary_and_starving_swarm_helpers() -> None:
-    """Validates the main live summary and starving swarm helpers invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Test main live summary and starving swarm helpers.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+    Asserts correct behavior of live summary and energy deficit swarm builders,
+    ensuring they provide accurate ecological state information.
     """
     loop = SimulationLoop(_config_with_trigger())
     api_main._sim_loop = loop
@@ -297,13 +363,10 @@ def test_main_live_summary_and_starving_swarm_helpers() -> None:
 
 @pytest.mark.asyncio
 async def test_condition_node_update_creates_root_when_rule_has_no_condition() -> None:
-    """Validates the condition node update creates root when rule has no condition invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Test condition node update for rules without conditions.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+    Asserts that a root condition node is created with default settings when
+    a trigger rule without an existing condition node is updated.
     """
     draft = get_draft()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Signal A")]
@@ -329,17 +392,10 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
 
 
 @pytest.mark.asyncio
-async def test_builder_crud_routes_cover_flora_herbivores_substances_and_diet_matrix() -> None:
-    """Validates the builder crud routes cover flora herbivores substances and diet matrix invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+async def test_builder_flora_routes_add_update_delete() -> None:
+    """Verify flora routes support add/update/delete and return 404 for missing species IDs."""
     async with _default_client() as client:
-        flora_add = await client.post(
+        add_resp = await client.post(
             "/api/config/flora",
             data={
                 "name": "Oak",
@@ -355,25 +411,45 @@ async def test_builder_crud_routes_cover_flora_herbivores_substances_and_diet_ma
                 "camouflage_factor": 5.0,
             },
         )
-        flora_update = await client.put(
+        update_resp = await client.put(
             "/api/config/flora/1",
             data={"name": "Oak Updated", "camouflage": "on", "camouflage_factor": -1.0},
         )
-        flora_delete = await client.delete("/api/config/flora/1")
-        flora_delete_missing = await client.delete("/api/config/flora/99")
+        delete_resp = await client.delete("/api/config/flora/1")
+        delete_missing_resp = await client.delete("/api/config/flora/99")
 
-        herbivore_add = await client.post(
+    assert add_resp.status_code == 200
+    assert update_resp.status_code == 200
+    assert delete_resp.status_code == 200
+    assert delete_missing_resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_builder_herbivore_routes_add_update_delete() -> None:
+    """Verify herbivore routes support add/update/delete and return 404 for missing species IDs."""
+    async with _default_client() as client:
+        add_resp = await client.post(
             "/api/config/herbivores",
             data={"name": "Locust", "energy_min": 2.0, "velocity": 2, "consumption_rate": 3.5},
         )
-        herbivore_update = await client.put(
+        update_resp = await client.put(
             "/api/config/herbivores/1",
             data={"name": "Locust Updated", "velocity": 3},
         )
-        herbivore_delete = await client.delete("/api/config/herbivores/1")
-        herbivore_delete_missing = await client.delete("/api/config/herbivores/99")
+        delete_resp = await client.delete("/api/config/herbivores/1")
+        delete_missing_resp = await client.delete("/api/config/herbivores/99")
 
-        substance_add = await client.post(
+    assert add_resp.status_code == 200
+    assert update_resp.status_code == 200
+    assert delete_resp.status_code == 200
+    assert delete_missing_resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_builder_substance_routes_and_diet_matrix_mutations() -> None:
+    """Verify substance CRUD routes and diet-matrix toggles mutate draft compatibility state."""
+    async with _default_client() as client:
+        add_resp = await client.post(
             "/api/config/substances",
             data={
                 "name": "Repellent",
@@ -385,7 +461,7 @@ async def test_builder_crud_routes_cover_flora_herbivores_substances_and_diet_ma
                 "energy_cost_per_tick": -1.0,
             },
         )
-        substance_update = await client.put(
+        update_resp = await client.put(
             "/api/config/substances/0",
             data={
                 "name": "Repellent Updated",
@@ -396,49 +472,37 @@ async def test_builder_crud_routes_cover_flora_herbivores_substances_and_diet_ma
                 "energy_cost_per_tick": -2.0,
             },
         )
-        matrix_toggle = await client.post(
+        toggle_resp = await client.post(
             "/api/matrices/diet",
             data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "toggle"},
         )
-        matrix_set = await client.post(
+        set_resp = await client.post(
             "/api/matrices/diet",
             data={"herbivore_idx": 0, "flora_idx": 0, "compatible": "false"},
         )
-        matrix_out_of_range = await client.post(
+        out_of_range_resp = await client.post(
             "/api/matrices/diet",
             data={"herbivore_idx": 9, "flora_idx": 9, "compatible": "true"},
         )
-        substance_delete = await client.delete("/api/config/substances/0")
-        substance_delete_missing = await client.delete("/api/config/substances/99")
+        delete_resp = await client.delete("/api/config/substances/0")
+        delete_missing_resp = await client.delete("/api/config/substances/99")
 
-    draft = get_draft()
-    assert flora_add.status_code == 200
-    assert flora_update.status_code == 200
-    assert flora_delete.status_code == 200
-    assert flora_delete_missing.status_code == 404
-    assert herbivore_add.status_code == 200
-    assert herbivore_update.status_code == 200
-    assert herbivore_delete.status_code == 200
-    assert herbivore_delete_missing.status_code == 404
-    assert substance_add.status_code == 200
-    assert substance_update.status_code == 200
-    assert matrix_toggle.status_code == 200
-    assert matrix_set.status_code == 200
-    assert matrix_out_of_range.status_code == 200
-    assert substance_delete.status_code == 200
-    assert substance_delete_missing.status_code == 404
-    assert draft.diet_matrix[0][0] is False
+    assert add_resp.status_code == 200
+    assert update_resp.status_code == 200
+    assert toggle_resp.status_code == 200
+    assert set_resp.status_code == 200
+    assert out_of_range_resp.status_code == 200
+    assert delete_resp.status_code == 200
+    assert delete_missing_resp.status_code == 404
+    assert get_draft().diet_matrix[0][0] is False
 
 
 @pytest.mark.asyncio
 async def test_builder_route_rule_of_16_branches() -> None:
-    """Validates the builder route rule of 16 branches invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Test builder route rule with 16 branches.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+    Asserts that adding new flora, herbivores, or substances beyond the 16 branch limit
+    returns a 400 error, preventing overflow.
     """
     draft = get_draft()
     draft.flora_species = [_flora(i) for i in range(16)]
@@ -448,13 +512,18 @@ async def test_builder_route_rule_of_16_branches() -> None:
     ]
 
     async with _default_client() as client:
-        flora_resp = await client.post("/api/config/flora", data={"name": "Overflow"})
-        herbivore_resp = await client.post("/api/config/herbivores", data={"name": "Overflow"})
-        substance_resp = await client.post("/api/config/substances", data={"name": "Overflow"})
+        responses = {
+            "/api/config/flora": await client.post("/api/config/flora", data={"name": "Overflow"}),
+            "/api/config/herbivores": await client.post(
+                "/api/config/herbivores", data={"name": "Overflow"}
+            ),
+            "/api/config/substances": await client.post(
+                "/api/config/substances", data={"name": "Overflow"}
+            ),
+        }
 
-    assert flora_resp.status_code == 400
-    assert herbivore_resp.status_code == 400
-    assert substance_resp.status_code == 400
+    for path in ("/api/config/flora", "/api/config/herbivores", "/api/config/substances"):
+        assert responses[path].status_code == 400
 
 
 @pytest.mark.asyncio
@@ -489,15 +558,8 @@ async def test_herbivore_routes_clamp_reproduction_divisor_to_physical_minimum()
 
 
 @pytest.mark.asyncio
-async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_error_paths() -> None:
-    """Validates the trigger rule placement and scenario routes cover success and error paths invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+async def test_trigger_rule_routes_add_update_and_delete() -> None:
+    """Verify trigger-rule add/update/delete routes and missing-rule handling."""
     draft = get_draft()
     draft.substance_definitions = [
         SubstanceDefinition(substance_id=0, name="Signal A"),
@@ -505,7 +567,7 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
     ]
 
     async with _default_client() as client:
-        add_rule = await client.post(
+        add_resp = await client.post(
             "/api/config/trigger-rules",
             data={
                 "flora_species_id": 0,
@@ -515,90 +577,128 @@ async def test_trigger_rule_placement_and_scenario_routes_cover_success_and_erro
                 "activation_condition_json": '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
             },
         )
-        update_rule = await client.put(
+        update_resp = await client.put(
             "/api/config/trigger-rules/0",
             data={"substance_id": 1, "min_herbivore_population": 7},
         )
-        update_rule_missing = await client.put(
-            "/api/config/trigger-rules/9",
-            data={"substance_id": 1},
+        update_missing_resp = await client.put(
+            "/api/config/trigger-rules/9", data={"substance_id": 1}
         )
-        replace_root = await client.post(
+        delete_resp = await client.delete("/api/config/trigger-rules/0")
+        delete_missing_resp = await client.delete("/api/config/trigger-rules/9")
+
+    assert add_resp.status_code == 200
+    assert update_resp.status_code == 200
+    assert update_missing_resp.status_code == 404
+    assert delete_resp.status_code == 200
+    assert delete_missing_resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_trigger_rule_condition_node_routes_validate_parent_paths() -> None:
+    """Verify trigger-rule condition tree endpoints support valid edits and reject invalid parent paths."""
+    draft = get_draft()
+    draft.substance_definitions = [
+        SubstanceDefinition(substance_id=0, name="Signal A"),
+        SubstanceDefinition(substance_id=1, name="Signal B"),
+    ]
+
+    async with _default_client() as client:
+        await client.post(
+            "/api/config/trigger-rules",
+            data={
+                "flora_species_id": 0,
+                "herbivore_species_id": 0,
+                "substance_id": 0,
+                "activation_condition_json": '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
+            },
+        )
+        replace_root_resp = await client.post(
             "/api/config/trigger-rules/0/condition/root",
             data={"node_kind": "all_of"},
         )
-        add_child = await client.post(
+        add_child_resp = await client.post(
             "/api/config/trigger-rules/0/condition/child",
             data={"node_kind": "substance_active", "parent_path": ""},
         )
-        update_node = await client.put(
+        update_node_resp = await client.put(
             "/api/config/trigger-rules/0/condition/node",
             data={"path": "1", "substance_id": 1},
         )
-        delete_child = await client.post(
+        delete_child_resp = await client.post(
             "/api/config/trigger-rules/0/condition/delete",
             data={"path": "1"},
         )
-        bad_child = await client.post(
+        invalid_parent_resp = await client.post(
             "/api/config/trigger-rules/0/condition/child",
             data={"node_kind": "herbivore_presence", "parent_path": "0"},
         )
-        delete_rule = await client.delete("/api/config/trigger-rules/0")
-        delete_rule_missing = await client.delete("/api/config/trigger-rules/9")
 
-        plant_add = await client.post(
-            "/api/config/placements/plant",
-            data={"species_id": 0, "x": 999, "y": -5, "energy": -3.0},
-        )
-        swarm_add = await client.post(
-            "/api/config/placements/swarm",
-            data={"species_id": 0, "x": -2, "y": 999, "population": 0, "energy": -7.0},
-        )
-        plant_delete = await client.delete("/api/config/placements/plant/0")
-        plant_delete_missing = await client.delete("/api/config/placements/plant/0")
-        swarm_delete = await client.delete("/api/config/placements/swarm/0")
-        swarm_delete_missing = await client.delete("/api/config/placements/swarm/0")
-        clear_resp = await client.post("/api/config/placements/clear")
+    assert replace_root_resp.status_code == 200
+    assert add_child_resp.status_code == 200
+    assert update_node_resp.status_code == 200
+    assert delete_child_resp.status_code == 200
+    assert invalid_parent_resp.status_code == 400
 
-        set_draft(DraftState(flora_species=[], herbivore_species=[]))
-        export_invalid = await client.get("/api/scenario/export")
-        load_invalid = await client.post("/api/scenario/load-draft")
-        import_invalid = await client.post(
-            "/api/scenario/import",
-            files={"file": ("broken.json", b"{not-json", "application/json")},
-        )
 
-    assert add_rule.status_code == 200
-    assert update_rule.status_code == 200
-    assert update_rule_missing.status_code == 404
-    assert replace_root.status_code == 200
-    assert add_child.status_code == 200
-    assert update_node.status_code == 200
-    assert delete_child.status_code == 200
-    assert bad_child.status_code == 400
-    assert delete_rule.status_code == 200
-    assert delete_rule_missing.status_code == 404
-    assert plant_add.status_code == 200
-    assert swarm_add.status_code == 200
-    assert plant_delete.status_code == 200
-    assert plant_delete_missing.status_code == 404
-    assert swarm_delete.status_code == 200
-    assert swarm_delete_missing.status_code == 404
-    assert clear_resp.status_code == 200
-    assert export_invalid.status_code == 400
-    assert load_invalid.status_code == 400
-    assert import_invalid.status_code == 422
+@pytest.mark.asyncio
+async def test_placement_routes_add_remove_and_clear() -> None:
+    """Verify placement endpoints add clamped entries, remove existing entries, and clear all placements."""
+    async with _default_client() as client:
+        responses = {
+            "plant_add": await client.post(
+                "/api/config/placements/plant",
+                data={"species_id": 0, "x": 999, "y": -5, "energy": -3.0},
+            ),
+            "swarm_add": await client.post(
+                "/api/config/placements/swarm",
+                data={"species_id": 0, "x": -2, "y": 999, "population": 0, "energy": -7.0},
+            ),
+            "plant_delete": await client.delete("/api/config/placements/plant/0"),
+            "plant_delete_missing": await client.delete("/api/config/placements/plant/0"),
+            "swarm_delete": await client.delete("/api/config/placements/swarm/0"),
+            "swarm_delete_missing": await client.delete("/api/config/placements/swarm/0"),
+            "clear": await client.post("/api/config/placements/clear"),
+        }
+
+    expected_statuses = {
+        "plant_add": 200,
+        "swarm_add": 200,
+        "plant_delete": 200,
+        "plant_delete_missing": 404,
+        "swarm_delete": 200,
+        "swarm_delete_missing": 404,
+        "clear": 200,
+    }
+    for key, expected_status in expected_statuses.items():
+        assert responses[key].status_code == expected_status
+
+
+@pytest.mark.asyncio
+async def test_scenario_routes_reject_invalid_draft_or_import_payload() -> None:
+    """Verify scenario export/load reject invalid drafts and import rejects malformed JSON uploads."""
+    set_draft(DraftState(flora_species=[], herbivore_species=[]))
+    async with _default_client() as client:
+        responses = {
+            "export": await client.get("/api/scenario/export"),
+            "load": await client.post("/api/scenario/load-draft"),
+            "import": await client.post(
+                "/api/scenario/import",
+                files={"file": ("broken.json", b"{not-json", "application/json")},
+            ),
+        }
+
+    assert responses["export"].status_code == 400
+    assert responses["load"].status_code == 400
+    assert responses["import"].status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
-    """Validates the scenario import reconstructs triggers and substances invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Test scenario import for triggers and substances reconstruction.
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
+    Asserts that importing a scenario correctly reconstructs the associated triggers and
+    substances, ensuring the ecological simulation can be accurately restored.
     """
     payload = _config_with_trigger().model_dump(mode="json")
     payload["flora_species"][0]["triggers"][0]["activation_condition"] = {
@@ -627,14 +727,7 @@ async def test_scenario_import_reconstructs_triggers_and_substances() -> None:
 
 
 def test_websocket_stream_endpoints_close_cleanly() -> None:
-    """Validates the websocket stream endpoints close cleanly invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify websocket endpoints close correctly when idle and stream payloads once a loop exists."""
     client = TestClient(app)
 
     with client.websocket_connect("/ws/simulation/stream") as websocket:

@@ -6,6 +6,7 @@ This module implements rigorous scientific tests for the PHIDS simulation system
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import random
 
 import pytest
@@ -45,64 +46,23 @@ def _flora_params(species_id: int = 0) -> FloraSpeciesParams:
     )
 
 
-def _add_plant(world: ECSWorld, x: int, y: int, species_id: int = 0, energy: float = 10.0) -> int:
-    e = world.create_entity()
-    p = PlantComponent(
-        entity_id=e.entity_id,
-        species_id=species_id,
-        x=x,
-        y=y,
-        energy=energy,
-        max_energy=30.0,
-        base_energy=10.0,
-        growth_rate=5.0,
-        survival_threshold=1.0,
-        reproduction_interval=2,
-        seed_min_dist=1.0,
-        seed_max_dist=2.0,
-        seed_energy_cost=2.0,
-    )
-    world.add_component(e.entity_id, p)
-    world.register_position(e.entity_id, x, y)
-    return e.entity_id
+_add_plant: Callable[..., int]
+_add_swarm: Callable[..., int]
 
 
-def _add_swarm(
-    world: ECSWorld,
-    x: int,
-    y: int,
-    species_id: int = 0,
-    pop: int = 10,
-    reproduction_divisor: float = 1.0,
-) -> int:
-    e = world.create_entity()
-    s = SwarmComponent(
-        entity_id=e.entity_id,
-        species_id=species_id,
-        x=x,
-        y=y,
-        population=pop,
-        initial_population=max(1, pop // 2),
-        energy=0.0,
-        energy_min=1.0,
-        velocity=1,
-        consumption_rate=1.0,
-        reproduction_energy_divisor=reproduction_divisor,
-    )
-    world.add_component(e.entity_id, s)
-    world.register_position(e.entity_id, x, y)
-    return e.entity_id
+@pytest.fixture(autouse=True)
+def _inject_shared_entity_builders(
+    add_plant: Callable[..., int],
+    add_swarm: Callable[..., int],
+) -> None:
+    """Inject shared entity-builder callables from conftest while preserving legacy local names."""
+    global _add_plant, _add_swarm
+    _add_plant = add_plant
+    _add_swarm = add_swarm
 
 
 def test_lifecycle_establishes_mycorrhizal_connections_with_cost() -> None:
-    """Validates the lifecycle establishes mycorrhizal connections with cost invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify lifecycle creates reciprocal mycorrhizal links and deducts connection cost."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
 
@@ -130,14 +90,7 @@ def test_lifecycle_establishes_mycorrhizal_connections_with_cost() -> None:
 
 
 def test_lifecycle_respects_interspecies_connection_switch() -> None:
-    """Validates the lifecycle respects interspecies connection switch invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify inter-species mycorrhizal links are blocked when the feature flag is disabled."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
@@ -160,14 +113,7 @@ def test_lifecycle_respects_interspecies_connection_switch() -> None:
 
 
 def test_lifecycle_mycorrhiza_does_not_spend_last_surplus_energy() -> None:
-    """Validates the lifecycle mycorrhiza does not spend last surplus energy invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify mycorrhiza formation does not consume the final survival surplus."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
 
@@ -201,17 +147,7 @@ def test_lifecycle_mycorrhiza_does_not_spend_last_surplus_energy() -> None:
 def test_lifecycle_mycorrhiza_respects_interval_and_forms_parallel_pairs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates the lifecycle mycorrhiza respects interval and forms parallel pairs invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify growth interval gating and deterministic pair formation for parallel links."""
     world = ECSWorld()
     env = GridEnvironment(width=8, height=4, num_signals=1, num_toxins=1)
 
@@ -271,17 +207,7 @@ def test_lifecycle_mycorrhiza_respects_interval_and_forms_parallel_pairs(
 def test_lifecycle_mycorrhiza_limits_one_new_link_per_plant_per_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates the lifecycle mycorrhiza limits one new link per plant per tick invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify each plant forms at most one new mycorrhizal link per tick."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
 
@@ -313,14 +239,7 @@ def test_lifecycle_mycorrhiza_limits_one_new_link_per_plant_per_tick(
 
 
 def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
-    """Validates the interaction diet matrix blocks incompatible feeding invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify incompatible diet entries prevent grazing and force attrition dynamics."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
@@ -352,14 +271,7 @@ def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
 
 
 def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
-    """Validates the interaction reproduction can trigger same tick mitosis invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify reproduction can trigger immediate mitosis when thresholds are exceeded."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
@@ -379,17 +291,7 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
 def test_interaction_flow_field_movement_chooses_strongest_gradient(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates the interaction flow field movement chooses strongest gradient invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify movement chooses the direction with the strongest local flow gradient."""
     world = ECSWorld()
     env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
     env.flow_field[0, 0] = 9.0
@@ -414,19 +316,13 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient(
 def test_interaction_flat_gradient_uses_momentum_inertia(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates momentum-biased movement on flat gradients to avoid circular random walks.
+    """Momentum-biased movement on flat gradients to avoid circular random walks.
 
     When the local flow field is flat, no biological gradient is available to guide directed motion.
     The interaction system should therefore reuse the swarm's last displacement vector as inertial
     memory, producing a sweeping foraging trajectory rather than isotropic local circling. This test
     fixes the prior heading and asserts that the weighted choice receives the momentum target as its
     dominant option.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
     """
     world = ECSWorld()
     env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
@@ -456,17 +352,7 @@ def test_interaction_flat_gradient_uses_momentum_inertia(
 def test_interaction_moved_swarm_does_not_feed_in_same_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates the interaction moved swarm does not feed in same tick invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify swarms that moved this tick do not also feed in the same phase."""
     world = ECSWorld()
     env = GridEnvironment(width=3, height=1, num_signals=1, num_toxins=1)
     env.flow_field[0, 0] = 0.0
@@ -493,14 +379,7 @@ def test_interaction_moved_swarm_does_not_feed_in_same_tick(
 
 
 def test_interaction_velocity_scaled_grazing_prevents_cooldown_hyper_feeding() -> None:
-    """Validates the interaction velocity scaled grazing prevents cooldown hyper feeding invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify cooldown swarms use velocity-scaled grazing to avoid hyper-feeding exploits."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=1, num_signals=1, num_toxins=1)
 
@@ -532,17 +411,7 @@ def test_interaction_velocity_scaled_grazing_prevents_cooldown_hyper_feeding() -
 def test_interaction_mitosis_offspring_can_diverge_next_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates the interaction mitosis offspring can diverge next tick invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify mitosis offspring can diverge spatially on subsequent ticks."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=1, num_signals=1, num_toxins=1)
     env.flow_field[:, 0] = 1.0
@@ -577,14 +446,7 @@ def test_interaction_mitosis_offspring_can_diverge_next_tick(
 
 
 def test_interaction_reproduction_divisor_limits_growth() -> None:
-    """Validates the interaction reproduction divisor limits growth invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify reproduction energy divisors bound growth rates between swarms."""
     world = ECSWorld()
     env = GridEnvironment(width=6, height=2, num_signals=1, num_toxins=1)
 
@@ -608,14 +470,7 @@ def test_interaction_reproduction_divisor_limits_growth() -> None:
 
 
 def test_interaction_mitosis_conserves_odd_population() -> None:
-    """Validates the interaction mitosis conserves odd population invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify mitosis conserves total population when splitting odd counts."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
@@ -633,17 +488,7 @@ def test_interaction_mitosis_conserves_odd_population() -> None:
 
 
 def test_interaction_mitosis_applies_natal_dispersal(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Validates the interaction mitosis applies natal dispersal invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify mitosis applies natal dispersal so offspring are spatially separated."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
@@ -667,17 +512,7 @@ def test_interaction_mitosis_applies_natal_dispersal(monkeypatch: pytest.MonkeyP
 def test_interaction_crowding_uses_random_walk_without_flow_choice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates the interaction crowding uses random walk without flow choice invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify crowded swarms use random walk and bypass flow-weighted movement choice."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=1, num_signals=1, num_toxins=1)
     env.flow_field[:, 0] = [0.0, 1.0, 3.0, 5.0]
@@ -710,14 +545,10 @@ def test_interaction_crowding_uses_random_walk_without_flow_choice(
 
 
 def test_interaction_feeding_ignores_stale_plant_entity_ids() -> None:
-    """Validates that feeding skips stale spatial-hash entity identifiers after plant garbage collection.
+    """Feeding skips stale spatial-hash entity identifiers after plant garbage collection.
 
     The test exercises two co-located swarms feeding in one tick. The first swarm can consume and delete
     a plant entity, and the second swarm must then continue safely without dereferencing a removed entity.
-
-    Returns:
-        None. The function verifies crash-free interaction processing under concurrent co-location feeding.
-
     """
     world = ECSWorld()
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
@@ -742,14 +573,7 @@ def test_interaction_feeding_ignores_stale_plant_entity_ids() -> None:
 
 
 def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
-    """Validates the signaling spawns configured toxin and applies properties invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify signaling creates configured toxin entities with expected runtime flags."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -793,14 +617,7 @@ def test_signaling_spawns_configured_toxin_and_applies_properties() -> None:
 
 
 def test_signaling_aggregates_co_located_swarm_population_for_trigger_threshold() -> None:
-    """Validates the signaling aggregates co located swarm population for trigger threshold invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify trigger checks aggregate co-located swarm populations before activation."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -831,14 +648,7 @@ def test_signaling_aggregates_co_located_swarm_population_for_trigger_threshold(
 
 
 def test_signaling_toxin_deactivates_when_trigger_species_is_gone() -> None:
-    """Validates the signaling toxin deactivates when trigger species is gone invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify toxin deactivates when its triggering herbivore species is absent."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -882,14 +692,7 @@ def test_signaling_toxin_deactivates_when_trigger_species_is_gone() -> None:
 
 
 def test_signaling_toxin_lingers_for_aftereffect_then_deactivates() -> None:
-    """Validates the signaling toxin lingers for aftereffect then deactivates invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify toxin remains active through aftereffect ticks and then deactivates."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -920,14 +723,7 @@ def test_signaling_toxin_lingers_for_aftereffect_then_deactivates() -> None:
 
 
 def test_signaling_irreversible_toxin_stays_active_after_trigger_loss() -> None:
-    """Validates the signaling irreversible toxin stays active after trigger loss invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify irreversible toxins stay active even after trigger disappearance."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -956,14 +752,7 @@ def test_signaling_irreversible_toxin_stays_active_after_trigger_loss() -> None:
 
 
 def test_signaling_signal_lingers_for_aftereffect_then_deactivates() -> None:
-    """Validates the signaling signal lingers for aftereffect then deactivates invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify signals persist during aftereffect and then deactivate after expiry."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1001,14 +790,7 @@ def test_signaling_signal_lingers_for_aftereffect_then_deactivates() -> None:
 
 
 def test_signaling_signal_with_zero_aftereffect_stops_emitting_next_tick() -> None:
-    """Validates the signaling signal with zero aftereffect stops emitting next tick invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify zero-aftereffect signals stop emitting on the following tick."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1040,14 +822,7 @@ def test_signaling_signal_with_zero_aftereffect_stops_emitting_next_tick() -> No
 
 
 def test_signaling_aftereffect_does_not_starve_plant_without_herbivore() -> None:
-    """Validates the signaling aftereffect does not starve plant without herbivore invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify aftereffect maintenance does not drain plant energy without active triggers."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1085,14 +860,7 @@ def test_signaling_aftereffect_does_not_starve_plant_without_herbivore() -> None
 
 
 def test_signaling_owner_death_stops_emission_and_existing_signal_decays() -> None:
-    """Validates the signaling owner death stops emission and existing signal decays invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify owner death stops new emission and existing signal mass decays."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1122,14 +890,7 @@ def test_signaling_owner_death_stops_emission_and_existing_signal_decays() -> No
 
 
 def test_signaling_preemptively_collects_inactive_orphaned_substances() -> None:
-    """Validates the signaling preemptively collects inactive orphaned substances invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify inactive orphaned substances are garbage-collected before signaling updates."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1157,14 +918,7 @@ def test_signaling_preemptively_collects_inactive_orphaned_substances() -> None:
 
 
 def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> None:
-    """Validates the signaling inactive substance does not reactivate without trigger invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify inactive substances remain inactive when trigger conditions stay false."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1194,14 +948,7 @@ def test_signaling_inactive_substance_does_not_reactivate_without_trigger() -> N
 
 
 def test_signaling_applies_toxin_damage_once_per_active_layer() -> None:
-    """Validates the signaling applies toxin damage once per active layer invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify toxin casualty application runs once per active toxin layer."""
     world = ECSWorld()
     env = GridEnvironment(width=6, height=6, num_signals=2, num_toxins=2)
 
@@ -1231,14 +978,7 @@ def test_signaling_applies_toxin_damage_once_per_active_layer() -> None:
 
 
 def test_signaling_toxins_remain_local_and_do_not_diffuse() -> None:
-    """Validates the signaling toxins remain local and do not diffuse invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify toxin layers remain local and are not diffused as airborne signals."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1271,14 +1011,7 @@ def test_signaling_toxins_remain_local_and_do_not_diffuse() -> None:
 
 
 def test_signaling_precursor_gate_blocks_activation() -> None:
-    """Validates the signaling precursor gate blocks activation invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify precursor-style activation conditions block signaling when unmet."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1402,14 +1135,7 @@ def test_signaling_environmental_signal_condition_triggers_without_herbivore() -
 
 
 def test_signaling_all_of_gate_supports_mixed_herbivore_and_substance_herbivore() -> None:
-    """Validates the signaling all of gate supports mixed herbivore and substance predicates invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify `all_of` gates combine herbivore and substance predicates correctly."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1453,14 +1179,7 @@ def test_signaling_all_of_gate_supports_mixed_herbivore_and_substance_herbivore(
 
 
 def test_signaling_any_of_gate_allows_alternative_herbivore_or_substance_paths() -> None:
-    """Validates the signaling any of gate allows alternative herbivore or substance paths invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify `any_of` gates activate when either herbivore or substance path is satisfied."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
 
@@ -1508,9 +1227,6 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately() -> Non
     - No ``SwarmComponent`` entities remain in the ECS world.
     - The spatial hash returns no entities at the swarm's former position.
     - The swarm entity no longer exists in the ECS registry.
-
-    Returns:
-        None. Correctness is enforced through assertions rather than data return.
     """
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=2)
@@ -1661,17 +1377,7 @@ def test_signaling_airborne_emission_is_not_hard_capped_at_one() -> None:
 
 
 def test_repelled_swarm_performs_random_walk(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Validates the repelled swarm performs random walk invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        monkeypatch: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify repelled swarms follow random-walk displacement and decrement repel duration."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
 

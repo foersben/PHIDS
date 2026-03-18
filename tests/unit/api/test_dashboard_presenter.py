@@ -283,17 +283,7 @@ def test_live_substance_state_payload_state_machine(
     kwargs: dict,
     expected_state: str,
 ) -> None:
-    """Validates the substance state machine maps each runtime flag combination to the correct token.
-
-    The five-state machine (field_snapshot → synthesizing → triggered → active/aftereffect →
-    configured) governs badge colouring and legend entries across the operator UI.  Correct
-    transitions are essential for communicating the biological phase of systemic acquired
-    resistance and toxin emission to the operator without ambiguity.
-
-    Args:
-        kwargs: Keyword arguments forwarded to :func:`_live_substance_state_payload`.
-        expected_state: The state token expected in the first element of the returned tuple.
-    """
+    """Verify each runtime flag combination maps to the expected live substance state token."""
     state, _ = _live_substance_state_payload(**kwargs)
     assert state == expected_state
 

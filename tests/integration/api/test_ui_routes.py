@@ -10,7 +10,9 @@ import asyncio
 import json
 import logging
 import math
+from collections.abc import Callable, Coroutine
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import polars as pl
@@ -106,20 +108,20 @@ async def test_root_returns_full_html() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("path", "marker"),
+    ("path", "marker", "extra_marker"),
     [
-        ("/ui/dashboard", "biotope-canvas"),
-        ("/ui/placements", "placement-canvas"),
-        ("/ui/biotope", "biotope-config-view"),
-        ("/ui/flora", "flora-config-view"),
-        ("/ui/herbivores", "herbivore-config-view"),
-        ("/ui/substances", "substance-config-view"),
-        ("/ui/diet-matrix", "diet-matrix-view"),
-        ("/ui/trigger-rules", "trigger-rules-view"),
-        ("/ui/batch", "Monte Carlo Batch Runner"),
+        ("/ui/dashboard", "biotope-canvas", None),
+        ("/ui/placements", "placement-canvas", None),
+        ("/ui/biotope", "biotope-config-view", None),
+        ("/ui/flora", "flora-config-view", None),
+        ("/ui/herbivores", "herbivore-config-view", None),
+        ("/ui/substances", "substance-config-view", None),
+        ("/ui/diet-matrix", "diet-matrix-view", None),
+        ("/ui/trigger-rules", "trigger-rules-view", None),
+        ("/ui/batch", "Monte Carlo Batch Runner", "Load Persisted Batches"),
     ],
 )
-async def test_ui_partials_render(path: str, marker: str) -> None:
+async def test_ui_partials_render(path: str, marker: str, extra_marker: str | None) -> None:
     """
     Verifies that each UI partial endpoint renders the expected canvas or configuration view.
 
@@ -130,8 +132,8 @@ async def test_ui_partials_render(path: str, marker: str) -> None:
 
     assert resp.status_code == 200
     assert marker in resp.text
-    if path == "/ui/batch":
-        assert "Load Persisted Batches" in resp.text
+    if extra_marker is not None:
+        assert extra_marker in resp.text
 
 
 @pytest.mark.asyncio
@@ -243,18 +245,87 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
 
 
 @pytest.mark.asyncio
-async def test_simulation_control_and_live_export_routes_cover_status_filters_and_htmx_badges(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Exercises simulation control, telemetry export, and HTMX badge branches through the live API surface."""
+async def test_simulation_load_cancels_pending_task(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify loading a scenario cancels an already-scheduled simulation task before replacing the loop."""
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 2, 2, 15.0)
     draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 20.0)
     draft.diet_matrix[0][0] = False
-    config = draft.build_sim_config()
 
     pending_load_task = asyncio.create_task(asyncio.sleep(60))
     api_main._sim_task = pending_load_task
+
+    async with _default_client() as client:
+        resp = await client.post("/api/scenario/load", json=draft.build_sim_config().model_dump())
+
+    assert resp.status_code == 200
+    assert pending_load_task.cancelled()
+
+
+@pytest.mark.asyncio
+async def test_simulation_status_and_tick_rate_routes() -> None:
+    """Verify status reflects loaded defaults and tick-rate updates are persisted."""
+    async with _default_client() as client:
+        await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
+        status_resp = await client.get("/api/simulation/status")
+        tick_rate_resp = await client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 22.5})
+
+    assert status_resp.status_code == 200
+    assert status_resp.json()["tick"] == 0
+    assert status_resp.json()["tick_rate_hz"] == pytest.approx(10.0)
+    assert tick_rate_resp.status_code == 200
+    assert tick_rate_resp.json()["tick_rate_hz"] == pytest.approx(22.5)
+
+
+@pytest.mark.asyncio
+async def test_simulation_step_and_wind_routes() -> None:
+    """Verify step increments tick and wind updates are returned with the requested vector."""
+    async with _default_client() as client:
+        await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
+        wind_resp = await client.put("/api/simulation/wind", json={"wind_x": 1.25, "wind_y": -0.5})
+        step_resp = await client.post("/api/simulation/step")
+
+    assert wind_resp.status_code == 200
+    assert wind_resp.json()["wind_x"] == 1.25
+    assert wind_resp.json()["wind_y"] == -0.5
+    assert step_resp.status_code == 200
+    assert step_resp.json()["tick"] == 1
+
+
+@pytest.mark.asyncio
+async def test_live_telemetry_export_and_chart_routes() -> None:
+    """Verify live telemetry endpoints return CSV/NDJSON/chart/table payloads after at least one tick."""
+    async with _default_client() as client:
+        await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
+        await client.post("/api/simulation/step")
+        csv_resp = await client.get("/api/telemetry/export/csv")
+        ndjson_resp = await client.get("/api/telemetry/export/json")
+        chart_resp = await client.get("/api/telemetry/chartjs-data")
+        table_resp = await client.get(
+            "/api/telemetry/table_preview",
+            params={
+                "columns": "tick,plant_0_pop",
+                "flora_ids": "0",
+                "tick_interval": 1,
+                "limit": 1,
+            },
+        )
+
+    assert csv_resp.status_code == 200
+    assert csv_resp.text.startswith("tick,")
+    assert ndjson_resp.status_code == 200
+    assert '"tick":' in ndjson_resp.text
+    assert chart_resp.status_code == 200
+    chart_payload = chart_resp.json()
+    assert chart_payload["labels"] == [0]
+    assert "flora_population" in chart_payload["series"]
+    assert table_resp.status_code == 200
+    assert "<th>tick</th>" in table_resp.text
+
+
+@pytest.mark.asyncio
+async def test_simulation_start_pause_reset_htmx_badges(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify HTMX control routes return badge fragments and reset cancels a pending simulation task."""
 
     class _CompletedTask:
         def done(self) -> bool:
@@ -271,27 +342,7 @@ async def test_simulation_control_and_live_export_routes_cover_status_filters_an
     real_create_task = asyncio.create_task
 
     async with _default_client() as client:
-        load_resp = await client.post("/api/scenario/load", json=config.model_dump())
-        status_resp = await client.get("/api/simulation/status")
-        tick_rate_resp = await client.put(
-            "/api/simulation/tick-rate",
-            data={"tick_rate_hz": 22.5},
-        )
-        wind_resp = await client.put("/api/simulation/wind", json={"wind_x": 1.25, "wind_y": -0.5})
-        step_resp = await client.post("/api/simulation/step")
-        csv_resp = await client.get("/api/telemetry/export/csv")
-        ndjson_resp = await client.get("/api/telemetry/export/json")
-        chart_resp = await client.get("/api/telemetry/chartjs-data")
-        table_resp = await client.get(
-            "/api/telemetry/table_preview",
-            params={
-                "columns": "tick,plant_0_pop",
-                "flora_ids": "0",
-                "tick_interval": 1,
-                "limit": 1,
-            },
-        )
-
+        await client.post("/api/scenario/load", json=get_draft().build_sim_config().model_dump())
         monkeypatch.setattr(api_main.asyncio, "create_task", _close_coro_task)
         start_resp = await client.post("/api/simulation/start", headers={"HX-Request": "true"})
         pause_resp = await client.post("/api/simulation/pause", headers={"HX-Request": "true"})
@@ -300,27 +351,6 @@ async def test_simulation_control_and_live_export_routes_cover_status_filters_an
         api_main._sim_task = pending_reset_task
         reset_resp = await client.post("/api/simulation/reset", headers={"HX-Request": "true"})
 
-    assert load_resp.status_code == 200
-    assert pending_load_task.cancelled()
-    assert status_resp.status_code == 200
-    assert status_resp.json()["tick"] == 0
-    assert status_resp.json()["tick_rate_hz"] == pytest.approx(10.0)
-    assert tick_rate_resp.status_code == 200
-    assert tick_rate_resp.json()["tick_rate_hz"] == pytest.approx(22.5)
-    assert wind_resp.status_code == 200
-    assert wind_resp.json()["wind_x"] == 1.25
-    assert step_resp.status_code == 200
-    assert step_resp.json()["tick"] == 1
-    assert csv_resp.status_code == 200
-    assert csv_resp.text.startswith("tick,")
-    assert ndjson_resp.status_code == 200
-    assert '"tick":' in ndjson_resp.text
-    assert chart_resp.status_code == 200
-    chart_payload = chart_resp.json()
-    assert chart_payload["labels"] == [0]
-    assert "plant_0_pop" in chart_payload["series"]
-    assert table_resp.status_code == 200
-    assert "plant_0_pop" in table_resp.text
     assert start_resp.status_code == 200
     assert "Running" in start_resp.text
     assert pause_resp.status_code == 200
@@ -331,25 +361,28 @@ async def test_simulation_control_and_live_export_routes_cover_status_filters_an
 
 
 @pytest.mark.asyncio
-async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_error_branches(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    """Exercises batch-start validation, asynchronous completion, status rendering, and export failure branches."""
+async def test_batch_start_rejects_invalid_draft() -> None:
+    """Verify batch start returns 400 when the draft lacks both flora and herbivore species."""
     reset_draft()
     invalid_draft = get_draft()
     invalid_draft.flora_species.clear()
     invalid_draft.herbivore_species.clear()
 
     async with _default_client() as client:
-        invalid_resp = await client.post(
+        resp = await client.post(
             "/api/batch/start",
             json={"runs": 1, "max_ticks": 2, "scenario_name": "invalid"},
         )
 
-    assert invalid_resp.status_code == 400
-    assert "Invalid draft" in invalid_resp.text
+    assert resp.status_code == 400
+    assert "Invalid draft" in resp.text
 
+
+def _patch_completed_batch_execution(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> list[asyncio.Task[None]]:
+    """Patch batch execution to complete asynchronously with deterministic aggregate output."""
     reset_draft()
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 1, 1, 12.0)
@@ -359,7 +392,7 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
     scheduled_tasks: list[asyncio.Task[None]] = []
     original_create_task = asyncio.create_task
 
-    def _capture_task(coro: object) -> asyncio.Task[None]:
+    def _capture_task(coro: Coroutine[Any, Any, None]) -> asyncio.Task[None]:
         task = original_create_task(coro)
         scheduled_tasks.append(task)
         return task
@@ -393,11 +426,24 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
         }
         (output_dir / f"{job_id}_summary.json").write_text(json.dumps(aggregate), encoding="utf-8")
         return batch_engine.BatchResult(
-            job_id=job_id, runs=runs, per_run_telemetry=[], aggregate=aggregate
+            job_id=job_id,
+            runs=runs,
+            per_run_telemetry=[],
+            aggregate=aggregate,
         )
 
     monkeypatch.setattr(api_main.asyncio, "create_task", _capture_task)
     monkeypatch.setattr("phids.engine.batch.BatchRunner.execute_batch", _fake_execute_batch)
+    return scheduled_tasks
+
+
+@pytest.mark.asyncio
+async def test_batch_status_ledger_and_view_routes_for_completed_job(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Verify completed batch jobs are visible in status, ledger, and aggregate view endpoints."""
+    scheduled_tasks = _patch_completed_batch_execution(monkeypatch, tmp_path)
 
     async with _default_client() as client:
         start_resp = await client.post(
@@ -408,29 +454,9 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
         job_id = start_resp.json()["job_id"]
 
         await asyncio.gather(*scheduled_tasks)
-
         status_resp = await client.get(f"/api/batch/status/{job_id}")
         ledger_resp = await client.get("/api/batch/ledger")
         view_resp = await client.get(f"/api/batch/view/{job_id}")
-        csv_resp = await client.get(
-            f"/api/batch/export/{job_id}",
-            params={"format": "csv", "columns": "tick,flora_population_mean", "tick_interval": 1},
-        )
-        tex_table_resp = await client.get(
-            f"/api/batch/export/{job_id}",
-            params={"format": "tex_table", "tick_interval": 1},
-        )
-        tikz_resp = await client.get(
-            f"/api/batch/export/{job_id}",
-            params={"format": "tex_tikz", "chart_type": "survival", "title": "Survival"},
-        )
-        missing_status_resp = await client.get("/api/batch/status/does-not-exist")
-        missing_export_resp = await client.get("/api/batch/export/does-not-exist")
-        bad_format_resp = await client.get(f"/api/batch/export/{job_id}", params={"format": "png"})
-        bad_tick_resp = await client.get(
-            f"/api/batch/export/{job_id}",
-            params={"format": "csv", "tick_interval": 0},
-        )
 
     assert status_resp.status_code == 200
     assert "coverage batch" in status_resp.text
@@ -438,20 +464,84 @@ async def test_batch_routes_cover_invalid_drafts_successful_jobs_and_export_erro
     assert job_id in ledger_resp.text
     assert view_resp.status_code == 200
     assert "batch-survival-chart" in view_resp.text
-    assert csv_resp.status_code == 200
-    assert "flora_population_mean" in csv_resp.text
-    assert tex_table_resp.status_code == 200
-    assert "\\toprule" in tex_table_resp.text
-    assert tikz_resp.status_code == 200
-    assert "Simulations alive (%)" in tikz_resp.text
-    assert missing_status_resp.status_code == 404
-    assert missing_export_resp.status_code == 404
-    assert bad_format_resp.status_code == 400
-    assert bad_tick_resp.status_code == 400
 
 
-def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path: Path) -> None:
-    """Exercises telemetry export helpers across filtering, tabular, PNG, and TikZ pathways."""
+@pytest.mark.parametrize(
+    ("params", "expected_fragment"),
+    [
+        (
+            {"format": "csv", "columns": "tick,flora_population_mean", "tick_interval": 1},
+            "flora_population_mean",
+        ),
+        ({"format": "tex_table", "tick_interval": 1}, "\\toprule"),
+        (
+            {"format": "tex_tikz", "chart_type": "survival", "title": "Survival"},
+            "Simulations alive (%)",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_batch_export_routes_support_csv_table_and_tikz(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    params: dict[str, str | int],
+    expected_fragment: str,
+) -> None:
+    """Verify completed batches export expected CSV, TeX table, and TikZ chart payloads."""
+    scheduled_tasks = _patch_completed_batch_execution(monkeypatch, tmp_path)
+
+    async with _default_client() as client:
+        start_resp = await client.post(
+            "/api/batch/start",
+            json={"runs": 2, "max_ticks": 3, "scenario_name": "coverage batch"},
+        )
+        assert start_resp.status_code == 200
+        job_id = start_resp.json()["job_id"]
+
+        await asyncio.gather(*scheduled_tasks)
+        resp = await client.get(f"/api/batch/export/{job_id}", params=params)
+
+    assert resp.status_code == 200
+    assert expected_fragment in resp.text
+
+
+@pytest.mark.parametrize(
+    ("path_template", "params", "expected_status"),
+    [
+        ("/api/batch/status/does-not-exist", None, 404),
+        ("/api/batch/export/does-not-exist", None, 404),
+        ("/api/batch/export/{job_id}", {"format": "png"}, 400),
+        ("/api/batch/export/{job_id}", {"format": "csv", "tick_interval": 0}, 400),
+    ],
+)
+@pytest.mark.asyncio
+async def test_batch_routes_return_errors_for_missing_job_and_invalid_export_params(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    path_template: str,
+    params: dict[str, str | int] | None,
+    expected_status: int,
+) -> None:
+    """Verify missing jobs and invalid export parameters return documented 404/400 responses."""
+    scheduled_tasks = _patch_completed_batch_execution(monkeypatch, tmp_path)
+
+    async with _default_client() as client:
+        start_resp = await client.post(
+            "/api/batch/start",
+            json={"runs": 2, "max_ticks": 3, "scenario_name": "coverage batch"},
+        )
+        assert start_resp.status_code == 200
+        job_id = start_resp.json()["job_id"]
+
+        await asyncio.gather(*scheduled_tasks)
+        path = path_template.format(job_id=job_id)
+        response = await client.get(path, params=params)
+
+    assert response.status_code == expected_status
+
+
+def test_export_helper_parses_species_ids_and_filters_rows() -> None:
+    """Verify species-ID helpers parse inputs and filter telemetry maps by requested flora/herbivore IDs."""
     rows = _sample_telemetry_rows()
     assert telemetry_export._append_species_id("2", 0) == "0,2"
     assert telemetry_export._parse_species_ids(" 1, bad, 2 ,, ") == {1, 2}
@@ -461,23 +551,39 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
     assert filtered_rows[0]["plant_pop_by_species"] == {1: 4}
     assert filtered_rows[1]["swarm_pop_by_species"] == {1: 2}
 
+
+def test_export_helper_builds_and_filters_dataframes() -> None:
+    """Verify telemetry rows convert to tabular form and support column projection and tick decimation."""
+    rows = _sample_telemetry_rows()
     dataframe = telemetry_export.telemetry_to_dataframe(rows)
     assert {"tick", "plant_0_pop", "plant_1_energy", "swarm_1_pop", "defense_cost_0"}.issubset(
         dataframe.columns
     )
+
     narrowed = telemetry_export.filter_dataframe_columns(dataframe, "plant_0_pop")
     assert list(narrowed.columns) == ["tick", "plant_0_pop"]
     decimated = telemetry_export.decimate_dataframe(dataframe, 2)
     assert len(decimated) == 1
 
-    polars_df = pl.DataFrame({"tick": [0, 1], "flora_population": [10, 8]})
-    telemetry_export.export_csv(polars_df, tmp_path / "telemetry.csv")
-    telemetry_export.export_json(polars_df, tmp_path / "telemetry.ndjson")
-    assert (tmp_path / "telemetry.csv").read_text(encoding="utf-8").startswith("tick,")
-    assert '"tick":0' in (tmp_path / "telemetry.ndjson").read_text(encoding="utf-8")
-    assert telemetry_export.export_bytes_csv(polars_df).startswith(b"tick,")
-    assert b'"tick":0' in telemetry_export.export_bytes_json(polars_df)
 
+def test_export_helper_writes_csv_and_ndjson_files(tmp_path: Path) -> None:
+    """Verify file and bytes export helpers emit CSV and NDJSON payloads with tick values."""
+    frame = pl.DataFrame({"tick": [0, 1], "flora_population": [10, 8]})
+    csv_path = tmp_path / "telemetry.csv"
+    ndjson_path = tmp_path / "telemetry.ndjson"
+
+    telemetry_export.export_csv(frame, csv_path)
+    telemetry_export.export_json(frame, ndjson_path)
+
+    assert csv_path.read_text(encoding="utf-8").startswith("tick,")
+    assert '"tick":0' in ndjson_path.read_text(encoding="utf-8")
+    assert telemetry_export.export_bytes_csv(frame).startswith(b"tick,")
+    assert b'"tick":0' in telemetry_export.export_bytes_json(frame)
+
+
+def test_export_helper_renders_tex_table_and_empty_state() -> None:
+    """Verify TeX table export includes tabular structure and emits a no-data marker for empty telemetry."""
+    rows = _sample_telemetry_rows()
     latex_table = telemetry_export.export_bytes_tex_table(
         rows,
         columns="tick,plant_0_pop",
@@ -487,8 +593,13 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
     assert b"\\toprule" in latex_table
     assert telemetry_export.export_bytes_tex_table([], tick_interval=1) == b"% No telemetry data\n"
 
+
+def test_export_helper_generates_png_and_tikz_for_supported_chart_types() -> None:
+    """Verify chart helpers generate PNG and TikZ outputs for all documented telemetry plot families."""
+    rows = _sample_telemetry_rows()
     flora_names = {0: "Grass", 1: "Clover"}
     herbivore_names = {0: "Aphid", 1: "Rabbit"}
+
     for plot_type in (
         "timeseries",
         "phasespace",
@@ -532,6 +643,9 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
     with pytest.raises(ValueError):
         telemetry_export.generate_tikz_str(rows, "unknown")
 
+
+def test_export_helper_maps_batch_aggregate_to_dataframe_columns() -> None:
+    """Verify aggregate telemetry dictionaries map to labeled dataframe columns and empty aggregates stay empty."""
     aggregate_frame = telemetry_export.aggregate_to_dataframe(
         {
             "ticks": [0, 1],
@@ -544,16 +658,16 @@ def test_export_helpers_cover_dataframe_filters_and_all_chart_variants(tmp_path:
             "per_herbivore_pop_mean": {"1": [1.0, 2.0]},
             "per_herbivore_pop_std": {"1": [0.0, 1.0]},
         },
-        flora_names=flora_names,
-        herbivore_names=herbivore_names,
+        flora_names={0: "Grass", 1: "Clover"},
+        herbivore_names={0: "Aphid", 1: "Rabbit"},
     )
     assert not aggregate_frame.empty
     assert {"Grass_pop_mean", "Rabbit_pop_std"}.issubset(aggregate_frame.columns)
     assert telemetry_export.aggregate_to_dataframe({}).empty
 
 
-def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths() -> None:
-    """Exercises draft-state mutation helpers, trigger-condition tree editing, and ID compaction semantics."""
+def test_draft_singleton_helpers_and_substance_type_labels() -> None:
+    """Verify draft singleton helpers and substance type labels preserve expected defaults and mappings."""
     draft = DraftState.default()
     draft_state_module._draft = None
     assert get_draft().scenario_name == "Default Scenario"
@@ -570,6 +684,9 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     )
     assert SubstanceDefinition(substance_id=3, is_toxin=True).type_label == "Toxin"
 
+
+def test_draft_condition_helper_functions_validate_and_remap_paths() -> None:
+    """Verify condition helper utilities parse paths, normalize defaults, and remap removed IDs."""
     assert draft_state_module._legacy_signal_ids_to_activation_condition([0, 1]) == {
         "kind": "all_of",
         "conditions": [
@@ -588,6 +705,37 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     with pytest.raises(ValueError):
         draft_state_module._default_activation_condition_node("unsupported")
 
+    remapped = draft_state_module._remap_condition_references(
+        {
+            "kind": "all_of",
+            "conditions": [
+                {
+                    "kind": "herbivore_presence",
+                    "herbivore_species_id": 2,
+                    "min_herbivore_population": 2,
+                },
+                {"kind": "substance_active", "substance_id": 2},
+            ],
+        },
+        removed_herbivore_id=1,
+        removed_substance_id=1,
+    )
+    assert remapped == {
+        "kind": "all_of",
+        "conditions": [
+            {
+                "kind": "herbivore_presence",
+                "herbivore_species_id": 1,
+                "min_herbivore_population": 2,
+            },
+            {"kind": "substance_active", "substance_id": 1},
+        ],
+    }
+
+
+def test_draft_trigger_rule_tree_mutations_preserve_expected_structure() -> None:
+    """Verify trigger-rule condition tree updates apply in order and reject out-of-range node paths."""
+    draft = DraftState.default()
     draft_service.add_flora(
         draft,
         FloraSpeciesParams(
@@ -662,12 +810,8 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         min_herbivore_population=5,
     )
     draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
-    with pytest.raises(IndexError):
-        draft_service.replace_trigger_rule_condition_node(
-            draft, 0, "9", {"kind": "substance_active", "substance_id": 0}
-        )
 
-    current_condition = draft.trigger_rules[0].activation_condition
+    current_condition = cast(dict[str, object], draft.trigger_rules[0].activation_condition)
     assert current_condition == {
         "kind": "all_of",
         "conditions": [
@@ -682,32 +826,45 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
         draft_state_module._prune_empty_condition_groups({"kind": "all_of", "conditions": []})
         is None
     )
-    remapped = draft_state_module._remap_condition_references(
-        {
-            "kind": "all_of",
-            "conditions": [
-                {
-                    "kind": "herbivore_presence",
-                    "herbivore_species_id": 2,
-                    "min_herbivore_population": 2,
-                },
-                {"kind": "substance_active", "substance_id": 2},
-            ],
-        },
-        removed_herbivore_id=1,
-        removed_substance_id=1,
+    with pytest.raises(IndexError):
+        draft_service.replace_trigger_rule_condition_node(
+            draft, 0, "9", {"kind": "substance_active", "substance_id": 0}
+        )
+
+
+def test_draft_species_compaction_and_placement_mutators() -> None:
+    """Verify species removal compacts IDs and placement mutators remain consistent through compaction."""
+    draft = DraftState.default()
+    draft_service.add_flora(
+        draft,
+        FloraSpeciesParams(
+            species_id=9,
+            name="Clover",
+            base_energy=9.0,
+            max_energy=80.0,
+            growth_rate=3.0,
+            survival_threshold=1.0,
+            reproduction_interval=8,
+            triggers=[],
+        ),
     )
-    assert remapped == {
-        "kind": "all_of",
-        "conditions": [
-            {
-                "kind": "herbivore_presence",
-                "herbivore_species_id": 1,
-                "min_herbivore_population": 2,
-            },
-            {"kind": "substance_active", "substance_id": 1},
-        ],
-    }
+    draft_service.add_herbivore(
+        draft,
+        HerbivoreSpeciesParams(
+            species_id=9,
+            name="Rabbit",
+            energy_min=4.0,
+            velocity=1,
+            consumption_rate=2.5,
+        ),
+    )
+    draft.substance_definitions = [
+        SubstanceDefinition(substance_id=0, name="Alarm"),
+        SubstanceDefinition(substance_id=1, name="Toxin", is_toxin=True, lethal=True),
+    ]
+    draft_service.add_trigger_rule(
+        draft, 1, 1, 1, min_herbivore_population=3, required_signal_ids=[0]
+    )
 
     draft_service.add_plant_placement(draft, 1, 3, 4, 12.0)
     draft_service.add_swarm_placement(draft, 1, 4, 5, 6, 18.0)
@@ -723,8 +880,9 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     draft_service.add_swarm_placement(draft, 1, 2, 2, 5, 14.0)
     draft_service.remove_herbivore(draft, 0)
     draft_service.remove_flora(draft, 0)
-    assert draft.herbivore_species[0].species_id == 0
-    assert draft.flora_species[0].species_id == 0
+    assert cast(HerbivoreSpeciesParams, draft.herbivore_species[0]).species_id == 0
+    assert cast(FloraSpeciesParams, draft.flora_species[0]).species_id == 0
+
     draft_service.remove_trigger_rule(draft, 0)
     draft_service.clear_placements(draft)
     assert not draft.initial_plants
@@ -734,6 +892,9 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     with pytest.raises(ValueError):
         draft_service.remove_herbivore(draft, 99)
 
+
+def test_empty_draft_cannot_build_simulation_config() -> None:
+    """Verify building a simulation config from an empty draft raises a validation error."""
     empty = DraftState.default()
     empty.flora_species.clear()
     empty.herbivore_species.clear()
@@ -742,15 +903,13 @@ def test_draft_state_mutators_and_condition_tree_helpers_cover_compaction_paths(
     reset_draft()
 
 
-def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_support_modules(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Exercises batch aggregation, flow fields, replay I/O, logging bootstrap, and CLI dispatch helpers."""
+def test_flow_field_helpers_compute_gradient_and_apply_camouflage() -> None:
+    """Verify flow-field helpers produce stronger attraction at resource cells and scale values via camouflage."""
     plant_energy = np.zeros((3, 3), dtype=np.float64)
     plant_energy[2, 2] = 5.0
     toxin_layers = np.zeros((1, 3, 3), dtype=np.float64)
     toxin_layers[0, 0, 0] = 1.0
+
     gradient = flow_field.compute_flow_field(plant_energy, toxin_layers, 3, 3)
     assert gradient[2, 2] > gradient[0, 0]
     attenuated = gradient[2, 2]
@@ -766,9 +925,13 @@ def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_suppor
         == 0.0
     )
 
+
+def test_replay_buffer_roundtrip_and_truncated_load(tmp_path: Path) -> None:
+    """Verify replay buffer serialization round-trips and truncated files still load recoverable frames."""
     replay_buffer = replay.ReplayBuffer()
     replay_buffer.append({"tick": 0, "value": 1})
     replay_buffer.append({"tick": 1, "value": 2})
+
     replay_path = tmp_path / "state.replay"
     replay_buffer.save(replay_path)
     loaded_buffer = replay.ReplayBuffer.load(replay_path)
@@ -781,25 +944,44 @@ def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_suppor
     truncated_loaded = replay.ReplayBuffer.load(truncated_path)
     assert len(truncated_loaded) == 1
 
+
+def test_batch_engine_headless_aggregate_and_sanitize_helpers() -> None:
+    """Verify headless execution helper returns telemetry rows and aggregate utilities normalize numeric payloads."""
     scenario_dict = DraftState.default().build_sim_config().model_dump()
     headless_rows = batch_engine._run_single_headless(scenario_dict, max_ticks=1, seed=3)
     assert isinstance(headless_rows, list)
+
     assert batch_engine.aggregate_batch_telemetry([]) == {}
     aggregate = batch_engine.aggregate_batch_telemetry(
         [_sample_telemetry_rows(), _sample_telemetry_rows()]
     )
     assert aggregate["runs_completed"] == 2
     assert aggregate["ticks"] == [0, 1]
+
     sanitized = batch_engine._sanitize_for_json(
         {"nan": float("nan"), "nested": [float("inf"), np.float64(1.5)]}
     )
     assert sanitized == {"nan": None, "nested": [None, 1.5]}
 
+
+def test_batch_engine_run_and_save_uses_headless_runner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify run-and-save delegates to the headless runner and returns the produced telemetry rows."""
+    scenario_dict = DraftState.default().build_sim_config().model_dump()
     expected_rows = _sample_telemetry_rows()
     monkeypatch.setattr(batch_engine, "_run_single_headless", lambda *args: expected_rows)
-    assert (
-        batch_engine._run_and_save((scenario_dict, 1, 2, "jobx", 0, str(tmp_path))) == expected_rows
-    )
+
+    rows = batch_engine._run_and_save((scenario_dict, 1, 2, "jobx", 0, str(tmp_path)))
+    assert rows == expected_rows
+
+
+def test_batch_runner_execute_batch_reports_progress_and_writes_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify batch runner emits progress callbacks and writes summary output when workers complete."""
 
     class _FakeFuture:
         def __init__(self, value: list[dict[str, object]]) -> None:
@@ -819,7 +1001,11 @@ def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_suppor
             return False
 
         def submit(
-            self, fn: object, args: tuple[dict[str, object], int, int, str, int, str]
+            self,
+            fn: Callable[
+                [tuple[dict[str, object], int, int, str, int, str]], list[dict[str, object]]
+            ],
+            args: tuple[dict[str, object], int, int, str, int, str],
         ) -> _FakeFuture:
             future = _FakeFuture(fn(args))
             self._futures.append(future)
@@ -830,7 +1016,9 @@ def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_suppor
         batch_engine.concurrent.futures, "as_completed", lambda futures: list(futures)
     )
     monkeypatch.setattr(batch_engine.multiprocessing, "get_context", lambda mode: object())
+
     progress: list[int] = []
+    scenario_dict = DraftState.default().build_sim_config().model_dump()
     batch_result = batch_engine.BatchRunner().execute_batch(
         scenario_dict,
         runs=2,
@@ -843,13 +1031,21 @@ def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_suppor
     assert progress == [1, 2]
     assert (tmp_path / "coverage-job_summary.json").exists()
 
+
+def test_logging_config_env_coercion_and_recent_log_capture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify logging config coerces invalid env values and captures recent logs with file output enabled."""
     assert logging_config._coerce_log_level("bogus") == "INFO"
     assert logging_config._coerce_positive_int("0", default=7) == 7
+
     monkeypatch.setenv("PHIDS_LOG_LEVEL", "debug")
     monkeypatch.setenv("PHIDS_LOG_FILE_LEVEL", "warning")
     monkeypatch.setenv("PHIDS_LOG_FILE", str(tmp_path / "phids.log"))
     monkeypatch.setenv("PHIDS_LOG_SIM_DEBUG_INTERVAL", "12")
     logging_config.configure_logging(force=True)
+
     logger = logging.getLogger("phids.coverage")
     logger.warning("coverage logging smoke")
     assert logging_config.get_simulation_debug_interval() == 12
@@ -859,18 +1055,32 @@ def test_batch_engine_flow_replay_logging_and_cli_helpers_cover_remaining_suppor
     )
     assert (tmp_path / "phids.log").exists()
 
+
+def test_cli_parser_and_main_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify CLI parser arguments and uvicorn dispatch wiring preserve command-line options."""
     parsed = phids_cli.build_parser().parse_args(
         ["--host", "0.0.0.0", "--port", "9000", "--reload"]
     )
     assert parsed.host == "0.0.0.0"
     assert parsed.port == 9000
+
     captured: dict[str, object] = {}
 
     def _fake_uvicorn_run(
-        app_obj: object, host: str, port: int, reload: bool, log_level: str
+        app_obj: object,
+        host: str,
+        port: int,
+        reload: bool,
+        log_level: str,
     ) -> None:
         captured.update(
-            {"app": app_obj, "host": host, "port": port, "reload": reload, "log_level": log_level}
+            {
+                "app": app_obj,
+                "host": host,
+                "port": port,
+                "reload": reload,
+                "log_level": log_level,
+            }
         )
 
     monkeypatch.setattr("uvicorn.run", _fake_uvicorn_run)
@@ -1194,54 +1404,40 @@ async def test_biotope_wind_update_auto_applies_to_loaded_live_loop() -> None:
     assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(-0.25)
 
 
+@pytest.mark.parametrize(
+    ("route", "preload_loop", "wind_x", "wind_y", "tick_rate_hz"),
+    [
+        ("/api/scenario/load-draft", False, 2.25, -1.5, 13.0),
+        ("/api/simulation/start", True, 1.1, 0.6, 7.5),
+    ],
+)
 @pytest.mark.asyncio
-async def test_load_draft_commits_pending_biotope_form_values_from_control_request() -> None:
-    """Ensures load-draft applies included pending biotope values instead of stale draft state."""
+async def test_control_routes_commit_pending_biotope_form_values(
+    route: str,
+    preload_loop: bool,
+    wind_x: float,
+    wind_y: float,
+    tick_rate_hz: float,
+) -> None:
+    """Ensure control routes commit included pending biotope values before applying state transitions."""
+    if preload_loop:
+        api_main._sim_loop = SimulationLoop(get_draft().build_sim_config())
+
     async with _default_client() as client:
         resp = await client.post(
-            "/api/scenario/load-draft",
+            route,
             headers={"HX-Request": "true"},
-            data={
-                "wind_x": 2.25,
-                "wind_y": -1.5,
-                "tick_rate_hz": 13.0,
-            },
+            data={"wind_x": wind_x, "wind_y": wind_y, "tick_rate_hz": tick_rate_hz},
         )
 
     assert resp.status_code == 200
     assert api_main._sim_loop is not None
-    assert get_draft().wind_x == pytest.approx(2.25)
-    assert get_draft().wind_y == pytest.approx(-1.5)
-    assert get_draft().tick_rate_hz == pytest.approx(13.0)
-    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(2.25)
-    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(-1.5)
-    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(13.0)
-
-
-@pytest.mark.asyncio
-async def test_start_commits_pending_biotope_form_values_before_running() -> None:
-    """Ensures start applies included pending biotope values before entering run state."""
-    api_main._sim_loop = SimulationLoop(get_draft().build_sim_config())
-
-    async with _default_client() as client:
-        resp = await client.post(
-            "/api/simulation/start",
-            headers={"HX-Request": "true"},
-            data={
-                "wind_x": 1.1,
-                "wind_y": 0.6,
-                "tick_rate_hz": 7.5,
-            },
-        )
-
-    assert resp.status_code == 200
-    assert api_main._sim_loop is not None
-    assert get_draft().wind_x == pytest.approx(1.1)
-    assert get_draft().wind_y == pytest.approx(0.6)
-    assert get_draft().tick_rate_hz == pytest.approx(7.5)
-    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(1.1)
-    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(0.6)
-    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(7.5)
+    assert get_draft().wind_x == pytest.approx(wind_x)
+    assert get_draft().wind_y == pytest.approx(wind_y)
+    assert get_draft().tick_rate_hz == pytest.approx(tick_rate_hz)
+    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(wind_x)
+    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(wind_y)
+    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(tick_rate_hz)
 
 
 @pytest.mark.asyncio

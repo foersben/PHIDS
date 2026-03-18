@@ -9,12 +9,12 @@ regressions in the simulation loop.
 from __future__ import annotations
 
 from pathlib import Path
+from collections.abc import Callable
 
 import numpy as np
 import pytest
 
 from phids.engine.components.plant import PlantComponent
-from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import _co_located_swarm_population as interaction_co_located
@@ -34,73 +34,35 @@ except ImportError:
     ZARR_AVAILABLE = False
 
 
-def _add_plant(world: ECSWorld, x: int, y: int, species_id: int = 0) -> int:
-    entity = world.create_entity()
-    world.add_component(
-        entity.entity_id,
-        PlantComponent(
-            entity_id=entity.entity_id,
-            species_id=species_id,
-            x=x,
-            y=y,
-            energy=10.0,
-            max_energy=20.0,
-            base_energy=10.0,
-            growth_rate=5.0,
-            survival_threshold=1.0,
-            reproduction_interval=2,
-            seed_min_dist=1.0,
-            seed_max_dist=2.0,
-            seed_energy_cost=1.0,
-        ),
-    )
-    world.register_position(entity.entity_id, x, y)
-    return entity.entity_id
-
-
-def _add_swarm(world: ECSWorld, x: int, y: int, species_id: int = 0, population: int = 5) -> int:
-    entity = world.create_entity()
-    world.add_component(
-        entity.entity_id,
-        SwarmComponent(
-            entity_id=entity.entity_id,
-            species_id=species_id,
-            x=x,
-            y=y,
-            population=population,
-            initial_population=max(1, population),
-            energy=25.0,
-            energy_min=1.0,
-            velocity=1,
-            consumption_rate=1.0,
-        ),
-    )
-    world.register_position(entity.entity_id, x, y)
-    return entity.entity_id
-
-
-def test_signaling_co_located_swarm_population_filters_species() -> None:
+def test_signaling_co_located_swarm_population_filters_species(
+    add_swarm: Callable[..., int],
+) -> None:
     world = ECSWorld()
-    _add_swarm(world, 4, 4, species_id=0, population=7)
-    _add_swarm(world, 4, 4, species_id=1, population=11)
-    _add_swarm(world, 4, 4, species_id=1, population=13)
+    add_swarm(world, 4, 4, species_id=0, population=7)
+    add_swarm(world, 4, 4, species_id=1, population=11)
+    add_swarm(world, 4, 4, species_id=1, population=13)
     assert signaling_co_located(world, x=4, y=4, herbivore_species_id=0) == 7
     assert signaling_co_located(world, x=4, y=4, herbivore_species_id=1) == 24
 
 
-def test_interaction_co_located_swarm_population_skips_non_swarm_and_stale_ids() -> None:
+def test_interaction_co_located_swarm_population_skips_non_swarm_and_stale_ids(
+    add_plant: Callable[..., int],
+    add_swarm: Callable[..., int],
+) -> None:
     world = ECSWorld()
-    plant_id = _add_plant(world, 2, 2, species_id=0)
+    plant_id = add_plant(world, 2, 2, species_id=0)
     world.entities_at(2, 2).add(9999)
-    _add_swarm(world, 2, 2, species_id=0, population=9)
-    _add_swarm(world, 2, 2, species_id=0, population=6)
+    add_swarm(world, 2, 2, species_id=0, population=9)
+    add_swarm(world, 2, 2, species_id=0, population=6)
     assert world.has_entity(plant_id)
     assert interaction_co_located(world, x=2, y=2) == 15
 
 
-def test_activation_condition_supports_none_and_environmental_signal_bounds() -> None:
+def test_activation_condition_supports_none_and_environmental_signal_bounds(
+    add_plant: Callable[..., int],
+) -> None:
     world = ECSWorld()
-    plant_id = _add_plant(world, 1, 1)
+    plant_id = add_plant(world, 1, 1)
     plant = world.get_entity(plant_id).get_component(PlantComponent)
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
     env.signal_layers[0, 1, 1] = 0.3
@@ -130,10 +92,13 @@ def test_activation_condition_supports_none_and_environmental_signal_bounds() ->
     )
 
 
-def test_activation_condition_with_swarm_presence_and_substance_active() -> None:
+def test_activation_condition_with_swarm_presence_and_substance_active(
+    add_plant: Callable[..., int],
+    add_swarm: Callable[..., int],
+) -> None:
     world = ECSWorld()
-    plant_id = _add_plant(world, 3, 3)
-    _add_swarm(world, 3, 3, species_id=2, population=4)
+    plant_id = add_plant(world, 3, 3)
+    add_swarm(world, 3, 3, species_id=2, population=4)
     plant = world.get_entity(plant_id).get_component(PlantComponent)
     env = GridEnvironment(width=6, height=6, num_signals=1, num_toxins=1)
     population_index = {(3, 3, 2): 4}
@@ -221,11 +186,11 @@ def test_zarr_signal_tail_clipping_on_append_and_read(tmp_path: Path) -> None:
     assert restored[0, 0, 1] > 0.0
 
 
-def test_collect_mycorrhizal_targets_respects_species_gate() -> None:
+def test_collect_mycorrhizal_targets_respects_species_gate(add_plant: Callable[..., int]) -> None:
     world = ECSWorld()
-    source_id = _add_plant(world, 1, 1, species_id=0)
-    same_species_id = _add_plant(world, 2, 1, species_id=0)
-    other_species_id = _add_plant(world, 3, 1, species_id=1)
+    source_id = add_plant(world, 1, 1, species_id=0)
+    same_species_id = add_plant(world, 2, 1, species_id=0)
+    other_species_id = add_plant(world, 3, 1, species_id=1)
     source = world.get_entity(source_id).get_component(PlantComponent)
     source.mycorrhizal_connections.update({same_species_id, other_species_id, 9999})
 

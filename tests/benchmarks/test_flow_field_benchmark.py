@@ -26,8 +26,6 @@ def test_flow_field_generation_benchmark(benchmark) -> None:  # type: ignore[no-
     non-finite values, confirming that the Jacobi propagation and subnormal-float truncation
     produce numerically stable outputs.
 
-    Args:
-        benchmark: ``pytest-benchmark`` fixture controlling repeated timing invocations.
     """
     width = 40
     height = 40

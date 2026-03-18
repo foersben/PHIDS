@@ -63,14 +63,7 @@ def _herbivore(species_id: int = 0) -> HerbivoreSpeciesParams:
 
 
 def test_trigger_schema_supports_full_substance_matrix() -> None:
-    """Validates the trigger schema supports full substance matrix invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify trigger schema accepts the full toxin and activation-condition field matrix."""
     trig = TriggerConditionSchema(
         herbivore_species_id=1,
         min_herbivore_population=3,
@@ -104,27 +97,13 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
 
 
 def test_diet_matrix_enforces_rule_of_16() -> None:
-    """Validates the diet matrix enforces rule of 16 invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify diet compatibility matrices reject row widths above the Rule-of-16 cap."""
     with pytest.raises(ValidationError):
         DietCompatibilityMatrix(rows=[[True] * 17])
 
 
 def test_simulation_config_rejects_unknown_species_placements() -> None:
-    """Validates the simulation config rejects unknown species placements invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify placement entries referencing undeclared species fail config validation."""
     flora = [_flora(0)]
     herbivore = [_herbivore(0)]
 
@@ -148,14 +127,7 @@ def test_simulation_config_rejects_unknown_species_placements() -> None:
 
 
 def test_simulation_config_validates_mycorrhizal_growth_interval_bounds() -> None:
-    """Validates the simulation config validates mycorrhizal growth interval bounds invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify mycorrhizal growth interval bounds are enforced and valid values are preserved."""
     flora = [_flora(0)]
     herbivore = [_herbivore(0)]
 
@@ -178,14 +150,7 @@ def test_simulation_config_validates_mycorrhizal_growth_interval_bounds() -> Non
 
 
 def test_grid_environment_invariants_and_double_buffer_swap() -> None:
-    """Validates the grid environment invariants and double buffer swap invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify grid bounds checks and plant-energy write/read buffer swapping semantics."""
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
 
     with pytest.raises(ValueError):
@@ -204,14 +169,7 @@ def test_grid_environment_invariants_and_double_buffer_swap() -> None:
 
 
 def test_ecs_query_intersection_and_component_removal() -> None:
-    """Validates the ecs query intersection and component removal invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify ECS multi-component queries update immediately after component removal."""
     world = ECSWorld()
 
     class C1:
@@ -235,14 +193,7 @@ def test_ecs_query_intersection_and_component_removal() -> None:
 
 
 def test_spatial_hash_allows_multiple_entities_per_cell() -> None:
-    """Validates the spatial hash allows multiple entities per cell invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify spatial hash buckets retain multiple entity IDs per coordinate."""
     world = ECSWorld()
     e1 = world.create_entity()
     e2 = world.create_entity()
@@ -254,14 +205,7 @@ def test_spatial_hash_allows_multiple_entities_per_cell() -> None:
 
 
 def test_plant_component_energy_never_negative_on_set() -> None:
-    """Validates the plant component energy never negative on set invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify plant-energy writes clamp negative values to zero on rebuild."""
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
     world = ECSWorld()
     e = world.create_entity()

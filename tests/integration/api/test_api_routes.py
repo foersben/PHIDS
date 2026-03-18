@@ -9,14 +9,8 @@ from phids.api.main import app
 
 
 def test_required_routes_present() -> None:
-    """Validates the required routes present invariant and confirms the expected biological behavior under controlled simulation conditions.
+    """Assert that the required API routes are present."""
 
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
     paths = {route.path for route in app.router.routes}
 
     assert "/api/scenario/load" in paths

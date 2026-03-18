@@ -66,7 +66,7 @@ def _minimal_scenario() -> dict:
 
 
 class TestRunSingleHeadless:
-    """Validates the module-level _run_single_headless function."""
+    """Integration checks for the module-level `_run_single_headless` execution path."""
 
     def test_returns_nonempty_rows(self) -> None:
         """A minimal headless run returns at least one telemetry row."""

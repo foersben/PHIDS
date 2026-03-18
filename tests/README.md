@@ -26,6 +26,18 @@ This repository is transitioning incrementally from a flat `tests/` layout to th
 hierarchy to keep CI stable. Existing root-level modules remain valid while they are
 moved in small, verifiable batches.
 
-Coverage- and migration-specific guard modules currently remain at the root (`test_coverage_*`,
-`test_additional_coverage.py`) and will be moved in a final consolidation pass after command and
-documentation references are fully updated.
+Coverage guard modules currently remain at the root (`test_coverage_*`). Domain-owned behavior
+tests previously grouped in `test_additional_coverage.py` have been migrated into
+`tests/integration/api/`, `tests/integration/systems/`, `tests/unit/io/`,
+`tests/unit/telemetry/`, `tests/unit/engine/core/`, and `tests/unit/shared/`.
+
+## God test policy
+
+Route and helper regressions must be decomposed into narrowly scoped tests that each validate one
+state transition or one helper contract. Avoid multi-branch "God Tests" that chain unrelated
+operations because a single early failure obscures downstream regressions and slows diagnosis.
+
+Preferred naming pattern:
+
+- `test_<surface>_<condition>_<expected_behavior>` for API/integration checks.
+- `test_<symbol>_<branch_or_invariant>` for pure helper and unit checks.

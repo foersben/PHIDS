@@ -16,62 +16,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 
 import pytest
 
-from phids.api.schemas import (
-    DietCompatibilityMatrix,
-    FloraSpeciesParams,
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
-    HerbivoreSpeciesParams,
-    SimulationConfig,
-)
+from phids.api.schemas import SimulationConfig
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.loop import SimulationLoop
 from phids.telemetry.conditions import check_termination
-
-
-def _base_config(max_ticks: int = 20) -> SimulationConfig:
-    return SimulationConfig(
-        grid_width=8,
-        grid_height=8,
-        max_ticks=max_ticks,
-        tick_rate_hz=50.0,
-        num_signals=2,
-        num_toxins=2,
-        wind_x=0.0,
-        wind_y=0.0,
-        flora_species=[
-            FloraSpeciesParams(
-                species_id=0,
-                name="flora-0",
-                base_energy=8.0,
-                max_energy=30.0,
-                growth_rate=2.0,
-                survival_threshold=1.0,
-                reproduction_interval=3,
-                seed_min_dist=1.0,
-                seed_max_dist=2.0,
-                seed_energy_cost=1.0,
-                triggers=[],
-            )
-        ],
-        herbivore_species=[
-            HerbivoreSpeciesParams(
-                species_id=0,
-                name="herbivore-0",
-                energy_min=1.0,
-                velocity=1,
-                consumption_rate=1.0,
-            )
-        ],
-        diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
-        initial_plants=[InitialPlantPlacement(species_id=0, x=2, y=2, energy=10.0)],
-        initial_swarms=[InitialSwarmPlacement(species_id=0, x=2, y=2, population=3, energy=3.0)],
-    )
 
 
 def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:
@@ -115,14 +69,7 @@ def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -
 
 
 def test_termination_z1_max_ticks() -> None:
-    """Validates the termination z1 max ticks invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify Z1 termination fires when `tick` reaches `max_ticks`."""
     world = _world_with_counts([0], [0])
     result = check_termination(world, tick=10, max_ticks=10)
     assert result.terminated is True
@@ -147,14 +94,7 @@ def test_termination_species_extinction_branches(
 
 
 def test_termination_z3_z5_all_extinction() -> None:
-    """Validates the termination z3 z5 all extinction invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+    """Verify Z3 fires when no flora entities remain in the world."""
     world = _world_with_counts([], [])
 
     z3 = check_termination(world, tick=0, max_ticks=100)
@@ -179,16 +119,11 @@ def test_termination_threshold_branches(
     assert expected_reason in result.reason
 
 
-def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
-    """Validates the simulation loop step updates replay and telemetry invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
-    loop = SimulationLoop(_base_config(max_ticks=30))
+def test_simulation_loop_step_updates_replay_and_telemetry(
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Verify one loop step advances tick state and records replay plus telemetry outputs."""
+    loop = SimulationLoop(loop_config_builder(max_ticks=30))
 
     before_tick = loop.tick
     result = asyncio.run(loop.step())
@@ -203,19 +138,12 @@ def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
     assert "death_defense_maintenance" in latest
 
 
-def test_simulation_loop_terminates_when_z1_reached(caplog) -> None:
-    """Validates the simulation loop terminates when z1 reached invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Args:
-        caplog: Input value used to parameterize deterministic behavior for this callable.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
-    loop = SimulationLoop(_base_config(max_ticks=1))
+def test_simulation_loop_terminates_when_z1_reached(
+    caplog,
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Verify loop state flips to terminated and logs when Z1 is already satisfied."""
+    loop = SimulationLoop(loop_config_builder(max_ticks=1))
     loop.tick = loop.config.max_ticks
 
     with caplog.at_level(logging.INFO, logger="phids.engine.loop"):
@@ -228,9 +156,11 @@ def test_simulation_loop_terminates_when_z1_reached(caplog) -> None:
     assert "Simulation terminated at tick" in caplog.text
 
 
-def test_get_state_snapshot_memorize_within_tick_and_refreshes_after_step() -> None:
+def test_get_state_snapshot_memorize_within_tick_and_refreshes_after_step(
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
     """Validate that snapshot generation does not repeat expensive env serialization within one tick."""
-    loop = SimulationLoop(_base_config(max_ticks=10))
+    loop = SimulationLoop(loop_config_builder(max_ticks=10))
 
     calls = {"count": 0}
     original_to_dict = loop.env.to_dict
@@ -252,9 +182,11 @@ def test_get_state_snapshot_memorize_within_tick_and_refreshes_after_step() -> N
     assert calls["count"] == 2
 
 
-def test_get_state_snapshot_cache_invalidates_when_wind_changes() -> None:
+def test_get_state_snapshot_cache_invalidates_when_wind_changes(
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
     """Validate snapshot cache invalidation for same-tick environmental wind updates."""
-    loop = SimulationLoop(_base_config(max_ticks=10))
+    loop = SimulationLoop(loop_config_builder(max_ticks=10))
 
     calls = {"count": 0}
     original_to_dict = loop.env.to_dict
@@ -273,9 +205,11 @@ def test_get_state_snapshot_cache_invalidates_when_wind_changes() -> None:
     assert isinstance(snapshot_after_wind, dict)
 
 
-def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization() -> None:
+def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization(
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
     """Validate replay append path can run without invoking env.to_dict in zarr mode."""
-    config = _base_config(max_ticks=10).model_copy(update={"replay_backend": "zarr"})
+    config = loop_config_builder(max_ticks=10).model_copy(update={"replay_backend": "zarr"})
     loop = SimulationLoop(config)
     if not hasattr(loop.replay, "append_raw_arrays"):
         pytest.skip("Zarr backend unavailable in this environment")

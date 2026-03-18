@@ -66,27 +66,67 @@ def _build_loaded_loop() -> SimulationLoop:
     return loop
 
 
-def test_main_numeric_coercion_helpers_cover_all_input_branches() -> None:
-    """Validate coercion behavior across bool, numeric, parsable string, and invalid inputs.
-
-    These helper functions are used in ranking and payload sanitation paths. Deterministic
-    coercion avoids unstable ordering or serialization errors when optional fields include
-    heterogeneous scalar values.
-    """
-    assert api_main._coerce_int(True, default=-9) == -9
-    assert api_main._coerce_int(7) == 7
-    assert api_main._coerce_int(4.8) == 4
-    assert api_main._coerce_int("12") == 12
-    assert api_main._coerce_int("bad", default=5) == 5
-
-    assert api_main._coerce_float(False, default=3.5) == 3.5
-    assert api_main._coerce_float(2) == pytest.approx(2.0)
-    assert api_main._coerce_float(2.75) == pytest.approx(2.75)
-    assert api_main._coerce_float("1.25") == pytest.approx(1.25)
-    assert api_main._coerce_float("x", default=9.0) == pytest.approx(9.0)
+@pytest.mark.parametrize(
+    ("input_val", "kwargs", "expected"),
+    [
+        (True, {"default": -9}, -9),
+        (7, {}, 7),
+        (4.8, {}, 4),
+        ("12", {}, 12),
+        ("bad", {"default": 5}, 5),
+    ],
+)
+def test_main_coerce_int_cases(input_val: object, kwargs: dict[str, int], expected: int) -> None:
+    """Validate integer coercion behavior across valid, invalid, and boolean inputs."""
+    assert api_main._coerce_int(input_val, **kwargs) == expected
 
 
-def test_main_default_activation_condition_and_trigger_index_branches() -> None:
+@pytest.mark.parametrize(
+    ("input_val", "kwargs", "expected"),
+    [
+        (False, {"default": 3.5}, 3.5),
+        (2, {}, 2.0),
+        (2.75, {}, 2.75),
+        ("1.25", {}, 1.25),
+        ("x", {"default": 9.0}, 9.0),
+    ],
+)
+def test_main_coerce_float_cases(
+    input_val: object,
+    kwargs: dict[str, float],
+    expected: float,
+) -> None:
+    """Validate floating-point coercion behavior across valid, invalid, and boolean inputs."""
+    assert api_main._coerce_float(input_val, **kwargs) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("kind", "field", "expected", "secondary_field", "secondary_expected"),
+    [
+        (
+            "environmental_signal",
+            "kind",
+            "environmental_signal",
+            "signal_id",
+            0,
+        ),
+        (
+            "any_of",
+            "kind",
+            "any_of",
+            "conditions.0.kind",
+            "herbivore_presence",
+        ),
+        ("substance_active", "substance_id", 1, None, None),
+    ],
+)
+def test_main_default_activation_condition_supported_kinds(
+    kind: str,
+    field: str,
+    expected: str | int,
+    secondary_field: str | None,
+    secondary_expected: str | int | None,
+) -> None:
     """Validate default-condition synthesis and index guarding for trigger-rule editing paths.
 
     The trigger-rule editor builds default condition nodes by kind and must reject unsupported
@@ -111,22 +151,25 @@ def test_main_default_activation_condition_and_trigger_index_branches() -> None:
     )
     rule = draft.trigger_rules[0]
 
-    env_signal = api_main._default_activation_condition_for_rule(
-        draft, rule, "environmental_signal"
-    )
-    assert env_signal["kind"] == "environmental_signal"
-    assert env_signal["signal_id"] == 0
+    condition = api_main._default_activation_condition_for_rule(draft, rule, kind)
+    assert condition[field] == expected
+    if secondary_field == "signal_id":
+        assert condition[secondary_field] == secondary_expected
+    elif secondary_field == "conditions.0.kind":
+        assert condition["conditions"][0]["kind"] == secondary_expected
 
-    any_of = api_main._default_activation_condition_for_rule(draft, rule, "any_of")
-    assert any_of["kind"] == "any_of"
-    assert any_of["conditions"][0]["kind"] == "herbivore_presence"
 
-    substance_active = api_main._default_activation_condition_for_rule(
+def test_main_default_activation_condition_invalid_kind_and_missing_trigger_index() -> None:
+    """Validate unsupported condition kinds and out-of-range trigger indices raise HTTP errors."""
+    draft = DraftState.default()
+    draft_service.add_trigger_rule(
         draft,
-        rule,
-        "substance_active",
+        flora_species_id=0,
+        herbivore_species_id=0,
+        substance_id=0,
+        min_herbivore_population=2,
     )
-    assert substance_active["substance_id"] == 1
+    rule = draft.trigger_rules[0]
 
     with pytest.raises(HTTPException) as unsupported:
         api_main._default_activation_condition_for_rule(draft, rule, "invalid")
@@ -172,46 +215,81 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
     assert len(stressed) == 1
     assert stressed[0]["energy_deficit"] > 0.0
 
+
+def test_render_status_badge_idle_without_loaded_loop() -> None:
+    """Validate that the status badge reports Idle when no loop is registered."""
     api_main._sim_loop = None
-    assert api_main._render_status_badge_html().find("Idle") != -1
-
-    api_main._sim_loop = loop
-    assert "Loaded" in api_main._render_status_badge_html()
-    loop.running = True
-    assert "Running" in api_main._render_status_badge_html()
-    loop.paused = True
-    assert "Paused" in api_main._render_status_badge_html()
-    loop.terminated = True
-    assert "Terminated" in api_main._render_status_badge_html()
+    assert "Idle" in api_main._render_status_badge_html()
 
 
-@pytest.mark.asyncio
-async def test_telemetry_chartjs_and_table_preview_empty_branches() -> None:
-    """Cover no-loop chart JSON and filtered-empty table preview response branches.
-
-    The telemetry API must return explicit empty payloads when no loop is loaded and provide
-    informative empty-state HTML when filters remove all candidate rows.
-    """
-    async with _default_client() as client:
-        no_loop_chart = await client.get("/api/telemetry/chartjs-data")
-    assert no_loop_chart.status_code == 200
-    assert no_loop_chart.json() == {
-        "labels": [],
-        "flora_ids": [],
-        "herbivore_ids": [],
-        "series": {},
-    }
-
+@pytest.mark.parametrize(
+    ("running", "paused", "terminated", "expected_label"),
+    [
+        (False, False, False, "Loaded"),
+        (True, False, False, "Running"),
+        (True, True, False, "Paused"),
+        (True, True, True, "Terminated"),
+    ],
+)
+def test_render_status_badge_loaded_loop_states(
+    running: bool,
+    paused: bool,
+    terminated: bool,
+    expected_label: str,
+) -> None:
+    """Validate status badge labels for loaded-loop runtime states."""
     loop = _build_loaded_loop()
-    loop.telemetry._rows = []
+    loop.running = running
+    loop.paused = paused
+    loop.terminated = terminated
+    assert expected_label in api_main._render_status_badge_html()
+
+
+@pytest.mark.parametrize(
+    ("setup_mode", "path", "params", "expected_json", "expected_text"),
+    [
+        (
+            "no_loop",
+            "/api/telemetry/chartjs-data",
+            None,
+            {
+                "labels": [],
+                "flora_ids": [],
+                "herbivore_ids": [],
+                "series": {},
+            },
+            None,
+        ),
+        (
+            "loaded_empty_rows",
+            "/api/telemetry/table_preview",
+            {"flora_ids": "99", "limit": 5},
+            None,
+            "No rows match current table filters",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_telemetry_empty_response_branches(
+    setup_mode: str,
+    path: str,
+    params: dict[str, str | int] | None,
+    expected_json: dict[str, object] | None,
+    expected_text: str | None,
+) -> None:
+    """Validate empty-state telemetry responses for no-loop and filtered-empty branches."""
+    if setup_mode == "loaded_empty_rows":
+        loop = _build_loaded_loop()
+        loop.telemetry._rows = []
 
     async with _default_client() as client:
-        filtered_empty = await client.get(
-            "/api/telemetry/table_preview",
-            params={"flora_ids": "99", "limit": 5},
-        )
-    assert filtered_empty.status_code == 200
-    assert "No rows match current table filters" in filtered_empty.text
+        response = await client.get(path, params=params)
+
+    assert response.status_code == 200
+    if expected_json is not None:
+        assert response.json() == expected_json
+    if expected_text is not None:
+        assert expected_text in response.text
 
 
 @pytest.mark.asyncio
@@ -256,38 +334,89 @@ async def test_telemetry_chartjs_since_tick_ahead_of_current_run_returns_full_ro
 
 
 @pytest.mark.asyncio
-async def test_export_route_error_and_format_branches(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Validate export error semantics and multi-format response branches.
-
-    The export endpoint must provide deterministic HTTP errors for invalid runtime state,
-    analytical projections, and rendering backends, while still producing file attachments
-    for supported formats.
-    """
+async def test_export_route_returns_404_without_loaded_loop() -> None:
+    """Validate export endpoints reject requests when no simulation loop is loaded."""
     async with _default_client() as client:
         no_loop = await client.get("/api/export/timeseries", params={"format": "csv"})
     assert no_loop.status_code == 404
 
+
+@pytest.mark.parametrize(
+    ("path", "params", "expected_status", "expected_text"),
+    [
+        ("/api/export/unknown", {"format": "csv"}, 400, "Unknown data_type"),
+        ("/api/export/timeseries", {"format": "csv", "tick_interval": 0}, 400, None),
+        ("/api/export/timeseries", {"format": "bad"}, 400, None),
+    ],
+)
+@pytest.mark.asyncio
+async def test_export_route_invalid_request_branches(
+    path: str,
+    params: dict[str, str | int],
+    expected_status: int,
+    expected_text: str | None,
+) -> None:
+    """Validate deterministic 400-branch handling for malformed export requests."""
     loop = _build_loaded_loop()
     await loop.step()
 
     async with _default_client() as client:
-        bad_type = await client.get("/api/export/unknown", params={"format": "csv"})
-        bad_interval = await client.get(
-            "/api/export/timeseries", params={"format": "csv", "tick_interval": 0}
-        )
-        csv_resp = await client.get("/api/export/metabolic", params={"format": "csv"})
-        tex_table_resp = await client.get("/api/export/timeseries", params={"format": "tex_table"})
-        bad_format = await client.get("/api/export/timeseries", params={"format": "bad"})
+        response = await client.get(path, params=params)
 
-    assert bad_type.status_code == 400
-    assert "Unknown data_type" in bad_type.text
-    assert bad_interval.status_code == 400
-    assert csv_resp.status_code == 200
-    assert "text/csv" in csv_resp.headers["content-type"]
-    assert "phids_defense_economy.csv" in csv_resp.headers["content-disposition"]
-    assert tex_table_resp.status_code == 200
-    assert "phids_timeseries_table.tex" in tex_table_resp.headers["content-disposition"]
-    assert bad_format.status_code == 400
+    assert response.status_code == expected_status
+    if expected_text is not None:
+        assert expected_text in response.text
+
+
+@pytest.mark.parametrize(
+    ("path", "params", "content_type_fragment", "disposition_fragment"),
+    [
+        (
+            "/api/export/metabolic",
+            {"format": "csv"},
+            "text/csv",
+            "phids_defense_economy.csv",
+        ),
+        (
+            "/api/export/timeseries",
+            {"format": "tex_table"},
+            "text/plain",
+            "phids_timeseries_table.tex",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_export_route_success_format_branches(
+    path: str,
+    params: dict[str, str],
+    content_type_fragment: str,
+    disposition_fragment: str,
+) -> None:
+    """Validate successful export responses for supported CSV and TeX table formats."""
+    loop = _build_loaded_loop()
+    await loop.step()
+
+    async with _default_client() as client:
+        response = await client.get(path, params=params)
+
+    assert response.status_code == 200
+    assert content_type_fragment in response.headers["content-type"]
+    assert disposition_fragment in response.headers["content-disposition"]
+
+
+@pytest.mark.parametrize(
+    ("format_name", "expected_message"),
+    [("tex_tikz", "tikz failed"), ("png", "png failed")],
+)
+@pytest.mark.asyncio
+async def test_export_route_backend_failure_branches(
+    monkeypatch: pytest.MonkeyPatch,
+    format_name: str,
+    expected_message: str,
+) -> None:
+    """Validate renderer backend failures propagate as deterministic 400 responses."""
+    loop = _build_loaded_loop()
+    await loop.step()
 
     def _raise_tikz(*args: object, **kwargs: object) -> str:
         raise ValueError("tikz failed")
@@ -299,34 +428,34 @@ async def test_export_route_error_and_format_branches(monkeypatch: pytest.Monkey
     monkeypatch.setattr("phids.api.routers.telemetry.generate_png_bytes", _raise_png)
 
     async with _default_client() as client:
-        tikz_fail = await client.get("/api/export/timeseries", params={"format": "tex_tikz"})
-        png_fail = await client.get("/api/export/timeseries", params={"format": "png"})
+        response = await client.get("/api/export/timeseries", params={"format": format_name})
 
-    assert tikz_fail.status_code == 400
-    assert "tikz failed" in tikz_fail.text
-    assert png_fail.status_code == 400
-    assert "png failed" in png_fail.text
+    assert response.status_code == 400
+    assert expected_message in response.text
 
 
-def test_htmx_request_detection_branch() -> None:
-    """Validate HTMX request detection for true and false header states."""
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [
+        ([(b"hx-request", b"true")], True),
+        ([], False),
+    ],
+)
+def test_htmx_request_detection_cases(
+    headers: list[tuple[bytes, bytes]],
+    expected: bool,
+) -> None:
+    """Validate HTMX request detection for both header-present and header-absent requests."""
     from starlette.requests import Request
 
-    true_scope = {
+    scope = {
         "type": "http",
         "method": "GET",
         "path": "/",
-        "headers": [(b"hx-request", b"true")],
-    }
-    false_scope = {
-        "type": "http",
-        "method": "GET",
-        "path": "/",
-        "headers": [],
+        "headers": headers,
     }
 
     async def _receive() -> dict[str, object]:
         return {"type": "http.request"}
 
-    assert api_main._is_htmx_request(Request(true_scope, _receive)) is True
-    assert api_main._is_htmx_request(Request(false_scope, _receive)) is False
+    assert api_main._is_htmx_request(Request(scope, _receive)) is expected
