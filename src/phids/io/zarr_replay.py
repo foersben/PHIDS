@@ -170,46 +170,83 @@ class ZarrReplayBuffer:
         Args:
             state: Tick state mapping (e.g., from ``SimulationLoop.get_state_snapshot()``).
         """
-        root = self._ensure_store()
-        tick = state.get("tick", self._frame_count)
+        self._append_fields(
+            tick=state.get("tick", self._frame_count),
+            terminated=state.get("terminated", False),
+            termination_reason=state.get("termination_reason", None),
+            fields={
+                field_name: field_data
+                for field_name, field_data in state.items()
+                if field_name not in ("tick", "terminated", "termination_reason")
+            },
+        )
 
-        # Extract and store metadata
+    def append_raw_arrays(
+        self,
+        *,
+        tick: int,
+        env: Any,
+        termination_state: tuple[bool, str | None],
+    ) -> None:
+        """Append replay frame directly from environment NumPy arrays.
+
+        Args:
+            tick: Current simulation tick.
+            env: Grid environment exposing replay layer arrays.
+            termination_state: Tuple ``(terminated, termination_reason)``.
+        """
+        terminated, termination_reason = termination_state
+        self._append_fields(
+            tick=tick,
+            terminated=terminated,
+            termination_reason=termination_reason,
+            fields={
+                "plant_energy_layer": env.plant_energy_layer,
+                "signal_layers": env.signal_layers,
+                "toxin_layers": env.toxin_layers,
+                "flow_field": env.flow_field,
+                "wind_vector_x": env.wind_vector_x,
+                "wind_vector_y": env.wind_vector_y,
+            },
+        )
+
+    def _append_fields(
+        self,
+        *,
+        tick: Any,
+        terminated: Any,
+        termination_reason: Any,
+        fields: dict[str, Any],
+    ) -> None:
+        """Persist one frame's metadata and field payloads into the store."""
+        root = self._ensure_store()
+
         metadata_entry: dict[str, Any] = {
-            "tick": tick,
-            "terminated": state.get("terminated", False),
-            "termination_reason": state.get("termination_reason", None),
+            "tick": int(tick),
+            "terminated": bool(terminated),
+            "termination_reason": termination_reason,
         }
         self._metadata.append(metadata_entry)
 
-        # Store field arrays in a frame-indexed group
         frame_key = f"frames/{self._frame_count:08d}"
         if frame_key not in root:
             root.create_group(frame_key)
         frame_group = root[frame_key]
 
-        for field_name, field_data in state.items():
-            if field_name in ("tick", "terminated", "termination_reason"):
-                continue
-
+        for field_name, field_data in fields.items():
             self._store_field(frame_group, field_name, field_data)
 
         self._frame_count += 1
         self._save_metadata()
 
-        # Apply retention policy: remove oldest frames if exceeding max_frames
         if self._max_frames is not None and len(self._metadata) > self._max_frames:
-            # Calculate how many old frames to drop
             frames_to_drop = len(self._metadata) - self._max_frames
-
-            # Remove oldest metadata entries and corresponding frame groups
             for i in range(frames_to_drop):
                 self._metadata.pop(0)
                 old_frame_key = f"frames/{self._frame_offset + i:08d}"
                 if old_frame_key in root:
                     del root[old_frame_key]
                     logger.debug("Pruned frame %d (retention policy)", self._frame_offset + i)
-
-            # Update frame offset
             self._frame_offset += frames_to_drop
             self._save_metadata()
 

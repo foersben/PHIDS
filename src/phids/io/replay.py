@@ -109,6 +109,38 @@ class ReplayBuffer:
             else:
                 del self._frames[:overflow]
 
+    def append_raw_arrays(
+        self,
+        *,
+        tick: int,
+        env: Any,
+        termination_state: tuple[bool, str | None],
+    ) -> None:
+        """Append replay frame from environment arrays.
+
+        This method decouples replay ingestion from UI snapshot generation. The
+        fallback msgpack backend remains list-serialisation based, so arrays are
+        converted to nested lists only at this replay boundary.
+
+        Args:
+            tick: Current simulation tick.
+            env: Grid environment object exposing replay layer arrays.
+            termination_state: Tuple ``(terminated, termination_reason)``.
+        """
+        terminated, termination_reason = termination_state
+        state: dict[str, Any] = {
+            "tick": int(tick),
+            "terminated": bool(terminated),
+            "termination_reason": termination_reason,
+            "plant_energy_layer": env.plant_energy_layer.tolist(),
+            "signal_layers": env.signal_layers.tolist(),
+            "toxin_layers": env.toxin_layers.tolist(),
+            "flow_field": env.flow_field.tolist(),
+            "wind_vector_x": env.wind_vector_x.tolist(),
+            "wind_vector_y": env.wind_vector_y.tolist(),
+        }
+        self.append(state)
+
     def __len__(self) -> int:
         """Return number of stored frames."""
         return len(self._spilled_index) + len(self._frames)

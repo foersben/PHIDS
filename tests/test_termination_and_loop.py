@@ -17,6 +17,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
+import pytest
+
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
@@ -275,3 +277,24 @@ def test_get_state_snapshot_cache_invalidates_when_wind_changes() -> None:
 
     assert calls["count"] == 2
     assert isinstance(snapshot_after_wind, dict)
+
+
+def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization() -> None:
+    """Validate replay append path can run without invoking env.to_dict in zarr mode."""
+    config = _base_config(max_ticks=10).model_copy(update={"replay_backend": "zarr"})
+    loop = SimulationLoop(config)
+    if not hasattr(loop.replay, "append_raw_arrays"):
+        pytest.skip("Zarr backend unavailable in this environment")
+
+    calls = {"count": 0}
+
+    def _fail_if_called() -> dict[str, object]:
+        calls["count"] += 1
+        raise AssertionError("env.to_dict should not be called during replay append in zarr mode")
+
+    loop.env.to_dict = _fail_if_called  # type: ignore[method-assign]
+
+    asyncio.run(loop.step())
+
+    assert calls["count"] == 0
+    assert len(loop.replay) == 1

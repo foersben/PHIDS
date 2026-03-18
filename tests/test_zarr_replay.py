@@ -175,6 +175,31 @@ class TestZarrReplayBuffer:
         plant_energy = np.array(frame_5["plant_energy"], dtype=np.float32)
         np.testing.assert_array_almost_equal(plant_energy, np.full((4, 4), 5.0))
 
+    def test_zarr_append_raw_arrays(self, temp_zarr_dir: Path) -> None:
+        """Verify raw-array replay append bypasses dict/list conversion requirements."""
+        store_path = temp_zarr_dir / "raw.zarr"
+        buf = ZarrReplayBuffer(spill_path=store_path)
+
+        class _Env:
+            def __init__(self) -> None:
+                self.plant_energy_layer = np.full((3, 3), 2.0, dtype=np.float64)
+                self.signal_layers = np.full((1, 3, 3), 1e-5, dtype=np.float64)
+                self.toxin_layers = np.zeros((1, 3, 3), dtype=np.float64)
+                self.flow_field = np.full((3, 3), 0.5, dtype=np.float64)
+                self.wind_vector_x = np.zeros((3, 3), dtype=np.float64)
+                self.wind_vector_y = np.zeros((3, 3), dtype=np.float64)
+
+        env = _Env()
+        buf.append_raw_arrays(tick=7, env=env, termination_state=(False, None))
+
+        frame = buf.get_frame(0)
+        assert frame["tick"] == 7
+        np.testing.assert_array_equal(
+            np.asarray(frame["plant_energy_layer"]), env.plant_energy_layer
+        )
+        restored_signals = np.asarray(frame["signal_layers"], dtype=np.float32)
+        assert float(restored_signals[0, 0, 0]) == 0.0
+
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 class TestZarrReplayMigration:

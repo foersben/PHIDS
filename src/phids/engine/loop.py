@@ -466,7 +466,14 @@ class SimulationLoop:
             # Phase 5: Telemetry
             # --------------------------------------------------------
             self.telemetry.record(self.world, self.tick, plant_death_causes=plant_death_causes)
-            self.replay.append(self.get_state_snapshot())
+            if hasattr(self.replay, "append_raw_arrays"):
+                self.replay.append_raw_arrays(
+                    tick=self.tick,
+                    env=self.env,
+                    termination_state=(self.terminated, self.termination_reason),
+                )
+            else:
+                self.replay.append(self.get_state_snapshot())
             latest_metrics = self.telemetry.get_latest_metrics()
             if debug_summary:
                 phase_timings_ms["telemetry_replay"] = (
