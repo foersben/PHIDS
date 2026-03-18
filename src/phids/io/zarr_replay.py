@@ -353,7 +353,7 @@ class ZarrReplayBuffer:
             logger.info("Migrating legacy msgpack replay from %s to Zarr", source)
             buf = cls()
             try:
-                import msgpack
+                import msgpack  # type: ignore[import-untyped]
             except ImportError as e:
                 raise ImportError("msgpack is required to load legacy .bin replay files") from e
 

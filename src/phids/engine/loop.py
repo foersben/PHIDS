@@ -37,9 +37,11 @@ from phids.shared.logging_config import get_simulation_debug_interval
 
 # Optional Zarr backend import
 try:
-    from phids.io.zarr_replay import ZarrReplayBuffer
+    from phids.io.zarr_replay import ZarrReplayBuffer as _ImportedZarrReplayBuffer
+
+    _ZarrReplayBuffer: type[Any] | None = _ImportedZarrReplayBuffer
 except ImportError:
-    ZarrReplayBuffer = None  # type: ignore[assignment]
+    _ZarrReplayBuffer = None
 
 logger = logging.getLogger(__name__)
 
@@ -88,10 +90,9 @@ class SimulationLoop:
         # Telemetry
         self.telemetry = TelemetryRecorder()
         # Deterministic replay state frames; backend selected by config
-        if config.replay_backend == "zarr" and ZarrReplayBuffer is not None:
-            self.replay: ReplayBuffer | ZarrReplayBuffer = ZarrReplayBuffer(  # type: ignore[assignment]
-                max_frames=MAX_REPLAY_FRAMES
-            )
+        self.replay: Any
+        if config.replay_backend == "zarr" and _ZarrReplayBuffer is not None:
+            self.replay = _ZarrReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
             logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
         else:
             self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES, spill_to_disk=True)
