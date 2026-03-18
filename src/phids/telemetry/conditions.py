@@ -92,7 +92,7 @@ def check_termination(
         return TerminationResult(terminated=True, reason="Z3: all flora extinct")
 
     # Z6 – aggregate flora energy exceeds upper bound
-    if z6_max_flora_energy > 0.0 and total_flora_energy > z6_max_flora_energy:
+    if 0.0 < z6_max_flora_energy < total_flora_energy:
         return TerminationResult(
             terminated=True,
             reason=f"Z6: total flora energy {total_flora_energy:.1f} > {z6_max_flora_energy}",
@@ -119,10 +119,7 @@ def check_termination(
         return TerminationResult(terminated=True, reason="Z5: all herbivores extinct")
 
     # Z7 – aggregate herbivore population exceeds upper bound
-    if (
-        z7_max_total_herbivore_population > 0
-        and total_herbivore_population > z7_max_total_herbivore_population
-    ):
+    if 0 < z7_max_total_herbivore_population < total_herbivore_population:
         return TerminationResult(
             terminated=True,
             reason=(
