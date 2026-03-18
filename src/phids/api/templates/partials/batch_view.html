@@ -116,11 +116,45 @@
     const agg = aggRaw ? JSON.parse(aggRaw.textContent || '{}') : null;
     if (!agg || !agg.ticks || agg.ticks.length === 0) return;
 
-    const labels = agg.ticks;
-    const floraMean = agg.flora_population_mean || [];
-    const floraStd = agg.flora_population_std || [];
-    const predMean = agg.herbivore_population_mean || [];
-    const predStd = agg.herbivore_population_std || [];
+    const labels = Array.isArray(agg.ticks) ? agg.ticks : [];
+
+    function _seriesWithLength(values, n) {
+      const src = Array.isArray(values) ? values : [];
+      const out = new Array(n).fill(0.0);
+      for (let i = 0; i < Math.min(src.length, n); i++) {
+        const v = Number(src[i]);
+        out[i] = Number.isFinite(v) ? v : 0.0;
+      }
+      return out;
+    }
+
+    function _sumSeriesMap(seriesMap, n) {
+      const out = new Array(n).fill(0.0);
+      if (!seriesMap || typeof seriesMap !== 'object') return out;
+      Object.values(seriesMap).forEach((series) => {
+        if (!Array.isArray(series)) return;
+        for (let i = 0; i < Math.min(series.length, n); i++) {
+          const v = Number(series[i]);
+          if (Number.isFinite(v)) out[i] += v;
+        }
+      });
+      return out;
+    }
+
+    const floraMean = _seriesWithLength(agg.flora_population_mean, labels.length);
+    const floraStd = _seriesWithLength(agg.flora_population_std, labels.length);
+    const herbivoreMeanRaw =
+      agg.herbivore_population_mean
+      || agg.swarm_population_mean
+      || agg.predator_population_mean
+      || _sumSeriesMap(agg.per_herbivore_pop_mean, labels.length);
+    const herbivoreStdRaw =
+      agg.herbivore_population_std
+      || agg.swarm_population_std
+      || agg.predator_population_std
+      || _sumSeriesMap(agg.per_herbivore_pop_std, labels.length);
+    const predMean = _seriesWithLength(herbivoreMeanRaw, labels.length);
+    const predStd = _seriesWithLength(herbivoreStdRaw, labels.length);
     const survivalSeries = (agg.survival_probability_curve || []).map((v) => 100.0 * v);
 
     const ctx = document.getElementById('batch-agg-chart');
@@ -211,6 +245,11 @@
     const csvExport = document.getElementById('batch-export-csv');
     const texExport = document.getElementById('batch-export-tex');
     const tikzExport = document.getElementById('batch-export-tikz');
+
+    if (chartPreset) {
+      // Enforce a deterministic default for each newly loaded batch detail.
+      chartPreset.value = 'balanced';
+    }
 
     function selectedColumnsCsv() {
       const selected = Array.from(colsSelect.options).filter((opt) => opt.selected).map((opt) => opt.value);
