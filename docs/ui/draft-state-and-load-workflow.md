@@ -197,9 +197,9 @@ This chapter is grounded in:
 - `src/phids/api/services/draft_service.py`
 - `src/phids/api/routers/config.py`
 - `src/phids/api/main.py`
-- `tests/test_ui_state.py`
-- `tests/test_ui_routes.py`
-- `tests/test_api_builder_and_helpers.py`
+- `tests/unit/api/test_ui_state.py`
+- `tests/integration/api/test_ui_routes.py`
+- `tests/integration/api/test_api_builder_and_helpers.py`
 
 ## Where to Read Next
 

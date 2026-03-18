@@ -39,4 +39,4 @@ Timeseries outputs combine mean trajectories for flora and herbivores with stand
 
 ## Verification Anchors
 
-Current behavior is grounded in `src/phids/api/routers/batch.py`, persisted summaries in `data/batches/`, and route-level coverage in `tests/test_api_routes.py` and `tests/test_ui_routes.py`. For telemetry semantics used in aggregate computation, see `docs/telemetry/analytics-and-export-formats.md`.
+Current behavior is grounded in `src/phids/api/routers/batch.py`, persisted summaries in `data/batches/`, and route-level coverage in `tests/integration/api/test_api_routes.py` and `tests/integration/api/test_ui_routes.py`. For telemetry semantics used in aggregate computation, see `docs/telemetry/analytics-and-export-formats.md`.

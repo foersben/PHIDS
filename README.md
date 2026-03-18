@@ -184,8 +184,8 @@ Open:
 ### 3) Focused validation pass
 
 ```bash
-uv run pytest tests/test_ui_routes.py -q
-uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py -q
+uv run pytest tests/integration/api/test_ui_routes.py -q
+uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q
 ```
 
 ### 4) Full local quality gate
@@ -257,15 +257,15 @@ Current verified state (local full-suite run):
 Focused checks:
 
 ```bash
-uv run pytest tests/test_ui_routes.py -q
-uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py -q
-uv run pytest tests/test_flow_field_benchmark.py tests/test_spatial_hash_benchmark.py -q
+uv run pytest tests/integration/api/test_ui_routes.py -q
+uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q
+uv run pytest tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q
 ```
 
 Coverage-uplift regression checks (entrypoint + batch orchestration):
 
 ```bash
-uv run pytest tests/test_cli_main.py tests/test_batch_runner.py -q
+uv run pytest tests/unit/cli/test_cli_main.py tests/integration/systems/test_batch_runner.py -q
 ```
 
 If you want to list only modules below 80% after a full run:
@@ -277,13 +277,13 @@ uv run pytest tests/ --no-header 2>&1 | awk '/^src\/phids\// {gsub("%","",$4); i
 Representative route/system smoke slice:
 
 ```bash
-uv run pytest -o addopts='' tests/test_api_routes.py tests/test_ui_routes.py tests/test_systems_behavior.py tests/test_example_scenarios.py -q
+uv run pytest -o addopts='' tests/integration/api/test_api_routes.py tests/integration/api/test_ui_routes.py tests/integration/systems/test_systems_behavior.py tests/e2e/scenarios/test_example_scenarios.py -q
 ```
 
 Focused batch/UI smoke slice:
 
 ```bash
-uv run pytest tests/test_ui_routes.py tests/test_api_routes.py -q
+uv run pytest tests/integration/api/test_ui_routes.py tests/integration/api/test_api_routes.py -q
 ```
 
 Scripted local CI:

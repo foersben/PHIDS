@@ -68,4 +68,4 @@ flowchart LR
 
 ## Verification Anchors
 
-Current implementation evidence is concentrated in `src/phids/engine/systems/signaling.py`, `src/phids/engine/core/biotope.py`, `src/phids/engine/loop.py`, and `tests/test_systems_behavior.py`. Together, these sources verify configured toxin materialization, co-located population aggregation for trigger thresholds, aftereffect persistence behavior, irreversible activation semantics, and direct toxin casualty application with spatial-hash consistency preservation.
+Current implementation evidence is concentrated in `src/phids/engine/systems/signaling.py`, `src/phids/engine/core/biotope.py`, `src/phids/engine/loop.py`, and `tests/integration/systems/test_systems_behavior.py`. Together, these sources verify configured toxin materialization, co-located population aggregation for trigger thresholds, aftereffect persistence behavior, irreversible activation semantics, and direct toxin casualty application with spatial-hash consistency preservation.

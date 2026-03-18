@@ -44,7 +44,7 @@ flowchart LR
 
 ## Validation Anchors and Current Limits
 
-Behavior is corroborated by `tests/test_replay_roundtrip.py`, `tests/test_termination_and_loop.py`, and `tests/test_additional_coverage.py`, including roundtrip integrity, file envelope handling, truncation robustness, and condition-path coverage for `Z1`–`Z7`.
+Behavior is corroborated by `tests/e2e/replay_and_io/test_replay_roundtrip.py`, `tests/integration/systems/test_termination_and_loop.py`, `tests/unit/io/test_replay_buffer.py`, and `tests/integration/systems/test_lifecycle_reproduction.py`, including roundtrip integrity, file envelope handling, truncation robustness, and condition-path coverage for `Z1`–`Z7`.
 
 Current limits are explicit: replay stores frame snapshots rather than diffs, uses a simple length-prefixed envelope rather than a rich container format, and prioritizes deterministic inspection and implementation clarity over maximal compression or arbitrary query indexing.
 

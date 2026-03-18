@@ -134,7 +134,7 @@ uv run mkdocs build --strict
 For focused route regression:
 
 ```bash
-uv run pytest -o addopts='' tests/test_ui_routes.py tests/test_api_routes.py -q
+uv run pytest -o addopts='' tests/integration/api/test_ui_routes.py tests/integration/api/test_api_routes.py -q
 ```
 
 ## Where to Read Next

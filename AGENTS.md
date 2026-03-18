@@ -16,10 +16,12 @@
 ## Edit map
 - Schemas and validation: `src/phids/api/schemas.py`.
 - UI draft/builder behavior: `src/phids/api/services/draft_service.py`, `src/phids/api/ui_state.py`, and Jinja templates in `src/phids/api/templates/`.
-- REST + HTMX endpoints: `src/phids/api/main.py`.
+- REST + HTMX endpoints: `src/phids/api/routers/{ui,telemetry,config,simulation,batch}.py`.
+- WebSocket streaming managers: `src/phids/api/websockets/manager.py`.
+- App composition/bootstrap: `src/phids/api/main.py`.
 - Simulation systems: `src/phids/engine/systems/{lifecycle,interaction,signaling}.py`.
 - Telemetry/export/termination: `src/phids/telemetry/{analytics,export,conditions}.py`.
-- Replay/state serialization: `src/phids/io/replay.py`.
+- Replay/state serialization: `src/phids/io/{replay,zarr_replay}.py`.
 
 ## Workflows that matter
 - Environment/dev server:
@@ -29,22 +31,35 @@
 - Full quality gate:
   `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest && uv run mkdocs build --strict`
 - Focused checks:
-  `uv run pytest tests/test_ui_routes.py -q`
-  `uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py -q`
-  `uv run pytest tests/test_flow_field_benchmark.py tests/test_spatial_hash_benchmark.py -q`
+  `uv run pytest tests/integration/api/test_ui_routes.py -q`
+  `uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q`
+  `uv run pytest tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q`
 
 ## Repo-specific patterns
 - Pydantic v2 is the API boundary; validate at ingress, then operate on trusted internal state.
 - System modules often use local imports to avoid circular dependencies—follow that pattern instead of “fixing” it globally.
-- UI changes usually require touching both route handlers and partial templates; `tests/test_ui_routes.py` is the fastest regression net.
+- UI changes usually require touching router handlers and partial templates; `tests/integration/api/test_ui_routes.py` is the fastest regression net.
 - Trigger logic is rule-based now: `DraftState.trigger_rules` allows multiple substance rules per `(flora, herbivore)` pair.
 - WebSocket surfaces differ intentionally: `/ws/simulation/stream` sends msgpack+zlib bytes, `/ws/ui/stream` sends lightweight JSON for canvas rendering.
+- Long replay persistence should use Zarr-backed paths (`src/phids/io/zarr_replay.py`), while bounded in-memory snapshots remain in `src/phids/io/replay.py`.
 
 ## Common pitfalls
 - Do not confuse draft state with live simulation state.
 - When deleting species/substances, compact IDs and clean dependent matrices, trigger rules, and placements.
 - If you change diffusion, flow-field logic, or spatial hashing, run the benchmark tests, not just unit tests.
 - Keep docstrings in Google style; docs are built with MkDocs + mkdocstrings from `docs/`.
+
+## Test Docstring Hygiene (Required)
+- Do not generate boilerplate pytest docstrings like "Validates the ... invariant".
+- For test functions, write concise 1-2 sentence docstrings that describe the actual assertion behavior.
+- Remove meaningless `Args:` / `Returns:` sections from ordinary pytest tests unless a complex parameterized input requires explicit clarification.
+- Keep the wording human-readable and specific to the endpoint, branch, invariant, or regression being exercised.
+
+## Test Structure Conventions (Required)
+- Keep tests aligned to the current domain hierarchy: `tests/unit/*`, `tests/integration/*`, `tests/e2e/*`, `tests/benchmarks/*`.
+- Avoid "God tests" that chain many unrelated endpoint calls; split by one state transition/invariant per test.
+- Prefer `pytest.mark.parametrize` for branch matrices and coercion helpers so each row reports independently.
+- Reuse shared builders/fixtures from `tests/conftest.py` (`config_builder`, `loop_config_builder`, `add_plant`, `add_swarm`) before introducing file-local setup helpers.
 
 ## Documentation & Writing Style
 When writing docstrings, comments, or markdown documentation, you MUST adhere to a rigorous,

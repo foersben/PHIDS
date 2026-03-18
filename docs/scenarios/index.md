@@ -72,7 +72,7 @@ substance definitions when importing JSON.
 ## Curated Example Pack
 
 The example pack is not an arbitrary folder of JSON files. It is a curated documentation and
-compatibility surface validated by tests under `tests/test_example_scenarios.py`.
+compatibility surface validated by tests under `tests/e2e/scenarios/test_example_scenarios.py`.
 
 In the current project state, examples are expected to:
 

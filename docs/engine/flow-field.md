@@ -45,6 +45,6 @@ The interaction consumer reads only the current cell and its 4-connected neighbo
 \end{document}
 ```
 
-Because flow-field generation runs every tick and influences all swarm movement, it remains one of the principal benchmark-sensitive kernels in the repository. The behavior is validated in `tests/test_flow_field.py`, and performance regressions are tracked in `tests/test_flow_field_benchmark.py`. Current tests confirm zero-input stability, toxin-layer aggregation, edge-condition correctness for degenerate grid dimensions, and camouflage attenuation behavior.
+Because flow-field generation runs every tick and influences all swarm movement, it remains one of the principal benchmark-sensitive kernels in the repository. The behavior is validated in `tests/unit/engine/core/test_flow_field.py`, and performance regressions are tracked in `tests/benchmarks/test_flow_field_benchmark.py`. Current tests confirm zero-input stability, toxin-layer aggregation, edge-condition correctness for degenerate grid dimensions, and camouflage attenuation behavior.
 
 The present model deliberately trades expressive richness for deterministic, interpretable dynamics: it uses a single propagation pass, 4-connectivity, toxin-layer summation, and local neighborhood reads. These constraints are not documentation simplifications; they are the active numerical assumptions governing PHIDS runtime behavior.

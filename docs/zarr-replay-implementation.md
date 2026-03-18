@@ -32,7 +32,7 @@ A drop-in replacement for `ReplayBuffer` implementing:
   - Compression/decompression pipelines
   - Filesystem abstraction (local, cloud-ready)
 
-### 5. **Comprehensive Test Suite** (`tests/test_zarr_replay.py`)
+### 5. **Comprehensive Test Suite** (`tests/e2e/replay_and_io/test_zarr_replay.py`)
 - **12 passing tests** covering:
   - Basic append/get_frame operations
   - Field array round-trip fidelity (shapes preserved, values accurate)

@@ -86,9 +86,9 @@ This section is grounded in:
 - `src/phids/api/ui_state.py`
 - `src/phids/api/main.py`
 - `src/phids/api/templates/`
-- `tests/test_ui_routes.py`
-- `tests/test_ui_state.py`
-- `tests/test_api_builder_and_helpers.py`
+- `tests/integration/api/test_ui_routes.py`
+- `tests/unit/api/test_ui_state.py`
+- `tests/integration/api/test_api_builder_and_helpers.py`
 
 ## Legacy Provenance
 

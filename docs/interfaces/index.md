@@ -87,9 +87,9 @@ This section is grounded in the current implementation and tests, especially:
 - `src/phids/api/main.py`
 - `src/phids/api/routers/`
 - `src/phids/api/ui_state.py`
-- `tests/test_api_routes.py`
-- `tests/test_ui_routes.py`
-- `tests/test_api_builder_and_helpers.py`
+- `tests/integration/api/test_api_routes.py`
+- `tests/integration/api/test_ui_routes.py`
+- `tests/integration/api/test_api_builder_and_helpers.py`
 
 ## Key Source Modules
 

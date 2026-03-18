@@ -261,7 +261,7 @@ The canonical testing guidance now lives in:
 Use:
 
 ```bash
-uv run pytest tests/test_ui_routes.py -q
+uv run pytest tests/integration/api/test_ui_routes.py -q
 ```
 
 ### Engine system changes
@@ -269,7 +269,7 @@ uv run pytest tests/test_ui_routes.py -q
 Use:
 
 ```bash
-uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py -q
+uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q
 ```
 
 ### Benchmark-sensitive changes
@@ -277,7 +277,7 @@ uv run pytest tests/test_systems_behavior.py tests/test_termination_and_loop.py 
 If a change touches diffusion, flow field, or spatial hashing, also run:
 
 ```bash
-uv run pytest tests/test_flow_field_benchmark.py tests/test_spatial_hash_benchmark.py -q
+uv run pytest tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q
 ```
 
 This is especially important because benchmark-sensitive regressions may not show up as functional

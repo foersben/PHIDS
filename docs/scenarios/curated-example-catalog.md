@@ -199,7 +199,7 @@ This makes the curated pack both a documentation layer and a tested compatibilit
 ## Verified Current-State Evidence
 
 - `examples/*.json`
-- `tests/test_example_scenarios.py`
+- `tests/e2e/scenarios/test_example_scenarios.py`
 - `src/phids/io/scenario.py`
 - `src/phids/engine/loop.py`
 

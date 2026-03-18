@@ -49,6 +49,6 @@ Interface error semantics are intentionally explicit. Current examples include v
 
 ## Verification Anchors
 
-Current behavior is corroborated by `src/phids/api/main.py`, `src/phids/api/websockets/manager.py`, `src/phids/api/routers/`, `tests/test_api_routes.py`, and `tests/test_ui_routes.py`.
+Current behavior is corroborated by `src/phids/api/main.py`, `src/phids/api/websockets/manager.py`, `src/phids/api/routers/`, `tests/integration/api/test_api_routes.py`, and `tests/integration/api/test_ui_routes.py`.
 
 For complementary material, see `docs/ui/draft-state-and-load-workflow.md`, `docs/ui/htmx-partials-and-builder-routes.md`, and `docs/interfaces/index.md`.

@@ -29,8 +29,8 @@ implemented project artifacts.
 - pre-commit: hooks are configured in `.pre-commit-config.yaml` and enforced in CI.
 - ruff + mypy: configured in `pyproject.toml`, executed in CI.
 - pytest + pytest-cov + pytest-benchmark: configured in `pyproject.toml`,
-  benchmark tests are in `tests/test_flow_field_benchmark.py` and
-  `tests/test_spatial_hash_benchmark.py`.
+  benchmark tests are in `tests/benchmarks/test_flow_field_benchmark.py` and
+  `tests/benchmarks/test_spatial_hash_benchmark.py`.
 - mkdocs + material + mkdocstrings: configured in `mkdocs.yml` with docs pages
   under `docs/`.
 

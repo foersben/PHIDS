@@ -50,4 +50,4 @@ The HTMX/Jinja architecture keeps server state authoritative, shares validation 
 
 ## Verification Anchors
 
-Current behavior is corroborated by `src/phids/api/routers/config.py`, `src/phids/api/routers/ui.py`, `src/phids/api/main.py`, `src/phids/api/ui_state.py`, `src/phids/api/templates/partials/`, `tests/test_ui_routes.py`, and `tests/test_api_builder_and_helpers.py`. Historical provenance remains available in `docs/legacy/2026-03-11/PHIDS_htmx_ui_design_specification.md`.
+Current behavior is corroborated by `src/phids/api/routers/config.py`, `src/phids/api/routers/ui.py`, `src/phids/api/main.py`, `src/phids/api/ui_state.py`, `src/phids/api/templates/partials/`, `tests/integration/api/test_ui_routes.py`, and `tests/integration/api/test_api_builder_and_helpers.py`. Historical provenance remains available in `docs/legacy/2026-03-11/PHIDS_htmx_ui_design_specification.md`.

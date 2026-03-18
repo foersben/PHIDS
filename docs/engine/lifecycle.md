@@ -77,7 +77,7 @@ Lifecycle also updates `last_energy_loss_cause`, enabling downstream telemetry a
 
 Lifecycle mutates ECS plant components directly but treats environmental layers through write-side biotope helpers (`set_plant_energy`, `clear_plant_energy`) and a single synchronized rebuild at phase end. The resulting hybrid strategy preserves deterministic throughput and avoids read-after-write contamination across phase boundaries, while remaining faithful to the project rule that locality-sensitive queries must use O(1) spatial-hash lookups instead of global pairwise scans.
 
-Implementation and validation anchors for this chapter are `src/phids/engine/systems/lifecycle.py`, `src/phids/engine/components/plant.py`, `src/phids/engine/loop.py`, `tests/test_systems_behavior.py`, `tests/test_schemas_and_invariants.py`, and `tests/test_additional_coverage.py`.
+Implementation and validation anchors for this chapter are `src/phids/engine/systems/lifecycle.py`, `src/phids/engine/components/plant.py`, `src/phids/engine/loop.py`, `tests/integration/systems/test_systems_behavior.py`, `tests/integration/systems/test_lifecycle_reproduction.py`, and `tests/unit/api/test_schemas_and_invariants.py`.
 
 ## Where to Read Next
 

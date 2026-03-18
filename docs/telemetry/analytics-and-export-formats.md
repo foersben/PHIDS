@@ -50,6 +50,6 @@ flowchart LR
 
 ## Validation Anchors and Current Limits
 
-Behavior is corroborated by `tests/test_termination_and_loop.py`, `tests/test_telemetry_per_species.py`, `tests/test_additional_coverage.py`, and `tests/test_ui_routes.py`. The current analytics layer is intentionally compact: it favors scenario-level comparability over exhaustive derived statistics, uses immediate-cause death attribution rather than full causal graphs, and exports JSON as NDJSON rather than nested experiment schemas.
+Behavior is corroborated by `tests/integration/systems/test_termination_and_loop.py`, `tests/unit/telemetry/test_telemetry_per_species.py`, `tests/unit/telemetry/test_export_helpers.py`, and `tests/integration/api/test_ui_routes.py`. The current analytics layer is intentionally compact: it favors scenario-level comparability over exhaustive derived statistics, uses immediate-cause death attribution rather than full causal graphs, and exports JSON as NDJSON rather than nested experiment schemas.
 
 For complementary semantics, see `docs/telemetry/replay-and-termination-semantics.md`, `docs/telemetry/index.md`, and `docs/interfaces/rest-and-websocket-surfaces.md`.

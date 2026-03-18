@@ -142,7 +142,7 @@ This chapter is grounded in:
 - `src/phids/api/schemas.py`
 - `src/phids/api/ui_state.py`
 - `src/phids/api/main.py`
-- `tests/test_example_scenarios.py`
+- `tests/e2e/scenarios/test_example_scenarios.py`
 
 ## Where to Read Next
 

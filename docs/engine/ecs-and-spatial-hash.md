@@ -46,6 +46,6 @@ flowchart LR
 
 ## Validation Anchors and Current Limits
 
-Implementation behavior is validated in `tests/test_ecs_world.py`, `tests/test_schemas_and_invariants.py`, and `tests/test_spatial_hash_benchmark.py`. These tests cover registration/movement invariants, query intersection correctness, multiple-occupancy behavior, and benchmark sensitivity of hot-cell lookups. Current limits are explicit: ECS storage is Python-dictionary based, destruction-time spatial cleanup scans cells, and the model prioritizes bounded-state clarity and locality guarantees over maximal generic ECS abstraction.
+Implementation behavior is validated in `tests/unit/engine/core/test_ecs_world.py`, `tests/unit/api/test_schemas_and_invariants.py`, and `tests/benchmarks/test_spatial_hash_benchmark.py`. These tests cover registration/movement invariants, query intersection correctness, multiple-occupancy behavior, and benchmark sensitivity of hot-cell lookups. Current limits are explicit: ECS storage is Python-dictionary based, destruction-time spatial cleanup scans cells, and the model prioritizes bounded-state clarity and locality guarantees over maximal generic ECS abstraction.
 
 For field-side buffering semantics, see `docs/engine/biotope-and-double-buffering.md`. For movement consumption of field gradients under locality constraints, see `docs/engine/flow-field.md` and `docs/engine/interaction.md`.

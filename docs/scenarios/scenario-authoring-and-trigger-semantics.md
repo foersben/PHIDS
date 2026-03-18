@@ -274,12 +274,12 @@ actually exhibited.
 
 The following tests support the current semantics described here:
 
-- `tests/test_ui_state.py`
-- `tests/test_api_builder_and_helpers.py`
-- `tests/test_ui_routes.py`
-- `tests/test_example_scenarios.py`
-- `tests/test_systems_behavior.py`
-- `tests/test_schemas_and_invariants.py`
+- `tests/unit/api/test_ui_state.py`
+- `tests/integration/api/test_api_builder_and_helpers.py`
+- `tests/integration/api/test_ui_routes.py`
+- `tests/e2e/scenarios/test_example_scenarios.py`
+- `tests/integration/systems/test_systems_behavior.py`
+- `tests/unit/api/test_schemas_and_invariants.py`
 
 ## Verified Current-State Evidence
 
