@@ -129,24 +129,21 @@ def test_termination_z1_max_ticks() -> None:
     assert result.reason.startswith("Z1")
 
 
-def test_termination_z2_and_z4_specific_species_extinction() -> None:
-    """Validates the termination z2 and z4 specific species extinction invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+@pytest.mark.parametrize(
+    ("kwargs", "expected_reason"),
+    [
+        ({"z2_flora_species": 1}, "Z2"),
+        ({"z4_herbivore_species": 1}, "Z4"),
+    ],
+)
+def test_termination_species_extinction_branches(
+    kwargs: dict[str, int], expected_reason: str
+) -> None:
+    """Validate species-index extinction termination branches through table-driven inputs."""
     world = _world_with_counts([0], [0])
-
-    z2 = check_termination(world, tick=0, max_ticks=100, z2_flora_species=1)
-    assert z2.terminated is True
-    assert "Z2" in z2.reason
-
-    z4 = check_termination(world, tick=0, max_ticks=100, z4_herbivore_species=1)
-    assert z4.terminated is True
-    assert "Z4" in z4.reason
+    result = check_termination(world, tick=0, max_ticks=100, **kwargs)
+    assert result.terminated is True
+    assert expected_reason in result.reason
 
 
 def test_termination_z3_z5_all_extinction() -> None:
@@ -165,24 +162,21 @@ def test_termination_z3_z5_all_extinction() -> None:
     assert "Z3" in z3.reason
 
 
-def test_termination_z6_z7_thresholds() -> None:
-    """Validates the termination z6 z7 thresholds invariant and confirms the expected biological behavior under controlled simulation conditions.
-
-    The assertions in this test enforce deterministic state transitions so ecological outcomes remain consistent with configured constraints and signal-response dynamics.
-
-    Returns:
-        None. The function verifies invariant compliance through assertions rather than data return.
-
-    """
+@pytest.mark.parametrize(
+    ("kwargs", "expected_reason"),
+    [
+        ({"z6_max_flora_energy": 1.0}, "Z6"),
+        ({"z7_max_total_herbivore_population": 1}, "Z7"),
+    ],
+)
+def test_termination_threshold_branches(
+    kwargs: dict[str, float | int], expected_reason: str
+) -> None:
+    """Validate numeric-threshold termination branches through table-driven inputs."""
     world = _world_with_counts([0], [0])
-
-    z6 = check_termination(world, tick=0, max_ticks=100, z6_max_flora_energy=1.0)
-    assert z6.terminated is True
-    assert "Z6" in z6.reason
-
-    z7 = check_termination(world, tick=0, max_ticks=100, z7_max_total_herbivore_population=1)
-    assert z7.terminated is True
-    assert "Z7" in z7.reason
+    result = check_termination(world, tick=0, max_ticks=100, **kwargs)
+    assert result.terminated is True
+    assert expected_reason in result.reason
 
 
 def test_simulation_loop_step_updates_replay_and_telemetry() -> None:
