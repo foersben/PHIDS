@@ -553,7 +553,7 @@ def test_build_live_dashboard_payload_structural_contract() -> None:
     loop = SimulationLoop(config)
     payload = build_live_dashboard_payload(loop, substance_names={})
 
-    required_keys = {
+    expected_top_level_keys = {
         "tick",
         "grid_width",
         "grid_height",
@@ -572,7 +572,36 @@ def test_build_live_dashboard_payload_structural_contract() -> None:
         "running",
         "paused",
     }
-    assert required_keys.issubset(payload.keys())
+    assert set(payload.keys()) == expected_top_level_keys
+
+    expected_plant_columns = {
+        "entity_id",
+        "species_id",
+        "name",
+        "x",
+        "y",
+        "energy",
+        "root_link_count",
+        "active_signal_ids",
+        "active_toxin_ids",
+    }
+    expected_swarm_columns = {
+        "x",
+        "y",
+        "population",
+        "species_id",
+        "name",
+        "energy",
+        "energy_deficit",
+        "repelled",
+        "repelled_ticks_remaining",
+        "toxin_level",
+        "intoxicated",
+    }
+    assert set(payload["plants"].keys()) == expected_plant_columns
+    assert set(payload["swarms"].keys()) == expected_swarm_columns
+    assert len({len(column) for column in payload["plants"].values()}) == 1
+    assert len({len(column) for column in payload["swarms"].values()}) == 1
 
 
 def test_build_live_dashboard_payload_tick_and_lifecycle_state() -> None:
