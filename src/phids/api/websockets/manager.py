@@ -138,6 +138,30 @@ class UIStreamManager:
             payload_builder: Callable that builds one dashboard payload from a live loop.
         """
         self._payload_builder = payload_builder
+        self._cache_signature: tuple[int, int, bool, bool, bool] | None = None
+        self._cache_text = ""
+
+    def _encoded_payload(self, loop: SimulationLoop) -> str:
+        """Return cached compact JSON text for the current UI-visible loop state.
+
+        Args:
+            loop: Active simulation loop used to assemble the UI payload.
+
+        Returns:
+            Compact JSON payload text for websocket transmission.
+        """
+        state_signature = (
+            id(loop),
+            loop.tick,
+            loop.running,
+            loop.paused,
+            loop.terminated,
+        )
+        if state_signature != self._cache_signature:
+            payload = self._payload_builder(loop)
+            self._cache_text = json.dumps(payload, separators=(",", ":"))
+            self._cache_signature = state_signature
+        return self._cache_text
 
     @staticmethod
     async def _safe_close(
@@ -189,8 +213,7 @@ class UIStreamManager:
                     loop.terminated,
                 )
                 if state_signature != last_state_signature:
-                    payload = self._payload_builder(loop)
-                    await websocket.send_text(json.dumps(payload, separators=(",", ":")))
+                    await websocket.send_text(self._encoded_payload(loop))
                     last_state_signature = state_signature
 
                 await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
