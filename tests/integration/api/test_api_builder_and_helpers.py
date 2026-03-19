@@ -737,6 +737,27 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     assert payload["grid_height"] == 8
     assert payload["all_flora_species"]
 
+    expected_top_level_keys = {
+        "tick",
+        "grid_width",
+        "grid_height",
+        "max_energy",
+        "species_energy",
+        "all_flora_species",
+        "signal_overlay",
+        "toxin_overlay",
+        "max_signal",
+        "max_toxin",
+        "plants",
+        "mycorrhizal_links",
+        "swarms",
+        "terminated",
+        "termination_reason",
+        "running",
+        "paused",
+    }
+    assert set(payload.keys()) == expected_top_level_keys
+
     # Enforce the hot-path columnar schema contract for live dashboard transport.
     assert isinstance(payload["plants"], dict)
     assert isinstance(payload["swarms"], dict)
