@@ -1,0 +1,98 @@
+{
+  "top_level_keys": [
+    "all_flora_species",
+    "grid_height",
+    "grid_width",
+    "max_energy",
+    "max_signal",
+    "max_toxin",
+    "mycorrhizal_links",
+    "paused",
+    "plants",
+    "running",
+    "signal_overlay",
+    "species_energy",
+    "swarms",
+    "terminated",
+    "termination_reason",
+    "tick",
+    "toxin_overlay"
+  ],
+  "plants_columns": [
+    "active_signal_ids",
+    "active_toxin_ids",
+    "energy",
+    "entity_id",
+    "name",
+    "root_link_count",
+    "species_id",
+    "x",
+    "y"
+  ],
+  "swarms_columns": [
+    "energy",
+    "energy_deficit",
+    "intoxicated",
+    "name",
+    "population",
+    "repelled",
+    "repelled_ticks_remaining",
+    "species_id",
+    "toxin_level",
+    "x",
+    "y"
+  ],
+  "plants_row_count": 1,
+  "swarms_row_count": 1,
+  "species_energy": {
+    "count": 1,
+    "first_species_id": 0,
+    "first_species_name": "flora-0",
+    "layer_width": 8,
+    "layer_height": 8,
+    "layer_sum": 10.0,
+    "nonzero_cells": [
+      [
+        2,
+        2,
+        10.0
+      ]
+    ]
+  },
+  "plants_first_row": {
+    "entity_id": 0,
+    "species_id": 0,
+    "name": "flora-0",
+    "x": 2,
+    "y": 2,
+    "energy": 10.0,
+    "root_link_count": 0,
+    "active_signal_ids": [],
+    "active_toxin_ids": []
+  },
+  "swarms_first_row": {
+    "species_id": 0,
+    "name": "herbivore-0",
+    "x": 2,
+    "y": 2,
+    "population": 4,
+    "energy": 5.0,
+    "energy_deficit": 0.0,
+    "repelled": false,
+    "repelled_ticks_remaining": 0,
+    "toxin_level": 0.0,
+    "intoxicated": false
+  },
+  "signal_overlay": {
+    "width": 8,
+    "height": 8,
+    "sum": 0.0,
+    "max": 0.0
+  },
+  "toxin_overlay": {
+    "width": 8,
+    "height": 8,
+    "sum": 0.0,
+    "max": 0.0
+  }
+}
