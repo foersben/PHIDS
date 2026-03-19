@@ -105,6 +105,29 @@ async def test_simulation_manager_reuses_snapshot_cache_for_unchanged_tick() -> 
     assert loop.snapshot_calls == 2
 
 
+def test_ui_manager_reuses_encoded_payload_for_unchanged_signature() -> None:
+    """Verify UI payload encoding is cached for unchanged loop state and refreshed on tick changes."""
+    loop = _FakeLoop(tick=7)
+    calls = {"count": 0}
+
+    def _payload_builder(current_loop: _FakeLoop) -> dict[str, int]:
+        calls["count"] += 1
+        return {"tick": current_loop.tick}
+
+    manager = UIStreamManager(payload_builder=_payload_builder)
+
+    first = manager._encoded_payload(loop)
+    second = manager._encoded_payload(loop)
+
+    assert first == second
+    assert calls["count"] == 1
+
+    loop.tick = 8
+    third = manager._encoded_payload(loop)
+    assert third != ""
+    assert calls["count"] == 2
+
+
 @pytest.mark.asyncio
 async def test_simulation_manager_rejects_missing_loop_with_policy_close() -> None:
     """Verifies explicit policy-close behavior when no simulation loop is loaded.
