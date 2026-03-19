@@ -26,6 +26,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.loop import SimulationLoop
 from phids.telemetry.conditions import check_termination
+from phids.telemetry.tick_metrics import collect_tick_metrics
 
 
 def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:
@@ -117,6 +118,29 @@ def test_termination_threshold_branches(
     result = check_termination(world, tick=0, max_ticks=100, **kwargs)
     assert result.terminated is True
     assert expected_reason in result.reason
+
+
+def test_termination_with_precomputed_tick_metrics_matches_world_scan() -> None:
+    """Termination decisions remain identical when metrics are provided by a shared tick snapshot."""
+    world = _world_with_counts([0], [0])
+    metrics = collect_tick_metrics(world)
+
+    via_metrics = check_termination(
+        world,
+        tick=0,
+        max_ticks=100,
+        z6_max_flora_energy=1.0,
+        tick_metrics=metrics,
+    )
+    via_world_scan = check_termination(
+        world,
+        tick=0,
+        max_ticks=100,
+        z6_max_flora_energy=1.0,
+    )
+
+    assert via_metrics.terminated is True
+    assert via_metrics.reason == via_world_scan.reason
 
 
 def test_simulation_loop_step_updates_replay_and_telemetry(

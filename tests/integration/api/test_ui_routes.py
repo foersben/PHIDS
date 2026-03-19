@@ -1049,26 +1049,13 @@ def test_logging_config_env_coercion_and_recent_log_capture(
     assert (tmp_path / "phids.log").exists()
 
 
-def test_cli_parser_and_main_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify CLI parser arguments and uvicorn dispatch wiring preserve command-line options."""
-    parsed = phids_cli.build_parser().parse_args(
-        ["--host", "0.0.0.0", "--port", "9000", "--reload"]
-    )
-    assert parsed.host == "0.0.0.0"
-    assert parsed.port == 9000
-
+def test_cli_option_dispatch_and_main_wiring(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify Typer CLI options and dispatch wiring preserve command-line semantics."""
     captured: dict[str, object] = {}
 
-    def _fake_uvicorn_run(
-        app_obj: object,
-        host: str,
-        port: int,
-        reload: bool,
-        log_level: str,
-    ) -> None:
+    def _fake_run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
         captured.update(
             {
-                "app": app_obj,
                 "host": host,
                 "port": port,
                 "reload": reload,
@@ -1076,7 +1063,13 @@ def test_cli_parser_and_main_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
             }
         )
 
-    monkeypatch.setattr("uvicorn.run", _fake_uvicorn_run)
+    monkeypatch.setattr(phids_cli, "_run_server", _fake_run_server)
+    phids_cli.main(["--host", "0.0.0.0", "--port", "9000", "--reload"])
+    assert captured["host"] == "0.0.0.0"
+    assert captured["port"] == 9000
+    assert captured["reload"] is True
+    assert captured["log_level"] == "info"
+
     phids_cli.main(["--host", "0.0.0.0", "--port", "9001", "--reload", "--log-level", "debug"])
     assert captured["host"] == "0.0.0.0"
     assert captured["port"] == 9001
@@ -1595,7 +1588,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         aftereffect_details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
 
     assert dashboard_payload["tick"] == 1
-    assert any(0 in plant["active_signal_ids"] for plant in dashboard_payload["plants"])
+    assert any(0 in ids for ids in dashboard_payload["plants"]["active_signal_ids"])
     assert dashboard_payload["mycorrhizal_links"]
     assert details_resp.status_code == 200, details_resp.text
     details = details_resp.json()

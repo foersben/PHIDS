@@ -594,28 +594,31 @@ def test_build_live_dashboard_payload_tick_and_lifecycle_state() -> None:
 
 
 def test_build_live_dashboard_payload_plant_and_swarm_entries() -> None:
-    """Verifies that live plant and swarm entities are serialised with mandatory fields.
+    """Verifies that live plant and swarm entities are serialised as columnar arrays.
 
-    Each plant entry must carry ``entity_id``, ``species_id``, ``x``, ``y``, and ``energy``
-    fields; each swarm entry must carry ``x``, ``y``, ``population``, and ``species_id``.
-    These fields are consumed directly by the canvas compositing passes.
+    The dashboard stream uses flat, column-oriented arrays for UI transfer efficiency.
+    Each entity table must expose mandatory columns with aligned lengths so index ``i``
+    across all columns reconstructs one logical entity row.
     """
     config = _minimal_config(x=4, y=4)
     loop = SimulationLoop(config)
     payload = build_live_dashboard_payload(loop, substance_names={})
 
-    assert len(payload["plants"]) == 1
-    plant = payload["plants"][0]
-    assert "entity_id" in plant
-    assert "x" in plant
-    assert "y" in plant
-    assert "energy" in plant
+    plant_columns = payload["plants"]
+    assert {"entity_id", "species_id", "x", "y", "energy"}.issubset(plant_columns.keys())
+    plant_count = len(plant_columns["entity_id"])
+    assert plant_count == 1
+    assert len(plant_columns["x"]) == plant_count
+    assert len(plant_columns["y"]) == plant_count
+    assert len(plant_columns["energy"]) == plant_count
 
-    assert len(payload["swarms"]) == 1
-    swarm = payload["swarms"][0]
-    assert "x" in swarm
-    assert "y" in swarm
-    assert "population" in swarm
+    swarm_columns = payload["swarms"]
+    assert {"x", "y", "population", "species_id"}.issubset(swarm_columns.keys())
+    swarm_count = len(swarm_columns["species_id"])
+    assert swarm_count == 1
+    assert len(swarm_columns["x"]) == swarm_count
+    assert len(swarm_columns["y"]) == swarm_count
+    assert len(swarm_columns["population"]) == swarm_count
 
 
 def test_build_live_dashboard_payload_extinct_species_bifurcation() -> None:

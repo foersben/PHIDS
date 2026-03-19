@@ -24,6 +24,7 @@ dependencies = [
     "pandas>=2.2",
     "matplotlib>=3.9",
     "zarr>=3.0",
+    "typer>=0.16",
 ]
 
 [project.scripts]

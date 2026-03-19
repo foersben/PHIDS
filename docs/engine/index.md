@@ -27,8 +27,8 @@ The current tick ordering implemented by `SimulationLoop.step()` is:
 3. **Lifecycle system**
 4. **Interaction system**
 5. **Signaling system**
-6. **Telemetry recording and replay snapshotting**
-7. **Termination evaluation**
+6. **Shared tick-metrics aggregation, telemetry recording, and replay snapshotting**
+7. **Termination evaluation from the same shared metrics snapshot**
 
 This ordering is not cosmetic. Each later phase assumes the side effects of the previous one.
 
@@ -39,10 +39,11 @@ flowchart TD
     C --> D[run_lifecycle]
     D --> E[run_interaction]
     E --> F[run_signaling]
-    F --> G[Record telemetry]
-    G --> H[Append replay snapshot]
-    H --> I[Evaluate Z1-Z7 termination]
-    I --> J[Increment tick]
+    F --> G[Collect TickMetrics once]
+    G --> H[Record telemetry from TickMetrics]
+    H --> I[Append replay snapshot]
+    I --> J[Evaluate Z1-Z7 termination from TickMetrics]
+    J --> K[Increment tick]
 ```
 
 ## Runtime Ownership and Invariants
@@ -171,10 +172,13 @@ Current-state nuance matters here:
 
 This is one of the richest areas of the simulator and deserves a dedicated chapter later.
 
-### 6. Telemetry and replay
+### 6. Shared metrics, telemetry, and replay
 
-After ecological state transitions are complete for the tick, the loop records telemetry and then
-appends a serialized snapshot of the current environment state.
+After ecological state transitions are complete for the tick, the loop performs one ECS aggregation
+pass into `TickMetrics` (`src/phids/telemetry/tick_metrics.py`). The telemetry recorder and
+termination checker both consume this shared snapshot, eliminating duplicate ECS scans while
+preserving deterministic observation of a single post-system world state. Replay snapshotting then
+appends the serialized environment projection for the same completed tick.
 
 The order matters: replay and telemetry are intended to describe the post-phase state of the
 completed tick, not an intermediate partial state.
@@ -185,7 +189,9 @@ and background deficit culling.
 
 ### 7. Termination evaluation
 
-Finally, the loop evaluates termination conditions through `check_termination()`.
+Finally, the loop evaluates termination conditions through `check_termination()`, passing the
+already-collected `TickMetrics` snapshot so termination logic and telemetry logic are causally
+aligned to identical aggregate observables.
 
 The currently implemented conditions are:
 

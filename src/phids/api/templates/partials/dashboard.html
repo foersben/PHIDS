@@ -233,8 +233,29 @@
     return Number(value).toFixed(digits);
   }
 
+  function isColumnarEntityTable(value) {
+    return !!value && !Array.isArray(value) && Array.isArray(value.x) && Array.isArray(value.y);
+  }
+
+  function asEntityRows(value, columns) {
+    if (Array.isArray(value)) return value;
+    if (!isColumnarEntityTable(value)) return [];
+    const count = value.x.length;
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      const row = {};
+      for (const column of columns) {
+        row[column] = Array.isArray(value[column]) ? value[column][i] : null;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
   function hasLiveSimData(data) {
-    return !!data && typeof data.tick === 'number' && Array.isArray(data.plants) && Array.isArray(data.swarms);
+    const hasPlants = Array.isArray(data?.plants) || isColumnarEntityTable(data?.plants);
+    const hasSwarms = Array.isArray(data?.swarms) || isColumnarEntityTable(data?.swarms);
+    return !!data && typeof data.tick === 'number' && hasPlants && hasSwarms;
   }
 
   function currentGridData() {
@@ -508,14 +529,39 @@
     if (!simData) return null;
     const x = cell.x;
     const y = cell.y;
-    const plantsAtCell = (simData.plants || []).filter(plant => plant.x === x && plant.y === y);
+    const plantRows = asEntityRows(simData.plants || [], [
+      'entity_id',
+      'species_id',
+      'name',
+      'x',
+      'y',
+      'energy',
+      'root_link_count',
+      'active_signal_ids',
+      'active_toxin_ids',
+    ]);
+    const swarmRows = asEntityRows(simData.swarms || [], [
+      'x',
+      'y',
+      'population',
+      'species_id',
+      'name',
+      'energy',
+      'energy_deficit',
+      'repelled',
+      'repelled_ticks_remaining',
+      'toxin_level',
+      'intoxicated',
+      'initial_population',
+    ]);
+    const plantsAtCell = plantRows.filter(plant => plant.x === x && plant.y === y);
     const touchingLinks = linksTouchingCell(simData.mycorrhizal_links || [], x, y);
     const plants = plantsAtCell.map(plant => {
       const neighbourLinks = linksTouchingCell(simData.mycorrhizal_links || [], plant.x, plant.y);
       const mycorrhizalNeighbours = neighbourLinks.map(link => {
         const otherX = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.x2) : Number(link.x1);
         const otherY = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.y2) : Number(link.y1);
-        const neighbourPlant = (simData.plants || []).find(other => other.x === otherX && other.y === otherY);
+        const neighbourPlant = plantRows.find(other => other.x === otherX && other.y === otherY);
         return {
           name: neighbourPlant?.name || `Plant @ (${otherX}, ${otherY})`,
           x: otherX,
@@ -589,7 +635,7 @@
         })),
       },
       plants,
-      swarms: (simData.swarms || [])
+      swarms: swarmRows
         .filter(swarm => swarm.x === x && swarm.y === y)
         .map(swarm => ({
           ...swarm,
@@ -683,6 +729,30 @@
   function drawSim(data) {
     const { gW, gH, cellW, cellH } = syncCanvasLayout(data);
     clearCanvas();
+    const plantRows = asEntityRows(data.plants || [], [
+      'entity_id',
+      'species_id',
+      'name',
+      'x',
+      'y',
+      'energy',
+      'root_link_count',
+      'active_signal_ids',
+      'active_toxin_ids',
+    ]);
+    const swarmRows = asEntityRows(data.swarms || [], [
+      'x',
+      'y',
+      'population',
+      'species_id',
+      'name',
+      'energy',
+      'energy_deficit',
+      'repelled',
+      'repelled_ticks_remaining',
+      'toxin_level',
+      'intoxicated',
+    ]);
 
     const maxE = data.max_energy || 1;
     if (data.species_energy && data.species_energy.length > 0) {
@@ -722,16 +792,16 @@
     drawMycorrhizalLinks(data.mycorrhizal_links || []);
     drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
     drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
-    drawPlantActivity(data.plants || []);
+    drawPlantActivity(plantRows);
     drawGridLines();
 
-    drawSwarmMarkers(data.swarms || []);
+    drawSwarmMarkers(swarmRows);
 
     const floraLegend = (data.all_flora_species || data.species_energy || []).map(species => ({
       name: species.extinct ? `${species.name} (†)` : species.name,
       color: species.extinct ? '#94a3b8' : FLORA_COLORS[species.species_id % FLORA_COLORS.length],
     }));
-    const swarmLegend = (data.swarms || []).map(swarm => ({
+    const swarmLegend = swarmRows.map(swarm => ({
       name: swarm.name || `Herbivore ${swarm.species_id}`,
       color: SWARM_COLORS[swarm.species_id % SWARM_COLORS.length],
     }));
@@ -739,10 +809,10 @@
     if ((data.max_signal || 0) > 0) extras.push({ name: 'Signal cloud', color: SIGNAL_COLOR });
     if ((data.max_toxin || 0) > 0) extras.push({ name: 'Toxin cloud', color: TOXIN_COLOR });
     if ((data.mycorrhizal_links || []).length > 0) extras.push({ name: 'Root link', color: '#60a5fa' });
-    if ((data.plants || []).some(plant => (plant.active_signal_ids || []).length > 0)) {
+    if (plantRows.some(plant => (plant.active_signal_ids || []).length > 0)) {
       extras.push({ name: 'Signal emitter', color: SIGNAL_COLOR });
     }
-    if ((data.plants || []).some(plant => (plant.active_toxin_ids || []).length > 0)) {
+    if (plantRows.some(plant => (plant.active_toxin_ids || []).length > 0)) {
       extras.push({ name: 'Toxin emitter', color: TOXIN_COLOR });
     }
     updateLegend(floraLegend, swarmLegend, extras);

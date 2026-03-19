@@ -5,50 +5,77 @@ This module defines the process boundary between operating-system invocation and
 
 from __future__ import annotations
 
-import argparse
 from collections.abc import Sequence
+from enum import Enum
+from typing import Annotated
 
-_VALID_LOG_LEVELS = ("critical", "error", "warning", "info", "debug", "trace")
+import typer
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """Construct the PHIDS command-line parser for server bootstrap.
+class LogLevel(str, Enum):
+    """Enumerate supported Uvicorn log levels for CLI validation."""
 
-    The parser encodes operational parameters that influence network exposure and observability of the runtime process. Centralizing these flags constrains startup variability and supports reproducible execution conditions for API, HTMX, and WebSocket interfaces.
+    CRITICAL = "critical"
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+    DEBUG = "debug"
+    TRACE = "trace"
 
-    Returns:
-        Configured parser for launching the PHIDS server process.
+
+app = typer.Typer(
+    add_completion=True,
+    invoke_without_command=True,
+    help=(
+        "Run the PHIDS FastAPI server that powers the JSON API, HTMX UI, "
+        "and WebSocket simulation streams."
+    ),
+)
+
+
+def _run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
+    """Launch Uvicorn with a deterministic PHIDS application configuration.
+
+    This function provides an isolated execution boundary between command parsing and process startup. Isolating this call preserves testability while maintaining a strict mapping from validated CLI parameters to the ASGI runtime surface.
+
+    Args:
+        host: Interface address for HTTP binding.
+        port: TCP port for HTTP binding.
+        reload: Auto-reload flag for local development.
+        log_level: Uvicorn logging verbosity.
     """
-    parser = argparse.ArgumentParser(
-        prog="phids",
-        description=(
-            "Run the PHIDS FastAPI server that powers the JSON API, HTMX UI, "
-            "and WebSocket simulation streams."
-        ),
+    import uvicorn
+
+    uvicorn.run(
+        "phids.api.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=log_level,
     )
-    parser.add_argument(
-        "--host",
-        default="127.0.0.1",
-        help="Interface to bind the HTTP server to. Use 0.0.0.0 inside containers.",
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=8000,
-        help="TCP port for the FastAPI server.",
-    )
-    parser.add_argument(
-        "--reload",
-        action="store_true",
-        help="Enable auto-reload for local development.",
-    )
-    parser.add_argument(
-        "--log-level",
-        default="info",
-        choices=_VALID_LOG_LEVELS,
-        help="Uvicorn log verbosity.",
-    )
-    return parser
+
+
+@app.callback()
+def serve(
+    host: Annotated[
+        str,
+        typer.Option(help="Interface to bind the HTTP server to. Use 0.0.0.0 inside containers."),
+    ] = "127.0.0.1",
+    port: Annotated[int, typer.Option(help="TCP port for the FastAPI server.")] = 8000,
+    reload: Annotated[bool, typer.Option(help="Enable auto-reload for local development.")] = False,
+    log_level: Annotated[LogLevel, typer.Option(help="Uvicorn log verbosity.")] = LogLevel.INFO,
+) -> None:
+    """Start the PHIDS FastAPI application from validated CLI options.
+
+    The callback defines a typed command surface that is validated before server startup. Keeping this mapping explicit ensures that network exposure and observability controls remain reproducible across local, containerized, and CI-managed runtime contexts.
+
+    Args:
+        host: Interface address for HTTP binding.
+        port: TCP port for HTTP binding.
+        reload: Auto-reload flag for local development.
+        log_level: Uvicorn logging verbosity.
+    """
+    _run_server(host=host, port=port, reload=reload, log_level=log_level.value)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -62,17 +89,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     Returns:
         None. The function starts the server process and does not produce a data value.
     """
-    args = build_parser().parse_args(argv)
-
-    import uvicorn
-    from phids.api.main import app
-
-    uvicorn.run(
-        app,
-        host=args.host,
-        port=args.port,
-        reload=args.reload,
-        log_level=args.log_level,
+    app(
+        args=list(argv) if argv is not None else None,
+        prog_name="phids",
+        standalone_mode=False,
     )
 
 

@@ -16,6 +16,7 @@ from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.telemetry.analytics import TelemetryRecorder
+from phids.telemetry.tick_metrics import collect_tick_metrics
 
 
 def _make_plant(world: ECSWorld, eid: int, species_id: int, energy: float) -> None:
@@ -282,3 +283,22 @@ class TestPerSpeciesTelemetry:
             rec.record(world, tick=tick)
         assert len(rec._rows) == 3
         assert [row["tick"] for row in rec._rows] == [3, 4, 5]
+
+    def test_record_accepts_precomputed_tick_metrics(self) -> None:
+        """Telemetry rows can be written from a shared TickMetrics snapshot without extra ECS scans."""
+        world = ECSWorld()
+        e1 = world.create_entity()
+        e2 = world.create_entity()
+        _make_plant(world, e1.entity_id, 2, 14.0)
+        _make_swarm(world, e2.entity_id, 3, 9)
+
+        rec = TelemetryRecorder()
+        metrics = collect_tick_metrics(world)
+        rec.record(world, tick=4, tick_metrics=metrics)
+
+        row = rec.get_latest_metrics()
+        assert row is not None
+        assert row["tick"] == 4
+        assert row["flora_population"] == 1
+        assert row["plant_pop_by_species"][2] == 1
+        assert row["swarm_pop_by_species"][3] == 9

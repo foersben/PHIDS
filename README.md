@@ -173,6 +173,12 @@ uv sync --all-extras --dev
 ### 2) Start the application
 
 ```bash
+uv run phids --reload
+```
+
+Equivalent direct ASGI launch remains available when needed:
+
+```bash
 uv run uvicorn phids.api.main:app --reload --app-dir src
 ```
 
@@ -383,6 +389,7 @@ uv run mkdocs serve
 
 - simulation/math: `numpy`, `scipy`, `numba`
 - API/runtime: `fastapi`, `uvicorn`, `websockets`
+- CLI: `typer`
 - validation/modeling boundary: `pydantic`
 - telemetry/data processing: `polars`
 - serialization: `msgpack`

@@ -423,18 +423,15 @@ def test_interaction_mitosis_offspring_can_diverge_next_tick(
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
-    calls = {"count": 0}
-
-    def _split_pick(
-        seq: list[tuple[int, int]], weights: list[float], k: int
-    ) -> list[tuple[int, int]]:
-        del weights, k
-        calls["count"] += 1
-        if calls["count"] == 1:
-            return [seq[1] if len(seq) > 1 else seq[0]]
-        return [seq[-1]]
-
-    monkeypatch.setattr(random, "choices", _split_pick)
+    # Force the mitosis offspring placement to a distinct neighbour so the
+    # divergence invariant is independent of ambient RNG state or test order.
+    monkeypatch.setattr(
+        "phids.engine.systems.interaction._random_walk_step",
+        lambda x, y, width, height: (
+            (x - 1) if x > 0 else (1 if width > 1 else 0),
+            y,
+        ),
+    )
 
     run_interaction(world, env, diet_matrix=[[False]], tick=1)
 

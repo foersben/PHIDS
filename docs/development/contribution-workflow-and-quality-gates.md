@@ -145,6 +145,12 @@ Current setup commands documented in the repo are:
 
 ```bash
 uv sync --all-extras --dev
+uv run phids --reload
+```
+
+The direct Uvicorn invocation remains valid for lower-level ASGI troubleshooting:
+
+```bash
 uv run uvicorn phids.api.main:app --reload --app-dir src
 ```
 

@@ -28,7 +28,7 @@ Live documentation: <https://foersben.github.io/PHIDS/>
 
 ```bash
 uv sync --all-extras --dev
-uv run uvicorn phids.api.main:app --reload --app-dir src
+uv run phids --reload
 ```
 
 Then open `http://127.0.0.1:8000/`.

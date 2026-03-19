@@ -33,16 +33,13 @@ sparse species sets.
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from typing import Any
 
 import polars as pl
 
-from phids.engine.components.plant import PlantComponent
-from phids.engine.components.substances import SubstanceComponent
-from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import MAX_TELEMETRY_TICKS
+from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +76,7 @@ class TelemetryRecorder:
         world: ECSWorld,
         tick: int,
         plant_death_causes: dict[str, int] | None = None,
+        tick_metrics: TickMetrics | None = None,
     ) -> None:
         """Snapshot current ECS metrics and append to the internal buffer.
 
@@ -95,43 +93,7 @@ class TelemetryRecorder:
             tick: Current simulation tick index.
             plant_death_causes: Per-tick plant death diagnostics keyed by cause.
         """
-        total_flora_energy = 0.0
-        flora_population = 0
-        plant_pop_by_species: dict[int, int] = defaultdict(int)
-        plant_energy_by_species: dict[int, float] = defaultdict(float)
-
-        for entity in world.query(PlantComponent):
-            plant: PlantComponent = entity.get_component(PlantComponent)
-            total_flora_energy += plant.energy
-            flora_population += 1
-            plant_pop_by_species[plant.species_id] += 1
-            plant_energy_by_species[plant.species_id] += plant.energy
-
-        herbivore_clusters = 0
-        herbivore_population = 0
-        swarm_pop_by_species: dict[int, int] = defaultdict(int)
-
-        for entity in world.query(SwarmComponent):
-            swarm: SwarmComponent = entity.get_component(SwarmComponent)
-            herbivore_clusters += 1
-            herbivore_population += swarm.population
-            swarm_pop_by_species[swarm.species_id] += swarm.population
-
-        defense_cost_by_species: dict[int, float] = defaultdict(float)
-        for entity in world.query(SubstanceComponent):
-            sub: SubstanceComponent = entity.get_component(SubstanceComponent)
-            if not sub.active or sub.energy_cost_per_tick <= 0.0:
-                continue
-            owner = (
-                world.get_entity(sub.owner_plant_id)
-                if world.has_entity(sub.owner_plant_id)
-                else None
-            )
-            if owner is None:
-                continue
-            if owner.has_component(PlantComponent):
-                plant_owner: PlantComponent = owner.get_component(PlantComponent)
-                defense_cost_by_species[plant_owner.species_id] += sub.energy_cost_per_tick
+        metrics = tick_metrics or collect_tick_metrics(world)
 
         death_counts = {
             "death_reproduction": 0,
@@ -146,16 +108,16 @@ class TelemetryRecorder:
 
         row: dict[str, Any] = {
             "tick": tick,
-            "total_flora_energy": total_flora_energy,
-            "flora_population": flora_population,
-            "herbivore_clusters": herbivore_clusters,
-            "herbivore_population": herbivore_population,
+            "total_flora_energy": float(metrics.total_flora_energy),
+            "flora_population": int(metrics.flora_population),
+            "herbivore_clusters": int(metrics.herbivore_clusters),
+            "herbivore_population": int(metrics.herbivore_population),
             **death_counts,
             # Per-species flat columns
-            "plant_pop_by_species": dict(plant_pop_by_species),
-            "plant_energy_by_species": dict(plant_energy_by_species),
-            "swarm_pop_by_species": dict(swarm_pop_by_species),
-            "defense_cost_by_species": dict(defense_cost_by_species),
+            "plant_pop_by_species": dict(metrics.plant_pop_by_species),
+            "plant_energy_by_species": dict(metrics.plant_energy_by_species),
+            "swarm_pop_by_species": dict(metrics.swarm_pop_by_species),
+            "defense_cost_by_species": dict(metrics.defense_cost_by_species),
         }
         self._rows.append(row)
         if len(self._rows) > self._max_rows:
@@ -166,9 +128,9 @@ class TelemetryRecorder:
         logger.debug(
             "Telemetry row recorded (tick=%d, flora=%d, herbivores=%d, flora_energy=%.2f)",
             tick,
-            flora_population,
-            herbivore_population,
-            total_flora_energy,
+            int(metrics.flora_population),
+            int(metrics.herbivore_population),
+            float(metrics.total_flora_energy),
         )
 
     def get_latest_metrics(self) -> dict[str, Any] | None:

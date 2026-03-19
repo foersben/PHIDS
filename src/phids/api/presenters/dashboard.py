@@ -942,10 +942,11 @@ def build_live_dashboard_payload(
 
     - Per-species plant energy layers from the double-buffered
       :class:`~phids.engine.core.biotope.GridEnvironment`.
-    - All live plant entities with their positions, energy, mycorrhizal connection counts,
-      and active substance channel identifiers.
-    - All live swarm entities with their positions, population, energy state, repellency, and
-      local toxin exposure.
+    - All live plant entities as columnar arrays (parallel vectors keyed by field name)
+      with positions, energy, mycorrhizal connection counts, and active substance channel
+      identifiers.
+    - All live swarm entities as columnar arrays with positions, population, energy state,
+      repellency, and local toxin exposure.
     - Signal and toxin field overlays (maximum projection across channels).
     - Mycorrhizal network links as computed by :func:`_build_live_mycorrhizal_links`.
     - Full flora species catalogue with per-species extinction flags, enabling the legend
@@ -990,7 +991,17 @@ def build_live_dashboard_payload(
         substance = entity.get_component(SubstanceComponent)
         owned_substances.setdefault(substance.owner_plant_id, []).append(substance)
 
-    plants = []
+    plants: dict[str, list[Any]] = {
+        "entity_id": [],
+        "species_id": [],
+        "name": [],
+        "x": [],
+        "y": [],
+        "energy": [],
+        "root_link_count": [],
+        "active_signal_ids": [],
+        "active_toxin_ids": [],
+    }
     for entity in world.query(PlantComponent):
         plant = entity.get_component(PlantComponent)
         plant_substances = owned_substances.get(plant.entity_id, [])
@@ -1020,63 +1031,55 @@ def build_live_dashboard_payload(
                 if substance.is_toxin and _is_live_substance_visible(substance)
             }
         )
-        plants.append(
-            {
-                "entity_id": plant.entity_id,
-                "species_id": plant.species_id,
-                "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
-                "x": plant.x,
-                "y": plant.y,
-                "energy": float(plant.energy),
-                "root_link_count": len(plant.mycorrhizal_connections),
-                "active_signal_ids": visible_signal_ids,
-                "active_toxin_ids": visible_toxin_ids,
-            }
-        )
-    plants.sort(
-        key=lambda plant: (
-            _coerce_int(plant.get("x", 0), default=0),
-            _coerce_int(plant.get("y", 0), default=0),
-            _coerce_int(plant.get("species_id", 0), default=0),
-        )
-    )
+        plants["entity_id"].append(plant.entity_id)
+        plants["species_id"].append(plant.species_id)
+        plants["name"].append(flora_names.get(plant.species_id, f"Flora {plant.species_id}"))
+        plants["x"].append(plant.x)
+        plants["y"].append(plant.y)
+        plants["energy"].append(float(plant.energy))
+        plants["root_link_count"].append(len(plant.mycorrhizal_connections))
+        plants["active_signal_ids"].append(visible_signal_ids)
+        plants["active_toxin_ids"].append(visible_toxin_ids)
 
-    swarms: list[dict[str, Any]] = []
+    swarms: dict[str, list[Any]] = {
+        "x": [],
+        "y": [],
+        "population": [],
+        "species_id": [],
+        "name": [],
+        "energy": [],
+        "energy_deficit": [],
+        "repelled": [],
+        "repelled_ticks_remaining": [],
+        "toxin_level": [],
+        "intoxicated": [],
+    }
     for entity in world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
         toxin_level = (
             float(env.toxin_layers[:, swarm.x, swarm.y].max()) if env.num_toxins > 0 else 0.0
         )
-        swarms.append(
-            {
-                "x": swarm.x,
-                "y": swarm.y,
-                "population": swarm.population,
-                "species_id": swarm.species_id,
-                "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
-                "energy": float(swarm.energy),
-                "energy_deficit": max(
-                    0.0,
-                    float(swarm.population * swarm.energy_min - swarm.energy),
-                ),
-                "repelled": swarm.repelled,
-                "repelled_ticks_remaining": swarm.repelled_ticks_remaining,
-                "toxin_level": toxin_level,
-                "intoxicated": toxin_level > 0.0,
-            }
+        swarms["x"].append(swarm.x)
+        swarms["y"].append(swarm.y)
+        swarms["population"].append(swarm.population)
+        swarms["species_id"].append(swarm.species_id)
+        swarms["name"].append(
+            herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}")
         )
-    swarms.sort(
-        key=lambda swarm: (
-            _coerce_int(swarm.get("x", 0), default=0),
-            _coerce_int(swarm.get("y", 0), default=0),
-            _coerce_int(swarm.get("species_id", 0), default=0),
+        swarms["energy"].append(float(swarm.energy))
+        swarms["energy_deficit"].append(
+            max(
+                0.0,
+                float(swarm.population * swarm.energy_min - swarm.energy),
+            )
         )
-    )
+        swarms["repelled"].append(swarm.repelled)
+        swarms["repelled_ticks_remaining"].append(swarm.repelled_ticks_remaining)
+        swarms["toxin_level"].append(toxin_level)
+        swarms["intoxicated"].append(toxin_level > 0.0)
 
     live_flora_species_ids = {
-        species_id
-        for species_id in (_coerce_int(plant.get("species_id", -1), default=-1) for plant in plants)
-        if species_id >= 0
+        int(species_id) for species_id in plants["species_id"] if int(species_id) >= 0
     }
     all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []

@@ -33,6 +33,7 @@ from phids.io.replay import ReplayBuffer
 from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.telemetry.analytics import TelemetryRecorder
 from phids.telemetry.conditions import TerminationResult, check_termination
+from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 from phids.shared.logging_config import get_simulation_debug_interval
 
 # Optional Zarr backend import
@@ -104,6 +105,9 @@ class SimulationLoop:
 
         # Pre-compute species parameter lookups
         self._flora_params: dict[int, Any] = {sp.species_id: sp for sp in config.flora_species}
+        self._herbivore_params: dict[int, Any] = {
+            sp.species_id: sp for sp in config.herbivore_species
+        }
         self._trigger_conditions: dict[int, list[Any]] = {
             sp.species_id: list(sp.triggers) for sp in config.flora_species
         }
@@ -220,9 +224,9 @@ class SimulationLoop:
             float: Configured minimum energy if found, otherwise a sensible
             default of 1.0.
         """
-        for sp in self.config.herbivore_species:
-            if sp.species_id == species_id:
-                return sp.energy_min
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.energy_min)
         return 1.0
 
     def _get_herbivore_velocity(self, species_id: int) -> int:
@@ -234,9 +238,9 @@ class SimulationLoop:
         Returns:
             int: Movement period in ticks; defaults to 1 when not found.
         """
-        for sp in self.config.herbivore_species:
-            if sp.species_id == species_id:
-                return sp.velocity
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return int(params.velocity)
         return 1
 
     def _get_herbivore_consumption_rate(self, species_id: int) -> float:
@@ -248,9 +252,9 @@ class SimulationLoop:
         Returns:
             float: Consumption rate if present, otherwise 1.0 by default.
         """
-        for sp in self.config.herbivore_species:
-            if sp.species_id == species_id:
-                return sp.consumption_rate
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.consumption_rate)
         return 1.0
 
     def _get_herbivore_reproduction_divisor(self, species_id: int) -> float:
@@ -262,9 +266,9 @@ class SimulationLoop:
         Returns:
             float: Reproduction divisor if present, otherwise 1.0.
         """
-        for sp in self.config.herbivore_species:
-            if sp.species_id == species_id:
-                return sp.reproduction_energy_divisor
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.reproduction_energy_divisor)
         return 1.0
 
     def _get_herbivore_energy_upkeep(self, species_id: int) -> float:
@@ -276,9 +280,9 @@ class SimulationLoop:
         Returns:
             Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
         """
-        for sp in self.config.herbivore_species:
-            if sp.species_id == species_id:
-                return sp.energy_upkeep_per_individual
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.energy_upkeep_per_individual)
         return 0.05
 
     def _get_herbivore_split_threshold(self, species_id: int) -> int:
@@ -291,9 +295,9 @@ class SimulationLoop:
             Configured split threshold if found; otherwise 0, which causes the interaction
             system to apply the legacy initial-population-based mitosis rule.
         """
-        for sp in self.config.herbivore_species:
-            if sp.species_id == species_id:
-                return sp.split_population_threshold
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return int(params.split_population_threshold)
         return 0
 
     # ------------------------------------------------------------------
@@ -462,10 +466,18 @@ class SimulationLoop:
             # before telemetry reads it and the next tick's flow field evaluates it.
             self.env.rebuild_energy_layer()
 
+            # Build one shared metrics snapshot for telemetry and termination.
+            tick_metrics: TickMetrics = collect_tick_metrics(self.world)
+
             # --------------------------------------------------------
             # Phase 5: Telemetry
             # --------------------------------------------------------
-            self.telemetry.record(self.world, self.tick, plant_death_causes=plant_death_causes)
+            self.telemetry.record(
+                self.world,
+                self.tick,
+                plant_death_causes=plant_death_causes,
+                tick_metrics=tick_metrics,
+            )
             if hasattr(self.replay, "append_raw_arrays"):
                 self.replay.append_raw_arrays(
                     tick=self.tick,
@@ -493,6 +505,7 @@ class SimulationLoop:
                 z4_herbivore_species=self.config.z4_herbivore_species_extinction,
                 z6_max_flora_energy=self.config.z6_max_total_flora_energy,
                 z7_max_total_herbivore_population=self.config.z7_max_total_herbivore_population,
+                tick_metrics=tick_metrics,
             )
             if debug_summary:
                 phase_timings_ms["termination"] = (time.perf_counter() - phase_started) * 1000.0

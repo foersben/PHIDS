@@ -4,7 +4,13 @@ PHIDS preserves deterministic run history through a replay channel that compleme
 
 ## Replay Artifact Semantics
 
-After ecological systems complete and telemetry is recorded, `SimulationLoop.step()` appends `get_state_snapshot()` output to `ReplayBuffer`. Snapshot payloads currently include tick index, termination flags, termination reason, and the environment projection returned by `GridEnvironment.to_dict()`. The artifact is therefore environment-centered and intentionally does not persist every ECS component field.
+After ecological systems complete, `SimulationLoop.step()` first computes a shared `TickMetrics`
+snapshot (`src/phids/telemetry/tick_metrics.py`) from one ECS aggregation pass. Telemetry recording
+and termination evaluation both consume this same snapshot, and the loop then appends
+`get_state_snapshot()` output to `ReplayBuffer`. Snapshot payloads include tick index,
+termination flags, termination reason, and the environment projection returned by
+`GridEnvironment.to_dict()`. The replay artifact remains environment-centered and intentionally
+does not persist every ECS component field.
 
 Frame serialization uses msgpack (`serialise_state`/`deserialise_state`). On disk, `ReplayBuffer.save(path)` writes an append-only record stream where each frame is prefixed by a 4-byte little-endian length. `ReplayBuffer.load(path)` replays the same envelope and gracefully stops on incomplete trailing records, retaining successfully decoded prior frames.
 
@@ -21,7 +27,11 @@ The distinction between replay and `WS /ws/simulation/stream` remains critical. 
 
 ## Termination Logic and Experimental Meaning
 
-Termination evaluation is implemented in `src/phids/telemetry/conditions.py` through `check_termination()` and `TerminationResult`. The active condition family spans `Z1` through `Z7`, covering max-tick completion, targeted or global species extinction, and upper-bound threshold crossings for aggregate flora energy or herbivore population.
+Termination evaluation is implemented in `src/phids/telemetry/conditions.py` through
+`check_termination()` and `TerminationResult`. The active condition family spans `Z1` through `Z7`,
+covering max-tick completion, targeted or global species extinction, and upper-bound threshold
+crossings for aggregate flora energy or herbivore population. The checker accepts an optional
+`tick_metrics` argument; when provided by `SimulationLoop`, no additional ECS scans are required.
 
 Let $\tau(\mathcal{X}_t)$ denote the termination predicate family over state $\mathcal{X}_t$. The loop applies
 

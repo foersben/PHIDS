@@ -19,6 +19,7 @@
 - REST + HTMX endpoints: `src/phids/api/routers/{ui,telemetry,config,simulation,batch}.py`.
 - WebSocket streaming managers: `src/phids/api/websockets/manager.py`.
 - App composition/bootstrap: `src/phids/api/main.py`.
+- CLI entrypoint and process startup flags: `src/phids/__main__.py` (Typer-based `phids` command).
 - Simulation systems: `src/phids/engine/systems/{lifecycle,interaction,signaling}.py`.
 - Telemetry/export/termination: `src/phids/telemetry/{analytics,export,conditions}.py`.
 - Replay/state serialization: `src/phids/io/{replay,zarr_replay}.py`.
@@ -26,7 +27,8 @@
 ## Workflows that matter
 - Environment/dev server:
   `uv sync --all-extras --dev`
-  `uv run uvicorn phids.api.main:app --reload --app-dir src`
+  `uv run phids --reload`
+  `uv run uvicorn phids.api.main:app --reload --app-dir src` (direct ASGI fallback)
 - Use Python 3.12 or newer locally; `pyproject.toml` now requires `>=3.12` and Ruff targets `py312`.
 - Full quality gate:
   `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest && uv run mkdocs build --strict`
@@ -41,8 +43,11 @@
 
 ## Repo-specific patterns
 - Pydantic v2 is the API boundary; validate at ingress, then operate on trusted internal state.
+- CLI parsing is Typer-driven in `src/phids/__main__.py`; preserve `main(argv)` compatibility for tests and embedding contexts.
 - System modules often use local imports to avoid circular dependencies—follow that pattern instead of “fixing” it globally.
 - UI changes usually require touching router handlers and partial templates; `tests/integration/api/test_ui_routes.py` is the fastest regression net.
+- `build_live_dashboard_payload` now emits columnar `plants`/`swarms` tables (parallel arrays) for `/ws/ui/stream`; do not reintroduce per-entity list-of-dict payload assembly in that hot path.
+- Per-tick ECS aggregation is shared via `TickMetrics` (`src/phids/telemetry/tick_metrics.py`), then consumed by both `TelemetryRecorder.record` and `check_termination` to avoid duplicate scans.
 - Trigger logic is rule-based now: `DraftState.trigger_rules` allows multiple substance rules per `(flora, herbivore)` pair.
 - WebSocket surfaces differ intentionally: `/ws/simulation/stream` sends msgpack+zlib bytes, `/ws/ui/stream` sends lightweight JSON for canvas rendering.
 - Long replay persistence should use Zarr-backed paths (`src/phids/io/zarr_replay.py`), while bounded in-memory snapshots remain in `src/phids/io/replay.py`.

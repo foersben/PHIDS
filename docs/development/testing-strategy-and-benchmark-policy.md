@@ -224,11 +224,13 @@ performance-sensitive expectations for core runtime surfaces.
 
 - `tests/benchmarks/test_flow_field_benchmark.py`
 - `tests/benchmarks/test_spatial_hash_benchmark.py`
+- `tests/benchmarks/test_dashboard_payload_benchmark.py`
 
 ### What they currently cover
 
 - flow-field generation cost on a representative grid,
-- hot-cell spatial-hash query behavior.
+- hot-cell spatial-hash query behavior,
+- live dashboard payload assembly + JSON serialization cost for `/ws/ui/stream`.
 
 ## When Benchmarks Are Mandatory
 
@@ -236,6 +238,8 @@ Benchmark tests should be run whenever a change touches:
 
 - `src/phids/engine/core/flow_field.py`
 - `src/phids/engine/core/ecs.py` spatial-hash behavior,
+- `src/phids/api/presenters/dashboard.py` live payload assembly,
+- `/ws/ui/stream` payload semantics consumed by `src/phids/api/websockets/manager.py`,
 - any code that materially changes the work performed by those subsystems,
 - diffusion-adjacent or locality-sensitive behavior that could indirectly degrade those paths.
 
