@@ -27,7 +27,7 @@ def test_dashboard_payload_build_and_json_encode_benchmark(  # type: ignore[no-u
 
     def _build_and_encode() -> str:
         payload = build_live_dashboard_payload(loop, substance_names={})
-        return json.dumps(payload)
+        return json.dumps(payload, separators=(",", ":"))
 
     encoded = benchmark(_build_and_encode)
 

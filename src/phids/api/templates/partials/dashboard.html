@@ -146,6 +146,8 @@
   const CELL_DETAILS_URL = '/api/ui/cell-details';
 
   let simData = null;
+  let simPlantRows = [];
+  let simSwarmRows = [];
   let placementData = null;
   let hoveredCell = null;
   let tooltipAnchor = null;
@@ -528,31 +530,8 @@
     if (!simData) return null;
     const x = cell.x;
     const y = cell.y;
-    const plantRows = asEntityRows(simData.plants || [], [
-      'entity_id',
-      'species_id',
-      'name',
-      'x',
-      'y',
-      'energy',
-      'root_link_count',
-      'active_signal_ids',
-      'active_toxin_ids',
-    ]);
-    const swarmRows = asEntityRows(simData.swarms || [], [
-      'x',
-      'y',
-      'population',
-      'species_id',
-      'name',
-      'energy',
-      'energy_deficit',
-      'repelled',
-      'repelled_ticks_remaining',
-      'toxin_level',
-      'intoxicated',
-      'initial_population',
-    ]);
+    const plantRows = simPlantRows;
+    const swarmRows = simSwarmRows;
     const plantsAtCell = plantRows.filter(plant => plant.x === x && plant.y === y);
     const touchingLinks = linksTouchingCell(simData.mycorrhizal_links || [], x, y);
     const plants = plantsAtCell.map(plant => {
@@ -728,30 +707,8 @@
   function drawSim(data) {
     const { gW, gH, cellW, cellH } = syncCanvasLayout(data);
     clearCanvas();
-    const plantRows = asEntityRows(data.plants || [], [
-      'entity_id',
-      'species_id',
-      'name',
-      'x',
-      'y',
-      'energy',
-      'root_link_count',
-      'active_signal_ids',
-      'active_toxin_ids',
-    ]);
-    const swarmRows = asEntityRows(data.swarms || [], [
-      'x',
-      'y',
-      'population',
-      'species_id',
-      'name',
-      'energy',
-      'energy_deficit',
-      'repelled',
-      'repelled_ticks_remaining',
-      'toxin_level',
-      'intoxicated',
-    ]);
+    const plantRows = simPlantRows;
+    const swarmRows = simSwarmRows;
 
     const maxE = data.max_energy || 1;
     if (data.species_energy && data.species_energy.length > 0) {
@@ -1226,6 +1183,30 @@
       }
       if (!data) return;
       simData = data;
+      simPlantRows = asEntityRows(data.plants || [], [
+        'entity_id',
+        'species_id',
+        'name',
+        'x',
+        'y',
+        'energy',
+        'root_link_count',
+        'active_signal_ids',
+        'active_toxin_ids',
+      ]);
+      simSwarmRows = asEntityRows(data.swarms || [], [
+        'x',
+        'y',
+        'population',
+        'species_id',
+        'name',
+        'energy',
+        'energy_deficit',
+        'repelled',
+        'repelled_ticks_remaining',
+        'toxin_level',
+        'intoxicated',
+      ]);
       tooltipCache.clear();
       stopPreviewPolling();
       const tickCounter = document.getElementById('tick-counter');
@@ -1248,6 +1229,8 @@
     ws.onclose = function () {
       if (!isActiveCanvas()) return;
       simData = null;
+      simPlantRows = [];
+      simSwarmRows = [];
       startPreviewPolling();
       wsRetryDelay = Math.min(wsRetryDelay * 1.5, 8000);
       frontendDiagnosticsUpdate({

@@ -190,7 +190,7 @@ class UIStreamManager:
                 )
                 if state_signature != last_state_signature:
                     payload = self._payload_builder(loop)
-                    await websocket.send_text(json.dumps(payload))
+                    await websocket.send_text(json.dumps(payload, separators=(",", ":")))
                     last_state_signature = state_signature
 
                 await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
