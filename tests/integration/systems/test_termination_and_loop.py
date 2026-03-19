@@ -26,7 +26,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.loop import SimulationLoop
 from phids.telemetry.conditions import check_termination
-from phids.telemetry.tick_metrics import collect_tick_metrics
+from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 
 def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:
@@ -250,3 +250,35 @@ def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization(
 
     assert calls["count"] == 0
     assert len(loop.replay) == 1
+
+
+def test_debug_tick_summary_uses_precomputed_metrics_without_swarm_rescan(
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Verify debug summary logging reads herbivore totals from shared metrics instead of querying swarms."""
+    loop = SimulationLoop(loop_config_builder(max_ticks=10))
+
+    original_query = loop.world.query
+
+    def _guard_query(component_type: type[object]) -> object:
+        if component_type is SwarmComponent:
+            raise AssertionError("debug summary must not query SwarmComponent")
+        return original_query(component_type)
+
+    loop.world.query = _guard_query  # type: ignore[method-assign]
+
+    loop._log_debug_tick_summary(
+        latest_metrics={
+            "total_flora_energy": 42.0,
+            "flora_population": 3,
+            "herbivore_clusters": 2,
+            "herbivore_population": 9,
+        },
+        tick_metrics=TickMetrics(
+            total_flora_energy=42.0,
+            flora_population=3,
+            herbivore_clusters=2,
+            herbivore_population=9,
+        ),
+        phase_timings_ms={"flow_field": 0.1},
+    )

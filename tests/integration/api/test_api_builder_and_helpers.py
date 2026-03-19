@@ -736,3 +736,39 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     assert payload["grid_width"] == 8
     assert payload["grid_height"] == 8
     assert payload["all_flora_species"]
+
+    # Enforce the hot-path columnar schema contract for live dashboard transport.
+    assert isinstance(payload["plants"], dict)
+    assert isinstance(payload["swarms"], dict)
+
+    expected_plant_columns = {
+        "entity_id",
+        "species_id",
+        "name",
+        "x",
+        "y",
+        "energy",
+        "root_link_count",
+        "active_signal_ids",
+        "active_toxin_ids",
+    }
+    expected_swarm_columns = {
+        "x",
+        "y",
+        "population",
+        "species_id",
+        "name",
+        "energy",
+        "energy_deficit",
+        "repelled",
+        "repelled_ticks_remaining",
+        "toxin_level",
+        "intoxicated",
+    }
+    assert set(payload["plants"].keys()) == expected_plant_columns
+    assert set(payload["swarms"].keys()) == expected_swarm_columns
+
+    plant_lengths = {len(column) for column in payload["plants"].values()}
+    swarm_lengths = {len(column) for column in payload["swarms"].values()}
+    assert len(plant_lengths) == 1
+    assert len(swarm_lengths) == 1

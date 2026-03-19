@@ -340,12 +340,30 @@ class SimulationLoop:
         self,
         *,
         latest_metrics: dict[str, Any] | None,
+        tick_metrics: TickMetrics,
         phase_timings_ms: dict[str, float],
     ) -> None:
         """Emit a coarse DEBUG snapshot for the current tick."""
-        swarm_population = 0
-        for entity in self.world.query(SwarmComponent):
-            swarm_population += entity.get_component(SwarmComponent).population
+        flora_energy = (
+            float(latest_metrics.get("total_flora_energy", tick_metrics.total_flora_energy))
+            if latest_metrics is not None
+            else float(tick_metrics.total_flora_energy)
+        )
+        flora_population = (
+            int(latest_metrics.get("flora_population", tick_metrics.flora_population))
+            if latest_metrics is not None
+            else int(tick_metrics.flora_population)
+        )
+        herbivore_clusters = (
+            int(latest_metrics.get("herbivore_clusters", tick_metrics.herbivore_clusters))
+            if latest_metrics is not None
+            else int(tick_metrics.herbivore_clusters)
+        )
+        herbivore_population = (
+            int(latest_metrics.get("herbivore_population", tick_metrics.herbivore_population))
+            if latest_metrics is not None
+            else int(tick_metrics.herbivore_population)
+        )
 
         logger.debug(
             (
@@ -354,10 +372,10 @@ class SimulationLoop:
                 "phase_timings_ms=%s)"
             ),
             self.tick,
-            float(latest_metrics.get("total_flora_energy", 0.0)) if latest_metrics else 0.0,
-            int(latest_metrics.get("flora_population", 0)) if latest_metrics else 0,
-            int(latest_metrics.get("herbivore_clusters", 0)) if latest_metrics else 0,
-            swarm_population,
+            flora_energy,
+            flora_population,
+            herbivore_clusters,
+            herbivore_population,
             len(self.replay),
             phase_timings_ms,
         )
@@ -514,6 +532,7 @@ class SimulationLoop:
             if debug_summary:
                 self._log_debug_tick_summary(
                     latest_metrics=latest_metrics,
+                    tick_metrics=tick_metrics,
                     phase_timings_ms=phase_timings_ms,
                 )
 
