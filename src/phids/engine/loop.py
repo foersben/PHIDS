@@ -462,8 +462,8 @@ class SimulationLoop:
                 phase_timings_ms["signaling"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # FIX: Commit all energy depletion from feeding and defense upkeep
-            # before telemetry reads it and the next tick's flow field evaluates it.
+            # Commit all energy depletion from feeding and defense upkeep before
+            # telemetry sampling and next-tick flow-field evaluation.
             self.env.rebuild_energy_layer()
 
             # Build one shared metrics snapshot for telemetry and termination.

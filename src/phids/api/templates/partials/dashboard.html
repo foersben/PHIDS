@@ -238,7 +238,6 @@
   }
 
   function asEntityRows(value, columns) {
-    if (Array.isArray(value)) return value;
     if (!isColumnarEntityTable(value)) return [];
     const count = value.x.length;
     const rows = [];
@@ -253,8 +252,8 @@
   }
 
   function hasLiveSimData(data) {
-    const hasPlants = Array.isArray(data?.plants) || isColumnarEntityTable(data?.plants);
-    const hasSwarms = Array.isArray(data?.swarms) || isColumnarEntityTable(data?.swarms);
+    const hasPlants = isColumnarEntityTable(data?.plants);
+    const hasSwarms = isColumnarEntityTable(data?.swarms);
     return !!data && typeof data.tick === 'number' && hasPlants && hasSwarms;
   }
 

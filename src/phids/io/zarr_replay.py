@@ -158,7 +158,7 @@ class ZarrReplayBuffer:
             "_metadata",
             data=meta_bytes,
             chunks=(len(meta_bytes),),
-            compressor=zarr.codecs.ZstdCodec(level=10),
+            compressors=(zarr.codecs.ZstdCodec(level=10),),
         )
 
     def append(self, state: dict[str, Any]) -> None:
@@ -283,7 +283,7 @@ class ZarrReplayBuffer:
             field_name,
             data=field_data,
             chunks=chunk_shape,
-            compressor=zarr.codecs.ZstdCodec(level=10),
+            compressors=(zarr.codecs.ZstdCodec(level=10),),
         )
 
     def __len__(self) -> int:
