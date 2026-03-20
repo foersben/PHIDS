@@ -97,6 +97,7 @@ Status legend:
 - Telemetry export matplotlib helper signatures now use explicit `Axes` typing at plot boundaries, reducing broad `Any` usage in visualization helpers without changing export behavior.
 - Zarr replay metadata loading now uses explicit runtime array narrowing and byte-decoding helpers, removing localized type-ignore escape hatches in `_load_metadata`.
 - SimulationLoop replay append protocol and snapshot cache now use explicit `ReplayState` typing, replacing broad dictionary-`Any` annotations at this runtime boundary.
+- Dashboard presenter live-substance visibility/serialization helpers now use explicit `SubstanceComponent` parameter typing instead of broad `Any` contracts.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`
