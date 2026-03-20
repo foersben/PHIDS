@@ -5,9 +5,11 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import msgpack
+import numpy as np
 import pytest
 
-from phids.io.replay import ReplayBuffer
+from phids.io.replay import ReplayBuffer, deserialise_state
 
 
 def test_replay_buffer_save_load_and_truncated_file_warning(
@@ -52,3 +54,41 @@ def test_replay_buffer_spills_old_frames_to_disk_and_retrieves_on_demand(
     loaded = ReplayBuffer.load(saved_path)
     assert len(loaded) == 5
     assert loaded.get_frame(2)["tick"] == 2
+
+
+def test_replay_buffer_append_raw_arrays_serialises_environment_layers() -> None:
+    """Raw-array append preserves layer payloads and termination metadata in replay frames."""
+
+    class _EnvStub:
+        def __init__(self) -> None:
+            self.plant_energy_layer = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+            self.signal_layers = np.zeros((1, 2, 2), dtype=np.float32)
+            self.toxin_layers = np.ones((1, 2, 2), dtype=np.float32)
+            self.flow_field = np.array([[0.25, -0.5], [1.25, 2.5]], dtype=np.float32)
+            self.wind_vector_x = np.full((2, 2), 0.1, dtype=np.float32)
+            self.wind_vector_y = np.full((2, 2), -0.2, dtype=np.float32)
+
+    replay = ReplayBuffer()
+    replay.append_raw_arrays(
+        tick=7, env=_EnvStub(), termination_state=(True, "Z1: max ticks reached")
+    )
+
+    frame = replay.get_frame(0)
+    assert frame["tick"] == 7
+    assert frame["terminated"] is True
+    assert frame["termination_reason"] == "Z1: max ticks reached"
+    assert frame["plant_energy_layer"] == [[1.0, 2.0], [3.0, 4.0]]
+    np.testing.assert_allclose(
+        np.asarray(frame["wind_vector_x"], dtype=np.float32),
+        np.array([[0.1, 0.1], [0.1, 0.1]], dtype=np.float32),
+    )
+    np.testing.assert_allclose(
+        np.asarray(frame["wind_vector_y"], dtype=np.float32),
+        np.array([[-0.2, -0.2], [-0.2, -0.2]], dtype=np.float32),
+    )
+
+
+def test_deserialise_state_rejects_non_mapping_payload() -> None:
+    """Decoding must fail closed when a replay frame payload is not a mapping."""
+    with pytest.raises(ValueError, match="must decode to a mapping"):
+        deserialise_state(msgpack.packb([1, 2, 3], use_bin_type=True))
