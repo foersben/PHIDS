@@ -34,6 +34,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import SUBSTANCE_EMIT_RATE
+from phids.api.schemas import TriggerConditionSchema
 
 
 def _is_substance_active_for_owner(
@@ -275,7 +276,7 @@ def _collect_mycorrhizal_targets(
 def run_signaling(
     world: ECSWorld,
     env: GridEnvironment,
-    trigger_conditions: dict[int, list[object]],
+    trigger_conditions: dict[int, list[TriggerConditionSchema]],
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
     tick: int,
@@ -293,8 +294,6 @@ def run_signaling(
         tick: Current simulation tick.
         plant_death_causes: Mapping of death causes to their respective counts.
     """
-    from phids.api.schemas import TriggerConditionSchema  # avoid circular at module level
-
     dead_substances: list[int] = []
     dead_plants: list[int] = []
     dead_plant_ids: set[int] = set()
@@ -342,11 +341,7 @@ def run_signaling(
         plant: PlantComponent = entity.get_component(PlantComponent)
         triggers = trigger_conditions.get(plant.species_id, [])
 
-        for trig_raw in triggers:
-            if not isinstance(trig_raw, TriggerConditionSchema):
-                continue
-            trig: TriggerConditionSchema = trig_raw
-
+        for trig in triggers:
             # Check for herbivore presence at this cell via spatial hash.
             herbivore_present = (
                 swarm_population_by_cell_species.get(

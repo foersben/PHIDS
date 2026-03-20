@@ -20,7 +20,7 @@ import logging
 import time
 from typing import Any, Callable, Protocol, cast
 
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas import SimulationConfig, TriggerConditionSchema
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
@@ -134,7 +134,7 @@ class SimulationLoop:
         self._herbivore_params: dict[int, Any] = {
             sp.species_id: sp for sp in config.herbivore_species
         }
-        self._trigger_conditions: dict[int, list[Any]] = {
+        self._trigger_conditions: dict[int, list[TriggerConditionSchema]] = {
             sp.species_id: list(sp.triggers) for sp in config.flora_species
         }
         self._diet_matrix: list[list[bool]] = config.diet_matrix.rows
