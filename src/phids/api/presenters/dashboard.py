@@ -55,7 +55,7 @@ dictionaries and eliminating hidden coupling to mutable application state.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from fastapi import HTTPException
 
@@ -63,6 +63,20 @@ if TYPE_CHECKING:
     from phids.api.ui_state import DraftState, TriggerRule
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.loop import SimulationLoop
+
+
+class _MycorrhizalLinkPayload(TypedDict, total=False):
+    """Serializable link payload used by draft and live mycorrhizal helpers."""
+
+    plant_index_a: int
+    plant_index_b: int
+    entity_id_a: int
+    entity_id_b: int
+    x1: int
+    y1: int
+    x2: int
+    y2: int
+    inter_species: bool
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +243,7 @@ def validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
+def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPayload]:
     """Infer potential mycorrhizal root links from adjacent draft plant placements.
 
     The mycorrhizal network in PHIDS is modelled as a graph of Manhattan-adjacent
@@ -246,7 +260,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
         A list of link dictionaries, each containing ``plant_index_a``, ``plant_index_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, and ``inter_species`` fields.
     """
-    links: list[dict[str, Any]] = []
+    links: list[_MycorrhizalLinkPayload] = []
     for left_index, left in enumerate(draft.initial_plants):
         for right_index in range(left_index + 1, len(draft.initial_plants)):
             right = draft.initial_plants[right_index]
@@ -269,7 +283,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[dict[str, Any]]:
     return links
 
 
-def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[dict[str, Any]]:
+def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLinkPayload]:
     """Serialise the unique set of root links currently active in the live ECS world.
 
     Each plant entity in the :class:`~phids.engine.core.ecs.ECSWorld` maintains a
@@ -294,7 +308,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[dict[str, Any]]:
         for entity in world.query(PlantComponent)
         for plant in [entity.get_component(PlantComponent)]
     }
-    links: list[dict[str, Any]] = []
+    links: list[_MycorrhizalLinkPayload] = []
     seen_pairs: set[tuple[int, int]] = set()
     for plant_id, plant in plant_lookup.items():
         for neighbour_id in sorted(plant.mycorrhizal_connections):
@@ -319,7 +333,9 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[dict[str, Any]]:
     return links
 
 
-def _links_touching_cell(links: list[dict[str, Any]], x: int, y: int) -> list[dict[str, Any]]:
+def _links_touching_cell(
+    links: list[_MycorrhizalLinkPayload], x: int, y: int
+) -> list[_MycorrhizalLinkPayload]:
     """Filter a serialised link list to those whose endpoint coordinates include (x, y).
 
     This filter is applied when assembling the per-cell tooltip payload, ensuring that
@@ -338,8 +354,7 @@ def _links_touching_cell(links: list[dict[str, Any]], x: int, y: int) -> list[di
     return [
         link
         for link in links
-        if (int(link["x1"]) == x and int(link["y1"]) == y)
-        or (int(link["x2"]) == x and int(link["y2"]) == y)
+        if (link["x1"] == x and link["y1"] == y) or (link["x2"] == x and link["y2"] == y)
     ]
 
 

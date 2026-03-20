@@ -98,6 +98,8 @@ Status legend:
 - Zarr replay metadata loading now uses explicit runtime array narrowing and byte-decoding helpers, removing localized type-ignore escape hatches in `_load_metadata`.
 - SimulationLoop replay append protocol and snapshot cache now use explicit `ReplayState` typing, replacing broad dictionary-`Any` annotations at this runtime boundary.
 - Dashboard presenter live-substance visibility/serialization helpers now use explicit `SubstanceComponent` parameter typing instead of broad `Any` contracts.
+- Dashboard presenter mycorrhizal link helpers now use an explicit typed payload contract for draft/live link dictionaries, reducing `Any` usage in link-path serialization.
+- Telemetry aggregate export now uses object-based mapping normalization for per-species series and typed tick-list coercion, reducing `Any` at the aggregate dataframe boundary.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`

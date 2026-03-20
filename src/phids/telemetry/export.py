@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import io
 import logging
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -76,6 +77,13 @@ def _to_int(value: object, default: int = 0) -> int:
         except ValueError:
             return default
     return default
+
+
+def _object_mapping(value: object) -> Mapping[object, object]:
+    """Return mapping view when the input is dictionary-like, otherwise empty mapping."""
+    if isinstance(value, Mapping):
+        return value
+    return {}
 
 
 # ---------------------------------------------------------------------------
@@ -1107,7 +1115,7 @@ def export_bytes_tex_table(
 
 
 def aggregate_to_dataframe(
-    aggregate: dict[str, Any],
+    aggregate: Mapping[str, object],
     *,
     flora_names: dict[int, str] | None = None,
     herbivore_names: dict[int, str] | None = None,
@@ -1130,11 +1138,12 @@ def aggregate_to_dataframe(
     """
     import pandas as pd
 
-    ticks = aggregate.get("ticks", [])
-    if not ticks:
+    ticks_raw = aggregate.get("ticks", [])
+    if not isinstance(ticks_raw, list) or not ticks_raw:
         return pd.DataFrame()
+    ticks: list[object] = ticks_raw
 
-    data: dict[str, Any] = {"tick": ticks}
+    data: dict[str, object] = {"tick": ticks}
     data["flora_population_mean"] = aggregate.get("flora_population_mean", [0.0] * len(ticks))
     data["flora_population_std"] = aggregate.get("flora_population_std", [0.0] * len(ticks))
     data["herbivore_population_mean"] = aggregate.get(
@@ -1142,16 +1151,22 @@ def aggregate_to_dataframe(
     )
     data["herbivore_population_std"] = aggregate.get("herbivore_population_std", [0.0] * len(ticks))
 
-    for fid, series_mean in aggregate.get("per_flora_pop_mean", {}).items():
-        name = (flora_names or {}).get(int(fid), f"flora_{fid}")
+    for fid, series_mean in _object_mapping(aggregate.get("per_flora_pop_mean", {})).items():
+        fid_int = _to_int(fid, default=-1)
+        name = (flora_names or {}).get(fid_int, f"flora_{fid_int}")
         data[f"{name}_pop_mean"] = series_mean
-        series_std = aggregate.get("per_flora_pop_std", {}).get(fid, [0.0] * len(ticks))
+        series_std = _object_mapping(aggregate.get("per_flora_pop_std", {})).get(
+            fid, [0.0] * len(ticks)
+        )
         data[f"{name}_pop_std"] = series_std
 
-    for pid, series_mean in aggregate.get("per_herbivore_pop_mean", {}).items():
-        name = (herbivore_names or {}).get(int(pid), f"herbivore_{pid}")
+    for pid, series_mean in _object_mapping(aggregate.get("per_herbivore_pop_mean", {})).items():
+        pid_int = _to_int(pid, default=-1)
+        name = (herbivore_names or {}).get(pid_int, f"herbivore_{pid_int}")
         data[f"{name}_pop_mean"] = series_mean
-        series_std = aggregate.get("per_herbivore_pop_std", {}).get(pid, [0.0] * len(ticks))
+        series_std = _object_mapping(aggregate.get("per_herbivore_pop_std", {})).get(
+            pid, [0.0] * len(ticks)
+        )
         data[f"{name}_pop_std"] = series_std
 
     return pd.DataFrame(data)
