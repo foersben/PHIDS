@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TelemetryRow = dict[str, object]
+TelemetryRow = dict[str, Any]
 TelemetryRows = list[TelemetryRow]
 
 
@@ -330,7 +330,7 @@ def telemetry_to_dataframe(rows: TelemetryRows) -> "pd.DataFrame":
 
 
 def generate_png_bytes(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     plot_type: str = "timeseries",
     *,
     flora_names: dict[int, str] | None = None,
@@ -478,7 +478,7 @@ def generate_png_bytes(
 
 def _plot_timeseries(
     ax: "Axes",
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     ticks: list[int],
     *,
     flora_names: dict[int, str] | None,
@@ -523,7 +523,7 @@ def _plot_timeseries(
 
 def _plot_phasespace(
     ax: "Axes",
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     prey_species_id: int,
     herbivore_species_id: int,
@@ -575,7 +575,7 @@ def _plot_phasespace(
 
 def _plot_defense_economy(
     ax: "Axes",
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     ticks: list[int],
     *,
     flora_names: dict[int, str] | None,
@@ -618,7 +618,7 @@ def _plot_defense_economy(
 
 def _plot_biomass_stack(
     ax: "Axes",
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     ticks: list[int],
     *,
     flora_names: dict[int, str] | None,
@@ -663,7 +663,7 @@ def _plot_biomass_stack(
 
 def _plot_survival_probability(
     ax: "Axes",
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     ticks: list[int],
     *,
     title: str | None,
@@ -697,7 +697,7 @@ def _plot_survival_probability(
 
 
 def generate_tikz_str(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     plot_type: str = "timeseries",
     *,
     flora_names: dict[int, str] | None = None,
@@ -800,7 +800,7 @@ def generate_tikz_str(
 
 
 def _tikz_timeseries(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     flora_names: dict[int, str] | None,
     herbivore_names: dict[int, str] | None,
@@ -871,7 +871,7 @@ def _tikz_timeseries(
 
 
 def _tikz_phasespace(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     prey_species_id: int,
     herbivore_species_id: int,
@@ -927,7 +927,7 @@ def _tikz_phasespace(
 
 
 def _tikz_defense_economy(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     flora_names: dict[int, str] | None,
     title: str | None,
@@ -984,7 +984,7 @@ def _tikz_defense_economy(
 
 
 def _tikz_biomass_stack(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     flora_names: dict[int, str] | None,
     title: str | None,
@@ -1035,7 +1035,7 @@ def _tikz_biomass_stack(
 
 
 def _tikz_survival_probability(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     title: str | None,
     x_label: str | None,
@@ -1076,7 +1076,7 @@ def _tikz_survival_probability(
 
 
 def export_bytes_tex_table(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     columns: str | None = None,
     include_flora_ids: str | None = None,

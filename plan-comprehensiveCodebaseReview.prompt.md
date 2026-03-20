@@ -101,6 +101,7 @@ Status legend:
 - Dashboard presenter mycorrhizal link helpers now use an explicit typed payload contract for draft/live link dictionaries, reducing `Any` usage in link-path serialization.
 - Dashboard presenter activation-condition rendering now uses mapping-based node typing with guarded concentration coercion, and preview/live payload column surfaces now use object-typed contracts (removing residual presenter-level `Any`).
 - Telemetry aggregate export now uses object-based mapping normalization for per-species series and typed tick-list coercion, reducing `Any` at the aggregate dataframe boundary.
+- Telemetry export plotting/TikZ/table helper signatures now consistently use shared `TelemetryRows` aliases, and aggregate coercion behavior is locked by focused unit tests for mixed-key species maps and malformed ticks.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`
