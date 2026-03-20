@@ -249,6 +249,19 @@ async def ui_trigger_rules(request: Request) -> Response:
     )
 
 
+@router.get("/ui/trigger-matrix", response_class=HTMLResponse, summary="Trigger rules (legacy URL)")
+async def ui_trigger_matrix_legacy(request: Request) -> Response:
+    """Serve the legacy trigger-rule URL without changing semantics.
+
+    Args:
+        request: FastAPI request object used by the template renderer.
+
+    Returns:
+        TemplateResponse: The same fragment returned by `ui_trigger_rules`.
+    """
+    return await ui_trigger_rules(request)
+
+
 @router.get("/ui/placements", response_class=HTMLResponse, summary="Placement editor partial")
 async def ui_placements(request: Request) -> Response:
     """Render the spatial placement editor and draft placement ledger.

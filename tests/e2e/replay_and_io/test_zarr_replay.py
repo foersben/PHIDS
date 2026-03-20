@@ -1,7 +1,8 @@
-"""Comprehensive test suite for the Zarr replay backend.
+"""Comprehensive test suite for Zarr replay backend and legacy msgpack migration.
 
-This test module validates ZarrReplayBuffer field serialization round-trip fidelity,
-metadata persistence, retention policies, and strict .zarr-only load semantics.
+This test module validates the ZarrReplayBuffer API compatibility with the legacy
+ReplayBuffer, field serialization round-trip fidelity, metadata persistence,
+retention policies, and backwards migration from msgpack-encoded replay files.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import msgpack  # type: ignore[import-untyped]
 
 try:
     from phids.io.zarr_replay import ZarrReplayBuffer
@@ -18,6 +20,8 @@ try:
     ZARR_AVAILABLE = True
 except ImportError:
     ZARR_AVAILABLE = False
+
+from phids.io.replay import ReplayBuffer
 
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
@@ -199,8 +203,8 @@ class TestZarrReplayBuffer:
 
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
-class TestZarrReplayLoadSemantics:
-    """Test forward-only replay loading semantics for Zarr stores."""
+class TestZarrReplayMigration:
+    """Test backwards-compatible migration from legacy msgpack replay format."""
 
     @pytest.fixture
     def temp_zarr_dir(self) -> Path:
@@ -210,6 +214,50 @@ class TestZarrReplayLoadSemantics:
         tmpdir = tempfile.mkdtemp()
         yield Path(tmpdir)
         shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.fixture
+    def temp_legacy_bin(self, temp_zarr_dir: Path) -> Path:
+        """Create a legacy msgpack-encoded replay file."""
+        replay_path = temp_zarr_dir / "legacy.bin"
+
+        # Create legacy replay with msgpack format
+        legacy_buf = ReplayBuffer()
+        for i in range(5):
+            state = {
+                "tick": i,
+                "terminated": False,
+                "termination_reason": None,
+                "energy": float(i * 10),
+                "population": i + 1,
+            }
+            legacy_buf.append(state)
+
+        legacy_buf.save(replay_path)
+        return replay_path
+
+    def test_zarr_load_legacy_msgpack(self, temp_zarr_dir: Path, temp_legacy_bin: Path) -> None:
+        """Verify migration of legacy msgpack replay to Zarr."""
+        buf = ZarrReplayBuffer.load(temp_legacy_bin)
+
+        assert len(buf) == 5
+
+        # Verify first frame
+        frame_0 = buf.get_frame(0)
+        assert frame_0["tick"] == 0
+        assert frame_0["energy"] == 0.0
+        assert frame_0["population"] == 1
+
+        # Verify middle frame
+        frame_2 = buf.get_frame(2)
+        assert frame_2["tick"] == 2
+        assert frame_2["energy"] == 20.0
+        assert frame_2["population"] == 3
+
+        # Verify last frame
+        frame_4 = buf.get_frame(4)
+        assert frame_4["tick"] == 4
+        assert frame_4["energy"] == 40.0
+        assert frame_4["population"] == 5
 
     def test_zarr_load_native_zarr(self, temp_zarr_dir: Path) -> None:
         """Verify native Zarr store loads correctly."""
@@ -227,21 +275,16 @@ class TestZarrReplayLoadSemantics:
         assert frame["tick"] == 1
         assert frame["data"] == 2
 
-    def test_zarr_load_rejects_legacy_bin_paths(self, temp_zarr_dir: Path) -> None:
-        """Verify .bin replay paths are rejected under forward-only loading semantics."""
-        legacy_path = temp_zarr_dir / "legacy.bin"
-        legacy_path.write_bytes(b"\x00\x00\x00\x00")
+    def test_zarr_load_legacy_non_mapping_payload_raises(self, temp_zarr_dir: Path) -> None:
+        """Migration fails fast when a legacy frame decodes to a non-mapping payload."""
+        bad_path = temp_zarr_dir / "legacy_bad.bin"
+        bad_payload = msgpack.packb(123, use_bin_type=True)
+        with bad_path.open("wb") as fp:
+            fp.write(len(bad_payload).to_bytes(4, "little"))
+            fp.write(bad_payload)
 
-        with pytest.raises(ValueError, match="only \\.zarr directories are supported"):
-            ZarrReplayBuffer.load(legacy_path)
-
-    def test_zarr_load_rejects_non_zarr_files_without_suffix(self, temp_zarr_dir: Path) -> None:
-        """Verify flat replay files without a .zarr suffix are rejected."""
-        flat_file = temp_zarr_dir / "replay"
-        flat_file.write_text("not a zarr store", encoding="utf-8")
-
-        with pytest.raises(ValueError, match="only \\.zarr directories are supported"):
-            ZarrReplayBuffer.load(flat_file)
+        with pytest.raises(ValueError, match="must decode to a mapping"):
+            ZarrReplayBuffer.load(bad_path)
 
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")

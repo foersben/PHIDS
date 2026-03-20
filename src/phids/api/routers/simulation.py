@@ -530,6 +530,11 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
                         repellent_walk_ticks=trig.repellent_walk_ticks,
                         energy_cost_per_tick=trig.energy_cost_per_tick,
                         irreversible=trig.irreversible,
+                        precursor_signal_id=(
+                            trig.precursor_signal_ids[0]
+                            if len(trig.precursor_signal_ids) == 1
+                            else trig.precursor_signal_id
+                        ),
                         min_herbivore_population=trig.min_herbivore_population,
                     )
                 )

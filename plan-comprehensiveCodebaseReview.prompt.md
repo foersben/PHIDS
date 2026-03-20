@@ -5,12 +5,6 @@ Status legend:
 - `IN PROGRESS`: implemented partially, breadth/depth still expanding.
 - `OPEN`: not yet addressed in this review cycle.
 
-## Non-Negotiable End State
-
-- Final state is forward-only: runtime and API surfaces must retain **zero backward compatibility**.
-- All compatibility shims, legacy aliases, migration translators, and deprecated route mirrors must be removed before plan closure.
-- Any temporary compatibility guard added during refactors is transitional only and must be replaced by explicit legacy-rejection behavior by the end of Phase 4/5.
-
 ## Phase Status
 
 1. `REALIZED` - High-risk correctness/performance pass (engine loop, telemetry, websocket payload path)
@@ -152,22 +146,16 @@ Status legend:
 
 ### 4) API/UI Contracts (`IN PROGRESS`)
 - Broaden contract checks from payload shape to route-level diagnostics/error semantics.
-- Enforce forward-only contract evolution for UI stream `contract_version` and reject legacy payload/route shapes without fallback decoding.
+- Formalize backward-compatibility policy for UI stream `contract_version` evolution.
 
 ### 5) Code Quality & Maintainability (`OPEN`)
 - Sweep for stale shims/comments and dead paths introduced by earlier refactors.
 - Run a focused typing-hole pass (`Any` hotspots, mypy strictness opportunities).
-- Remove legacy compatibility surfaces from runtime code paths:
-  - deprecated schema fields and translator validators,
-  - legacy route aliases that duplicate canonical handlers,
-  - compatibility adapter branches retained only for historical payloads.
-- Replace shim-preservation checks with legacy-rejection assertions and remove now-obsolete compatibility comments.
 
 ### 6) Testing Strategy (`IN PROGRESS`)
 - Property testing: pilots now include interaction arithmetic, signaling condition-tree semantics, termination parity, and replay spill/load plus truncation and header-corruption invariants.
 - Mutation testing: pilots now include termination, interaction, signaling, dashboard, and flow-field branch sentinels; monitor runtime budget.
 - Flakiness: add deterministic stress matrix for order/race-sensitive surfaces.
-- Legacy deprecation testing: add explicit rejection tests for removed contracts (schema-level validation failures and `404`/`422` route/input responses), and remove tests that encode compatibility-preservation expectations.
 
 ### 7) Security & Operational Hardening (`OPEN`)
 - Verify websocket lifecycle/resource cleanup under reconnect storms and failure injection.
@@ -194,10 +182,3 @@ Status legend:
 - Structural improvements roadmap: `OPEN`
 - Testing uplift plan: `REALIZED` (pilot lanes and benchmark budgets integrated)
 - AGENTS/docs update proposals: `OPEN` (evaluate at end of maintainability + docs pass)
-
-### Definition of Done (Plan Closure Gate)
-
-- No compatibility shims remain in runtime paths.
-- No legacy aliases/routes/fields/translators remain for historical contract preservation.
-- Test suite asserts rejection (not silent migration) of deprecated inputs/contracts.
-- Docs and runbooks describe only canonical forward contracts and current endpoints.
