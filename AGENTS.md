@@ -97,6 +97,8 @@
 - Core architectural and language rules: `.github/copilot-instructions.md`.
 - Docstring execution constraints and section ordering: `.github/prompts/docstrings.md.prompt.md`.
 - Mode-specific writing behavior: `.github/agents/docs-scientist.agent.md`, `.github/agents/docs-operator.agent.md`, `.github/agents/docs-annotator.agent.md`.
+- Canonical agent and MCP governance docs: `docs/development/agent-ecosystem-and-governance.md`, `docs/development/agent-ownership-delegation.md`, `docs/development/agent-invocation-and-reporting.md`, `docs/development/mcp-capability-model.md`, `docs/development/mcp-lifecycle.md`, `docs/development/agent-target-state-blueprint.md`.
+- Use those chapters as source-of-truth for implemented vs planned agent capabilities; keep this file as a concise routing guide.
 - Documentation work is not complete until `uv run mkdocs build --strict` passes.
 
 ## Git Operations Agent
@@ -104,3 +106,8 @@
 - Route Git-centric tasks directly to `git-ops` (for example: commit preparation, branch creation, PR publication, merge workflows, rollback support).
 - `git-ops` executes push/publish, pull-request actions, release-tag workflows, and release publication after explicit in-session instruction from a human operator.
 - `git-ops` runs with tool-backed execution through `.github/agents/git-ops.agent.md` and reports resulting refs, SHAs, and next verification actions.
+
+## Test Operations Agent
+- `test-ops` is the dedicated testing specialist for deterministic execution, failure isolation, coverage triage, and verification handoff.
+- Route test-centric work (failing suites, flaky behavior, missing coverage, gate triage) to `test-ops` through `.github/agents/test-ops.agent.md`.
+- Default escalation path: when `git-ops` encounters failing tests or coverage gates, it delegates remediation to `test-ops` and resumes publish flow only after recheck results are returned.

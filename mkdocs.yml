@@ -84,6 +84,12 @@ nav:
   - Development:
       - Overview: development/index.md
       - Contribution Workflow and Quality Gates: development/contribution-workflow-and-quality-gates.md
+      - Agent Ecosystem and Governance: development/agent-ecosystem-and-governance.md
+      - Agent Ownership and Delegation: development/agent-ownership-delegation.md
+      - Agent Invocation and Reporting: development/agent-invocation-and-reporting.md
+      - Agent Ecosystem Target-State Blueprint: development/agent-target-state-blueprint.md
+      - MCP Capability Model: development/mcp-capability-model.md
+      - MCP Lifecycle: development/mcp-lifecycle.md
       - Scientific Authoring Workflow: development/scientific-authoring-workflow.md
       - Documentation Status and Open Work: development/documentation-status-and-open-work.md
       - GitHub Actions and Local CI Rehearsal: development/github-actions-and-local-ci.md

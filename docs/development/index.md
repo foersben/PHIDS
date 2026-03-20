@@ -7,6 +7,12 @@ In practical terms, the development documentation translates project principles 
 ## Canonical Development Chapter
 
 - [`contribution-workflow-and-quality-gates.md`](contribution-workflow-and-quality-gates.md)
+- [`agent-ecosystem-and-governance.md`](agent-ecosystem-and-governance.md)
+- [`agent-ownership-delegation.md`](agent-ownership-delegation.md)
+- [`agent-invocation-and-reporting.md`](agent-invocation-and-reporting.md)
+- [`agent-target-state-blueprint.md`](agent-target-state-blueprint.md)
+- [`mcp-capability-model.md`](mcp-capability-model.md)
+- [`mcp-lifecycle.md`](mcp-lifecycle.md)
 - [`documentation-status-and-open-work.md`](documentation-status-and-open-work.md)
 - [`github-actions-and-local-ci.md`](github-actions-and-local-ci.md)
 - [`documentation-standards.md`](documentation-standards.md)
