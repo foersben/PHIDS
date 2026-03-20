@@ -58,3 +58,27 @@ def test_spatial_hash_register_move_and_gc(empty_world: ECSWorld) -> None:
     world.collect_garbage([entity.entity_id])
     assert not world.has_entity(entity.entity_id)
     assert entity.entity_id not in world.entities_at(3, 4)
+
+
+def test_register_position_replaces_previous_cell_membership(empty_world: ECSWorld) -> None:
+    """Registering a new position moves membership to the new cell and clears the old roster."""
+    world = empty_world
+    entity = world.create_entity()
+
+    world.register_position(entity.entity_id, 1, 1)
+    world.register_position(entity.entity_id, 2, 2)
+
+    assert entity.entity_id not in world.entities_at(1, 1)
+    assert entity.entity_id in world.entities_at(2, 2)
+
+
+def test_destroy_entity_cleans_spatial_hash_without_full_scan(empty_world: ECSWorld) -> None:
+    """Destroying a registered entity removes it from the spatial hash and prunes empty cells."""
+    world = empty_world
+    entity = world.create_entity()
+
+    world.register_position(entity.entity_id, 5, 7)
+    world.destroy_entity(entity.entity_id)
+
+    assert entity.entity_id not in world.entities_at(5, 7)
+    assert (5, 7) not in world._spatial_hash

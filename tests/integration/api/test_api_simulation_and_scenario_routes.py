@@ -136,6 +136,64 @@ async def test_api_simulation_wind_update_round_trip(
 
 
 @pytest.mark.asyncio
+async def test_api_simulation_step_preserves_live_wind_update(
+    api_client: AsyncClient,
+    config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Verify a direct wind update remains active when stepping without form overrides."""
+    load_resp = await api_client.post(
+        "/api/scenario/load", json=config_builder().model_dump(mode="json")
+    )
+    assert load_resp.status_code == 200, load_resp.text
+    wind_resp = await api_client.put("/api/simulation/wind", json={"wind_x": 1.25, "wind_y": -0.5})
+    assert wind_resp.status_code == 200, wind_resp.text
+
+    step_resp = await api_client.post("/api/simulation/step")
+
+    assert step_resp.status_code == 200, step_resp.text
+    assert api_main._sim_loop is not None
+    assert float(api_main._sim_loop.env.wind_vector_x.mean()) == pytest.approx(1.25)
+    assert float(api_main._sim_loop.env.wind_vector_y.mean()) == pytest.approx(-0.5)
+
+
+@pytest.mark.asyncio
+async def test_api_simulation_start_preserves_live_tick_rate_update(
+    api_client: AsyncClient,
+    config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Verify tick-rate updates through the live route are retained when start applies draft sync."""
+    load_resp = await api_client.post(
+        "/api/scenario/load", json=config_builder().model_dump(mode="json")
+    )
+    assert load_resp.status_code == 200, load_resp.text
+
+    tick_rate_resp = await api_client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 22.5})
+    assert tick_rate_resp.status_code == 200, tick_rate_resp.text
+
+    start_resp = await api_client.post("/api/simulation/start")
+    assert start_resp.status_code == 200, start_resp.text
+    assert api_main._sim_loop is not None
+    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(22.5)
+
+
+@pytest.mark.asyncio
+async def test_api_simulation_start_rejects_invalid_form_scalar(
+    api_client: AsyncClient,
+    config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Verify malformed form scalars on control routes produce a deterministic 422 response."""
+    load_resp = await api_client.post(
+        "/api/scenario/load", json=config_builder().model_dump(mode="json")
+    )
+    assert load_resp.status_code == 200, load_resp.text
+
+    resp = await api_client.post("/api/simulation/start", data={"grid_width": "not-an-int"})
+
+    assert resp.status_code == 422, resp.text
+    assert "grid_width" in resp.text
+
+
+@pytest.mark.asyncio
 async def test_api_telemetry_exports_include_tick_field(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],

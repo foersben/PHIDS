@@ -47,19 +47,31 @@ def _form_scalar(form_data: FormData, key: str) -> str | None:
 
 
 def _form_int(form_data: FormData, key: str) -> int | None:
-    """Parse an optional integer form field."""
+    """Parse an optional integer form field with explicit validation failures."""
     raw = _form_scalar(form_data, key)
     if raw is None:
         return None
-    return int(raw)
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid integer value for '{key}': {raw!r}",
+        ) from exc
 
 
 def _form_float(form_data: FormData, key: str) -> float | None:
-    """Parse an optional float form field."""
+    """Parse an optional float form field with explicit validation failures."""
     raw = _form_scalar(form_data, key)
     if raw is None:
         return None
-    return float(raw)
+    try:
+        return float(raw)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid float value for '{key}': {raw!r}",
+        ) from exc
 
 
 def _apply_optional_biotope_overrides(
@@ -407,6 +419,7 @@ async def update_tick_rate(
     """
     loop = api_main._get_loop()
     applied_tick_rate = loop.update_tick_rate(tick_rate_hz)
+    get_draft().tick_rate_hz = applied_tick_rate
     api_main.logger.info("Live simulation tick rate updated via API to %.2f Hz", applied_tick_rate)
     if api_main._is_htmx_request(request):
         return HTMLResponse(content=api_main._render_status_badge_html())
@@ -425,6 +438,9 @@ async def update_wind(payload: WindUpdatePayload) -> dict[str, float | str]:
     """
     loop = api_main._get_loop()
     loop.update_wind(payload.wind_x, payload.wind_y)
+    draft = get_draft()
+    draft.wind_x = payload.wind_x
+    draft.wind_y = payload.wind_y
     api_main.logger.info(
         "Wind updated via API to (vx=%.3f, vy=%.3f)", payload.wind_x, payload.wind_y
     )

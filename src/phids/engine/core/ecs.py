@@ -93,6 +93,7 @@ class ECSWorld:
             _entities: Mapping of entity id to Entity.
             _component_index: Index mapping component types to entity id sets.
             _spatial_hash: Grid cell roster mapping (x, y) to entity id sets.
+            _entity_positions: Reverse index mapping entity ids to their current cell.
         """
         self._next_id: int = 0
         self._entities: dict[int, Entity] = {}
@@ -100,6 +101,8 @@ class ECSWorld:
         self._component_index: dict[type[object], set[int]] = defaultdict(set)
         # (x, y) -> set of entity ids (Spatial Hash / Grid Cell Roster)
         self._spatial_hash: dict[tuple[int, int], set[int]] = defaultdict(set)
+        # entity_id -> (x, y) reverse lookup for O(1) spatial cleanup on move/destroy
+        self._entity_positions: dict[int, tuple[int, int]] = {}
 
     # ------------------------------------------------------------------
     # Entity lifecycle
@@ -129,9 +132,10 @@ class ECSWorld:
         # Clean component index
         for ctype in list(entity._components.keys()):
             self._component_index[ctype].discard(entity_id)
-        # Clean spatial hash (search all cells – acceptable for sparse grids)
-        for cell_set in self._spatial_hash.values():
-            cell_set.discard(entity_id)
+        # O(1) spatial cleanup using the reverse position index.
+        position = self._entity_positions.pop(entity_id, None)
+        if position is not None:
+            self._remove_from_cell(entity_id, position)
 
     def has_entity(self, entity_id: int) -> bool:
         """Return True if the entity exists.
@@ -194,7 +198,12 @@ class ECSWorld:
             yield from self._entities.values()
             return
         # Start from the smallest set for efficiency
-        sets = [self._component_index.get(ct, set()) for ct in component_types]
+        sets: list[set[int]] = []
+        for component_type in component_types:
+            indexed_ids = self._component_index.get(component_type)
+            if indexed_ids is None:
+                return
+            sets.append(indexed_ids)
         smallest = min(sets, key=len)
         for eid in list(smallest):
             entity = self._entities.get(eid)
@@ -215,7 +224,14 @@ class ECSWorld:
             x: X coordinate of the cell.
             y: Y coordinate of the cell.
         """
-        self._spatial_hash[(x, y)].add(entity_id)
+        new_position = (x, y)
+        old_position = self._entity_positions.get(entity_id)
+        if old_position == new_position:
+            return
+        if old_position is not None:
+            self._remove_from_cell(entity_id, old_position)
+        self._spatial_hash[new_position].add(entity_id)
+        self._entity_positions[entity_id] = new_position
 
     def unregister_position(self, entity_id: int, x: int, y: int) -> None:
         """Remove an entity from a grid cell.
@@ -225,9 +241,10 @@ class ECSWorld:
             x: X coordinate of the cell.
             y: Y coordinate of the cell.
         """
-        cell = self._spatial_hash.get((x, y))
-        if cell is not None:
-            cell.discard(entity_id)
+        position = (x, y)
+        self._remove_from_cell(entity_id, position)
+        if self._entity_positions.get(entity_id) == position:
+            self._entity_positions.pop(entity_id, None)
 
     def move_entity(self, entity_id: int, old_x: int, old_y: int, new_x: int, new_y: int) -> None:
         """Atomically update spatial hash when an entity moves.
@@ -253,6 +270,15 @@ class ECSWorld:
             set[int]: Entity ids occupying the cell.
         """
         return self._spatial_hash.get((x, y), set())
+
+    def _remove_from_cell(self, entity_id: int, cell: tuple[int, int]) -> None:
+        """Detach an entity from a cell and prune empty cell buckets."""
+        roster = self._spatial_hash.get(cell)
+        if roster is None:
+            return
+        roster.discard(entity_id)
+        if not roster:
+            self._spatial_hash.pop(cell, None)
 
     # ------------------------------------------------------------------
     # Garbage collection
