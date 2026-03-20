@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Callable, Protocol, cast
+from typing import Callable, Protocol, cast
 
 from phids.api.schemas import (
     FloraSpeciesParams,
@@ -34,7 +34,7 @@ from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
-from phids.io.replay import ReplayBuffer
+from phids.io.replay import ReplayBuffer, ReplayState
 from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
 from phids.telemetry.conditions import TerminationResult, check_termination
@@ -45,7 +45,7 @@ from phids.shared.logging_config import get_simulation_debug_interval
 class _ReplayBackend(Protocol):
     """Structural contract shared by replay backends used by SimulationLoop."""
 
-    def append(self, state: dict[str, Any]) -> None: ...
+    def append(self, state: ReplayState) -> None: ...
 
     def __len__(self) -> int: ...
 
@@ -103,7 +103,7 @@ class SimulationLoop:
         self._debug_tick_interval: int = get_simulation_debug_interval()
         self._state_revision: int = 0
         self._cached_snapshot_tick: int = -1
-        self._cached_snapshot: dict[str, Any] | None = None
+        self._cached_snapshot: ReplayState | None = None
 
         # Build environment
         self.env = GridEnvironment(
@@ -691,23 +691,26 @@ class SimulationLoop:
     # State snapshot for WebSocket streaming
     # ------------------------------------------------------------------
 
-    def get_state_snapshot(self) -> dict[str, Any]:
+    def get_state_snapshot(self) -> ReplayState:
         """Return a serialisable snapshot of the current grid state.
 
         Returns:
-            dict[str, Any]: Snapshot containing tick, termination state and
+            ReplayState: Snapshot containing tick, termination state and
             environment dictionary (from :meth:`GridEnvironment.to_dict`).
         """
         if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
             return self._cached_snapshot
 
-        snapshot = {
-            "tick": self.tick,
-            "terminated": self.terminated,
-            "termination_reason": self.termination_reason,
-            "state_revision": self._state_revision,
-            **self.env.to_dict(),
-        }
+        snapshot = cast(
+            ReplayState,
+            {
+                "tick": self.tick,
+                "terminated": self.terminated,
+                "termination_reason": self.termination_reason,
+                "state_revision": self._state_revision,
+                **self.env.to_dict(),
+            },
+        )
         self._cached_snapshot_tick = self.tick
         self._cached_snapshot = snapshot
         return snapshot
