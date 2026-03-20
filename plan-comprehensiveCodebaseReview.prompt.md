@@ -79,6 +79,7 @@ Status legend:
 - Telemetry recorder row buffering and dataframe flattening now use explicit telemetry row/species-map aliases, reducing `Any` in the analytics accumulation path.
 - Signaling activation-condition evaluation and active-toxin property merging now use explicit typed node/property contracts, removing remaining `Any` hotspots in this system.
 - API composition helper contracts in `api.main` now use object-based mapping/list annotations for condition parsing, trigger-context construction, and live diagnostics helpers.
+- Config router flora/herbivore patch payloads and trigger-condition node traversal now use object-typed maps, removing remaining router-level `Any` hotspots.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`

@@ -12,7 +12,7 @@ configuration transformations.
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -218,7 +218,7 @@ async def config_flora_update(
     fp = draft.flora_species[idx]
     if not isinstance(fp, FloraSpeciesParams):
         raise HTTPException(status_code=400, detail="Invalid flora species entry in draft state.")
-    updates: dict[str, Any] = {}
+    updates: dict[str, object] = {}
     if name is not None:
         updates["name"] = name
     if base_energy is not None:
@@ -342,7 +342,7 @@ async def config_herbivore_update(
         raise HTTPException(
             status_code=400, detail="Invalid herbivore species entry in draft state."
         )
-    updates: dict[str, Any] = {}
+    updates: dict[str, object] = {}
     if name is not None:
         updates["name"] = name
     if energy_min is not None:
@@ -706,7 +706,7 @@ async def config_trigger_rule_condition_node_update(
         )
 
     try:
-        current_node: dict[str, Any] = rule.activation_condition
+        current_node: dict[str, object] = rule.activation_condition
         if path:
             path_indices = [int(part) for part in path.split(".") if part != ""]
             for child_index in path_indices:
