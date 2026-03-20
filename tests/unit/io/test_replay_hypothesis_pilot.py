@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 import pytest
 
 from phids.io.replay import deserialise_state, serialise_state
@@ -67,3 +70,47 @@ def test_serialise_deserialise_roundtrip_preserves_state_payload(
     decoded = deserialise_state(serialise_state(state))
 
     assert decoded == state
+
+
+@pytest.mark.hypothesis_pilot
+@settings(max_examples=72, deadline=None, derandomize=True)
+@given(
+    values=st.lists(st.integers(min_value=0, max_value=10_000), min_size=1, max_size=16),
+    max_frames=st.integers(min_value=1, max_value=16),
+)
+def test_replay_buffer_spill_and_save_load_preserve_ordered_frames(
+    values: list[int],
+    max_frames: int,
+) -> None:
+    """Replay spill mode preserves frame order and payload integrity through save/load boundaries."""
+    from phids.io.replay import ReplayBuffer
+
+    states = [
+        {
+            "tick": tick,
+            "value": value,
+        }
+        for tick, value in enumerate(values)
+    ]
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        spill_path = root / "spill.bin"
+        merged_path = root / "merged.replay"
+
+        replay = ReplayBuffer(max_frames=max_frames, spill_to_disk=True, spill_path=spill_path)
+        for state in states:
+            replay.append(state)
+
+        assert len(replay) == len(states)
+        if len(states) > max_frames:
+            assert spill_path.exists()
+
+        for idx, expected in enumerate(states):
+            assert replay.get_frame(idx) == expected
+
+        replay.save(merged_path)
+        reloaded = ReplayBuffer.load(merged_path)
+        assert len(reloaded) == len(states)
+        for idx, expected in enumerate(states):
+            assert reloaded.get_frame(idx) == expected

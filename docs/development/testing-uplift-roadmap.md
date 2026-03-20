@@ -14,6 +14,7 @@ PHIDS already includes targeted mutation and property pilots, branch-focused int
 - dashboard mutation pilot coverage in `tests/unit/api/test_dashboard_mutation_pilot.py`,
 - bounded Hypothesis termination parity coverage in `tests/unit/telemetry/test_termination_hypothesis_pilot.py`,
 - bounded Hypothesis replay round-trip coverage in `tests/unit/io/test_replay_hypothesis_pilot.py`,
+- bounded Hypothesis replay spill/save/load persistence coverage in `tests/unit/io/test_replay_hypothesis_pilot.py`,
 - explicit warning/fail budget checks and p95 warning telemetry in `tests/benchmarks/test_dashboard_payload_benchmark.py`,
 - websocket encode-path budget checks in `tests/benchmarks/test_websocket_encode_benchmark.py`,
 - diffusion hotspot benchmark coverage in `tests/benchmarks/test_diffusion_hotspot_benchmark.py`,
@@ -53,7 +54,7 @@ Bounded Hypothesis pilots should remain in optional lanes and focus on invariant
 
 ### Near-Term Expansion Targets
 
-- replay spill/load invariants for bounded frame windows.
+- replay corruption/truncation invariants for bounded frame windows.
 
 ### Guardrails
 
