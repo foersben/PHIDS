@@ -122,3 +122,27 @@ def test_replay_buffer_owned_spill_cleanup_removes_file(tmp_path: Path) -> None:
     replay._cleanup_spill_file()  # noqa: SLF001
 
     assert not replay._spill_path.exists()  # noqa: SLF001
+
+
+def test_replay_buffer_get_frame_rejects_out_of_range_indices() -> None:
+    """Frame access fails deterministically for negative and overflow tick indices."""
+    replay = ReplayBuffer()
+    replay.append({"tick": 0, "value": 1})
+
+    with pytest.raises(IndexError, match="Replay frame index out of range"):
+        replay.get_frame(-1)
+
+    with pytest.raises(IndexError, match="Replay frame index out of range"):
+        replay.get_frame(1)
+
+
+def test_replay_buffer_read_spilled_frame_rejects_partial_payload(tmp_path: Path) -> None:
+    """Spill-frame reads fail closed when the stored payload length is incomplete."""
+    spill_path = tmp_path / "partial_spill.bin"
+    spill_path.write_bytes(b"abc")
+
+    replay = ReplayBuffer(spill_to_disk=True, spill_path=spill_path)
+    replay._spilled_index = [(0, 8)]  # noqa: SLF001
+
+    with pytest.raises(IndexError, match="Spill frame could not be read completely"):
+        replay._read_spilled_frame(0)  # noqa: SLF001
