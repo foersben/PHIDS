@@ -114,3 +114,39 @@ def test_replay_buffer_spill_and_save_load_preserve_ordered_frames(
         assert len(reloaded) == len(states)
         for idx, expected in enumerate(states):
             assert reloaded.get_frame(idx) == expected
+
+
+@pytest.mark.hypothesis_pilot
+@settings(max_examples=72, deadline=None, derandomize=True)
+@given(
+    values=st.lists(st.integers(min_value=0, max_value=10_000), min_size=1, max_size=16),
+    trunc_bytes=st.integers(min_value=1, max_value=64),
+)
+def test_replay_buffer_load_truncation_preserves_valid_prefix(
+    values: list[int],
+    trunc_bytes: int,
+) -> None:
+    """Loading a truncated replay preserves the maximal valid frame prefix without raising errors."""
+    from phids.io.replay import ReplayBuffer
+
+    states = [{"tick": tick, "value": value} for tick, value in enumerate(values)]
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        full_path = root / "full.replay"
+        truncated_path = root / "truncated.replay"
+
+        replay = ReplayBuffer()
+        for state in states:
+            replay.append(state)
+        replay.save(full_path)
+
+        payload = full_path.read_bytes()
+        cut = min(trunc_bytes, len(payload) - 1)
+        truncated_path.write_bytes(payload[:-cut])
+
+        loaded = ReplayBuffer.load(truncated_path)
+
+        assert len(loaded) <= len(states)
+        for idx in range(len(loaded)):
+            assert loaded.get_frame(idx) == states[idx]
