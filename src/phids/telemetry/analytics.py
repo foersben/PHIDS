@@ -33,7 +33,7 @@ sparse species sets.
 from __future__ import annotations
 
 import logging
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 import polars as pl
 
@@ -46,8 +46,8 @@ logger = logging.getLogger(__name__)
 TelemetryScalar: TypeAlias = None | bool | int | float | str
 SpeciesCountMap: TypeAlias = dict[int, int]
 SpeciesEnergyMap: TypeAlias = dict[int, float]
-TelemetryValue: TypeAlias = TelemetryScalar | SpeciesCountMap | SpeciesEnergyMap
-TelemetryRow: TypeAlias = dict[str, TelemetryValue]
+TelemetryValue: TypeAlias = Any
+TelemetryRow: TypeAlias = dict[str, Any]
 
 
 def _as_species_count_map(value: TelemetryValue | object) -> SpeciesCountMap:

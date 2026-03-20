@@ -241,6 +241,21 @@ class TriggerConditionSchema(BaseModel):
         ge=0,
         description="Aftereffect duration T_k (signals linger after emission ceases).",
     )
+    precursor_signal_id: int = Field(
+        default=-1,
+        ge=-1,
+        lt=MAX_SUBSTANCE_TYPES,
+        description=(
+            "Legacy single precursor signal identifier required before activation; "
+            "-1 means no precursor requirement."
+        ),
+    )
+    precursor_signal_ids: list[SubstanceId] = Field(
+        default_factory=list,
+        description=(
+            "Optional list of precursor signals that must all be active before activation."
+        ),
+    )
     activation_condition: ConditionNode | None = Field(
         default=None,
         description=(
