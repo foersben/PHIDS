@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Protocol, cast
+from typing import Any, Callable, Protocol, cast
 
 from phids.api.schemas import SimulationConfig
 from phids.engine.components.plant import PlantComponent
@@ -58,11 +58,11 @@ class _RawArrayReplayBackend(_ReplayBackend, Protocol):
 
 
 # Optional Zarr backend import
-_ImportedZarrReplayBuffer: type[Any] | None
+_ImportedZarrReplayBuffer: Callable[..., _RawArrayReplayBackend] | None
 try:
     from phids.io.zarr_replay import ZarrReplayBuffer as _ImportedZarrReplayBuffer
 
-    _ZarrReplayBuffer: type[Any] | None = _ImportedZarrReplayBuffer
+    _ZarrReplayBuffer: Callable[..., _RawArrayReplayBackend] | None = _ImportedZarrReplayBuffer
 except ImportError:
     _ImportedZarrReplayBuffer = None
     _ZarrReplayBuffer = None
@@ -362,6 +362,18 @@ class SimulationLoop:
             and self.tick % self._debug_tick_interval == 0
         )
 
+    def _append_replay_frame(self) -> None:
+        """Append one replay frame using the backend-specific ingestion path."""
+        if self._replay_supports_raw_arrays:
+            replay_backend = cast(_RawArrayReplayBackend, self.replay)
+            replay_backend.append_raw_arrays(
+                tick=self.tick,
+                env=self.env,
+                termination_state=(self.terminated, self.termination_reason),
+            )
+            return
+        self.replay.append(self.get_state_snapshot())
+
     def _log_debug_tick_summary(
         self,
         *,
@@ -522,15 +534,7 @@ class SimulationLoop:
                 plant_death_causes=plant_death_causes,
                 tick_metrics=tick_metrics,
             )
-            if self._replay_supports_raw_arrays:
-                replay_backend = cast(_RawArrayReplayBackend, self.replay)
-                replay_backend.append_raw_arrays(
-                    tick=self.tick,
-                    env=self.env,
-                    termination_state=(self.terminated, self.termination_reason),
-                )
-            else:
-                self.replay.append(self.get_state_snapshot())
+            self._append_replay_frame()
             latest_metrics = self.telemetry.get_latest_metrics()
             if debug_summary:
                 phase_timings_ms["telemetry_replay"] = (

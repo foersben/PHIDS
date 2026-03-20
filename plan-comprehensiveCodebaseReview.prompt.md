@@ -62,6 +62,7 @@ Status legend:
 ### E) Phase 4 maintainability kick-off (typing/debt)
 - `SimulationLoop` replay backend dispatch now uses an explicit typed contract instead of dynamic `Any`/`hasattr` branching.
 - Optional Zarr import typing now uses explicit cross-branch symbol declaration to eliminate static-analysis ambiguity.
+- Replay append branching is now isolated in a dedicated helper (`_append_replay_frame`) to reduce phase-loop complexity and centralize backend-specific behavior.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
