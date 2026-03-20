@@ -58,7 +58,7 @@ class TestZarrReplayBuffer:
         buf = ZarrReplayBuffer(spill_path=store_path)
 
         energy_field = np.random.rand(5, 5).astype(np.float32)
-        signal_field = np.random.rand(3, 5, 5).astype(np.float32)
+        signal_field = (np.random.rand(3, 5, 5) * 0.999 + 0.001).astype(np.float32)
 
         state = {
             "tick": 42,

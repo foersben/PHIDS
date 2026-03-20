@@ -72,6 +72,7 @@ Status legend:
 - Batch aggregate view/export handlers now use typed JSON aggregate normalization helpers to reduce `Any` hotspots while preserving CSV/TeX/TikZ behavior.
 - Replay raw-array ingestion now uses explicit structural environment contracts in both msgpack and Zarr replay backends, reducing `Any` in hot replay paths.
 - Msgpack replay payload serialization/deserialization now uses explicit `ReplayState`/`ReplayValue` aliases with decode-shape guards, tightening type safety at the replay I/O boundary.
+- Zarr replay metadata and frame reconstruction now use typed metadata entries plus `ReplayState`/`ReplayValue` aliases, reducing dynamic type escape hatches in the storage backend.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`

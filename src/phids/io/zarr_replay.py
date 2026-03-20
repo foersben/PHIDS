@@ -32,9 +32,10 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Protocol, TypedDict, cast
 
 import numpy as np
+from phids.io.replay import ReplayState, ReplayValue
 
 try:
     import zarr
@@ -59,6 +60,14 @@ class _ReplayEnvLike(Protocol):
     flow_field: np.ndarray
     wind_vector_x: np.ndarray
     wind_vector_y: np.ndarray
+
+
+class _MetadataEntry(TypedDict):
+    """Per-frame metadata record persisted alongside Zarr field arrays."""
+
+    tick: int
+    terminated: bool
+    termination_reason: str | None
 
 
 class ZarrReplayBuffer:
@@ -97,10 +106,34 @@ class ZarrReplayBuffer:
         self._store_path: Path | None = Path(spill_path) if spill_path is not None else None
         self._owns_store = spill_path is None
         self._max_frames = max_frames if max_frames is None else max(1, int(max_frames))
-        self._metadata: list[dict[str, Any]] = []
+        self._metadata: list[_MetadataEntry] = []
         self._root: zarr.Group | None = None
         self._frame_count: int = 0
         self._frame_offset: int = 0  # Index of oldest retained frame in Zarr store
+
+    def _coerce_metadata_entries(self, payload: object) -> list[_MetadataEntry]:
+        """Return metadata entries that match the persisted per-frame metadata schema."""
+        if not isinstance(payload, list):
+            return []
+        entries: list[_MetadataEntry] = []
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            tick = item.get("tick")
+            terminated = item.get("terminated")
+            termination_reason = item.get("termination_reason")
+            if not isinstance(tick, int) or not isinstance(terminated, bool):
+                continue
+            if termination_reason is not None and not isinstance(termination_reason, str):
+                continue
+            entries.append(
+                {
+                    "tick": tick,
+                    "terminated": terminated,
+                    "termination_reason": termination_reason,
+                }
+            )
+        return entries
 
     def _ensure_store(self) -> zarr.Group:
         """Lazily create or open the Zarr store group."""
@@ -128,11 +161,12 @@ class ZarrReplayBuffer:
                 meta_obj = json.loads(meta_str)
                 # Support both old format (direct array) and new format (with offset)
                 if isinstance(meta_obj, list):
-                    self._metadata = meta_obj
+                    self._metadata = self._coerce_metadata_entries(meta_obj)
                     self._frame_offset = 0
                 elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
-                    self._metadata = meta_obj["_metadata"]
-                    self._frame_offset = meta_obj.get("_frame_offset", 0)
+                    self._metadata = self._coerce_metadata_entries(meta_obj["_metadata"])
+                    frame_offset = meta_obj.get("_frame_offset", 0)
+                    self._frame_offset = frame_offset if isinstance(frame_offset, int) else 0
                 self._frame_count = len(self._metadata) + self._frame_offset
             except Exception as e:
                 logger.warning("Failed to load metadata from Zarr store: %s", e)
@@ -172,7 +206,7 @@ class ZarrReplayBuffer:
             compressors=(zarr.codecs.ZstdCodec(level=10),),
         )
 
-    def append(self, state: dict[str, Any]) -> None:
+    def append(self, state: ReplayState) -> None:
         """Serialize and append a tick state to the buffer.
 
         Decomposes the state dict into field arrays, storing each as a
@@ -181,10 +215,17 @@ class ZarrReplayBuffer:
         Args:
             state: Tick state mapping (e.g., from ``SimulationLoop.get_state_snapshot()``).
         """
+        tick_value = state.get("tick", self._frame_count)
+        terminated_value = state.get("terminated", False)
+        termination_reason_value = state.get("termination_reason", None)
         self._append_fields(
-            tick=state.get("tick", self._frame_count),
-            terminated=state.get("terminated", False),
-            termination_reason=state.get("termination_reason", None),
+            tick=int(tick_value)
+            if isinstance(tick_value, (int, float, str))
+            else self._frame_count,
+            terminated=bool(terminated_value),
+            termination_reason=(
+                termination_reason_value if isinstance(termination_reason_value, str) else None
+            ),
             fields={
                 field_name: field_data
                 for field_name, field_data in state.items()
@@ -227,12 +268,12 @@ class ZarrReplayBuffer:
         tick: int,
         terminated: bool,
         termination_reason: str | None,
-        fields: dict[str, Any],
+        fields: dict[str, ReplayValue | np.ndarray],
     ) -> None:
         """Persist one frame's metadata and field payloads into the store."""
         root = self._ensure_store()
 
-        metadata_entry: dict[str, Any] = {
+        metadata_entry: _MetadataEntry = {
             "tick": int(tick),
             "terminated": bool(terminated),
             "termination_reason": termination_reason,
@@ -242,7 +283,7 @@ class ZarrReplayBuffer:
         frame_key = f"frames/{self._frame_count:08d}"
         if frame_key not in root:
             root.create_group(frame_key)
-        frame_group = root[frame_key]
+        frame_group = cast(zarr.Group, root[frame_key])
 
         for field_name, field_data in fields.items():
             self._store_field(frame_group, field_name, field_data)
@@ -261,7 +302,12 @@ class ZarrReplayBuffer:
             self._frame_offset += frames_to_drop
             self._save_metadata()
 
-    def _store_field(self, frame_group: Any, field_name: str, field_data: Any) -> None:
+    def _store_field(
+        self,
+        frame_group: zarr.Group,
+        field_name: str,
+        field_data: ReplayValue | np.ndarray,
+    ) -> None:
         """Store a single field (array or nested list) into the frame group."""
         if isinstance(field_data, (list, tuple)):
             field_data = np.asarray(field_data, dtype=np.float32)
@@ -301,14 +347,14 @@ class ZarrReplayBuffer:
         """Return total number of retained frames."""
         return len(self._metadata)
 
-    def get_frame(self, tick: int) -> dict[str, Any]:
+    def get_frame(self, tick: int) -> ReplayState:
         """Return the deserialized state for the specified frame index.
 
         Args:
             tick: Index of the frame to retrieve (0-based).
 
         Returns:
-            dict[str, Any]: Reconstructed state mapping.
+            ReplayState: Reconstructed state mapping.
 
         Raises:
             IndexError: If the tick is out of range.
@@ -325,19 +371,25 @@ class ZarrReplayBuffer:
         if frame_key not in root:
             raise IndexError(f"Frame {tick} not found in Zarr store (key: {frame_key})")
 
-        frame_group = cast(Any, root[frame_key])
-        state: dict[str, Any] = {}
+        frame_group = cast(zarr.Group, root[frame_key])
+        state: ReplayState = {}
 
         # Restore metadata
         if tick < len(self._metadata):
-            state.update(self._metadata[tick])
+            metadata = self._metadata[tick]
+            state["tick"] = metadata["tick"]
+            state["terminated"] = metadata["terminated"]
+            state["termination_reason"] = metadata["termination_reason"]
 
         # Restore field arrays
         try:
             for field_name in frame_group.array_keys():
-                array_data = frame_group[field_name][:]
+                field_obj = frame_group[field_name]
+                if not isinstance(field_obj, zarr.Array):
+                    continue
+                array_data = np.asarray(field_obj[:])
                 # Convert back to native Python lists for compatibility
-                state[field_name] = array_data.tolist()
+                state[field_name] = cast(ReplayValue, array_data.tolist())
         except (AttributeError, TypeError):
             pass
 
@@ -345,7 +397,7 @@ class ZarrReplayBuffer:
         try:
             for attr_name, attr_value in frame_group.attrs.items():
                 if attr_name not in state:
-                    state[attr_name] = attr_value
+                    state[attr_name] = cast(ReplayValue, attr_value)
         except (AttributeError, TypeError):
             pass
 
