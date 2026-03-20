@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Any, TypeVar, cast
+from typing import TypeVar, cast
 
 C = TypeVar("C")
 
@@ -32,9 +32,9 @@ class Entity:
     """Lightweight wrapper holding an entity id and attached components."""
 
     entity_id: int
-    _components: dict[type[Any], Any] = field(default_factory=dict, repr=False)
+    _components: dict[type[object], object] = field(default_factory=dict, repr=False)
 
-    def add_component(self, component: Any) -> None:
+    def add_component(self, component: object) -> None:
         """Attach a component instance keyed by its type.
 
         Args:
@@ -53,7 +53,7 @@ class Entity:
         """
         return cast(C, self._components[component_type])
 
-    def has_component(self, component_type: type[Any]) -> bool:
+    def has_component(self, component_type: type[object]) -> bool:
         """Return True if the entity has a component of the given type.
 
         Args:
@@ -64,7 +64,7 @@ class Entity:
         """
         return component_type in self._components
 
-    def remove_component(self, component_type: type[Any]) -> None:
+    def remove_component(self, component_type: type[object]) -> None:
         """Detach a component of the given type (no-op if absent).
 
         Args:
@@ -97,7 +97,7 @@ class ECSWorld:
         self._next_id: int = 0
         self._entities: dict[int, Entity] = {}
         # component_type -> set of entity ids
-        self._component_index: dict[type[Any], set[int]] = defaultdict(set)
+        self._component_index: dict[type[object], set[int]] = defaultdict(set)
         # (x, y) -> set of entity ids (Spatial Hash / Grid Cell Roster)
         self._spatial_hash: dict[tuple[int, int], set[int]] = defaultdict(set)
 
@@ -159,7 +159,7 @@ class ECSWorld:
     # Component helpers
     # ------------------------------------------------------------------
 
-    def add_component(self, entity_id: int, component: Any) -> None:
+    def add_component(self, entity_id: int, component: object) -> None:
         """Attach a component to an entity and update the component index.
 
         Args:
@@ -170,7 +170,7 @@ class ECSWorld:
         entity.add_component(component)
         self._component_index[type(component)].add(entity_id)
 
-    def remove_component(self, entity_id: int, component_type: type[Any]) -> None:
+    def remove_component(self, entity_id: int, component_type: type[object]) -> None:
         """Detach a component of the specified type from an entity.
 
         Args:
@@ -181,7 +181,7 @@ class ECSWorld:
         entity.remove_component(component_type)
         self._component_index[component_type].discard(entity_id)
 
-    def query(self, *component_types: type[Any]) -> Iterator[Entity]:
+    def query(self, *component_types: type[object]) -> Iterator[Entity]:
         """Yield all entities that possess all listed component types.
 
         Args:
