@@ -26,7 +26,7 @@ which convolves each airborne signal layer with the pre-computed kernel and appl
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeAlias, TypedDict, cast
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
@@ -35,6 +35,41 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import SUBSTANCE_EMIT_RATE
 from phids.api.schemas import TriggerConditionSchema
+
+ActivationNode: TypeAlias = dict[str, object]
+
+
+class _ActiveToxinProps(TypedDict):
+    """Merged toxin properties for one active toxin layer during the current signaling pass."""
+
+    lethal: bool
+    lethality_rate: float
+    repellent: bool
+    repellent_walk_ticks: int
+
+
+def _coerce_int(value: object, default: int) -> int:
+    """Convert activation-node scalar payloads to int with deterministic fallback semantics."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float, str)):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _coerce_float(value: object, default: float) -> float:
+    """Convert activation-node scalar payloads to float with deterministic fallback semantics."""
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float, str)):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def _is_substance_active_for_owner(
@@ -59,7 +94,7 @@ def _build_swarm_population_index(world: ECSWorld) -> dict[tuple[int, int, int],
 def _check_activation_condition(
     plant: PlantComponent,
     owner_plant_id: int,
-    activation_condition: dict[str, Any] | None,
+    activation_condition: ActivationNode | None,
     env: GridEnvironment,
     swarm_population_by_cell_species: dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
@@ -94,15 +129,17 @@ def _check_activation_condition(
 
     kind = activation_condition.get("kind")
     if kind == "herbivore_presence":
-        herbivore_species_id = int(activation_condition.get("herbivore_species_id", -1))
-        min_herbivore_population = int(activation_condition.get("min_herbivore_population", 1))
+        herbivore_species_id = _coerce_int(activation_condition.get("herbivore_species_id", -1), -1)
+        min_herbivore_population = _coerce_int(
+            activation_condition.get("min_herbivore_population", 1), 1
+        )
         return (
             swarm_population_by_cell_species.get((plant.x, plant.y, herbivore_species_id), 0)
             >= min_herbivore_population
         )
 
     if kind == "substance_active":
-        substance_id = int(activation_condition.get("substance_id", -1))
+        substance_id = _coerce_int(activation_condition.get("substance_id", -1), -1)
         return _is_substance_active_for_owner(
             owner_plant_id,
             substance_id,
@@ -110,40 +147,48 @@ def _check_activation_condition(
         )
 
     if kind == "environmental_signal":
-        signal_id = int(activation_condition.get("signal_id", -1))
-        min_conc = float(activation_condition.get("min_concentration", 0.01))
+        signal_id = _coerce_int(activation_condition.get("signal_id", -1), -1)
+        min_conc = _coerce_float(activation_condition.get("min_concentration", 0.01), 0.01)
         if 0 <= signal_id < env.num_signals:
             return float(env.signal_layers[signal_id, plant.x, plant.y]) >= min_conc
         return False
 
     if kind == "all_of":
         conditions = activation_condition.get("conditions", [])
-        return bool(conditions) and all(
+        valid_conditions = (
+            [child for child in conditions if isinstance(child, dict)]
+            if isinstance(conditions, list)
+            else []
+        )
+        return bool(valid_conditions) and all(
             _check_activation_condition(
                 plant,
                 owner_plant_id,
-                child,
+                cast(ActivationNode, child),
                 env,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,
             )
-            for child in conditions
-            if isinstance(child, dict)
+            for child in valid_conditions
         )
 
     if kind == "any_of":
         conditions = activation_condition.get("conditions", [])
+        valid_conditions = (
+            [child for child in conditions if isinstance(child, dict)]
+            if isinstance(conditions, list)
+            else []
+        )
         return any(
             _check_activation_condition(
                 plant,
                 owner_plant_id,
-                child,
+                cast(ActivationNode, child),
                 env,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,
             )
-            for child in conditions
-            if isinstance(child, dict)
+            for child in valid_conditions
         )
 
     return False
@@ -458,7 +503,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 3. Emit active signals / toxins into environment layers
     # ------------------------------------------------------------------
-    active_toxin_props: dict[int, dict[str, Any]] = {}
+    active_toxin_props: dict[int, _ActiveToxinProps] = {}
 
     for entity in list(world.query(SubstanceComponent)):
         sub = entity.get_component(SubstanceComponent)

@@ -77,6 +77,7 @@ Status legend:
 - Scenario I/O helpers now use explicit typed JSON mapping aliases with root-object validation to reduce `Any` at the configuration ingest boundary.
 - Batch engine aggregation/sanitization paths now use explicit telemetry/JSON aliases and numeric coercion helpers, reducing `Any` in batch summary generation.
 - Telemetry recorder row buffering and dataframe flattening now use explicit telemetry row/species-map aliases, reducing `Any` in the analytics accumulation path.
+- Signaling activation-condition evaluation and active-toxin property merging now use explicit typed node/property contracts, removing remaining `Any` hotspots in this system.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
