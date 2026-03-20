@@ -69,6 +69,7 @@ Status legend:
 - Simulation control handlers now return explicit `Response` objects for mixed HTMX/JSON branches, avoiding broad `Any` unions in route annotations.
 - Telemetry fragment handlers now return concrete `Response` annotations instead of `Any`, and telemetry numeric coercion uses typed `object` input guards.
 - Config draft-mutation handlers now return concrete `Response` annotations instead of `Any`, improving typing consistency across the largest HTMX router partition.
+- Batch aggregate view/export handlers now use typed JSON aggregate normalization helpers to reduce `Any` hotspots while preserving CSV/TeX/TikZ behavior.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
@@ -78,6 +79,7 @@ Status legend:
   - `src/phids/api/routers/simulation.py`
   - `src/phids/api/routers/telemetry.py`
   - `src/phids/api/routers/config.py`
+  - `src/phids/api/routers/batch.py`
   - `tests/integration/systems/test_termination_and_loop.py`
   - `tests/integration/api/test_api_simulation_and_scenario_routes.py`
   - `tests/integration/api/test_ui_routes.py`

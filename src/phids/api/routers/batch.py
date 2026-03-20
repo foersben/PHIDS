@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
-from typing import Any
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -24,6 +24,31 @@ from phids.api.ui_state import get_draft
 from phids.telemetry.export import decimate_dataframe, filter_dataframe_columns, generate_tikz_str
 
 router = APIRouter()
+
+
+def _load_aggregate_json(summary_path: Path) -> dict[str, object]:
+    """Load one persisted aggregate JSON object, defaulting to an empty mapping on shape mismatch."""
+    with summary_path.open(encoding="utf-8") as fp:
+        payload = json.load(fp)
+    if isinstance(payload, dict):
+        return payload
+    api_main.logger.warning("Unexpected aggregate payload type in %s", summary_path)
+    return {}
+
+
+def _as_list(value: object) -> list[object]:
+    """Normalize aggregate array fields to list payloads."""
+    return value if isinstance(value, list) else []
+
+
+def _safe_float(value: object) -> float:
+    """Return a finite float-like value for aggregate export rows."""
+    if not isinstance(value, (str, bytes, bytearray, int, float)):
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _discover_persisted_batches() -> list[BatchJobState]:
@@ -205,10 +230,9 @@ async def batch_view(request: Request, job_id: str) -> Response:
     draft = get_draft()
     job = draft.active_batch_jobs.get(job_id)
     summary_path = api_main._BATCH_DIR / f"{job_id}_summary.json"
-    aggregate: dict[str, Any] = {}
+    aggregate: dict[str, object] = {}
     if summary_path.exists():
-        with summary_path.open(encoding="utf-8") as fp:
-            aggregate = json.load(fp)
+        aggregate = _load_aggregate_json(summary_path)
 
     return api_main.templates.TemplateResponse(
         request,
@@ -240,8 +264,7 @@ async def batch_export(
     if not summary_path.exists():
         raise HTTPException(status_code=404, detail=f"No summary found for job '{job_id}'.")
 
-    with summary_path.open(encoding="utf-8") as fp:
-        aggregate: dict[str, Any] = json.load(fp)
+    aggregate = _load_aggregate_json(summary_path)
 
     from phids.telemetry.export import aggregate_to_dataframe
 
@@ -261,11 +284,11 @@ async def batch_export(
         filename = f"phids_batch_{job_id}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
-        rows_agg: list[dict[str, Any]] = []
-        ticks = aggregate.get("ticks", [])
-        flora_mean = aggregate.get("flora_population_mean", [])
-        herbivore_mean = aggregate.get("herbivore_population_mean", [])
-        survival = aggregate.get("survival_probability_curve", [])
+        rows_agg: list[dict[str, object]] = []
+        ticks = _as_list(aggregate.get("ticks", []))
+        flora_mean = _as_list(aggregate.get("flora_population_mean", []))
+        herbivore_mean = _as_list(aggregate.get("herbivore_population_mean", []))
+        survival = _as_list(aggregate.get("survival_probability_curve", []))
         for i, t in enumerate(ticks):
             rows_agg.append(
                 {
@@ -274,7 +297,7 @@ async def batch_export(
                     "swarm_pop_by_species": {
                         0: herbivore_mean[i] if i < len(herbivore_mean) else 0
                     },
-                    "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
+                    "survival_probability": _safe_float(survival[i]) if i < len(survival) else 0.0,
                 }
             )
         normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
