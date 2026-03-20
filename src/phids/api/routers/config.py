@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
@@ -48,7 +48,7 @@ async def config_biotope(
     mycorrhizal_connection_cost: Annotated[float, Form()] = 1.0,
     mycorrhizal_growth_interval_ticks: Annotated[int, Form()] = 8,
     mycorrhizal_signal_velocity: Annotated[int, Form()] = 1,
-) -> Any:
+) -> Response:
     """Persist biotope parameters to the draft and return the updated partial.
 
     Args:
@@ -150,7 +150,7 @@ async def config_flora_add(
     seed_energy_cost: Annotated[float, Form()] = 5.0,
     camouflage: Annotated[str, Form()] = "off",
     camouflage_factor: Annotated[float, Form()] = 1.0,
-) -> Any:
+) -> Response:
     """Add one flora species to the draft and render the updated flora table."""
     draft = get_draft()
     if len(draft.flora_species) >= 16:
@@ -200,7 +200,7 @@ async def config_flora_update(
     seed_energy_cost: Annotated[float | None, Form()] = None,
     camouflage: Annotated[str | None, Form()] = None,
     camouflage_factor: Annotated[float | None, Form()] = None,
-) -> Any:
+) -> Response:
     """Patch one flora species in the draft and render the updated flora table."""
     draft = get_draft()
     idx = next(
@@ -279,7 +279,7 @@ async def config_herbivore_add(
     reproduction_energy_divisor: Annotated[float, Form()] = 1.0,
     energy_upkeep_per_individual: Annotated[float, Form()] = 0.05,
     split_population_threshold: Annotated[int, Form()] = 0,
-) -> Any:
+) -> Response:
     """Add one herbivore species to the draft and render the updated herbivore table."""
     draft = get_draft()
     if len(draft.herbivore_species) >= 16:
@@ -322,7 +322,7 @@ async def config_herbivore_update(
     reproduction_energy_divisor: Annotated[float | None, Form()] = None,
     energy_upkeep_per_individual: Annotated[float | None, Form()] = None,
     split_population_threshold: Annotated[int | None, Form()] = None,
-) -> Any:
+) -> Response:
     """Patch one herbivore species in the draft and render the updated herbivore table."""
     draft = get_draft()
     idx = next(
@@ -402,7 +402,7 @@ async def config_substance_add(
     repellent_walk_ticks: Annotated[int, Form()] = 3,
     energy_cost_per_tick: Annotated[float, Form()] = 1.0,
     irreversible: Annotated[str, Form()] = "false",
-) -> Any:
+) -> Response:
     """Add one substance definition to the draft and render the updated substance table."""
     draft = get_draft()
     try:
@@ -451,7 +451,7 @@ async def config_substance_update(
     repellent_walk_ticks: Annotated[int | None, Form()] = None,
     energy_cost_per_tick: Annotated[float | None, Form()] = None,
     irreversible: Annotated[str | None, Form()] = None,
-) -> Any:
+) -> Response:
     """Patch one substance definition in the draft and render the updated table."""
     draft = get_draft()
     try:
@@ -508,7 +508,7 @@ async def matrix_diet(
     herbivore_idx: Annotated[int, Form()],
     flora_idx: Annotated[int, Form()],
     compatible: Annotated[str, Form()] = "toggle",
-) -> Any:
+) -> Response:
     """Toggle or set one diet compatibility cell in the draft matrix."""
     draft = get_draft()
     updated_value = draft_service.set_diet_compatibility(
@@ -549,7 +549,7 @@ async def config_trigger_rule_add(
     substance_id: Annotated[int, Form()],
     min_herbivore_population: Annotated[int, Form()] = 5,
     activation_condition_json: Annotated[str, Form()] = "",
-) -> Any:
+) -> Response:
     """Add one trigger rule to the draft and render the updated trigger-rule table."""
     draft = get_draft()
     draft_service.add_trigger_rule(
@@ -586,7 +586,7 @@ async def config_trigger_rule_update(
     substance_id: Annotated[int | None, Form()] = None,
     min_herbivore_population: Annotated[int | None, Form()] = None,
     activation_condition_json: Annotated[str | None, Form()] = None,
-) -> Any:
+) -> Response:
     """Update one trigger rule in the draft and render the updated trigger-rule table."""
     draft = get_draft()
     if index < 0 or index >= len(draft.trigger_rules):
@@ -623,7 +623,7 @@ async def config_trigger_rule_condition_root(
     request: Request,
     index: int,
     node_kind: Annotated[str, Form()],
-) -> Any:
+) -> Response:
     """Create or replace the root activation-condition node for one trigger rule."""
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
@@ -649,7 +649,7 @@ async def config_trigger_rule_condition_child_add(
     index: int,
     node_kind: Annotated[str, Form()],
     parent_path: Annotated[str, Form()] = "",
-) -> Any:
+) -> Response:
     """Append one child activation-condition node to a group node."""
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
@@ -684,7 +684,7 @@ async def config_trigger_rule_condition_node_update(
     substance_id: Annotated[int | None, Form()] = None,
     signal_id: Annotated[int | None, Form()] = None,
     min_concentration: Annotated[float | None, Form()] = None,
-) -> Any:
+) -> Response:
     """Update or replace one node in a trigger-rule activation-condition tree."""
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
@@ -762,7 +762,7 @@ async def config_trigger_rule_condition_delete(
     request: Request,
     index: int,
     path: Annotated[str, Form()] = "",
-) -> Any:
+) -> Response:
     """Delete one trigger-rule condition node or clear the whole condition tree."""
     draft = get_draft()
     api_main._trigger_rule_by_index(draft, index)
@@ -782,7 +782,7 @@ async def config_trigger_rule_condition_delete(
     response_class=HTMLResponse,
     summary="Delete a trigger rule",
 )
-async def config_trigger_rule_delete(request: Request, index: int) -> Any:
+async def config_trigger_rule_delete(request: Request, index: int) -> Response:
     """Remove one trigger rule from the draft and render the updated trigger table."""
     draft = get_draft()
     try:
@@ -850,7 +850,7 @@ async def config_placement_plant_add(
     x: Annotated[int, Form()],
     y: Annotated[int, Form()],
     energy: Annotated[float, Form()] = 10.0,
-) -> Any:
+) -> Response:
     """Create one plant placement and render the updated placement ledger."""
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
@@ -881,7 +881,7 @@ async def config_placement_swarm_add(
     y: Annotated[int, Form()],
     population: Annotated[int, Form()] = 10,
     energy: Annotated[float, Form()] = 50.0,
-) -> Any:
+) -> Response:
     """Create one swarm placement and render the updated placement ledger."""
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
@@ -918,7 +918,7 @@ async def config_placement_swarm_add(
     response_class=HTMLResponse,
     summary="Remove a placed plant",
 )
-async def config_placement_plant_delete(request: Request, index: int) -> Any:
+async def config_placement_plant_delete(request: Request, index: int) -> Response:
     """Remove one plant placement and render the updated placement ledger."""
     draft = get_draft()
     try:
@@ -943,7 +943,7 @@ async def config_placement_plant_delete(request: Request, index: int) -> Any:
     response_class=HTMLResponse,
     summary="Remove a placed swarm",
 )
-async def config_placement_swarm_delete(request: Request, index: int) -> Any:
+async def config_placement_swarm_delete(request: Request, index: int) -> Response:
     """Remove one swarm placement and render the updated placement ledger."""
     draft = get_draft()
     try:
@@ -966,7 +966,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Any:
 @router.post(
     "/api/config/placements/clear", response_class=HTMLResponse, summary="Clear all placements"
 )
-async def config_placements_clear(request: Request) -> Any:
+async def config_placements_clear(request: Request) -> Response:
     """Clear all plant and swarm placements and render the updated placement ledger."""
     draft = get_draft()
     draft_service.clear_placements(draft)

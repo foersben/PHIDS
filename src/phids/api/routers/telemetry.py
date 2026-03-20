@@ -12,7 +12,6 @@ perturb deterministic engine advancement or the biological semantics encoded in 
 from __future__ import annotations
 
 import math
-from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -34,8 +33,10 @@ from phids.telemetry.export import (
 router = APIRouter()
 
 
-def _safe_float(value: Any) -> float:
+def _safe_float(value: object) -> float:
     """Return a finite float representation for telemetry serialization."""
+    if not isinstance(value, (str, bytes, bytearray, int, float)):
+        return 0.0
     try:
         candidate = float(value)
     except (TypeError, ValueError):
@@ -164,7 +165,7 @@ async def telemetry_table_preview(
     herbivore_ids: str | None = None,
     tick_interval: int = 1,
     limit: int = 200,
-) -> Any:
+) -> Response:
     """Render a bounded HTML preview of filtered telemetry rows.
 
     Args:
@@ -286,8 +287,7 @@ async def export_telemetry_format(
             df = telemetry_to_dataframe(filtered_rows)
             df = filter_dataframe_columns(df, columns)
             df = decimate_dataframe(df, tick_interval)
-            csv_text = cast(str, df.to_csv(index=False))
-            return csv_text.encode("utf-8")
+            return str(df.to_csv(index=False)).encode("utf-8")
 
         data = await run_in_threadpool(_build_export_csv)
         filename = f"phids_{normalized_data_type}.csv"
@@ -372,7 +372,7 @@ async def export_telemetry_format(
 
 
 @router.get("/api/telemetry", summary="Telemetry SVG chart partial")
-async def telemetry_chart(request: Request) -> Any:
+async def telemetry_chart(request: Request) -> Response:
     """Render the HTMX-polled telemetry chart fragment.
 
     Args:
