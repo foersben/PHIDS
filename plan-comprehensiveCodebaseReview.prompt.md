@@ -46,7 +46,7 @@ Status legend:
 - Bounded signaling condition-tree truth-table invariants now run under the Hypothesis pilot lane.
 - Marker-based pilot lane selection is now wired for deterministic local/CI execution (`mutation_pilot`, `hypothesis_pilot`).
 - Dashboard payload benchmark now emits warning/fail budget checks for mean and p95 latency with environment overrides.
-- Replay buffer unit coverage now includes explicit raw-array append serialization checks, fail-closed deserialization guards for non-mapping msgpack payloads, bounded in-memory overflow retention behavior, frame-index bounds checks, and spill-file cleanup/partial-read guard branches.
+- Replay buffer unit coverage now includes explicit raw-array append serialization checks, fail-closed deserialization guards for non-mapping msgpack payloads, bounded in-memory overflow retention behavior, frame-index bounds checks, and spill-file cleanup/partial-read guard branches (including non-fatal cleanup OSError handling).
 - Evidence:
   - `tests/integration/systems/test_interaction_property_invariants.py`
   - `tests/integration/systems/test_interaction_hypothesis_pilot.py`

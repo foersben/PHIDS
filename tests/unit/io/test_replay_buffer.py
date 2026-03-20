@@ -124,6 +124,24 @@ def test_replay_buffer_owned_spill_cleanup_removes_file(tmp_path: Path) -> None:
     assert not replay._spill_path.exists()  # noqa: SLF001
 
 
+def test_replay_buffer_owned_spill_cleanup_swallows_oserror(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cleanup remains non-fatal when owned spill unlink raises OSError."""
+    replay = ReplayBuffer(spill_to_disk=True)
+    replay._spill_path = tmp_path / "owned_spill_error.bin"  # noqa: SLF001
+    replay._owns_spill_file = True  # noqa: SLF001
+
+    def _raise_unlink_error(self: Path, *, missing_ok: bool = False) -> None:  # noqa: ARG001
+        raise OSError("simulated unlink failure")
+
+    monkeypatch.setattr(Path, "unlink", _raise_unlink_error)
+
+    # Should not raise; cleanup logs debug and continues.
+    replay._cleanup_spill_file()  # noqa: SLF001
+
+
 def test_replay_buffer_get_frame_rejects_out_of_range_indices() -> None:
     """Frame access fails deterministically for negative and overflow tick indices."""
     replay = ReplayBuffer()
