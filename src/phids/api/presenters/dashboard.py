@@ -54,6 +54,7 @@ dictionaries and eliminating hidden coupling to mutable application state.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException
@@ -95,6 +96,20 @@ def _coerce_int(value: object, *, default: int = -1) -> int:
     return default
 
 
+def _coerce_float(value: object, *, default: float = 0.0) -> float:
+    """Coerce an arbitrary object to ``float``, returning ``default`` on failure."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+
+
 def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
     """Return a deterministic fallback display label for a substance identifier.
 
@@ -114,7 +129,7 @@ def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
 
 
 def _describe_activation_condition(
-    condition: dict[str, Any] | None,
+    condition: Mapping[str, object] | None,
     *,
     herbivore_names: dict[int, str] | None = None,
     substance_names: dict[int, str] | None = None,
@@ -162,7 +177,7 @@ def _describe_activation_condition(
         return f"{substance_label} active"
     if kind == "environmental_signal":
         signal_id = _coerce_int(condition.get("signal_id", -1), default=-1)
-        min_conc = float(condition.get("min_concentration", 0.01))
+        min_conc = _coerce_float(condition.get("min_concentration", 0.01), default=0.01)
         signal_label = (
             substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False))
             if substance_names is not None
@@ -170,7 +185,10 @@ def _describe_activation_condition(
         )
         return f"{signal_label} concentration ≥ {min_conc:.2f}"
 
-    children = [child for child in condition.get("conditions", []) if isinstance(child, dict)]
+    raw_children = condition.get("conditions", [])
+    if not isinstance(raw_children, list):
+        return "unconditional"
+    children = [child for child in raw_children if isinstance(child, Mapping)]
     joiner = " AND " if kind == "all_of" else " OR "
     if not children:
         return "unconditional"
