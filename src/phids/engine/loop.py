@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any
+from typing import Any, Protocol, cast
 
 from phids.api.schemas import SimulationConfig
 from phids.engine.components.plant import PlantComponent
@@ -36,12 +36,35 @@ from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 from phids.shared.logging_config import get_simulation_debug_interval
 
+
+class _ReplayBackend(Protocol):
+    """Structural contract shared by replay backends used by SimulationLoop."""
+
+    def append(self, state: dict[str, Any]) -> None: ...
+
+    def __len__(self) -> int: ...
+
+
+class _RawArrayReplayBackend(_ReplayBackend, Protocol):
+    """Replay backend contract for direct environment-array ingestion."""
+
+    def append_raw_arrays(
+        self,
+        *,
+        tick: int,
+        env: GridEnvironment,
+        termination_state: tuple[bool, str | None],
+    ) -> None: ...
+
+
 # Optional Zarr backend import
+_ImportedZarrReplayBuffer: type[Any] | None
 try:
     from phids.io.zarr_replay import ZarrReplayBuffer as _ImportedZarrReplayBuffer
 
     _ZarrReplayBuffer: type[Any] | None = _ImportedZarrReplayBuffer
 except ImportError:
+    _ImportedZarrReplayBuffer = None
     _ZarrReplayBuffer = None
 
 logger = logging.getLogger(__name__)
@@ -92,9 +115,11 @@ class SimulationLoop:
         # Telemetry
         self.telemetry = TelemetryRecorder()
         # Deterministic replay state frames; backend selected by config
-        self.replay: Any
+        self.replay: _ReplayBackend
+        self._replay_supports_raw_arrays = False
         if config.replay_backend == "zarr" and _ZarrReplayBuffer is not None:
             self.replay = _ZarrReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
+            self._replay_supports_raw_arrays = True
             logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
         else:
             self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES, spill_to_disk=True)
@@ -497,8 +522,9 @@ class SimulationLoop:
                 plant_death_causes=plant_death_causes,
                 tick_metrics=tick_metrics,
             )
-            if hasattr(self.replay, "append_raw_arrays"):
-                self.replay.append_raw_arrays(
+            if self._replay_supports_raw_arrays:
+                replay_backend = cast(_RawArrayReplayBackend, self.replay)
+                replay_backend.append_raw_arrays(
                     tick=self.tick,
                     env=self.env,
                     termination_state=(self.terminated, self.termination_reason),

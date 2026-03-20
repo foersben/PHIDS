@@ -143,6 +143,36 @@ def test_termination_with_precomputed_tick_metrics_matches_world_scan() -> None:
     assert via_metrics.reason == via_world_scan.reason
 
 
+@pytest.mark.parametrize(
+    ("setup", "kwargs"),
+    [
+        ("z2", {"z2_flora_species": 1}),
+        ("z4", {"z4_herbivore_species": 1}),
+        ("z6", {"z6_max_flora_energy": 1.0}),
+        ("z7", {"z7_max_total_herbivore_population": 1}),
+    ],
+)
+def test_termination_parity_between_metrics_and_world_scan_across_branches(
+    setup: str,
+    kwargs: dict[str, int | float],
+) -> None:
+    """Branch outcomes remain identical when termination is evaluated via shared TickMetrics."""
+    world = _world_with_counts([0], [0])
+    if setup == "z6":
+        plant = next(iter(world.query(PlantComponent))).get_component(PlantComponent)
+        plant.energy = 8.0
+    if setup == "z7":
+        swarm = next(iter(world.query(SwarmComponent))).get_component(SwarmComponent)
+        swarm.population = 9
+
+    metrics = collect_tick_metrics(world)
+    via_metrics = check_termination(world, tick=0, max_ticks=100, tick_metrics=metrics, **kwargs)
+    via_world_scan = check_termination(world, tick=0, max_ticks=100, **kwargs)
+
+    assert via_metrics.terminated == via_world_scan.terminated
+    assert via_metrics.reason == via_world_scan.reason
+
+
 def test_simulation_loop_step_updates_replay_and_telemetry(
     loop_config_builder: Callable[..., SimulationConfig],
 ) -> None:
@@ -249,6 +279,28 @@ def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization(
     asyncio.run(loop.step())
 
     assert calls["count"] == 0
+    assert len(loop.replay) == 1
+
+
+def test_step_with_msgpack_backend_uses_snapshot_serialization_path(
+    loop_config_builder: Callable[..., SimulationConfig],
+) -> None:
+    """Validate fallback replay backend still appends via cached state snapshots."""
+    config = loop_config_builder(max_ticks=10).model_copy(update={"replay_backend": "msgpack"})
+    loop = SimulationLoop(config)
+
+    calls = {"count": 0}
+    original_to_dict = loop.env.to_dict
+
+    def _counted_to_dict() -> dict[str, object]:
+        calls["count"] += 1
+        return original_to_dict()
+
+    loop.env.to_dict = _counted_to_dict  # type: ignore[method-assign]
+
+    asyncio.run(loop.step())
+
+    assert calls["count"] == 1
     assert len(loop.replay) == 1
 
 

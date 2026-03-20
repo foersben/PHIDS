@@ -10,7 +10,7 @@ Status legend:
 1. `REALIZED` - High-risk correctness/performance pass (engine loop, telemetry, websocket payload path)
 2. `REALIZED` - Contract/API hardening for `/ws/ui/stream` columnar schema
 3. `REALIZED` - Testing quality uplift (property + mutation pilots + benchmark budgets)
-4. `OPEN` - Maintainability pass (debt/shims/typing sweep)
+4. `IN PROGRESS` - Maintainability pass (debt/shims/typing sweep)
 5. `OPEN` - Docs/DevEx pass (drift alignment and onboarding accuracy)
 
 ## Realized Work (Evidence-Backed)
@@ -58,6 +58,14 @@ Status legend:
   - `tests/unit/engine/core/test_flow_field_mutation_pilot.py`
   - `pyproject.toml`
   - `.github/workflows/ci.yml`
+
+### E) Phase 4 maintainability kick-off (typing/debt)
+- `SimulationLoop` replay backend dispatch now uses an explicit typed contract instead of dynamic `Any`/`hasattr` branching.
+- Optional Zarr import typing now uses explicit cross-branch symbol declaration to eliminate static-analysis ambiguity.
+- Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
+- Evidence:
+  - `src/phids/engine/loop.py`
+  - `tests/integration/systems/test_termination_and_loop.py`
 
 ## Open Work by Review Area
 
