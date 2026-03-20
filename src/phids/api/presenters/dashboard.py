@@ -55,7 +55,7 @@ dictionaries and eliminating hidden coupling to mutable application state.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from fastapi import HTTPException
 
@@ -441,7 +441,7 @@ def _serialize_live_substance(
     *,
     herbivore_names: dict[int, str],
     substance_names: dict[int, str],
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Serialise a single live runtime substance component into a dashboard-ready dictionary.
 
     The output dictionary encodes the full biological and operational state of the substance
@@ -509,7 +509,7 @@ def _fallback_live_substance_payload(
     *,
     is_toxin: bool,
     substance_names: dict[int, str],
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Return a snapshot-only fallback payload for a diffused field residue without a live owner.
 
     When the environmental signal or toxin layer at a given cell is non-zero but no live
@@ -573,7 +573,7 @@ def build_live_cell_details(
     y: int,
     *,
     substance_names: dict[int, str],
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Assemble a rich tooltip payload for a single live-simulation grid cell.
 
     This function traverses the ECS world and double-buffered environmental layers for cell
@@ -630,8 +630,8 @@ def build_live_cell_details(
     live_links = _build_live_mycorrhizal_links(loop)
     touching_links = _links_touching_cell(live_links, x, y)
 
-    plants: list[dict[str, Any]] = []
-    swarms: list[dict[str, Any]] = []
+    plants: list[dict[str, object]] = []
+    swarms: list[dict[str, object]] = []
 
     cell_signal_peak = float(env.signal_layers[:, x, y].max()) if env.num_signals > 0 else 0.0
     cell_toxin_peak = float(env.toxin_layers[:, x, y].max()) if env.num_toxins > 0 else 0.0
@@ -660,7 +660,10 @@ def build_live_cell_details(
                 for substance in plant_substances
             ]
             visible_keys = {
-                (int(payload["substance_id"]), payload["kind"] == "toxin")
+                (
+                    _coerce_int(payload.get("substance_id", -1), default=-1),
+                    payload.get("kind") == "toxin",
+                )
                 for payload in visible_substances
             }
             for signal_id in range(env.num_signals):
@@ -688,7 +691,10 @@ def build_live_cell_details(
                 )
                 visible_keys.add(substance_key)
             visible_substances.sort(
-                key=lambda payload: (payload["kind"] == "toxin", int(payload["substance_id"]))
+                key=lambda payload: (
+                    payload.get("kind") == "toxin",
+                    _coerce_int(payload.get("substance_id", -1), default=-1),
+                )
             )
             mycorrhizal_neighbours = []
             for neighbour_id in sorted(plant.mycorrhizal_connections):
@@ -809,7 +815,7 @@ def build_preview_cell_details(
     *,
     draft: DraftState,
     substance_names: dict[int, str] | None = None,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Assemble a tooltip payload for a single draft (pre-simulation) grid cell.
 
     When no live simulation is running, the operator-facing canvas displays the draft
@@ -865,7 +871,7 @@ def build_preview_cell_details(
     preview_links = build_draft_mycorrhizal_links(draft)
     touching_links = _links_touching_cell(preview_links, x, y)
 
-    plants: list[dict[str, Any]] = []
+    plants: list[dict[str, object]] = []
     for index, plant in enumerate(draft.initial_plants):
         if plant.x != x or plant.y != y:
             continue
@@ -968,7 +974,7 @@ def build_live_dashboard_payload(
     loop: SimulationLoop,
     *,
     substance_names: dict[int, str],
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Assemble the full JSON payload streamed to the browser canvas over the UI WebSocket.
 
     This function constructs the authoritative rendering payload consumed by
@@ -1025,7 +1031,7 @@ def build_live_dashboard_payload(
         substance = entity.get_component(SubstanceComponent)
         owned_substances.setdefault(substance.owner_plant_id, []).append(substance)
 
-    plants: dict[str, list[Any]] = {
+    plants: dict[str, list[object]] = {
         "entity_id": [],
         "species_id": [],
         "name": [],
@@ -1075,7 +1081,7 @@ def build_live_dashboard_payload(
         plants["active_signal_ids"].append(visible_signal_ids)
         plants["active_toxin_ids"].append(visible_toxin_ids)
 
-    swarms: dict[str, list[Any]] = {
+    swarms: dict[str, list[object]] = {
         "x": [],
         "y": [],
         "population": [],
@@ -1113,7 +1119,9 @@ def build_live_dashboard_payload(
         swarms["intoxicated"].append(toxin_level > 0.0)
 
     live_flora_species_ids = {
-        int(species_id) for species_id in plants["species_id"] if int(species_id) >= 0
+        sid
+        for sid in (_coerce_int(species_id, default=-1) for species_id in plants["species_id"])
+        if sid >= 0
     }
     all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []
