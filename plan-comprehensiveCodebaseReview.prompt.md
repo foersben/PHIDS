@@ -80,6 +80,7 @@ Status legend:
 - Signaling activation-condition evaluation and active-toxin property merging now use explicit typed node/property contracts, removing remaining `Any` hotspots in this system.
 - API composition helper contracts in `api.main` now use object-based mapping/list annotations for condition parsing, trigger-context construction, and live diagnostics helpers.
 - Config router flora/herbivore patch payloads and trigger-condition node traversal now use object-typed maps, removing remaining router-level `Any` hotspots.
+- Simulation loop species lookup caches and debug-summary metric extraction now use schema/telemetry-specific typing with deterministic scalar coercion helpers.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`

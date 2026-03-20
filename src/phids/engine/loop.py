@@ -20,7 +20,12 @@ import logging
 import time
 from typing import Any, Callable, Protocol, cast
 
-from phids.api.schemas import SimulationConfig, TriggerConditionSchema
+from phids.api.schemas import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+    SimulationConfig,
+    TriggerConditionSchema,
+)
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
@@ -31,7 +36,7 @@ from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
 from phids.io.replay import ReplayBuffer
 from phids.shared.constants import MAX_REPLAY_FRAMES
-from phids.telemetry.analytics import TelemetryRecorder
+from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
 from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 from phids.shared.logging_config import get_simulation_debug_interval
@@ -130,8 +135,10 @@ class SimulationLoop:
                 )
 
         # Pre-compute species parameter lookups
-        self._flora_params: dict[int, Any] = {sp.species_id: sp for sp in config.flora_species}
-        self._herbivore_params: dict[int, Any] = {
+        self._flora_params: dict[int, FloraSpeciesParams] = {
+            sp.species_id: sp for sp in config.flora_species
+        }
+        self._herbivore_params: dict[int, HerbivoreSpeciesParams] = {
             sp.species_id: sp for sp in config.herbivore_species
         }
         self._trigger_conditions: dict[int, list[TriggerConditionSchema]] = {
@@ -377,28 +384,67 @@ class SimulationLoop:
     def _log_debug_tick_summary(
         self,
         *,
-        latest_metrics: dict[str, Any] | None,
+        latest_metrics: TelemetryRow | None,
         tick_metrics: TickMetrics,
         phase_timings_ms: dict[str, float],
     ) -> None:
         """Emit a coarse DEBUG snapshot for the current tick."""
+
+        def _metric_float(value: object, default: float) -> float:
+            if isinstance(value, bool):
+                return default
+            if isinstance(value, (int, float)):
+                return float(value)
+            if isinstance(value, str):
+                try:
+                    return float(value)
+                except ValueError:
+                    return default
+            return default
+
+        def _metric_int(value: object, default: int) -> int:
+            if isinstance(value, bool):
+                return default
+            if isinstance(value, int):
+                return value
+            if isinstance(value, float):
+                return int(value)
+            if isinstance(value, str):
+                try:
+                    return int(value)
+                except ValueError:
+                    return default
+            return default
+
         flora_energy = (
-            float(latest_metrics.get("total_flora_energy", tick_metrics.total_flora_energy))
+            _metric_float(
+                latest_metrics.get("total_flora_energy", tick_metrics.total_flora_energy),
+                float(tick_metrics.total_flora_energy),
+            )
             if latest_metrics is not None
             else float(tick_metrics.total_flora_energy)
         )
         flora_population = (
-            int(latest_metrics.get("flora_population", tick_metrics.flora_population))
+            _metric_int(
+                latest_metrics.get("flora_population", tick_metrics.flora_population),
+                int(tick_metrics.flora_population),
+            )
             if latest_metrics is not None
             else int(tick_metrics.flora_population)
         )
         herbivore_clusters = (
-            int(latest_metrics.get("herbivore_clusters", tick_metrics.herbivore_clusters))
+            _metric_int(
+                latest_metrics.get("herbivore_clusters", tick_metrics.herbivore_clusters),
+                int(tick_metrics.herbivore_clusters),
+            )
             if latest_metrics is not None
             else int(tick_metrics.herbivore_clusters)
         )
         herbivore_population = (
-            int(latest_metrics.get("herbivore_population", tick_metrics.herbivore_population))
+            _metric_int(
+                latest_metrics.get("herbivore_population", tick_metrics.herbivore_population),
+                int(tick_metrics.herbivore_population),
+            )
             if latest_metrics is not None
             else int(tick_metrics.herbivore_population)
         )
@@ -478,7 +524,7 @@ class SimulationLoop:
                 self.world,
                 self.env,
                 self.tick,
-                self._flora_params,
+                cast(dict[int, object], self._flora_params),
                 mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
                 mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
                 mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
