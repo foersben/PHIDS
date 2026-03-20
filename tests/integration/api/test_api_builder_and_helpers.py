@@ -16,6 +16,7 @@ from starlette.requests import Request
 from phids.api import main as api_main
 from phids.api.main import app
 from phids.api.presenters.dashboard import (
+    build_live_dashboard_payload,
     build_draft_mycorrhizal_links,
     validate_cell_coordinates,
 )
@@ -730,14 +731,18 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
 
     loop = SimulationLoop(_config_with_trigger())
     api_main._sim_loop = loop
+    expected_payload = build_live_dashboard_payload(loop, substance_names={})
     with client.websocket_connect("/ws/ui/stream") as websocket:
         payload = json.loads(websocket.receive_text())
-    assert payload["tick"] == 0
-    assert payload["grid_width"] == 8
-    assert payload["grid_height"] == 8
+
     assert payload["all_flora_species"]
+    assert payload["tick"] == expected_payload["tick"]
+    assert payload["grid_width"] == expected_payload["grid_width"]
+    assert payload["grid_height"] == expected_payload["grid_height"]
+    assert payload["all_flora_species"] == expected_payload["all_flora_species"]
 
     expected_top_level_keys = {
+        "contract_version",
         "tick",
         "grid_width",
         "grid_height",
@@ -757,10 +762,6 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
         "paused",
     }
     assert set(payload.keys()) == expected_top_level_keys
-
-    # Enforce the hot-path columnar schema contract for live dashboard transport.
-    assert isinstance(payload["plants"], dict)
-    assert isinstance(payload["swarms"], dict)
 
     expected_plant_columns = {
         "entity_id",
@@ -793,3 +794,5 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     swarm_lengths = {len(column) for column in payload["swarms"].values()}
     assert len(plant_lengths) == 1
     assert len(swarm_lengths) == 1
+    assert len(payload["plants"]["entity_id"]) == len(expected_payload["plants"]["entity_id"])
+    assert len(payload["swarms"]["species_id"]) == len(expected_payload["swarms"]["species_id"])

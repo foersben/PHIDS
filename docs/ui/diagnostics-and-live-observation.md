@@ -31,25 +31,33 @@ for browser rendering, not programmatic full-state transport.
 
 ### Message content
 
-Each frame sent by `/ws/ui/stream` contains:
+Each frame sent by `/ws/ui/stream` contains the following top-level fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `contract_version` | `int` | Wire-contract version for additive schema evolution (current value: `1`) |
 | `tick` | `int` | Current simulation tick |
+| `grid_width` | `int` | Horizontal grid resolution in cells |
+| `grid_height` | `int` | Vertical grid resolution in cells |
 | `max_energy` | `float` | Maximum plant energy for canvas normalization |
-| `plant_energy` | `[[float]]` | 2-D list of aggregate plant energy values per cell |
 | `species_energy` | `[{species_id, name, layer}]` | Per-species energy arrays for overlay selection |
+| `all_flora_species` | `[{species_id, name, extinct}]` | Complete flora catalogue including extinction state |
 | `signal_overlay` | `[[float]]` | Summed signal concentration layer (null if no signals) |
 | `toxin_overlay` | `[[float]]` | Summed toxin concentration layer (null if no toxins) |
 | `max_signal` | `float` | Maximum value in `signal_overlay` for normalization |
 | `max_toxin` | `float` | Maximum value in `toxin_overlay` for normalization |
-| `plants` | `[{entity_id, x, y, species_id, energy, camouflage, ...}]` | Live plant list |
-| `swarms` | `[{entity_id, x, y, species_id, population, energy, ...}]` | Live swarm list |
+| `plants` | `{column: [values...]}` | Columnar live-plant table (parallel arrays) |
+| `swarms` | `{column: [values...]}` | Columnar live-swarm table (parallel arrays) |
 | `mycorrhizal_links` | `[{x1, y1, x2, y2, inter_species}]` | Active root-network links |
 | `running` | `bool` | Whether the simulation loop is currently running |
 | `paused` | `bool` | Whether the loop is currently paused |
 | `terminated` | `bool` | Whether a termination condition has been satisfied |
 | `termination_reason` | `str\|null` | Human-readable Z-code reason if terminated |
+
+The `plants` and `swarms` fields use strict columnar transport. Required columns are:
+
+- Plants: `entity_id`, `species_id`, `name`, `x`, `y`, `energy`, `root_link_count`, `active_signal_ids`, `active_toxin_ids`.
+- Swarms: `x`, `y`, `population`, `species_id`, `name`, `energy`, `energy_deficit`, `repelled`, `repelled_ticks_remaining`, `toxin_level`, `intoxicated`.
 
 ### Transmission policy
 

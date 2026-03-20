@@ -1,6 +1,8 @@
 {
+  "contract_version": 1,
   "top_level_keys": [
     "all_flora_species",
+    "contract_version",
     "grid_height",
     "grid_width",
     "max_energy",
