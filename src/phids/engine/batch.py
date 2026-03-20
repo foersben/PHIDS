@@ -145,7 +145,7 @@ def _run_single_headless(
         seed: Random seed for reproducibility and ensemble diversity.
 
     Returns:
-        list[dict[str, Any]]: List of per-tick telemetry row dicts accumulated by
+        list[TelemetryRow]: List of per-tick telemetry row dicts accumulated by
         :class:`~phids.telemetry.analytics.TelemetryRecorder`.
     """
     random.seed(seed)
@@ -191,7 +191,7 @@ def _run_and_save(
             ``(scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str)``.
 
     Returns:
-        list[dict[str, Any]]: Per-tick telemetry rows for this run.
+        list[TelemetryRow]: Per-tick telemetry rows for this run.
     """
     scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str = args
     rows = _run_single_headless(scenario_dict, max_ticks, seed)
@@ -226,7 +226,7 @@ def aggregate_batch_telemetry(
             :func:`_run_single_headless`.
 
     Returns:
-        dict[str, Any]: Aggregate summary with keys ``ticks``,
+        BatchAggregate: Aggregate summary with keys ``ticks``,
         ``flora_population_mean``, ``flora_population_std``,
         ``herbivore_population_mean``, ``herbivore_population_std``,
         ``total_flora_energy_mean``, ``total_flora_energy_std``,

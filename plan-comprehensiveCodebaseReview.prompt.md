@@ -82,6 +82,7 @@ Status legend:
 - Config router flora/herbivore patch payloads and trigger-condition node traversal now use object-typed maps, removing remaining router-level `Any` hotspots.
 - Simulation loop species lookup caches and debug-summary metric extraction now use schema/telemetry-specific typing with deterministic scalar coercion helpers.
 - ECS component registries now use object-typed storage boundaries with generic retrieval casts, reducing broad `Any` usage in core indexing/query paths.
+- Replay msgpack serialization now returns an explicit `bytes` cast at the I/O boundary, eliminating residual `no-any-return` suppression.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`

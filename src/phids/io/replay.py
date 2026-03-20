@@ -62,7 +62,7 @@ def serialise_state(state: ReplayState) -> bytes:
     Returns:
         bytes: msgpack-encoded frame.
     """
-    return msgpack.packb(state, use_bin_type=True)  # type: ignore[no-any-return]
+    return cast(bytes, msgpack.packb(state, use_bin_type=True))
 
 
 def deserialise_state(data: bytes) -> ReplayState:
