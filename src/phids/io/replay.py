@@ -24,11 +24,28 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import msgpack  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
+
+
+class _ReplayArrayLike(Protocol):
+    """Structural contract for array payloads that can be serialized through tolist()."""
+
+    def tolist(self) -> object: ...
+
+
+class _ReplayEnvLike(Protocol):
+    """Structural contract for environment layers consumed by append_raw_arrays."""
+
+    plant_energy_layer: _ReplayArrayLike
+    signal_layers: _ReplayArrayLike
+    toxin_layers: _ReplayArrayLike
+    flow_field: _ReplayArrayLike
+    wind_vector_x: _ReplayArrayLike
+    wind_vector_y: _ReplayArrayLike
 
 
 def serialise_state(state: dict[str, Any]) -> bytes:
@@ -113,7 +130,7 @@ class ReplayBuffer:
         self,
         *,
         tick: int,
-        env: Any,
+        env: _ReplayEnvLike,
         termination_state: tuple[bool, str | None],
     ) -> None:
         """Append replay frame from environment arrays.

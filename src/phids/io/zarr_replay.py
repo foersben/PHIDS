@@ -32,7 +32,7 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import numpy as np
 
@@ -48,6 +48,17 @@ logger = logging.getLogger(__name__)
 
 # Metadata compression threshold (fields smaller than this are stored as JSON arrays)
 METADATA_THRESHOLD_BYTES = 4096
+
+
+class _ReplayEnvLike(Protocol):
+    """Structural contract for environment layers consumed by append_raw_arrays."""
+
+    plant_energy_layer: np.ndarray
+    signal_layers: np.ndarray
+    toxin_layers: np.ndarray
+    flow_field: np.ndarray
+    wind_vector_x: np.ndarray
+    wind_vector_y: np.ndarray
 
 
 class ZarrReplayBuffer:
@@ -185,7 +196,7 @@ class ZarrReplayBuffer:
         self,
         *,
         tick: int,
-        env: Any,
+        env: _ReplayEnvLike,
         termination_state: tuple[bool, str | None],
     ) -> None:
         """Append replay frame directly from environment NumPy arrays.
@@ -213,9 +224,9 @@ class ZarrReplayBuffer:
     def _append_fields(
         self,
         *,
-        tick: Any,
-        terminated: Any,
-        termination_reason: Any,
+        tick: int,
+        terminated: bool,
+        termination_reason: str | None,
         fields: dict[str, Any],
     ) -> None:
         """Persist one frame's metadata and field payloads into the store."""
