@@ -155,7 +155,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
 @router.get(
     "/api/batch/status/{job_id}", response_class=HTMLResponse, summary="Batch job status row"
 )
-async def batch_status(request: Request, job_id: str) -> Any:
+async def batch_status(request: Request, job_id: str) -> Response:
     """Render one HTMX status-row fragment for a batch job.
 
     Raises:
@@ -173,7 +173,7 @@ async def batch_status(request: Request, job_id: str) -> Any:
 
 
 @router.get("/api/batch/ledger", response_class=HTMLResponse, summary="Batch job ledger")
-async def batch_ledger(request: Request) -> Any:
+async def batch_ledger(request: Request) -> Response:
     """Render the HTMX ledger fragment listing all tracked batch jobs."""
     draft = get_draft()
     jobs = list(draft.active_batch_jobs.values())
@@ -200,7 +200,7 @@ async def batch_load_persisted() -> JSONResponse:
 
 
 @router.get("/api/batch/view/{job_id}", response_class=HTMLResponse, summary="Batch aggregate view")
-async def batch_view(request: Request, job_id: str) -> Any:
+async def batch_view(request: Request, job_id: str) -> Response:
     """Render aggregate statistics fragment for one batch job identifier."""
     draft = get_draft()
     job = draft.active_batch_jobs.get(job_id)
