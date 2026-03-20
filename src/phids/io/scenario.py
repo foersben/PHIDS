@@ -21,14 +21,18 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Mapping, TypeAlias
 
 from phids.api.schemas import SimulationConfig
 
 logger = logging.getLogger(__name__)
 
+JSONScalar: TypeAlias = None | bool | int | float | str
+JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
+JSONMapping: TypeAlias = Mapping[str, JSONValue]
 
-def load_scenario_from_dict(data: dict[str, Any]) -> SimulationConfig:
+
+def load_scenario_from_dict(data: JSONMapping) -> SimulationConfig:
     """Parse and validate a simulation configuration from a mapping.
 
     Args:
@@ -40,7 +44,7 @@ def load_scenario_from_dict(data: dict[str, Any]) -> SimulationConfig:
     Raises:
         pydantic.ValidationError: If the configuration is invalid.
     """
-    config = SimulationConfig.model_validate(data)
+    config = SimulationConfig.model_validate(dict(data))
     logger.debug(
         "Scenario validated from mapping (grid=%dx%d, flora=%d, herbivores=%d)",
         config.grid_width,
@@ -62,7 +66,10 @@ def load_scenario_from_json(path: str | Path) -> SimulationConfig:
     """
     source = Path(path)
     raw = source.read_text(encoding="utf-8")
-    data: dict[str, Any] = json.loads(raw)
+    decoded: JSONValue = json.loads(raw)
+    if not isinstance(decoded, dict):
+        raise ValueError(f"Scenario JSON root must be an object: {source}")
+    data: dict[str, JSONValue] = decoded
     config = load_scenario_from_dict(data)
     logger.info("Scenario loaded from %s", source)
     return config

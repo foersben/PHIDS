@@ -74,6 +74,7 @@ Status legend:
 - Msgpack replay payload serialization/deserialization now uses explicit `ReplayState`/`ReplayValue` aliases with decode-shape guards, tightening type safety at the replay I/O boundary.
 - Zarr replay metadata and frame reconstruction now use typed metadata entries plus `ReplayState`/`ReplayValue` aliases, reducing dynamic type escape hatches in the storage backend.
 - Legacy `.bin` migration in the Zarr backend now reuses typed msgpack deserialization (`deserialise_state`) and validates non-mapping payloads via focused replay tests.
+- Scenario I/O helpers now use explicit typed JSON mapping aliases with root-object validation to reduce `Any` at the configuration ingest boundary.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
@@ -85,6 +86,7 @@ Status legend:
   - `src/phids/api/routers/config.py`
   - `src/phids/io/replay.py`
   - `src/phids/io/zarr_replay.py`
+  - `src/phids/io/scenario.py`
   - `tests/integration/systems/test_termination_and_loop.py`
   - `tests/integration/api/test_api_simulation_and_scenario_routes.py`
   - `tests/integration/api/test_ui_routes.py`
