@@ -66,13 +66,16 @@ Status legend:
 - Signaling trigger pipelines now use explicit `TriggerConditionSchema` typing from loop cache to signaling execution, removing redundant runtime trigger type guards.
 - UI HTML router handlers now return concrete `Response` annotations instead of `Any`, improving endpoint typing consistency.
 - Batch HTML fragment handlers now return concrete `Response` annotations instead of `Any`, improving endpoint typing consistency across router surfaces.
+- Simulation control handlers now return explicit `Response` objects for mixed HTMX/JSON branches, avoiding broad `Any` unions in route annotations.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`
   - `src/phids/api/routers/ui.py`
   - `src/phids/api/routers/batch.py`
+  - `src/phids/api/routers/simulation.py`
   - `tests/integration/systems/test_termination_and_loop.py`
+  - `tests/integration/api/test_api_simulation_and_scenario_routes.py`
   - `tests/integration/api/test_ui_routes.py`
 
 ## Open Work by Review Area

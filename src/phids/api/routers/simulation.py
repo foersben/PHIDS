@@ -14,10 +14,11 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from starlette.datastructures import FormData
 
 import phids.api.main as api_main
 from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
@@ -37,7 +38,7 @@ router = APIRouter()
 draft_service = DraftService()
 
 
-def _form_scalar(form_data: Any, key: str) -> str | None:
+def _form_scalar(form_data: FormData, key: str) -> str | None:
     """Return a scalar form value as string, ignoring file uploads."""
     value = form_data.get(key)
     if value is None or isinstance(value, UploadFile):
@@ -45,7 +46,7 @@ def _form_scalar(form_data: Any, key: str) -> str | None:
     return str(value)
 
 
-def _form_int(form_data: Any, key: str) -> int | None:
+def _form_int(form_data: FormData, key: str) -> int | None:
     """Parse an optional integer form field."""
     raw = _form_scalar(form_data, key)
     if raw is None:
@@ -53,7 +54,7 @@ def _form_int(form_data: Any, key: str) -> int | None:
     return int(raw)
 
 
-def _form_float(form_data: Any, key: str) -> float | None:
+def _form_float(form_data: FormData, key: str) -> float | None:
     """Parse an optional float form field."""
     raw = _form_scalar(form_data, key)
     if raw is None:
@@ -165,7 +166,7 @@ def _apply_optional_biotope_overrides(
     )
 
 
-def _apply_optional_biotope_overrides_from_form(form_data: Any) -> None:
+def _apply_optional_biotope_overrides_from_form(form_data: FormData) -> None:
     """Extract known biotope fields from form-data and apply draft overrides."""
     _apply_optional_biotope_overrides(
         grid_width=_form_int(form_data, "grid_width"),
@@ -191,7 +192,7 @@ def _apply_optional_biotope_overrides_from_form(form_data: Any) -> None:
 
 
 @router.post("/api/scenario/load", summary="Load simulation scenario")
-async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
+async def load_scenario(config: SimulationConfig) -> dict[str, int | str]:
     """Initialize live runtime state from a validated scenario payload.
 
     The endpoint is the strict ingress boundary between static configuration and executable
@@ -229,7 +230,7 @@ async def load_scenario(config: SimulationConfig) -> dict[str, Any]:
 
 
 @router.post("/api/simulation/start", summary="Start or resume simulation")
-async def start_simulation(request: Request) -> Any:
+async def start_simulation(request: Request) -> Response:
     """Start or resume asynchronous simulation advancement for the active loop.
 
     Args:
@@ -252,7 +253,7 @@ async def start_simulation(request: Request) -> Any:
         api_main.logger.info("Start requested while simulation was already running")
         if api_main._is_htmx_request(request):
             return HTMLResponse(content=api_main._render_status_badge_html())
-        return {"message": "Simulation already running."}
+        return JSONResponse({"message": "Simulation already running."})
 
     if loop.terminated:
         api_main.logger.warning(
@@ -269,11 +270,11 @@ async def start_simulation(request: Request) -> Any:
     api_main.logger.info("Background simulation task created")
     if api_main._is_htmx_request(request):
         return HTMLResponse(content=api_main._render_status_badge_html())
-    return {"message": "Simulation started."}
+    return JSONResponse({"message": "Simulation started."})
 
 
 @router.post("/api/simulation/pause", summary="Pause or resume simulation")
-async def pause_simulation(request: Request) -> Any:
+async def pause_simulation(request: Request) -> Response:
     """Toggle pause state of the active live simulation loop.
 
     Args:
@@ -288,11 +289,11 @@ async def pause_simulation(request: Request) -> Any:
     api_main.logger.info("Simulation %s via API", state)
     if api_main._is_htmx_request(request):
         return HTMLResponse(content=api_main._render_status_badge_html())
-    return {"message": f"Simulation {state}."}
+    return JSONResponse({"message": f"Simulation {state}."})
 
 
 @router.post("/api/simulation/step", summary="Advance simulation by one tick")
-async def step_simulation(request: Request) -> Any:
+async def step_simulation(request: Request) -> Response:
     """Execute exactly one deterministic tick on the active simulation loop.
 
     Raises:
@@ -329,16 +330,18 @@ async def step_simulation(request: Request) -> Any:
     )
     if api_main._is_htmx_request(request):
         return HTMLResponse(content=api_main._render_status_badge_html())
-    return {
-        "message": "Simulation advanced by one tick.",
-        "tick": loop.tick,
-        "terminated": loop.terminated,
-        "termination_reason": loop.termination_reason,
-    }
+    return JSONResponse(
+        {
+            "message": "Simulation advanced by one tick.",
+            "tick": loop.tick,
+            "terminated": loop.terminated,
+            "termination_reason": loop.termination_reason,
+        }
+    )
 
 
 @router.post("/api/simulation/reset", summary="Reset simulation to the loaded scenario")
-async def reset_simulation(request: Request) -> Any:
+async def reset_simulation(request: Request) -> Response:
     """Recreate live runtime state from the loaded baseline scenario.
 
     Args:
@@ -363,7 +366,7 @@ async def reset_simulation(request: Request) -> Any:
     api_main.logger.info("Simulation reset to the loaded scenario")
     if api_main._is_htmx_request(request):
         return HTMLResponse(content=api_main._render_status_badge_html())
-    return {"message": "Simulation reset.", "tick": 0}
+    return JSONResponse({"message": "Simulation reset.", "tick": 0})
 
 
 @router.get(
@@ -392,7 +395,7 @@ async def simulation_status() -> SimulationStatusResponse:
 async def update_tick_rate(
     request: Request,
     tick_rate_hz: Annotated[float, Form()] = 10.0,
-) -> Any:
+) -> Response:
     """Update the active simulation tick-speed in the live grid view.
 
     Args:
@@ -407,11 +410,11 @@ async def update_tick_rate(
     api_main.logger.info("Live simulation tick rate updated via API to %.2f Hz", applied_tick_rate)
     if api_main._is_htmx_request(request):
         return HTMLResponse(content=api_main._render_status_badge_html())
-    return {"message": "Tick rate updated.", "tick_rate_hz": applied_tick_rate}
+    return JSONResponse({"message": "Tick rate updated.", "tick_rate_hz": applied_tick_rate})
 
 
 @router.put("/api/simulation/wind", summary="Update wind vector")
-async def update_wind(payload: WindUpdatePayload) -> dict[str, Any]:
+async def update_wind(payload: WindUpdatePayload) -> dict[str, float | str]:
     """Update the uniform wind vector field of the active environment.
 
     Args:
@@ -581,7 +584,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
     response_class=HTMLResponse,
     summary="Load draft config into simulation engine",
 )
-async def scenario_load_draft(request: Request) -> Any:
+async def scenario_load_draft(request: Request) -> HTMLResponse:
     """Build a validated config from the draft and instantiate a new live loop.
 
     Args:
