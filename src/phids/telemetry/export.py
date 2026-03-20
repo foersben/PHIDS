@@ -38,6 +38,7 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     import pandas as pd  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
@@ -468,7 +469,7 @@ def generate_png_bytes(
 
 
 def _plot_timeseries(
-    ax: Any,
+    ax: "Axes",
     rows: list[dict[str, Any]],
     ticks: list[int],
     *,
@@ -513,7 +514,7 @@ def _plot_timeseries(
 
 
 def _plot_phasespace(
-    ax: Any,
+    ax: "Axes",
     rows: list[dict[str, Any]],
     *,
     prey_species_id: int,
@@ -565,7 +566,7 @@ def _plot_phasespace(
 
 
 def _plot_defense_economy(
-    ax: Any,
+    ax: "Axes",
     rows: list[dict[str, Any]],
     ticks: list[int],
     *,
@@ -608,7 +609,7 @@ def _plot_defense_economy(
 
 
 def _plot_biomass_stack(
-    ax: Any,
+    ax: "Axes",
     rows: list[dict[str, Any]],
     ticks: list[int],
     *,
@@ -653,7 +654,7 @@ def _plot_biomass_stack(
 
 
 def _plot_survival_probability(
-    ax: Any,
+    ax: "Axes",
     rows: list[dict[str, Any]],
     ticks: list[int],
     *,

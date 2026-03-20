@@ -93,6 +93,7 @@ Status legend:
 - UI stream contract checks now include docs-parity assertions against a versioned fixture snapshot for top-level fields and columnar table columns.
 - Interaction arithmetic coverage now includes bounded Hypothesis pilots and expanded closed-form invariant matrices for attrition, reproduction, and mitosis branches.
 - Flow-field and termination mutation-pilot suites now include focused branch sentinels for clipping thresholds, sign polarity, propagation depth, and rule-precedence semantics.
+- Telemetry export matplotlib helper signatures now use explicit `Axes` typing at plot boundaries, reducing broad `Any` usage in visualization helpers without changing export behavior.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`
