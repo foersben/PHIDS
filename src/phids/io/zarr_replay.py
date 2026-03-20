@@ -135,6 +135,18 @@ class ZarrReplayBuffer:
             )
         return entries
 
+    def _decode_metadata_bytes(self, payload: object) -> bytes:
+        """Return byte payload for persisted metadata arrays.
+
+        The `_metadata` Zarr node is expected to store a uint8 array containing
+        UTF-8 JSON bytes. This helper performs explicit runtime narrowing before
+        conversion so callers avoid unchecked indexing/type-ignore patterns.
+        """
+        if not isinstance(payload, zarr.Array):
+            raise TypeError("_metadata node is not a Zarr array")
+        array_obj = payload
+        return bytes(np.asarray(array_obj[:], dtype=np.uint8).tolist())
+
     def _ensure_store(self) -> zarr.Group:
         """Lazily create or open the Zarr store group."""
         if self._root is not None:
@@ -156,8 +168,8 @@ class ZarrReplayBuffer:
         root = self._ensure_store()
         if "_metadata" in root:
             try:
-                meta_bytes = root["_metadata"][:]  # type: ignore[index]
-                meta_str = bytes(meta_bytes).decode("utf-8")  # type: ignore[arg-type]
+                meta_bytes = self._decode_metadata_bytes(root["_metadata"])
+                meta_str = meta_bytes.decode("utf-8")
                 meta_obj = json.loads(meta_str)
                 # Support both old format (direct array) and new format (with offset)
                 if isinstance(meta_obj, list):
