@@ -138,7 +138,7 @@ class UIStreamManager:
             payload_builder: Callable that builds one dashboard payload from a live loop.
         """
         self._payload_builder = payload_builder
-        self._cache_signature: tuple[int, int, bool, bool, bool] | None = None
+        self._cache_signature: tuple[int, int, int, bool, bool, bool] | None = None
         self._cache_text = ""
 
     def _encoded_payload(self, loop: SimulationLoop) -> str:
@@ -153,6 +153,7 @@ class UIStreamManager:
         state_signature = (
             id(loop),
             loop.tick,
+            loop.state_revision,
             loop.running,
             loop.paused,
             loop.terminated,
@@ -197,7 +198,7 @@ class UIStreamManager:
         await websocket.accept()
         logger.debug("WebSocket connected: /ws/ui/stream")
 
-        last_state_signature: tuple[int, int, bool, bool, bool] | None = None
+        last_state_signature: tuple[int, int, int, bool, bool, bool] | None = None
         try:
             while True:
                 loop = get_loop()
@@ -208,6 +209,7 @@ class UIStreamManager:
                 state_signature = (
                     id(loop),
                     loop.tick,
+                    loop.state_revision,
                     loop.running,
                     loop.paused,
                     loop.terminated,

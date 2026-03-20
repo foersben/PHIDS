@@ -10,11 +10,26 @@ regression guard for UI-stream throughput under evolving payload contracts.
 from __future__ import annotations
 
 import json
+import os
+import warnings
 
+import numpy as np
 import pytest
 
 from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.engine.loop import SimulationLoop
+
+
+def _budget_from_env(name: str, default_ms: float) -> float:
+    """Return a float millisecond budget from environment, falling back to ``default_ms``."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default_ms
+    try:
+        value = float(raw)
+    except ValueError:
+        return default_ms
+    return value if value > 0.0 else default_ms
 
 
 @pytest.mark.benchmark
@@ -30,6 +45,44 @@ def test_dashboard_payload_build_and_json_encode_benchmark(  # type: ignore[no-u
         return json.dumps(payload, separators=(",", ":"))
 
     encoded = benchmark(_build_and_encode)
+
+    stats = benchmark.stats.stats
+    rounds = np.asarray(getattr(stats, "data", []), dtype=np.float64)
+    mean_ms = float(stats.mean) * 1000.0
+    p95_ms = float(np.percentile(rounds, 95)) * 1000.0 if rounds.size > 0 else mean_ms
+
+    warn_mean_ms = _budget_from_env("PHIDS_DASHBOARD_BENCH_WARN_MEAN_MS", 8.0)
+    fail_mean_ms = _budget_from_env("PHIDS_DASHBOARD_BENCH_FAIL_MEAN_MS", 40.0)
+    warn_p95_ms = _budget_from_env("PHIDS_DASHBOARD_BENCH_WARN_P95_MS", 16.0)
+    fail_p95_ms = _budget_from_env("PHIDS_DASHBOARD_BENCH_FAIL_P95_MS", 80.0)
+
+    benchmark.extra_info["mean_ms"] = round(mean_ms, 4)
+    benchmark.extra_info["p95_ms"] = round(p95_ms, 4)
+
+    if mean_ms > warn_mean_ms:
+        warnings.warn(
+            (
+                "Dashboard payload mean latency exceeded warning budget: "
+                f"{mean_ms:.3f}ms > {warn_mean_ms:.3f}ms"
+            ),
+            RuntimeWarning,
+        )
+    if p95_ms > warn_p95_ms:
+        warnings.warn(
+            (
+                "Dashboard payload p95 latency exceeded warning budget: "
+                f"{p95_ms:.3f}ms > {warn_p95_ms:.3f}ms"
+            ),
+            RuntimeWarning,
+        )
+
+    assert mean_ms <= fail_mean_ms, (
+        "Dashboard payload mean latency exceeded fail budget: "
+        f"{mean_ms:.3f}ms > {fail_mean_ms:.3f}ms"
+    )
+    assert p95_ms <= fail_p95_ms, (
+        f"Dashboard payload p95 latency exceeded fail budget: {p95_ms:.3f}ms > {fail_p95_ms:.3f}ms"
+    )
 
     assert encoded
     decoded = json.loads(encoded)

@@ -73,6 +73,7 @@ class SimulationLoop:
         self.termination_reason: str | None = None
         self._lock: asyncio.Lock = asyncio.Lock()
         self._debug_tick_interval: int = get_simulation_debug_interval()
+        self._state_revision: int = 0
         self._cached_snapshot_tick: int = -1
         self._cached_snapshot: dict[str, Any] | None = None
 
@@ -600,9 +601,15 @@ class SimulationLoop:
         """
         self.env.set_uniform_wind(vx, vy)
         # Wind can change snapshot content without advancing ticks.
+        self._state_revision += 1
         self._cached_snapshot_tick = -1
         self._cached_snapshot = None
         logger.info("Simulation wind updated to (vx=%.3f, vy=%.3f)", vx, vy)
+
+    @property
+    def state_revision(self) -> int:
+        """Return a monotonic token for non-tick state mutations relevant to stream payloads."""
+        return self._state_revision
 
     # ------------------------------------------------------------------
     # State snapshot for WebSocket streaming
@@ -622,6 +629,7 @@ class SimulationLoop:
             "tick": self.tick,
             "terminated": self.terminated,
             "termination_reason": self.termination_reason,
+            "state_revision": self._state_revision,
             **self.env.to_dict(),
         }
         self._cached_snapshot_tick = self.tick

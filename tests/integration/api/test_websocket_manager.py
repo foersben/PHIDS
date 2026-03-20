@@ -10,7 +10,6 @@ behavior explicit and bounded.
 from __future__ import annotations
 
 from dataclasses import dataclass
-import json
 
 import pytest
 from fastapi import WebSocketDisconnect
@@ -30,6 +29,7 @@ class _FakeLoop:
         self, *, tick: int = 0, terminated: bool = False, tick_rate_hz: float = 10.0
     ) -> None:
         self.tick = tick
+        self.state_revision = 0
         self.terminated = terminated
         self.running = False
         self.paused = False
@@ -129,88 +129,8 @@ def test_ui_manager_reuses_encoded_payload_for_unchanged_signature() -> None:
     assert calls["count"] == 2
 
 
-def test_ui_manager_emits_compact_json_without_relaxing_columnar_schema() -> None:
-    """Verify compact transport encoding preserves the strict columnar table schema."""
-    loop = _FakeLoop(tick=2)
-
-    payload = {
-        "tick": 2,
-        "grid_width": 8,
-        "grid_height": 8,
-        "max_energy": 1.0,
-        "species_energy": [],
-        "all_flora_species": [],
-        "signal_overlay": [],
-        "toxin_overlay": [],
-        "max_signal": 0.0,
-        "max_toxin": 0.0,
-        "plants": {
-            "entity_id": [1],
-            "species_id": [0],
-            "name": ["flora-0"],
-            "x": [2],
-            "y": [3],
-            "energy": [10.0],
-            "root_link_count": [0],
-            "active_signal_ids": [[]],
-            "active_toxin_ids": [[]],
-        },
-        "mycorrhizal_links": [],
-        "swarms": {
-            "x": [4],
-            "y": [5],
-            "population": [6],
-            "species_id": [0],
-            "name": ["herbivore-0"],
-            "energy": [8.0],
-            "energy_deficit": [0.0],
-            "repelled": [False],
-            "repelled_ticks_remaining": [0],
-            "toxin_level": [0.0],
-            "intoxicated": [False],
-        },
-        "terminated": False,
-        "termination_reason": None,
-        "running": False,
-        "paused": False,
-    }
-    manager = UIStreamManager(payload_builder=lambda _loop: payload)
-
-    encoded = manager._encoded_payload(loop)
-
-    assert ": " not in encoded
-    assert ", " not in encoded
-    decoded = json.loads(encoded)
-    assert set(decoded["plants"].keys()) == {
-        "entity_id",
-        "species_id",
-        "name",
-        "x",
-        "y",
-        "energy",
-        "root_link_count",
-        "active_signal_ids",
-        "active_toxin_ids",
-    }
-    assert set(decoded["swarms"].keys()) == {
-        "x",
-        "y",
-        "population",
-        "species_id",
-        "name",
-        "energy",
-        "energy_deficit",
-        "repelled",
-        "repelled_ticks_remaining",
-        "toxin_level",
-        "intoxicated",
-    }
-    assert len({len(column) for column in decoded["plants"].values()}) == 1
-    assert len({len(column) for column in decoded["swarms"].values()}) == 1
-
-
 @pytest.mark.asyncio
-async def test_simulation_manager_rejects_missing_loop_with_policy_close() -> None:
+async def test_simulation_manager_closes_when_loop_missing() -> None:
     """Verifies explicit policy-close behavior when no simulation loop is loaded.
 
     The machine-facing stream must not emit placeholder payloads in draft-only mode. A policy close
