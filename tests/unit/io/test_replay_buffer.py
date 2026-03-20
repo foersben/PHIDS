@@ -92,3 +92,33 @@ def test_deserialise_state_rejects_non_mapping_payload() -> None:
     """Decoding must fail closed when a replay frame payload is not a mapping."""
     with pytest.raises(ValueError, match="must decode to a mapping"):
         deserialise_state(msgpack.packb([1, 2, 3], use_bin_type=True))
+
+
+def test_replay_buffer_in_memory_overflow_discards_oldest_without_spill() -> None:
+    """Bounded in-memory mode keeps only newest frames when spill is disabled."""
+    replay = ReplayBuffer(max_frames=2, spill_to_disk=False)
+    for tick in range(5):
+        replay.append({"tick": tick, "value": tick})
+
+    assert len(replay) == 2
+    assert replay.get_frame(0)["tick"] == 3
+    assert replay.get_frame(1)["tick"] == 4
+
+
+def test_replay_buffer_read_spilled_frame_requires_existing_spill_file() -> None:
+    """Reading spilled payloads fails with deterministic IndexError when no spill file exists."""
+    replay = ReplayBuffer(spill_to_disk=True)
+    with pytest.raises(IndexError, match="Spill file is not available"):
+        replay._read_spilled_frame(0)  # noqa: SLF001
+
+
+def test_replay_buffer_owned_spill_cleanup_removes_file(tmp_path: Path) -> None:
+    """Owned spill files are removed during cleanup to avoid stale temporary artifacts."""
+    replay = ReplayBuffer(spill_to_disk=True)
+    replay._spill_path = tmp_path / "owned_spill.bin"  # noqa: SLF001
+    replay._owns_spill_file = True  # noqa: SLF001
+    replay._spill_path.write_bytes(b"frame-bytes")  # noqa: SLF001
+
+    replay._cleanup_spill_file()  # noqa: SLF001
+
+    assert not replay._spill_path.exists()  # noqa: SLF001
