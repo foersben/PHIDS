@@ -22,7 +22,6 @@ import json
 import logging
 import pathlib
 import time
-from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
 from fastapi import (
@@ -256,7 +255,7 @@ def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
     )
 
 
-def _parse_activation_condition_json(raw: str | None) -> dict[str, Any] | None:
+def _parse_activation_condition_json(raw: str | None) -> dict[str, object] | None:
     """Parse and validate a serialized activation-condition tree from builder input.
 
     Args:
@@ -286,7 +285,7 @@ def _parse_activation_condition_json(raw: str | None) -> dict[str, Any] | None:
 
 
 def _describe_activation_condition(
-    condition: dict[str, Any] | None,
+    condition: dict[str, object] | None,
     *,
     herbivore_names: dict[int, str] | None = None,
     substance_names: dict[int, str] | None = None,
@@ -328,7 +327,7 @@ def _describe_activation_condition(
         return f"{substance_label} active"
     if kind == "environmental_signal":
         signal_id = _coerce_int(condition.get("signal_id", -1), default=-1)
-        min_conc = float(condition.get("min_concentration", 0.01))
+        min_conc = _coerce_float(condition.get("min_concentration", 0.01), default=0.01)
         signal_label = (
             substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False))
             if substance_names is not None
@@ -336,7 +335,12 @@ def _describe_activation_condition(
         )
         return f"{signal_label} concentration ≥ {min_conc:.2f}"
 
-    children = [child for child in condition.get("conditions", []) if isinstance(child, dict)]
+    raw_children = condition.get("conditions", [])
+    children = (
+        [child for child in raw_children if isinstance(child, dict)]
+        if isinstance(raw_children, list)
+        else []
+    )
     joiner = " AND " if kind == "all_of" else " OR "
     if not children:
         return "unconditional"
@@ -351,7 +355,7 @@ def _describe_activation_condition(
     return f"({joiner.join(rendered)})"
 
 
-def _trigger_rules_template_context(draft: DraftState) -> dict[str, Any]:
+def _trigger_rules_template_context(draft: DraftState) -> dict[str, object]:
     """Assemble the canonical template context for trigger-rule partial rendering.
 
     Args:
@@ -400,7 +404,7 @@ def _default_activation_condition_for_rule(
     draft: DraftState,
     rule: TriggerRule,
     node_kind: str,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Construct a default activation-condition node compatible with a trigger rule.
 
     Args:
@@ -467,7 +471,7 @@ def _trigger_rule_by_index(draft: DraftState, index: int) -> TriggerRule:
     return draft.trigger_rules[index]
 
 
-def _build_live_summary() -> dict[str, Any] | None:
+def _build_live_summary() -> dict[str, object] | None:
     """Aggregate coarse live-model counters for diagnostics surfaces.
 
     Returns:
@@ -504,7 +508,7 @@ def _build_live_summary() -> dict[str, Any] | None:
     }
 
 
-def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
+def _build_energy_deficit_swarms() -> list[dict[str, object]]:
     """Rank live swarms by metabolic energy deficit severity.
 
     Returns:
@@ -518,7 +522,7 @@ def _build_energy_deficit_swarms() -> list[dict[str, Any]]:
     herbivore_names = {
         species.species_id: species.name for species in _sim_loop.config.herbivore_species
     }
-    energy_stressed: list[dict[str, Any]] = []
+    energy_stressed: list[dict[str, object]] = []
     for entity in _sim_loop.world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
         energy_deficit = float(max(0.0, swarm.population * swarm.energy_min - swarm.energy))
@@ -716,7 +720,7 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
 # ---------------------------------------------------------------------------
 
 
-def _build_telemetry_svg(df: Any) -> str:  # df is polars.DataFrame
+def _build_telemetry_svg(df: object) -> str:
     """Generate an inline SVG line chart from telemetry data.
 
     Args:

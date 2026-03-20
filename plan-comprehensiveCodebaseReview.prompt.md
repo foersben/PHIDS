@@ -78,6 +78,7 @@ Status legend:
 - Batch engine aggregation/sanitization paths now use explicit telemetry/JSON aliases and numeric coercion helpers, reducing `Any` in batch summary generation.
 - Telemetry recorder row buffering and dataframe flattening now use explicit telemetry row/species-map aliases, reducing `Any` in the analytics accumulation path.
 - Signaling activation-condition evaluation and active-toxin property merging now use explicit typed node/property contracts, removing remaining `Any` hotspots in this system.
+- API composition helper contracts in `api.main` now use object-based mapping/list annotations for condition parsing, trigger-context construction, and live diagnostics helpers.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
@@ -87,6 +88,7 @@ Status legend:
   - `src/phids/api/routers/simulation.py`
   - `src/phids/api/routers/telemetry.py`
   - `src/phids/api/routers/config.py`
+  - `src/phids/api/main.py`
   - `src/phids/io/replay.py`
   - `src/phids/io/zarr_replay.py`
   - `src/phids/io/scenario.py`
