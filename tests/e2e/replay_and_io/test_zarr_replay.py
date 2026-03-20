@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import msgpack  # type: ignore[import-untyped]
 
 try:
     from phids.io.zarr_replay import ZarrReplayBuffer
@@ -273,6 +274,17 @@ class TestZarrReplayMigration:
         frame = buf_load.get_frame(1)
         assert frame["tick"] == 1
         assert frame["data"] == 2
+
+    def test_zarr_load_legacy_non_mapping_payload_raises(self, temp_zarr_dir: Path) -> None:
+        """Migration fails fast when a legacy frame decodes to a non-mapping payload."""
+        bad_path = temp_zarr_dir / "legacy_bad.bin"
+        bad_payload = msgpack.packb(123, use_bin_type=True)
+        with bad_path.open("wb") as fp:
+            fp.write(len(bad_payload).to_bytes(4, "little"))
+            fp.write(bad_payload)
+
+        with pytest.raises(ValueError, match="must decode to a mapping"):
+            ZarrReplayBuffer.load(bad_path)
 
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")

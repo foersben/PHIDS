@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Protocol, TypedDict, cast
 
 import numpy as np
-from phids.io.replay import ReplayState, ReplayValue
+from phids.io.replay import ReplayState, ReplayValue, deserialise_state
 
 try:
     import zarr
@@ -452,10 +452,6 @@ class ZarrReplayBuffer:
             # Migrate legacy msgpack-encoded replay
             logger.info("Migrating legacy msgpack replay from %s to Zarr", source)
             buf = cls()
-            try:
-                import msgpack  # type: ignore[import-untyped]
-            except ImportError as e:
-                raise ImportError("msgpack is required to load legacy .bin replay files") from e
 
             with source.open("rb") as fp:
                 frame_count = 0
@@ -474,7 +470,7 @@ class ZarrReplayBuffer:
                         )
                         break
 
-                    state = msgpack.unpackb(frame_data, raw=False)
+                    state = deserialise_state(frame_data)
                     buf.append(state)
                     frame_count += 1
 
