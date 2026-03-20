@@ -75,6 +75,7 @@ Status legend:
 - Zarr replay metadata and frame reconstruction now use typed metadata entries plus `ReplayState`/`ReplayValue` aliases, reducing dynamic type escape hatches in the storage backend.
 - Legacy `.bin` migration in the Zarr backend now reuses typed msgpack deserialization (`deserialise_state`) and validates non-mapping payloads via focused replay tests.
 - Scenario I/O helpers now use explicit typed JSON mapping aliases with root-object validation to reduce `Any` at the configuration ingest boundary.
+- Batch engine aggregation/sanitization paths now use explicit telemetry/JSON aliases and numeric coercion helpers, reducing `Any` in batch summary generation.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
@@ -87,6 +88,7 @@ Status legend:
   - `src/phids/io/replay.py`
   - `src/phids/io/zarr_replay.py`
   - `src/phids/io/scenario.py`
+  - `src/phids/engine/batch.py`
   - `tests/integration/systems/test_termination_and_loop.py`
   - `tests/integration/api/test_api_simulation_and_scenario_routes.py`
   - `tests/integration/api/test_ui_routes.py`
