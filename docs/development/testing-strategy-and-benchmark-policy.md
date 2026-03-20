@@ -26,7 +26,8 @@ Current repository-wide defaults include:
 - coverage over `src/phids`,
 - `--cov-fail-under=80`,
 - benchmark GC control,
-- benchmark sorting by mean runtime.
+- benchmark sorting by mean runtime,
+- explicit pilot markers (`mutation_pilot`, `hypothesis_pilot`) for deterministic lane selection.
 
 This means that a plain repository-level run:
 
@@ -225,12 +226,18 @@ performance-sensitive expectations for core runtime surfaces.
 - `tests/benchmarks/test_flow_field_benchmark.py`
 - `tests/benchmarks/test_spatial_hash_benchmark.py`
 - `tests/benchmarks/test_dashboard_payload_benchmark.py`
+- `tests/benchmarks/test_websocket_encode_benchmark.py`
+- `tests/benchmarks/test_diffusion_hotspot_benchmark.py`
+- `tests/benchmarks/test_replay_export_serialization_benchmark.py`
 
 ### What they currently cover
 
 - flow-field generation cost on a representative grid,
 - hot-cell spatial-hash query behavior,
 - live dashboard payload assembly + JSON serialization cost for `/ws/ui/stream`.
+- websocket simulation/UI frame encoding latency budgets.
+- sparse and active diffusion hotspot latency budgets.
+- replay frame round-trip and telemetry export (CSV/NDJSON) serialization latency budgets.
 
 ## When Benchmarks Are Mandatory
 
@@ -251,7 +258,7 @@ project expectations.
 Use:
 
 ```bash
-uv run pytest -o addopts='' tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q
+uv run pytest -o addopts='' tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py tests/benchmarks/test_dashboard_payload_benchmark.py tests/benchmarks/test_websocket_encode_benchmark.py tests/benchmarks/test_diffusion_hotspot_benchmark.py tests/benchmarks/test_replay_export_serialization_benchmark.py -q
 ```
 
 For CI-parity whole-suite benchmarking, the repository-level `uv run pytest` remains the canonical
@@ -266,8 +273,9 @@ In particular:
 
 - flow field has a dedicated benchmark,
 - spatial hash has a dedicated benchmark,
-- diffusion is benchmark-sensitive in policy, but does not currently have a dedicated benchmark test
-  file of its own.
+- diffusion has a dedicated hotspot benchmark suite,
+- websocket encode paths have dedicated benchmark budget guards,
+- replay/export serialization now has a dedicated benchmark budget suite.
 
 Contributors should document and reason about that current state precisely.
 
@@ -284,10 +292,11 @@ A good contribution should therefore:
 
 ## CI Parity
 
-The current CI workflow distributes validation across three focused jobs:
+The current CI workflow distributes validation across four focused jobs:
 
 ```bash
 uv run pytest
+uv run pytest -o addopts='' -m "mutation_pilot or hypothesis_pilot" -q
 uv run ruff check .
 uv run ruff format --check .
 uv run mkdocs build --strict
@@ -297,6 +306,7 @@ In practice, the jobs are:
 
 - `quality` for the repository's currently green Ruff lint/format checks,
 - `tests-py312` for the full suite,
+- `testing-pilots` for deterministic mutation/property pilot lanes,
 - `docs` for the strict MkDocs build.
 
 The workflow is now intentionally triggered only for pull requests targeting `main` and manual

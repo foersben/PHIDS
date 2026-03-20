@@ -70,8 +70,7 @@ Status legend:
 - Extend floating-point edge-case assertions around `SIGNAL_EPSILON` in broader integration scenarios.
 
 ### 3) Performance & Memory (`IN PROGRESS`)
-- Dashboard payload benchmark budget assertions are in place (warning/fail thresholds + p95 telemetry).
-- Extend budget assertions to websocket encode paths and diffusion hotspots.
+- Dashboard, websocket encode, diffusion hotspot, and replay/export serialization benchmark budget assertions are in place (warning/fail thresholds + p95 telemetry).
 - Review residual allocation churn in hot loops beyond already-optimized websocket/aggregation paths.
 
 ### 4) API/UI Contracts (`IN PROGRESS`)
@@ -83,7 +82,7 @@ Status legend:
 - Run a focused typing-hole pass (`Any` hotspots, mypy strictness opportunities).
 
 ### 6) Testing Strategy (`IN PROGRESS`)
-- Property testing: pilots now include interaction arithmetic and signaling condition-tree semantics; extend to replay and termination parity.
+- Property testing: pilots now include interaction arithmetic, signaling condition-tree semantics, and termination parity; extend to replay buffer invariants.
 - Mutation testing: pilots now include termination, interaction, signaling, dashboard, and flow-field branch sentinels; monitor runtime budget.
 - Flakiness: add deterministic stress matrix for order/race-sensitive surfaces.
 
@@ -98,8 +97,7 @@ Status legend:
 ## Next Steps (Execution Order)
 
 1. Finish Phase 3 hardening:
-   - Extend current budget assertions to websocket encode and diffusion hotspots.
-   - Expand pilot breadth to replay/termination parity surfaces.
+   - Expand property pilot breadth to replay buffer invariants.
 2. Execute Phase 4 maintainability sweep:
    - Remove stale shims/comments and resolve top typing holes.
 3. Execute Phase 5 docs/DevEx alignment:
