@@ -19,7 +19,6 @@ from phids.api.ui_state import (
     TriggerRule,
     _condition_node_at_path,
     _default_activation_condition_node,
-    _legacy_signal_ids_to_activation_condition,
     _parse_condition_path,
     _prune_empty_condition_groups,
     _remap_condition_references,
@@ -64,7 +63,7 @@ def _reset_draft_singleton() -> None:
 
 
 def test_condition_helper_utilities_and_type_labels() -> None:
-    """Verify condition helper utilities normalize legacy inputs and label substance types correctly."""
+    """Verify condition helper utilities and substance type labels remain internally consistent."""
     assert SubstanceDefinition(substance_id=0, is_toxin=False).type_label == "Signal"
     assert SubstanceDefinition(substance_id=1, is_toxin=True).type_label == "Toxin"
     assert (
@@ -74,20 +73,6 @@ def test_condition_helper_utilities_and_type_labels() -> None:
         SubstanceDefinition(substance_id=3, is_toxin=True, repellent=True).type_label
         == "Repellent Toxin"
     )
-
-    assert _legacy_signal_ids_to_activation_condition(None) is None
-    assert _legacy_signal_ids_to_activation_condition([-1, -5]) is None
-    assert _legacy_signal_ids_to_activation_condition([4]) == {
-        "kind": "substance_active",
-        "substance_id": 4,
-    }
-    assert _legacy_signal_ids_to_activation_condition([2, 5]) == {
-        "kind": "all_of",
-        "conditions": [
-            {"kind": "substance_active", "substance_id": 2},
-            {"kind": "substance_active", "substance_id": 5},
-        ],
-    }
 
     assert _parse_condition_path("") == []
     assert _parse_condition_path("0.1.2") == [0, 1, 2]
@@ -264,7 +249,7 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     three previously scattered mutation families: scalar biotope normalization, bounded chemical
     registry editing, and herbivore-flora edibility toggles. The assertions ensure that Rule-of-16
     substance ceilings remain enforced, deleted substance identifiers are compacted deterministically,
-    precursor and activation-condition references are remapped consistently, and diet toggles mutate
+    activation-condition references are remapped consistently, and diet toggles mutate
     only valid matrix coordinates. The resulting invariants preserve a coherent draft-to-schema
     translation for signaling cascades and trophic compatibility.
 
@@ -276,7 +261,6 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     draft_service.add_substance(draft, name="Alarm")
     draft_service.add_substance(draft, name="Shield", is_toxin="true", lethal="true")
     draft_service.add_substance(draft, name="Relay")
-    draft.substance_definitions[2].precursor_signal_id = 2
 
     draft_service.add_trigger_rule(
         draft,
@@ -366,7 +350,6 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     draft_service.remove_substance(draft, 1)
     assert [definition.substance_id for definition in draft.substance_definitions] == [0, 1]
     assert draft.substance_definitions[1].name == "Relay"
-    assert draft.substance_definitions[1].precursor_signal_id == 1
     assert len(draft.trigger_rules) == 1
     assert draft.trigger_rules[0].substance_id == 1
     assert draft.trigger_rules[0].activation_condition == {
@@ -396,7 +379,19 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
         SubstanceDefinition(substance_id=0, name="Signal 0"),
         SubstanceDefinition(substance_id=1, name="Signal 1"),
     ]
-    draft_service.add_trigger_rule(draft, 0, 0, 0, required_signal_ids=[0, 1])
+    draft_service.add_trigger_rule(
+        draft,
+        0,
+        0,
+        0,
+        activation_condition={
+            "kind": "all_of",
+            "conditions": [
+                {"kind": "substance_active", "substance_id": 0},
+                {"kind": "substance_active", "substance_id": 1},
+            ],
+        },
+    )
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
         "conditions": [
@@ -410,7 +405,7 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
         0,
         substance_id=1,
         min_herbivore_population=7,
-        required_signal_ids=[1],
+        activation_condition={"kind": "substance_active", "substance_id": 1},
     )
     assert draft.trigger_rules[0].substance_id == 1
     assert draft.trigger_rules[0].min_herbivore_population == 7

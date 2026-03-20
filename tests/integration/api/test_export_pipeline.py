@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import pytest
 
+from phids.telemetry.analytics import TelemetryRow
 from phids.telemetry.export import (
     export_bytes_tex_table,
     generate_png_bytes,
@@ -25,8 +26,14 @@ from phids.telemetry.export import (
 )
 
 
-def _sample_rows() -> list[dict]:
-    """Return a minimal two-tick telemetry row list for export testing."""
+def _sample_rows() -> list[TelemetryRow]:
+    """Return a minimal two-tick telemetry row list for export testing.
+
+    Returns:
+        list[TelemetryRow]: Two deterministic telemetry rows spanning population,
+        energy, and species-indexed dictionary fields required by all export formats.
+
+    """
     return [
         {
             "tick": 0,
@@ -279,7 +286,7 @@ class TestExportBytesTexTable:
 
     def test_tick_interval_decimates_rows(self) -> None:
         """Tick-interval decimation reduces exported LaTeX row count as expected."""
-        rows: list[dict] = []
+        rows: list[TelemetryRow] = []
         for idx in range(6):
             src = _sample_rows()[idx % 2]
             row = dict(src)

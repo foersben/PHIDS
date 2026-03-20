@@ -34,9 +34,10 @@ import io
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import polars as pl
+from phids.telemetry.analytics import TelemetryRow
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -44,7 +45,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TelemetryRow = dict[str, Any]
 TelemetryRows = list[TelemetryRow]
 
 

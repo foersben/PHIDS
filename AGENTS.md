@@ -60,10 +60,10 @@
 - Do not reintroduce file-local `AsyncClient` factories in API integration tests; use shared fixtures from `tests/conftest.py`.
 
 ## Test Docstring Hygiene (Required)
-- Do not generate boilerplate pytest docstrings like "Validates the ... invariant".
-- For test functions, write concise 1-2 sentence docstrings that describe the actual assertion behavior.
-- Remove meaningless `Args:` / `Returns:` sections from ordinary pytest tests unless a complex parameterized input requires explicit clarification.
-- Keep the wording human-readable and specific to the endpoint, branch, invariant, or regression being exercised.
+- Avoid empty boilerplate docstrings (for example, "Validates the ... invariant") that add no technical meaning.
+- Keep test docstrings specific to the asserted contract, branch, or regression surface.
+- Apply Google-style sections when applicable to the signature/behavior (`Args`, `Returns`, `Raises`, `Attributes`, `Yields`, `Examples`, `Notes`).
+- For parameterized tests and fixture-heavy tests, include `Args` when it improves reproducibility of the assertion context.
 
 ## Test Structure Conventions (Required)
 - Keep tests aligned to the current domain hierarchy: `tests/unit/*`, `tests/integration/*`, `tests/e2e/*`, `tests/benchmarks/*`.
@@ -85,9 +85,9 @@
 When writing docstrings, comments, or markdown documentation, you MUST adhere to a rigorous,
 scholarly, and scientific writing style:
 
-1. **Explanatory Depth (Floating Texts):** Do not write terse, one-line summaries. Module and class
-   docstrings must contain long, precise, and comprehensive explanatory paragraphs (floating texts)
-   that detail the algorithmic mechanics AND the biological rationale.
+1. **Explanatory Depth (Floating Texts):** Prefer substantial explanatory text for modules and
+   classes, including algorithmic mechanics and biological rationale when relevant to the surface
+   being documented.
 2. **Academic Tone:** Use a formal, academic tone. Avoid colloquialisms, conversational filler
    (e.g., "basically", "just", "so"), and first-person pronouns.
 3. **Domain Precision:** Strictly use the project's scientific and mathematical terminology (e.g.,
@@ -98,8 +98,11 @@ scholarly, and scientific writing style:
    - Follow with a detailed paragraph explaining the *why* and *how* of the system.
    - Explicitly state the relationship between the computational logic (e.g., ECS,
      double-buffering) and the biological phenomena it simulates.
-5. **Formatting:** Adhere strictly to Google-style docstrings, but expand the top-level description
-   into a mini-essay or scholarly abstract.
+5. **Formatting:** Adhere strictly to Google-style docstrings. Required sections must appear when
+   applicable (`Args`, `Returns`, `Raises`, `Attributes`, `Yields`, `Examples`, `Notes`).
+6. **Contextual Scientific Depth:** Scientific long-form explanations, equations, and LaTeX are
+   encouraged when they materially improve precision; they are not mandatory for every routine
+   utility, route, or test helper.
 
 ## Documentation Mode Selection (Required)
 - Use a **scientific formal mode** for engine, modeling, simulation, and algorithm pages (for example `docs/engine/*`, `docs/foundations/*`, and analytical sections in `docs/reference/*`). In these pages, extensive floating text, formal terminology, equations, Mermaid state-flow diagrams, and TikZ vector graphics are encouraged when they improve explanatory precision.

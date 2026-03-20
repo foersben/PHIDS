@@ -33,13 +33,14 @@ from phids.engine.loop import SimulationLoop
 from phids.io import replay
 from phids.io.scenario import load_scenario_from_json
 from phids.shared import logging_config
+from phids.telemetry.analytics import TelemetryRow
 from phids.telemetry import export as telemetry_export
 
 
 draft_service = DraftService()
 
 
-def _sample_telemetry_rows() -> list[dict[str, object]]:
+def _sample_telemetry_rows() -> list[TelemetryRow]:
     """Return compact telemetry rows spanning flora, herbivore, defense, and batch fields."""
     return [
         {
@@ -65,6 +66,40 @@ def _sample_telemetry_rows() -> list[dict[str, object]]:
             "survival_probability": 0.75,
         },
     ]
+
+
+def _as_object_dict_rows(value: object) -> list[dict[str, object]]:
+    """Normalize heterogeneous payload values to a list of object dictionaries.
+
+    Args:
+        value: Untrusted payload node retrieved from a dynamic JSON-like mapping.
+
+    Returns:
+        A list containing only dictionary entries.
+    """
+    if not isinstance(value, list):
+        return []
+    return [row for row in value if isinstance(row, dict)]
+
+
+def _safe_int(value: object, default: int = -1) -> int:
+    """Coerce heterogeneous payload scalars to integer identifiers.
+
+    Args:
+        value: Untrusted scalar payload value.
+        default: Fallback value returned when conversion fails.
+
+    Returns:
+        Integer representation of ``value`` or ``default`` on conversion failure.
+    """
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float, str)):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
 
 
 @pytest.mark.asyncio
@@ -120,6 +155,14 @@ async def test_ui_partials_render(
     assert marker in resp.text
     if extra_marker is not None:
         assert extra_marker in resp.text
+
+
+@pytest.mark.asyncio
+async def test_trigger_matrix_legacy_route_is_rejected(api_client: AsyncClient) -> None:
+    """Verifies the removed legacy trigger-matrix URL is no longer routable."""
+    resp = await api_client.get("/ui/trigger-matrix")
+
+    assert resp.status_code == 404, resp.text
 
 
 @pytest.mark.asyncio
@@ -208,8 +251,18 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
             break
 
     payload = build_live_dashboard_payload(loop, substance_names=api_main._sim_substance_names)
-    payload_species = {int(spec["species_id"]) for spec in payload["species_energy"]}
-    legend_species = {int(spec["species_id"]) for spec in payload["all_flora_species"]}
+    species_energy_rows = _as_object_dict_rows(payload.get("species_energy"))
+    all_flora_rows = _as_object_dict_rows(payload.get("all_flora_species"))
+    payload_species = {
+        species_id
+        for species_id in (_safe_int(spec.get("species_id")) for spec in species_energy_rows)
+        if species_id >= 0
+    }
+    legend_species = {
+        species_id
+        for species_id in (_safe_int(spec.get("species_id")) for spec in all_flora_rows)
+        if species_id >= 0
+    }
     configured_species = {species.species_id for species in loop.config.flora_species}
     live_species = {
         entity.get_component(PlantComponent).species_id
@@ -221,9 +274,9 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
 
     # Extinct entries must remain visible in the legend metadata but absent from the render layers.
     extinct_in_payload = {
-        int(spec["species_id"])
-        for spec in payload["all_flora_species"]
-        if spec.get("extinct", False)
+        _safe_int(spec.get("species_id"))
+        for spec in all_flora_rows
+        if spec.get("extinct", False) and _safe_int(spec.get("species_id")) >= 0
     }
     assert extinct_in_payload == configured_species - live_species
 
@@ -680,13 +733,6 @@ def test_draft_singleton_helpers_and_substance_type_labels() -> None:
 
 def test_draft_condition_helper_functions_validate_and_remap_paths() -> None:
     """Verify condition helper utilities parse paths, normalize defaults, and remap removed IDs."""
-    assert draft_state_module._legacy_signal_ids_to_activation_condition([0, 1]) == {
-        "kind": "all_of",
-        "conditions": [
-            {"kind": "substance_active", "substance_id": 0},
-            {"kind": "substance_active", "substance_id": 1},
-        ],
-    }
     assert draft_state_module._parse_condition_path("0.1.2") == [0, 1, 2]
     assert draft_state_module._default_activation_condition_node(
         "herbivore_presence", herbivore_species_id=2, min_herbivore_population=0
@@ -762,14 +808,24 @@ def test_draft_trigger_rule_tree_mutations_preserve_expected_structure() -> None
         1,
         1,
         min_herbivore_population=3,
-        required_signal_ids=[0],
+        activation_condition={"kind": "substance_active", "substance_id": 0},
     )
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "substance_active",
         "substance_id": 0,
     }
 
-    draft_service.update_trigger_rule(draft, 0, required_signal_ids=[0, 1])
+    draft_service.update_trigger_rule(
+        draft,
+        0,
+        activation_condition={
+            "kind": "all_of",
+            "conditions": [
+                {"kind": "substance_active", "substance_id": 0},
+                {"kind": "substance_active", "substance_id": 1},
+            ],
+        },
+    )
     draft_service.set_trigger_rule_activation_condition(
         draft,
         0,
@@ -804,17 +860,19 @@ def test_draft_trigger_rule_tree_mutations_preserve_expected_structure() -> None
     )
     draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
 
-    current_condition = cast(dict[str, object], draft.trigger_rules[0].activation_condition)
+    current_condition = cast(
+        draft_state_module.ActivationConditionNode, draft.trigger_rules[0].activation_condition
+    )
+    current_children = cast(
+        list[draft_state_module.ActivationConditionNode], current_condition["conditions"]
+    )
     assert current_condition == {
         "kind": "all_of",
         "conditions": [
             {"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}
         ],
     }
-    assert (
-        draft_state_module._condition_node_at_path(current_condition, [0])
-        == current_condition["conditions"][0]
-    )
+    assert draft_state_module._condition_node_at_path(current_condition, [0]) == current_children[0]
     assert (
         draft_state_module._prune_empty_condition_groups({"kind": "all_of", "conditions": []})
         is None
@@ -856,7 +914,12 @@ def test_draft_species_compaction_and_placement_mutators() -> None:
         SubstanceDefinition(substance_id=1, name="Toxin", is_toxin=True, lethal=True),
     ]
     draft_service.add_trigger_rule(
-        draft, 1, 1, 1, min_herbivore_population=3, required_signal_ids=[0]
+        draft,
+        1,
+        1,
+        1,
+        min_herbivore_population=3,
+        activation_condition={"kind": "substance_active", "substance_id": 0},
     )
 
     draft_service.add_plant_placement(draft, 1, 3, 4, 12.0)
@@ -1237,7 +1300,16 @@ async def test_batch_export_tikz_supports_survival_chart_type(
 async def test_export_route_accepts_metabolic_alias_and_returns_tikz(
     api_client: AsyncClient,
 ) -> None:
-    """Validates that the metabolic alias resolves to defense-economy export generation."""
+    """Validates that the metabolic export alias resolves to defense-economy TikZ output.
+
+    This test exercises the route-level alias mapping used by the UI export surface. The
+    assertions verify that the alias delegates to the metabolic defense rendering pathway and
+    emits the expected scientific chart title, preserving deterministic endpoint semantics for
+    comparative telemetry interpretation.
+
+    Args:
+        api_client: Async HTTP client fixture bound to the in-process ASGI app.
+    """
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 2, 2, 20.0)
     draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 20.0)
@@ -1254,7 +1326,16 @@ async def test_export_route_accepts_metabolic_alias_and_returns_tikz(
 
 @pytest.mark.asyncio
 async def test_export_route_rejects_non_positive_tick_interval(api_client: AsyncClient) -> None:
-    # ...existing setup...
+    """Ensures telemetry export rejects invalid decimation intervals at the API boundary.
+
+    The route must fail closed when ``tick_interval`` is non-positive, because decimation stride
+    semantics are defined only for positive integer steps. The assertion confirms deterministic
+    HTTP 400 diagnostics instead of silent coercion, preserving reproducibility for downstream
+    batch and visualization workflows.
+
+    Args:
+        api_client: Async HTTP client fixture bound to the in-process ASGI app.
+    """
     load_resp = await api_client.post("/api/scenario/load-draft")
     assert load_resp.status_code == 200, load_resp.text
     resp = await api_client.get(
@@ -1268,10 +1349,15 @@ async def test_export_route_rejects_non_positive_tick_interval(api_client: Async
 
 @pytest.mark.asyncio
 async def test_placement_preview_data_includes_root_links(api_client: AsyncClient) -> None:
-    """
-    Validates that placement preview data includes mycorrhizal root links and correct plant/swarm attributes.
+    """Validates that draft placement preview payloads include mycorrhizal link diagnostics.
 
-    This test ensures that the placement preview endpoint returns data reflecting plant and swarm placements, including mycorrhizal links. The test supports the scientific requirement for accurate visualization and analysis of root network connectivity and population attributes in draft scenarios, facilitating reproducible ecological experimentation.
+    This test confirms that the preview endpoint emits colocated plant and swarm attributes
+    together with root-network edge geometry, enabling deterministic inspection of draft
+    connectivity before simulation start. The contract is essential for scientifically traceable
+    scenario authoring in mycorrhizal signaling experiments.
+
+    Args:
+        api_client: Async HTTP client fixture bound to the in-process ASGI app.
     """
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 4, 4, 12.0)
@@ -1293,10 +1379,14 @@ async def test_placement_preview_data_includes_root_links(api_client: AsyncClien
 async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza(
     api_client: AsyncClient,
 ) -> None:
-    """
-    Ensures that cell details endpoint returns draft preview payload including mycorrhizal connections.
+    """Ensures draft cell-detail payloads expose plant, swarm, and mycorrhizal-neighbour context.
 
-    This test verifies that the cell details endpoint provides draft mode data with correct plant, swarm, and mycorrhizal connection attributes. The test supports the scientific requirement for transparent reporting of root network connectivity and population attributes in draft scenarios, facilitating rigorous ecological analysis and scenario design.
+    The endpoint must report biologically relevant co-location diagnostics, including root-link
+    neighbour coordinates and local swarm composition, so operators can validate draft-state
+    topology before committing configurations to the live ECS loop.
+
+    Args:
+        api_client: Async HTTP client fixture bound to the in-process ASGI app.
     """
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 1, 2, 15.0)
@@ -1320,10 +1410,15 @@ async def test_ui_cell_details_returns_draft_preview_payload_with_mycorrhiza(
 async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval(
     api_client: AsyncClient,
 ) -> None:
-    """
-    Validates that biotope configuration updates clamp mycorrhizal growth interval to minimum value.
+    """Validates clamping of mycorrhizal growth interval and related termination scalars.
 
-    This test ensures that the biotope configuration endpoint enforces a minimum value for mycorrhizal growth interval ticks, supporting the scientific requirement for deterministic parameter validation and ecological realism in simulation configuration.
+    The biotope configuration route is required to normalize out-of-range control values into the
+    bounded domain used by deterministic simulation scheduling. This test verifies that clamped
+    values are reflected both in rendered form fragments and in server-side draft state, ensuring
+    coherent draft-to-runtime parameter propagation.
+
+    Args:
+        api_client: Async HTTP client fixture bound to the in-process ASGI app.
     """
     async with api_client as client:
         resp = await client.post(
@@ -1496,7 +1591,6 @@ async def test_substance_and_diet_routes_delegate_to_service_and_compact_referen
     assert draft.substance_definitions[1].energy_cost_per_tick == pytest.approx(0.0)
     assert draft.substance_definitions[1].irreversible is True
 
-    draft.substance_definitions[2].precursor_signal_id = 2
     draft_service.add_trigger_rule(
         draft,
         0,
@@ -1519,7 +1613,6 @@ async def test_substance_and_diet_routes_delegate_to_service_and_compact_referen
     assert missing_delete.status_code == 404, missing_delete.text
     assert [definition.substance_id for definition in draft.substance_definitions] == [0, 1]
     assert draft.substance_definitions[1].name == "Relay"
-    assert draft.substance_definitions[1].precursor_signal_id == 1
     assert len(draft.trigger_rules) == 1
     assert draft.trigger_rules[0].substance_id == 1
     assert draft.trigger_rules[0].activation_condition == {
@@ -1588,7 +1681,9 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         aftereffect_details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
 
     assert dashboard_payload["tick"] == 1
-    assert any(0 in ids for ids in dashboard_payload["plants"]["active_signal_ids"])
+    plants_table = cast(dict[str, object], dashboard_payload["plants"])
+    active_signal_ids = cast(list[list[int]], plants_table["active_signal_ids"])
+    assert any(0 in ids for ids in active_signal_ids)
     assert dashboard_payload["mycorrhizal_links"]
     assert details_resp.status_code == 200, details_resp.text
     details = details_resp.json()

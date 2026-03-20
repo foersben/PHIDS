@@ -7,8 +7,8 @@ reference-integrity violations before any engine state is allocated; (2) ``DietC
 rejects row counts and column counts exceeding the Rule-of-16 bounds; (3) the activation-condition
 schema tree correctly validates ``all_of``, ``any_of``, ``herbivore_presence``, and
 ``substance_active`` nodes and rejects structurally invalid compositions; (4)
-``TriggerConditionSchema`` correctly migrates legacy ``precursor_signal_id`` fields into the
-unified ``activation_condition`` tree via its ``model_validator``; and (5) ``GridEnvironment``
+``TriggerConditionSchema`` rejects removed legacy precursor fields so trigger predicates remain
+forward-only through ``activation_condition``; and (5) ``GridEnvironment``
 raises ``ValueError`` for width, height, signal, and toxin layer counts outside their valid
 ranges, confirming that defensive bounds checking is present at the engine level independently
 of the API schema layer.
@@ -94,6 +94,53 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
     assert trig.energy_cost_per_tick == 0.6
     assert trig.activation_condition is not None
     assert trig.activation_condition.kind == "all_of"
+
+
+def test_trigger_schema_rejects_removed_single_legacy_precursor_field() -> None:
+    """Verify removed precursor_signal_id input is rejected as an unknown schema field."""
+    with pytest.raises(ValidationError):
+        TriggerConditionSchema.model_validate(
+            {
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 1,
+                "substance_id": 2,
+                "synthesis_duration": 3,
+                "precursor_signal_id": 9,
+            }
+        )
+
+
+def test_trigger_schema_rejects_removed_multi_legacy_precursor_field() -> None:
+    """Verify removed precursor_signal_ids input is rejected as an unknown schema field."""
+    with pytest.raises(ValidationError):
+        TriggerConditionSchema.model_validate(
+            {
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 2,
+                "substance_id": 3,
+                "synthesis_duration": 4,
+                "precursor_signal_ids": [4, 8],
+            }
+        )
+
+
+def test_trigger_schema_rejects_removed_legacy_precursor_fields_even_with_activation_condition() -> (
+    None
+):
+    """Verify removed precursor fields are rejected even when a valid activation_condition is supplied."""
+    explicit = HerbivorePresenceConditionSchema(herbivore_species_id=5, min_herbivore_population=7)
+    with pytest.raises(ValidationError):
+        TriggerConditionSchema.model_validate(
+            {
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 1,
+                "substance_id": 1,
+                "synthesis_duration": 1,
+                "precursor_signal_id": 11,
+                "precursor_signal_ids": [13],
+                "activation_condition": explicit.model_dump(mode="json"),
+            }
+        )
 
 
 def test_diet_matrix_enforces_rule_of_16() -> None:

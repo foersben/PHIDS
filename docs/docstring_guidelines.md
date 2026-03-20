@@ -6,10 +6,10 @@ consistent API documentation.
 
 Summary
 - Use triple-quoted strings (""") for all docstrings.
-- Prefer short one-line summary followed by a blank line and an expanded
-  description when necessary.
-- Use sections: Args, Returns, Raises, Yields, Examples, and Notes where
-  appropriate.
+- Start with a precise declarative summary sentence, then add explanatory context
+  appropriate to the module/function complexity.
+- Use Google-style sections (`Args`, `Returns`, `Raises`, `Yields`, `Examples`,
+  `Notes`, `Attributes`) whenever applicable to the symbol's behavior/signature.
 - Prefer type annotations in signatures and repeat brief type hints in the
   Args/Returns sections only when helpful for clarity.
 
@@ -62,8 +62,9 @@ Notes
 
 ## Scientific & Scholarly Tone Requirement
 
-All documentation must be written in an academic, scientifically rigorous style. We prefer long,
-precise explanatory texts over brief summaries.
+All documentation should maintain an academically rigorous tone. Explanatory scientific depth is
+expected for engine/modeling topics and encouraged elsewhere when it improves clarity, but
+equation-heavy or mini-essay treatment is not mandatory for every routine helper/test.
 
 ### ❌ Bad Example (Too terse, informal)
 """Handles swarm movement and eating.

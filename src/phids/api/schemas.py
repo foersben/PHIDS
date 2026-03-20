@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from phids.shared.constants import (
     MAX_FLORA_SPECIES,
@@ -127,9 +127,6 @@ class SubstanceComponentSchema(BaseModel):
     repellent_walk_ticks: int = Field(
         default=0, ge=0, description="Random-walk duration k on repel trigger."
     )
-    precursor_signal_id: int = Field(
-        default=-1, description="Signal substance_id required before toxin activation (-1 = none)."
-    )
     energy_cost_per_tick: float = Field(
         default=0.0, ge=0.0, description="Energy cost drained from the owner plant per active tick."
     )
@@ -222,6 +219,8 @@ class TriggerConditionSchema(BaseModel):
     behavioural properties of the resulting substance.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     herbivore_species_id: HerbivoreId
     min_herbivore_population: int = Field(
         ..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis."
@@ -242,17 +241,6 @@ class TriggerConditionSchema(BaseModel):
         ge=0,
         description="Aftereffect duration T_k (signals linger after emission ceases).",
     )
-    precursor_signal_id: int = Field(
-        default=-1,
-        description="Single signal substance_id required before toxin activation (-1 = none). Legacy field.",
-    )
-    precursor_signal_ids: list[int] = Field(
-        default_factory=list,
-        description=(
-            "All signal substance_ids that must ALL be active before this substance activates "
-            "(AND logic). Empty list = no precursor required. Takes precedence over precursor_signal_id."
-        ),
-    )
     activation_condition: ConditionNode | None = Field(
         default=None,
         description=(
@@ -270,27 +258,6 @@ class TriggerConditionSchema(BaseModel):
             "until owner death."
         ),
     )
-
-    @model_validator(mode="after")
-    def _populate_activation_condition_from_legacy_precursors(self) -> TriggerConditionSchema:
-        """Translate deprecated precursor fields into the richer condition tree."""
-        if self.activation_condition is not None:
-            return self
-
-        signal_ids = self.precursor_signal_ids
-        if not signal_ids and self.precursor_signal_id >= 0:
-            signal_ids = [self.precursor_signal_id]
-
-        if not signal_ids:
-            return self
-
-        leaves = [
-            SubstanceActiveConditionSchema(substance_id=signal_id) for signal_id in signal_ids
-        ]
-        self.activation_condition = (
-            leaves[0] if len(leaves) == 1 else AllOfConditionSchema(conditions=leaves)
-        )
-        return self
 
 
 # ---------------------------------------------------------------------------

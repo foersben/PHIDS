@@ -16,12 +16,21 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 if TYPE_CHECKING:
-    from phids.api.schemas import SimulationConfig
+    from phids.api.schemas import (
+        BatchJobState,
+        FloraSpeciesParams,
+        HerbivoreSpeciesParams,
+        SimulationConfig,
+    )
 
 logger = logging.getLogger(__name__)
+
+ConditionScalar: TypeAlias = str | int | float | bool
+ConditionValue: TypeAlias = ConditionScalar | list["ActivationConditionNode"]
+ActivationConditionNode: TypeAlias = dict[str, ConditionValue]
 
 # ---------------------------------------------------------------------------
 # Substance definition (independent of any trigger coupling)
@@ -49,7 +58,6 @@ class SubstanceDefinition:
         repellent_walk_ticks: Random-walk duration on repel trigger.
         energy_cost_per_tick: Energy drained from the plant per active tick.
         irreversible: Keep the substance active permanently once activated.
-        precursor_signal_id: Signal id required before activation (−1 = none).
         min_herbivore_population: Minimum swarm size to trigger synthesis.
     """
 
@@ -64,7 +72,6 @@ class SubstanceDefinition:
     repellent_walk_ticks: int = 3
     energy_cost_per_tick: float = 1.0
     irreversible: bool = False
-    precursor_signal_id: int = -1
     min_herbivore_population: int = 5
 
     @property
@@ -156,18 +163,7 @@ class TriggerRule:
     herbivore_species_id: int
     substance_id: int
     min_herbivore_population: int = 5
-    activation_condition: dict[str, object] | None = None
-
-
-def _legacy_signal_ids_to_activation_condition(
-    required_signal_ids: list[int] | None,
-) -> dict[str, object] | None:
-    """Convert legacy signal-only precursor gates into the richer tree form."""
-    signal_ids = [signal_id for signal_id in (required_signal_ids or []) if signal_id >= 0]
-    if not signal_ids:
-        return None
-    leaves = [{"kind": "substance_active", "substance_id": signal_id} for signal_id in signal_ids]
-    return leaves[0] if len(leaves) == 1 else {"kind": "all_of", "conditions": leaves}
+    activation_condition: ActivationConditionNode | None = None
 
 
 def _parse_condition_path(path: str) -> list[int]:
@@ -183,7 +179,7 @@ def _default_activation_condition_node(
     herbivore_species_id: int = 0,
     substance_id: int = 0,
     min_herbivore_population: int = 1,
-) -> dict[str, object]:
+) -> ActivationConditionNode:
     """Create a default activation-condition node of the requested kind."""
     if node_kind == "herbivore_presence":
         return {
@@ -208,9 +204,9 @@ def _default_activation_condition_node(
 
 
 def _condition_node_at_path(
-    condition: dict[str, object],
+    condition: ActivationConditionNode,
     path: list[int],
-) -> dict[str, object]:
+) -> ActivationConditionNode:
     """Return the condition node at ``path`` or raise on invalid traversal."""
     node = condition
     for index in path:
@@ -226,7 +222,9 @@ def _condition_node_at_path(
     return node
 
 
-def _prune_empty_condition_groups(condition: dict[str, object] | None) -> dict[str, object] | None:
+def _prune_empty_condition_groups(
+    condition: ActivationConditionNode | None,
+) -> ActivationConditionNode | None:
     """Remove empty nested groups after delete/remap operations."""
     if condition is None:
         return None
@@ -237,7 +235,7 @@ def _prune_empty_condition_groups(condition: dict[str, object] | None) -> dict[s
     if not isinstance(children, list):
         return None
 
-    new_children: list[dict[str, object]] = []
+    new_children: list[ActivationConditionNode] = []
     for child in children:
         if not isinstance(child, dict):
             continue
@@ -251,11 +249,11 @@ def _prune_empty_condition_groups(condition: dict[str, object] | None) -> dict[s
 
 
 def _remap_condition_references(
-    condition: dict[str, object] | None,
+    condition: ActivationConditionNode | None,
     *,
     removed_herbivore_id: int | None = None,
     removed_substance_id: int | None = None,
-) -> dict[str, object] | None:
+) -> ActivationConditionNode | None:
     """Compact/remove nested condition references after entity deletion."""
     if condition is None:
         return None
@@ -368,14 +366,14 @@ class DraftState:
     mycorrhizal_connection_cost: float = 1.0
     mycorrhizal_growth_interval_ticks: int = 8
     mycorrhizal_signal_velocity: int = 1
-    flora_species: list[object] = dataclasses.field(default_factory=list)
-    herbivore_species: list[object] = dataclasses.field(default_factory=list)
+    flora_species: list[FloraSpeciesParams] = dataclasses.field(default_factory=list)
+    herbivore_species: list[HerbivoreSpeciesParams] = dataclasses.field(default_factory=list)
     diet_matrix: list[list[bool]] = dataclasses.field(default_factory=list)
     trigger_rules: list[TriggerRule] = dataclasses.field(default_factory=list)
     substance_definitions: list[SubstanceDefinition] = dataclasses.field(default_factory=list)
     initial_plants: list[PlacedPlant] = dataclasses.field(default_factory=list)
     initial_swarms: list[PlacedSwarm] = dataclasses.field(default_factory=list)
-    active_batch_jobs: dict[str, object] = dataclasses.field(default_factory=dict)
+    active_batch_jobs: dict[str, BatchJobState] = dataclasses.field(default_factory=dict)
 
     # ------------------------------------------------------------------
     # Config export
@@ -392,10 +390,8 @@ class DraftState:
         """
         from phids.api.schemas import (
             DietCompatibilityMatrix,
-            FloraSpeciesParams,
             InitialPlantPlacement,
             InitialSwarmPlacement,
-            HerbivoreSpeciesParams,
             SimulationConfig,
             TriggerConditionSchema,
         )
@@ -444,8 +440,6 @@ class DraftState:
 
         flora_with_triggers: list[FloraSpeciesParams] = []
         for fp in self.flora_species:
-            if not isinstance(fp, FloraSpeciesParams):
-                continue
             triggers = triggers_by_flora.get(fp.species_id, [])
             flora_with_triggers.append(fp.model_copy(update={"triggers": triggers}))
 
@@ -481,9 +475,7 @@ class DraftState:
             wind_x=self.wind_x,
             wind_y=self.wind_y,
             flora_species=flora_with_triggers,
-            herbivore_species=[
-                pp for pp in self.herbivore_species if isinstance(pp, HerbivoreSpeciesParams)
-            ],
+            herbivore_species=self.herbivore_species,
             diet_matrix=DietCompatibilityMatrix(rows=diet_rows),
             initial_plants=plant_placements,
             initial_swarms=swarm_placements,

@@ -434,8 +434,6 @@ def run_signaling(
                     repellent_walk_ticks=trig.repellent_walk_ticks,
                     aftereffect_ticks=trig.aftereffect_ticks,
                     aftereffect_remaining_ticks=trig.aftereffect_ticks,
-                    precursor_signal_id=trig.precursor_signal_id,
-                    precursor_signal_ids=tuple(trig.precursor_signal_ids),
                     activation_condition=(
                         trig.activation_condition.model_dump(mode="json")
                         if trig.activation_condition is not None

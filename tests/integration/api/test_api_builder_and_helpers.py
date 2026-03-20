@@ -31,6 +31,7 @@ from phids.api.schemas import (
     TriggerConditionSchema,
 )
 from phids.api.ui_state import (
+    ActivationConditionNode,
     DraftState,
     SubstanceDefinition,
     TriggerRule,
@@ -147,7 +148,7 @@ def test_main_substance_name_helpers_default_and_draft_overrides() -> None:
 )
 def test_main_activation_condition_json_parser_valid_cases(
     raw: str | None,
-    expected: dict[str, object] | None,
+    expected: ActivationConditionNode | None,
 ) -> None:
     """Verify activation-condition parser returns normalized dicts for valid inputs."""
     assert api_main._parse_activation_condition_json(raw) == expected
@@ -206,7 +207,7 @@ def test_main_activation_condition_json_parser_invalid_cases(raw: str) -> None:
     ],
 )
 def test_main_activation_condition_descriptions(
-    condition: dict[str, object] | None,
+    condition: ActivationConditionNode | None,
     herbivore_names: dict[int, str] | None,
     substance_names: dict[int, str] | None,
     expected: str,

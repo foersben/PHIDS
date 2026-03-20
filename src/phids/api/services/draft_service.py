@@ -14,19 +14,24 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from phids.api.ui_state import (
+    ActivationConditionNode,
+    ConditionValue,
     DraftState,
     PlacedPlant,
     PlacedSwarm,
     SubstanceDefinition,
     TriggerRule,
     _condition_node_at_path,
-    _legacy_signal_ids_to_activation_condition,
     _parse_condition_path,
     _prune_empty_condition_groups,
     _remap_condition_references,
 )
+
+if TYPE_CHECKING:
+    from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +209,7 @@ class DraftService:
             )
         )
 
-    def add_flora(self, draft: DraftState, params: object) -> None:
+    def add_flora(self, draft: DraftState, params: FloraSpeciesParams) -> None:
         """Append one flora species and expand dependent matrix state.
 
         Args:
@@ -268,7 +273,7 @@ class DraftService:
             len(draft.trigger_rules),
         )
 
-    def add_herbivore(self, draft: DraftState, params: object) -> None:
+    def add_herbivore(self, draft: DraftState, params: HerbivoreSpeciesParams) -> None:
         """Append one herbivore species and expand dependent matrix state.
 
         Args:
@@ -485,10 +490,6 @@ class DraftService:
         del draft.substance_definitions[idx]
         for new_id, definition in enumerate(draft.substance_definitions):
             definition.substance_id = new_id
-            if definition.precursor_signal_id == substance_id:
-                definition.precursor_signal_id = -1
-            elif definition.precursor_signal_id > substance_id:
-                definition.precursor_signal_id -= 1
 
         remaining_rules: list[TriggerRule] = []
         removed_rules = 0
@@ -552,8 +553,7 @@ class DraftService:
         herbivore_species_id: int,
         substance_id: int,
         min_herbivore_population: int = 5,
-        activation_condition: dict[str, object] | None = None,
-        required_signal_ids: list[int] | None = None,
+        activation_condition: ActivationConditionNode | None = None,
     ) -> None:
         """Append one trigger rule to the draft trigger ledger.
 
@@ -564,7 +564,6 @@ class DraftService:
             substance_id: Substance identifier synthesized by the rule.
             min_herbivore_population: Minimum herbivore population threshold.
             activation_condition: Optional nested activation-condition tree.
-            required_signal_ids: Optional legacy shorthand converted into tree form.
         """
         draft.trigger_rules.append(
             TriggerRule(
@@ -572,11 +571,7 @@ class DraftService:
                 herbivore_species_id=herbivore_species_id,
                 substance_id=substance_id,
                 min_herbivore_population=min_herbivore_population,
-                activation_condition=deepcopy(
-                    activation_condition
-                    if activation_condition is not None
-                    else _legacy_signal_ids_to_activation_condition(required_signal_ids)
-                ),
+                activation_condition=deepcopy(activation_condition),
             )
         )
         logger.debug(
@@ -617,8 +612,7 @@ class DraftService:
         herbivore_species_id: int | None = None,
         substance_id: int | None = None,
         min_herbivore_population: int | None = None,
-        activation_condition: dict[str, object] | None = None,
-        required_signal_ids: list[int] | None = None,
+        activation_condition: ActivationConditionNode | None = None,
     ) -> None:
         """Patch selected fields on one trigger rule.
 
@@ -630,7 +624,6 @@ class DraftService:
             substance_id: Optional replacement substance identifier.
             min_herbivore_population: Optional replacement threshold.
             activation_condition: Optional replacement condition tree.
-            required_signal_ids: Optional legacy shorthand converted into tree form.
 
         Raises:
             IndexError: The requested trigger-rule index is out of range.
@@ -646,10 +639,6 @@ class DraftService:
             rule.min_herbivore_population = min_herbivore_population
         if activation_condition is not None:
             rule.activation_condition = deepcopy(activation_condition)
-        elif required_signal_ids is not None:
-            rule.activation_condition = _legacy_signal_ids_to_activation_condition(
-                required_signal_ids
-            )
         logger.debug(
             "Draft trigger rule updated (index=%d, flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)",
             index,
@@ -662,7 +651,7 @@ class DraftService:
         self,
         draft: DraftState,
         index: int,
-        condition: dict[str, object] | None,
+        condition: ActivationConditionNode | None,
     ) -> None:
         """Replace the full activation-condition tree for one trigger rule.
 
@@ -678,7 +667,7 @@ class DraftService:
         draft: DraftState,
         index: int,
         path: str,
-        condition: dict[str, object],
+        condition: ActivationConditionNode,
     ) -> None:
         """Replace one condition node addressed by a dotted path.
 
@@ -716,7 +705,7 @@ class DraftService:
         draft: DraftState,
         index: int,
         parent_path: str,
-        condition: dict[str, object],
+        condition: ActivationConditionNode,
     ) -> None:
         """Append one child condition to a group node in a trigger tree.
 
@@ -778,7 +767,7 @@ class DraftService:
         draft: DraftState,
         index: int,
         path: str,
-        **fields: object,
+        **fields: ConditionValue,
     ) -> None:
         """Patch selected key-value fields on one condition node.
 
