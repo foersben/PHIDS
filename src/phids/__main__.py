@@ -64,6 +64,10 @@ def serve(
     port: Annotated[int, typer.Option(help="TCP port for the FastAPI server.")] = 8000,
     reload: Annotated[bool, typer.Option(help="Enable auto-reload for local development.")] = False,
     log_level: Annotated[LogLevel, typer.Option(help="Uvicorn log verbosity.")] = LogLevel.INFO,
+    mcp: Annotated[
+        bool,
+        typer.Option(help="Start the PHIDS stdio MCP server instead of the HTTP runtime."),
+    ] = False,
 ) -> None:
     """Start the PHIDS FastAPI application from validated CLI options.
 
@@ -74,7 +78,14 @@ def serve(
         port: TCP port for HTTP binding.
         reload: Auto-reload flag for local development.
         log_level: Uvicorn logging verbosity.
+        mcp: Whether to start the MCP stdio server instead of Uvicorn.
     """
+    if mcp:
+        from phids.mcp_server import run_mcp_server
+
+        run_mcp_server()
+        return
+
     _run_server(host=host, port=port, reload=reload, log_level=log_level.value)
 
 

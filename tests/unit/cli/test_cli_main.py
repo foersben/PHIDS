@@ -49,6 +49,27 @@ def test_main_passes_cli_args_to_uvicorn(monkeypatch) -> None:
     assert calls["log_level"] == "debug"
 
 
+def test_main_routes_mcp_flag_to_mcp_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """CLI main switches to the stdio MCP launcher when requested explicitly."""
+    import phids.__main__ as cli
+
+    calls: dict[str, int] = {"mcp": 0, "uvicorn": 0}
+
+    def _fake_run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
+        calls["uvicorn"] += 1
+
+    def _fake_run_mcp_server() -> None:
+        calls["mcp"] += 1
+
+    monkeypatch.setattr(cli, "_run_server", _fake_run_server)
+    monkeypatch.setattr("phids.mcp_server.run_mcp_server", _fake_run_mcp_server)
+
+    cli.main(["--mcp"])
+
+    assert calls["mcp"] == 1
+    assert calls["uvicorn"] == 0
+
+
 def test_main_rejects_invalid_log_level() -> None:
     """CLI exits with a usage error when the log level is outside the configured enum."""
     import click
