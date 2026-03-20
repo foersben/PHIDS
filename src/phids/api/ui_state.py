@@ -29,8 +29,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 ConditionScalar: TypeAlias = str | int | float | bool
-ConditionValue: TypeAlias = ConditionScalar | list["ActivationConditionNode"]
-ActivationConditionNode: TypeAlias = dict[str, ConditionValue]
+ConditionValue: TypeAlias = object
+ActivationConditionNode: TypeAlias = dict[str, object]
 
 # ---------------------------------------------------------------------------
 # Substance definition (independent of any trigger coupling)
