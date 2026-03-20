@@ -42,6 +42,41 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+TelemetryRow = dict[str, object]
+TelemetryRows = list[TelemetryRow]
+
+
+def _species_map(row: TelemetryRow, key: str) -> dict[int, object]:
+    """Return a normalized integer-keyed species map for one telemetry row field."""
+    raw = row.get(key, {})
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[int, object] = {}
+    for sid, value in raw.items():
+        try:
+            sid_int = int(sid)
+        except (TypeError, ValueError):
+            continue
+        out[sid_int] = value
+    return out
+
+
+def _to_int(value: object, default: int = 0) -> int:
+    """Coerce heterogeneous scalar values to int with deterministic fallback."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
 # ---------------------------------------------------------------------------
 # Palette for per-species Chart.js / matplotlib series
 # ---------------------------------------------------------------------------
@@ -104,11 +139,11 @@ def _parse_species_ids(raw: str | None) -> set[int] | None:
 
 
 def filter_telemetry_rows(
-    rows: list[dict[str, Any]],
+    rows: TelemetryRows,
     *,
     flora_ids: str | None = None,
     herbivore_ids: str | None = None,
-) -> list[dict[str, Any]]:
+) -> TelemetryRows:
     """Filter per-species nested telemetry dictionaries by id.
 
     Args:
@@ -117,37 +152,33 @@ def filter_telemetry_rows(
         herbivore_ids: Optional CSV herbivore species-id list.
 
     Returns:
-        list[dict[str, Any]]: Row list with filtered species dictionaries.
+        TelemetryRows: Row list with filtered species dictionaries.
     """
     flora_keep = _parse_species_ids(flora_ids)
     herbivore_keep = _parse_species_ids(herbivore_ids)
     if flora_keep is None and herbivore_keep is None:
         return rows
 
-    filtered: list[dict[str, Any]] = []
+    filtered: TelemetryRows = []
     for row in rows:
         clone = dict(row)
+        plant_pop = _species_map(row, "plant_pop_by_species")
+        plant_energy = _species_map(row, "plant_energy_by_species")
+        defense_cost = _species_map(row, "defense_cost_by_species")
+        swarm_pop = _species_map(row, "swarm_pop_by_species")
         if flora_keep is not None:
             clone["plant_pop_by_species"] = {
-                sid: val
-                for sid, val in row.get("plant_pop_by_species", {}).items()
-                if int(sid) in flora_keep
+                sid: val for sid, val in plant_pop.items() if sid in flora_keep
             }
             clone["plant_energy_by_species"] = {
-                sid: val
-                for sid, val in row.get("plant_energy_by_species", {}).items()
-                if int(sid) in flora_keep
+                sid: val for sid, val in plant_energy.items() if sid in flora_keep
             }
             clone["defense_cost_by_species"] = {
-                sid: val
-                for sid, val in row.get("defense_cost_by_species", {}).items()
-                if int(sid) in flora_keep
+                sid: val for sid, val in defense_cost.items() if sid in flora_keep
             }
         if herbivore_keep is not None:
             clone["swarm_pop_by_species"] = {
-                sid: val
-                for sid, val in row.get("swarm_pop_by_species", {}).items()
-                if int(sid) in herbivore_keep
+                sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep
             }
         filtered.append(clone)
     return filtered
@@ -226,7 +257,7 @@ def export_bytes_json(df: pl.DataFrame) -> bytes:
 # ---------------------------------------------------------------------------
 
 
-def telemetry_to_dataframe(rows: list[dict[str, Any]]) -> "pd.DataFrame":
+def telemetry_to_dataframe(rows: TelemetryRows) -> "pd.DataFrame":
     """Flatten per-species nested dicts from raw telemetry rows into a pandas DataFrame.
 
     Converts the list of row dicts accumulated by
@@ -254,16 +285,16 @@ def telemetry_to_dataframe(rows: list[dict[str, Any]]) -> "pd.DataFrame":
     all_flora_ids: set[int] = set()
     all_swarm_ids: set[int] = set()
     for row in rows:
-        all_flora_ids.update(row.get("plant_pop_by_species", {}).keys())
-        all_swarm_ids.update(row.get("swarm_pop_by_species", {}).keys())
+        all_flora_ids.update(_species_map(row, "plant_pop_by_species").keys())
+        all_swarm_ids.update(_species_map(row, "swarm_pop_by_species").keys())
 
     flat_rows = []
     for row in rows:
-        flat: dict[str, Any] = {k: v for k, v in row.items() if not isinstance(v, dict)}
-        pop_by = row.get("plant_pop_by_species", {})
-        energy_by = row.get("plant_energy_by_species", {})
-        swarm_by = row.get("swarm_pop_by_species", {})
-        defense_by = row.get("defense_cost_by_species", {})
+        flat: dict[str, object] = {k: v for k, v in row.items() if not isinstance(v, dict)}
+        pop_by = _species_map(row, "plant_pop_by_species")
+        energy_by = _species_map(row, "plant_energy_by_species")
+        swarm_by = _species_map(row, "swarm_pop_by_species")
+        defense_by = _species_map(row, "defense_cost_by_species")
 
         for fid in sorted(all_flora_ids):
             flat[f"plant_{fid}_pop"] = pop_by.get(fid, 0)
@@ -363,7 +394,7 @@ def generate_png_bytes(
         plt.close(fig)
         return buf.getvalue()
 
-    ticks = [r["tick"] for r in plot_rows]
+    ticks = [_to_int(r.get("tick", 0)) for r in plot_rows]
 
     if plot_type == "timeseries":
         _plot_timeseries(

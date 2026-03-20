@@ -83,6 +83,7 @@ Status legend:
 - Simulation loop species lookup caches and debug-summary metric extraction now use schema/telemetry-specific typing with deterministic scalar coercion helpers.
 - ECS component registries now use object-typed storage boundaries with generic retrieval casts, reducing broad `Any` usage in core indexing/query paths.
 - Replay msgpack serialization now returns an explicit `bytes` cast at the I/O boundary, eliminating residual `no-any-return` suppression.
+- Telemetry export row filtering and dataframe flattening helpers now use explicit telemetry row aliases and normalized species-map coercion, reducing `Any` at the export ingest boundary.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
@@ -99,6 +100,7 @@ Status legend:
   - `src/phids/engine/batch.py`
   - `src/phids/engine/core/ecs.py`
   - `src/phids/telemetry/analytics.py`
+  - `src/phids/telemetry/export.py`
   - `tests/integration/systems/test_termination_and_loop.py`
   - `tests/integration/api/test_api_simulation_and_scenario_routes.py`
   - `tests/integration/api/test_ui_routes.py`
