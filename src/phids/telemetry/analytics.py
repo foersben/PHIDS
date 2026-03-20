@@ -33,7 +33,7 @@ sparse species sets.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TypeAlias
 
 import polars as pl
 
@@ -42,6 +42,34 @@ from phids.shared.constants import MAX_TELEMETRY_TICKS
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 logger = logging.getLogger(__name__)
+
+TelemetryScalar: TypeAlias = None | bool | int | float | str
+SpeciesCountMap: TypeAlias = dict[int, int]
+SpeciesEnergyMap: TypeAlias = dict[int, float]
+TelemetryValue: TypeAlias = TelemetryScalar | SpeciesCountMap | SpeciesEnergyMap
+TelemetryRow: TypeAlias = dict[str, TelemetryValue]
+
+
+def _as_species_count_map(value: TelemetryValue | object) -> SpeciesCountMap:
+    """Return a species-count mapping or an empty mapping when shape/type mismatch occurs."""
+    if isinstance(value, dict):
+        return {
+            int(k): int(v)
+            for k, v in value.items()
+            if isinstance(k, int) and isinstance(v, (int, float))
+        }
+    return {}
+
+
+def _as_species_energy_map(value: TelemetryValue | object) -> SpeciesEnergyMap:
+    """Return a species-energy mapping or an empty mapping when shape/type mismatch occurs."""
+    if isinstance(value, dict):
+        return {
+            int(k): float(v)
+            for k, v in value.items()
+            if isinstance(k, int) and isinstance(v, (int, float))
+        }
+    return {}
 
 
 class TelemetryRecorder:
@@ -67,7 +95,7 @@ class TelemetryRecorder:
         Args:
             max_rows: Maximum in-memory tick rows retained in the rolling window.
         """
-        self._rows: list[dict[str, Any]] = []
+        self._rows: list[TelemetryRow] = []
         self._df: pl.DataFrame | None = None
         self._max_rows = max(1, int(max_rows))
 
@@ -106,7 +134,7 @@ class TelemetryRecorder:
             for key in death_counts:
                 death_counts[key] = int(plant_death_causes.get(key, 0))
 
-        row: dict[str, Any] = {
+        row: TelemetryRow = {
             "tick": tick,
             "total_flora_energy": float(metrics.total_flora_energy),
             "flora_population": int(metrics.flora_population),
@@ -133,11 +161,11 @@ class TelemetryRecorder:
             float(metrics.total_flora_energy),
         )
 
-    def get_latest_metrics(self) -> dict[str, Any] | None:
+    def get_latest_metrics(self) -> TelemetryRow | None:
         """Return the latest recorded telemetry row, if available.
 
         Returns:
-            dict[str, Any] | None: Most recent metrics row or ``None``.
+            TelemetryRow | None: Most recent metrics row or ``None``.
         """
         if not self._rows:
             return None
@@ -158,8 +186,8 @@ class TelemetryRecorder:
         flora_ids: set[int] = set()
         herbivore_ids: set[int] = set()
         for row in self._rows:
-            flora_ids.update(row.get("plant_pop_by_species", {}).keys())
-            herbivore_ids.update(row.get("swarm_pop_by_species", {}).keys())
+            flora_ids.update(_as_species_count_map(row.get("plant_pop_by_species", {})).keys())
+            herbivore_ids.update(_as_species_count_map(row.get("swarm_pop_by_species", {})).keys())
         return {
             "flora_ids": sorted(flora_ids),
             "herbivore_ids": sorted(herbivore_ids),
@@ -200,29 +228,31 @@ class TelemetryRecorder:
                 all_flora_ids: set[int] = set()
                 all_swarm_ids: set[int] = set()
                 for r in self._rows:
-                    all_flora_ids.update(r.get("plant_pop_by_species", {}).keys())
-                    all_swarm_ids.update(r.get("swarm_pop_by_species", {}).keys())
+                    all_flora_ids.update(
+                        _as_species_count_map(r.get("plant_pop_by_species", {})).keys()
+                    )
+                    all_swarm_ids.update(
+                        _as_species_count_map(r.get("swarm_pop_by_species", {})).keys()
+                    )
                 sorted_flora = sorted(all_flora_ids)
                 sorted_swarm = sorted(all_swarm_ids)
 
                 # Build flat rows: aggregate scalars + per-species flat columns
-                flat_rows: list[dict[str, Any]] = []
+                flat_rows: list[dict[str, object]] = []
                 for r in self._rows:
-                    flat: dict[str, Any] = {k: v for k, v in r.items() if not isinstance(v, dict)}
+                    flat: dict[str, object] = {
+                        k: v for k, v in r.items() if not isinstance(v, dict)
+                    }
+                    plant_pop = _as_species_count_map(r.get("plant_pop_by_species", {}))
+                    plant_energy = _as_species_energy_map(r.get("plant_energy_by_species", {}))
+                    defense_cost = _as_species_energy_map(r.get("defense_cost_by_species", {}))
+                    swarm_pop = _as_species_count_map(r.get("swarm_pop_by_species", {}))
                     for fid in sorted_flora:
-                        flat[f"plant_{fid}_pop"] = int(
-                            r.get("plant_pop_by_species", {}).get(fid, 0)
-                        )
-                        flat[f"plant_{fid}_energy"] = float(
-                            r.get("plant_energy_by_species", {}).get(fid, 0.0)
-                        )
-                        flat[f"defense_cost_{fid}"] = float(
-                            r.get("defense_cost_by_species", {}).get(fid, 0.0)
-                        )
+                        flat[f"plant_{fid}_pop"] = int(plant_pop.get(fid, 0))
+                        flat[f"plant_{fid}_energy"] = float(plant_energy.get(fid, 0.0))
+                        flat[f"defense_cost_{fid}"] = float(defense_cost.get(fid, 0.0))
                     for sid in sorted_swarm:
-                        flat[f"swarm_{sid}_pop"] = int(
-                            r.get("swarm_pop_by_species", {}).get(sid, 0)
-                        )
+                        flat[f"swarm_{sid}_pop"] = int(swarm_pop.get(sid, 0))
                     flat_rows.append(flat)
                 self._df = pl.DataFrame(flat_rows)
             else:
