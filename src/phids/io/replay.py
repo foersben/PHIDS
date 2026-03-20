@@ -24,11 +24,15 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Protocol, TypeAlias, cast
 
 import msgpack  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
+
+ReplayScalar: TypeAlias = None | bool | int | float | str
+ReplayValue: TypeAlias = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
+ReplayState: TypeAlias = dict[str, ReplayValue]
 
 
 class _ReplayArrayLike(Protocol):
@@ -48,7 +52,7 @@ class _ReplayEnvLike(Protocol):
     wind_vector_y: _ReplayArrayLike
 
 
-def serialise_state(state: dict[str, Any]) -> bytes:
+def serialise_state(state: ReplayState) -> bytes:
     """Serialise a state snapshot to a msgpack frame.
 
     Args:
@@ -61,17 +65,19 @@ def serialise_state(state: dict[str, Any]) -> bytes:
     return msgpack.packb(state, use_bin_type=True)  # type: ignore[no-any-return]
 
 
-def deserialise_state(data: bytes) -> dict[str, Any]:
+def deserialise_state(data: bytes) -> ReplayState:
     """Deserialize a msgpack frame into a state mapping.
 
     Args:
         data: msgpack-encoded bytes produced by :func:`serialise_state`.
 
     Returns:
-        dict[str, Any]: Decoded state mapping.
+        ReplayState: Decoded state mapping.
     """
-    result: dict[str, Any] = msgpack.unpackb(data, raw=False)
-    return result
+    decoded = msgpack.unpackb(data, raw=False)
+    if not isinstance(decoded, dict):
+        raise ValueError("Replay frame payload must decode to a mapping.")
+    return cast(ReplayState, decoded)
 
 
 class ReplayBuffer:
@@ -111,7 +117,7 @@ class ReplayBuffer:
         self._spill_path: Path | None = Path(spill_path) if spill_path is not None else None
         self._owns_spill_file = spill_path is None
 
-    def append(self, state: dict[str, Any]) -> None:
+    def append(self, state: ReplayState) -> None:
         """Serialize and append a tick state to the buffer.
 
         Args:
@@ -145,16 +151,16 @@ class ReplayBuffer:
             termination_state: Tuple ``(terminated, termination_reason)``.
         """
         terminated, termination_reason = termination_state
-        state: dict[str, Any] = {
+        state: ReplayState = {
             "tick": int(tick),
             "terminated": bool(terminated),
             "termination_reason": termination_reason,
-            "plant_energy_layer": env.plant_energy_layer.tolist(),
-            "signal_layers": env.signal_layers.tolist(),
-            "toxin_layers": env.toxin_layers.tolist(),
-            "flow_field": env.flow_field.tolist(),
-            "wind_vector_x": env.wind_vector_x.tolist(),
-            "wind_vector_y": env.wind_vector_y.tolist(),
+            "plant_energy_layer": cast(ReplayValue, env.plant_energy_layer.tolist()),
+            "signal_layers": cast(ReplayValue, env.signal_layers.tolist()),
+            "toxin_layers": cast(ReplayValue, env.toxin_layers.tolist()),
+            "flow_field": cast(ReplayValue, env.flow_field.tolist()),
+            "wind_vector_x": cast(ReplayValue, env.wind_vector_x.tolist()),
+            "wind_vector_y": cast(ReplayValue, env.wind_vector_y.tolist()),
         }
         self.append(state)
 
@@ -162,14 +168,14 @@ class ReplayBuffer:
         """Return number of stored frames."""
         return len(self._spilled_index) + len(self._frames)
 
-    def get_frame(self, tick: int) -> dict[str, Any]:
+    def get_frame(self, tick: int) -> ReplayState:
         """Return the deserialised state for the specified tick index.
 
         Args:
             tick: Index of the frame to retrieve (0-based).
 
         Returns:
-            dict[str, Any]: Decoded state mapping for the requested tick.
+            ReplayState: Decoded state mapping for the requested tick.
         """
         if tick < 0 or tick >= len(self):
             raise IndexError(f"Replay frame index out of range: {tick}")
