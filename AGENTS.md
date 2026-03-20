@@ -81,31 +81,26 @@
 - Keep benchmark tests explicitly marked with `@pytest.mark.benchmark` in `tests/benchmarks/*` so selection via `-m 'not benchmark'` remains deterministic.
 - Prefer small route tests that verify one endpoint contract plus one invariant, especially in `tests/integration/api/test_ui_routes.py`.
 
-## Documentation & Writing Style
-When writing docstrings, comments, or markdown documentation, you MUST adhere to a rigorous,
-scholarly, and scientific writing style:
+## Documentation Agent Orchestration
+- Agent definitions live under `.github/agents/*.agent.md`; keep scope-specific behavior there to avoid policy duplication here.
+- `docs-librarian`, `docs-scientist`, and `docs-operator` each have whole-`docs/` primary accessible scope.
+- `docs-librarian` is the coordinator and final QA gate: assign concrete file targets and writing mode before delegation.
+- Default delegation is by specialty:
+  - Scientific/engine/foundations and analytical reference docs -> `docs-scientist`.
+  - Development workflows, runbooks, CI/CD, and contributor operations -> `docs-operator`.
+  - Python docstring-only work (`src/phids/**/*.py`, `tests/**/*.py`) -> `docs-annotator`.
+- Delegation is the default; explicit user tagging is optional when scope can be inferred reliably.
+- `docs-librarian` validates delegated outputs for implementation-truth alignment, link/nav integrity, and writing-mode compliance.
+- If scope is mixed or drift is detected, `docs-librarian` retasks/subdivides and revalidates before completion.
 
-1. **Explanatory Depth (Floating Texts):** Prefer substantial explanatory text for modules and
-   classes, including algorithmic mechanics and biological rationale when relevant to the surface
-   being documented.
-2. **Academic Tone:** Use a formal, academic tone. Avoid colloquialisms, conversational filler
-   (e.g., "basically", "just", "so"), and first-person pronouns.
-3. **Domain Precision:** Strictly use the project's scientific and mathematical terminology (e.g.,
-   "systemic acquired resistance", "metabolic attrition", "O(1) spatial hash lookups", "mitosis",
-   "Gaussian diffusion").
-4. **Structure:**
-   - Start with a precise declarative sentence.
-   - Follow with a detailed paragraph explaining the *why* and *how* of the system.
-   - Explicitly state the relationship between the computational logic (e.g., ECS,
-     double-buffering) and the biological phenomena it simulates.
-5. **Formatting:** Adhere strictly to Google-style docstrings. Required sections must appear when
-   applicable (`Args`, `Returns`, `Raises`, `Attributes`, `Yields`, `Examples`, `Notes`).
-6. **Contextual Scientific Depth:** Scientific long-form explanations, equations, and LaTeX are
-   encouraged when they materially improve precision; they are not mandatory for every routine
-   utility, route, or test helper.
+## Documentation Policy Sources
+- Core architectural and language rules: `.github/copilot-instructions.md`.
+- Docstring execution constraints and section ordering: `.github/prompts/docstrings.md.prompt.md`.
+- Mode-specific writing behavior: `.github/agents/docs-scientist.agent.md`, `.github/agents/docs-operator.agent.md`, `.github/agents/docs-annotator.agent.md`.
+- Documentation work is not complete until `uv run mkdocs build --strict` passes.
 
-## Documentation Mode Selection (Required)
-- Use a **scientific formal mode** for engine, modeling, simulation, and algorithm pages (for example `docs/engine/*`, `docs/foundations/*`, and analytical sections in `docs/reference/*`). In these pages, extensive floating text, formal terminology, equations, Mermaid state-flow diagrams, and TikZ vector graphics are encouraged when they improve explanatory precision.
-- Use an **operational prose mode** for administrative checklists, CI/CD workflows, release processes, contributor onboarding, and project-management notes (for example `docs/development/*`, process-heavy parts of `README.md`, and runbook-like pages). In these pages, avoid equation-heavy formalization and avoid symbolic predicates unless they are strictly necessary for implementation clarity.
-- For operational prose mode, prefer clear narrative explanations, compact Mermaid process diagrams, and copyable command snippets. Keep mathematical notation minimal or absent.
-- Do not translate routine governance text into pseudo-theorem style. Documentation quality for these pages is defined by practical clarity, reproducibility of steps, and compatibility with GitHub Actions and GitHub Pages build constraints.
+## Git Operations Agent
+- `git-ops` is the dedicated agent for repository lifecycle work: status inspection, staged slicing, signed commits, branch management, merge/rebase flows, push/publish, and release tagging.
+- Route Git-centric tasks directly to `git-ops` (for example: commit preparation, branch creation, PR publication, merge workflows, rollback support).
+- `git-ops` executes push/publish, pull-request actions, release-tag workflows, and release publication after explicit in-session instruction from a human operator.
+- `git-ops` runs with tool-backed execution through `.github/agents/git-ops.agent.md` and reports resulting refs, SHAs, and next verification actions.
