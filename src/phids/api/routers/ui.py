@@ -13,10 +13,8 @@ browser-side replicas.
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
 from phids.api.ui_state import get_draft
@@ -26,7 +24,7 @@ router = APIRouter()
 
 
 @router.get("/ui/batch", response_class=HTMLResponse, summary="Batch runner dashboard")
-async def ui_batch_dashboard(request: Request) -> Any:
+async def ui_batch_dashboard(request: Request) -> Response:
     """Render the Monte Carlo batch runner dashboard shell.
 
     Args:
@@ -40,7 +38,7 @@ async def ui_batch_dashboard(request: Request) -> Any:
 
 
 @router.get("/ui/diagnostics/model", response_class=HTMLResponse, summary="Diagnostics model tab")
-async def ui_diagnostics_model(request: Request) -> Any:
+async def ui_diagnostics_model(request: Request) -> Response:
     """Render live ecological counters and deficit diagnostics.
 
     Args:
@@ -67,7 +65,7 @@ async def ui_diagnostics_model(request: Request) -> Any:
 @router.get(
     "/ui/diagnostics/frontend", response_class=HTMLResponse, summary="Diagnostics frontend tab"
 )
-async def ui_diagnostics_frontend(request: Request) -> Any:
+async def ui_diagnostics_frontend(request: Request) -> Response:
     """Render the browser-observation diagnostics shell.
 
     Args:
@@ -82,7 +80,7 @@ async def ui_diagnostics_frontend(request: Request) -> Any:
 @router.get(
     "/ui/diagnostics/backend", response_class=HTMLResponse, summary="Diagnostics backend tab"
 )
-async def ui_diagnostics_backend(request: Request) -> Any:
+async def ui_diagnostics_backend(request: Request) -> Response:
     """Render recent structured backend logs for operator inspection.
 
     Args:
@@ -100,7 +98,7 @@ async def ui_diagnostics_backend(request: Request) -> Any:
 
 
 @router.get("/", response_class=HTMLResponse, summary="Main UI")
-async def root(request: Request) -> Any:
+async def root(request: Request) -> Response:
     """Render the PHIDS control-centre root page.
 
     Args:
@@ -122,7 +120,7 @@ async def root(request: Request) -> Any:
 
 
 @router.get("/ui/dashboard", response_class=HTMLResponse, summary="Dashboard partial")
-async def ui_dashboard(request: Request) -> Any:
+async def ui_dashboard(request: Request) -> Response:
     """Render the live dashboard partial.
 
     Args:
@@ -135,7 +133,7 @@ async def ui_dashboard(request: Request) -> Any:
 
 
 @router.get("/ui/biotope", response_class=HTMLResponse, summary="Biotope config partial")
-async def ui_biotope(request: Request) -> Any:
+async def ui_biotope(request: Request) -> Response:
     """Render the biotope parameter editor.
 
     Args:
@@ -153,7 +151,7 @@ async def ui_biotope(request: Request) -> Any:
 
 
 @router.get("/ui/flora", response_class=HTMLResponse, summary="Flora config partial")
-async def ui_flora(request: Request) -> Any:
+async def ui_flora(request: Request) -> Response:
     """Render the flora-species editor table.
 
     Args:
@@ -172,7 +170,7 @@ async def ui_flora(request: Request) -> Any:
 
 
 @router.get("/ui/herbivores", response_class=HTMLResponse, summary="Herbivore config partial")
-async def ui_herbivores(request: Request) -> Any:
+async def ui_herbivores(request: Request) -> Response:
     """Render the herbivore-species editor table.
 
     Args:
@@ -191,7 +189,7 @@ async def ui_herbivores(request: Request) -> Any:
 
 
 @router.get("/ui/substances", response_class=HTMLResponse, summary="Substance config partial")
-async def ui_substances(request: Request) -> Any:
+async def ui_substances(request: Request) -> Response:
     """Render the substance-definition editor.
 
     Args:
@@ -210,7 +208,7 @@ async def ui_substances(request: Request) -> Any:
 
 
 @router.get("/ui/diet-matrix", response_class=HTMLResponse, summary="Diet matrix partial")
-async def ui_diet_matrix(request: Request) -> Any:
+async def ui_diet_matrix(request: Request) -> Response:
     """Render the herbivore-to-flora compatibility matrix.
 
     Args:
@@ -233,7 +231,7 @@ async def ui_diet_matrix(request: Request) -> Any:
 
 
 @router.get("/ui/trigger-rules", response_class=HTMLResponse, summary="Trigger rules partial")
-async def ui_trigger_rules(request: Request) -> Any:
+async def ui_trigger_rules(request: Request) -> Response:
     """Render the trigger-rule editor.
 
     Args:
@@ -252,7 +250,7 @@ async def ui_trigger_rules(request: Request) -> Any:
 
 
 @router.get("/ui/trigger-matrix", response_class=HTMLResponse, summary="Trigger rules (legacy URL)")
-async def ui_trigger_matrix_legacy(request: Request) -> Any:
+async def ui_trigger_matrix_legacy(request: Request) -> Response:
     """Serve the legacy trigger-rule URL without changing semantics.
 
     Args:
@@ -265,7 +263,7 @@ async def ui_trigger_matrix_legacy(request: Request) -> Any:
 
 
 @router.get("/ui/placements", response_class=HTMLResponse, summary="Placement editor partial")
-async def ui_placements(request: Request) -> Any:
+async def ui_placements(request: Request) -> Response:
     """Render the spatial placement editor and draft placement ledger.
 
     Args:

@@ -64,11 +64,14 @@ Status legend:
 - Optional Zarr import typing now uses explicit cross-branch symbol declaration to eliminate static-analysis ambiguity.
 - Replay append branching is now isolated in a dedicated helper (`_append_replay_frame`) to reduce phase-loop complexity and centralize backend-specific behavior.
 - Signaling trigger pipelines now use explicit `TriggerConditionSchema` typing from loop cache to signaling execution, removing redundant runtime trigger type guards.
+- UI HTML router handlers now return concrete `Response` annotations instead of `Any`, improving endpoint typing consistency.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`
+  - `src/phids/api/routers/ui.py`
   - `tests/integration/systems/test_termination_and_loop.py`
+  - `tests/integration/api/test_ui_routes.py`
 
 ## Open Work by Review Area
 
