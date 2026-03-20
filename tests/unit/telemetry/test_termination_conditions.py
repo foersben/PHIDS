@@ -12,7 +12,7 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.telemetry.conditions import check_termination
-from phids.telemetry.tick_metrics import TickMetrics
+from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 
 def _add_plant(world: ECSWorld, *, species_id: int, energy: float = 5.0) -> None:
@@ -176,3 +176,50 @@ def test_species_extinction_does_not_fire_when_species_present(
 
     assert result.terminated is False
     assert result.reason == ""
+
+
+@pytest.mark.parametrize(
+    ("setup", "kwargs"),
+    [
+        ("z2", {"z2_flora_species": 1}),
+        ("z4", {"z4_herbivore_species": 1}),
+        ("z6", {"z6_max_flora_energy": 10.0}),
+        ("z7", {"z7_max_total_herbivore_population": 8}),
+        ("z5", {"z3_check_all_flora": False, "z5_check_all_herbivores": True}),
+        ("z3", {"z3_check_all_flora": True, "z5_check_all_herbivores": False}),
+        ("precedence_z2_over_z6", {"z2_flora_species": 1, "z6_max_flora_energy": 1.0}),
+    ],
+)
+def test_termination_result_matches_between_world_scan_and_tick_metrics(
+    setup: str,
+    kwargs: dict[str, int | float | bool],
+) -> None:
+    """World-scan and precomputed-metrics paths yield identical termination decisions."""
+    world = ECSWorld()
+    # Build case-specific entities into the same world instance.
+    if setup == "precedence_z2_over_z6":
+        _add_plant(world, species_id=0, energy=50.0)
+        _add_swarm(world, species_id=0)
+    elif setup == "z2":
+        _add_plant(world, species_id=0)
+        _add_swarm(world, species_id=0)
+    elif setup == "z4":
+        _add_plant(world, species_id=0)
+        _add_swarm(world, species_id=0)
+    elif setup == "z6":
+        _add_plant(world, species_id=0, energy=25.0)
+        _add_swarm(world, species_id=0)
+    elif setup == "z7":
+        _add_plant(world, species_id=0)
+        _add_swarm(world, species_id=0, population=12)
+    elif setup == "z5":
+        _add_plant(world, species_id=0)
+    elif setup == "z3":
+        _add_swarm(world, species_id=0)
+
+    metrics = collect_tick_metrics(world)
+    via_world_scan = check_termination(world, tick=0, max_ticks=100, **kwargs)
+    via_metrics = check_termination(world, tick=0, max_ticks=100, tick_metrics=metrics, **kwargs)
+
+    assert via_metrics.terminated == via_world_scan.terminated
+    assert via_metrics.reason == via_world_scan.reason

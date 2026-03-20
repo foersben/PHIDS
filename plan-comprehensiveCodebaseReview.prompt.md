@@ -84,13 +84,22 @@ Status legend:
 - ECS component registries now use object-typed storage boundaries with generic retrieval casts, reducing broad `Any` usage in core indexing/query paths.
 - Replay msgpack serialization now returns an explicit `bytes` cast at the I/O boundary, eliminating residual `no-any-return` suppression.
 - Telemetry export row filtering and dataframe flattening helpers now use explicit telemetry row aliases and normalized species-map coercion, reducing `Any` at the export ingest boundary.
+- Simulation control form-scalar parsing now fails with deterministic HTTP 422 diagnostics for malformed numeric inputs, and live tick-rate/wind updates are mirrored back into draft state to prevent drift on subsequent start/step transitions.
+- ECS spatial-hash bookkeeping now maintains a reverse entity-position index, enabling O(1) cleanup on destroy/re-register paths and pruning empty cell buckets without full-map scans.
+- Live dashboard payloads now expose an explicit `contract_version` field (`1`) for additive wire-schema evolution policy.
 - Integration coverage now asserts both Zarr raw-array append and msgpack snapshot fallback replay paths.
+- Integration coverage now asserts that direct live wind/tick-rate updates persist across simulation control routes and that malformed numeric form fields are rejected consistently.
+- Unit coverage now asserts spatial-hash re-registration replacement semantics and O(1) destroy cleanup behavior.
+- UI stream contract checks now include docs-parity assertions against a versioned fixture snapshot for top-level fields and columnar table columns.
+- Interaction arithmetic coverage now includes bounded Hypothesis pilots and expanded closed-form invariant matrices for attrition, reproduction, and mitosis branches.
+- Flow-field and termination mutation-pilot suites now include focused branch sentinels for clipping thresholds, sign polarity, propagation depth, and rule-precedence semantics.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`
   - `src/phids/api/routers/ui.py`
   - `src/phids/api/routers/batch.py`
   - `src/phids/api/routers/simulation.py`
+  - `src/phids/api/presenters/dashboard.py`
   - `src/phids/api/routers/telemetry.py`
   - `src/phids/api/routers/config.py`
   - `src/phids/api/main.py`
@@ -103,6 +112,13 @@ Status legend:
   - `src/phids/telemetry/export.py`
   - `tests/integration/systems/test_termination_and_loop.py`
   - `tests/integration/api/test_api_simulation_and_scenario_routes.py`
+  - `tests/integration/api/test_api_builder_and_helpers.py`
+  - `tests/integration/systems/test_interaction_hypothesis_pilot.py`
+  - `tests/integration/systems/test_interaction_property_invariants.py`
+  - `tests/unit/engine/core/test_ecs_world.py`
+  - `tests/unit/engine/core/test_flow_field_mutation_pilot.py`
+  - `tests/unit/telemetry/test_termination_mutation_pilot.py`
+  - `tests/unit/api/test_ui_stream_docs_contract.py`
   - `tests/integration/api/test_ui_routes.py`
 
 ## Open Work by Review Area

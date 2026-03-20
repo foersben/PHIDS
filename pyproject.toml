@@ -38,6 +38,7 @@ dev = [
     "pytest-cov>=5.0",
     "pytest-benchmark>=4.0",
     "pytest-asyncio>=0.23",
+    "hypothesis>=6.0",
     "httpx>=0.27",
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.5",
@@ -70,6 +71,8 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
     "benchmark: performance benchmark tests; deselect with -m 'not benchmark'",
+    "mutation_pilot: focused deterministic mutation-resistance pilots for branch semantics",
+    "hypothesis_pilot: optional bounded Hypothesis pilot invariants for interaction arithmetic",
 ]
 addopts = [
     "--cov=src/phids",

@@ -7,51 +7,12 @@ This module implements unit tests for the PHIDS flow-field computation and signa
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from phids.engine.core.flow_field import (
     _compute_flow_field_impl,
     apply_camouflage,
     compute_flow_field,
 )
-
-
-def _reference_jacobi_flow(
-    plant_energy: np.ndarray,
-    toxin_sum: np.ndarray,
-    *,
-    width: int,
-    height: int,
-) -> np.ndarray:
-    """Compute a tiny pure-NumPy Jacobi reference for kernel-order regression checks."""
-    base = plant_energy - toxin_sum
-    current = base.copy()
-    nxt = np.zeros_like(current)
-    decay = 0.6
-
-    for _ in range(width + height):
-        for x in range(width):
-            for y in range(height):
-                neighbors_sum = 0.0
-                neighbor_count = 0
-                if x > 0:
-                    neighbors_sum += current[x - 1, y]
-                    neighbor_count += 1
-                if x < width - 1:
-                    neighbors_sum += current[x + 1, y]
-                    neighbor_count += 1
-                if y > 0:
-                    neighbors_sum += current[x, y - 1]
-                    neighbor_count += 1
-                if y < height - 1:
-                    neighbors_sum += current[x, y + 1]
-                    neighbor_count += 1
-                propagated = neighbors_sum / neighbor_count if neighbor_count > 0 else 0.0
-                nxt[x, y] = base[x, y] + decay * propagated
-        current, nxt = nxt, current
-
-    current[np.abs(current) < 1e-4] = 0.0
-    return current
 
 
 def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
@@ -62,34 +23,6 @@ def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
     flow = _compute_flow_field_impl(plant_energy, toxin_sum, width=1, height=1)
 
     assert np.allclose(flow, np.zeros((1, 1), dtype=np.float64))
-
-
-def test_compute_flow_field_impl_subnormal_clipping_boundary() -> None:
-    """Verify values below 1e-4 are clipped to zero while exactly 1e-4 is preserved."""
-    toxin_sum = np.zeros((1, 1), dtype=np.float64)
-
-    at_boundary = _compute_flow_field_impl(
-        np.array([[1e-4]], dtype=np.float64), toxin_sum, width=1, height=1
-    )
-    below_boundary = _compute_flow_field_impl(
-        np.array([[9e-5]], dtype=np.float64), toxin_sum, width=1, height=1
-    )
-
-    assert at_boundary[0, 0] == pytest.approx(1e-4)
-    assert below_boundary[0, 0] == 0.0
-
-
-def test_compute_flow_field_impl_single_cell_sign_polarity() -> None:
-    """Verify base-term polarity remains plant-minus-toxin for single-cell kernels."""
-    attractive = _compute_flow_field_impl(
-        np.array([[3.0]], dtype=np.float64), np.array([[1.0]], dtype=np.float64), width=1, height=1
-    )
-    repulsive = _compute_flow_field_impl(
-        np.array([[1.0]], dtype=np.float64), np.array([[3.0]], dtype=np.float64), width=1, height=1
-    )
-
-    assert attractive[0, 0] > 0.0
-    assert repulsive[0, 0] < 0.0
 
 
 def test_compute_flow_field_impl_propagates_along_single_row() -> None:
@@ -105,18 +38,6 @@ def test_compute_flow_field_impl_propagates_along_single_row() -> None:
     assert flow[0, 4] > 0.0
     assert flow[0, 2] > flow[0, 0]
     assert np.isclose(flow[0, 0], flow[0, 4])
-
-
-def test_compute_flow_field_impl_edge_source_does_not_wrap_around() -> None:
-    """Verify edge-origin attraction decays with distance and does not wrap to opposite borders."""
-    plant_energy = np.zeros((4, 4), dtype=np.float64)
-    toxin_sum = np.zeros((4, 4), dtype=np.float64)
-    plant_energy[0, 0] = 8.0
-
-    flow = _compute_flow_field_impl(plant_energy, toxin_sum, width=4, height=4)
-
-    assert flow[0, 0] > flow[1, 0] > flow[2, 0] > flow[3, 0]
-    assert flow[0, 0] > flow[0, 1] > flow[0, 2] > flow[0, 3]
 
 
 def test_compute_flow_field_impl_propagates_toxin_repulsion_along_single_column() -> None:
@@ -184,23 +105,6 @@ def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
     )
 
     assert np.allclose(combined, separate_sum)
-
-
-def test_compute_flow_field_impl_matches_reference_jacobi_small_grid() -> None:
-    """Verify the kernel matches a tiny reference Jacobi implementation on a mixed-sign grid."""
-    plant_energy = np.array(
-        [[0.0, 1.0, 0.0], [2.0, 0.0, 0.5], [0.0, 0.0, 0.0]],
-        dtype=np.float64,
-    )
-    toxin_sum = np.array(
-        [[0.0, 0.0, 0.2], [0.0, 1.5, 0.0], [0.0, 0.1, 0.0]],
-        dtype=np.float64,
-    )
-
-    actual = _compute_flow_field_impl(plant_energy, toxin_sum, width=3, height=3)
-    expected = _reference_jacobi_flow(plant_energy, toxin_sum, width=3, height=3)
-
-    assert np.allclose(actual, expected)
 
 
 def test_compute_flow_field_wrapper_sums_toxin_layers_before_propagation() -> None:
