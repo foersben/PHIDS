@@ -10,7 +10,7 @@ import pytest
 from phids.io.replay import deserialise_state, serialise_state
 
 try:
-    from hypothesis import given, settings, strategies as st
+    from hypothesis import assume, given, settings, strategies as st
 except ModuleNotFoundError:
     pytest.skip("Install hypothesis to run optional property pilots.", allow_module_level=True)
 
@@ -149,4 +149,53 @@ def test_replay_buffer_load_truncation_preserves_valid_prefix(
 
         assert len(loaded) <= len(states)
         for idx in range(len(loaded)):
+            assert loaded.get_frame(idx) == states[idx]
+
+
+@pytest.mark.hypothesis_pilot
+@settings(max_examples=72, deadline=None, derandomize=True)
+@given(
+    values=st.lists(st.integers(min_value=0, max_value=10_000), min_size=1, max_size=16),
+    corrupt_index=st.integers(min_value=0, max_value=15),
+)
+def test_replay_buffer_load_length_header_corruption_keeps_prior_frames(
+    values: list[int],
+    corrupt_index: int,
+) -> None:
+    """A corrupted frame-length header truncates loading at that frame and preserves prior frames."""
+    from phids.io.replay import ReplayBuffer
+
+    assume(corrupt_index < len(values))
+    states = [{"tick": tick, "value": value} for tick, value in enumerate(values)]
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        full_path = root / "full.replay"
+        corrupt_path = root / "corrupt_header.replay"
+
+        replay = ReplayBuffer()
+        for state in states:
+            replay.append(state)
+        replay.save(full_path)
+
+        data = bytearray(full_path.read_bytes())
+
+        # Locate frame header offsets by walking the valid length-prefixed stream.
+        cursor = 0
+        header_offsets: list[int] = []
+        while cursor + 4 <= len(data):
+            header_offsets.append(cursor)
+            frame_len = int.from_bytes(data[cursor : cursor + 4], "little")
+            cursor += 4 + frame_len
+
+        header_offset = header_offsets[corrupt_index]
+        remaining_after_header = len(data) - (header_offset + 4)
+        corrupted_len = min((1 << 32) - 1, remaining_after_header + 1)
+        data[header_offset : header_offset + 4] = int(corrupted_len).to_bytes(4, "little")
+        corrupt_path.write_bytes(bytes(data))
+
+        loaded = ReplayBuffer.load(corrupt_path)
+
+        assert len(loaded) == corrupt_index
+        for idx in range(corrupt_index):
             assert loaded.get_frame(idx) == states[idx]

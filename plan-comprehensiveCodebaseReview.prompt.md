@@ -82,7 +82,7 @@ Status legend:
 - Run a focused typing-hole pass (`Any` hotspots, mypy strictness opportunities).
 
 ### 6) Testing Strategy (`IN PROGRESS`)
-- Property testing: pilots now include interaction arithmetic, signaling condition-tree semantics, termination parity, and replay spill/load plus truncation-prefix invariants.
+- Property testing: pilots now include interaction arithmetic, signaling condition-tree semantics, termination parity, and replay spill/load plus truncation and header-corruption invariants.
 - Mutation testing: pilots now include termination, interaction, signaling, dashboard, and flow-field branch sentinels; monitor runtime budget.
 - Flakiness: add deterministic stress matrix for order/race-sensitive surfaces.
 
@@ -97,7 +97,7 @@ Status legend:
 ## Next Steps (Execution Order)
 
 1. Finish Phase 3 hardening:
-   - Expand property pilot breadth to replay corruption edge cases beyond truncation (length-header perturbations).
+   - Phase 3 pilot breadth and benchmark budget targets are now realized.
 2. Execute Phase 4 maintainability sweep:
    - Remove stale shims/comments and resolve top typing holes.
 3. Execute Phase 5 docs/DevEx alignment:
