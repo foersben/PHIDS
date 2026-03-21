@@ -21,10 +21,94 @@ import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.services.draft_service import DraftService
-from phids.api.ui_state import SubstanceDefinition, get_draft
+from phids.api.ui_state import (
+    ActivationConditionNode,
+    DraftState,
+    SubstanceDefinition,
+    _condition_node_at_path,
+    _parse_condition_path,
+    get_draft,
+)
 
 router = APIRouter()
 draft_service = DraftService()
+
+
+def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Response:
+    """Render the canonical trigger-rules partial response."""
+    return api_main.templates.TemplateResponse(
+        request,
+        "partials/trigger_rules.html",
+        api_main._trigger_rules_template_context(draft),
+    )
+
+
+def _render_placement_list_partial(request: Request, draft: DraftState) -> Response:
+    """Render the canonical placement-ledger partial response."""
+    return api_main.templates.TemplateResponse(
+        request,
+        "partials/placement_list.html",
+        {
+            "flora_species": draft.flora_species,
+            "herbivore_species": draft.herbivore_species,
+            "initial_plants": draft.initial_plants,
+            "initial_swarms": draft.initial_swarms,
+        },
+    )
+
+
+def _flora_update_payload(
+    *,
+    name: str | None,
+    base_energy: float | None,
+    max_energy: float | None,
+    growth_rate: float | None,
+    survival_threshold: float | None,
+    reproduction_interval: int | None,
+    seed_min_dist: float | None,
+    seed_max_dist: float | None,
+    seed_energy_cost: float | None,
+    camouflage: str | None,
+    camouflage_factor: float | None,
+) -> dict[str, object]:
+    """Collect flora patch fields with deterministic clamping semantics."""
+    updates = _flora_update_payload(
+        name=name,
+        base_energy=base_energy,
+        max_energy=max_energy,
+        growth_rate=growth_rate,
+        survival_threshold=survival_threshold,
+        reproduction_interval=reproduction_interval,
+        seed_min_dist=seed_min_dist,
+        seed_max_dist=seed_max_dist,
+        seed_energy_cost=seed_energy_cost,
+        camouflage=camouflage,
+        camouflage_factor=camouflage_factor,
+    )
+    return updates
+
+
+def _herbivore_update_payload(
+    *,
+    name: str | None,
+    energy_min: float | None,
+    velocity: int | None,
+    consumption_rate: float | None,
+    reproduction_energy_divisor: float | None,
+    energy_upkeep_per_individual: float | None,
+    split_population_threshold: int | None,
+) -> dict[str, object]:
+    """Collect herbivore patch fields with deterministic clamping semantics."""
+    updates = _herbivore_update_payload(
+        name=name,
+        energy_min=energy_min,
+        velocity=velocity,
+        consumption_rate=consumption_rate,
+        reproduction_energy_divisor=reproduction_energy_divisor,
+        energy_upkeep_per_individual=energy_upkeep_per_individual,
+        split_population_threshold=split_population_threshold,
+    )
+    return updates
 
 
 @router.post(
@@ -566,11 +650,7 @@ async def config_trigger_rule_add(
         herbivore_species_id,
         substance_id,
     )
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.put(
@@ -607,11 +687,7 @@ async def config_trigger_rule_update(
         ),
     )
     api_main.logger.debug("Trigger rule updated via API (index=%d)", index)
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.post(
@@ -632,11 +708,7 @@ async def config_trigger_rule_condition_root(
         index,
         api_main._default_activation_condition_for_rule(draft, rule, node_kind),
     )
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.post(
@@ -699,26 +771,14 @@ async def config_trigger_rule_condition_node_update(
             index,
             api_main._default_activation_condition_for_rule(draft, rule, kind),
         )
-        return api_main.templates.TemplateResponse(
-            request,
-            "partials/trigger_rules.html",
-            api_main._trigger_rules_template_context(draft),
-        )
+        return _render_trigger_rules_partial(request, draft)
 
     try:
-        current_node: dict[str, object] = rule.activation_condition
-        if path:
-            path_indices = [int(part) for part in path.split(".") if part != ""]
-            for child_index in path_indices:
-                children = current_node.get("conditions")
-                if current_node.get("kind") not in {"all_of", "any_of"} or not isinstance(
-                    children, list
-                ):
-                    raise IndexError("Condition path traversed into a non-group node.")
-                next_node = children[child_index]
-                if not isinstance(next_node, dict):
-                    raise IndexError("Condition path resolved to an invalid child node.")
-                current_node = next_node
+        current_node: ActivationConditionNode = (
+            _condition_node_at_path(rule.activation_condition, _parse_condition_path(path))
+            if path
+            else rule.activation_condition
+        )
 
         if kind is not None and current_node.get("kind") != kind:
             replacement = api_main._default_activation_condition_for_rule(draft, rule, kind)
@@ -743,14 +803,10 @@ async def config_trigger_rule_condition_node_update(
 
             if updates:
                 draft_service.update_trigger_rule_condition_node(draft, index, path, **updates)
-    except IndexError as exc:
+    except (IndexError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.post(
@@ -770,11 +826,7 @@ async def config_trigger_rule_condition_delete(
         draft_service.delete_trigger_rule_condition_node(draft, index, path)
     except IndexError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.delete(
@@ -790,11 +842,7 @@ async def config_trigger_rule_delete(request: Request, index: int) -> Response:
     except IndexError as exc:
         api_main.logger.warning("Trigger rule delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.get("/api/config/placements/data", summary="Get placement data as JSON")
@@ -859,16 +907,7 @@ async def config_placement_plant_add(
     api_main.logger.info(
         "Plant placement added via API (species_id=%d, x=%d, y=%d)", species_id, x, y
     )
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/placement_list.html",
-        {
-            "flora_species": draft.flora_species,
-            "herbivore_species": draft.herbivore_species,
-            "initial_plants": draft.initial_plants,
-            "initial_swarms": draft.initial_swarms,
-        },
-    )
+    return _render_placement_list_partial(request, draft)
 
 
 @router.post(
@@ -901,16 +940,7 @@ async def config_placement_swarm_add(
         y,
         max(1, population),
     )
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/placement_list.html",
-        {
-            "flora_species": draft.flora_species,
-            "herbivore_species": draft.herbivore_species,
-            "initial_plants": draft.initial_plants,
-            "initial_swarms": draft.initial_swarms,
-        },
-    )
+    return _render_placement_list_partial(request, draft)
 
 
 @router.delete(
@@ -926,16 +956,7 @@ async def config_placement_plant_delete(request: Request, index: int) -> Respons
     except IndexError as exc:
         api_main.logger.warning("Plant placement delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/placement_list.html",
-        {
-            "flora_species": draft.flora_species,
-            "herbivore_species": draft.herbivore_species,
-            "initial_plants": draft.initial_plants,
-            "initial_swarms": draft.initial_swarms,
-        },
-    )
+    return _render_placement_list_partial(request, draft)
 
 
 @router.delete(
@@ -951,16 +972,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
     except IndexError as exc:
         api_main.logger.warning("Swarm placement delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/placement_list.html",
-        {
-            "flora_species": draft.flora_species,
-            "herbivore_species": draft.herbivore_species,
-            "initial_plants": draft.initial_plants,
-            "initial_swarms": draft.initial_swarms,
-        },
-    )
+    return _render_placement_list_partial(request, draft)
 
 
 @router.post(
@@ -971,13 +983,4 @@ async def config_placements_clear(request: Request) -> Response:
     draft = get_draft()
     draft_service.clear_placements(draft)
     api_main.logger.info("All draft placements cleared via API")
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/placement_list.html",
-        {
-            "flora_species": draft.flora_species,
-            "herbivore_species": draft.herbivore_species,
-            "initial_plants": draft.initial_plants,
-            "initial_swarms": draft.initial_swarms,
-        },
-    )
+    return _render_placement_list_partial(request, draft)

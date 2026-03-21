@@ -58,7 +58,6 @@ class SubstanceDefinition:
         repellent_walk_ticks: Random-walk duration on repel trigger.
         energy_cost_per_tick: Energy drained from the plant per active tick.
         irreversible: Keep the substance active permanently once activated.
-        precursor_signal_id: Signal id required before activation (−1 = none).
         min_herbivore_population: Minimum swarm size to trigger synthesis.
     """
 
@@ -73,7 +72,6 @@ class SubstanceDefinition:
     repellent_walk_ticks: int = 3
     energy_cost_per_tick: float = 1.0
     irreversible: bool = False
-    precursor_signal_id: int = -1
     min_herbivore_population: int = 5
 
     @property
@@ -166,17 +164,6 @@ class TriggerRule:
     substance_id: int
     min_herbivore_population: int = 5
     activation_condition: ActivationConditionNode | None = None
-
-
-def _legacy_signal_ids_to_activation_condition(
-    required_signal_ids: list[int] | None,
-) -> ActivationConditionNode | None:
-    """Convert legacy signal-only precursor gates into the richer tree form."""
-    signal_ids = [signal_id for signal_id in (required_signal_ids or []) if signal_id >= 0]
-    if not signal_ids:
-        return None
-    leaves = [{"kind": "substance_active", "substance_id": signal_id} for signal_id in signal_ids]
-    return leaves[0] if len(leaves) == 1 else {"kind": "all_of", "conditions": leaves}
 
 
 def _parse_condition_path(path: str) -> list[int]:

@@ -108,17 +108,13 @@ This allows scenarios to encode multi-stage defensive logic such as:
 - allow activation through one of several ecological pathways,
 - require conjunctions of herbivore presence and precursor substances.
 
-## Legacy Precursors and Normalization
+## Canonical Trigger Representation
 
-`TriggerConditionSchema` still contains legacy precursor fields:
+`activation_condition` is the sole trigger-gating representation in the scenario schema and runtime
+pipeline.
 
-- `precursor_signal_id`
-- `precursor_signal_ids`
-
-The current schema layer normalizes these into the richer `activation_condition` representation.
-
-This is an important current-state behavior: older, signal-only precursor logic is translated into a
-condition-tree representation rather than handled as a wholly separate runtime concept.
+Legacy precursor fields are not part of `TriggerConditionSchema` and are rejected at ingress. This
+ensures one unambiguous source of truth for multi-stage defense activation semantics.
 
 ## DraftState as Authoring Structure
 

@@ -41,3 +41,16 @@ Preferred naming pattern:
 
 - `test_<surface>_<condition>_<expected_behavior>` for API/integration checks.
 - `test_<symbol>_<branch_or_invariant>` for pure helper and unit checks.
+
+## Targeted coverage workflow
+
+Use targeted coverage when validating one test module or node while still enforcing the project
+coverage floor for the relevant implementation surface.
+
+```zsh
+scripts/target_cov.zsh tests/integration/api/test_api_simulation_and_scenario_routes.py phids.api.routers.simulation
+scripts/target_cov.zsh tests/unit/api/test_ui_state.py phids.api.services.draft_service
+```
+
+This keeps fast debugging (`-o addopts=''`) and applies `--cov-fail-under=80` only to the selected
+module, which is the suitable denominator for individual-slice verification.

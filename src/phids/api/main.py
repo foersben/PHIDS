@@ -22,6 +22,7 @@ import json
 import logging
 import pathlib
 import time
+from typing import TypedDict
 
 from pydantic import TypeAdapter, ValidationError
 from fastapi import (
@@ -48,6 +49,7 @@ from phids.api.routers.config import router as config_router
 from phids.api.routers.telemetry import router as telemetry_router
 from phids.api.routers.ui import router as ui_router
 from phids.api.ui_state import (
+    ActivationConditionNode,
     DraftState,
     TriggerRule,
     get_draft,
@@ -135,6 +137,31 @@ _sim_task: asyncio.Task[None] | None = None
 _sim_substance_names: dict[int, str] = {}
 _condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
 _BATCH_DIR = pathlib.Path("data") / "batches"
+
+
+class LiveSummary(TypedDict):
+    """Structured live-runtime counters for diagnostics and status rendering."""
+
+    tick: int
+    running: bool
+    paused: bool
+    terminated: bool
+    termination_reason: str | None
+    plants: int
+    swarms: int
+    active_substances: int
+
+
+class EnergyDeficitSwarmRow(TypedDict):
+    """One leaderboard row describing a swarm with positive metabolic energy deficit."""
+
+    entity_id: int
+    name: str
+    population: int
+    energy_deficit: float
+    x: int
+    y: int
+    repelled: bool
 
 
 def _coerce_int(value: object, *, default: int = -1) -> int:
@@ -255,7 +282,7 @@ def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
     )
 
 
-def _parse_activation_condition_json(raw: str | None) -> dict[str, object] | None:
+def _parse_activation_condition_json(raw: str | None) -> ActivationConditionNode | None:
     """Parse and validate a serialized activation-condition tree from builder input.
 
     Args:
@@ -285,7 +312,7 @@ def _parse_activation_condition_json(raw: str | None) -> dict[str, object] | Non
 
 
 def _describe_activation_condition(
-    condition: dict[str, object] | None,
+    condition: ActivationConditionNode | None,
     *,
     herbivore_names: dict[int, str] | None = None,
     substance_names: dict[int, str] | None = None,
@@ -404,7 +431,7 @@ def _default_activation_condition_for_rule(
     draft: DraftState,
     rule: TriggerRule,
     node_kind: str,
-) -> dict[str, object]:
+) -> ActivationConditionNode:
     """Construct a default activation-condition node compatible with a trigger rule.
 
     Args:
@@ -471,7 +498,7 @@ def _trigger_rule_by_index(draft: DraftState, index: int) -> TriggerRule:
     return draft.trigger_rules[index]
 
 
-def _build_live_summary() -> dict[str, object] | None:
+def _build_live_summary() -> LiveSummary | None:
     """Aggregate coarse live-model counters for diagnostics surfaces.
 
     Returns:
@@ -496,7 +523,7 @@ def _build_live_summary() -> dict[str, object] | None:
             or substance.aftereffect_remaining_ticks > 0
         ):
             active_substances += 1
-    return {
+    summary: LiveSummary = {
         "tick": _sim_loop.tick,
         "running": _sim_loop.running,
         "paused": _sim_loop.paused,
@@ -506,9 +533,10 @@ def _build_live_summary() -> dict[str, object] | None:
         "swarms": swarms,
         "active_substances": active_substances,
     }
+    return summary
 
 
-def _build_energy_deficit_swarms() -> list[dict[str, object]]:
+def _build_energy_deficit_swarms() -> list[EnergyDeficitSwarmRow]:
     """Rank live swarms by metabolic energy deficit severity.
 
     Returns:
@@ -522,7 +550,7 @@ def _build_energy_deficit_swarms() -> list[dict[str, object]]:
     herbivore_names = {
         species.species_id: species.name for species in _sim_loop.config.herbivore_species
     }
-    energy_stressed: list[dict[str, object]] = []
+    energy_stressed: list[EnergyDeficitSwarmRow] = []
     for entity in _sim_loop.world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
         energy_deficit = float(max(0.0, swarm.population * swarm.energy_min - swarm.energy))
@@ -541,8 +569,8 @@ def _build_energy_deficit_swarms() -> list[dict[str, object]]:
         )
     energy_stressed.sort(
         key=lambda swarm: (
-            -_coerce_float(swarm.get("energy_deficit", 0.0), default=0.0),
-            str(swarm.get("name", "")),
+            -swarm["energy_deficit"],
+            swarm["name"],
         )
     )
     return energy_stressed[:12]

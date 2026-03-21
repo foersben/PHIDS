@@ -40,6 +40,8 @@
   `uv run pytest -m 'not benchmark' -q`
 - If repo-level `addopts` interfere with targeted debugging, use:
   `uv run pytest -o addopts='' <path-or-node> -q`
+- For targeted module-level coverage closure (>=80%) on focused slices, use:
+  `scripts/target_cov.zsh <test-path-or-node> <cov-module>`
 
 ## Repo-specific patterns
 - Pydantic v2 is the API boundary; validate at ingress, then operate on trusted internal state.
@@ -49,12 +51,14 @@
 - `build_live_dashboard_payload` now emits columnar `plants`/`swarms` tables (parallel arrays) for `/ws/ui/stream`; do not reintroduce per-entity list-of-dict payload assembly in that hot path.
 - Per-tick ECS aggregation is shared via `TickMetrics` (`src/phids/telemetry/tick_metrics.py`), then consumed by both `TelemetryRecorder.record` and `check_termination` to avoid duplicate scans.
 - Trigger logic is rule-based now: `DraftState.trigger_rules` allows multiple substance rules per `(flora, herbivore)` pair.
+- Trigger semantics are canonical via `activation_condition` across draft/runtime paths; legacy precursor fields (`precursor_signal_id`, `precursor_signal_ids`, `required_signal_ids`) are removed and must not be reintroduced.
 - WebSocket surfaces differ intentionally: `/ws/simulation/stream` sends msgpack+zlib bytes, `/ws/ui/stream` sends lightweight JSON for canvas rendering.
 - Long replay persistence should use Zarr-backed paths (`src/phids/io/zarr_replay.py`), while bounded in-memory snapshots remain in `src/phids/io/replay.py`.
 
 ## Common pitfalls
 - Do not confuse draft state with live simulation state.
 - When deleting species/substances, compact IDs and clean dependent matrices, trigger rules, and placements.
+- When migrating or extending trigger configuration, target `activation_condition` only; do not branch on removed precursor fields or legacy shorthand parameters.
 - If you change diffusion, flow-field logic, or spatial hashing, run the benchmark tests, not just unit tests.
 - Keep docstrings in Google style; docs are built with MkDocs + mkdocstrings from `docs/`.
 - Do not reintroduce file-local `AsyncClient` factories in API integration tests; use shared fixtures from `tests/conftest.py`.

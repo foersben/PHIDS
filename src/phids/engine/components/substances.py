@@ -45,9 +45,6 @@ class SubstanceComponent:
         lethality_rate: Individuals eliminated per tick when lethal.
         repellent: Whether the toxin repels swarms.
         repellent_walk_ticks: Duration of repelled random-walk in ticks.
-        precursor_signal_id: Single required precursor signal id (-1 = none). Legacy.
-        precursor_signal_ids: All signal ids that must ALL be active before this
-            substance activates (AND logic).  Empty tuple = no precursor required.
         activation_condition: Optional nested activation predicate tree stored
             in JSON-serialisable form for runtime evaluation and tooltip display.
         energy_cost_per_tick: Energy drained from the owner plant per active tick.
@@ -69,8 +66,6 @@ class SubstanceComponent:
     lethality_rate: float = 0.0
     repellent: bool = False
     repellent_walk_ticks: int = 0
-    precursor_signal_id: int = -1
-    precursor_signal_ids: tuple[int, ...] = ()
     activation_condition: dict[str, object] | None = None
     energy_cost_per_tick: float = 0.0
     irreversible: bool = False

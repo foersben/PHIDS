@@ -79,8 +79,13 @@ Status legend:
 - Batch engine aggregation/sanitization paths now use explicit telemetry/JSON aliases and numeric coercion helpers, reducing `Any` in batch summary generation.
 - Telemetry recorder row buffering and dataframe flattening now use explicit telemetry row/species-map aliases, reducing `Any` in the analytics accumulation path.
 - Signaling activation-condition evaluation and active-toxin property merging now use explicit typed node/property contracts, removing remaining `Any` hotspots in this system.
+- Legacy precursor trigger shims are removed across draft/runtime paths: `SubstanceComponent` no longer carries `precursor_signal_id`/`precursor_signal_ids`, draft/service APIs no longer accept `required_signal_ids`, and trigger semantics are canonicalized on `activation_condition` only.
 - API composition helper contracts in `api.main` now use object-based mapping/list annotations for condition parsing, trigger-context construction, and live diagnostics helpers.
+- `api.main` live-diagnostics helpers now use explicit typed payload contracts (`LiveSummary`, `EnergyDeficitSwarmRow`) and activation-condition helper signatures are aligned to `ActivationConditionNode` for stricter interface boundaries without route behavior changes.
 - Config router flora/herbivore patch payloads and trigger-condition node traversal now use object-typed maps, removing remaining router-level `Any` hotspots.
+- Config trigger-condition node editing now reuses shared draft-state traversal helpers (`_parse_condition_path`, `_condition_node_at_path`) instead of route-local tree-walk duplication, with invalid path parse failures normalized to deterministic HTTP 400 responses.
+- Config router now centralizes repeated trigger-rules/placement partial rendering through local response helpers, reducing repeated `TemplateResponse` assembly and response-shape drift risk across CRUD endpoints.
+- Flora and herbivore patch routes now reuse shared payload-assembly helpers for deterministic field/clamp semantics instead of duplicated inline update-map construction.
 - Simulation loop species lookup caches and debug-summary metric extraction now use schema/telemetry-specific typing with deterministic scalar coercion helpers.
 - ECS component registries now use object-typed storage boundaries with generic retrieval casts, reducing broad `Any` usage in core indexing/query paths.
 - Replay msgpack serialization now returns an explicit `bytes` cast at the I/O boundary, eliminating residual `no-any-return` suppression.
@@ -102,6 +107,12 @@ Status legend:
 - Dashboard presenter activation-condition rendering now uses mapping-based node typing with guarded concentration coercion, and preview/live payload column surfaces now use object-typed contracts (removing residual presenter-level `Any`).
 - Telemetry aggregate export now uses object-based mapping normalization for per-species series and typed tick-list coercion, reducing `Any` at the aggregate dataframe boundary.
 - Telemetry export plotting/TikZ/table helper signatures now consistently use shared `TelemetryRows` aliases, and aggregate coercion behavior is locked by focused unit tests for mixed-key species maps and malformed ticks.
+- Trigger-semantics documentation now reflects canonical `activation_condition` behavior and removes stale legacy-precursor normalization guidance.
+- Targeted per-module coverage workflow is now codified via `scripts/target_cov.zsh`, enabling focused test slices to enforce `--cov-fail-under=80` against the relevant implementation module.
+- Simulation/scenario route integration coverage is expanded and now reaches full module coverage for `phids.api.routers.simulation` under the targeted coverage lane.
+- Config-router focused integration coverage now clears the targeted lane floor (`phids.api.routers.config` >80%) via `tests/integration/api/test_api_builder_and_helpers.py`.
+- Simulation router now centralizes HTMX status-badge fragment responses through a dedicated helper, eliminating repeated inline HTML fragment construction across control routes.
+- Focused module coverage for `phids.api.main` now clears the targeted lane floor (>80%) via `scripts/target_cov.zsh tests/integration/api/test_api_builder_and_helpers.py phids.api.main`.
 - Evidence:
   - `src/phids/engine/loop.py`
   - `src/phids/engine/systems/signaling.py`

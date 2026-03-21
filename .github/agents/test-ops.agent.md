@@ -38,9 +38,14 @@ Protect PHIDS correctness and delivery safety by owning test execution strategy,
 
 ## Default Validation Ladder
 1. Targeted rerun of failing node(s) with `-q`.
-2. Related-domain integration/unit suite.
-3. Fast repository loop: `uv run pytest -m 'not benchmark' -q`.
-4. Full quality gate when requested or release-adjacent.
+2. Targeted per-module coverage gate when suitable: `scripts/target_cov.zsh <test-path-or-node> <cov-module>`.
+3. Related-domain integration/unit suite.
+4. Fast repository loop: `uv run pytest -m 'not benchmark' -q`.
+5. Full quality gate when requested or release-adjacent.
+
+Coverage note:
+- Prefer `scripts/target_cov.zsh` for single-module closure and regression triage so `--cov-fail-under=80` applies to the relevant implementation surface instead of a whole-repo denominator.
+- Keep ad-hoc debugging fast with `-o addopts=''` when coverage gating is not the current objective.
 
 ## Direct Invocation Output Contract
 - Use this section order: `Checklist`, `Findings`, `Actions Taken`, `Evidence`, `Verification`, `Open Risks`.

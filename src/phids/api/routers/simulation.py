@@ -38,6 +38,11 @@ router = APIRouter()
 draft_service = DraftService()
 
 
+def _status_badge_fragment() -> HTMLResponse:
+    """Return the canonical HTMX status-badge fragment response."""
+    return HTMLResponse(content=api_main._render_status_badge_html())
+
+
 def _form_scalar(form_data: FormData, key: str) -> str | None:
     """Return a scalar form value as string, ignoring file uploads."""
     value = form_data.get(key)
@@ -264,7 +269,7 @@ async def start_simulation(request: Request) -> Response:
     if loop.running and not loop.paused:
         api_main.logger.info("Start requested while simulation was already running")
         if api_main._is_htmx_request(request):
-            return HTMLResponse(content=api_main._render_status_badge_html())
+            return _status_badge_fragment()
         return JSONResponse({"message": "Simulation already running."})
 
     if loop.terminated:
@@ -281,7 +286,7 @@ async def start_simulation(request: Request) -> Response:
     api_main._sim_task = asyncio.create_task(_bg())
     api_main.logger.info("Background simulation task created")
     if api_main._is_htmx_request(request):
-        return HTMLResponse(content=api_main._render_status_badge_html())
+        return _status_badge_fragment()
     return JSONResponse({"message": "Simulation started."})
 
 
@@ -300,7 +305,7 @@ async def pause_simulation(request: Request) -> Response:
     state = "paused" if loop.paused else "resumed"
     api_main.logger.info("Simulation %s via API", state)
     if api_main._is_htmx_request(request):
-        return HTMLResponse(content=api_main._render_status_badge_html())
+        return _status_badge_fragment()
     return JSONResponse({"message": f"Simulation {state}."})
 
 
@@ -341,7 +346,7 @@ async def step_simulation(request: Request) -> Response:
         result.terminated,
     )
     if api_main._is_htmx_request(request):
-        return HTMLResponse(content=api_main._render_status_badge_html())
+        return _status_badge_fragment()
     return JSONResponse(
         {
             "message": "Simulation advanced by one tick.",
@@ -377,7 +382,7 @@ async def reset_simulation(request: Request) -> Response:
     api_main._set_simulation_substance_names(loop.config)
     api_main.logger.info("Simulation reset to the loaded scenario")
     if api_main._is_htmx_request(request):
-        return HTMLResponse(content=api_main._render_status_badge_html())
+        return _status_badge_fragment()
     return JSONResponse({"message": "Simulation reset.", "tick": 0})
 
 
@@ -422,7 +427,7 @@ async def update_tick_rate(
     get_draft().tick_rate_hz = applied_tick_rate
     api_main.logger.info("Live simulation tick rate updated via API to %.2f Hz", applied_tick_rate)
     if api_main._is_htmx_request(request):
-        return HTMLResponse(content=api_main._render_status_badge_html())
+        return _status_badge_fragment()
     return JSONResponse({"message": "Tick rate updated.", "tick_rate_hz": applied_tick_rate})
 
 
@@ -531,7 +536,6 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
                         repellent_walk_ticks=trig.repellent_walk_ticks,
                         energy_cost_per_tick=trig.energy_cost_per_tick,
                         irreversible=trig.irreversible,
-                        precursor_signal_id=-1,
                         min_herbivore_population=trig.min_herbivore_population,
                     )
                 )
@@ -634,4 +638,4 @@ async def scenario_load_draft(request: Request) -> HTMLResponse:
         len(config.flora_species),
         len(config.herbivore_species),
     )
-    return HTMLResponse(content=api_main._render_status_badge_html())
+    return _status_badge_fragment()
