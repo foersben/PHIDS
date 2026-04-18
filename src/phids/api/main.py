@@ -15,6 +15,7 @@ import datetime
 import json
 import logging
 import pathlib
+import re
 import time
 import zlib
 from typing import Annotated, Any, cast
@@ -1657,6 +1658,19 @@ async def export_telemetry_format(
 _BATCH_DIR = pathlib.Path("data") / "batches"
 
 
+def _validate_job_id(job_id: str) -> None:
+    """Ensure job_id is alphanumeric and safe for filesystem operations.
+
+    Args:
+        job_id: Unique batch job identifier.
+
+    Raises:
+        HTTPException: 400 if job_id contains invalid characters.
+    """
+    if not re.fullmatch(r"^[a-zA-Z0-9_\-]+$", job_id):
+        raise HTTPException(status_code=400, detail="Invalid job_id format.")
+
+
 def _discover_persisted_batches() -> list[BatchJobState]:
     """Discover persisted batch summaries from disk and map them to UI job rows.
 
@@ -1814,6 +1828,7 @@ async def batch_status(request: Request, job_id: str) -> Any:
     Raises:
         HTTPException: 404 if ``job_id`` is not found.
     """
+    _validate_job_id(job_id)
     draft = get_draft()
     job = draft.active_batch_jobs.get(job_id)
     if job is None:
@@ -1876,6 +1891,7 @@ async def batch_view(request: Request, job_id: str) -> Any:
     Returns:
         TemplateResponse: Rendered ``partials/batch_view.html`` fragment.
     """
+    _validate_job_id(job_id)
     import json as _json
 
     draft = get_draft()
@@ -1919,6 +1935,7 @@ async def batch_export(
     Raises:
         HTTPException: 404 if the summary file for ``job_id`` does not exist.
     """
+    _validate_job_id(job_id)
     import json as _json
 
     summary_path = _BATCH_DIR / f"{job_id}_summary.json"
