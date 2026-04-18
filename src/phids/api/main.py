@@ -1853,7 +1853,8 @@ async def batch_load_persisted() -> JSONResponse:
     """
     draft = get_draft()
     loaded = 0
-    for job in _discover_persisted_batches():
+    discovered = await run_in_threadpool(_discover_persisted_batches)
+    for job in discovered:
         if job.job_id not in draft.active_batch_jobs:
             draft.active_batch_jobs[job.job_id] = job
             loaded += 1
@@ -1881,10 +1882,14 @@ async def batch_view(request: Request, job_id: str) -> Any:
     draft = get_draft()
     job = draft.active_batch_jobs.get(job_id)
     summary_path = _BATCH_DIR / f"{job_id}_summary.json"
-    aggregate: dict[str, Any] = {}
-    if summary_path.exists():
-        with summary_path.open(encoding="utf-8") as fp:
-            aggregate = _json.load(fp)
+
+    def _load_summary() -> dict[str, Any]:
+        if summary_path.exists():
+            with summary_path.open(encoding="utf-8") as fp:
+                return cast(dict[str, Any], _json.load(fp))
+        return {}
+
+    aggregate = await run_in_threadpool(_load_summary)
 
     return templates.TemplateResponse(
         request,
@@ -1922,61 +1927,71 @@ async def batch_export(
     import json as _json
 
     summary_path = _BATCH_DIR / f"{job_id}_summary.json"
-    if not summary_path.exists():
-        raise HTTPException(status_code=404, detail=f"No summary found for job '{job_id}'.")
 
-    with summary_path.open(encoding="utf-8") as fp:
-        aggregate: dict[str, Any] = _json.load(fp)
+    def _prepare_export_data() -> tuple[bytes, str, str]:
+        if not summary_path.exists():
+            raise FileNotFoundError(f"No summary found for job '{job_id}'.")
 
-    from phids.telemetry.export import aggregate_to_dataframe
+        with summary_path.open(encoding="utf-8") as fp:
+            aggregate: dict[str, Any] = _json.load(fp)
 
-    df = aggregate_to_dataframe(aggregate)
-    if tick_interval < 1:
-        raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
-    df = filter_dataframe_columns(df, columns)
-    df = decimate_dataframe(df, tick_interval)
+        from phids.telemetry.export import aggregate_to_dataframe
 
-    if format == "csv":
-        data = df.to_csv(index=False).encode("utf-8")
-        filename = f"phids_batch_{job_id}.csv"
-        media_type = "text/csv"
-    elif format == "tex_table":
-        latex: str = df.to_latex(index=False, float_format="%.2f")
-        data = latex.encode("utf-8")
-        filename = f"phids_batch_{job_id}_table.tex"
-        media_type = "text/plain"
-    elif format == "tex_tikz":
-        # Build simplified export rows from aggregate mean and survival series.
-        rows_agg: list[dict[str, Any]] = []
-        ticks = aggregate.get("ticks", [])
-        flora_mean = aggregate.get("flora_population_mean", [])
-        pred_mean = aggregate.get("predator_population_mean", [])
-        survival = aggregate.get("survival_probability_curve", [])
-        for i, t in enumerate(ticks):
-            rows_agg.append(
-                {
-                    "tick": t,
-                    "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
-                    "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
-                    "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
-                }
+        df = aggregate_to_dataframe(aggregate)
+        if tick_interval < 1:
+            raise ValueError("tick_interval must be >= 1")
+        df = filter_dataframe_columns(df, columns)
+        df = decimate_dataframe(df, tick_interval)
+
+        if format == "csv":
+            data = df.to_csv(index=False).encode("utf-8")
+            filename = f"phids_batch_{job_id}.csv"
+            media_type = "text/csv"
+        elif format == "tex_table":
+            latex: str = df.to_latex(index=False, float_format="%.2f")
+            data = latex.encode("utf-8")
+            filename = f"phids_batch_{job_id}_table.tex"
+            media_type = "text/plain"
+        elif format == "tex_tikz":
+            # Build simplified export rows from aggregate mean and survival series.
+            rows_agg: list[dict[str, Any]] = []
+            ticks = aggregate.get("ticks", [])
+            flora_mean = aggregate.get("flora_population_mean", [])
+            pred_mean = aggregate.get("predator_population_mean", [])
+            survival = aggregate.get("survival_probability_curve", [])
+            for i, t in enumerate(ticks):
+                rows_agg.append(
+                    {
+                        "tick": t,
+                        "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
+                        "swarm_pop_by_species": {0: pred_mean[i] if i < len(pred_mean) else 0},
+                        "survival_probability": float(survival[i]) if i < len(survival) else 0.0,
+                    }
+                )
+            normalized_chart_type = (
+                "survival_probability" if chart_type == "survival" else chart_type
             )
-        normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
-        tikz = generate_tikz_str(
-            rows_agg,
-            normalized_chart_type,
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-        )
-        data = tikz.encode("utf-8")
-        filename = f"phids_batch_{job_id}.tex"
-        media_type = "text/plain"
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown format '{format}'. Use csv, tex_table, or tex_tikz.",
-        )
+            tikz = generate_tikz_str(
+                rows_agg,
+                normalized_chart_type,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+            )
+            data = tikz.encode("utf-8")
+            filename = f"phids_batch_{job_id}.tex"
+            media_type = "text/plain"
+        else:
+            raise ValueError(f"Unknown format '{format}'. Use csv, tex_table, or tex_tikz.")
+
+        return data, filename, media_type
+
+    try:
+        data, filename, media_type = await run_in_threadpool(_prepare_export_data)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     logger.info("Batch export job=%s format=%s size=%d", job_id, format, len(data))
     return Response(
