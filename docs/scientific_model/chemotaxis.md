@@ -73,3 +73,18 @@ If the center cell `(1,1)` had the highest value (e.g., it was currently situate
 - **A* (A-Star) or Dijkstra Pathfinding:** Calculating optimal, obstacle-avoidant paths from every swarm to the nearest food source.
     - *Why rejected:* Classic pathfinding scales poorly. Calculating paths for hundreds of swarms across a dynamic grid per tick would bottleneck the CPU, creating a computational complexity of $O(N \cdot M^2)$. Furthermore, swarms lack "global knowledge" of the map; their navigation is inherently sensory-driven.
     - *Our advantage:* The unified Flow Field is calculated exactly *once* per tick via Numba JIT compilation. Every swarm simply samples its immediate adjacent cells via O(1) array reads. This perfectly mimics biological sensory constraints while maintaining extreme computational efficiency.
+
+## Zero-Gradient Navigation (The Isotropic Search)
+
+A critical edge case in spatial ecology occurs when an organism is entirely outside the sensory horizon of any resource or predator. Mathematically, this happens when the entire Moore neighborhood evaluates to zero:
+
+$$
+\forall (u,v) \in \mathcal{N}(x,y), \; F_t(u,v) = 0.0
+$$
+
+If a swarm relied strictly on gradient ascent, a zero-gradient would result in indefinite paralysis (anchoring in an empty void).
+
+In biological systems, when an organism loses a scent trail, it transitions from directed movement (taxis) to an undirected, exploratory movement (kinesis) to maximize the probability of intersecting a new gradient.
+
+**Algorithmic Resolution:**
+When PHIDS evaluates a zero-gradient neighborhood, the swarm enters a **Random Walk** state. It selects a neighboring cell from a uniform random distribution, effectively performing an isotropic search until it re-enters the active Flow Field. This behavior is also deployed when swarms are actively repelled by incompatible flora or localized toxins, forcing them to disperse blindly until they secure a safe sensory anchor.
