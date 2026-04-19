@@ -21,6 +21,7 @@ from functools import partial
 import json
 import logging
 import pathlib
+import polars as pl
 import time
 from typing import TypedDict
 
@@ -763,7 +764,6 @@ def _build_telemetry_svg(df: object) -> str:
         energy on a shared temporal axis to support rapid diagnosis of trophic oscillation and
         metabolic collapse onset.
     """
-    import polars as pl
 
     if not isinstance(df, pl.DataFrame) or df.is_empty() or len(df) < 2:
         return (

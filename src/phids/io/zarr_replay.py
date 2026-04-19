@@ -31,6 +31,7 @@ import json
 import logging
 import tempfile
 import uuid
+import shutil
 from pathlib import Path
 from typing import Protocol, TypedDict, cast
 
@@ -426,7 +427,6 @@ class ZarrReplayBuffer:
         """
         destination = Path(path)
         if destination.suffix == ".zarr":
-            import shutil
 
             if destination.exists():
                 shutil.rmtree(destination)
@@ -496,7 +496,6 @@ class ZarrReplayBuffer:
         if self._store_path is None or not self._owns_store:
             return
         try:
-            import shutil
 
             shutil.rmtree(self._store_path, ignore_errors=True)
         except OSError:

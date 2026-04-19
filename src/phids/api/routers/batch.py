@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import uuid
 import json
 from pathlib import Path
 
@@ -105,8 +106,6 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
     Raises:
         HTTPException: If the current draft cannot be compiled into a valid simulation config.
     """
-    import datetime
-    import uuid
 
     draft = get_draft()
     try:
@@ -169,9 +168,8 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
             api_main.logger.exception("Batch job %s failed", job_id)
             job.status = "failed"
         finally:
-            import datetime as dt
 
-            job.finished_at = dt.datetime.now(tz=dt.timezone.utc).isoformat()
+            job.finished_at = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
 
     asyncio.create_task(_run_batch())
     return JSONResponse({"job_id": job_id})
