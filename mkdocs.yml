@@ -51,6 +51,9 @@ nav:
   - Home: index.md
   - Scientific Model:
       - Mathematical Framework: scientific_model/mathematical_framework.md
+      - Reaction-Diffusion PDEs: scientific_model/reaction_diffusion.md
+      - Chemotaxis & Flow Fields: scientific_model/chemotaxis.md
+      - Population Dynamics: scientific_model/population_dynamics.md
   - Technical Architecture:
       - System Architecture: technical_architecture/system_architecture.md
       - Engine Execution: technical_architecture/engine_execution.md
