@@ -41,24 +41,24 @@ scope and the kinds of ecological questions PHIDS can answer reproducibly.
 ## Documentation Map
 
 - **Foundations** — research scope, terminology, and modeling commitments:
-  [`foundations/`](foundations/index.md)
+  [`foundations/`](scientific_model/mathematical_framework.md)
 - **Architecture** — package boundaries, loop ownership, and runtime decomposition:
-  [`architecture/`](architecture/index.md)
+  [`architecture/`](technical_architecture/system_architecture.md)
 - **Engine** — subsystem behavior and performance-sensitive invariants:
-  [`engine/`](engine/index.md)
+  [`engine/`](technical_architecture/engine_execution.md)
 - **Interfaces** — REST, WebSocket, and control-center surfaces:
-  [`interfaces/`](interfaces/index.md) and [`ui/`](ui/index.md)
+  [`interfaces/`](technical_architecture/interfaces_and_ui.md) and [`ui/`](technical_architecture/interfaces_and_ui.md)
 - **Live Observation and Diagnostics** — cell inspection, canvas streaming, diagnostics rail:
-  [`ui/diagnostics-and-live-observation.md`](ui/diagnostics-and-live-observation.md)
+  [`technical_architecture/interfaces_and_ui.md`](technical_architecture/interfaces_and_ui.md)
 - **Scenarios** — schema semantics, import/export, and curated examples:
-  [`scenarios/`](scenarios/index.md)
+  [`scenarios/`](scenario_guide/scenario_authoring.md)
 - **Telemetry** — analytics, replay framing, and termination interpretation:
-  [`telemetry/`](telemetry/index.md)
+  [`telemetry/`](technical_architecture/telemetry.md)
 - **Development handoff and CI guidance** — deferred documentation work and workflow validation:
-  [`development/documentation-status-and-open-work.md`](development/documentation-status-and-open-work.md)
-  and [`development/github-actions-and-local-ci.md`](development/github-actions-and-local-ci.md)
+  [`development_guide/agent_ecosystem.md`](development_guide/agent_ecosystem.md)
+  and [`development_guide/contribution_workflow.md`](development_guide/contribution_workflow.md)
 - **Release governance** — version bump, promotion, tag publication, and artifact checks:
-  [`development/release-checklist.md`](development/release-checklist.md)
+  [`development_guide/contribution_workflow.md`](development_guide/contribution_workflow.md)
 - **Reference** — module map, glossary and concept index, and generated Python API docs:
   [`reference/`](reference/index.md)
 - **Glossary** — current-state definitions for all major PHIDS terms:
@@ -74,12 +74,12 @@ chapters describe the behavior of the active `phids.*` runtime under `src/phids/
 
 If you are new to the project, a practical reading order is:
 
-1. start with [`foundations/index.md`](foundations/index.md),
-2. continue to [`architecture/index.md`](architecture/index.md),
-3. inspect the relevant subsystem chapter under [`engine/`](engine/index.md),
-4. then use [`interfaces/`](interfaces/index.md), [`scenarios/`](scenarios/index.md), or
-   [`telemetry/`](telemetry/index.md) depending on the surface you are working on,
-5. use [`development/documentation-status-and-open-work.md`](development/documentation-status-and-open-work.md)
+1. start with [`scientific_model/mathematical_framework.md`](scientific_model/mathematical_framework.md),
+2. continue to [`technical_architecture/system_architecture.md`](technical_architecture/system_architecture.md),
+3. inspect the relevant subsystem chapter under [`engine/`](technical_architecture/engine_execution.md),
+4. then use [`interfaces/`](technical_architecture/interfaces_and_ui.md), [`scenarios/`](scenario_guide/scenario_authoring.md), or
+   [`telemetry/`](technical_architecture/telemetry.md) depending on the surface you are working on,
+5. use [`development_guide/agent_ecosystem.md`](development_guide/agent_ecosystem.md)
    if you are resuming the documentation migration or polish pass.
 
 ## Current Documentation Anchors

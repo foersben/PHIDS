@@ -17,7 +17,7 @@ kinds are `herbivore_presence`, `substance_active`, `environmental_signal`, `all
 Activation conditions allow composite, multi-factor trigger logic beyond a simple herbivore-count
 threshold.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### Aftereffect
 
@@ -26,7 +26,7 @@ active for a bounded number of ticks after its trigger condition ceases to be sa
 with zero aftereffect deactivates on the first non-triggered tick; one configured as `irreversible`
 is pinned in the active state permanently after first activation.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### Airborne Diffusion
 
@@ -36,8 +36,8 @@ diffusion via `scipy.signal.convolve2d` acting on signal layers. Diffusion is de
 Toxin layers are intentionally excluded from diffusion; toxins are point-emitter defenses
 constrained to the emitting plant's cell.
 
-See: [`engine/biotope-and-double-buffering.md`](../engine/biotope-and-double-buffering.md),
-[`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system_architecture.md),
+[`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -50,7 +50,7 @@ floor: `baseline_energy = population × energy_min`. In the interaction system's
 only energy above this baseline ("surplus energy") is eligible for conversion into new individuals.
 This prevents large, energy-marginal swarms from reproducing.
 
-See: [`engine/interaction.md`](../engine/interaction.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -63,7 +63,7 @@ computation. A plant with `camouflage=True` and `camouflage_factor < 1.0` reduce
 attraction signal visible to herbivore swarms, providing partial concealment from gradient-following
 movement.
 
-See: [`engine/flow-field.md`](../engine/flow-field.md)
+See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
 
 ### Carrying Capacity (`TILE_CARRYING_CAPACITY`)
 
@@ -73,7 +73,7 @@ dispersal is triggered. The check aggregates the `population` attribute of all c
 not the count of swarm entities — so that biologically dense tiles are correctly identified
 regardless of swarm entity fragmentation.
 
-See: [`engine/interaction.md`](../engine/interaction.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
 
 ### Control Center
 
@@ -82,7 +82,7 @@ scenario drafting, live simulation monitoring, telemetry inspection, and per-cel
 single browser workbench. State ownership remains on the server: the browser transmits incremental
 mutations via HTMX, and the server-side `DraftState` is the canonical editable record.
 
-See: [`ui/index.md`](../ui/index.md)
+See: [`ui/index.md`](../technical_architecture/system_architecture.md)
 
 ---
 
@@ -95,7 +95,7 @@ registry structures (`ECSWorld`), not behavioral Python objects. Grid state live
 Hot-path math is Numba-compiled. This approach maximizes cache locality, enables vectorization, and
 ensures that adding a new entity type does not require subclassing or inheritance hierarchies.
 
-See: [`architecture/index.md`](../architecture/index.md), [`engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md)
+See: [`architecture/index.md`](../technical_architecture/system_architecture.md), [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
 ### Diet Matrix
 
@@ -104,7 +104,7 @@ A `True` entry permits the corresponding herbivore species to feed on the corres
 during the interaction phase. The matrix is loaded from `SimulationConfig.diet_matrix` and cached
 in `SimulationLoop._diet_matrix`.
 
-See: [`engine/interaction.md`](../engine/interaction.md), [`scenarios/schema-and-curated-examples.md`](../scenarios/schema-and-curated-examples.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`scenarios/schema-and-curated-examples.md`](../scenario_guide/curated_examples.md)
 
 ### Double Buffering
 
@@ -114,7 +114,7 @@ during one phase do not corrupt the state being consumed by the same phase. In P
 `_..._write` backing arrays; a swap call (`rebuild_energy_layer()` or end-of-diffusion swap) makes
 the new state read-visible.
 
-See: [`engine/biotope-and-double-buffering.md`](../engine/biotope-and-double-buffering.md)
+See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system_architecture.md)
 
 ### Draft State (`DraftState`)
 
@@ -124,7 +124,7 @@ implemented in `phids.api.ui_state`. `DraftState` is entirely independent of any
 draft into a live simulation. This boundary prevents the browser from directly mutating runtime
 state.
 
-See: [`ui/draft-state-and-load-workflow.md`](../ui/draft-state-and-load-workflow.md)
+See: [`ui/draft-state-and-load-workflow.md`](../technical_architecture/interfaces_and_ui.md)
 
 ---
 
@@ -137,7 +137,7 @@ components are dataclasses attached to entity IDs in `ECSWorld`; systems are fre
 (`run_lifecycle`, `run_interaction`, `run_signaling`) that query and mutate components. No
 behavioral Python object hierarchy is used for plants, swarms, or substances.
 
-See: [`engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md)
+See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
 ### `ECSWorld`
 
@@ -146,7 +146,7 @@ mapping entity IDs to component instances, and the spatial hash mapping grid cel
 sets. Key methods: `create_entity`, `add_component`, `get_entity`, `has_entity`,
 `register_position`, `move_entity`, `unregister_position`, `entities_at`, `collect_garbage`.
 
-See: [`engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md)
+See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
 ### `environmental_signal` (activation condition kind)
 
@@ -156,7 +156,7 @@ enables a plant to activate a defense in response to ambient signal concentratio
 mycorrhizal relay or airborne diffusion from neighbouring plants, providing a mechanistic basis for
 primed systemic acquired resistance.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -169,7 +169,7 @@ aggregate plant-energy layer and toxin layers. Positive values are associated wi
 energy (attractive); toxin contribution is subtractive (repulsive). Swarms sample this field to
 select their next movement cell via `_choose_neighbour_by_flow_probability(...)`.
 
-See: [`engine/flow-field.md`](../engine/flow-field.md)
+See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -183,7 +183,7 @@ single `world.collect_garbage(ids)` call after the iteration loop completes. Imm
 `unregister_position` calls are used to revoke spatial-hash entries before GC, preventing ghost
 lookups within the same tick.
 
-See: [`engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md)
+See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
 ### Ghost Entity
 
@@ -193,8 +193,8 @@ spatial-hash lookups because `world.entities_at(x, y)` returns their IDs as if t
 alive. PHIDS prevents ghost entities through immediate `unregister_position` calls and same-tick GC
 in both the interaction and signaling phases.
 
-See: [`engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md),
-[`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md),
+[`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### `GridEnvironment`
 
@@ -203,7 +203,7 @@ energy (`plant_energy_layer`), per-species energy layers, signal layers, toxin l
 and the scalar flow field. It is the concrete implementation of PHIDS's double-buffering strategy
 for field-level state.
 
-See: [`engine/biotope-and-double-buffering.md`](../engine/biotope-and-double-buffering.md)
+See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system_architecture.md)
 
 ---
 
@@ -215,7 +215,7 @@ A substance configured with `irreversible=True`. Once activated, such a substanc
 active state and does not deactivate due to trigger loss or aftereffect expiry. This models a
 systemic acquired resistance (SAR)-like permanent induced defense response.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -228,7 +228,7 @@ inflicted on a swarm co-located with a non-zero toxin concentration:
 `casualties = int(lethality_rate × toxin_value × population)`. A lethality rate of 0.0 means the
 toxin is non-lethal (potentially only repellent).
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -241,7 +241,7 @@ the magnitude of the deficit. Each lost individual "refunds" `energy_min` units 
 reserve is clamped to `0.0`. This models starvation as a smooth population shrinkage rather than
 an abrupt all-or-nothing event.
 
-See: [`engine/interaction.md`](../engine/interaction.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
 
 ### Mitosis
 
@@ -250,7 +250,7 @@ threshold. The parent swarm retains `floor(n/2)` individuals; a new swarm entity
 the complementary half and equal share of energy. The parent's `initial_population` is reset to the
 retained value, which re-anchors the future mitosis threshold.
 
-See: [`engine/interaction.md`](../engine/interaction.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
 
 ### Mycorrhizal Network
 
@@ -260,7 +260,7 @@ different, if enabled) species occupy cells within a maximum distance. The signa
 these links to relay signal concentrations to connected cells, modelling root-mediated chemical
 communication.
 
-See: [`engine/lifecycle.md`](../engine/lifecycle.md), [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/lifecycle.md`](../scientific_model/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -273,7 +273,7 @@ amortized O(1) time. It is the primary locality primitive in PHIDS: all cell-loc
 (feeding, trigger evaluation, crowding checks) are dispatched via `world.entities_at(x, y)` rather
 than through O(N²) global pairwise scans.
 
-See: [`engine/ecs-and-spatial-hash.md`](../engine/ecs-and-spatial-hash.md)
+See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
 ---
 
@@ -285,7 +285,7 @@ A msgpack-backed per-tick snapshot store in `phids.io.replay`. Each tick's envir
 serialized and appended to the buffer after telemetry recording. The buffer supports offline
 replay, diff analysis, and export to external tooling.
 
-See: [`telemetry/replay-and-termination-semantics.md`](../telemetry/replay-and-termination-semantics.md)
+See: [`telemetry/replay-and-termination-semantics.md`](../technical_architecture/telemetry.md)
 
 ### Repellence / Repelled State
 
@@ -294,7 +294,7 @@ A swarm state flag (`repelled`, `repelled_ticks_remaining`) set either by chemic
 performs a random-walk step rather than following the flow field, and the timer decrements each
 tick until it reaches zero.
 
-See: [`engine/interaction.md`](../engine/interaction.md), [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### Rule of 16
 
@@ -303,7 +303,7 @@ bounded to a maximum of 16 each, as defined in `phids.shared.constants`. NumPy a
 pre-allocated to these maximum dimensions at simulation start, eliminating dynamic array resizing
 (`np.append`) during the simulation loop and ensuring memory stability at hot-path boundaries.
 
-See: [`foundations/index.md`](../foundations/index.md)
+See: [`foundations/index.md`](../scientific_model/index.md)
 
 ---
 
@@ -317,7 +317,7 @@ configured as irreversible will maintain its defense permanently. A neighbouring
 with `environmental_signal` activation can prime its own defense in response to relay-deposited
 signal concentrations, approximating primed SAR.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### `SIGNAL_EPSILON`
 
@@ -326,7 +326,7 @@ step, any signal layer value below `SIGNAL_EPSILON` is zeroed to preserve sparsi
 numerical instability from accumulating subnormal floating-point values in otherwise-inactive
 cells.
 
-See: [`engine/biotope-and-double-buffering.md`](../engine/biotope-and-double-buffering.md)
+See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system_architecture.md)
 
 ### `SimulationConfig`
 
@@ -335,7 +335,7 @@ run: grid dimensions, species definitions, diet matrix, trigger rules, initial p
 conditions, mycorrhizal settings, and termination constraints. It is the single validated ingress
 point for scenario data, after which internal state is treated as trusted.
 
-See: [`scenarios/schema-and-curated-examples.md`](../scenarios/schema-and-curated-examples.md)
+See: [`scenarios/schema-and-curated-examples.md`](../scenario_guide/curated_examples.md)
 
 ### `SimulationLoop`
 
@@ -344,7 +344,7 @@ through a fixed phase sequence (flow field → camouflage → lifecycle → inte
 telemetry → termination) under an `asyncio.Lock`, accumulates telemetry, appends replay snapshots,
 and evaluates Z1–Z7 termination conditions each tick.
 
-See: [`engine/index.md`](../engine/index.md)
+See: [`engine/index.md`](../scientific_model/index.md)
 
 ### Spatial Hash
 
@@ -358,14 +358,14 @@ activation state, aftereffect timer, lethality/repellence parameters, activation
 and energy cost. Substances are materialized as discrete entities by the signaling system when a
 trigger rule fires.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### Surplus Energy
 
 The energy a swarm holds above its `baseline_energy` (`energy − population × energy_min`). Only
 surplus energy is convertible into new individuals during the interaction phase's reproduction step.
 
-See: [`engine/interaction.md`](../engine/interaction.md), [Baseline Energy](#baseline-energy)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [Baseline Energy](#baseline-energy)
 
 ### Synthesis
 
@@ -374,7 +374,7 @@ and activation (defense becomes effective). `synthesis_remaining` is decremented
 trigger is satisfied; once it reaches zero and the activation condition passes, the substance
 transitions to the active state.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -387,7 +387,7 @@ flora and herbivore population counts, active substance counts, and per-category
 after each tick. Metrics are exposed via REST (`GET /api/telemetry`) and polled by the UI
 diagnostics rail.
 
-See: [`telemetry/analytics-and-export-formats.md`](../telemetry/analytics-and-export-formats.md)
+See: [`telemetry/analytics-and-export-formats.md`](../technical_architecture/telemetry.md)
 
 ### Termination Condition
 
@@ -404,7 +404,7 @@ currently implemented conditions are:
 | Z6   | Total flora energy exceeds a maximum threshold |
 | Z7   | Total herbivore population exceeds a maximum threshold |
 
-See: [`telemetry/replay-and-termination-semantics.md`](../telemetry/replay-and-termination-semantics.md)
+See: [`telemetry/replay-and-termination-semantics.md`](../technical_architecture/telemetry.md)
 
 ### TILE_CARRYING_CAPACITY
 
@@ -418,7 +418,7 @@ species ID, a minimum population threshold, an optional nested activation condit
 substance parameters that should be instantiated. Multiple trigger rules per `(flora, substance)`
 pair are supported.
 
-See: [`scenarios/scenario-authoring-and-trigger-semantics.md`](../scenarios/scenario-authoring-and-trigger-semantics.md)
+See: [`scenarios/scenario-authoring-and-trigger-semantics.md`](../scenario_guide/scenario_authoring.md)
 
 ### Toxin
 
@@ -427,7 +427,7 @@ airborne Gaussian diffusion. They are point-emitter defenses that emit into and 
 toxin layer at the emitting plant's cell. Their effects on swarms (lethal casualties, repellence)
 are enforced exclusively in the signaling phase by `_apply_toxin_to_swarms`.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -441,7 +441,7 @@ velocity of `n` means the swarm navigates once every `n` ticks; between navigati
 (`consumption_rate / velocity`) to prevent high-frequency movers from extracting disproportionate
 energy per tick.
 
-See: [`engine/interaction.md`](../engine/interaction.md)
+See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
 
 ### VOC (Volatile Organic Compound)
 
@@ -450,7 +450,7 @@ signal layers, diffuse through the environment via Gaussian convolution, and can
 `environmental_signal` activation condition. They model airborne alarm volatiles such as green leaf
 volatiles and terpenes.
 
-See: [`engine/signaling.md`](../engine/signaling.md)
+See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ---
 
@@ -465,7 +465,7 @@ PHIDS exposes two intentionally distinct WebSocket endpoints:
 - `/ws/ui/stream` — emits lightweight JSON payloads optimized for canvas rendering in the browser
   control center.
 
-See: [`interfaces/rest-and-websocket-surfaces.md`](../interfaces/rest-and-websocket-surfaces.md)
+See: [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)
 
 ### Wind Field
 
@@ -474,5 +474,5 @@ A uniform 2D velocity vector (`wind_x`, `wind_y`) configured at scenario load an
 directional atmospheric transport of volatile signals. The wind vector can be updated at runtime via
 `PUT /api/wind`.
 
-See: [`engine/flow-field.md`](../engine/flow-field.md),
-[`interfaces/rest-and-websocket-surfaces.md`](../interfaces/rest-and-websocket-surfaces.md)
+See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md),
+[`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)

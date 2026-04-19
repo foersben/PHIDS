@@ -49,78 +49,21 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  - Documentation Architecture: information-architecture.md
-  - Foundations:
-      - Overview: foundations/index.md
-      - Research Scope and Modeling Assumptions: foundations/research-scope.md
-  - Architecture:
-      - Overview: architecture/index.md
-  - Engine:
-      - Overview: engine/index.md
-      - Biotope and Double-Buffering: engine/biotope-and-double-buffering.md
-      - ECS and Spatial Hash: engine/ecs-and-spatial-hash.md
-      - Flow Field: engine/flow-field.md
-      - Lifecycle: engine/lifecycle.md
-      - Interaction: engine/interaction.md
-      - Signaling and Substance Lifecycle: engine/signaling.md
-      - Formal Algorithmic Model: engine/formal-algorithmic-model.md
-  - Interfaces:
-      - Overview: interfaces/index.md
-      - REST and WebSocket Surfaces: interfaces/rest-and-websocket-surfaces.md
-      - UI Control Center: ui/index.md
-      - Draft State and Load Workflow: ui/draft-state-and-load-workflow.md
-      - HTMX Partials and Builder Routes: ui/htmx-partials-and-builder-routes.md
-      - Batch Runner and Aggregate Analysis: ui/batch-runner-and-aggregate-analysis.md
-      - Diagnostics and Live Observation: ui/diagnostics-and-live-observation.md
+  - Scientific Model:
+      - Mathematical Framework: scientific_model/mathematical_framework.md
+  - Technical Architecture:
+      - System Architecture: technical_architecture/system_architecture.md
+      - Engine Execution: technical_architecture/engine_execution.md
+      - Interfaces & UI: technical_architecture/interfaces_and_ui.md
+      - Telemetry: technical_architecture/telemetry.md
   - Scenarios:
-      - Overview: scenarios/index.md
-      - Scenario Schema and Curated Examples: scenarios/schema-and-curated-examples.md
-      - Scenario Authoring and Trigger Semantics: scenarios/scenario-authoring-and-trigger-semantics.md
-      - Curated Example Catalog: scenarios/curated-example-catalog.md
-  - Telemetry:
-      - Overview: telemetry/index.md
-      - Analytics and Export Formats: telemetry/analytics-and-export-formats.md
-      - Replay and Termination Semantics: telemetry/replay-and-termination-semantics.md
-  - Development:
-      - Overview: development/index.md
-      - Contribution Workflow and Quality Gates: development/contribution-workflow-and-quality-gates.md
-      - Agent Ecosystem and Governance: development/agent-ecosystem-and-governance.md
-      - Agent Ownership and Delegation: development/agent-ownership-delegation.md
-      - Agent Invocation and Reporting: development/agent-invocation-and-reporting.md
-      - Agent Ecosystem Target-State Blueprint: development/agent-target-state-blueprint.md
-      - MCP Capability Model: development/mcp-capability-model.md
-      - MCP Lifecycle: development/mcp-lifecycle.md
-      - Scientific Authoring Workflow: development/scientific-authoring-workflow.md
-      - Documentation Status and Open Work: development/documentation-status-and-open-work.md
-      - GitHub Actions and Local CI Rehearsal: development/github-actions-and-local-ci.md
-      - Containers and Release Automation: development/containers-and-release-automation.md
-      - Release Checklist: development/release-checklist.md
-      - Documentation Standards: development/documentation-standards.md
-      - Testing Strategy and Benchmark Policy: development/testing-strategy-and-benchmark-policy.md
-  - Reference:
-      - Guide: reference/index.md
-      - Module Map and Symbol Guide: reference/module-map.md
-      - Glossary and Concept Index: reference/glossary-and-concept-index.md
+      - Scenario Authoring: scenario_guide/scenario_authoring.md
+      - Curated Examples: scenario_guide/curated_examples.md
+  - Development & Reference:
+      - Contribution & Workflows: development_guide/contribution_workflow.md
+      - Agent Ecosystem: development_guide/agent_ecosystem.md
+      - Module Map: reference/module-map.md
+      - Glossary & Concepts: reference/glossary-and-concept-index.md
       - Requirements Traceability: reference/requirements-traceability.md
       - Python API Reference: reference/api.md
-      - Repository README Mirror: appendices/readme.md
-  - Legacy Archive:
-      - Overview: legacy/index.md
-      - Root Legacy Source Documents:
-          - Architecture Diagrams (legacy root): architecture.md
-          - Comprehensive Description (legacy root): comprehensive_description.md
-          - Technical Requirements (legacy root): technical_requirements.md
-          - Requirements Coverage (legacy root): requirements_coverage.md
-          - UI Design Specification (legacy root): PHIDS_htmx_ui_design_specification.md
-          - API Reference Note (legacy root): reference.md
-          - Docstring Guidelines (legacy root): docstring_guidelines.md
-      - Snapshot 2026-03-11: legacy/2026-03-11/index.md
-      - Snapshot 2026-03-11 Documents:
-          - Original Homepage: legacy/2026-03-11/index_original.md
-          - Architecture Diagrams: legacy/2026-03-11/architecture.md
-          - Comprehensive Description: legacy/2026-03-11/comprehensive_description.md
-          - Technical Requirements: legacy/2026-03-11/technical_requirements.md
-          - Requirements Coverage: legacy/2026-03-11/requirements_coverage.md
-          - UI Design Specification: legacy/2026-03-11/PHIDS_htmx_ui_design_specification.md
-          - API Reference Note: legacy/2026-03-11/reference.md
-          - Docstring Guidelines: legacy/2026-03-11/docstring_guidelines.md
+      - Legacy Archive: legacy/index.md
