@@ -54,6 +54,9 @@ nav:
       - Reaction-Diffusion PDEs: scientific_model/reaction_diffusion.md
       - Chemotaxis & Flow Fields: scientific_model/chemotaxis.md
       - Population Dynamics: scientific_model/population_dynamics.md
+      - Herbivore Behavior & Kinematics: scientific_model/herbivore_behavior.md
+      - Flora & Symbiosis: scientific_model/flora_and_symbiosis.md
+      - Ecological Analytics: scientific_model/ecological_analytics.md
   - Technical Architecture:
       - System Architecture: technical_architecture/system_architecture.md
       - Engine Execution: technical_architecture/engine_execution.md
