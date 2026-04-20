@@ -373,5 +373,5 @@ Use the API reference when you need to know:
 ## Where to Read Next
 
 - For rendered symbol-level API docs: [`api.md`](api.md)
-- For contributor-facing documentation rules: [`../development/documentation-standards.md`](../development/documentation-standards.md)
-- For the repository-facing summary: [`../appendices/readme.md`](../appendices/readme.md)
+- For contributor-facing documentation rules: [`../development_guide/contribution_workflow.md`](../development_guide/contribution_workflow.md)
+- For the repository-facing summary:

@@ -84,5 +84,5 @@ canonical active traceability surface for the current documentation architecture
 ## Where to Read Next
 
 - For package ownership and codebase inventory: [`module-map.md`](module-map.md)
-- For contributor-facing documentation rules: [`../development/documentation-standards.md`](../development/documentation-standards.md)
-- For the scientific information architecture of the site: [`../information-architecture.md`](../information-architecture.md)
+- For contributor-facing documentation rules: [`../development_guide/contribution_workflow.md`](../development_guide/contribution_workflow.md)
+- For the scientific information architecture of the site: [`../technical_architecture/system_architecture.md`](../technical_architecture/system_architecture.md)
