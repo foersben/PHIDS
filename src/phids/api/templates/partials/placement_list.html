@@ -20,7 +20,9 @@
     </div>
     <button hx-delete="/api/config/placements/plant/{{ idx }}"
       hx-target="#placement-list" hx-swap="innerHTML"
-      class="text-red-500 hover:text-red-700 font-medium ml-2">✕</button>
+      aria-label="Remove plant at {{ p.x }}, {{ p.y }}"
+      title="Remove plant"
+      class="text-red-500 hover:text-red-700 font-medium ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-sm">✕</button>
   </div>
   {% endfor %}
 </div>
@@ -48,7 +50,9 @@
     </div>
     <button hx-delete="/api/config/placements/swarm/{{ idx }}"
       hx-target="#placement-list" hx-swap="innerHTML"
-      class="text-red-500 hover:text-red-700 font-medium ml-2">✕</button>
+      aria-label="Remove swarm at {{ s.x }}, {{ s.y }}"
+      title="Remove swarm"
+      class="text-red-500 hover:text-red-700 font-medium ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-sm">✕</button>
   </div>
   {% endfor %}
 </div>
