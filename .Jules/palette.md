@@ -1,0 +1,3 @@
+## 2024-04-28 - Icon-Only Button Accessibility Pattern
+**Learning:** Found a systemic pattern across multiple HTML partials (e.g., `placement_list.html`, `base.html`, etc) where icon-only buttons (like "✕", "◫") lack `aria-label`s, `title`s, and explicit keyboard focus indicators. This severely impacts screen reader users and keyboard navigators.
+**Action:** When working on UI components in this application, proactively audit icon-only buttons and explicitly add `aria-label`, `title`, and `focus-visible` styling (e.g., `focus:outline-none focus-visible:ring-2 rounded`) to ensure they meet basic accessibility baselines.
