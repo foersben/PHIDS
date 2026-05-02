@@ -18,9 +18,9 @@
       </span>
       <span class="text-slate-400 ml-1">E={{ p.energy }}</span>
     </div>
-    <button hx-delete="/api/config/placements/plant/{{ idx }}"
+    <button aria-label="Delete plant at {{ p.x }}, {{ p.y }}" hx-delete="/api/config/placements/plant/{{ idx }}"
       hx-target="#placement-list" hx-swap="innerHTML"
-      class="text-red-500 hover:text-red-700 font-medium ml-2">✕</button>
+      class="text-red-500 hover:text-red-700 font-medium ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded">✕</button>
   </div>
   {% endfor %}
 </div>
@@ -46,9 +46,9 @@
       </span>
       <span class="text-slate-400 ml-1">n={{ s.population }} E={{ s.energy }}</span>
     </div>
-    <button hx-delete="/api/config/placements/swarm/{{ idx }}"
+    <button aria-label="Delete swarm at {{ s.x }}, {{ s.y }}" hx-delete="/api/config/placements/swarm/{{ idx }}"
       hx-target="#placement-list" hx-swap="innerHTML"
-      class="text-red-500 hover:text-red-700 font-medium ml-2">✕</button>
+      class="text-red-500 hover:text-red-700 font-medium ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded">✕</button>
   </div>
   {% endfor %}
 </div>
