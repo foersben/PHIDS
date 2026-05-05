@@ -104,9 +104,9 @@
         class="block w-full text-center px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">
         📥 Export JSON
       </a>
-      <label class="block w-full text-center px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm cursor-pointer transition-colors">
+      <label class="block w-full text-center px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-indigo-500">
         📤 Import JSON
-        <input type="file" accept=".json" class="hidden" id="scenario-import-input"
+        <input type="file" accept=".json" class="sr-only" id="scenario-import-input"
           onchange="phidsUploadScenario(this)">
       </label>
     </div>
@@ -215,16 +215,16 @@
 
       <div id="diagnostics-collapsed-shell" class="hidden h-full flex-col items-center gap-3 bg-slate-50/90 px-2 py-3">
         <div class="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 [writing-mode:vertical-rl] rotate-180">Diag</div>
-        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
-          data-tab-key="model" data-diagnostics-url="/ui/diagnostics/model" title="Model diagnostics">◫</button>
-        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-          data-tab-key="frontend" data-diagnostics-url="/ui/diagnostics/frontend" title="Frontend diagnostics">⌘</button>
-        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-          data-tab-key="backend" data-diagnostics-url="/ui/diagnostics/backend" title="Backend logs">☰</button>
+        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
+          data-tab-key="model" data-diagnostics-url="/ui/diagnostics/model" title="Model diagnostics" aria-label="Model diagnostics">◫</button>
+        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
+          data-tab-key="frontend" data-diagnostics-url="/ui/diagnostics/frontend" title="Frontend diagnostics" aria-label="Frontend diagnostics">⌘</button>
+        <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
+          data-tab-key="backend" data-diagnostics-url="/ui/diagnostics/backend" title="Backend logs" aria-label="Backend logs">☰</button>
         <div class="mt-auto">
           <button type="button" id="diagnostics-expand-collapsed"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors"
-            title="Expand diagnostics">⟩</button>
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
+            title="Expand diagnostics" aria-label="Expand diagnostics">⟩</button>
         </div>
       </div>
     </aside>
