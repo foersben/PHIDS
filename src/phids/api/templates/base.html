@@ -104,9 +104,9 @@
         class="block w-full text-center px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">
         📥 Export JSON
       </a>
-      <label class="block w-full text-center px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm cursor-pointer transition-colors">
+      <label class="block w-full text-center px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-400 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-slate-900">
         📤 Import JSON
-        <input type="file" accept=".json" class="hidden" id="scenario-import-input"
+        <input type="file" accept=".json" class="sr-only" id="scenario-import-input"
           onchange="phidsUploadScenario(this)">
       </label>
     </div>
