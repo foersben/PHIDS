@@ -1,0 +1,3 @@
+## 2025-05-09 - Accessible Icon-Only Buttons
+**Learning:** Found several icon-only buttons (diagnostics panel toggles, entity deletion buttons) that lacked screen reader support and visible keyboard focus states. Relying solely on the `title` attribute is insufficient for robust accessibility, and default focus rings can sometimes be difficult to see against specific background colors.
+**Action:** When implementing or updating icon-only buttons, systematically pair the visual icon with a descriptive `aria-label` and enforce keyboard navigability by appending `focus:outline-none focus-visible:ring-2` (using a ring color appropriate for the context, e.g., `ring-indigo-500` or `ring-red-400`).
