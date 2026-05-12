@@ -1,0 +1,3 @@
+## 2024-05-12 - Icon-only delete buttons in coordinate-based lists
+**Learning:** For list items representing spatial entities on a grid (like plants or swarms at specific X/Y coordinates), a generic 'Remove' aria-label on an icon-only delete button is insufficient for screen reader users. They need the spatial context to know *which* item they are removing.
+**Action:** When adding aria-labels to delete buttons in coordinate-based lists, always include the item's coordinates in the label (e.g., `aria-label="Remove plant at ({{ x }}, {{ y }})"`). Also ensure icon-only buttons receive focus-visible styles for keyboard accessibility.
