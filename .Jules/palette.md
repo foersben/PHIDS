@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility and Safety for Delete Actions
+**Learning:** Icon-only destructive actions without ARIA labels or confirmation prompts leave screen reader users without context and all users prone to accidental mistakes. Adding focus rings matching the destructive action's color (e.g. `ring-red-500`) provides strong visual feedback for keyboard users, and `hx-confirm` easily guards against accidental deletions.
+**Action:** Always verify that icon-only buttons have descriptive `aria-label` and `title` attributes. Use `focus-visible` to ensure clear keyboard navigation paths. Use `hx-confirm` for destructive actions built on HTMX.
