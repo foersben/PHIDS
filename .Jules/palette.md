@@ -1,0 +1,3 @@
+## 2024-05-27 - Placement List Remove Buttons Contextual ARIA
+**Learning:** In the Placement List, there were icon-only '✕' buttons to delete plants and swarms, but they lacked `aria-label`s or focus rings. Adding simple `aria-label`s with spatial context (`Remove plant at (x, y)`) significantly improves screen reader navigation in coordinate-based lists.
+**Action:** Always add contextual data to `aria-label`s for delete actions in lists where identical items may exist at different spatial locations. Also add explicit `focus-visible` classes for keyboard navigators since default outline was suppressed.
