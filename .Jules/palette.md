@@ -1,0 +1,3 @@
+## 2025-06-01 - Default Draft Needs Manual Seed for A11y Tests
+**Learning:** The default draft state loaded via `/api/scenario/load-draft` does not guarantee the presence of spatial entities (plants/swarms). When writing Playwright UI verification scripts targeting the "Placed Entities" list, attempting to select delete buttons right after loading the draft causes test timeouts.
+**Action:** Always explicitly seed test entities using programmatic interactions (e.g., clicking the `#placement-canvas` at specific coordinates) to guarantee the DOM contains the elements required for interaction/accessibility testing.
