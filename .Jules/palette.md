@@ -1,0 +1,3 @@
+## 2024-06-07 - Accessibility of icon-only delete buttons in placement list
+**Learning:** Icon-only buttons (like "X" for delete) in coordinate-based lists need contextual `aria-label`s to be meaningful to screen reader users (e.g., instead of just "Delete", use "Remove plant at (X, Y)"). They also require explicit `focus-visible` styling for keyboard navigation since browsers often don't provide clear default outlines for custom icon buttons.
+**Action:** Always verify that dynamically generated lists containing icon buttons include context-specific ARIA labels and explicit focus ring utility classes (`focus:outline-none focus-visible:ring-2 focus-visible:ring-COLOR`).
