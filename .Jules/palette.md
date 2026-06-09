@@ -1,0 +1,4 @@
+## 2024-05-15 - Contextual ARIA labels for coordinate-based entities
+
+**Learning:** When listing dynamically placed spatial entities (like plants or swarms on a biotope grid), generic icon-only buttons (like "✕" for delete) are inaccessible. Adding ARIA labels is necessary, but standard labels like "Delete plant" are insufficient when multiple similar entities exist. The specific coordinate context must be included in the label (e.g., `Remove plant at ({{ p.x }}, {{ p.y }})`) to provide adequate context for screen reader users to distinguish which exact entity they are interacting with.
+**Action:** Always inject spatial coordinates or other unique identifying context into the `aria-label` and `title` attributes when adding accessible labels to UI lists that represent a spatial grid or coordinate system.
