@@ -1,0 +1,3 @@
+## 2024-05-19 - [Added Context to Coordinates-Based Delete Actions]
+**Learning:** For layout grids or coordinate systems like the placement list, adding an `aria-label` or confirmation prompt that includes the actual dynamic coordinates (`({{ p.x }}, {{ p.y }})`) is vital. Generic "Remove item" labels fail to help screen reader users identify exactly which entity they are deleting when multiple items look functionally identical.
+**Action:** Always include specific contextual data (like coordinates, IDs, or unique titles) in `aria-label`s and `hx-confirm` dialogs for dynamically generated lists.
