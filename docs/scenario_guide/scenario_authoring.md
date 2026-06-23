@@ -1,3 +1,11 @@
+---
+type: scenario
+title: "Scenario Authoring & Schema"
+status: active
+version: 0.1
+description: "Documentation for Scenario Authoring & Schema in the PHIDS framework."
+---
+
 # Scenario Authoring & Schema
 
 Scenarios in PHIDS form the strict boundaries of the ecological experiment. A scenario dictates the grid dimensions, initial biomass distributions, trophic links (who eats what), and the specific biochemical triggers deployed by flora when attacked. At the engine level, all scenarios are structurally validated against the `SimulationConfig` Pydantic schema before execution.

@@ -63,7 +63,7 @@ repos:
         entry: uv run python scripts/validate_okf.py
         language: system
         files: ^(docs/|\.agents/).*\.md$
-        pass_filenames: false
+        pass_filenames: true
 
       - id: enforce-author-identity
         name: Enforce Author Identity

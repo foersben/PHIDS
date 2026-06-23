@@ -1,3 +1,11 @@
+---
+type: scientific_model
+title: "Chemotaxis & Flow Fields"
+status: active
+version: 0.1
+description: "Documentation for Chemotaxis & Flow Fields in the PHIDS framework."
+---
+
 # Chemotaxis & Flow Fields
 
 Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field, simulating a sensory-driven process called **chemotaxis**.

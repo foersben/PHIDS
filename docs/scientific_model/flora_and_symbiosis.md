@@ -1,3 +1,11 @@
+---
+type: scientific_model
+title: "Flora Lifecycle and Symbiotic Networks"
+status: active
+version: 0.1
+description: "Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS framework."
+---
+
 # Flora Lifecycle and Symbiotic Networks
 
 Flora within PHIDS are stationary entities on the grid that produce the resources driving the herbivore ecosystem. While stationary, their behavior governs resource distribution, secondary defenses, and spatial networks.

@@ -1,3 +1,11 @@
+---
+type: reference
+title: "Glossary and Concept Index"
+status: active
+version: 0.1
+description: "Documentation for Glossary and Concept Index in the PHIDS framework."
+---
+
 # Glossary and Concept Index
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary

@@ -1,3 +1,11 @@
+---
+type: reference
+title: "Reference Guide"
+status: active
+version: 0.1
+description: "Documentation for Reference Guide in the PHIDS framework."
+---
+
 # Reference Guide
 
 The reference section separates human-oriented explanation from symbol-oriented API detail.

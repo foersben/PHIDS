@@ -1,3 +1,11 @@
+---
+type: scientific_model
+title: "Scientific Model"
+status: active
+version: 0.1
+description: "Documentation for Scientific Model in the PHIDS framework."
+---
+
 # Scientific Model
 
 This section formally details the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a rigorous, deterministic computational ecology model. The documentation here defines the theoretical foundations, the explicit mathematical representations of the biological mechanisms, and the bounded approximations underlying the execution of the system.

@@ -3,7 +3,7 @@
 
 from pathlib import Path
 from re import findall
-from sys import exit
+from sys import argv, exit
 
 import yaml
 
@@ -59,15 +59,26 @@ def main() -> None:
 
     global_errors = 0
 
-    for base_path in base_paths:
-        for md_file in base_path.rglob("*.md"):
-            # Skip checking reserved operational logs if needed, otherwise scan all concepts
-            file_errors = check_okf_concept(md_file, base_paths)
-            if file_errors:
-                global_errors += len(file_errors)
-                print(f"❌ OKF Non-Compliance inside -> {md_file.relative_to(Path.cwd())}:")
-                for err in file_errors:
-                    print(f"   • {err}")
+    # Handle file lists passed via CLI args (e.g. from pre-commit)
+    if len(argv) > 1:
+        md_files = [Path(p).resolve() for p in argv[1:]]
+    else:
+        md_files = []
+        for base_path in base_paths:
+            md_files.extend(base_path.rglob("*.md"))
+
+    for md_file in md_files:
+        # Ignore legacy docs and generated site folders
+        if "docs/legacy/" in md_file.as_posix() or "site/" in md_file.as_posix():
+            continue
+        if not md_file.exists() or not md_file.is_file():
+            continue
+        file_errors = check_okf_concept(md_file, base_paths)
+        if file_errors:
+            global_errors += len(file_errors)
+            print(f"❌ OKF Non-Compliance inside -> {md_file.relative_to(Path.cwd())}:")
+            for err in file_errors:
+                print(f"   • {err}")
 
     if global_errors > 0:
         print(f"\n💥 Result: Found {global_errors} errors. Knowledge bundle rejected.")

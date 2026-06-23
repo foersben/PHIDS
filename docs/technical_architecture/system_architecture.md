@@ -1,3 +1,11 @@
+---
+type: technical_architecture
+title: "System Architecture"
+status: active
+version: 0.1
+description: "Documentation for System Architecture in the PHIDS framework."
+---
+
 # System Architecture
 
 The PHIDS simulator is engineered as a headless, high-performance data-oriented system. It segregates logic from state to bypass the bottlenecks inherent in traditional Object-Oriented simulation frameworks. This document outlines the fundamental technical boundaries that ensure deterministic, reproducible simulation loops.

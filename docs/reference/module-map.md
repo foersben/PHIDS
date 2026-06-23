@@ -1,3 +1,11 @@
+---
+type: reference
+title: "Module Map and Symbol Guide"
+status: active
+version: 0.1
+description: "Documentation for Module Map and Symbol Guide in the PHIDS framework."
+---
+
 # Module Map and Symbol Guide
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended

@@ -1,3 +1,11 @@
+---
+type: scientific_model
+title: "Mathematical Framework"
+status: active
+version: 0.1
+description: "Documentation for Mathematical Framework in the PHIDS framework."
+---
+
 # Mathematical Framework
 
 This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a coupled hybrid dynamical system. In this model, discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers.

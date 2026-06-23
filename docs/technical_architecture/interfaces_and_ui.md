@@ -1,3 +1,11 @@
+---
+type: technical_architecture
+title: "Interfaces & UI"
+status: active
+version: 0.1
+description: "Documentation for Interfaces & UI in the PHIDS framework."
+---
+
 # Interfaces & UI
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.

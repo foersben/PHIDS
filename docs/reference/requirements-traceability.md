@@ -1,3 +1,11 @@
+---
+type: reference
+title: "Requirements Traceability"
+status: active
+version: 0.1
+description: "Documentation for Requirements Traceability in the PHIDS framework."
+---
+
 # Requirements Traceability
 
 This page is the canonical current-state successor to the legacy requirements coverage notes. It maps
