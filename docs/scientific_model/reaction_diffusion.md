@@ -57,6 +57,7 @@ The full update is then the convolution of the advected field $\tilde{C}^{t}$.
 Imagine a $3 \times 3$ grid segment. The center cell $(1,1)$ contains a plant actively emitting a signal.
 
 **Tick 0:**
+
 $$
 C^0 =
 \begin{bmatrix}
@@ -69,6 +70,7 @@ $$
 Assume a simplified discrete Laplacian convolution kernel $\mathcal{K}$ that distributes 20% of a cell's value to its 4 orthogonal neighbors, keeping 20% in the center. Assume decay factor $\gamma = 0.9$ and no new emission ($Q=0$).
 
 **Tick 1 (After Convolution):**
+
 $$
 \mathcal{K} * C^0 =
 \begin{bmatrix}
@@ -79,6 +81,7 @@ $$
 $$
 
 **Tick 1 (After Decay $\gamma = 0.9$):**
+
 $$
 C^1 =
 \begin{bmatrix}

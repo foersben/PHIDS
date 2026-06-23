@@ -18,9 +18,10 @@ A plant cannot self-starve to drop a single seed. The plant's energy minus the s
 If the parent survives the check, it attempts to disperse the seed into an adjacent coordinate $(x,y)$.
 
 **Algorithm & Germination Restrictions:**
-1.  **Calm Air ($Wind \approx 0$):** A bounded annulus is generated around the parent, defined by $r_{min}$ and $r_{max}$. A random polar angle $\theta$ is chosen. The seed falls at $(x + r \cos \theta, y + r \sin \theta)$.
-2.  **Wind-Active Air:** If wind is present, the model switches to an anemochorous kernel. It samples a Gaussian distribution aligned to the continuous wind vector $(Wind_X, Wind_Y)$, scaled by the seed's terminal velocity and drop height.
-3.  **The Exclusion Zone:** Seeds *cannot* germinate if they land on an already occupied grid cell. If the target coordinate is occupied, the reproductive energy is spent, but no new entity is generated.
+
+1. **Calm Air ($Wind \approx 0$):** A bounded annulus is generated around the parent, defined by $r_{min}$ and $r_{max}$. A random polar angle $\theta$ is chosen. The seed falls at $(x + r \cos \theta, y + r \sin \theta)$.
+2. **Wind-Active Air:** If wind is present, the model switches to an anemochorous kernel. It samples a Gaussian distribution aligned to the continuous wind vector $(Wind_X, Wind_Y)$, scaled by the seed's terminal velocity and drop height.
+3. **The Exclusion Zone:** Seeds *cannot* germinate if they land on an already occupied grid cell. If the target coordinate is occupied, the reproductive energy is spent, but no new entity is generated.
 
 **Biological Rationale:**
 The model prevents infinite stacking. A single grid patch only has sunlight and soil capacity for one active plant organism.

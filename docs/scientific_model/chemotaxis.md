@@ -52,6 +52,7 @@ Stochastic tie-handling breaks equivalencies when multiple neighbors share the m
 Imagine a swarm at center coordinate `(1, 1)` evaluating its Moore neighborhood in a simplified subset of the Flow Field $F_t$:
 
 **Flow Field Segment:**
+
 $$
 \begin{bmatrix}
 0.5 & 1.2 & 2.1 \\

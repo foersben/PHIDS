@@ -35,7 +35,7 @@ A successful, stable scenario will exhibit **Cyclic Oscillations** (Boom-and-Bus
 
 If a scenario does not cycle, it inevitably hits a **Termination Condition**.
 
-## 2. Termination Protocols ($Z_1$ - $Z_7$)
+## 2. Termination Protocol ($Z_1$ - $Z_7$)
 
 The engine integrates continuous checks against operational bounds:
 
