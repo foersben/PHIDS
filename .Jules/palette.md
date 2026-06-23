@@ -1,0 +1,3 @@
+## 2024-06-23 - Coordinate-based Spatial Context in ARIA Labels
+**Learning:** When adding `aria-label` attributes to destructive actions (like delete buttons) for entities plotted on a coordinate grid (like the placement editor's plant and swarm entities), generic labels like "Remove plant" provide insufficient context for screen reader users trying to distinguish between multiple identical entity types on the grid.
+**Action:** Always include the specific spatial context or grid coordinates within the `aria-label` and `title` attributes (e.g., `aria-label="Remove plant at ({{ p.x }}, {{ p.y }})"`) to ensure each button's accessible name uniquely identifies the entity it affects.
