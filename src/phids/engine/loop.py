@@ -507,6 +507,9 @@ class SimulationLoop:
                 self.env.toxin_layers,
                 self.env.width,
                 self.env.height,
+                self.env._flow_field_base,
+                self.env._flow_field_current,
+                self.env._flow_field_nxt,
             )
             if debug_summary:
                 phase_timings_ms["flow_field"] = (time.perf_counter() - phase_started) * 1000.0

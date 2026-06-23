@@ -25,6 +25,9 @@ def _compute_flow_field_impl(
     toxin_sum: npt.NDArray[np.float64],
     width: int,
     height: int,
+    base: npt.NDArray[np.float64] | None = None,
+    current: npt.NDArray[np.float64] | None = None,
+    nxt: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """Compute the attraction gradient using iterative Jacobi propagation.
 
@@ -33,13 +36,27 @@ def _compute_flow_field_impl(
         toxin_sum: 2-D array ``(W, H)`` of aggregated toxin concentration per cell.
         width: Grid width W.
         height: Grid height H.
+        base: Pre-allocated 2-D scratch array.
+        current: Pre-allocated 2-D scratch array.
+        nxt: Pre-allocated 2-D scratch array.
 
     Returns:
         npt.NDArray[np.float64]: Scalar attraction field of shape ``(W, H)``.
     """
-    base = np.zeros((width, height), dtype=np.float64)
-    current = np.zeros((width, height), dtype=np.float64)
-    nxt = np.zeros((width, height), dtype=np.float64)
+    if base is None:
+        base = np.zeros((width, height), dtype=np.float64)
+    else:
+        base.fill(0.0)
+
+    if current is None:
+        current = np.zeros((width, height), dtype=np.float64)
+    else:
+        current.fill(0.0)
+
+    if nxt is None:
+        nxt = np.zeros((width, height), dtype=np.float64)
+    else:
+        nxt.fill(0.0)
 
     for x in range(width):
         for y in range(height):
@@ -88,6 +105,9 @@ def compute_flow_field(
     toxin_layers: npt.NDArray[np.float64],
     width: int,
     height: int,
+    base: npt.NDArray[np.float64] | None = None,
+    current: npt.NDArray[np.float64] | None = None,
+    nxt: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """Public wrapper: sum toxin layers and delegate to the Numba kernel.
 
@@ -96,13 +116,24 @@ def compute_flow_field(
         toxin_layers: Shape ``(num_toxins, W, H)`` toxin concentration layers.
         width: Grid width.
         height: Grid height.
+        base: Pre-allocated 2-D scratch array.
+        current: Pre-allocated 2-D scratch array.
+        nxt: Pre-allocated 2-D scratch array.
 
     Returns:
         npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
     """
+    if base is None:
+        base = np.zeros((width, height), dtype=np.float64)
+    if current is None:
+        current = np.zeros((width, height), dtype=np.float64)
+    if nxt is None:
+        nxt = np.zeros((width, height), dtype=np.float64)
+
     toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
     result = np.asarray(
-        _compute_flow_field(plant_energy, toxin_sum, width, height), dtype=np.float64
+        _compute_flow_field(plant_energy, toxin_sum, width, height, base, current, nxt),
+        dtype=np.float64,
     )
     return result
 

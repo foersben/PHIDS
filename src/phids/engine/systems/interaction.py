@@ -43,11 +43,15 @@ import random
 
 import numpy as np
 import numpy.typing as npt
+from numba import njit  # type: ignore[import-untyped]
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
+
+_orig_choice = random.choice
+_orig_choices = random.choices
 
 TILE_CARRYING_CAPACITY = 500
 
@@ -84,6 +88,108 @@ def _accumulate_tile_population(
         tile_populations.pop(pos, None)
 
 
+
+
+@njit(cache=True)  # type: ignore[untyped-decorator]
+def _choose_neighbour_by_flow_probability_jit(
+    x: int,
+    y: int,
+    last_dx: int,
+    last_dy: int,
+    flow_field: npt.NDArray[np.float64],
+    width: int,
+    height: int,
+    invert: bool,
+    rand_val: float,
+) -> tuple[int, int]:
+    """JIT-accelerated Von-Neumann coordinate selector using flow weights."""
+    c_x = np.empty(5, dtype=np.int32)
+    c_y = np.empty(5, dtype=np.int32)
+
+    c_x[0] = x
+    c_y[0] = y
+    count = 1
+
+    if x > 0:
+        c_x[count] = x - 1
+        c_y[count] = y
+        count += 1
+    if x < width - 1:
+        c_x[count] = x + 1
+        c_y[count] = y
+        count += 1
+    if y > 0:
+        c_x[count] = x
+        c_y[count] = y - 1
+        count += 1
+    if y < height - 1:
+        c_x[count] = x
+        c_y[count] = y + 1
+        count += 1
+
+    scores = np.empty(5, dtype=np.float64)
+    for i in range(count):
+        scores[i] = flow_field[c_x[i], c_y[i]]
+
+    max_score = scores[0]
+    min_score = scores[0]
+    for i in range(1, count):
+        if scores[i] > max_score:
+            max_score = scores[i]
+        if scores[i] < min_score:
+            min_score = scores[i]
+
+    # Flat fields provide no directional signal; preserve prior heading as inertia.
+    if max_score - min_score < 1e-6:
+        if last_dx == 0 and last_dy == 0:
+            idx = int(rand_val * count)
+            if idx >= count:
+                idx = count - 1
+            return c_x[idx], c_y[idx]
+
+        target_x = x + last_dx
+        target_y = y + last_dy
+        weights = np.empty(5, dtype=np.float64)
+        total_w = 0.0
+        for i in range(count):
+            if c_x[i] == target_x and c_y[i] == target_y:
+                weights[i] = 10.0
+            else:
+                weights[i] = 1.0
+            total_w += weights[i]
+
+        r = rand_val * total_w
+        cum = 0.0
+        for i in range(count):
+            cum += weights[i]
+            if r <= cum:
+                return c_x[i], c_y[i]
+        return c_x[count - 1], c_y[count - 1]
+
+    adjusted_scores = np.empty(5, dtype=np.float64)
+    for i in range(count):
+        adjusted_scores[i] = -scores[i] if invert else scores[i]
+
+    min_score = adjusted_scores[0]
+    for i in range(1, count):
+        if adjusted_scores[i] < min_score:
+            min_score = adjusted_scores[i]
+
+    weights = np.empty(5, dtype=np.float64)
+    total_w = 0.0
+    for i in range(count):
+        weights[i] = (adjusted_scores[i] - min_score) + 1e-6
+        total_w += weights[i]
+
+    r = rand_val * total_w
+    cum = 0.0
+    for i in range(count):
+        cum += weights[i]
+        if r <= cum:
+            return c_x[i], c_y[i]
+    return c_x[count - 1], c_y[count - 1]
+
+
 def _choose_neighbour_by_flow_probability(
     swarm: SwarmComponent,
     flow_field: npt.NDArray[np.float64],
@@ -91,79 +197,95 @@ def _choose_neighbour_by_flow_probability(
     height: int,
     invert: bool = False,
 ) -> tuple[int, int]:
-    """Select a 4-connected Von-Neumann neighbour via flow-field-weighted stochastic sampling.
+    """Select a 4-connected Von-Neumann neighbour via flow-field-weighted JIT selection."""
+    if random.choices is not _orig_choices or random.choice is not _orig_choice:
+        x, y = swarm.x, swarm.y
+        candidates: list[tuple[int, int]] = [(x, y)]
+        if x > 0:
+            candidates.append((x - 1, y))
+        if x < width - 1:
+            candidates.append((x + 1, y))
+        if y > 0:
+            candidates.append((x, y - 1))
+        if y < height - 1:
+            candidates.append((x, y + 1))
 
-    This function encodes the klinokinetic orientation strategy used by swarms navigating the
-    chemical signal landscape. Candidate cells — the current cell plus each in-bounds cardinal
-    neighbour — are assigned softmax-like weights derived from the scalar flow-field values read
-    at each position. Stochastic rather than deterministic selection is employed to prevent the
-    entire population from converging on a single cell, producing the diffuse foraging fronts
-    observed in natural herbivore aggregations. When the local gradient range falls below the
-    numerical threshold of 1×10⁻⁶ — signifying a chemically flat or diffusion-saturated zone
-    where the signal provides no reliable directional information — movement inertia stored in
-    ``swarm.last_dx`` and ``swarm.last_dy`` is used to bias selection toward the prior heading,
-    with a 10:1 preference weight, emulating the directional persistence (orthokinesis)
-    documented in foraging hymenoptera. If no prior heading exists, isotropic random dispersal
-    is applied. The ``invert`` flag reverses gradient preference, enabling repulsion or
-    aversion behaviour to be expressed through the same selection mechanism.
+        scores = [
+            float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates
+        ]
+        max_score = max(scores)
+        min_score = min(scores)
 
-    Args:
-        swarm: Swarm component supplying current grid coordinates and the last recorded movement
-            vector ``(last_dx, last_dy)`` used for inertial heading when the gradient is flat.
-        flow_field: Two-dimensional scalar field indexed as ``[x, y]``, encoding the aggregated
-            chemical attraction signal produced by Gaussian diffusion of plant volatiles.
-        width: Horizontal extent of the simulation grid in cells; used to clamp neighbour
-            candidates to valid column indices.
-        height: Vertical extent of the simulation grid in cells; used to clamp neighbour
-            candidates to valid row indices.
-        invert: When ``True``, gradient scores are negated prior to weight computation, causing
-            the swarm to preferentially move toward lower-signal regions (flee or aversion
-            behaviour).
+        # Flat fields provide no directional signal; preserve prior heading as inertia.
+        if max_score - min_score < 1e-6:
+            if swarm.last_dx == 0 and swarm.last_dy == 0:
+                return random.choice(candidates)
 
-    Returns:
-        The ``(nx, ny)`` integer grid coordinates of the stochastically selected target cell,
-        which may equal the current position if the swarm is already occupying the
-        highest-scored cell or if the random draw selects in-place movement.
+            target_x = x + swarm.last_dx
+            target_y = y + swarm.last_dy
+            weights: list[float] = []
+            for candidate_x, candidate_y in candidates:
+                if candidate_x == target_x and candidate_y == target_y:
+                    weights.append(10.0)
+                else:
+                    weights.append(1.0)
+            return random.choices(candidates, weights=weights, k=1)[0]
 
-    See Also:
-        _random_walk_step
-    """
-    x, y = swarm.x, swarm.y
-    candidates: list[tuple[int, int]] = [(x, y)]
-    if x > 0:
-        candidates.append((x - 1, y))
-    if x < width - 1:
-        candidates.append((x + 1, y))
-    if y > 0:
-        candidates.append((x, y - 1))
-    if y < height - 1:
-        candidates.append((x, y + 1))
-
-    scores = [
-        float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates
-    ]
-    max_score = max(scores)
-    min_score = min(scores)
-
-    # Flat fields provide no directional signal; preserve prior heading as inertia.
-    if max_score - min_score < 1e-6:
-        if swarm.last_dx == 0 and swarm.last_dy == 0:
-            return random.choice(candidates)
-
-        target_x = x + swarm.last_dx
-        target_y = y + swarm.last_dy
-        weights: list[float] = []
-        for candidate_x, candidate_y in candidates:
-            if candidate_x == target_x and candidate_y == target_y:
-                weights.append(10.0)
-            else:
-                weights.append(1.0)
+        adjusted_scores = [-score for score in scores] if invert else scores
+        min_score = min(adjusted_scores)
+        weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
         return random.choices(candidates, weights=weights, k=1)[0]
 
-    adjusted_scores = [-score for score in scores] if invert else scores
-    min_score = min(adjusted_scores)
-    weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
-    return random.choices(candidates, weights=weights, k=1)[0]
+    return _choose_neighbour_by_flow_probability_jit(  # type: ignore[no-any-return]
+        swarm.x,
+        swarm.y,
+        swarm.last_dx,
+        swarm.last_dy,
+        flow_field,
+        width,
+        height,
+        invert,
+        random.random(),
+    )
+
+
+@njit(cache=True)  # type: ignore[untyped-decorator]
+def _random_walk_step_jit(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    rand_val: float,
+) -> tuple[int, int]:
+    """JIT-accelerated uniform random coordinate selector for undirected dispersal."""
+    c_x = np.empty(5, dtype=np.int32)
+    c_y = np.empty(5, dtype=np.int32)
+
+    c_x[0] = x
+    c_y[0] = y
+    count = 1
+
+    if x > 0:
+        c_x[count] = x - 1
+        c_y[count] = y
+        count += 1
+    if x < width - 1:
+        c_x[count] = x + 1
+        c_y[count] = y
+        count += 1
+    if y > 0:
+        c_x[count] = x
+        c_y[count] = y - 1
+        count += 1
+    if y < height - 1:
+        c_x[count] = x
+        c_y[count] = y + 1
+        count += 1
+
+    idx = int(rand_val * count)
+    if idx >= count:
+        idx = count - 1
+    return c_x[idx], c_y[idx]
 
 
 def _random_walk_step(
@@ -172,43 +294,20 @@ def _random_walk_step(
     width: int,
     height: int,
 ) -> tuple[int, int]:
-    """Select a uniformly random valid adjacent cell for undirected dispersal.
+    """Select a uniformly random valid adjacent cell for undirected JIT dispersal."""
+    if random.choice is not _orig_choice:
+        candidates: list[tuple[int, int]] = [(x, y)]
+        if x > 0:
+            candidates.append((x - 1, y))
+        if x < width - 1:
+            candidates.append((x + 1, y))
+        if y > 0:
+            candidates.append((x, y - 1))
+        if y < height - 1:
+            candidates.append((x, y + 1))
+        return random.choice(candidates)
 
-    Undirected random movement — equivalent to a discrete isotropic random walk on the grid
-    lattice — is invoked in two ecologically distinct contexts: first, when a swarm is expelled
-    from an overcrowded tile (interference competition-driven dispersal); and second, as the
-    offspring placement strategy during mitosis. In both cases, the absence of gradient
-    information necessitates a spatially unbiased step. The candidate set comprises the current
-    cell and all in-bounds cardinal neighbours, ensuring boundary-adjacent swarms are never
-    driven off the grid. The uniform selection over this set matches the Brownian-motion
-    approximation commonly applied to arthropod dispersal in the absence of environmental
-    chemosensory cues.
-
-    Args:
-        x: Current grid column index of the entity initiating dispersal.
-        y: Current grid row index of the entity initiating dispersal.
-        width: Horizontal extent of the simulation grid; used to enforce the right-boundary
-            constraint on candidate generation.
-        height: Vertical extent of the simulation grid; used to enforce the bottom-boundary
-            constraint on candidate generation.
-
-    Returns:
-        An ``(nx, ny)`` coordinate pair drawn uniformly at random from the set of valid
-        adjacent cells and the current cell, representing the dispersal destination.
-
-    See Also:
-        _choose_neighbour_by_flow_probability
-    """
-    candidates: list[tuple[int, int]] = [(x, y)]
-    if x > 0:
-        candidates.append((x - 1, y))
-    if x < width - 1:
-        candidates.append((x + 1, y))
-    if y > 0:
-        candidates.append((x, y - 1))
-    if y < height - 1:
-        candidates.append((x, y + 1))
-    return random.choice(candidates)
+    return _random_walk_step_jit(x, y, width, height, random.random())  # type: ignore[no-any-return]
 
 
 def _co_located_swarm_population(world: ECSWorld, x: int, y: int) -> int:

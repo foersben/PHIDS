@@ -229,7 +229,7 @@ def validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
         height: Total grid height in cells.
 
     Raises:
-        HTTPException: HTTP 404 if the coordinates fall outside ``[0, width) × [0, height)``.
+        HTTPException: HTTP 404 if the coordinates fall outside ``[0, width) x [0, height)``.
     """
     if not (0 <= x < width and 0 <= y < height):
         raise HTTPException(
@@ -1015,6 +1015,7 @@ def build_live_dashboard_payload(
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.components.swarm import SwarmComponent
 
+    _ = substance_names
     env = loop.env
     world = loop.world
     max_e = float(env.plant_energy_layer.max()) or 1.0
@@ -1161,6 +1162,7 @@ def build_live_dashboard_payload(
         "grid_width": env.width,
         "grid_height": env.height,
         "max_energy": max_e,
+        "plant_energy": env.plant_energy_layer.tolist(),
         "species_energy": species_energy,
         "all_flora_species": all_flora_species,
         "signal_overlay": signal_overlay.tolist() if signal_overlay is not None else [],

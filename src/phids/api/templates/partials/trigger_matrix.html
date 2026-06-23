@@ -26,25 +26,27 @@
       </thead>
       <tbody class="divide-y divide-slate-100">
         {% for fp in flora_species %}
+        {% set flora_idx = loop.index0 %}
         <tr>
           <td class="px-4 py-3 font-medium text-slate-700">{{ fp.name }}</td>
           {% for pp in herbivore_species %}
+          {% set herbivore_idx = loop.index0 %}
           <td class="px-4 py-3 text-center">
             <select
               hx-post="/api/matrices/trigger"
-              hx-vals='{"flora_idx": {{ loop.parent.index0 }}, "herbivore_idx": {{ loop.index0 }}}'
+              hx-vals='{"flora_idx": {{ flora_idx }}, "herbivore_idx": {{ herbivore_idx }}}'
               hx-trigger="change"
               hx-target="#trigger-matrix-view" hx-swap="outerHTML"
               hx-include="this"
               name="substance_id"
               class="border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
               <option value="-1"
-                {% if trigger_matrix[loop.parent.index0][loop.index0] == -1 %}selected{% endif %}>
+                {% if trigger_matrix[flora_idx][herbivore_idx] == -1 %}selected{% endif %}>
                 — none —
               </option>
               {% for sub in substances %}
               <option value="{{ sub.substance_id }}"
-                {% if trigger_matrix[loop.parent.index0][loop.index0] == sub.substance_id %}selected{% endif %}>
+                {% if trigger_matrix[flora_idx][herbivore_idx] == sub.substance_id %}selected{% endif %}>
                 {{ sub.name }}
               </option>
               {% endfor %}

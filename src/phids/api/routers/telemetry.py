@@ -265,7 +265,8 @@ async def export_telemetry_format(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, defense_economy, biomass_stack, or metabolic."
+                f"Unknown data_type '{data_type}'. Use timeseries, phasespace, "
+                "defense_economy, biomass_stack, or metabolic."
             ),
         )
 
@@ -401,5 +402,6 @@ async def telemetry_chart(request: Request) -> Response:
             "legend": legend,
             "latest_metrics": latest_metrics,
             "live_summary": live_summary,
+            "tick_value": api_main._sim_loop.tick if api_main._sim_loop is not None else 0,
         },
     )

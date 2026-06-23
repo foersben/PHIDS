@@ -26,14 +26,16 @@
       </thead>
       <tbody class="divide-y divide-slate-100">
         {% for pp in herbivore_species %}
+        {% set herbivore_idx = loop.index0 %}
         <tr>
           <td class="px-4 py-3 font-medium text-slate-700">{{ pp.name }}</td>
           {% for fp in flora_species %}
+          {% set flora_idx = loop.index0 %}
           <td class="px-4 py-3 text-center">
             <input type="checkbox"
-              {% if diet_matrix[loop.parent.index0][loop.index0] %}checked{% endif %}
+              {% if diet_matrix[herbivore_idx][flora_idx] %}checked{% endif %}
               hx-post="/api/matrices/diet"
-              hx-vals='{"herbivore_idx": {{ loop.parent.index0 }}, "flora_idx": {{ loop.index0 }}, "compatible": "toggle"}'
+              hx-vals='{"herbivore_idx": {{ herbivore_idx }}, "flora_idx": {{ flora_idx }}, "compatible": "toggle"}'
               hx-trigger="change"
               hx-target="#diet-matrix-view" hx-swap="outerHTML"
               class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">

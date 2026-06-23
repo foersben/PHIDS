@@ -147,6 +147,11 @@ class GridEnvironment:
         # ------------------------------------------------------------------
         self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
+        # Pre-allocated scratch buffers for flow field JIT calculations
+        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+
     # ------------------------------------------------------------------
     # Wind helpers
     # ------------------------------------------------------------------

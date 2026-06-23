@@ -49,7 +49,7 @@ run_tests() {
 
 run_docs() {
   echo ">>> Building docs in strict mode"
-  uv run mkdocs build --strict
+  uv run zensical build
 }
 
 case "$job" in

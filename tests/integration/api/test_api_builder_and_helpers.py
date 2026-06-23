@@ -749,6 +749,7 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
         "grid_height",
         "max_energy",
         "species_energy",
+        "plant_energy",
         "all_flora_species",
         "signal_overlay",
         "toxin_overlay",
