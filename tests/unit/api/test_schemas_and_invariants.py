@@ -22,8 +22,8 @@ from pydantic import ValidationError
 from phids.api.schemas import (
     AllOfConditionSchema,
     DietCompatibilityMatrix,
-    HerbivorePresenceConditionSchema,
     FloraSpeciesParams,
+    HerbivorePresenceConditionSchema,
     HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,

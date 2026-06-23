@@ -1,5 +1,4 @@
-"""
-Test coverage for PHIDS DraftState and UI state mutation invariants.
+"""Test coverage for PHIDS DraftState and UI state mutation invariants.
 
 This module implements unit tests for the PHIDS DraftState and UI state mutation logic. The test suite verifies deterministic scenario construction, species and substance management, trigger rule editing, and placement mutation, ensuring compliance with the Rule of 16, O(1) spatial hash invariants, and double-buffered simulation logic. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and UI configuration. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
 """
@@ -11,8 +10,8 @@ from typing import cast
 
 import pytest
 
-from phids.api.services.draft_service import DraftService
 from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams, SimulationConfig
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
@@ -91,10 +90,10 @@ def test_condition_helper_utilities_and_type_labels() -> None:
         "substance_id": 7,
     }
     group_node = cast(
-        dict[str, object],
+        "dict[str, object]",
         _default_activation_condition_node("all_of", herbivore_species_id=2),
     )
-    group_conditions = cast(list[dict[str, object]], group_node["conditions"])
+    group_conditions = cast("list[dict[str, object]]", group_node["conditions"])
     assert group_conditions[0]["herbivore_species_id"] == 2
     assert _default_activation_condition_node("any_of")["kind"] == "any_of"
 
@@ -219,13 +218,13 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
     draft_service.add_swarm_placement(draft, 1, 3, 3, 5, 8.0)
 
     draft_service.remove_flora(draft, 0)
-    assert [cast(FloraSpeciesParams, flora).species_id for flora in draft.flora_species] == [0]
+    assert [cast("FloraSpeciesParams", flora).species_id for flora in draft.flora_species] == [0]
     assert draft.diet_matrix == [[False], [True]]
     assert draft.trigger_rules[0].flora_species_id == 0
 
     draft_service.remove_herbivore(draft, 0)
     assert [
-        cast(HerbivoreSpeciesParams, herbivore).species_id for herbivore in draft.herbivore_species
+        cast("HerbivoreSpeciesParams", herbivore).species_id for herbivore in draft.herbivore_species
     ] == [0]
     assert draft.diet_matrix == [[True]]
     assert draft.trigger_rules[0].herbivore_species_id == 0
@@ -242,8 +241,7 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
 
 
 def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> None:
-    """
-    Validates scalar biotope normalization, substance-registry compaction, and diet-cell mutation semantics.
+    """Validates scalar biotope normalization, substance-registry compaction, and diet-cell mutation semantics.
 
     This experiment verifies the architectural boundary now concentrated in ``DraftService`` for
     three previously scattered mutation families: scalar biotope normalization, bounded chemical
@@ -520,7 +518,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     draft_service.add_plant_placement(draft, 0, 2, 2, 8.5)
     draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 9.0)
 
-    config = cast(SimulationConfig, draft.build_sim_config())
+    config = cast("SimulationConfig", draft.build_sim_config())
     assert config.mycorrhizal_growth_interval_ticks == 11
     assert config.z2_flora_species_extinction == 0
     assert config.z4_herbivore_species_extinction == 0

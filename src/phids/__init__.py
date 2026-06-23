@@ -1,5 +1,4 @@
-"""
-PHIDS (Plant-Herbivore Interaction & Defense Simulator) top-level package.
+"""PHIDS (Plant-Herbivore Interaction & Defense Simulator) top-level package.
 
 This package serves as the canonical entry point for the PHIDS ecosystem simulation engine,
 orchestrating the initialization of logging and exposing core engine modules. The architectural

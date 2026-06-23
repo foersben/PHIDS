@@ -274,6 +274,7 @@ class GridEnvironment:
 
     def to_dict(self) -> dict[str, object]:
         """Return a lightweight snapshot dict suitable for msgpack serialisation.
+
         Returns:
             dict: Mapping containing numpy arrays converted to nested lists.
         """

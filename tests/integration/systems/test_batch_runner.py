@@ -276,8 +276,8 @@ def test_run_and_save_delegates_to_single_runner(monkeypatch) -> None:
 
 def test_run_single_headless_breaks_when_termination_detected(monkeypatch) -> None:
     """Headless driver exits early when the simulation loop reports termination."""
-    from phids.engine import batch as batch_mod
     import phids.engine.loop as loop_mod
+    from phids.engine import batch as batch_mod
 
     class _TerminatedResult:
         terminated = True
@@ -320,7 +320,7 @@ def test_execute_batch_handles_success_and_failure_and_writes_strict_json(
         def __init__(self, *_args: object, **_kwargs: object) -> None:
             self._submitted = 0
 
-        def __enter__(self) -> "_FakeExecutor":
+        def __enter__(self) -> _FakeExecutor:
             return self
 
         def __exit__(self, *_args: object) -> bool:

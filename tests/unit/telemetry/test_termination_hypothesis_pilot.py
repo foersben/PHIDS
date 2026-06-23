@@ -11,7 +11,8 @@ from phids.telemetry.conditions import check_termination
 from phids.telemetry.tick_metrics import collect_tick_metrics
 
 try:
-    from hypothesis import HealthCheck, given, settings, strategies as st
+    from hypothesis import HealthCheck, given, settings
+    from hypothesis import strategies as st
 except ModuleNotFoundError:
     pytest.skip("Install hypothesis to run optional property pilots.", allow_module_level=True)
 

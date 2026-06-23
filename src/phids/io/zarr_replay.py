@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Protocol, TypedDict, cast
 
 import numpy as np
+
 from phids.io.replay import ReplayState, ReplayValue, deserialise_state
 
 try:
@@ -295,7 +296,7 @@ class ZarrReplayBuffer:
         frame_key = f"frames/{self._frame_count:08d}"
         if frame_key not in root:
             root.create_group(frame_key)
-        frame_group = cast(zarr.Group, root[frame_key])
+        frame_group = cast("zarr.Group", root[frame_key])
 
         for field_name, field_data in fields.items():
             self._store_field(frame_group, field_name, field_data)
@@ -383,7 +384,7 @@ class ZarrReplayBuffer:
         if frame_key not in root:
             raise IndexError(f"Frame {tick} not found in Zarr store (key: {frame_key})")
 
-        frame_group = cast(zarr.Group, root[frame_key])
+        frame_group = cast("zarr.Group", root[frame_key])
         state: ReplayState = {}
 
         # Restore metadata
@@ -401,7 +402,7 @@ class ZarrReplayBuffer:
                     continue
                 array_data = np.asarray(field_obj[:])
                 # Convert back to native Python lists for compatibility
-                state[field_name] = cast(ReplayValue, array_data.tolist())
+                state[field_name] = cast("ReplayValue", array_data.tolist())
         except (AttributeError, TypeError):
             pass
 
@@ -409,7 +410,7 @@ class ZarrReplayBuffer:
         try:
             for attr_name, attr_value in frame_group.attrs.items():
                 if attr_name not in state:
-                    state[attr_name] = cast(ReplayValue, attr_value)
+                    state[attr_name] = cast("ReplayValue", attr_value)
         except (AttributeError, TypeError):
             pass
 

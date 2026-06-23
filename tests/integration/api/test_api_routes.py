@@ -1,6 +1,9 @@
 """Experimental validation suite for test api routes.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and
+simulation invariants. The tests map computational rules to biological interpretations, including metabolic
+attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation
+details remain aligned with the PHIDS scientific model.
 """
 
 from __future__ import annotations
@@ -11,7 +14,16 @@ from phids.api.main import app
 def test_required_routes_present() -> None:
     """Assert that the required API routes are present."""
 
-    paths = {route.path for route in app.router.routes}
+    def get_route_paths(router) -> set[str]:
+        route_paths = set()
+        for route in router.routes:
+            if hasattr(route, "path"):
+                route_paths.add(route.path)
+            elif hasattr(route, "original_router"):
+                route_paths.update(get_route_paths(route.original_router))
+        return route_paths
+
+    paths = get_route_paths(app.router)
 
     assert "/api/scenario/load" in paths
     assert "/api/simulation/start" in paths

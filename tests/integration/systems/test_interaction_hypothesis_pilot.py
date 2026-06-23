@@ -14,7 +14,8 @@ from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
 
 try:
-    from hypothesis import given, settings, strategies as st
+    from hypothesis import given, settings
+    from hypothesis import strategies as st
 except ModuleNotFoundError:
     pytest.skip("Install hypothesis to run optional property pilots.", allow_module_level=True)
 

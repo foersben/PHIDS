@@ -34,9 +34,10 @@ import math
 import multiprocessing
 import os
 import random
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, TypeAlias, cast
+from typing import TypeAlias, cast
 
 import numpy as np
 
@@ -164,7 +165,7 @@ def _run_single_headless(
                 break
 
     asyncio.run(_advance())
-    rows: list[TelemetryRow] = [cast(TelemetryRow, dict(row)) for row in loop.telemetry._rows]
+    rows: list[TelemetryRow] = [cast("TelemetryRow", dict(row)) for row in loop.telemetry._rows]
     logger.debug(
         "Headless run complete (seed=%d, ticks=%d, rows=%d)",
         seed,
@@ -439,7 +440,7 @@ class BatchRunner:
             scenario_name or str(scenario_dict.get("scenario_name", ""))
         ).strip()
         aggregate["scenario_name"] = persisted_scenario_name or "unnamed"
-        aggregate = cast(BatchAggregate, _sanitize_for_json(aggregate))
+        aggregate = cast("BatchAggregate", _sanitize_for_json(aggregate))
 
         summary_path = save_dir / f"{job_id}_summary.json"
         with summary_path.open("w", encoding="utf-8") as fp:

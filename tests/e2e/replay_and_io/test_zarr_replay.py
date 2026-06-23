@@ -10,9 +10,9 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+import msgpack  # type: ignore[import-untyped]
 import numpy as np
 import pytest
-import msgpack  # type: ignore[import-untyped]
 
 try:
     from phids.io.zarr_replay import ZarrReplayBuffer

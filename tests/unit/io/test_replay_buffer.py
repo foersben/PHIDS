@@ -109,19 +109,19 @@ def test_replay_buffer_read_spilled_frame_requires_existing_spill_file() -> None
     """Reading spilled payloads fails with deterministic IndexError when no spill file exists."""
     replay = ReplayBuffer(spill_to_disk=True)
     with pytest.raises(IndexError, match="Spill file is not available"):
-        replay._read_spilled_frame(0)  # noqa: SLF001
+        replay._read_spilled_frame(0)
 
 
 def test_replay_buffer_owned_spill_cleanup_removes_file(tmp_path: Path) -> None:
     """Owned spill files are removed during cleanup to avoid stale temporary artifacts."""
     replay = ReplayBuffer(spill_to_disk=True)
-    replay._spill_path = tmp_path / "owned_spill.bin"  # noqa: SLF001
-    replay._owns_spill_file = True  # noqa: SLF001
-    replay._spill_path.write_bytes(b"frame-bytes")  # noqa: SLF001
+    replay._spill_path = tmp_path / "owned_spill.bin"
+    replay._owns_spill_file = True
+    replay._spill_path.write_bytes(b"frame-bytes")
 
-    replay._cleanup_spill_file()  # noqa: SLF001
+    replay._cleanup_spill_file()
 
-    assert not replay._spill_path.exists()  # noqa: SLF001
+    assert not replay._spill_path.exists()
 
 
 def test_replay_buffer_owned_spill_cleanup_swallows_oserror(
@@ -130,8 +130,8 @@ def test_replay_buffer_owned_spill_cleanup_swallows_oserror(
 ) -> None:
     """Cleanup remains non-fatal when owned spill unlink raises OSError."""
     replay = ReplayBuffer(spill_to_disk=True)
-    replay._spill_path = tmp_path / "owned_spill_error.bin"  # noqa: SLF001
-    replay._owns_spill_file = True  # noqa: SLF001
+    replay._spill_path = tmp_path / "owned_spill_error.bin"
+    replay._owns_spill_file = True
 
     def _raise_unlink_error(self: Path, *, missing_ok: bool = False) -> None:  # noqa: ARG001
         raise OSError("simulated unlink failure")
@@ -139,7 +139,7 @@ def test_replay_buffer_owned_spill_cleanup_swallows_oserror(
     monkeypatch.setattr(Path, "unlink", _raise_unlink_error)
 
     # Should not raise; cleanup logs debug and continues.
-    replay._cleanup_spill_file()  # noqa: SLF001
+    replay._cleanup_spill_file()
 
 
 def test_replay_buffer_get_frame_rejects_out_of_range_indices() -> None:
@@ -160,7 +160,7 @@ def test_replay_buffer_read_spilled_frame_rejects_partial_payload(tmp_path: Path
     spill_path.write_bytes(b"abc")
 
     replay = ReplayBuffer(spill_to_disk=True, spill_path=spill_path)
-    replay._spilled_index = [(0, 8)]  # noqa: SLF001
+    replay._spilled_index = [(0, 8)]
 
     with pytest.raises(IndexError, match="Spill frame could not be read completely"):
-        replay._read_spilled_frame(0)  # noqa: SLF001
+        replay._read_spilled_frame(0)

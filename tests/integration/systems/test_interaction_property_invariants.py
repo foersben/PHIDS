@@ -14,9 +14,8 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
 
-
 _NO_DIET = np.zeros((1, 1), dtype=np.bool_)
-_NO_DIET_MATRIX = cast(list[list[bool]], _NO_DIET)
+_NO_DIET_MATRIX = cast("list[list[bool]]", _NO_DIET)
 
 
 def _run_attrition_step(

@@ -49,7 +49,6 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 
-
 TILE_CARRYING_CAPACITY = 500
 
 

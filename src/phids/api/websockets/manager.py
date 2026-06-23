@@ -12,10 +12,10 @@ observability of ecological dynamics.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
 import json
 import logging
 import zlib
+from collections.abc import Callable
 
 import msgpack  # type: ignore[import-untyped]
 from fastapi import WebSocket, WebSocketDisconnect

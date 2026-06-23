@@ -56,16 +56,16 @@ from phids.api.presenters.dashboard import (
     build_preview_cell_details,
     validate_cell_coordinates,
 )
-from phids.api.services.draft_service import DraftService
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
+    HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    HerbivoreSpeciesParams,
     SimulationConfig,
     TriggerConditionSchema,
 )
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import DraftState, SubstanceDefinition, TriggerRule, reset_draft
 from phids.engine.components.plant import PlantComponent
 from phids.engine.loop import SimulationLoop

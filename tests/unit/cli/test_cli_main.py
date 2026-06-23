@@ -72,10 +72,11 @@ def test_main_routes_mcp_flag_to_mcp_server(monkeypatch: pytest.MonkeyPatch) -> 
 
 def test_main_rejects_invalid_log_level() -> None:
     """CLI exits with a usage error when the log level is outside the configured enum."""
-    import click
+    import typer
+
     import phids.__main__ as cli
 
-    with pytest.raises(click.BadParameter):
+    with pytest.raises(typer.BadParameter):
         cli.main(["--log-level", "verbose"])
 
 

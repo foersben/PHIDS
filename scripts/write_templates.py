@@ -2,7 +2,7 @@
 
 import pathlib
 
-BASE = pathlib.Path("src/phids/api/templates")
+BASE = pathlib.Path(__file__).resolve().parent.parent / "src/phids/api/templates"
 PARTIALS = BASE / "partials"
 BASE.mkdir(parents=True, exist_ok=True)
 PARTIALS.mkdir(parents=True, exist_ok=True)

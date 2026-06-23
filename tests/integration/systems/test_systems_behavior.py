@@ -1,27 +1,26 @@
-"""
-Test suite for PHIDS simulation systems: lifecycle, interaction, signaling, and termination.
+"""Test suite for PHIDS simulation systems: lifecycle, interaction, signaling, and termination.
 
 This module implements rigorous scientific tests for the PHIDS simulation systems, including lifecycle, interaction, signaling, and termination. Each test function is documented to state the invariant or biological behavior being verified and its scientific rationale, supporting reproducible validation of emergent ecological dynamics, double-buffered state management, and O(1) spatial hash invariants. The test suite ensures compliance with deterministic simulation logic, data-oriented modeling, and the Rule of 16 for memory allocation. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import random
+from collections.abc import Callable
 
 import pytest
 
 from phids.api.schemas import (
     AllOfConditionSchema,
     AnyOfConditionSchema,
-    HerbivorePresenceConditionSchema,
     FloraSpeciesParams,
+    HerbivorePresenceConditionSchema,
     SubstanceActiveConditionSchema,
     TriggerConditionSchema,
 )
 from phids.engine.components.plant import PlantComponent
-from phids.engine.components.swarm import SwarmComponent
 from phids.engine.components.substances import SubstanceComponent
+from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction

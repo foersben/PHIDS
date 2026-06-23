@@ -28,13 +28,13 @@ from __future__ import annotations
 
 from typing import TypeAlias, TypedDict, cast
 
+from phids.api.schemas import TriggerConditionSchema
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import SUBSTANCE_EMIT_RATE
-from phids.api.schemas import TriggerConditionSchema
 
 ActivationNode: TypeAlias = dict[str, object]
 
@@ -164,7 +164,7 @@ def _check_activation_condition(
             _check_activation_condition(
                 plant,
                 owner_plant_id,
-                cast(ActivationNode, child),
+                cast("ActivationNode", child),
                 env,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,
@@ -183,7 +183,7 @@ def _check_activation_condition(
             _check_activation_condition(
                 plant,
                 owner_plant_id,
-                cast(ActivationNode, child),
+                cast("ActivationNode", child),
                 env,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,

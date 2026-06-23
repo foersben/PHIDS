@@ -16,20 +16,21 @@ from starlette.requests import Request
 from phids.api import main as api_main
 from phids.api.main import app
 from phids.api.presenters.dashboard import (
-    build_live_dashboard_payload,
     build_draft_mycorrhizal_links,
+    build_live_dashboard_payload,
     validate_cell_coordinates,
 )
-from phids.api.services.draft_service import DraftService
+from phids.api.routers.config import config_trigger_rule_condition_node_update
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
+    HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
-    HerbivoreSpeciesParams,
     SimulationConfig,
     TriggerConditionSchema,
 )
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     ActivationConditionNode,
     DraftState,
@@ -42,7 +43,6 @@ from phids.api.ui_state import (
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
-from phids.api.routers.config import config_trigger_rule_condition_node_update
 
 draft_service = DraftService()
 

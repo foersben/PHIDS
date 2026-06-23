@@ -37,11 +37,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import polars as pl
+
 from phids.telemetry.analytics import TelemetryRow
 
 if TYPE_CHECKING:
-    from matplotlib.axes import Axes
     import pandas as pd  # type: ignore[import-untyped]
+    from matplotlib.axes import Axes
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ def _append_species_id(csv_ids: str | None, species_id: int) -> str:
     return ",".join(str(i) for i in sorted(ids))
 
 
-def decimate_dataframe(df: "pd.DataFrame", tick_interval: int) -> "pd.DataFrame":
+def decimate_dataframe(df: pd.DataFrame, tick_interval: int) -> pd.DataFrame:
     """Return a tick-decimated DataFrame using stride semantics.
 
     Args:
@@ -193,7 +194,7 @@ def filter_telemetry_rows(
     return filtered
 
 
-def filter_dataframe_columns(df: "pd.DataFrame", columns: str | None) -> "pd.DataFrame":
+def filter_dataframe_columns(df: pd.DataFrame, columns: str | None) -> pd.DataFrame:
     """Return a DataFrame restricted to requested columns.
 
     Args:
@@ -266,7 +267,7 @@ def export_bytes_json(df: pl.DataFrame) -> bytes:
 # ---------------------------------------------------------------------------
 
 
-def telemetry_to_dataframe(rows: TelemetryRows) -> "pd.DataFrame":
+def telemetry_to_dataframe(rows: TelemetryRows) -> pd.DataFrame:
     """Flatten per-species nested dicts from raw telemetry rows into a pandas DataFrame.
 
     Converts the list of row dicts accumulated by
@@ -462,10 +463,10 @@ def generate_png_bytes(
     else:
         plt.close(fig)
         raise ValueError(
-            (
+
                 f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, "
                 "defense_economy, biomass_stack, or survival_probability"
-            )
+
         )
 
     fig.tight_layout()
@@ -477,7 +478,7 @@ def generate_png_bytes(
 
 
 def _plot_timeseries(
-    ax: "Axes",
+    ax: Axes,
     rows: TelemetryRows,
     ticks: list[int],
     *,
@@ -522,7 +523,7 @@ def _plot_timeseries(
 
 
 def _plot_phasespace(
-    ax: "Axes",
+    ax: Axes,
     rows: TelemetryRows,
     *,
     prey_species_id: int,
@@ -574,7 +575,7 @@ def _plot_phasespace(
 
 
 def _plot_defense_economy(
-    ax: "Axes",
+    ax: Axes,
     rows: TelemetryRows,
     ticks: list[int],
     *,
@@ -617,7 +618,7 @@ def _plot_defense_economy(
 
 
 def _plot_biomass_stack(
-    ax: "Axes",
+    ax: Axes,
     rows: TelemetryRows,
     ticks: list[int],
     *,
@@ -662,7 +663,7 @@ def _plot_biomass_stack(
 
 
 def _plot_survival_probability(
-    ax: "Axes",
+    ax: Axes,
     rows: TelemetryRows,
     ticks: list[int],
     *,
@@ -792,10 +793,10 @@ def generate_tikz_str(
             y_label=y_label,
         )
     raise ValueError(
-        (
+
             f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, "
             "biomass_stack, or survival_probability"
-        )
+
     )
 
 
@@ -1119,7 +1120,7 @@ def aggregate_to_dataframe(
     *,
     flora_names: dict[int, str] | None = None,
     herbivore_names: dict[int, str] | None = None,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Convert a batch aggregate summary dict to a wide pandas DataFrame.
 
     Constructs a per-tick DataFrame from the mean and standard deviation arrays

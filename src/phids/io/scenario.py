@@ -20,8 +20,9 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping, TypeAlias
+from typing import TypeAlias
 
 from phids.api.schemas import SimulationConfig
 

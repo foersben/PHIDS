@@ -51,7 +51,7 @@ class Entity:
         Returns:
             The component instance for the entity.
         """
-        return cast(C, self._components[component_type])
+        return cast("C", self._components[component_type])
 
     def has_component(self, component_type: type[object]) -> bool:
         """Return True if the entity has a component of the given type.

@@ -219,7 +219,7 @@ async def telemetry_table_preview(
 @router.get("/api/export/{data_type}", summary="Export telemetry data in academic formats")
 async def export_telemetry_format(
     data_type: str,
-    format: str = "csv",  # noqa: A002
+    format: str = "csv",
     prey_species_id: int = 0,
     herbivore_species_id: int = 0,
     columns: str | None = None,

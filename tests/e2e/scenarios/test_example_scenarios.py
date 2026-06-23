@@ -1,5 +1,4 @@
-"""
-Test coverage for PHIDS curated example scenarios and scenario validation invariants.
+"""Test coverage for PHIDS curated example scenarios and scenario validation invariants.
 
 This module implements integration tests for PHIDS curated example scenarios. The test suite verifies scenario loading, placement validation, and simulation step execution, ensuring compliance with deterministic scenario construction, Rule of 16 entity caps, and double-buffered simulation logic. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and scenario configuration. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
 """

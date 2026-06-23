@@ -8,8 +8,8 @@ regressions in the simulation loop.
 
 from __future__ import annotations
 
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -21,6 +21,8 @@ from phids.engine.systems.interaction import _co_located_swarm_population as int
 from phids.engine.systems.signaling import (
     _check_activation_condition,
     _collect_mycorrhizal_targets,
+)
+from phids.engine.systems.signaling import (
     _co_located_swarm_population as signaling_co_located,
 )
 from phids.io.replay import ReplayBuffer

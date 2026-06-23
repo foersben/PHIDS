@@ -18,7 +18,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Callable, Protocol, cast
+from collections.abc import Callable
+from typing import Protocol, cast
 
 from phids.api.schemas import (
     FloraSpeciesParams,
@@ -36,10 +37,10 @@ from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
 from phids.io.replay import ReplayBuffer, ReplayState
 from phids.shared.constants import MAX_REPLAY_FRAMES
+from phids.shared.logging_config import get_simulation_debug_interval
 from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
 from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
-from phids.shared.logging_config import get_simulation_debug_interval
 
 
 class _ReplayBackend(Protocol):
@@ -372,7 +373,7 @@ class SimulationLoop:
     def _append_replay_frame(self) -> None:
         """Append one replay frame using the backend-specific ingestion path."""
         if self._replay_supports_raw_arrays:
-            replay_backend = cast(_RawArrayReplayBackend, self.replay)
+            replay_backend = cast("_RawArrayReplayBackend", self.replay)
             replay_backend.append_raw_arrays(
                 tick=self.tick,
                 env=self.env,
@@ -524,7 +525,7 @@ class SimulationLoop:
                 self.world,
                 self.env,
                 self.tick,
-                cast(dict[int, object], self._flora_params),
+                cast("dict[int, object]", self._flora_params),
                 mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
                 mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
                 mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
@@ -702,7 +703,7 @@ class SimulationLoop:
             return self._cached_snapshot
 
         snapshot = cast(
-            ReplayState,
+            "ReplayState",
             {
                 "tick": self.tick,
                 "terminated": self.terminated,

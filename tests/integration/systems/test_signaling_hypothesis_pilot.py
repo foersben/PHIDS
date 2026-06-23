@@ -9,7 +9,8 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.systems.signaling import _check_activation_condition
 
 try:
-    from hypothesis import given, settings, strategies as st
+    from hypothesis import given, settings
+    from hypothesis import strategies as st
 except ModuleNotFoundError:
     pytest.skip("Install hypothesis to run optional property pilots.", allow_module_level=True)
 

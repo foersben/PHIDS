@@ -552,7 +552,7 @@ def get_draft() -> DraftState:
     Returns:
         DraftState: The active draft configuration.
     """
-    global _draft  # noqa: PLW0603
+    global _draft
     if _draft is None:
         _draft = DraftState.default()
         logger.info("Draft state initialised with built-in default scenario")
@@ -565,7 +565,7 @@ def set_draft(state: DraftState) -> None:
     Args:
         state: New :class:`DraftState` to activate.
     """
-    global _draft  # noqa: PLW0603
+    global _draft
     _draft = state
     logger.info(
         "Draft state replaced (scenario_name=%s, flora=%d, herbivores=%d, substances=%d)",
@@ -578,6 +578,6 @@ def set_draft(state: DraftState) -> None:
 
 def reset_draft() -> None:
     """Reset the draft state to the built-in default."""
-    global _draft  # noqa: PLW0603
+    global _draft
     _draft = DraftState.default()
     logger.info("Draft state reset to built-in default scenario")

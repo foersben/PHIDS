@@ -363,7 +363,7 @@ def _links_touching_cell(
 # ---------------------------------------------------------------------------
 
 
-def _is_live_substance_visible(substance: "SubstanceComponent") -> bool:
+def _is_live_substance_visible(substance: SubstanceComponent) -> bool:
     """Determine whether a live substance component warrants serialisation in UI payloads.
 
     A substance is considered visible — and therefore included in tooltip and dashboard
@@ -437,7 +437,7 @@ def _live_substance_state_payload(
 
 
 def _serialize_live_substance(
-    substance: "SubstanceComponent",
+    substance: SubstanceComponent,
     *,
     herbivore_names: dict[int, str],
     substance_names: dict[int, str],

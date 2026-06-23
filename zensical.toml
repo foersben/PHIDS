@@ -1,0 +1,104 @@
+[project]
+site_name = "PHIDS"
+site_description = "Plant-Herbivore Interaction & Defense Simulator"
+site_url = "https://foersben.github.io/PHIDS/"
+repo_name = "foersben/PHIDS"
+repo_url = "https://github.com/foersben/PHIDS"
+docs_dir = "docs"
+site_dir = "site"
+language = "en"
+
+extra_css = [
+    "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+]
+
+extra_javascript = [
+    "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js",
+    "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js",
+    "https://unpkg.com/mermaid@10/dist/mermaid.min.js",
+    "javascripts/katex.js",
+    "javascripts/mermaid.js"
+]
+
+[project.theme]
+variant = "modern"
+features = [
+    "navigation.tabs",
+    "navigation.sections",
+    "navigation.top",
+    "toc.integrate",
+    "search.suggest",
+    "search.highlight",
+    "content.code.copy",
+]
+palette = [
+    { media = "(prefers-color-scheme: dark)", scheme = "slate", primary = "black", accent = "deep-orange" },
+    { media = "(prefers-color-scheme: light)", scheme = "default", primary = "black", accent = "deep-orange" },
+]
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+"pymdownx.highlight" = { anchor_linenums = true }
+"pymdownx.inlinehilite" = {}
+"pymdownx.arithmatex" = { generic = true }
+"pymdownx.superfences" = { custom_fences = [
+    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+] }
+
+
+[[project.nav]]
+Home = "index.md"
+
+[[project.nav]]
+"Scientific Model" = [
+    { "Mathematical Framework" = "scientific_model/mathematical_framework.md" },
+    { "Reaction-Diffusion PDEs" = "scientific_model/reaction_diffusion.md" },
+    { "Chemotaxis & Flow Fields" = "scientific_model/chemotaxis.md" },
+    { "Population Dynamics" = "scientific_model/population_dynamics.md" },
+    { "Herbivore Behavior & Kinematics" = "scientific_model/herbivore_behavior.md" },
+    { "Flora & Symbiosis" = "scientific_model/flora_and_symbiosis.md" },
+    { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
+]
+
+[[project.nav]]
+"Technical Architecture" = [
+    { "System Architecture" = "technical_architecture/system_architecture.md" },
+    { "Engine Execution" = "technical_architecture/engine_execution.md" },
+    { "Interfaces & UI" = "technical_architecture/interfaces_and_ui.md" },
+    { "Telemetry" = "technical_architecture/telemetry.md" },
+]
+
+[[project.nav]]
+Scenarios = [
+    { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
+    { "Curated Examples" = "scenario_guide/curated_examples.md" },
+]
+
+[[project.nav]]
+"Development & Reference" = [
+    { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
+    { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
+    { "Module Map" = "reference/module-map.md" },
+    { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
+    { "Requirements Traceability" = "reference/requirements-traceability.md" },
+    { "Python API Reference" = "reference/api.md" },
+    { "Legacy Archive" = "legacy/index.md" },
+]
+
+[project.plugins.htmlproofer]
+
+[project.plugins.mkdocstrings]
+default_handler = "python"
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+show_root_heading = true
+show_source = true
+heading_level = 2
+show_signature_annotations = true

@@ -75,7 +75,7 @@ def _discover_persisted_batches() -> list[BatchJobState]:
         ticks = aggregate.get("ticks", [])
         started_at = datetime.datetime.fromtimestamp(
             summary_path.stat().st_mtime,
-            tz=datetime.timezone.utc,
+            tz=datetime.UTC,
         )
         discovered.append(
             BatchJobState(
@@ -122,7 +122,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
         completed=0,
         total=payload.runs,
         scenario_name=scenario_name,
-        started_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+        started_at=datetime.datetime.now(tz=datetime.UTC).isoformat(),
         max_ticks=payload.max_ticks,
     )
     draft.active_batch_jobs[job_id] = job
@@ -171,7 +171,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
         finally:
             import datetime as dt
 
-            job.finished_at = dt.datetime.now(tz=dt.timezone.utc).isoformat()
+            job.finished_at = dt.datetime.now(tz=dt.UTC).isoformat()
 
     asyncio.create_task(_run_batch())
     return JSONResponse({"job_id": job_id})
@@ -247,7 +247,7 @@ async def batch_view(request: Request, job_id: str) -> Response:
 )
 async def batch_export(
     job_id: str,
-    format: str = "csv",  # noqa: A002
+    format: str = "csv",
     tick_interval: int = 1,
     columns: str | None = None,
     title: str | None = None,

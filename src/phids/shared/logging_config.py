@@ -8,11 +8,11 @@ without paying for verbose logs by default.
 
 from __future__ import annotations
 
-from collections import deque
-from datetime import datetime
 import logging
 import logging.config
 import os
+from collections import deque
+from datetime import datetime
 from pathlib import Path
 from threading import Lock
 from typing import Final
@@ -124,7 +124,7 @@ def configure_logging(*, force: bool = False) -> None:
     Args:
         force: Reconfigure logging even if already configured.
     """
-    global _CONFIGURED  # noqa: PLW0603
+    global _CONFIGURED
     if _CONFIGURED and not force:
         return
 

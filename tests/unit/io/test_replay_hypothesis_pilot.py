@@ -10,7 +10,8 @@ import pytest
 from phids.io.replay import deserialise_state, serialise_state
 
 try:
-    from hypothesis import assume, given, settings, strategies as st
+    from hypothesis import assume, given, settings
+    from hypothesis import strategies as st
 except ModuleNotFoundError:
     pytest.skip("Install hypothesis to run optional property pilots.", allow_module_level=True)
 

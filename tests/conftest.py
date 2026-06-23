@@ -33,7 +33,7 @@ from phids.engine.core.ecs import ECSWorld
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def safe_global_reset() -> AsyncGenerator[None, None]:
+async def safe_global_reset() -> AsyncGenerator[None]:
     """Reset global API state and cancel dangling simulation tasks around each test."""
     reset_draft()
     yield
@@ -48,7 +48,7 @@ async def safe_global_reset() -> AsyncGenerator[None, None]:
 
 
 @pytest_asyncio.fixture
-async def api_client() -> AsyncGenerator[AsyncClient, None]:
+async def api_client() -> AsyncGenerator[AsyncClient]:
     """Provide a shared AsyncClient bound to the in-process FastAPI application."""
     client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
     try:

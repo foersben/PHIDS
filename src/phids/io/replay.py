@@ -62,7 +62,7 @@ def serialise_state(state: ReplayState) -> bytes:
     Returns:
         bytes: msgpack-encoded frame.
     """
-    return cast(bytes, msgpack.packb(state, use_bin_type=True))
+    return cast("bytes", msgpack.packb(state, use_bin_type=True))
 
 
 def deserialise_state(data: bytes) -> ReplayState:
@@ -77,7 +77,7 @@ def deserialise_state(data: bytes) -> ReplayState:
     decoded = msgpack.unpackb(data, raw=False)
     if not isinstance(decoded, dict):
         raise ValueError("Replay frame payload must decode to a mapping.")
-    return cast(ReplayState, decoded)
+    return cast("ReplayState", decoded)
 
 
 class ReplayBuffer:
@@ -155,12 +155,12 @@ class ReplayBuffer:
             "tick": int(tick),
             "terminated": bool(terminated),
             "termination_reason": termination_reason,
-            "plant_energy_layer": cast(ReplayValue, env.plant_energy_layer.tolist()),
-            "signal_layers": cast(ReplayValue, env.signal_layers.tolist()),
-            "toxin_layers": cast(ReplayValue, env.toxin_layers.tolist()),
-            "flow_field": cast(ReplayValue, env.flow_field.tolist()),
-            "wind_vector_x": cast(ReplayValue, env.wind_vector_x.tolist()),
-            "wind_vector_y": cast(ReplayValue, env.wind_vector_y.tolist()),
+            "plant_energy_layer": cast("ReplayValue", env.plant_energy_layer.tolist()),
+            "signal_layers": cast("ReplayValue", env.signal_layers.tolist()),
+            "toxin_layers": cast("ReplayValue", env.toxin_layers.tolist()),
+            "flow_field": cast("ReplayValue", env.flow_field.tolist()),
+            "wind_vector_x": cast("ReplayValue", env.wind_vector_x.tolist()),
+            "wind_vector_y": cast("ReplayValue", env.wind_vector_y.tolist()),
         }
         self.append(state)
 

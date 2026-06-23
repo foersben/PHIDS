@@ -1,5 +1,4 @@
-"""
-Test coverage for PHIDS flow-field computation and signal/toxin propagation invariants.
+"""Test coverage for PHIDS flow-field computation and signal/toxin propagation invariants.
 
 This module implements unit tests for the PHIDS flow-field computation and signal/toxin propagation logic. The test suite verifies deterministic gradient generation, camouflage application, and toxin repulsion, ensuring compliance with NumPy vectorization, double-buffered state management, and O(1) spatial hash invariants. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and flow-field mechanics. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
 """
