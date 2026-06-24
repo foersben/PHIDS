@@ -8,11 +8,14 @@ regressions in the simulation loop.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
@@ -39,6 +42,7 @@ except ImportError:
 def test_signaling_co_located_swarm_population_filters_species(
     add_swarm: Callable[..., int],
 ) -> None:
+    """Verify that signaling co-located swarm population filtering correctly maps species."""
     world = ECSWorld()
     add_swarm(world, 4, 4, species_id=0, population=7)
     add_swarm(world, 4, 4, species_id=1, population=11)
@@ -51,6 +55,7 @@ def test_interaction_co_located_swarm_population_skips_non_swarm_and_stale_ids(
     add_plant: Callable[..., int],
     add_swarm: Callable[..., int],
 ) -> None:
+    """Verify that co-located swarm population utility ignores stale entity IDs."""
     world = ECSWorld()
     plant_id = add_plant(world, 2, 2, species_id=0)
     world.entities_at(2, 2).add(9999)
@@ -63,6 +68,7 @@ def test_interaction_co_located_swarm_population_skips_non_swarm_and_stale_ids(
 def test_activation_condition_supports_none_and_environmental_signal_bounds(
     add_plant: Callable[..., int],
 ) -> None:
+    """Assert activation check passes on empty node and honors environmental signal boundaries."""
     world = ECSWorld()
     plant_id = add_plant(world, 1, 1)
     plant = world.get_entity(plant_id).get_component(PlantComponent)
@@ -98,6 +104,7 @@ def test_activation_condition_with_swarm_presence_and_substance_active(
     add_plant: Callable[..., int],
     add_swarm: Callable[..., int],
 ) -> None:
+    """Verify activation condition under simultaneous swarm presence and substance active requirements."""
     world = ECSWorld()
     plant_id = add_plant(world, 3, 3)
     add_swarm(world, 3, 3, species_id=2, population=4)
@@ -113,13 +120,11 @@ def test_activation_condition_with_swarm_presence_and_substance_active(
     }
     substance_active = {"kind": "substance_active", "substance_id": 7}
     composite = {"kind": "all_of", "conditions": [herbivore_presence, substance_active]}
-    assert (
-        _check_activation_condition(plant, plant_id, composite, env, population_index, active)
-        is True
-    )
+    assert _check_activation_condition(plant, plant_id, composite, env, population_index, active) is True
 
 
 def test_replay_cleanup_spill_file_for_owned_and_non_owned_paths(tmp_path: Path) -> None:
+    """Verify spill-file deletion behaves correctly for owned vs non-owned telemetry paths."""
     owned = ReplayBuffer(spill_to_disk=True)
     owned_path = owned._ensure_spill_path()
     owned_path.write_bytes(b"frame")
@@ -135,6 +140,7 @@ def test_replay_cleanup_spill_file_for_owned_and_non_owned_paths(tmp_path: Path)
 
 
 def test_replay_get_frame_out_of_range_raises() -> None:
+    """Assert out of range index lookup raises IndexError on ReplayBuffer."""
     buffer = ReplayBuffer()
     buffer.append({"tick": 0})
     with pytest.raises(IndexError):
@@ -142,6 +148,7 @@ def test_replay_get_frame_out_of_range_raises() -> None:
 
 
 def test_replay_read_spilled_frame_incomplete_payload_raises(tmp_path: Path) -> None:
+    """Assert IndexError is raised when spilled telemetry index payload is corrupted."""
     spill_path = tmp_path / "spill.bin"
     spill_path.write_bytes(b"123")
     buffer = ReplayBuffer(spill_to_disk=True, spill_path=spill_path)
@@ -152,6 +159,7 @@ def test_replay_read_spilled_frame_incomplete_payload_raises(tmp_path: Path) -> 
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 def test_zarr_cleanup_store_for_owned_paths() -> None:
+    """Verify automatic cleanup of spilled telemetry store directory for owned paths."""
     buffer = ZarrReplayBuffer()
     buffer._ensure_store()
     assert buffer._store_path is not None
@@ -163,6 +171,7 @@ def test_zarr_cleanup_store_for_owned_paths() -> None:
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 def test_zarr_load_metadata_falls_back_on_corrupt_blob(tmp_path: Path) -> None:
+    """Verify metadata loader recovers gracefully when Zarr metadata array is corrupted."""
     import zarr
 
     store_path = tmp_path / "corrupt.zarr"
@@ -178,6 +187,7 @@ def test_zarr_load_metadata_falls_back_on_corrupt_blob(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 def test_zarr_signal_tail_clipping_on_append_and_read(tmp_path: Path) -> None:
+    """Verify signaling concentration values below SIGNAL_EPSILON are clipped to zero on append."""
     store_path = tmp_path / "signal.zarr"
     buffer = ZarrReplayBuffer(spill_path=store_path)
     signal = np.array([[[SIGNAL_EPSILON * 0.5, SIGNAL_EPSILON * 2.0]]], dtype=np.float32)
@@ -189,6 +199,7 @@ def test_zarr_signal_tail_clipping_on_append_and_read(tmp_path: Path) -> None:
 
 
 def test_collect_mycorrhizal_targets_respects_species_gate(add_plant: Callable[..., int]) -> None:
+    """Verify mycorrhizal target collection respects inter-species connection settings."""
     world = ECSWorld()
     source_id = add_plant(world, 1, 1, species_id=0)
     same_species_id = add_plant(world, 2, 1, species_id=0)
@@ -206,6 +217,7 @@ def test_collect_mycorrhizal_targets_respects_species_gate(add_plant: Callable[.
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 def test_zarr_get_frame_out_of_bounds_raises(tmp_path: Path) -> None:
+    """Assert IndexError is raised on out-of-bounds frame lookup in ZarrReplayBuffer."""
     buffer = ZarrReplayBuffer(spill_path=tmp_path / "frames.zarr")
     buffer.append({"tick": 0, "value": 1})
     with pytest.raises(IndexError):

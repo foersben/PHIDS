@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -12,6 +12,9 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import TILE_CARRYING_CAPACITY, run_interaction
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def test_crowding_threshold_strict_gt_capacity(
@@ -36,13 +39,11 @@ def test_crowding_threshold_strict_gt_capacity(
     equal_swarm = equal_world.get_entity(equal_swarm_id).get_component(SwarmComponent)
     equal_swarm.energy_upkeep_per_individual = 0.0
     equal_swarm.split_population_threshold = TILE_CARRYING_CAPACITY * 10
-    monkeypatch.setattr(
-        random, "choice", lambda seq: (_ for _ in ()).throw(AssertionError("unexpected"))
-    )
+    monkeypatch.setattr(random, "choice", lambda _seq: (_ for _ in ()).throw(AssertionError("unexpected")))
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, k: [seq[weights.index(max(weights))]],
+        lambda seq, weights, _k: [seq[weights.index(max(weights))]],
     )
 
     run_interaction(equal_world, env, diet_matrix=[[False]], tick=0)
@@ -72,9 +73,7 @@ def test_crowding_threshold_strict_gt_capacity(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, k: (_ for _ in ()).throw(
-            AssertionError("flow chooser should not run")
-        ),
+        lambda _seq, _weights, _k: (_ for _ in ()).throw(AssertionError("flow chooser should not run")),
     )
 
     run_interaction(above_world, env, diet_matrix=[[False]], tick=0)
@@ -102,9 +101,7 @@ def test_crowding_precedes_anchor_when_edible_plant_present(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, k: (_ for _ in ()).throw(
-            AssertionError("flow chooser should not run")
-        ),
+        lambda _seq, _weights, _k: (_ for _ in ()).throw(AssertionError("flow chooser should not run")),
     )
 
     run_interaction(world, env, diet_matrix=[[True]], tick=0)

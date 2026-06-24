@@ -22,15 +22,14 @@ import json
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TypeAlias
 
 from phids.api.schemas import SimulationConfig
 
 logger = logging.getLogger(__name__)
 
-JSONScalar: TypeAlias = None | bool | int | float | str
-JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
-JSONMapping: TypeAlias = Mapping[str, JSONValue]
+type JSONScalar = None | bool | int | float | str
+type JSONValue = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
+type JSONMapping = Mapping[str, JSONValue]
 
 
 def load_scenario_from_dict(data: JSONMapping) -> SimulationConfig:

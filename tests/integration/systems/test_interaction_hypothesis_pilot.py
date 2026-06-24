@@ -225,9 +225,7 @@ def test_reproduction_closed_form_holds_for_bounded_hypothesis_samples(
     """Bounded random inputs preserve floor-based surplus-to-offspring conversion."""
     baseline_energy = float(population) * energy_min
     cost_per_offspring = max(energy_min, energy_min * reproduction_divisor)
-    initial_energy = baseline_energy + (
-        (whole_surplus_units + fractional_surplus) * cost_per_offspring
-    )
+    initial_energy = baseline_energy + ((whole_surplus_units + fractional_surplus) * cost_per_offspring)
 
     surplus = max(0.0, initial_energy - baseline_energy)
     expected_offspring = int(surplus // cost_per_offspring)
@@ -276,9 +274,7 @@ def test_mitosis_threshold_partition_and_energy_halving_hold_for_bounded_hypothe
         energy_min=energy_min,
     )
 
-    split_threshold = (
-        split_population_threshold if split_population_threshold > 0 else 2 * initial_population
-    )
+    split_threshold = split_population_threshold if split_population_threshold > 0 else 2 * initial_population
     should_split = population >= split_threshold
 
     swarms = [entity.get_component(SwarmComponent) for entity in world.query(SwarmComponent)]
@@ -289,9 +285,7 @@ def test_mitosis_threshold_partition_and_energy_halving_hold_for_bounded_hypothe
         return
 
     assert len(swarms) == 2
-    offspring_ids = [
-        entity.entity_id for entity in world.query(SwarmComponent) if entity.entity_id != parent_id
-    ]
+    offspring_ids = [entity.entity_id for entity in world.query(SwarmComponent) if entity.entity_id != parent_id]
     assert len(offspring_ids) == 1
 
     parent = world.get_entity(parent_id).get_component(SwarmComponent)

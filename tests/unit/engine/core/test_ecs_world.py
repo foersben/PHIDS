@@ -12,7 +12,10 @@ coordinate, and must be absent from all cells after garbage collection removes i
 
 from __future__ import annotations
 
-from phids.engine.core.ecs import ECSWorld
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from phids.engine.core.ecs import ECSWorld
 
 
 class Marker:

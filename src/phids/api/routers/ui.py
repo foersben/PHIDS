@@ -62,9 +62,7 @@ async def ui_diagnostics_model(request: Request) -> Response:
     )
 
 
-@router.get(
-    "/ui/diagnostics/frontend", response_class=HTMLResponse, summary="Diagnostics frontend tab"
-)
+@router.get("/ui/diagnostics/frontend", response_class=HTMLResponse, summary="Diagnostics frontend tab")
 async def ui_diagnostics_frontend(request: Request) -> Response:
     """Render the browser-observation diagnostics shell.
 
@@ -77,9 +75,7 @@ async def ui_diagnostics_frontend(request: Request) -> Response:
     return api_main.templates.TemplateResponse(request, "partials/diagnostics_frontend.html")
 
 
-@router.get(
-    "/ui/diagnostics/backend", response_class=HTMLResponse, summary="Diagnostics backend tab"
-)
+@router.get("/ui/diagnostics/backend", response_class=HTMLResponse, summary="Diagnostics backend tab")
 async def ui_diagnostics_backend(request: Request) -> Response:
     """Render recent structured backend logs for operator inspection.
 

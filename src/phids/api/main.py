@@ -15,14 +15,12 @@ signal propagation, and metabolic attrition trajectories.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import pathlib
 import time
-from collections.abc import Awaitable, Callable
 from functools import partial
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from fastapi import (
     FastAPI,
@@ -56,8 +54,13 @@ from phids.api.ui_state import (
     get_draft,
 )
 from phids.api.websockets import SimulationStreamManager, UIStreamManager
-from phids.engine.loop import SimulationLoop
 from phids.shared.logging_config import configure_logging
+
+if TYPE_CHECKING:
+    import asyncio
+    from collections.abc import Awaitable, Callable
+
+    from phids.engine.loop import SimulationLoop
 
 configure_logging()
 
@@ -72,10 +75,9 @@ _STATIC_DIR = pathlib.Path(__file__).parent / "static"
 templates = Jinja2Templates(directory=str(_TEMPLATE_DIR))
 
 app = FastAPI(
-    title="PHIDS – Plant-Herbivore Interaction & Defense Simulator",
+    title="PHIDS - Plant-Herbivore Interaction & Defense Simulator",
     description=(
-        "Visual discrete-event simulator modelling ecological dynamics between "
-        "plants and herbivores on a spatial grid."
+        "Visual discrete-event simulator modelling ecological dynamics between plants and herbivores on a spatial grid."
     ),
     version="0.4.0",
 )
@@ -364,11 +366,7 @@ def _describe_activation_condition(
         return f"{signal_label} concentration ≥ {min_conc:.2f}"
 
     raw_children = condition.get("conditions", [])
-    children = (
-        [child for child in raw_children if isinstance(child, dict)]
-        if isinstance(raw_children, list)
-        else []
-    )
+    children = [child for child in raw_children if isinstance(child, dict)] if isinstance(raw_children, list) else []
     joiner = " AND " if kind == "all_of" else " OR "
     if not children:
         return "unconditional"
@@ -397,18 +395,14 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, object]:
         getattr(species, "species_id", index): getattr(species, "name", f"Herbivore {index}")
         for index, species in enumerate(draft.herbivore_species)
     }
-    substance_names = {
-        definition.substance_id: definition.name for definition in draft.substance_definitions
-    }
+    substance_names = {definition.substance_id: definition.name for definition in draft.substance_definitions}
     return {
         "flora_species": draft.flora_species,
         "herbivore_species": draft.herbivore_species,
         "trigger_rules": draft.trigger_rules,
         "substances": draft.substance_definitions,
         "trigger_rule_condition_json": {
-            index: json.dumps(rule.activation_condition, indent=2)
-            if rule.activation_condition is not None
-            else ""
+            index: json.dumps(rule.activation_condition, indent=2) if rule.activation_condition is not None else ""
             for index, rule in enumerate(draft.trigger_rules)
         },
         "trigger_rule_condition_summary": {
@@ -518,11 +512,7 @@ def _build_live_summary() -> LiveSummary | None:
     active_substances = 0
     for entity in world.query(SubstanceComponent):
         substance = entity.get_component(SubstanceComponent)
-        if (
-            substance.active
-            or substance.synthesis_remaining > 0
-            or substance.aftereffect_remaining_ticks > 0
-        ):
+        if substance.active or substance.synthesis_remaining > 0 or substance.aftereffect_remaining_ticks > 0:
             active_substances += 1
     summary: LiveSummary = {
         "tick": _sim_loop.tick,
@@ -548,9 +538,7 @@ def _build_energy_deficit_swarms() -> list[EnergyDeficitSwarmRow]:
 
     from phids.engine.components.swarm import SwarmComponent
 
-    herbivore_names = {
-        species.species_id: species.name for species in _sim_loop.config.herbivore_species
-    }
+    herbivore_names = {species.species_id: species.name for species in _sim_loop.config.herbivore_species}
     energy_stressed: list[EnergyDeficitSwarmRow] = []
     for entity in _sim_loop.world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
@@ -661,7 +649,7 @@ async def simulation_stream(websocket: WebSocket) -> None:
 
 
 # ---------------------------------------------------------------------------
-# UI WebSocket – JSON stream for canvas rendering
+# UI WebSocket - JSON stream for canvas rendering
 # ---------------------------------------------------------------------------
 
 
@@ -737,9 +725,7 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
     payload = (
         build_live_cell_details(_sim_loop, x, y, substance_names=_sim_substance_names)
         if _sim_loop is not None
-        else build_preview_cell_details(
-            x, y, draft=get_draft(), substance_names=_sim_substance_names
-        )
+        else build_preview_cell_details(x, y, draft=get_draft(), substance_names=_sim_substance_names)
     )
     return JSONResponse(content=payload)
 
@@ -774,7 +760,7 @@ def _build_telemetry_svg(df: object) -> str:
             "</text></svg>"
         )
 
-    W, H, pad = 800, 160, 30
+    w, h, pad = 800, 160, 30
     ticks: list[int] = df["tick"].to_list()
     flora_pop: list[int] = df["flora_population"].to_list()
     herbivore_pop: list[int] = df["herbivore_population"].to_list()
@@ -785,28 +771,21 @@ def _build_telemetry_svg(df: object) -> str:
     max_energy = max(flora_e, default=1.0) or 1.0
 
     def sx(t: int) -> float:
-        return pad + (t / max_tick) * (W - 2 * pad)
+        return pad + (t / max_tick) * (w - 2 * pad)
 
     def sy_pop(v: int) -> float:
-        return H - pad - (v / max_pop) * (H - 2 * pad)
+        return h - pad - (v / max_pop) * (h - 2 * pad)
 
     def sy_e(v: float) -> float:
-        return H - pad - (v / max_energy) * (H - 2 * pad)
+        return h - pad - (v / max_energy) * (h - 2 * pad)
 
     n = len(ticks)
-    fp_path = " ".join(
-        f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(flora_pop[i]):.1f}" for i in range(n)
-    )
-    pp_path = " ".join(
-        f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(herbivore_pop[i]):.1f}"
-        for i in range(n)
-    )
-    fe_path = " ".join(
-        f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_e(flora_e[i]):.1f}" for i in range(n)
-    )
+    fp_path = " ".join(f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(flora_pop[i]):.1f}" for i in range(n))
+    pp_path = " ".join(f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_pop(herbivore_pop[i]):.1f}" for i in range(n))
+    fe_path = " ".join(f"{'M' if i == 0 else 'L'}{sx(ticks[i]):.1f},{sy_e(flora_e[i]):.1f}" for i in range(n))
 
     return (
-        f'<svg width="100%" height="{H}" viewBox="0 0 {W} {H}" class="w-full">'
+        f'<svg width="100%" height="{h}" viewBox="0 0 {w} {h}" class="w-full">'
         f'<path d="{fp_path}" stroke="#22c55e" stroke-width="2" fill="none"/>'
         f'<path d="{pp_path}" stroke="#ef4444" stroke-width="2" fill="none"/>'
         f'<path d="{fe_path}" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-dasharray="4 2"/>'

@@ -69,9 +69,7 @@ def test_replay_buffer_append_raw_arrays_serialises_environment_layers() -> None
             self.wind_vector_y = np.full((2, 2), -0.2, dtype=np.float32)
 
     replay = ReplayBuffer()
-    replay.append_raw_arrays(
-        tick=7, env=_EnvStub(), termination_state=(True, "Z1: max ticks reached")
-    )
+    replay.append_raw_arrays(tick=7, env=_EnvStub(), termination_state=(True, "Z1: max ticks reached"))
 
     frame = replay.get_frame(0)
     assert frame["tick"] == 7

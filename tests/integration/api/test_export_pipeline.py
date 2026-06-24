@@ -15,9 +15,13 @@ correct phase-space coordinates, correct export format routing).
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
-from phids.telemetry.analytics import TelemetryRow
+if TYPE_CHECKING:
+    from phids.telemetry.analytics import TelemetryRow
+
 from phids.telemetry.export import (
     export_bytes_tex_table,
     generate_png_bytes,

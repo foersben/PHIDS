@@ -70,11 +70,7 @@ class DraftService:
             The list index of the matching substance definition, or ``None`` if absent.
         """
         return next(
-            (
-                i
-                for i, substance in enumerate(draft.substance_definitions)
-                if substance.substance_id == substance_id
-            ),
+            (i for i, substance in enumerate(draft.substance_definitions) if substance.substance_id == substance_id),
             None,
         )
 
@@ -508,7 +504,10 @@ class DraftService:
         draft.trigger_rules = remaining_rules
 
         logger.debug(
-            "Draft substance removed (substance_id=%d, total_substances=%d, remaining_trigger_rules=%d, removed_trigger_rules=%d)",
+            (
+                "Draft substance removed (substance_id=%d, total_substances=%d, "
+                "remaining_trigger_rules=%d, removed_trigger_rules=%d)"
+            ),
             substance_id,
             len(draft.substance_definitions),
             len(draft.trigger_rules),
@@ -539,9 +538,7 @@ class DraftService:
             return None
 
         if compatible == "toggle":
-            draft.diet_matrix[herbivore_idx][flora_idx] = not draft.diet_matrix[herbivore_idx][
-                flora_idx
-            ]
+            draft.diet_matrix[herbivore_idx][flora_idx] = not draft.diet_matrix[herbivore_idx][flora_idx]
         else:
             draft.diet_matrix[herbivore_idx][flora_idx] = self._is_truthy_flag(compatible)
         return draft.diet_matrix[herbivore_idx][flora_idx]
@@ -595,7 +592,10 @@ class DraftService:
         removed = draft.trigger_rules[index]
         del draft.trigger_rules[index]
         logger.debug(
-            "Draft trigger rule removed (index=%d, flora_species_id=%d, herbivore_species_id=%d, substance_id=%d, total_rules=%d)",
+            (
+                "Draft trigger rule removed (index=%d, flora_species_id=%d, "
+                "herbivore_species_id=%d, substance_id=%d, total_rules=%d)"
+            ),
             index,
             removed.flora_species_id,
             removed.herbivore_species_id,

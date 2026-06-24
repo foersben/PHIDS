@@ -16,7 +16,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from phids.api.schemas import (
@@ -28,9 +28,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-ConditionScalar: TypeAlias = str | int | float | bool
-ConditionValue: TypeAlias = object
-ActivationConditionNode: TypeAlias = dict[str, object]
+type ConditionScalar = str | int | float | bool
+type ConditionValue = object
+type ActivationConditionNode = dict[str, object]
 
 # ---------------------------------------------------------------------------
 # Substance definition (independent of any trigger coupling)
@@ -321,8 +321,8 @@ class DraftState:
 
     Attributes:
         scenario_name: Human-readable label used in the UI header.
-        grid_width: Biotope width in cells (1–80).
-        grid_height: Biotope height in cells (1–80).
+        grid_width: Biotope width in cells (1-80).
+        grid_height: Biotope height in cells (1-80).
         max_ticks: Simulation tick budget.
         tick_rate_hz: WebSocket streaming rate in ticks per second.
         wind_x: Initial uniform wind x-component.
@@ -404,9 +404,7 @@ class DraftState:
             )
             raise ValueError("At least one flora and one herbivore species are required.")
 
-        subs_by_id: dict[int, SubstanceDefinition] = {
-            sd.substance_id: sd for sd in self.substance_definitions
-        }
+        subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
@@ -414,7 +412,10 @@ class DraftState:
             sd = subs_by_id.get(rule.substance_id)
             if sd is None:
                 logger.warning(
-                    "Skipping trigger rule with missing substance definition (flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)",
+                    (
+                        "Skipping trigger rule with missing substance definition "
+                        "(flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)"
+                    ),
                     rule.flora_species_id,
                     rule.herbivore_species_id,
                     rule.substance_id,
@@ -451,8 +452,7 @@ class DraftState:
         ]
 
         plant_placements = [
-            InitialPlantPlacement(species_id=p.species_id, x=p.x, y=p.y, energy=p.energy)
-            for p in self.initial_plants
+            InitialPlantPlacement(species_id=p.species_id, x=p.x, y=p.y, energy=p.energy) for p in self.initial_plants
         ]
         swarm_placements = [
             InitialSwarmPlacement(
@@ -489,7 +489,10 @@ class DraftState:
             z7_max_total_herbivore_population=self.z7_max_total_herbivore_population,
         )
         logger.info(
-            "Draft converted to SimulationConfig (grid=%dx%d, flora=%d, herbivores=%d, trigger_rules=%d, plants=%d, swarms=%d)",
+            (
+                "Draft converted to SimulationConfig "
+                "(grid=%dx%d, flora=%d, herbivores=%d, trigger_rules=%d, plants=%d, swarms=%d)"
+            ),
             self.grid_width,
             self.grid_height,
             len(flora_with_triggers),

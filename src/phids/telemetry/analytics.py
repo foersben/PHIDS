@@ -33,42 +33,36 @@ sparse species sets.
 from __future__ import annotations
 
 import logging
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
-from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import MAX_TELEMETRY_TICKS
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
+if TYPE_CHECKING:
+    from phids.engine.core.ecs import ECSWorld
+
 logger = logging.getLogger(__name__)
 
-TelemetryScalar: TypeAlias = None | bool | int | float | str
-SpeciesCountMap: TypeAlias = dict[int, int]
-SpeciesEnergyMap: TypeAlias = dict[int, float]
-TelemetryValue: TypeAlias = Any
-TelemetryRow: TypeAlias = dict[str, Any]
+type TelemetryScalar = None | bool | int | float | str
+type SpeciesCountMap = dict[int, int]
+type SpeciesEnergyMap = dict[int, float]
+type TelemetryValue = Any
+type TelemetryRow = dict[str, Any]
 
 
 def _as_species_count_map(value: TelemetryValue | object) -> SpeciesCountMap:
     """Return a species-count mapping or an empty mapping when shape/type mismatch occurs."""
     if isinstance(value, dict):
-        return {
-            int(k): int(v)
-            for k, v in value.items()
-            if isinstance(k, int) and isinstance(v, (int, float))
-        }
+        return {int(k): int(v) for k, v in value.items() if isinstance(k, int) and isinstance(v, (int, float))}
     return {}
 
 
 def _as_species_energy_map(value: TelemetryValue | object) -> SpeciesEnergyMap:
     """Return a species-energy mapping or an empty mapping when shape/type mismatch occurs."""
     if isinstance(value, dict):
-        return {
-            int(k): float(v)
-            for k, v in value.items()
-            if isinstance(k, int) and isinstance(v, (int, float))
-        }
+        return {int(k): float(v) for k, v in value.items() if isinstance(k, int) and isinstance(v, (int, float))}
     return {}
 
 
@@ -120,6 +114,7 @@ class TelemetryRecorder:
             world: The ECS world to sample entity components from.
             tick: Current simulation tick index.
             plant_death_causes: Per-tick plant death diagnostics keyed by cause.
+            tick_metrics: Optional pre-collected tick metrics; if omitted, they are gathered from the world.
         """
         metrics = tick_metrics or collect_tick_metrics(world)
 
@@ -228,21 +223,15 @@ class TelemetryRecorder:
                 all_flora_ids: set[int] = set()
                 all_swarm_ids: set[int] = set()
                 for r in self._rows:
-                    all_flora_ids.update(
-                        _as_species_count_map(r.get("plant_pop_by_species", {})).keys()
-                    )
-                    all_swarm_ids.update(
-                        _as_species_count_map(r.get("swarm_pop_by_species", {})).keys()
-                    )
+                    all_flora_ids.update(_as_species_count_map(r.get("plant_pop_by_species", {})).keys())
+                    all_swarm_ids.update(_as_species_count_map(r.get("swarm_pop_by_species", {})).keys())
                 sorted_flora = sorted(all_flora_ids)
                 sorted_swarm = sorted(all_swarm_ids)
 
                 # Build flat rows: aggregate scalars + per-species flat columns
                 flat_rows: list[dict[str, object]] = []
                 for r in self._rows:
-                    flat: dict[str, object] = {
-                        k: v for k, v in r.items() if not isinstance(v, dict)
-                    }
+                    flat: dict[str, object] = {k: v for k, v in r.items() if not isinstance(v, dict)}
                     plant_pop = _as_species_count_map(r.get("plant_pop_by_species", {}))
                     plant_energy = _as_species_energy_map(r.get("plant_energy_by_species", {}))
                     defense_cost = _as_species_energy_map(r.get("defense_cost_by_species", {}))

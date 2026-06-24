@@ -1,4 +1,4 @@
-"""Academic export pipeline for PHIDS telemetry data.
+r"""Academic export pipeline for PHIDS telemetry data.
 
 This module implements the export layer that transforms Polars DataFrames produced by
 :class:`~phids.telemetry.analytics.TelemetryRecorder` into publication-ready artifacts
@@ -33,15 +33,15 @@ from __future__ import annotations
 import io
 import logging
 from collections.abc import Mapping
-from pathlib import Path
 from typing import TYPE_CHECKING
-
-import polars as pl
 
 from phids.telemetry.analytics import TelemetryRow
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd  # type: ignore[import-untyped]
+    import polars as pl
     from matplotlib.axes import Axes
 
 logger = logging.getLogger(__name__)
@@ -177,19 +177,11 @@ def filter_telemetry_rows(
         defense_cost = _species_map(row, "defense_cost_by_species")
         swarm_pop = _species_map(row, "swarm_pop_by_species")
         if flora_keep is not None:
-            clone["plant_pop_by_species"] = {
-                sid: val for sid, val in plant_pop.items() if sid in flora_keep
-            }
-            clone["plant_energy_by_species"] = {
-                sid: val for sid, val in plant_energy.items() if sid in flora_keep
-            }
-            clone["defense_cost_by_species"] = {
-                sid: val for sid, val in defense_cost.items() if sid in flora_keep
-            }
+            clone["plant_pop_by_species"] = {sid: val for sid, val in plant_pop.items() if sid in flora_keep}
+            clone["plant_energy_by_species"] = {sid: val for sid, val in plant_energy.items() if sid in flora_keep}
+            clone["defense_cost_by_species"] = {sid: val for sid, val in defense_cost.items() if sid in flora_keep}
         if herbivore_keep is not None:
-            clone["swarm_pop_by_species"] = {
-                sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep
-            }
+            clone["swarm_pop_by_species"] = {sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep}
         filtered.append(clone)
     return filtered
 
@@ -376,6 +368,13 @@ def generate_png_bytes(
         herbivore_names: Optional display names keyed by herbivore species id.
         prey_species_id: Flora species id for phase-space x-axis.
         herbivore_species_id: Herbivore species id for phase-space y-axis.
+        include_flora_ids: Optional comma-separated list of flora species IDs to filter.
+        include_herbivore_ids: Optional comma-separated list of herbivore species IDs to filter.
+        title: Optional custom chart title.
+        x_label: Optional custom x-axis label.
+        x_max: Optional custom x-axis maximum value.
+        y_label: Optional custom y-axis label.
+        y_max: Optional custom y-axis maximum value.
         dpi: Output resolution in dots per inch.
 
     Returns:
@@ -463,10 +462,8 @@ def generate_png_bytes(
     else:
         plt.close(fig)
         raise ValueError(
-
-                f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, "
-                "defense_economy, biomass_stack, or survival_probability"
-
+            f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, "
+            "defense_economy, biomass_stack, or survival_probability"
         )
 
     fig.tight_layout()
@@ -496,6 +493,9 @@ def _plot_timeseries(
         ticks: Tick index list aligned with ``rows``.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
+        title: Optional custom chart title.
+        x_label: Optional custom x-axis label.
+        y_label: Optional custom y-axis label.
     """
     all_flora: set[int] = set()
     all_pred: set[int] = set()
@@ -545,6 +545,11 @@ def _plot_phasespace(
         herbivore_species_id: Herbivore species id to use as y-axis.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
+        title: Optional custom chart title.
+        x_label: Optional custom x-axis label.
+        y_label: Optional custom y-axis label.
+        x_max: Optional custom x-axis maximum value.
+        y_max: Optional custom y-axis maximum value.
     """
     x = [r.get("plant_pop_by_species", {}).get(prey_species_id, 0) for r in rows]
     y = [r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0) for r in rows]
@@ -645,10 +650,7 @@ def _plot_biomass_stack(
     if not ordered:
         ax.plot(ticks, [0.0] * len(ticks), color="#94a3b8", linewidth=1.0, label="No flora")
     else:
-        ys = [
-            [float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows]
-            for fid in ordered
-        ]
+        ys = [[float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows] for fid in ordered]
         labels = [(flora_names or {}).get(fid, f"Flora {fid}") for fid in ordered]
         colours = [_FLORA_COLOURS[i % len(_FLORA_COLOURS)] for i, _ in enumerate(ordered)]
         ax.stackplot(ticks, ys, labels=labels, colors=colours, alpha=0.35)
@@ -713,7 +715,7 @@ def generate_tikz_str(
     x_max: float | None = None,
     y_max: float | None = None,
 ) -> str:
-    """Generate a PGFPlots LaTeX source string for publication-quality figures.
+    r"""Generate a PGFPlots LaTeX source string for publication-quality figures.
 
     Produces a self-contained ``tikzpicture`` environment using the ``pgfplots``
     package. The output does not require the ``tikzplotlib`` library; instead,
@@ -734,6 +736,13 @@ def generate_tikz_str(
         herbivore_names: Optional display names keyed by herbivore species id.
         prey_species_id: Flora species id for phase-space x-axis.
         herbivore_species_id: Herbivore species id for phase-space y-axis.
+        include_flora_ids: Optional comma-separated list of flora species IDs to filter.
+        include_herbivore_ids: Optional comma-separated list of herbivore species IDs to filter.
+        title: Optional custom chart title.
+        x_label: Optional custom x-axis label.
+        x_max: Optional custom x-axis maximum value.
+        y_label: Optional custom y-axis label.
+        y_max: Optional custom y-axis maximum value.
 
     Returns:
         str: LaTeX source code for a complete ``tikzpicture`` environment.
@@ -793,10 +802,8 @@ def generate_tikz_str(
             y_label=y_label,
         )
     raise ValueError(
-
-            f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, "
-            "biomass_stack, or survival_probability"
-
+        f"Unknown plot_type '{plot_type}'; expected timeseries, phasespace, defense_economy, "
+        "biomass_stack, or survival_probability"
     )
 
 
@@ -815,6 +822,9 @@ def _tikz_timeseries(
         rows: Raw telemetry rows.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
+        title: Optional custom chart title.
+        x_label: Optional custom x-axis label.
+        y_label: Optional custom y-axis label.
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
@@ -838,23 +848,15 @@ def _tikz_timeseries(
     for i, fid in enumerate(sorted(all_flora)):
         colour = flora_colours[i % len(flora_colours)]
         name = (flora_names or {}).get(fid, f"Flora {fid}")
-        coords = " ".join(
-            f"({r['tick']},{r.get('plant_pop_by_species', {}).get(fid, 0)})" for r in rows
-        )
-        plots.append(
-            f"    \\addplot[color={colour}, thick] coordinates {{{coords}}};\n"
-            f"    \\addlegendentry{{{name}}}"
-        )
+        coords = " ".join(f"({r['tick']},{r.get('plant_pop_by_species', {}).get(fid, 0)})" for r in rows)
+        plots.append(f"    \\addplot[color={colour}, thick] coordinates {{{coords}}};\n    \\addlegendentry{{{name}}}")
 
     for i, pid in enumerate(sorted(all_herbivores)):
         colour = herbivore_colours[i % len(herbivore_colours)]
         name = (herbivore_names or {}).get(pid, f"Herbivore {pid}")
-        coords = " ".join(
-            f"({r['tick']},{r.get('swarm_pop_by_species', {}).get(pid, 0)})" for r in rows
-        )
+        coords = " ".join(f"({r['tick']},{r.get('swarm_pop_by_species', {}).get(pid, 0)})" for r in rows)
         plots.append(
-            f"    \\addplot[color={colour}, thick, dashed] coordinates {{{coords}}};\n"
-            f"    \\addlegendentry{{{name}}}"
+            f"    \\addplot[color={colour}, thick, dashed] coordinates {{{coords}}};\n    \\addlegendentry{{{name}}}"
         )
 
     body = "\n".join(plots)
@@ -892,6 +894,11 @@ def _tikz_phasespace(
         herbivore_species_id: Herbivore species id for y-axis.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
+        title: Optional custom chart title.
+        x_label: Optional custom x-axis label.
+        y_label: Optional custom y-axis label.
+        x_max: Optional custom x-axis maximum value.
+        y_max: Optional custom y-axis maximum value.
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
@@ -965,10 +972,7 @@ def _tikz_defense_economy(
             ratio = defense / energy if energy > 0.0 else 0.0
             coords_parts.append(f"({tick},{ratio})")
         coords = " ".join(coords_parts)
-        plots.append(
-            f"    \\addplot[color={colour}, thick] coordinates {{{coords}}};\n"
-            f"    \\addlegendentry{{{name}}}"
-        )
+        plots.append(f"    \\addplot[color={colour}, thick] coordinates {{{coords}}};\n    \\addlegendentry{{{name}}}")
 
     body = "\n".join(plots)
     return (
@@ -1013,9 +1017,7 @@ def _tikz_biomass_stack(
     for i, fid in enumerate(sorted(all_flora)):
         colour = flora_colours[i % len(flora_colours)]
         name = (flora_names or {}).get(fid, f"Flora {fid}")
-        coords = " ".join(
-            f"({r.get('tick', 0)},{r.get('plant_pop_by_species', {}).get(fid, 0)})" for r in rows
-        )
+        coords = " ".join(f"({r.get('tick', 0)},{r.get('plant_pop_by_species', {}).get(fid, 0)})" for r in rows)
         plots.append(
             f"    \\addplot+[name path={name.replace(' ', '_')}, color={colour}, thick] coordinates {{{coords}}};\n"
             f"    \\addlegendentry{{{name}}}"
@@ -1053,9 +1055,7 @@ def _tikz_survival_probability(
     Returns:
         str: LaTeX ``tikzpicture`` source.
     """
-    coords = " ".join(
-        f"({r.get('tick', 0)},{100.0 * float(r.get('survival_probability', 0.0))})" for r in rows
-    )
+    coords = " ".join(f"({r.get('tick', 0)},{100.0 * float(r.get('survival_probability', 0.0))})" for r in rows)
     return (
         "\\begin{tikzpicture}\n"
         "\\begin{axis}[\n"
@@ -1084,7 +1084,7 @@ def export_bytes_tex_table(
     include_herbivore_ids: str | None = None,
     tick_interval: int = 1,
 ) -> bytes:
-    """Render the telemetry rows as a booktabs LaTeX tabular environment.
+    r"""Render the telemetry rows as a booktabs LaTeX tabular environment.
 
     Flattens per-species dicts into a wide pandas DataFrame via
     :func:`telemetry_to_dataframe`, then serialises to LaTeX using
@@ -1094,13 +1094,15 @@ def export_bytes_tex_table(
 
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
+        columns: Optional comma-separated list of columns to include.
+        include_flora_ids: Optional comma-separated list of flora species IDs to filter.
+        include_herbivore_ids: Optional comma-separated list of herbivore species IDs to filter.
+        tick_interval: Integer tick interval to decimate rows.
 
     Returns:
         bytes: UTF-8 encoded LaTeX ``tabular`` source.
     """
-    filtered_rows = filter_telemetry_rows(
-        rows, flora_ids=include_flora_ids, herbivore_ids=include_herbivore_ids
-    )
+    filtered_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, herbivore_ids=include_herbivore_ids)
     df = telemetry_to_dataframe(filtered_rows)
     df = filter_dataframe_columns(df, columns)
     df = decimate_dataframe(df, tick_interval)
@@ -1147,27 +1149,21 @@ def aggregate_to_dataframe(
     data: dict[str, object] = {"tick": ticks}
     data["flora_population_mean"] = aggregate.get("flora_population_mean", [0.0] * len(ticks))
     data["flora_population_std"] = aggregate.get("flora_population_std", [0.0] * len(ticks))
-    data["herbivore_population_mean"] = aggregate.get(
-        "herbivore_population_mean", [0.0] * len(ticks)
-    )
+    data["herbivore_population_mean"] = aggregate.get("herbivore_population_mean", [0.0] * len(ticks))
     data["herbivore_population_std"] = aggregate.get("herbivore_population_std", [0.0] * len(ticks))
 
     for fid, series_mean in _object_mapping(aggregate.get("per_flora_pop_mean", {})).items():
         fid_int = _to_int(fid, default=-1)
         name = (flora_names or {}).get(fid_int, f"flora_{fid_int}")
         data[f"{name}_pop_mean"] = series_mean
-        series_std = _object_mapping(aggregate.get("per_flora_pop_std", {})).get(
-            fid, [0.0] * len(ticks)
-        )
+        series_std = _object_mapping(aggregate.get("per_flora_pop_std", {})).get(fid, [0.0] * len(ticks))
         data[f"{name}_pop_std"] = series_std
 
     for pid, series_mean in _object_mapping(aggregate.get("per_herbivore_pop_mean", {})).items():
         pid_int = _to_int(pid, default=-1)
         name = (herbivore_names or {}).get(pid_int, f"herbivore_{pid_int}")
         data[f"{name}_pop_mean"] = series_mean
-        series_std = _object_mapping(aggregate.get("per_herbivore_pop_std", {})).get(
-            pid, [0.0] * len(ticks)
-        )
+        series_std = _object_mapping(aggregate.get("per_herbivore_pop_std", {})).get(pid, [0.0] * len(ticks))
         data[f"{name}_pop_std"] = series_std
 
     return pd.DataFrame(data)

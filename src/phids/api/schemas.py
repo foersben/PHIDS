@@ -24,7 +24,7 @@ Rule-of-16 shape bounds on both dimensions of the herbivore-flora edibility matr
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -61,16 +61,12 @@ class PlantComponentSchema(BaseModel):
     base_energy: float = Field(..., gt=0.0, description="Initial energy E_i,j(0).")
     growth_rate: float = Field(..., ge=0.0, description="Per-tick growth rate r_i,j (%).")
     survival_threshold: float = Field(..., ge=0.0, description="Minimum energy B_i,j before death.")
-    reproduction_interval: int = Field(
-        ..., gt=0, description="Ticks between reproduction attempts (T_i)."
-    )
+    reproduction_interval: int = Field(..., gt=0, description="Ticks between reproduction attempts (T_i).")
     seed_min_dist: float = Field(..., ge=0.0, description="Minimum seed dispersal distance d_min.")
     seed_max_dist: float = Field(..., gt=0.0, description="Maximum seed dispersal distance d_max.")
     seed_energy_cost: float = Field(..., ge=0.0, description="Energy cost per reproduction event.")
     camouflage: bool = Field(default=False, description="Constitutive gradient attenuation flag.")
-    camouflage_factor: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Gradient multiplier when camouflaged."
-    )
+    camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0, description="Gradient multiplier when camouflaged.")
     last_reproduction_tick: int = Field(default=0, description="Last tick of reproduction.")
 
 
@@ -78,9 +74,7 @@ class SwarmComponentSchema(BaseModel):
     """Pydantic schema for the Herbivore Swarm ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
-    species_id: HerbivoreId = Field(
-        ..., description="Herbivore species index [0, MAX_HERBIVORE_SPECIES)."
-    )
+    species_id: HerbivoreId = Field(..., description="Herbivore species index [0, MAX_HERBIVORE_SPECIES).")
     x: int = Field(..., ge=0, description="Grid x-coordinate.")
     y: int = Field(..., ge=0, description="Grid y-coordinate.")
     population: int = Field(..., gt=0, description="Current swarm head-count n(t).")
@@ -100,9 +94,7 @@ class SwarmComponentSchema(BaseModel):
         description="Explicit mitosis threshold; 0 keeps legacy initial-population based split rule.",
     )
     repelled: bool = Field(default=False, description="Currently repelled by toxin.")
-    repelled_ticks_remaining: int = Field(
-        default=0, description="Ticks remaining in repelled random-walk."
-    )
+    repelled_ticks_remaining: int = Field(default=0, description="Ticks remaining in repelled random-walk.")
 
 
 class SubstanceComponentSchema(BaseModel):
@@ -112,21 +104,13 @@ class SubstanceComponentSchema(BaseModel):
     substance_id: SubstanceId = Field(..., description="Substance layer index.")
     owner_plant_id: int = Field(..., description="ECS entity id of the producing plant.")
     is_toxin: bool = Field(default=False, description="True for toxins, False for signals.")
-    synthesis_remaining: int = Field(
-        default=0, ge=0, description="Ticks before substance becomes active."
-    )
+    synthesis_remaining: int = Field(default=0, ge=0, description="Ticks before substance becomes active.")
     active: bool = Field(default=False, description="Whether the substance is currently active.")
-    aftereffect_ticks: int = Field(
-        default=0, ge=0, description="Remaining aftereffect duration T_k."
-    )
+    aftereffect_ticks: int = Field(default=0, ge=0, description="Remaining aftereffect duration T_k.")
     lethal: bool = Field(default=False, description="Lethal toxin flag.")
-    lethality_rate: float = Field(
-        default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i)."
-    )
+    lethality_rate: float = Field(default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i).")
     repellent: bool = Field(default=False, description="Repellent toxin flag.")
-    repellent_walk_ticks: int = Field(
-        default=0, ge=0, description="Random-walk duration k on repel trigger."
-    )
+    repellent_walk_ticks: int = Field(default=0, ge=0, description="Random-walk duration k on repel trigger.")
     energy_cost_per_tick: float = Field(
         default=0.0, ge=0.0, description="Energy cost drained from the owner plant per active tick."
     )
@@ -152,18 +136,14 @@ class SubstanceActiveConditionSchema(BaseModel):
     """Leaf predicate requiring another substance to already be active."""
 
     kind: Literal["substance_active"] = "substance_active"
-    substance_id: SubstanceId = Field(
-        ..., description="Active substance required for this predicate."
-    )
+    substance_id: SubstanceId = Field(..., description="Active substance required for this predicate.")
 
 
 class EnvironmentalSignalConditionSchema(BaseModel):
     """Leaf predicate requiring a minimum ambient signal concentration at the owner's cell."""
 
     kind: Literal["environmental_signal"] = "environmental_signal"
-    signal_id: SubstanceId = Field(
-        ..., description="Signal layer identifier to read from the environment."
-    )
+    signal_id: SubstanceId = Field(..., description="Signal layer identifier to read from the environment.")
     min_concentration: float = Field(
         default=0.01,
         ge=0.0,
@@ -193,7 +173,7 @@ class AnyOfConditionSchema(BaseModel):
     )
 
 
-ConditionNode: TypeAlias = Annotated[
+type ConditionNode = Annotated[
     HerbivorePresenceConditionSchema
     | SubstanceActiveConditionSchema
     | EnvironmentalSignalConditionSchema
@@ -222,20 +202,14 @@ class TriggerConditionSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     herbivore_species_id: HerbivoreId
-    min_herbivore_population: int = Field(
-        ..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis."
-    )
+    min_herbivore_population: int = Field(..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis.")
     substance_id: SubstanceId = Field(..., description="Substance to synthesise.")
     synthesis_duration: int = Field(..., gt=0, description="Ticks to synthesise T(s_x).")
     is_toxin: bool = Field(default=False, description="True for toxins, False for signals.")
     lethal: bool = Field(default=False, description="Lethal toxin flag.")
-    lethality_rate: float = Field(
-        default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i)."
-    )
+    lethality_rate: float = Field(default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i).")
     repellent: bool = Field(default=False, description="Repellent toxin flag.")
-    repellent_walk_ticks: int = Field(
-        default=0, ge=0, description="Random-walk duration k on repel trigger."
-    )
+    repellent_walk_ticks: int = Field(default=0, ge=0, description="Random-walk duration k on repel trigger.")
     aftereffect_ticks: int = Field(
         default=0,
         ge=0,
@@ -254,8 +228,7 @@ class TriggerConditionSchema(BaseModel):
     irreversible: bool = Field(
         default=False,
         description=(
-            "If true, activation is irreversible: once active, the substance remains active "
-            "until owner death."
+            "If true, activation is irreversible: once active, the substance remains active until owner death."
         ),
     )
 
@@ -281,18 +254,12 @@ class FloraSpeciesParams(BaseModel):
     seed_drop_height: float = Field(
         default=SEED_DROP_HEIGHT_DEFAULT,
         gt=0.0,
-        description=(
-            "Approximate seed release height used for wind-flight-time estimation in "
-            "anemochorous dispersal."
-        ),
+        description=("Approximate seed release height used for wind-flight-time estimation in anemochorous dispersal."),
     )
     seed_terminal_velocity: float = Field(
         default=SEED_TERMINAL_VELOCITY_DEFAULT,
         gt=0.0,
-        description=(
-            "Approximate seed terminal fall velocity used for wind-driven downwind shift "
-            "estimation."
-        ),
+        description=("Approximate seed terminal fall velocity used for wind-driven downwind shift estimation."),
     )
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -345,14 +312,10 @@ class DietCompatibilityMatrix(BaseModel):
     def _validate_shape(self) -> DietCompatibilityMatrix:
         n_herbivore = len(self.rows)
         if n_herbivore > MAX_HERBIVORE_SPECIES:
-            raise ValueError(
-                f"DietCompatibilityMatrix has {n_herbivore} rows, max is {MAX_HERBIVORE_SPECIES}."
-            )
+            raise ValueError(f"DietCompatibilityMatrix has {n_herbivore} rows, max is {MAX_HERBIVORE_SPECIES}.")
         for row in self.rows:
             if len(row) > MAX_FLORA_SPECIES:
-                raise ValueError(
-                    f"DietCompatibilityMatrix row length {len(row)} exceeds {MAX_FLORA_SPECIES}."
-                )
+                raise ValueError(f"DietCompatibilityMatrix row length {len(row)} exceeds {MAX_FLORA_SPECIES}.")
         return self
 
 
@@ -400,33 +363,22 @@ class SimulationConfig(BaseModel):
     wind_y: float = Field(default=0.0, description="Initial wind vector y-component.")
 
     flora_species: list[FloraSpeciesParams] = Field(..., min_length=1, max_length=MAX_FLORA_SPECIES)
-    herbivore_species: list[HerbivoreSpeciesParams] = Field(
-        ..., min_length=1, max_length=MAX_HERBIVORE_SPECIES
-    )
+    herbivore_species: list[HerbivoreSpeciesParams] = Field(..., min_length=1, max_length=MAX_HERBIVORE_SPECIES)
     diet_matrix: DietCompatibilityMatrix
 
     initial_plants: list[InitialPlantPlacement] = Field(default_factory=list)
     initial_swarms: list[InitialSwarmPlacement] = Field(default_factory=list)
 
     # Symbiotic network settings
-    mycorrhizal_inter_species: bool = Field(
-        default=False, description="Allow inter-species root connections."
-    )
-    mycorrhizal_connection_cost: float = Field(
-        default=1.0, ge=0.0, description="Energy cost to establish a root link."
-    )
+    mycorrhizal_inter_species: bool = Field(default=False, description="Allow inter-species root connections.")
+    mycorrhizal_connection_cost: float = Field(default=1.0, ge=0.0, description="Energy cost to establish a root link.")
     mycorrhizal_growth_interval_ticks: int = Field(
         default=8,
         ge=1,
         le=256,
-        description=(
-            "Ticks between mycorrhizal growth attempts. "
-            "At most one new root link is formed per interval."
-        ),
+        description=("Ticks between mycorrhizal growth attempts. At most one new root link is formed per interval."),
     )
-    mycorrhizal_signal_velocity: int = Field(
-        default=1, gt=0, description="Signal transfer speed t_g (ticks per hop)."
-    )
+    mycorrhizal_signal_velocity: int = Field(default=1, gt=0, description="Signal transfer speed t_g (ticks per hop).")
 
     # Termination conditions
     z2_flora_species_extinction: int = Field(
@@ -458,14 +410,12 @@ class SimulationConfig(BaseModel):
         for plant_placement in self.initial_plants:
             if plant_placement.species_id not in flora_ids:
                 raise ValueError(
-                    f"InitialPlantPlacement references unknown "
-                    f"flora species {plant_placement.species_id}."
+                    f"InitialPlantPlacement references unknown flora species {plant_placement.species_id}."
                 )
         for swarm_placement in self.initial_swarms:
             if swarm_placement.species_id not in herbivore_ids:
                 raise ValueError(
-                    f"InitialSwarmPlacement references unknown herbivore species "
-                    f"{swarm_placement.species_id}."
+                    f"InitialSwarmPlacement references unknown herbivore species {swarm_placement.species_id}."
                 )
         return self
 

@@ -24,15 +24,15 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Protocol, TypeAlias, cast
+from typing import Protocol, cast
 
 import msgpack  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
-ReplayScalar: TypeAlias = None | bool | int | float | str
-ReplayValue: TypeAlias = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
-ReplayState: TypeAlias = dict[str, ReplayValue]
+type ReplayScalar = None | bool | int | float | str
+type ReplayValue = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
+type ReplayState = dict[str, ReplayValue]
 
 
 class _ReplayArrayLike(Protocol):

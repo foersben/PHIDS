@@ -1,7 +1,7 @@
 """Performance benchmarks for the Numba-accelerated flow-field gradient kernel.
 
 This module measures the wall-clock throughput of :func:`~phids.engine.core.flow_field.compute_flow_field`
-on a representative 40×40 grid under a realistic multi-source configuration. The benchmark
+on a representative 40x40 grid under a realistic multi-source configuration. The benchmark
 validates not only correctness (finite output values, expected shape) but also that the Numba
 JIT-compiled iterative Jacobi propagation does not regress in throughput relative to the
 performance contract established when the kernel was introduced. Changes to diffusion iteration
@@ -19,7 +19,7 @@ from phids.engine.core.flow_field import compute_flow_field
 
 @pytest.mark.benchmark
 def test_flow_field_generation_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
-    """Benchmarks compute_flow_field throughput on a 40×40 grid with two plant attractors and one toxin repeller.
+    """Benchmarks compute_flow_field throughput on a 40x40 grid with two plant attractors and one toxin repeller.
 
     The benchmark uses ``pytest-benchmark`` to measure median call latency across repeated
     invocations of the full public wrapper :func:`~phids.engine.core.flow_field.compute_flow_field`,

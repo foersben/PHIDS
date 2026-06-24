@@ -1,18 +1,21 @@
 """Command-line entry point for the PHIDS runtime server.
 
-This module defines the process boundary between operating-system invocation and the PHIDS API runtime. It formalizes host, port, reload, and logging controls so simulation services can be started reproducibly across local development and containerized deployments. The launcher delegates execution to the FastAPI surface without mutating simulation state, preserving deterministic behavior in downstream ECS and double-buffered engine phases.
+This module defines the process boundary between operating-system invocation and the PHIDS API runtime. It formalizes
+host, port, reload, and logging controls so simulation services can be started reproducibly across local development
+and containerized deployments. The launcher delegates execution to the FastAPI surface without mutating simulation
+state, preserving deterministic behavior in downstream ECS and double-buffered engine phases.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from enum import Enum
+from collections.abc import Sequence  # noqa: TC003
+from enum import StrEnum
 from typing import Annotated
 
 import typer
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Enumerate supported Uvicorn log levels for CLI validation."""
 
     CRITICAL = "critical"
@@ -26,17 +29,16 @@ class LogLevel(str, Enum):
 app = typer.Typer(
     add_completion=True,
     invoke_without_command=True,
-    help=(
-        "Run the PHIDS FastAPI server that powers the JSON API, HTMX UI, "
-        "and WebSocket simulation streams."
-    ),
+    help=("Run the PHIDS FastAPI server that powers the JSON API, HTMX UI, and WebSocket simulation streams."),
 )
 
 
 def _run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
     """Launch Uvicorn with a deterministic PHIDS application configuration.
 
-    This function provides an isolated execution boundary between command parsing and process startup. Isolating this call preserves testability while maintaining a strict mapping from validated CLI parameters to the ASGI runtime surface.
+    This function provides an isolated execution boundary between command parsing and process startup. Isolating this
+    call preserves testability while maintaining a strict mapping from validated CLI parameters to the ASGI
+    runtime surface.
 
     Args:
         host: Interface address for HTTP binding.
@@ -71,7 +73,9 @@ def serve(
 ) -> None:
     """Start the PHIDS FastAPI application from validated CLI options.
 
-    The callback defines a typed command surface that is validated before server startup. Keeping this mapping explicit ensures that network exposure and observability controls remain reproducible across local, containerized, and CI-managed runtime contexts.
+    The callback defines a typed command surface that is validated before server startup. Keeping this mapping
+    explicit ensures that network exposure and observability controls remain reproducible across local,
+    containerized, and CI-managed runtime contexts.
 
     Args:
         host: Interface address for HTTP binding.
@@ -92,7 +96,8 @@ def serve(
 def main(argv: Sequence[str] | None = None) -> None:
     """Start the PHIDS FastAPI application with parsed runtime arguments.
 
-    This function materializes command-line intent into a concrete ASGI server configuration. It resolves arguments, loads the API application, and transfers control to Uvicorn for long-running service orchestration.
+    This function materializes command-line intent into a concrete ASGI server configuration. It resolves
+    arguments, loads the API application, and transfers control to Uvicorn for long-running service orchestration.
 
     Args:
         argv: Optional argument sequence used by tests or embedding contexts.

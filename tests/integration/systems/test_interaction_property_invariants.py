@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
@@ -13,6 +12,9 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _NO_DIET = np.zeros((1, 1), dtype=np.bool_)
 _NO_DIET_MATRIX = cast("list[list[bool]]", _NO_DIET)
@@ -99,7 +101,7 @@ def _run_mitosis_step(
     offspring_pos = (2, 1)
     monkeypatch.setattr(
         "phids.engine.systems.interaction._random_walk_step",
-        lambda x, y, width, height: offspring_pos,
+        lambda _x, _y, _width, _height: offspring_pos,
     )
 
     swarm_id = add_swarm(
@@ -379,9 +381,7 @@ def test_mitosis_threshold_and_partition_invariants(
         return
 
     assert len(swarms) == 2
-    offspring_ids = [
-        entity.entity_id for entity in world.query(SwarmComponent) if entity.entity_id != parent_id
-    ]
+    offspring_ids = [entity.entity_id for entity in world.query(SwarmComponent) if entity.entity_id != parent_id]
     assert len(offspring_ids) == 1
 
     parent = world.get_entity(parent_id).get_component(SwarmComponent)

@@ -20,7 +20,7 @@ emits into the environment.
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
-# Rule of 16 – hard upper limits for pre-allocated matrices
+# Rule of 16 - hard upper limits for pre-allocated matrices
 # ---------------------------------------------------------------------------
 MAX_FLORA_SPECIES: int = 16
 MAX_HERBIVORE_SPECIES: int = 16

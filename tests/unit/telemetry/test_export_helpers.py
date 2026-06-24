@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import polars as pl
 
@@ -13,6 +13,9 @@ from phids.telemetry.export import (
     export_csv,
     export_json,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_telemetry_export_helpers_write_files_and_bytes(tmp_path: Path) -> None:
@@ -42,9 +45,7 @@ def test_aggregate_to_dataframe_coerces_species_keys_and_defaults_missing_std() 
         "per_herbivore_pop_mean": {2: [1.0, 2.0]},
     }
 
-    df = aggregate_to_dataframe(
-        aggregate, flora_names={1: "flora-a"}, herbivore_names={2: "swarm-b"}
-    )
+    df = aggregate_to_dataframe(aggregate, flora_names={1: "flora-a"}, herbivore_names={2: "swarm-b"})
 
     assert list(df["flora-a_pop_mean"]) == [4.0, 5.0]
     assert list(df["flora-a_pop_std"]) == [0.0, 0.0]

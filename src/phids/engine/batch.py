@@ -34,20 +34,22 @@ import math
 import multiprocessing
 import os
 import random
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TypeAlias, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 logger = logging.getLogger(__name__)
 
-JSONScalar: TypeAlias = None | bool | int | float | str
-JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
-TelemetryRow: TypeAlias = dict[str, object]
-TelemetryRuns: TypeAlias = list[list[TelemetryRow]]
-BatchAggregate: TypeAlias = dict[str, object]
+type JSONScalar = None | bool | int | float | str
+type JSONValue = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
+type TelemetryRow = dict[str, object]
+type TelemetryRuns = list[list[TelemetryRow]]
+type BatchAggregate = dict[str, object]
 
 
 def _coerce_int(value: object) -> int:
@@ -194,7 +196,7 @@ def _run_and_save(
     Returns:
         list[TelemetryRow]: Per-tick telemetry rows for this run.
     """
-    scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str = args
+    scenario_dict, max_ticks, seed, job_id, run_index, _output_dir_str = args
     rows = _run_single_headless(scenario_dict, max_ticks, seed)
     logger.info("Batch run %d/%s complete (seed=%d, rows=%d)", run_index, job_id, seed, len(rows))
     return rows
@@ -415,13 +417,10 @@ class BatchRunner:
         )
 
         args_list = [
-            (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir))
-            for idx, seed in enumerate(range(runs))
+            (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir)) for idx, seed in enumerate(range(runs))
         ]
 
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers, mp_context=mp_ctx
-        ) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as executor:
             futures = {executor.submit(_run_and_save, args): i for i, args in enumerate(args_list)}
             for future in concurrent.futures.as_completed(futures):
                 try:
@@ -436,9 +435,7 @@ class BatchRunner:
                     on_progress(completed)
 
         aggregate = aggregate_batch_telemetry(per_run_telemetry)
-        persisted_scenario_name = (
-            scenario_name or str(scenario_dict.get("scenario_name", ""))
-        ).strip()
+        persisted_scenario_name = (scenario_name or str(scenario_dict.get("scenario_name", ""))).strip()
         aggregate["scenario_name"] = persisted_scenario_name or "unnamed"
         aggregate = cast("BatchAggregate", _sanitize_for_json(aggregate))
 

@@ -1,17 +1,23 @@
 """Experimental validation suite for test api builder and helpers.
 
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and simulation invariants. The tests map computational rules to biological interpretations, including metabolic attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation details remain aligned with the PHIDS scientific model.
+This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and
+simulation invariants. The tests map computational rules to biological interpretations, including metabolic
+attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation
+details remain aligned with the PHIDS scientific model.
 """
 
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
 from starlette.requests import Request
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 from phids.api import main as api_main
 from phids.api.main import app
@@ -501,18 +507,12 @@ async def test_builder_route_rule_of_16_branches(api_client: AsyncClient) -> Non
     draft = get_draft()
     draft.flora_species = [_flora(i) for i in range(16)]
     draft.herbivore_species = [_herbivore(i) for i in range(16)]
-    draft.substance_definitions = [
-        SubstanceDefinition(substance_id=i, name=f"s{i}") for i in range(16)
-    ]
+    draft.substance_definitions = [SubstanceDefinition(substance_id=i, name=f"s{i}") for i in range(16)]
 
     responses = {
         "/api/config/flora": await api_client.post("/api/config/flora", data={"name": "Overflow"}),
-        "/api/config/herbivores": await api_client.post(
-            "/api/config/herbivores", data={"name": "Overflow"}
-        ),
-        "/api/config/substances": await api_client.post(
-            "/api/config/substances", data={"name": "Overflow"}
-        ),
+        "/api/config/herbivores": await api_client.post("/api/config/herbivores", data={"name": "Overflow"}),
+        "/api/config/substances": await api_client.post("/api/config/substances", data={"name": "Overflow"}),
     }
 
     for path in ("/api/config/flora", "/api/config/herbivores", "/api/config/substances"):
@@ -543,11 +543,7 @@ async def test_herbivore_routes_clamp_reproduction_divisor_to_physical_minimum(
     assert add_resp.status_code == 200, add_resp.text
     assert update_resp.status_code == 200, update_resp.text
     draft = get_draft()
-    herbivore = next(
-        p
-        for p in draft.herbivore_species
-        if isinstance(p, HerbivoreSpeciesParams) and p.species_id == 1
-    )
+    herbivore = next(p for p in draft.herbivore_species if isinstance(p, HerbivoreSpeciesParams) and p.species_id == 1)
     assert herbivore.reproduction_energy_divisor == pytest.approx(1.0)
 
 
@@ -567,16 +563,16 @@ async def test_trigger_rule_routes_add_update_and_delete(api_client: AsyncClient
             "herbivore_species_id": 0,
             "substance_id": 0,
             "min_herbivore_population": 0,
-            "activation_condition_json": '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
+            "activation_condition_json": (
+                '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
+            ),
         },
     )
     update_resp = await api_client.put(
         "/api/config/trigger-rules/0",
         data={"substance_id": 1, "min_herbivore_population": 7},
     )
-    update_missing_resp = await api_client.put(
-        "/api/config/trigger-rules/9", data={"substance_id": 1}
-    )
+    update_missing_resp = await api_client.put("/api/config/trigger-rules/9", data={"substance_id": 1})
     delete_resp = await api_client.delete("/api/config/trigger-rules/0")
     delete_missing_resp = await api_client.delete("/api/config/trigger-rules/9")
 
@@ -604,7 +600,9 @@ async def test_trigger_rule_condition_node_routes_validate_parent_paths(
             "flora_species_id": 0,
             "herbivore_species_id": 0,
             "substance_id": 0,
-            "activation_condition_json": '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
+            "activation_condition_json": (
+                '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
+            ),
         },
     )
     replace_root_resp = await api_client.post(

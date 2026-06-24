@@ -10,14 +10,18 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
-from httpx import AsyncClient
 
 import phids.api.main as api_main
 from phids.api.schemas import SimulationConfig, TriggerConditionSchema
 from phids.api.ui_state import DraftState, get_draft, set_draft
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
@@ -88,9 +92,7 @@ async def test_api_simulation_step_increments_tick(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify a manual step increments tick state once a scenario is loaded."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
     step_resp = await api_client.post("/api/simulation/step")
 
@@ -104,9 +106,7 @@ async def test_api_simulation_reset_restores_tick_zero(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify reset returns tick zero and status reflects the reset state."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
     step_resp = await api_client.post("/api/simulation/step")
     assert step_resp.status_code == 200, step_resp.text
@@ -125,9 +125,7 @@ async def test_api_simulation_wind_update_round_trip(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify wind updates are applied and returned by the simulation control route."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
     wind_resp = await api_client.put("/api/simulation/wind", json={"wind_x": 1.5, "wind_y": -0.5})
 
@@ -142,9 +140,7 @@ async def test_api_simulation_step_preserves_live_wind_update(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify a direct wind update remains active when stepping without form overrides."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
     wind_resp = await api_client.put("/api/simulation/wind", json={"wind_x": 1.25, "wind_y": -0.5})
     assert wind_resp.status_code == 200, wind_resp.text
@@ -163,9 +159,7 @@ async def test_api_simulation_start_preserves_live_tick_rate_update(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify tick-rate updates through the live route are retained when start applies draft sync."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     tick_rate_resp = await api_client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 22.5})
@@ -183,9 +177,7 @@ async def test_api_simulation_start_rejects_invalid_form_scalar(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify malformed form scalars on control routes produce a deterministic 422 response."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     resp = await api_client.post("/api/simulation/start", data={"grid_width": "not-an-int"})
@@ -200,9 +192,7 @@ async def test_api_simulation_start_applies_valid_form_overrides_to_draft(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify valid scalar form fields on start are persisted into draft biotope state."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     resp = await api_client.post(
@@ -223,9 +213,7 @@ async def test_api_simulation_start_htmx_when_already_running_returns_fragment(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify HTMX start requests while already running return the status-badge fragment path."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     start_resp = await api_client.post("/api/simulation/start")
@@ -245,9 +233,7 @@ async def test_api_simulation_step_rejects_running_and_terminated_branches(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify single-step rejects active-running and terminated loop states with deterministic 400 errors."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     start_resp = await api_client.post("/api/simulation/start")
@@ -276,9 +262,7 @@ async def test_api_simulation_start_rejects_invalid_float_form_scalar(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify malformed float form scalars on control routes produce deterministic 422 responses."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     resp = await api_client.post("/api/simulation/start", data={"tick_rate_hz": "not-a-float"})
@@ -293,9 +277,7 @@ async def test_api_simulation_control_routes_return_htmx_status_fragments(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify HTMX control requests return status-badge fragments across pause/step/reset/tick-rate."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     tick_rate_resp = await api_client.put(
@@ -325,9 +307,7 @@ async def test_api_telemetry_exports_include_tick_field(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify telemetry export endpoints return tick data once telemetry has been recorded."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
     assert api_main._sim_loop is not None
     api_main._sim_loop.telemetry.record(api_main._sim_loop.world, tick=0)
@@ -346,9 +326,7 @@ async def test_api_simulation_rejects_commands_when_terminated(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify start is rejected once the simulation loop has terminated."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder().model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
     assert api_main._sim_loop is not None
     api_main._sim_loop.terminated = True
@@ -463,9 +441,7 @@ async def test_scenario_load_draft_cancels_running_background_task(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify loading draft while a simulation task is running cancels it and returns fresh status HTML."""
-    load_resp = await api_client.post(
-        "/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json")
-    )
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
     start_resp = await api_client.post("/api/simulation/start")

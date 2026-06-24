@@ -129,19 +129,11 @@ async def telemetry_chartjs_data(since_tick: int | None = None) -> JSONResponse:
         "total_flora_energy": [_safe_float(r.get("total_flora_energy", 0.0)) for r in rows],
     }
     for fid in flora_ids:
-        series[f"plant_{fid}_pop"] = [
-            _safe_float(r.get("plant_pop_by_species", {}).get(fid, 0)) for r in rows
-        ]
-        series[f"plant_{fid}_energy"] = [
-            _safe_float(r.get("plant_energy_by_species", {}).get(fid, 0.0)) for r in rows
-        ]
-        series[f"defense_cost_{fid}"] = [
-            _safe_float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows
-        ]
+        series[f"plant_{fid}_pop"] = [_safe_float(r.get("plant_pop_by_species", {}).get(fid, 0)) for r in rows]
+        series[f"plant_{fid}_energy"] = [_safe_float(r.get("plant_energy_by_species", {}).get(fid, 0.0)) for r in rows]
+        series[f"defense_cost_{fid}"] = [_safe_float(r.get("defense_cost_by_species", {}).get(fid, 0.0)) for r in rows]
     for hid in herbivore_ids:
-        series[f"swarm_{hid}_pop"] = [
-            _safe_float(r.get("swarm_pop_by_species", {}).get(hid, 0)) for r in rows
-        ]
+        series[f"swarm_{hid}_pop"] = [_safe_float(r.get("swarm_pop_by_species", {}).get(hid, 0)) for r in rows]
 
     return JSONResponse(
         {
@@ -155,9 +147,7 @@ async def telemetry_chartjs_data(since_tick: int | None = None) -> JSONResponse:
     )
 
 
-@router.get(
-    "/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview"
-)
+@router.get("/api/telemetry/table_preview", response_class=HTMLResponse, summary="Telemetry table preview")
 async def telemetry_table_preview(
     request: Request,
     columns: str | None = None,
@@ -274,12 +264,8 @@ async def export_telemetry_format(
         raise HTTPException(status_code=400, detail="tick_interval must be >= 1")
 
     rows = api_main._sim_loop.telemetry._rows
-    flora_names: dict[int, str] = {
-        sp.species_id: sp.name for sp in api_main._sim_loop.config.flora_species
-    }
-    herbivore_names: dict[int, str] = {
-        sp.species_id: sp.name for sp in api_main._sim_loop.config.herbivore_species
-    }
+    flora_names: dict[int, str] = {sp.species_id: sp.name for sp in api_main._sim_loop.config.flora_species}
+    herbivore_names: dict[int, str] = {sp.species_id: sp.name for sp in api_main._sim_loop.config.herbivore_species}
     filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
     if format == "csv":

@@ -10,9 +10,10 @@ surfaces remain stable under edge-case parameterizations and absent-runtime stat
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 from fastapi import HTTPException
-from httpx import AsyncClient
 
 from phids.api import main as api_main
 from phids.api.presenters.dashboard import (
@@ -28,6 +29,9 @@ from phids.api.ui_state import (
 )
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 draft_service = DraftService()
 
@@ -399,10 +403,10 @@ async def test_export_route_backend_failure_branches(
     loop = _build_loaded_loop()
     await loop.step()
 
-    def _raise_tikz(*args: object, **kwargs: object) -> str:
+    def _raise_tikz(*_args: object, **_kwargs: object) -> str:
         raise ValueError("tikz failed")
 
-    def _raise_png(*args: object, **kwargs: object) -> bytes:
+    def _raise_png(*_args: object, **_kwargs: object) -> bytes:
         raise ValueError("png failed")
 
     monkeypatch.setattr("phids.api.routers.telemetry.generate_tikz_str", _raise_tikz)

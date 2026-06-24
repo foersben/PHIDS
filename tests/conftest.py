@@ -109,6 +109,7 @@ def config_builder() -> Callable[..., SimulationConfig]:
     Returns:
         A builder function that returns a configured SimulationConfig instance.
     """
+
     def _config(max_ticks: int = 5) -> SimulationConfig:
         """Create a baseline SimulationConfig.
 
@@ -153,9 +154,7 @@ def config_builder() -> Callable[..., SimulationConfig]:
             ],
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
             initial_plants=[InitialPlantPlacement(species_id=0, x=2, y=2, energy=10.0)],
-            initial_swarms=[
-                InitialSwarmPlacement(species_id=0, x=2, y=2, population=3, energy=3.0)
-            ],
+            initial_swarms=[InitialSwarmPlacement(species_id=0, x=2, y=2, population=3, energy=3.0)],
         )
 
     return _config
@@ -168,6 +167,7 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
     Returns:
         A builder function that returns a configured SimulationConfig instance.
     """
+
     def _base_config(max_ticks: int = 20) -> SimulationConfig:
         """Create a baseline SimulationConfig for loop and termination verification.
 
@@ -212,9 +212,7 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
             ],
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
             initial_plants=[InitialPlantPlacement(species_id=0, x=2, y=2, energy=10.0)],
-            initial_swarms=[
-                InitialSwarmPlacement(species_id=0, x=2, y=2, population=3, energy=3.0)
-            ],
+            initial_swarms=[InitialSwarmPlacement(species_id=0, x=2, y=2, population=3, energy=3.0)],
         )
 
     return _base_config
@@ -228,6 +226,7 @@ def add_plant() -> Callable[..., int]:
         A callable that creates a plant entity, attaches a PlantComponent to it,
         registers its position in the world's spatial hash, and returns the entity ID.
     """
+
     def _add_plant(
         world: ECSWorld,
         x: int,
@@ -296,6 +295,7 @@ def add_swarm() -> Callable[..., int]:
         A callable that creates a swarm entity, attaches a SwarmComponent to it,
         registers its position in the world's spatial hash, and returns the entity ID.
     """
+
     def _add_swarm(
         world: ECSWorld,
         x: int,
@@ -334,13 +334,9 @@ def add_swarm() -> Callable[..., int]:
         """
         if pop is not None and population is not None and pop != population:
             raise ValueError("Specify either 'pop' or 'population' with the same value")
-        final_population: int = (
-            population if population is not None else (pop if pop is not None else 10)
-        )
+        final_population: int = population if population is not None else (pop if pop is not None else 10)
         final_reproduction_divisor: float = (
-            reproduction_energy_divisor
-            if reproduction_energy_divisor is not None
-            else reproduction_divisor
+            reproduction_energy_divisor if reproduction_energy_divisor is not None else reproduction_divisor
         )
 
         entity = world.create_entity()

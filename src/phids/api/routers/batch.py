@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -23,7 +23,12 @@ from phids.api.schemas import BatchJobState, BatchStartPayload
 from phids.api.ui_state import get_draft
 from phids.telemetry.export import decimate_dataframe, filter_dataframe_columns, generate_tikz_str
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 router = APIRouter()
+
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 def _load_aggregate_json(summary_path: Path) -> dict[str, object]:
@@ -147,9 +152,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
 
             def _progress(completed: int) -> None:
                 job.completed = completed
-                api_main.logger.debug(
-                    "Batch job %s progress: %d/%d", job_id, completed, payload.runs
-                )
+                api_main.logger.debug("Batch job %s progress: %d/%d", job_id, completed, payload.runs)
 
             await loop.run_in_executor(
                 None,
@@ -173,13 +176,13 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
 
             job.finished_at = dt.datetime.now(tz=dt.UTC).isoformat()
 
-    asyncio.create_task(_run_batch())
+    task = asyncio.create_task(_run_batch())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return JSONResponse({"job_id": job_id})
 
 
-@router.get(
-    "/api/batch/status/{job_id}", response_class=HTMLResponse, summary="Batch job status row"
-)
+@router.get("/api/batch/status/{job_id}", response_class=HTMLResponse, summary="Batch job status row")
 async def batch_status(request: Request, job_id: str) -> Response:
     """Render one HTMX status-row fragment for a batch job.
 
@@ -209,9 +212,7 @@ async def batch_ledger(request: Request) -> Response:
     )
 
 
-@router.post(
-    "/api/batch/load-persisted", summary="Load persisted batch summaries into the UI ledger"
-)
+@router.post("/api/batch/load-persisted", summary="Load persisted batch summaries into the UI ledger")
 async def batch_load_persisted() -> JSONResponse:
     """Load persisted batch summaries from disk into draft job registry."""
     draft = get_draft()
@@ -294,9 +295,7 @@ async def batch_export(
                 {
                     "tick": t,
                     "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
-                    "swarm_pop_by_species": {
-                        0: herbivore_mean[i] if i < len(herbivore_mean) else 0
-                    },
+                    "swarm_pop_by_species": {0: herbivore_mean[i] if i < len(herbivore_mean) else 0},
                     "survival_probability": _safe_float(survival[i]) if i < len(survival) else 0.0,
                 }
             )

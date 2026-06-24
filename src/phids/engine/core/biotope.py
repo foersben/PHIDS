@@ -35,9 +35,7 @@ _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.8
 
 
-def _make_gaussian_kernel(
-    size: int = _KERNEL_SIZE, sigma: float = _SIGMA
-) -> npt.NDArray[np.float64]:
+def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
     """Return a normalised 2-D Gaussian kernel for VOC diffusion.
 
     Args:
@@ -115,9 +113,7 @@ class GridEnvironment:
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
         )
-        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(
-            self.plant_energy_by_species
-        )
+        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(self.plant_energy_by_species)
 
         # ------------------------------------------------------------------
         # Wind layers (dynamic, updated via REST API)
@@ -126,24 +122,20 @@ class GridEnvironment:
         self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # ------------------------------------------------------------------
-        # Signal layers  [num_signals, W, H] – read buffer
+        # Signal layers  [num_signals, W, H] - read buffer
         # ------------------------------------------------------------------
-        self.signal_layers: npt.NDArray[np.float64] = np.zeros(
-            (num_signals, width, height), dtype=np.float64
-        )
+        self.signal_layers: npt.NDArray[np.float64] = np.zeros((num_signals, width, height), dtype=np.float64)
         # Write buffer for double-buffering
         self._signal_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.signal_layers)
 
         # ------------------------------------------------------------------
         # Toxin layers  [num_toxins, W, H] (local plant-tissue fields)
         # ------------------------------------------------------------------
-        self.toxin_layers: npt.NDArray[np.float64] = np.zeros(
-            (num_toxins, width, height), dtype=np.float64
-        )
+        self.toxin_layers: npt.NDArray[np.float64] = np.zeros((num_toxins, width, height), dtype=np.float64)
         self._toxin_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.toxin_layers)
 
         # ------------------------------------------------------------------
-        # Flow-field gradient (scalar attraction field, W×H)
+        # Flow-field gradient (scalar attraction field, WxH)
         # ------------------------------------------------------------------
         self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 

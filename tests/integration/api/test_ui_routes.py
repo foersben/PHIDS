@@ -1,6 +1,12 @@
 """Integration coverage for PHIDS HTMX/UI routes and dashboard helpers.
 
-This module implements integration tests for the PHIDS HTMX-driven UI routes and dashboard helpers. The test suite verifies the correctness of server-side draft state mutation, scenario loading, placement editing, and dashboard rendering, ensuring compliance with deterministic simulation logic, double-buffered state management, and O(1) spatial hash invariants. Each test function is documented to state the invariant or biological behavior being verified and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and UI interactions. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+This module implements integration tests for the PHIDS HTMX-driven UI routes and dashboard helpers. The test suite
+verifies the correctness of server-side draft state mutation, scenario loading, placement editing, and dashboard
+rendering, ensuring compliance with deterministic simulation logic, double-buffered state management, and O(1)
+spatial hash invariants. Each test function is documented to state the invariant or biological behavior being
+verified and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological
+dynamics and UI interactions. The module-level docstring is written in accordance with Google-style documentation
+standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
 """
 
 from __future__ import annotations
@@ -9,18 +15,18 @@ import asyncio
 import json
 import logging
 import math
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine  # noqa: TC003
 from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
 import polars as pl
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient  # noqa: TC002
 
-from phids import __main__ as phids_cli
-from phids.api import main as api_main
-from phids.api import ui_state as draft_state_module
+import phids.__main__ as phids_cli
+import phids.api.main as api_main
+import phids.api.ui_state as draft_state_module
 from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api.schemas import BatchJobState, FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.services.draft_service import DraftService
@@ -33,7 +39,7 @@ from phids.io import replay
 from phids.io.scenario import load_scenario_from_json
 from phids.shared import logging_config
 from phids.telemetry import export as telemetry_export
-from phids.telemetry.analytics import TelemetryRow
+from phids.telemetry.analytics import TelemetryRow  # noqa: TC001
 
 draft_service = DraftService()
 
@@ -104,7 +110,10 @@ def _safe_int(value: object, default: int = -1) -> int:
 async def test_root_returns_full_html(api_client: AsyncClient) -> None:
     """Validates that the root endpoint returns a complete HTML workspace for the PHIDS UI.
 
-    This test ensures that the main workspace, diagnostics rail, and upload scenario elements are present in the HTML response, confirming the integrity of the HTMX-driven UI. The presence of these elements is critical for user interaction, scenario management, and diagnostics, supporting the scientific workflow of ecosystem simulation and analysis.
+    This test ensures that the main workspace, diagnostics rail, and upload scenario elements
+    are present in the HTML response, confirming the integrity of the HTMX-driven UI. The presence
+    of these elements is critical for user interaction, scenario management, and diagnostics,
+    supporting the scientific workflow of ecosystem simulation and analysis.
     """
     resp = await api_client.get("/")
 
@@ -143,7 +152,11 @@ async def test_ui_partials_render(
 ) -> None:
     """Verifies that each UI partial endpoint renders the expected canvas or configuration view.
 
-    This test suite systematically checks the rendering of dashboard and configuration views for biotope, flora, herbivores, substances, diet matrix, and trigger rules. The presence of specific markers in the HTML response confirms that the UI correctly exposes the configuration and visualization surfaces necessary for deterministic scenario editing and ecological simulation, supporting rigorous scientific experimentation.
+    This test suite systematically checks the rendering of dashboard and configuration views for
+    biotope, flora, herbivores, substances, diet matrix, and trigger rules. The presence of
+    specific markers in the HTML response confirms that the UI correctly exposes the configuration
+    and visualization surfaces necessary for deterministic scenario editing and ecological simulation,
+    supporting rigorous scientific experimentation.
     """
     resp = await api_client.get(path)
 
@@ -173,7 +186,10 @@ async def test_trigger_matrix_legacy_route_is_rejected(api_client: AsyncClient) 
 async def test_diagnostics_tabs_render(api_client: AsyncClient, path: str) -> None:
     """Ensures that diagnostics tab endpoints render the diagnostics content for model, frontend, and backend.
 
-    This test validates the accessibility and rendering of diagnostics views, which are essential for monitoring simulation health, model correctness, and backend/frontend integration. The presence of diagnostics content in the response supports the scientific requirement for transparent telemetry and error reporting in PHIDS.
+    This test validates the accessibility and rendering of diagnostics views, which are essential
+    for monitoring simulation health, model correctness, and backend/frontend integration. The
+    presence of diagnostics content in the response supports the scientific requirement for
+    transparent telemetry and error reporting in PHIDS.
     """
     resp = await api_client.get(path)
 
@@ -185,7 +201,10 @@ async def test_diagnostics_tabs_render(api_client: AsyncClient, path: str) -> No
 async def test_ui_status_helpers_render_without_loaded_simulation(api_client: AsyncClient) -> None:
     """Confirms that UI status helpers render correctly when no simulation is loaded.
 
-    This test checks the tick, status badge, and telemetry endpoints for correct responses in the absence of a loaded simulation. The test ensures that the UI accurately reflects the idle state, supporting the scientific principle of deterministic state reporting and user feedback in ecosystem simulation workflows.
+    This test checks the tick, status badge, and telemetry endpoints for correct responses in the
+    absence of a loaded simulation. The test ensures that the UI accurately reflects the idle state,
+    supporting the scientific principle of deterministic state reporting and user feedback in
+    ecosystem simulation workflows.
     """
     tick_resp = await api_client.get("/api/ui/tick")
     status_resp = await api_client.get("/api/ui/status-badge")
@@ -237,10 +256,7 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
     # Advance until only one flora species remains in the ECS world.
     while loop.tick < 140:
         asyncio.run(loop.step())
-        live_species = {
-            entity.get_component(PlantComponent).species_id
-            for entity in loop.world.query(PlantComponent)
-        }
+        live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
         if len(live_species) <= 1:
             break
 
@@ -253,15 +269,10 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
         if species_id >= 0
     }
     legend_species = {
-        species_id
-        for species_id in (_safe_int(spec.get("species_id")) for spec in all_flora_rows)
-        if species_id >= 0
+        species_id for species_id in (_safe_int(spec.get("species_id")) for spec in all_flora_rows) if species_id >= 0
     }
     configured_species = {species.species_id for species in loop.config.flora_species}
-    live_species = {
-        entity.get_component(PlantComponent).species_id
-        for entity in loop.world.query(PlantComponent)
-    }
+    live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
 
     assert payload_species == live_species
     assert legend_species == configured_species
@@ -278,7 +289,6 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
 @pytest.mark.asyncio
 async def test_simulation_load_cancels_pending_task(
     api_client: AsyncClient,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Verify loading a scenario cancels an already-scheduled simulation task before replacing the loop."""
     draft = get_draft()
@@ -435,14 +445,14 @@ def _patch_completed_batch_execution(
         return task
 
     def _fake_execute_batch(
-        self: batch_engine.BatchRunner,
-        scenario_dict: dict[str, object],
+        _self: batch_engine.BatchRunner,
+        _scenario_dict: dict[str, object],
         runs: int,
-        max_ticks: int,
+        _max_ticks: int,
         job_id: str,
         output_dir: Path,
         on_progress: object | None = None,
-        scenario_name: str | None = None,
+        _scenario_name: str | None = None,
     ) -> batch_engine.BatchResult:
         if callable(on_progress):
             on_progress(1)
@@ -596,9 +606,7 @@ def test_export_helper_builds_and_filters_dataframes() -> None:
     """Verify telemetry rows convert to tabular form and support column projection and tick decimation."""
     rows = _sample_telemetry_rows()
     dataframe = telemetry_export.telemetry_to_dataframe(rows)
-    assert {"tick", "plant_0_pop", "plant_1_energy", "swarm_1_pop", "defense_cost_0"}.issubset(
-        dataframe.columns
-    )
+    assert {"tick", "plant_0_pop", "plant_1_energy", "swarm_1_pop", "defense_cost_0"}.issubset(dataframe.columns)
 
     narrowed = telemetry_export.filter_dataframe_columns(dataframe, "plant_0_pop")
     assert list(narrowed.columns) == ["tick", "plant_0_pop"]
@@ -715,13 +723,8 @@ def test_draft_singleton_helpers_and_substance_type_labels() -> None:
     assert get_draft() is draft
 
     assert SubstanceDefinition(substance_id=0).type_label == "Signal"
-    assert (
-        SubstanceDefinition(substance_id=1, is_toxin=True, lethal=True).type_label == "Lethal Toxin"
-    )
-    assert (
-        SubstanceDefinition(substance_id=2, is_toxin=True, repellent=True).type_label
-        == "Repellent Toxin"
-    )
+    assert SubstanceDefinition(substance_id=1, is_toxin=True, lethal=True).type_label == "Lethal Toxin"
+    assert SubstanceDefinition(substance_id=2, is_toxin=True, repellent=True).type_label == "Repellent Toxin"
     assert SubstanceDefinition(substance_id=3, is_toxin=True).type_label == "Toxin"
 
 
@@ -854,23 +857,14 @@ def test_draft_trigger_rule_tree_mutations_preserve_expected_structure() -> None
     )
     draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
 
-    current_condition = cast(
-        "draft_state_module.ActivationConditionNode", draft.trigger_rules[0].activation_condition
-    )
-    current_children = cast(
-        "list[draft_state_module.ActivationConditionNode]", current_condition["conditions"]
-    )
+    current_condition = cast("draft_state_module.ActivationConditionNode", draft.trigger_rules[0].activation_condition)
+    current_children = cast("list[draft_state_module.ActivationConditionNode]", current_condition["conditions"])
     assert current_condition == {
         "kind": "all_of",
-        "conditions": [
-            {"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}
-        ],
+        "conditions": [{"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}],
     }
     assert draft_state_module._condition_node_at_path(current_condition, [0]) == current_children[0]
-    assert (
-        draft_state_module._prune_empty_condition_groups({"kind": "all_of", "conditions": []})
-        is None
-    )
+    assert draft_state_module._prune_empty_condition_groups({"kind": "all_of", "conditions": []}) is None
     with pytest.raises(IndexError):
         draft_service.replace_trigger_rule_condition_node(
             draft, 0, "9", {"kind": "substance_active", "substance_id": 0}
@@ -1002,15 +996,11 @@ def test_batch_engine_headless_aggregate_and_sanitize_helpers() -> None:
     assert isinstance(headless_rows, list)
 
     assert batch_engine.aggregate_batch_telemetry([]) == {}
-    aggregate = batch_engine.aggregate_batch_telemetry(
-        [_sample_telemetry_rows(), _sample_telemetry_rows()]
-    )
+    aggregate = batch_engine.aggregate_batch_telemetry([_sample_telemetry_rows(), _sample_telemetry_rows()])
     assert aggregate["runs_completed"] == 2
     assert aggregate["ticks"] == [0, 1]
 
-    sanitized = batch_engine._sanitize_for_json(
-        {"nan": float("nan"), "nested": [float("inf"), np.float64(1.5)]}
-    )
+    sanitized = batch_engine._sanitize_for_json({"nan": float("nan"), "nested": [float("inf"), np.float64(1.5)]})
     assert sanitized == {"nan": None, "nested": [None, 1.5]}
 
 
@@ -1021,7 +1011,7 @@ def test_batch_engine_run_and_save_uses_headless_runner(
     """Verify run-and-save delegates to the headless runner and returns the produced telemetry rows."""
     scenario_dict = DraftState.default().build_sim_config().model_dump()
     expected_rows = _sample_telemetry_rows()
-    monkeypatch.setattr(batch_engine, "_run_single_headless", lambda *args: expected_rows)
+    monkeypatch.setattr(batch_engine, "_run_single_headless", lambda *_args: expected_rows)
 
     rows = batch_engine._run_and_save((scenario_dict, 1, 2, "jobx", 0, str(tmp_path)))
     assert rows == expected_rows
@@ -1041,7 +1031,7 @@ def test_batch_runner_execute_batch_reports_progress_and_writes_summary(
             return self._value
 
     class _FakeExecutor:
-        def __init__(self, *args: object, **kwargs: object) -> None:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
             self._futures: list[_FakeFuture] = []
 
         def __enter__(self) -> _FakeExecutor:
@@ -1052,9 +1042,7 @@ def test_batch_runner_execute_batch_reports_progress_and_writes_summary(
 
         def submit(
             self,
-            fn: Callable[
-                [tuple[dict[str, object], int, int, str, int, str]], list[dict[str, object]]
-            ],
+            fn: Callable[[tuple[dict[str, object], int, int, str, int, str]], list[dict[str, object]]],
             args: tuple[dict[str, object], int, int, str, int, str],
         ) -> _FakeFuture:
             future = _FakeFuture(fn(args))
@@ -1062,10 +1050,8 @@ def test_batch_runner_execute_batch_reports_progress_and_writes_summary(
             return future
 
     monkeypatch.setattr(batch_engine.concurrent.futures, "ProcessPoolExecutor", _FakeExecutor)
-    monkeypatch.setattr(
-        batch_engine.concurrent.futures, "as_completed", lambda futures: list(futures)
-    )
-    monkeypatch.setattr(batch_engine.multiprocessing, "get_context", lambda mode: object())
+    monkeypatch.setattr(batch_engine.concurrent.futures, "as_completed", lambda futures: list(futures))
+    monkeypatch.setattr(batch_engine.multiprocessing, "get_context", lambda _mode: object())
 
     progress: list[int] = []
     scenario_dict = DraftState.default().build_sim_config().model_dump()
@@ -1099,10 +1085,7 @@ def test_logging_config_env_coercion_and_recent_log_capture(
     logger = logging.getLogger("phids.coverage")
     logger.warning("coverage logging smoke")
     assert logging_config.get_simulation_debug_interval() == 12
-    assert any(
-        entry["message"] == "coverage logging smoke"
-        for entry in logging_config.get_recent_logs(limit=10)
-    )
+    assert any(entry["message"] == "coverage logging smoke" for entry in logging_config.get_recent_logs(limit=10))
     assert (tmp_path / "phids.log").exists()
 
 
@@ -1242,12 +1225,8 @@ async def test_batch_export_csv_respects_tick_interval_decimation(
     monkeypatch.setattr(api_main, "_BATCH_DIR", batch_dir)
 
     async with api_client as client:
-        full_resp = await client.get(
-            f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 1}
-        )
-        decimated_resp = await client.get(
-            f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 2}
-        )
+        full_resp = await client.get(f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 1})
+        decimated_resp = await client.get(f"/api/batch/export/{job_id}", params={"format": "csv", "tick_interval": 2})
 
     assert full_resp.status_code == 200, full_resp.text
     assert decimated_resp.status_code == 200, decimated_resp.text
@@ -1620,13 +1599,17 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates that live dashboard payload and cell details include signals, mycorrhizal links, and triggered substances.
+    """Validates live dashboard payload and cell details including signals and links.
 
-    This test simulates a live scenario with plant and swarm placements, trigger rules, and substance definitions. It verifies that the dashboard and cell details endpoints report active signals, mycorrhizal links, and triggered/aftereffect states for substances, supporting the scientific requirement for transparent reporting of emergent ecological dynamics and signal propagation in PHIDS.
+    This test simulates a live scenario with plant and swarm placements, trigger rules, and
+    substance definitions. It verifies that the dashboard and cell details endpoints report
+    active signals, mycorrhizal links, and triggered/aftereffect states for substances,
+    supporting the scientific requirement for transparent reporting of emergent ecological
+    dynamics and signal propagation in PHIDS.
     """
     monkeypatch.setattr(
         "phids.engine.systems.interaction._choose_neighbour_by_flow_probability",
-        lambda swarm, flow_field, width, height, invert=False: (swarm.x, swarm.y),
+        lambda swarm, _flow_field, _width, _height, _invert=False: (swarm.x, swarm.y),
     )
 
     draft = get_draft()
@@ -1714,7 +1697,9 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
 async def test_ui_cell_details_rejects_stale_live_tick(api_client: AsyncClient) -> None:
     """Ensures that cell details endpoint rejects requests with stale expected tick in live mode.
 
-    This test verifies that the cell details endpoint returns a 409 status and correct tick information when the expected tick is stale, supporting the scientific requirement for deterministic state synchronization and error reporting in live simulation scenarios.
+    This test verifies that the cell details endpoint returns a 409 status and correct tick
+    information when the expected tick is stale, supporting the scientific requirement for
+    deterministic state synchronization and error reporting in live simulation scenarios.
     """
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 3, 3, 20.0)
@@ -1742,7 +1727,9 @@ async def test_ui_cell_details_rejects_stale_live_tick(api_client: AsyncClient) 
 async def test_model_diagnostics_and_telemetry_refresh_context(api_client: AsyncClient) -> None:
     """Validates that model diagnostics and telemetry endpoints refresh context after simulation step.
 
-    This test ensures that the diagnostics and telemetry endpoints report updated context after a simulation step, supporting the scientific requirement for transparent reporting of simulation progress, plant death diagnostics, and energy deficit watch in PHIDS.
+    This test ensures that the diagnostics and telemetry endpoints report updated context after
+    a simulation step, supporting the scientific requirement for transparent reporting of
+    simulation progress, plant death diagnostics, and energy deficit watch in PHIDS.
     """
     draft = get_draft()
     draft_service.add_plant_placement(draft, 0, 5, 5, 17.0)
@@ -1766,7 +1753,9 @@ async def test_model_diagnostics_and_telemetry_refresh_context(api_client: Async
 async def test_backend_diagnostics_shows_recent_logs(api_client: AsyncClient) -> None:
     """Ensures that backend diagnostics endpoint displays recent logs for UI diagnostics.
 
-    This test validates that the backend diagnostics endpoint exposes recent log entries, supporting the scientific requirement for transparent error reporting and backend health monitoring in PHIDS UI diagnostics workflows.
+    This test validates that the backend diagnostics endpoint exposes recent log entries,
+    supporting the scientific requirement for transparent error reporting and backend
+    health monitoring in PHIDS UI diagnostics workflows.
     """
     api_main.logger.info("UI diagnostics backend smoke test")
 
@@ -1782,7 +1771,10 @@ async def test_backend_diagnostics_shows_recent_logs(api_client: AsyncClient) ->
 async def test_scenario_export_and_import_round_trip_ui(api_client: AsyncClient) -> None:
     """Validates scenario export and import round-trip functionality via the UI endpoints.
 
-    This test ensures that the scenario export and import endpoints correctly serialize and deserialize scenario state, preserving mycorrhizal growth interval and placement attributes. The test supports the scientific requirement for reproducible scenario management and state persistence in PHIDS ecosystem simulation workflows.
+    This test ensures that the scenario export and import endpoints correctly serialize and
+    deserialize scenario state, preserving mycorrhizal growth interval and placement attributes.
+    The test supports the scientific requirement for reproducible scenario management and state
+    persistence in PHIDS ecosystem simulation workflows.
     """
     export_path = Path("/tmp/phids-ui-test.json")
     draft = get_draft()

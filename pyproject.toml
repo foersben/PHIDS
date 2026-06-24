@@ -96,6 +96,7 @@ addopts = [
     "--benchmark-storage=.cache/benchmarks", # Store benchmark outputs here
 ]
 cache_dir = ".cache/pytest"
+hypothesis_database_file = ".cache/hypothesis/db"
 
 [tool.coverage.run]
 source = ["src/phids"]

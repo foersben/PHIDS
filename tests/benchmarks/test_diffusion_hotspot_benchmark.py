@@ -43,19 +43,15 @@ def _enforce_budget(  # type: ignore[no-untyped-def]
 
     if mean_ms > warn_mean_ms:
         warnings.warn(
-            (
-                f"{metric_prefix} mean latency exceeded warning budget: "
-                f"{mean_ms:.3f}ms > {warn_mean_ms:.3f}ms"
-            ),
+            (f"{metric_prefix} mean latency exceeded warning budget: {mean_ms:.3f}ms > {warn_mean_ms:.3f}ms"),
             RuntimeWarning,
+            stacklevel=2,
         )
     if p95_ms > warn_p95_ms:
         warnings.warn(
-            (
-                f"{metric_prefix} p95 latency exceeded warning budget: "
-                f"{p95_ms:.3f}ms > {warn_p95_ms:.3f}ms"
-            ),
+            (f"{metric_prefix} p95 latency exceeded warning budget: {p95_ms:.3f}ms > {warn_p95_ms:.3f}ms"),
             RuntimeWarning,
+            stacklevel=2,
         )
 
     assert mean_ms <= fail_mean_ms, (

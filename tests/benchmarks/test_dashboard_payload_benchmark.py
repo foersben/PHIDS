@@ -61,24 +61,19 @@ def test_dashboard_payload_build_and_json_encode_benchmark(  # type: ignore[no-u
 
     if mean_ms > warn_mean_ms:
         warnings.warn(
-            (
-                "Dashboard payload mean latency exceeded warning budget: "
-                f"{mean_ms:.3f}ms > {warn_mean_ms:.3f}ms"
-            ),
+            (f"Dashboard payload mean latency exceeded warning budget: {mean_ms:.3f}ms > {warn_mean_ms:.3f}ms"),
             RuntimeWarning,
+            stacklevel=2,
         )
     if p95_ms > warn_p95_ms:
         warnings.warn(
-            (
-                "Dashboard payload p95 latency exceeded warning budget: "
-                f"{p95_ms:.3f}ms > {warn_p95_ms:.3f}ms"
-            ),
+            (f"Dashboard payload p95 latency exceeded warning budget: {p95_ms:.3f}ms > {warn_p95_ms:.3f}ms"),
             RuntimeWarning,
+            stacklevel=2,
         )
 
     assert mean_ms <= fail_mean_ms, (
-        "Dashboard payload mean latency exceeded fail budget: "
-        f"{mean_ms:.3f}ms > {fail_mean_ms:.3f}ms"
+        f"Dashboard payload mean latency exceeded fail budget: {mean_ms:.3f}ms > {fail_mean_ms:.3f}ms"
     )
     assert p95_ms <= fail_p95_ms, (
         f"Dashboard payload p95 latency exceeded fail budget: {p95_ms:.3f}ms > {fail_p95_ms:.3f}ms"

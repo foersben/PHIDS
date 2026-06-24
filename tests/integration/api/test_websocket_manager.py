@@ -25,9 +25,7 @@ class _FakeConfig:
 class _FakeLoop:
     """Minimal loop surrogate exposing the stream-facing simulation contract."""
 
-    def __init__(
-        self, *, tick: int = 0, terminated: bool = False, tick_rate_hz: float = 10.0
-    ) -> None:
+    def __init__(self, *, tick: int = 0, terminated: bool = False, tick_rate_hz: float = 10.0) -> None:
         self.tick = tick
         self.state_revision = 0
         self.terminated = terminated

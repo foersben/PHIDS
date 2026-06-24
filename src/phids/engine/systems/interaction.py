@@ -1,7 +1,7 @@
 """Interaction system: swarm gradient navigation, herbivory, metabolic attrition, and mitosis.
 
 This module implements the second of three ordered per-tick simulation phases in the PHIDS engine.
-The interaction phase resolves all herbivore–flora encounters after plant lifecycle dynamics have
+The interaction phase resolves all herbivore-flora encounters after plant lifecycle dynamics have
 been committed to the energy layers, but before chemical-defense substances are emitted and
 diffused. This ordering is a deliberate architectural invariant: herbivory must operate against
 the most current plant-energy state produced by the lifecycle phase, while the chemical-signaling
@@ -12,7 +12,7 @@ component access, maintaining strict separation between signal propagation and e
 
 Swarm movement is governed by probabilistic sampling over the 4-connected Von-Neumann
 neighbourhood, weighted by the scalar flow-field gradient encoded in ``GridEnvironment.flow_field``.
-When the local gradient range falls below the numerical threshold of 1×10⁻⁶ — indicating a
+When the local gradient range falls below the numerical threshold of 1x10^-6 — indicating a
 chemically flat or saturated zone — movement inertia encoded in ``SwarmComponent.last_dx`` /
 ``SwarmComponent.last_dy`` introduces a directional persistence bias, approximating the
 klinokinetic orientation behaviour observed in real arthropod foragers navigating low-stimulus
@@ -22,11 +22,11 @@ the ceiling enter a transient random-walk dispersal phase, modelling the habitat
 saturation-driven emigration documented in colonial insect foragers. Herbivory is applied
 exclusively to stationary swarms (those that did not relocate during the current tick) via O(1)
 spatial hash lookups; a species-pair diet-compatibility matrix gates energy transfer between each
-herbivore–flora combination, ensuring phylogenetic dietary specificity. Metabolic attrition
+herbivore-flora combination, ensuring phylogenetic dietary specificity. Metabolic attrition
 deducts per-individual upkeep energy each tick; energy deficits are resolved as population
 casualties computed by ⌈deficit / energy_min⌉, converting energetic debt directly into
 individual mortality. Surplus energy above the swarm-baseline threshold is converted into new
-individuals at cost ``energy_min × reproduction_energy_divisor``, implementing a simple
+individuals at cost ``energy_min * reproduction_energy_divisor``, implementing a simple
 net-assimilation model of reproduction. Mitosis splits an oversized swarm into two equal halves
 and registers both entities in the ECS world and spatial hash, mimicking the colony fission
 events characteristic of social hymenoptera and clonal plant-grazer aggregations.
@@ -40,6 +40,7 @@ Attributes:
 from __future__ import annotations
 
 import random
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -47,8 +48,10 @@ from numba import njit  # type: ignore[import-untyped]
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.biotope import GridEnvironment
-from phids.engine.core.ecs import ECSWorld
+
+if TYPE_CHECKING:
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.core.ecs import ECSWorld
 
 _orig_choice = random.choice
 _orig_choices = random.choices
@@ -69,7 +72,7 @@ def _accumulate_tile_population(
     spatial hash and summing component populations on every crowding check, each movement and
     reproduction event issues a corrective delta to keep the cache consistent. Zero and negative
     population tiles are evicted immediately to avoid unbounded memory growth across a simulation
-    run with many birth–death cycles. The function is intentionally side-effecting and operates
+    run with many birth-death cycles. The function is intentionally side-effecting and operates
     in-place on the shared ``tile_populations`` mapping passed by the outer interaction loop.
 
     Args:
@@ -86,8 +89,6 @@ def _accumulate_tile_population(
         tile_populations[pos] = next_population
     else:
         tile_populations.pop(pos, None)
-
-
 
 
 @njit(cache=True)  # type: ignore[untyped-decorator]
@@ -210,9 +211,7 @@ def _choose_neighbour_by_flow_probability(
         if y < height - 1:
             candidates.append((x, y + 1))
 
-        scores = [
-            float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates
-        ]
+        scores = [float(flow_field[candidate_x, candidate_y]) for candidate_x, candidate_y in candidates]
         max_score = max(scores)
         min_score = min(scores)
 
@@ -414,13 +413,13 @@ def run_interaction(
     world: ECSWorld,
     env: GridEnvironment,
     diet_matrix: list[list[bool]],
-    tick: int,
+    _tick: int,
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one complete interaction tick, advancing all swarm entities through seven ordered phases.
 
     This function is the primary entry point for the interaction system and orchestrates the full
-    herbivore–flora encounter resolution cycle for a single simulation tick. The seven sequential
+    herbivore-flora encounter resolution cycle for a single simulation tick. The seven sequential
     sub-phases — movement cooldown, gradient-directed navigation with anchoring, herbivorous
     feeding, metabolic attrition, mortality evaluation, net-assimilation reproduction, and colony
     fission — are applied atomically to each swarm entity in sequence. The ordering is a strict
@@ -446,12 +445,12 @@ def run_interaction(
         Only when neither condition holds is gradient-directed movement via
     ``_choose_neighbour_by_flow_probability`` invoked.
 
-    Herbivory computes consumed energy as ``min((consumption_rate / velocity) × population,
+    Herbivory computes consumed energy as ``min((consumption_rate / velocity) * population,
     plant.energy)`` and transfers it directly to the swarm's energy budget, modelling
     assimilation efficiency. Plants whose post-consumption energy falls below
     ``survival_threshold`` are immediately removed from the ECS registry and spatial hash,
     recording the cause of death in ``plant_death_causes`` if provided. Metabolic attrition
-    applies a per-tick upkeep cost of ``population × energy_min × energy_upkeep_per_individual``;
+    applies a per-tick upkeep cost of ``population * energy_min * energy_upkeep_per_individual``;
     any resulting energy deficit is liquidated by computing casualties as ⌈deficit / energy_min⌉
     and reducing the population accordingly, with residual energy redistributed among survivors.
     Reproduction converts swarm-scale surplus energy above the per-capita baseline into new
@@ -503,10 +502,7 @@ def run_interaction(
             old_x, old_y = swarm.x, swarm.y
 
             # 1. Crowding takes strict precedence (Physical Jostling)
-            if (
-                not swarm.repelled
-                and tile_populations.get((swarm.x, swarm.y), 0) > TILE_CARRYING_CAPACITY
-            ):
+            if not swarm.repelled and tile_populations.get((swarm.x, swarm.y), 0) > TILE_CARRYING_CAPACITY:
                 swarm.repelled = True
                 swarm.repelled_ticks_remaining = 1
 
@@ -525,9 +521,7 @@ def run_interaction(
                     if not co_entity.has_component(PlantComponent):
                         continue
                     anchor_plant = co_entity.get_component(PlantComponent)
-                    herbivore_row = (
-                        diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-                    )
+                    herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
                     if (
                         anchor_plant.species_id < len(herbivore_row)
                         and herbivore_row[anchor_plant.species_id]
@@ -560,7 +554,7 @@ def run_interaction(
             swarm.move_cooldown = swarm.velocity - 1
 
         # ----------------------------------------------------------------
-        # 3. Feeding – check co-located plants via spatial hash
+        # 3. Feeding - check co-located plants via spatial hash
         # ----------------------------------------------------------------
         if not has_moved:
             ate_anything = False
@@ -575,13 +569,8 @@ def run_interaction(
                 target_plant: PlantComponent = co_entity.get_component(PlantComponent)
 
                 # Diet compatibility check
-                herbivore_row = (
-                    diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-                )
-                if not (
-                    target_plant.species_id < len(herbivore_row)
-                    and herbivore_row[target_plant.species_id]
-                ):
+                herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
+                if not (target_plant.species_id < len(herbivore_row) and herbivore_row[target_plant.species_id]):
                     on_incompatible_plant = True
                     continue
 
@@ -685,9 +674,7 @@ def run_interaction(
         # 7. Mitosis
         # ----------------------------------------------------------------
         split_threshold = (
-            swarm.split_population_threshold
-            if swarm.split_population_threshold > 0
-            else 2 * swarm.initial_population
+            swarm.split_population_threshold if swarm.split_population_threshold > 0 else 2 * swarm.initial_population
         )
         if swarm.population >= split_threshold:
             pre_split_population = swarm.population

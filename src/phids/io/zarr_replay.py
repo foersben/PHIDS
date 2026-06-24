@@ -42,9 +42,7 @@ try:
     import zarr
     import zarr.codecs
 except ImportError as e:
-    raise ImportError(
-        "zarr>=3.0 is required for ZarrReplayBuffer. Install with: uv add zarr"
-    ) from e
+    raise ImportError("zarr>=3.0 is required for ZarrReplayBuffer. Install with: uv add zarr") from e
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +87,7 @@ class ZarrReplayBuffer:
         self,
         max_frames: int | None = None,
         *,
-        spill_to_disk: bool = False,  # Ignored for Zarr; included for drop-in compatibility
+        spill_to_disk: bool = False,  # noqa: ARG002  # Ignored for Zarr; included for drop-in compatibility
         spill_path: str | Path | None = None,
     ) -> None:
         """Create or open a Zarr replay buffer.
@@ -232,13 +230,9 @@ class ZarrReplayBuffer:
         terminated_value = state.get("terminated", False)
         termination_reason_value = state.get("termination_reason", None)
         self._append_fields(
-            tick=int(tick_value)
-            if isinstance(tick_value, (int, float, str))
-            else self._frame_count,
+            tick=int(tick_value) if isinstance(tick_value, (int, float, str)) else self._frame_count,
             terminated=bool(terminated_value),
-            termination_reason=(
-                termination_reason_value if isinstance(termination_reason_value, str) else None
-            ),
+            termination_reason=(termination_reason_value if isinstance(termination_reason_value, str) else None),
             fields={
                 field_name: field_data
                 for field_name, field_data in state.items()
@@ -373,9 +367,7 @@ class ZarrReplayBuffer:
             IndexError: If the tick is out of range.
         """
         if tick < 0 or tick >= len(self._metadata):
-            raise IndexError(
-                f"Replay frame index out of range: {tick} (total frames={len(self._metadata)})"
-            )
+            raise IndexError(f"Replay frame index out of range: {tick} (total frames={len(self._metadata)})")
 
         root = self._ensure_store()
         # Calculate actual frame index in Zarr store (accounting for offset)

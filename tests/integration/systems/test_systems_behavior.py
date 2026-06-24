@@ -1,14 +1,24 @@
 """Test suite for PHIDS simulation systems: lifecycle, interaction, signaling, and termination.
 
-This module implements rigorous scientific tests for the PHIDS simulation systems, including lifecycle, interaction, signaling, and termination. Each test function is documented to state the invariant or biological behavior being verified and its scientific rationale, supporting reproducible validation of emergent ecological dynamics, double-buffered state management, and O(1) spatial hash invariants. The test suite ensures compliance with deterministic simulation logic, data-oriented modeling, and the Rule of 16 for memory allocation. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+This module implements rigorous scientific tests for the PHIDS simulation systems, including lifecycle,
+interaction, signaling, and termination. Each test function is documented to state the invariant or
+biological behavior being verified and its scientific rationale, supporting reproducible validation of
+emergent ecological dynamics, double-buffered state management, and O(1) spatial hash invariants. The
+test suite ensures compliance with deterministic simulation logic, data-oriented modeling, and the
+Rule of 16 for memory allocation. The module-level docstring is written in accordance with Google-style
+documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and
+scientific rationale.
 """
 
 from __future__ import annotations
 
 import random
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from phids.api.schemas import (
     AllOfConditionSchema,
@@ -303,7 +313,7 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, k: [seq[weights.index(max(weights))]],
+        lambda seq, weights, _k: [seq[weights.index(max(weights))]],
     )
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
@@ -366,7 +376,7 @@ def test_interaction_moved_swarm_does_not_feed_in_same_tick(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, k: [seq[weights.index(max(weights))]],
+        lambda seq, weights, _k: [seq[weights.index(max(weights))]],
     )
 
     run_interaction(world, env, diet_matrix=[[True]], tick=0)
@@ -426,7 +436,7 @@ def test_interaction_mitosis_offspring_can_diverge_next_tick(
     # divergence invariant is independent of ambient RNG state or test order.
     monkeypatch.setattr(
         "phids.engine.systems.interaction._random_walk_step",
-        lambda x, y, width, height: (
+        lambda x, y, width, _height: (
             (x - 1) if x > 0 else (1 if width > 1 else 0),
             y,
         ),
@@ -1082,9 +1092,7 @@ def test_signaling_allows_condition_only_trigger_without_local_herbivore() -> No
 
     by_id = {
         sub.substance_id: sub
-        for sub in (
-            entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent)
-        )
+        for sub in (entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent))
     }
     assert 1 in by_id
     assert by_id[1].active is True
@@ -1122,9 +1130,7 @@ def test_signaling_environmental_signal_condition_triggers_without_herbivore() -
 
     by_id = {
         sub.substance_id: sub
-        for sub in (
-            entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent)
-        )
+        for sub in (entity.get_component(SubstanceComponent) for entity in world.query(SubstanceComponent))
     }
     assert 1 in by_id
     assert by_id[1].active is True
@@ -1246,8 +1252,7 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately() -> Non
 
     # The swarm must have been destroyed within this signaling tick
     assert list(world.query(SwarmComponent)) == [], (
-        "Ghost swarm detected: zero-population swarm entity was not garbage-collected "
-        "within the signaling phase."
+        "Ghost swarm detected: zero-population swarm entity was not garbage-collected within the signaling phase."
     )
     assert not world.has_entity(swarm_id), (
         "Ghost swarm detected: swarm entity still present in ECS registry after lethal toxin kill."

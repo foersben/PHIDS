@@ -6,7 +6,7 @@ runner, the statistical aggregation performed by
 :func:`~phids.engine.batch.aggregate_batch_telemetry`, and the end-to-end
 :class:`~phids.engine.batch.BatchRunner` execution path. Because
 :func:`_run_single_headless` invokes Numba JIT compilation on first call, the
-tests use minimal grid dimensions (2×2) and short tick counts (3–5) to keep
+tests use minimal grid dimensions (2x2) and short tick counts (3-5) to keep
 wall-clock time acceptable in CI. The tests do not exercise the
 ``ProcessPoolExecutor`` path to avoid subprocess overhead in unit testing;
 instead, the aggregation and single-run interfaces are tested in-process via
@@ -16,13 +16,16 @@ instead, the aggregation and single-run interfaces are tested in-process via
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def _minimal_scenario() -> dict:
-    """Return a JSON-serialisable SimulationConfig dict for a 4×4 grid with one flora and one herbivore."""
+    """Return a JSON-serialisable SimulationConfig dict for a 4x4 grid with one flora and one herbivore."""
     from phids.api.schemas import (
         DietCompatibilityMatrix,
         FloraSpeciesParams,
@@ -283,7 +286,7 @@ def test_run_single_headless_breaks_when_termination_detected(monkeypatch) -> No
         terminated = True
 
     class _FakeTelemetry:
-        _rows = [{"tick": 0, "flora_population": 0, "herbivore_population": 0}]
+        _rows = [{"tick": 0, "flora_population": 0, "herbivore_population": 0}]  # noqa: RUF012
 
     class _FakeLoop:
         def __init__(self, _config: object) -> None:
@@ -329,15 +332,11 @@ def test_execute_batch_handles_success_and_failure_and_writes_strict_json(
         def submit(self, _fn: object, _args: object) -> _FakeFuture:
             self._submitted += 1
             if self._submitted == 1:
-                return _FakeFuture(
-                    payload=[{"tick": 0, "flora_population": 2, "herbivore_population": 1}]
-                )
+                return _FakeFuture(payload=[{"tick": 0, "flora_population": 2, "herbivore_population": 1}])
             return _FakeFuture(exc=RuntimeError("worker failed"))
 
     monkeypatch.setattr(batch_mod.concurrent.futures, "ProcessPoolExecutor", _FakeExecutor)
-    monkeypatch.setattr(
-        batch_mod.concurrent.futures, "as_completed", lambda futures: list(futures.keys())
-    )
+    monkeypatch.setattr(batch_mod.concurrent.futures, "as_completed", lambda futures: list(futures.keys()))
     monkeypatch.setattr(batch_mod.multiprocessing, "get_context", lambda _method: object())
 
     # Inject NaN to verify _sanitize_for_json + allow_nan=False output path.

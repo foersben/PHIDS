@@ -15,13 +15,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from phids.api.schemas import SimulationConfig
 from phids.api.ui_state import DraftState
 from phids.engine.loop import SimulationLoop
 from phids.shared.logging_config import configure_logging, get_simulation_debug_interval
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
+
+    from phids.api.schemas import SimulationConfig
 
 
 def test_configure_logging_respects_env(monkeypatch) -> None:
@@ -50,7 +54,6 @@ def test_draft_build_logs_missing_species_warning(caplog) -> None:
 
 
 def test_simulation_loop_emits_periodic_debug_summary(
-    monkeypatch,
     caplog,
     loop_config_builder: Callable[..., SimulationConfig],
 ) -> None:

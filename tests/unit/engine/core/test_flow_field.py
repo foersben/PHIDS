@@ -1,6 +1,13 @@
 """Test coverage for PHIDS flow-field computation and signal/toxin propagation invariants.
 
-This module implements unit tests for the PHIDS flow-field computation and signal/toxin propagation logic. The test suite verifies deterministic gradient generation, camouflage application, and toxin repulsion, ensuring compliance with NumPy vectorization, double-buffered state management, and O(1) spatial hash invariants. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and flow-field mechanics. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+This module implements unit tests for the PHIDS flow-field computation and signal/toxin
+propagation logic. The test suite verifies deterministic gradient generation, camouflage
+application, and toxin repulsion, ensuring compliance with NumPy vectorization, double-buffered
+state management, and O(1) spatial hash invariants. Each test function is documented to state
+the invariant or biological behavior being validated and its scientific rationale, supporting
+reproducible and rigorous validation of emergent ecological dynamics and flow-field mechanics.
+The module-level docstring is written in accordance with Google-style documentation standards,
+providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
 """
 
 from __future__ import annotations
@@ -94,9 +101,7 @@ def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
     plant_b[2, 1] = 2.0
 
     combined = _compute_flow_field_impl(plant_a + plant_b, zero_toxins, width=3, height=3)
-    separate_sum = _compute_flow_field_impl(
-        plant_a, zero_toxins, width=3, height=3
-    ) + _compute_flow_field_impl(
+    separate_sum = _compute_flow_field_impl(plant_a, zero_toxins, width=3, height=3) + _compute_flow_field_impl(
         plant_b,
         zero_toxins,
         width=3,

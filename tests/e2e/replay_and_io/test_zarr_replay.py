@@ -195,9 +195,7 @@ class TestZarrReplayBuffer:
 
         frame = buf.get_frame(0)
         assert frame["tick"] == 7
-        np.testing.assert_array_equal(
-            np.asarray(frame["plant_energy_layer"]), env.plant_energy_layer
-        )
+        np.testing.assert_array_equal(np.asarray(frame["plant_energy_layer"]), env.plant_energy_layer)
         restored_signals = np.asarray(frame["signal_layers"], dtype=np.float32)
         assert float(restored_signals[0, 0, 0]) == 0.0
 
@@ -235,7 +233,7 @@ class TestZarrReplayMigration:
         legacy_buf.save(replay_path)
         return replay_path
 
-    def test_zarr_load_legacy_msgpack(self, temp_zarr_dir: Path, temp_legacy_bin: Path) -> None:
+    def test_zarr_load_legacy_msgpack(self, _temp_zarr_dir: Path, temp_legacy_bin: Path) -> None:
         """Verify migration of legacy msgpack replay to Zarr."""
         buf = ZarrReplayBuffer.load(temp_legacy_bin)
 
@@ -330,7 +328,7 @@ class TestZarrReplayAPI:
         loaded_buf = ZarrReplayBuffer.load(export_path)
         assert len(loaded_buf) == len(zarr_buf)
 
-    def test_zarr_lazy_store_initialization(self, temp_zarr_dir: Path) -> None:
+    def test_zarr_lazy_store_initialization(self, _temp_zarr_dir: Path) -> None:
         """Verify store is created lazily on first append."""
         buf = ZarrReplayBuffer()
         # Store should not exist yet

@@ -16,17 +16,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 
-from phids.api.schemas import SimulationConfig
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.loop import SimulationLoop
 from phids.telemetry.conditions import check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from phids.api.schemas import SimulationConfig
 
 
 def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:
@@ -84,9 +88,7 @@ def test_termination_z1_max_ticks() -> None:
         ({"z4_herbivore_species": 1}, "Z4"),
     ],
 )
-def test_termination_species_extinction_branches(
-    kwargs: dict[str, int], expected_reason: str
-) -> None:
+def test_termination_species_extinction_branches(kwargs: dict[str, int], expected_reason: str) -> None:
     """Validate species-index extinction termination branches through table-driven inputs."""
     world = _world_with_counts([0], [0])
     result = check_termination(world, tick=0, max_ticks=100, **kwargs)
@@ -110,9 +112,7 @@ def test_termination_z3_z5_all_extinction() -> None:
         ({"z7_max_total_herbivore_population": 1}, "Z7"),
     ],
 )
-def test_termination_threshold_branches(
-    kwargs: dict[str, float | int], expected_reason: str
-) -> None:
+def test_termination_threshold_branches(kwargs: dict[str, float | int], expected_reason: str) -> None:
     """Validate numeric-threshold termination branches through table-driven inputs."""
     world = _world_with_counts([0], [0])
     result = check_termination(world, tick=0, max_ticks=100, **kwargs)

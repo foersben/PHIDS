@@ -1,6 +1,14 @@
 """Test coverage for PHIDS DraftState and UI state mutation invariants.
 
-This module implements unit tests for the PHIDS DraftState and UI state mutation logic. The test suite verifies deterministic scenario construction, species and substance management, trigger rule editing, and placement mutation, ensuring compliance with the Rule of 16, O(1) spatial hash invariants, and double-buffered simulation logic. Each test function is documented to state the invariant or biological behavior being validated and its scientific rationale, supporting reproducible and rigorous validation of emergent ecological dynamics and UI configuration. The module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the test suite's scope and scientific rationale.
+This module implements unit tests for the PHIDS DraftState and UI state mutation logic.
+The test suite verifies deterministic scenario construction, species and substance management,
+trigger rule editing, and placement mutation, ensuring compliance with the Rule of 16,
+O(1) spatial hash invariants, and double-buffered simulation logic. Each test function is
+documented to state the invariant or biological behavior being validated and its scientific
+rationale, supporting reproducible and rigorous validation of emergent ecological dynamics
+and UI configuration. The module-level docstring is written in accordance with Google-style
+documentation standards, providing a comprehensive scholarly abstract of the test suite's
+scope and scientific rationale.
 """
 
 from __future__ import annotations
@@ -65,13 +73,8 @@ def test_condition_helper_utilities_and_type_labels() -> None:
     """Verify condition helper utilities and substance type labels remain deterministic."""
     assert SubstanceDefinition(substance_id=0, is_toxin=False).type_label == "Signal"
     assert SubstanceDefinition(substance_id=1, is_toxin=True).type_label == "Toxin"
-    assert (
-        SubstanceDefinition(substance_id=2, is_toxin=True, lethal=True).type_label == "Lethal Toxin"
-    )
-    assert (
-        SubstanceDefinition(substance_id=3, is_toxin=True, repellent=True).type_label
-        == "Repellent Toxin"
-    )
+    assert SubstanceDefinition(substance_id=2, is_toxin=True, lethal=True).type_label == "Lethal Toxin"
+    assert SubstanceDefinition(substance_id=3, is_toxin=True, repellent=True).type_label == "Repellent Toxin"
 
     assert _parse_condition_path("") == []
     assert _parse_condition_path("0.1.2") == [0, 1, 2]
@@ -223,9 +226,7 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
     assert draft.trigger_rules[0].flora_species_id == 0
 
     draft_service.remove_herbivore(draft, 0)
-    assert [
-        cast("HerbivoreSpeciesParams", herbivore).species_id for herbivore in draft.herbivore_species
-    ] == [0]
+    assert [cast("HerbivoreSpeciesParams", herbivore).species_id for herbivore in draft.herbivore_species] == [0]
     assert draft.diet_matrix == [[True]]
     assert draft.trigger_rules[0].herbivore_species_id == 0
     assert draft.trigger_rules[0].activation_condition == {
@@ -457,17 +458,13 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
     draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
-        "conditions": [
-            {"kind": "herbivore_presence", "herbivore_species_id": 0, "min_herbivore_population": 3}
-        ],
+        "conditions": [{"kind": "herbivore_presence", "herbivore_species_id": 0, "min_herbivore_population": 3}],
     }
     draft_service.delete_trigger_rule_condition_node(draft, 0, "")
     assert draft.trigger_rules[0].activation_condition is None
 
     with pytest.raises(IndexError):
-        draft_service.append_trigger_rule_condition_child(
-            draft, 0, "", {"kind": "substance_active", "substance_id": 0}
-        )
+        draft_service.append_trigger_rule_condition_child(draft, 0, "", {"kind": "substance_active", "substance_id": 0})
     with pytest.raises(IndexError):
         draft_service.update_trigger_rule_condition_node(draft, 0, "0", substance_id=0)
     with pytest.raises(IndexError):
@@ -502,9 +499,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
             "min_herbivore_population": 5,
         },
     )
-    draft.trigger_rules.append(
-        TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=99)
-    )
+    draft.trigger_rules.append(TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=99))
     draft.mycorrhizal_growth_interval_ticks = 11
     draft.z2_flora_species_extinction = 0
     draft.z4_herbivore_species_extinction = 0

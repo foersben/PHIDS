@@ -15,12 +15,15 @@ import asyncio
 import json
 import logging
 import zlib
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import msgpack  # type: ignore[import-untyped]
 from fastapi import WebSocket, WebSocketDisconnect
 
-from phids.engine.loop import SimulationLoop
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from phids.engine.loop import SimulationLoop
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +68,7 @@ class SimulationStreamManager:
         return self._cache_payload
 
     @staticmethod
-    async def _safe_close(
-        websocket: WebSocket, *, code: int = 1000, reason: str | None = None
-    ) -> None:
+    async def _safe_close(websocket: WebSocket, *, code: int = 1000, reason: str | None = None) -> None:
         """Close a WebSocket connection without propagating shutdown exceptions.
 
         Args:
@@ -165,9 +166,7 @@ class UIStreamManager:
         return self._cache_text
 
     @staticmethod
-    async def _safe_close(
-        websocket: WebSocket, *, code: int = 1000, reason: str | None = None
-    ) -> None:
+    async def _safe_close(websocket: WebSocket, *, code: int = 1000, reason: str | None = None) -> None:
         """Close a WebSocket connection without propagating shutdown exceptions.
 
         Args:

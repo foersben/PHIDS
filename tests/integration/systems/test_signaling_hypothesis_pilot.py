@@ -78,7 +78,5 @@ def test_composite_activation_conditions_follow_boolean_truth_tables(
         active_substance_ids_by_owner={},
     )
 
-    expected = (
-        (left_true and right_true) if combinator_kind == "all_of" else (left_true or right_true)
-    )
+    expected = (left_true and right_true) if combinator_kind == "all_of" else (left_true or right_true)
     assert result is expected

@@ -26,17 +26,19 @@ which convolves each airborne signal layer with the pre-computed kernel and appl
 
 from __future__ import annotations
 
-from typing import TypeAlias, TypedDict, cast
+from typing import TYPE_CHECKING, TypedDict, cast
 
-from phids.api.schemas import TriggerConditionSchema
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.biotope import GridEnvironment
-from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import SUBSTANCE_EMIT_RATE
 
-ActivationNode: TypeAlias = dict[str, object]
+if TYPE_CHECKING:
+    from phids.api.schemas import TriggerConditionSchema
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.core.ecs import ECSWorld
+
+type ActivationNode = dict[str, object]
 
 
 class _ActiveToxinProps(TypedDict):
@@ -130,9 +132,7 @@ def _check_activation_condition(
     kind = activation_condition.get("kind")
     if kind == "herbivore_presence":
         herbivore_species_id = _coerce_int(activation_condition.get("herbivore_species_id", -1), -1)
-        min_herbivore_population = _coerce_int(
-            activation_condition.get("min_herbivore_population", 1), 1
-        )
+        min_herbivore_population = _coerce_int(activation_condition.get("min_herbivore_population", 1), 1)
         return (
             swarm_population_by_cell_species.get((plant.x, plant.y, herbivore_species_id), 0)
             >= min_herbivore_population
@@ -156,9 +156,7 @@ def _check_activation_condition(
     if kind == "all_of":
         conditions = activation_condition.get("conditions", [])
         valid_conditions = (
-            [child for child in conditions if isinstance(child, dict)]
-            if isinstance(conditions, list)
-            else []
+            [child for child in conditions if isinstance(child, dict)] if isinstance(conditions, list) else []
         )
         return bool(valid_conditions) and all(
             _check_activation_condition(
@@ -175,9 +173,7 @@ def _check_activation_condition(
     if kind == "any_of":
         conditions = activation_condition.get("conditions", [])
         valid_conditions = (
-            [child for child in conditions if isinstance(child, dict)]
-            if isinstance(conditions, list)
-            else []
+            [child for child in conditions if isinstance(child, dict)] if isinstance(conditions, list) else []
         )
         return any(
             _check_activation_condition(
@@ -324,7 +320,7 @@ def run_signaling(
     trigger_conditions: dict[int, list[TriggerConditionSchema]],
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
-    tick: int,
+    _tick: int,
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.
@@ -362,9 +358,7 @@ def run_signaling(
         sub = entity.get_component(SubstanceComponent)
         owner_substance_by_key[(sub.owner_plant_id, sub.substance_id)] = sub
         if sub.active:
-            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
-                sub.substance_id
-            )
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(sub.substance_id)
 
     swarm_population_by_cell_species = _build_swarm_population_index(world)
 
@@ -389,9 +383,7 @@ def run_signaling(
         for trig in triggers:
             # Check for herbivore presence at this cell via spatial hash.
             herbivore_present = (
-                swarm_population_by_cell_species.get(
-                    (plant.x, plant.y, trig.herbivore_species_id), 0
-                )
+                swarm_population_by_cell_species.get((plant.x, plant.y, trig.herbivore_species_id), 0)
                 >= trig.min_herbivore_population
             )
 
@@ -465,9 +457,7 @@ def run_signaling(
             continue
         if not sub.triggered_this_tick:
             continue
-        owner_entity = (
-            world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
-        )
+        owner_entity = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
         if owner_entity is None:
             dead_substances.append(entity.entity_id)
             continue
@@ -486,9 +476,7 @@ def run_signaling(
                 continue
             sub.active = True
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
-            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
-                sub.substance_id
-            )
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(sub.substance_id)
 
     # ------------------------------------------------------------------
     # 2b. Irreversible induced defense lock
@@ -511,14 +499,10 @@ def run_signaling(
         if not sub.triggered_this_tick:
             if not sub.irreversible and sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
-                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
-                    sub.substance_id
-                )
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
                 continue
 
-        owner_entity = (
-            world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
-        )
+        owner_entity = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
         if owner_entity is None:
             dead_substances.append(entity.entity_id)
             continue
@@ -556,9 +540,7 @@ def run_signaling(
                 dead_plants.append(plant.entity_id)
                 dead_plant_ids.add(plant.entity_id)
                 sub.active = False
-                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
-                    sub.substance_id
-                )
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
                 dead_substances.append(entity.entity_id)
                 continue
 
@@ -566,8 +548,7 @@ def run_signaling(
             if sub.substance_id < env.num_toxins:
                 env.toxin_layers[sub.substance_id, plant.x, plant.y] = min(
                     1.0,
-                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
-                    + SUBSTANCE_EMIT_RATE,
+                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + SUBSTANCE_EMIT_RATE,
                 )
                 if sub.substance_id not in active_toxin_props:
                     active_toxin_props[sub.substance_id] = {
@@ -579,9 +560,7 @@ def run_signaling(
                 else:
                     props = active_toxin_props[sub.substance_id]
                     props["lethal"] = bool(props["lethal"] or sub.lethal)
-                    props["lethality_rate"] = max(
-                        float(props["lethality_rate"]), sub.lethality_rate
-                    )
+                    props["lethality_rate"] = max(float(props["lethality_rate"]), sub.lethality_rate)
                     props["repellent"] = bool(props["repellent"] or sub.repellent)
                     props["repellent_walk_ticks"] = max(
                         int(props["repellent_walk_ticks"]),
@@ -654,9 +633,7 @@ def run_signaling(
             sub.aftereffect_remaining_ticks -= 1
             if sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
-                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
-                    sub.substance_id
-                )
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
         else:
             sub.active = False
             active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)

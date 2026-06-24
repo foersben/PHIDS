@@ -167,9 +167,7 @@ def configure_logging(*, force: bool = False) -> None:
         {
             "version": 1,
             "disable_existing_loggers": False,
-            "formatters": {
-                "standard": {"format": ("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")}
-            },
+            "formatters": {"standard": {"format": ("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")}},
             "handlers": handlers,
             "root": {
                 "level": "WARNING",

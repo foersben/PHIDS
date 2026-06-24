@@ -111,9 +111,7 @@ def _herbivore_update_payload(
     return updates
 
 
-@router.post(
-    "/api/config/biotope", response_class=HTMLResponse, summary="Update biotope draft config"
-)
+@router.post("/api/config/biotope", response_class=HTMLResponse, summary="Update biotope draft config")
 async def config_biotope(
     request: Request,
     grid_width: Annotated[int, Form()] = 40,
@@ -179,7 +177,10 @@ async def config_biotope(
         mycorrhizal_signal_velocity=mycorrhizal_signal_velocity,
     )
     api_main.logger.debug(
-        "Draft biotope updated (grid=%dx%d, max_ticks=%d, tick_rate_hz=%.2f, wind=(%.3f, %.3f), signals=%d, toxins=%d, z2=%d, z4=%d, z6=%.3f, z7=%d, mycorrhiza_interval=%d)",
+        (
+            "Draft biotope updated (grid=%dx%d, max_ticks=%d, tick_rate_hz=%.2f, wind=(%.3f, %.3f), "
+            "signals=%d, toxins=%d, z2=%d, z4=%d, z6=%.3f, z7=%d, mycorrhiza_interval=%d)"
+        ),
         draft.grid_width,
         draft.grid_height,
         draft.max_ticks,
@@ -327,9 +328,7 @@ async def config_flora_update(
         updates["camouflage_factor"] = max(0.0, min(1.0, camouflage_factor))
 
     draft.flora_species[idx] = fp.model_copy(update=updates)
-    api_main.logger.debug(
-        "Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates)
-    )
+    api_main.logger.debug("Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))
     return api_main.templates.TemplateResponse(
         request,
         "partials/flora_config.html",
@@ -337,9 +336,7 @@ async def config_flora_update(
     )
 
 
-@router.delete(
-    "/api/config/flora/{species_id}", response_class=HTMLResponse, summary="Delete flora species"
-)
+@router.delete("/api/config/flora/{species_id}", response_class=HTMLResponse, summary="Delete flora species")
 async def config_flora_delete(species_id: int) -> HTMLResponse:
     """Remove one flora species from the draft."""
     draft = get_draft()
@@ -351,9 +348,7 @@ async def config_flora_delete(species_id: int) -> HTMLResponse:
     return HTMLResponse(content="")
 
 
-@router.post(
-    "/api/config/herbivores", response_class=HTMLResponse, summary="Add herbivore species to draft"
-)
+@router.post("/api/config/herbivores", response_class=HTMLResponse, summary="Add herbivore species to draft")
 async def config_herbivore_add(
     request: Request,
     name: Annotated[str, Form()] = "NewHerbivore",
@@ -368,9 +363,7 @@ async def config_herbivore_add(
     draft = get_draft()
     if len(draft.herbivore_species) >= 16:
         api_main.logger.warning("Rule-of-16 rejected herbivore creation")
-        raise HTTPException(
-            status_code=400, detail="Rule of 16: maximum herbivore species reached."
-        )
+        raise HTTPException(status_code=400, detail="Rule of 16: maximum herbivore species reached.")
     new_id = len(draft.herbivore_species)
     params = HerbivoreSpeciesParams(
         species_id=new_id,
@@ -423,9 +416,7 @@ async def config_herbivore_update(
 
     pp = draft.herbivore_species[idx]
     if not isinstance(pp, HerbivoreSpeciesParams):
-        raise HTTPException(
-            status_code=400, detail="Invalid herbivore species entry in draft state."
-        )
+        raise HTTPException(status_code=400, detail="Invalid herbivore species entry in draft state.")
     updates: dict[str, object] = {}
     if name is not None:
         updates["name"] = name
@@ -443,9 +434,7 @@ async def config_herbivore_update(
         updates["split_population_threshold"] = split_population_threshold
 
     draft.herbivore_species[idx] = pp.model_copy(update=updates)
-    api_main.logger.debug(
-        "Herbivore species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates)
-    )
+    api_main.logger.debug("Herbivore species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))
     return api_main.templates.TemplateResponse(
         request,
         "partials/herbivore_config.html",
@@ -552,13 +541,9 @@ async def config_substance_update(
             irreversible=irreversible,
         )
     except ValueError as exc:
-        api_main.logger.warning(
-            "Substance update requested for unknown substance_id=%d", substance_id
-        )
+        api_main.logger.warning("Substance update requested for unknown substance_id=%d", substance_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    api_main.logger.debug(
-        "Substance updated via API (substance_id=%d, name=%s)", substance_id, sd.name
-    )
+    api_main.logger.debug("Substance updated via API (substance_id=%d, name=%s)", substance_id, sd.name)
 
     return api_main.templates.TemplateResponse(
         request,
@@ -578,9 +563,7 @@ async def config_substance_delete(substance_id: int) -> HTMLResponse:
     try:
         draft_service.remove_substance(draft, substance_id)
     except ValueError as exc:
-        api_main.logger.warning(
-            "Substance delete requested for unknown substance_id=%d", substance_id
-        )
+        api_main.logger.warning("Substance delete requested for unknown substance_id=%d", substance_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     api_main.logger.info("Substance deleted via API (substance_id=%d)", substance_id)
     return HTMLResponse(content="")
@@ -763,9 +746,7 @@ async def config_trigger_rule_condition_node_update(
 
     if rule.activation_condition is None:
         if kind is None or path:
-            raise HTTPException(
-                status_code=400, detail="Trigger rule has no activation condition to update."
-            )
+            raise HTTPException(status_code=400, detail="Trigger rule has no activation condition to update.")
         draft_service.set_trigger_rule_activation_condition(
             draft,
             index,
@@ -889,9 +870,7 @@ async def placement_data() -> JSONResponse:
     )
 
 
-@router.post(
-    "/api/config/placements/plant", response_class=HTMLResponse, summary="Place a plant on the grid"
-)
+@router.post("/api/config/placements/plant", response_class=HTMLResponse, summary="Place a plant on the grid")
 async def config_placement_plant_add(
     request: Request,
     species_id: Annotated[int, Form()],
@@ -904,15 +883,11 @@ async def config_placement_plant_add(
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
     draft_service.add_plant_placement(draft, species_id, x, y, max(0.1, energy))
-    api_main.logger.info(
-        "Plant placement added via API (species_id=%d, x=%d, y=%d)", species_id, x, y
-    )
+    api_main.logger.info("Plant placement added via API (species_id=%d, x=%d, y=%d)", species_id, x, y)
     return _render_placement_list_partial(request, draft)
 
 
-@router.post(
-    "/api/config/placements/swarm", response_class=HTMLResponse, summary="Place a swarm on the grid"
-)
+@router.post("/api/config/placements/swarm", response_class=HTMLResponse, summary="Place a swarm on the grid")
 async def config_placement_swarm_add(
     request: Request,
     species_id: Annotated[int, Form()],
@@ -975,9 +950,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
     return _render_placement_list_partial(request, draft)
 
 
-@router.post(
-    "/api/config/placements/clear", response_class=HTMLResponse, summary="Clear all placements"
-)
+@router.post("/api/config/placements/clear", response_class=HTMLResponse, summary="Clear all placements")
 async def config_placements_clear(request: Request) -> Response:
     """Clear all plant and swarm placements and render the updated placement ledger."""
     draft = get_draft()

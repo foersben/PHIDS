@@ -1,4 +1,4 @@
-"""Termination condition evaluators (Z1–Z7) for deterministic simulation halting.
+"""Termination condition evaluators (Z1-Z7) for deterministic simulation halting.
 
 This module implements the rule-based termination logic that determines when a PHIDS simulation
 run should end. Seven named termination conditions are supported: Z1 halts when the configured
@@ -21,11 +21,14 @@ endpoint when the simulation halts.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.ecs import ECSWorld
-from phids.telemetry.tick_metrics import TickMetrics
+
+if TYPE_CHECKING:
+    from phids.engine.core.ecs import ECSWorld
+    from phids.telemetry.tick_metrics import TickMetrics
 
 
 @dataclass(slots=True)
@@ -58,18 +61,19 @@ def check_termination(
     Args:
         world: ECS world registry.
         tick: Current simulation tick.
-        max_ticks: Z1 – maximum allowed ticks (halt when reached).
+        max_ticks: Z1 - maximum allowed ticks (halt when reached).
         z2_flora_species: Species id that triggers Z2 on extinction (-1 disables).
         z3_check_all_flora: If True, halt when all flora are extinct (Z3).
         z4_herbivore_species: Species id that triggers Z4 on extinction (-1 disables).
         z5_check_all_herbivores: If True, halt when all herbivores are extinct (Z5).
         z6_max_flora_energy: Aggregate flora energy threshold for Z6 (-1 disables).
         z7_max_total_herbivore_population: Aggregate herbivore population threshold for Z7 (-1 disables).
+        tick_metrics: Optional pre-computed tick metrics.
 
     Returns:
         TerminationResult: Object indicating whether termination occurred and why.
     """
-    # Z1 – maximum tick count
+    # Z1 - maximum tick count
     if tick >= max_ticks:
         return TerminationResult(terminated=True, reason=f"Z1: reached max_ticks={max_ticks}")
 
@@ -88,17 +92,15 @@ def check_termination(
         total_flora_energy = float(tick_metrics.total_flora_energy)
         flora_alive = bool(tick_metrics.flora_alive)
 
-    # Z2 – specific flora species extinction
+    # Z2 - specific flora species extinction
     if z2_flora_species >= 0 and z2_flora_species not in flora_species_alive:
-        return TerminationResult(
-            terminated=True, reason=f"Z2: flora species {z2_flora_species} extinct"
-        )
+        return TerminationResult(terminated=True, reason=f"Z2: flora species {z2_flora_species} extinct")
 
-    # Z3 – all flora extinct
+    # Z3 - all flora extinct
     if z3_check_all_flora and not flora_alive:
         return TerminationResult(terminated=True, reason="Z3: all flora extinct")
 
-    # Z6 – aggregate flora energy exceeds upper bound
+    # Z6 - aggregate flora energy exceeds upper bound
     if 0.0 < z6_max_flora_energy < total_flora_energy:
         return TerminationResult(
             terminated=True,
@@ -120,23 +122,20 @@ def check_termination(
         total_herbivore_population = int(tick_metrics.total_herbivore_population)
         herbivores_alive = bool(tick_metrics.herbivores_alive)
 
-    # Z4 – specific herbivore species extinction
+    # Z4 - specific herbivore species extinction
     if z4_herbivore_species >= 0 and z4_herbivore_species not in herbivore_species_alive:
-        return TerminationResult(
-            terminated=True, reason=f"Z4: herbivore species {z4_herbivore_species} extinct"
-        )
+        return TerminationResult(terminated=True, reason=f"Z4: herbivore species {z4_herbivore_species} extinct")
 
-    # Z5 – all herbivores extinct
+    # Z5 - all herbivores extinct
     if z5_check_all_herbivores and not herbivores_alive:
         return TerminationResult(terminated=True, reason="Z5: all herbivores extinct")
 
-    # Z7 – aggregate herbivore population exceeds upper bound
+    # Z7 - aggregate herbivore population exceeds upper bound
     if 0 < z7_max_total_herbivore_population < total_herbivore_population:
         return TerminationResult(
             terminated=True,
             reason=(
-                f"Z7: total herbivore population {total_herbivore_population} "
-                f"> {z7_max_total_herbivore_population}"
+                f"Z7: total herbivore population {total_herbivore_population} > {z7_max_total_herbivore_population}"
             ),
         )
 

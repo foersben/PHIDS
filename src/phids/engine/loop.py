@@ -18,15 +18,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Callable
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
-from phids.api.schemas import (
-    FloraSpeciesParams,
-    HerbivoreSpeciesParams,
-    SimulationConfig,
-    TriggerConditionSchema,
-)
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
@@ -41,6 +34,16 @@ from phids.shared.logging_config import get_simulation_debug_interval
 from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
 from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from phids.api.schemas import (
+        FloraSpeciesParams,
+        HerbivoreSpeciesParams,
+        SimulationConfig,
+        TriggerConditionSchema,
+    )
 
 
 class _ReplayBackend(Protocol):
@@ -131,14 +134,11 @@ class SimulationLoop:
             self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES, spill_to_disk=True)
             if config.replay_backend == "zarr":
                 logger.warning(
-                    "Zarr backend requested but unavailable; falling back to msgpack. "
-                    "Install zarr with: uv add zarr"
+                    "Zarr backend requested but unavailable; falling back to msgpack. Install zarr with: uv add zarr"
                 )
 
         # Pre-compute species parameter lookups
-        self._flora_params: dict[int, FloraSpeciesParams] = {
-            sp.species_id: sp for sp in config.flora_species
-        }
+        self._flora_params: dict[int, FloraSpeciesParams] = {sp.species_id: sp for sp in config.flora_species}
         self._herbivore_params: dict[int, HerbivoreSpeciesParams] = {
             sp.species_id: sp for sp in config.herbivore_species
         }
@@ -150,7 +150,10 @@ class SimulationLoop:
         # Spawn initial entities
         self._spawn_initial_entities()
         logger.info(
-            "SimulationLoop initialised (grid=%dx%d, flora_species=%d, herbivore_species=%d, signals=%d, toxins=%d, tick_rate_hz=%.2f)",
+            (
+                "SimulationLoop initialised (grid=%dx%d, flora_species=%d, "
+                "herbivore_species=%d, signals=%d, toxins=%d, tick_rate_hz=%.2f)"
+            ),
             config.grid_width,
             config.grid_height,
             len(config.flora_species),
@@ -227,15 +230,9 @@ class SimulationLoop:
                 energy_min=self._get_herbivore_energy_min(swarm_placement.species_id),
                 velocity=self._get_herbivore_velocity(swarm_placement.species_id),
                 consumption_rate=self._get_herbivore_consumption_rate(swarm_placement.species_id),
-                reproduction_energy_divisor=self._get_herbivore_reproduction_divisor(
-                    swarm_placement.species_id
-                ),
-                energy_upkeep_per_individual=self._get_herbivore_energy_upkeep(
-                    swarm_placement.species_id
-                ),
-                split_population_threshold=self._get_herbivore_split_threshold(
-                    swarm_placement.species_id
-                ),
+                reproduction_energy_divisor=self._get_herbivore_reproduction_divisor(swarm_placement.species_id),
+                energy_upkeep_per_individual=self._get_herbivore_energy_upkeep(swarm_placement.species_id),
+                split_population_threshold=self._get_herbivore_split_threshold(swarm_placement.species_id),
             )
             self.world.add_component(entity.entity_id, swarm)
             self.world.register_position(entity.entity_id, swarm_placement.x, swarm_placement.y)
@@ -353,9 +350,7 @@ class SimulationLoop:
         Flips the ``paused`` boolean.
         """
         self.paused = not self.paused
-        logger.info(
-            "Simulation loop %s at tick %d", "paused" if self.paused else "resumed", self.tick
-        )
+        logger.info("Simulation loop %s at tick %d", "paused" if self.paused else "resumed", self.tick)
 
     def stop(self) -> None:
         """Halt the simulation by clearing the running flag."""
@@ -587,14 +582,12 @@ class SimulationLoop:
             self._append_replay_frame()
             latest_metrics = self.telemetry.get_latest_metrics()
             if debug_summary:
-                phase_timings_ms["telemetry_replay"] = (
-                    time.perf_counter() - phase_started
-                ) * 1000.0
+                phase_timings_ms["telemetry_replay"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
             # --------------------------------------------------------
             # Phase 6: Termination check (double-buffer swap happens here
-            #          implicitly – all writes committed before check)
+            #          implicitly - all writes committed before check)
             # --------------------------------------------------------
             result = check_termination(
                 self.world,

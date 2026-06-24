@@ -208,3 +208,4 @@ __marimo__/
 
 # PHIDS Archived files
 .archive/
+.github/workflows/secrets.env

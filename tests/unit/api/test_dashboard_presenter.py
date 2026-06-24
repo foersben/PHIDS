@@ -79,9 +79,7 @@ draft_service = DraftService()
 # ---------------------------------------------------------------------------
 
 
-def _flora(
-    species_id: int, *, triggers: list[TriggerConditionSchema] | None = None
-) -> FloraSpeciesParams:
+def _flora(species_id: int, *, triggers: list[TriggerConditionSchema] | None = None) -> FloraSpeciesParams:
     """Construct a minimal :class:`FloraSpeciesParams` fixture for testing."""
     return FloraSpeciesParams(
         species_id=species_id,
@@ -502,9 +500,7 @@ def test_build_preview_cell_details_includes_trigger_rules() -> None:
     draft = DraftState.default()
     draft_service.add_plant_placement(draft, 0, 3, 3, 10.0)
     draft.substance_definitions.append(
-        SubstanceDefinition(
-            substance_id=0, name="VOC", is_toxin=False, synthesis_duration=1, aftereffect_ticks=0
-        )
+        SubstanceDefinition(substance_id=0, name="VOC", is_toxin=False, synthesis_duration=1, aftereffect_ticks=0)
     )
     draft_service.add_trigger_rule(
         draft,
@@ -635,10 +631,7 @@ def test_build_live_dashboard_payload_extinct_species_bifurcation() -> None:
 
     while loop.tick < 140:
         asyncio.run(loop.step())
-        live_species = {
-            entity.get_component(PlantComponent).species_id
-            for entity in loop.world.query(PlantComponent)
-        }
+        live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
         if len(live_species) <= 1:
             break
 
@@ -646,10 +639,7 @@ def test_build_live_dashboard_payload_extinct_species_bifurcation() -> None:
     payload_species = {int(spec["species_id"]) for spec in payload["species_energy"]}
     legend_species = {int(spec["species_id"]) for spec in payload["all_flora_species"]}
     configured_species = {species.species_id for species in loop.config.flora_species}
-    live_species = {
-        entity.get_component(PlantComponent).species_id
-        for entity in loop.world.query(PlantComponent)
-    }
+    live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
 
     # Extant species only in the render layer.
     assert payload_species == live_species
@@ -657,9 +647,7 @@ def test_build_live_dashboard_payload_extinct_species_bifurcation() -> None:
     assert legend_species == configured_species
     # Extinct entries carry the flag.
     extinct_in_payload = {
-        int(spec["species_id"])
-        for spec in payload["all_flora_species"]
-        if spec.get("extinct", False)
+        int(spec["species_id"]) for spec in payload["all_flora_species"] if spec.get("extinct", False)
     }
     assert extinct_in_payload == configured_species - live_species
 

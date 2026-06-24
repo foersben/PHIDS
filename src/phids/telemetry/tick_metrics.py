@@ -19,11 +19,14 @@ identical post-system world snapshot without divergent sampling artifacts.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.ecs import ECSWorld
+
+if TYPE_CHECKING:
+    from phids.engine.core.ecs import ECSWorld
 
 
 @dataclass(slots=True)
@@ -79,12 +82,10 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
         metrics.flora_alive = True
         metrics.total_flora_energy += float(plant.energy)
         metrics.flora_species_alive.add(species_id)
-        metrics.plant_pop_by_species[species_id] = (
-            metrics.plant_pop_by_species.get(species_id, 0) + 1
+        metrics.plant_pop_by_species[species_id] = metrics.plant_pop_by_species.get(species_id, 0) + 1
+        metrics.plant_energy_by_species[species_id] = metrics.plant_energy_by_species.get(species_id, 0.0) + float(
+            plant.energy
         )
-        metrics.plant_energy_by_species[species_id] = metrics.plant_energy_by_species.get(
-            species_id, 0.0
-        ) + float(plant.energy)
 
     for entity in world.query(SwarmComponent):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
@@ -95,19 +96,13 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
         metrics.herbivore_population += population
         metrics.total_herbivore_population += population
         metrics.herbivore_species_alive.add(species_id)
-        metrics.swarm_pop_by_species[species_id] = (
-            metrics.swarm_pop_by_species.get(species_id, 0) + population
-        )
+        metrics.swarm_pop_by_species[species_id] = metrics.swarm_pop_by_species.get(species_id, 0) + population
 
     for entity in world.query(SubstanceComponent):
         substance: SubstanceComponent = entity.get_component(SubstanceComponent)
         if not substance.active or substance.energy_cost_per_tick <= 0.0:
             continue
-        owner = (
-            world.get_entity(substance.owner_plant_id)
-            if world.has_entity(substance.owner_plant_id)
-            else None
-        )
+        owner = world.get_entity(substance.owner_plant_id) if world.has_entity(substance.owner_plant_id) else None
         if owner is None or not owner.has_component(PlantComponent):
             continue
         owner_plant: PlantComponent = owner.get_component(PlantComponent)

@@ -5,7 +5,7 @@ PHIDS ``SimulationLoop``. The lifecycle phase applies deterministic physiologica
 registered plant entities before any herbivore interactions are resolved, ensuring that the energy
 state observed by the interaction and signaling phases reflects the current-tick growth outcome.
 
-Per-tick growth increments the energy reserve of each plant by ``base_energy × (growth_rate / 100)``,
+Per-tick growth increments the energy reserve of each plant by ``base_energy * (growth_rate / 100)``,
 clamped to ``max_energy``. Reproduction is attempted on each tick that satisfies the
 ``reproduction_interval`` constraint and leaves sufficient energy surplus above ``seed_energy_cost``;
 the seed is dispersed to a randomly sampled polar coordinate within ``[seed_min_dist, seed_max_dist]``
@@ -25,11 +25,14 @@ from __future__ import annotations
 
 import math
 import random
+from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
-from phids.engine.core.biotope import GridEnvironment
-from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import SEED_DROP_HEIGHT_DEFAULT, SEED_TERMINAL_VELOCITY_DEFAULT
+
+if TYPE_CHECKING:
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.core.ecs import ECSWorld
 
 
 def _grow(plant: PlantComponent, tick: int) -> None:
@@ -99,13 +102,13 @@ def _attempt_reproduction(
     if wind_speed > 1e-9:
         # Wind-active mode uses a single anisotropic Gaussian kernel centered
         # downwind from the parent, avoiding annulus-plus-Gaussian double shifts.
-        tx = int(round(plant.x + wind_dx))
-        ty = int(round(plant.y + wind_dy))
+        tx = round(plant.x + wind_dx)
+        ty = round(plant.y + wind_dy)
     else:
         angle = random.uniform(0, 2 * math.pi)
         distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
-        tx = int(round(plant.x + distance * math.cos(angle)))
-        ty = int(round(plant.y + distance * math.sin(angle)))
+        tx = round(plant.x + distance * math.cos(angle))
+        ty = round(plant.y + distance * math.sin(angle))
 
     # Boundary check
     if not (0 <= tx < env.width and 0 <= ty < env.height):
@@ -115,7 +118,7 @@ def _attempt_reproduction(
     occupants = world.entities_at(tx, ty)
     for eid in occupants:
         if world.get_entity(eid).has_component(PlantComponent):
-            return []  # cell occupied – energy spent, no offspring
+            return []  # cell occupied - energy spent, no offspring
 
     # Spawn new plant
     params_raw = flora_species_params.get(plant.species_id)
@@ -168,8 +171,9 @@ def _establish_mycorrhizal_connections(
     connections. Each new connection costs ``connection_cost`` energy
     deducted from both participants. Inter-species links are only created
     when ``inter_species`` is True. During one growth invocation, each plant
-    can establish at most one new connection so disjoint pairs can grow in
-    parallel without a single global bottleneck.
+    upkeep evaluates connection feasibility. Each plant can establish at most
+    one new connection so disjoint pairs can grow in parallel without a single
+    global bottleneck.
 
     Args:
         world: ECSWorld registry.
@@ -178,6 +182,7 @@ def _establish_mycorrhizal_connections(
         inter_species: Allow connections between different species.
         excluded_entity_ids: Plants to ignore (for example, plants already
             marked for removal in the current lifecycle pass).
+        plant_death_causes: Optional dictionary tracking causes of plant death.
 
     Returns:
         tuple[bool, list[int]]: ``(made_connection, dead_entity_ids)`` where
@@ -187,9 +192,7 @@ def _establish_mycorrhizal_connections(
     """
     excluded = excluded_entity_ids or set()
     plants: list[PlantComponent] = [
-        e.get_component(PlantComponent)
-        for e in world.query(PlantComponent)
-        if e.entity_id not in excluded
+        e.get_component(PlantComponent) for e in world.query(PlantComponent) if e.entity_id not in excluded
     ]
     plants.sort(key=lambda plant: (plant.y, plant.x, plant.species_id, plant.entity_id))
 
@@ -313,9 +316,7 @@ def run_lifecycle(
         env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
 
         # Prune dead mycorrhizal links
-        plant.mycorrhizal_connections = {
-            eid for eid in plant.mycorrhizal_connections if world.has_entity(eid)
-        }
+        plant.mycorrhizal_connections = {eid for eid in plant.mycorrhizal_connections if world.has_entity(eid)}
 
         # Survival check
         if plant.energy < plant.survival_threshold:

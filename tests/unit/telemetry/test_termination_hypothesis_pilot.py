@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 
 from phids.engine.core.ecs import ECSWorld
 from phids.telemetry.conditions import check_termination
 from phids.telemetry.tick_metrics import collect_tick_metrics
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 try:
     from hypothesis import HealthCheck, given, settings

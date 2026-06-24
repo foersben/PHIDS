@@ -55,7 +55,7 @@ def test_main_routes_mcp_flag_to_mcp_server(monkeypatch: pytest.MonkeyPatch) -> 
 
     calls: dict[str, int] = {"mcp": 0, "uvicorn": 0}
 
-    def _fake_run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
+    def _fake_run_server(*, _host: str, _port: int, _reload: bool, _log_level: str) -> None:
         calls["uvicorn"] += 1
 
     def _fake_run_mcp_server() -> None:

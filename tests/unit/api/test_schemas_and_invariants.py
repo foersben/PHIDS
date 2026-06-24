@@ -78,9 +78,7 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
         activation_condition=AllOfConditionSchema(
             conditions=[
                 SubstanceActiveConditionSchema(substance_id=1),
-                HerbivorePresenceConditionSchema(
-                    herbivore_species_id=2, min_herbivore_population=4
-                ),
+                HerbivorePresenceConditionSchema(herbivore_species_id=2, min_herbivore_population=4),
             ]
         ),
         energy_cost_per_tick=0.6,
@@ -124,9 +122,7 @@ def test_trigger_schema_rejects_removed_multi_legacy_precursor_field() -> None:
         )
 
 
-def test_trigger_schema_rejects_removed_legacy_precursor_fields_even_with_activation_condition() -> (
-    None
-):
+def test_trigger_schema_rejects_removed_legacy_precursor_fields_even_with_activation_condition() -> None:
     """Verify removed precursor fields are rejected even when a valid activation_condition is supplied."""
     explicit = HerbivorePresenceConditionSchema(herbivore_species_id=5, min_herbivore_population=7)
     with pytest.raises(ValidationError):
@@ -167,9 +163,7 @@ def test_simulation_config_rejects_unknown_species_placements() -> None:
             flora_species=flora,
             herbivore_species=herbivore,
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
-            initial_swarms=[
-                InitialSwarmPlacement(species_id=1, x=0, y=0, population=2, energy=4.0)
-            ],
+            initial_swarms=[InitialSwarmPlacement(species_id=1, x=0, y=0, population=2, energy=4.0)],
         )
 
 

@@ -14,11 +14,10 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response
-from starlette.datastructures import FormData
 
 import phids.api.main as api_main
 from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
@@ -33,6 +32,9 @@ from phids.api.ui_state import (
     set_draft,
 )
 from phids.engine.loop import SimulationLoop
+
+if TYPE_CHECKING:
+    from starlette.datastructures import FormData
 
 router = APIRouter()
 draft_service = DraftService()
@@ -151,9 +153,7 @@ def _apply_optional_biotope_overrides(
             else draft.z4_herbivore_species_extinction
         ),
         z6_max_total_flora_energy=(
-            z6_max_total_flora_energy
-            if z6_max_total_flora_energy is not None
-            else draft.z6_max_total_flora_energy
+            z6_max_total_flora_energy if z6_max_total_flora_energy is not None else draft.z6_max_total_flora_energy
         ),
         z7_max_total_herbivore_population=(
             z7_max_total_herbivore_population
@@ -223,9 +223,7 @@ async def load_scenario(config: SimulationConfig) -> dict[str, int | str]:
         Confirmation payload containing loaded grid dimensions.
     """
     if api_main._sim_task is not None and not api_main._sim_task.done():
-        api_main.logger.info(
-            "Cancelling existing background simulation task before loading a new scenario"
-        )
+        api_main.logger.info("Cancelling existing background simulation task before loading a new scenario")
         api_main._sim_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await api_main._sim_task
@@ -273,9 +271,7 @@ async def start_simulation(request: Request) -> Response:
         return JSONResponse({"message": "Simulation already running."})
 
     if loop.terminated:
-        api_main.logger.warning(
-            "Start requested for a terminated simulation (reason=%s)", loop.termination_reason
-        )
+        api_main.logger.warning("Start requested for a terminated simulation (reason=%s)", loop.termination_reason)
         raise HTTPException(status_code=400, detail="Simulation has terminated.")
 
     loop.start()
@@ -323,12 +319,7 @@ async def step_simulation(request: Request) -> Response:
     loop.update_tick_rate(draft.tick_rate_hz)
     loop.update_wind(draft.wind_x, draft.wind_y)
 
-    if (
-        api_main._sim_task is not None
-        and not api_main._sim_task.done()
-        and loop.running
-        and not loop.paused
-    ):
+    if api_main._sim_task is not None and not api_main._sim_task.done() and loop.running and not loop.paused:
         api_main.logger.warning("Single-step requested while simulation is already running")
         raise HTTPException(status_code=400, detail="Pause the simulation before stepping.")
 
@@ -446,9 +437,7 @@ async def update_wind(payload: WindUpdatePayload) -> dict[str, float | str]:
     draft = get_draft()
     draft.wind_x = payload.wind_x
     draft.wind_y = payload.wind_y
-    api_main.logger.info(
-        "Wind updated via API to (vx=%.3f, vy=%.3f)", payload.wind_x, payload.wind_y
-    )
+    api_main.logger.info("Wind updated via API to (vx=%.3f, vy=%.3f)", payload.wind_x, payload.wind_y)
     return {"message": "Wind updated.", "wind_x": payload.wind_x, "wind_y": payload.wind_y}
 
 
@@ -473,16 +462,12 @@ async def scenario_export() -> Response:
     return Response(
         content=data,
         media_type="application/json",
-        headers={
-            "Content-Disposition": (
-                f'attachment; filename="{draft.scenario_name.replace(" ", "_")}.json"'
-            )
-        },
+        headers={"Content-Disposition": (f'attachment; filename="{draft.scenario_name.replace(" ", "_")}.json"')},
     )
 
 
 @router.post("/api/scenario/import", summary="Import scenario from JSON file")
-async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
+async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa: B008
     """Parse an uploaded scenario JSON document and replace draft state.
 
     Args:
@@ -564,8 +549,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:
         trigger_rules=imported_trigger_rules,
         substance_definitions=imported_substances,
         initial_plants=[
-            PlacedPlant(species_id=p.species_id, x=p.x, y=p.y, energy=p.energy)
-            for p in config.initial_plants
+            PlacedPlant(species_id=p.species_id, x=p.x, y=p.y, energy=p.energy) for p in config.initial_plants
         ],
         initial_swarms=[
             PlacedSwarm(

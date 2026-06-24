@@ -6,11 +6,15 @@ in-memory dict conversion, JSON persistence, and file-backed reload operations.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from phids.api.schemas import SimulationConfig
 from phids.io.scenario import load_scenario_from_dict, load_scenario_from_json, scenario_to_json
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
+
+    from phids.api.schemas import SimulationConfig
 
 
 def test_scenario_helpers_roundtrip_json_file(

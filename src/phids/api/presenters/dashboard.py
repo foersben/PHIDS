@@ -207,9 +207,7 @@ def _describe_activation_condition(
     if not children:
         return "unconditional"
     rendered = [
-        _describe_activation_condition(
-            child, herbivore_names=herbivore_names, substance_names=substance_names
-        )
+        _describe_activation_condition(child, herbivore_names=herbivore_names, substance_names=substance_names)
         for child in children
     ]
     return f"({joiner.join(rendered)})"
@@ -333,9 +331,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     return links
 
 
-def _links_touching_cell(
-    links: list[_MycorrhizalLinkPayload], x: int, y: int
-) -> list[_MycorrhizalLinkPayload]:
+def _links_touching_cell(links: list[_MycorrhizalLinkPayload], x: int, y: int) -> list[_MycorrhizalLinkPayload]:
     """Filter a serialised link list to those whose endpoint coordinates include (x, y).
 
     This filter is applied when assembling the per-cell tooltip payload, ensuring that
@@ -351,11 +347,7 @@ def _links_touching_cell(
     Returns:
         The subset of ``links`` where either endpoint matches ``(x, y)``.
     """
-    return [
-        link
-        for link in links
-        if (link["x1"] == x and link["y1"] == y) or (link["x2"] == x and link["y2"] == y)
-    ]
+    return [link for link in links if (link["x1"] == x and link["y1"] == y) or (link["x2"] == x and link["y2"] == y)]
 
 
 # ---------------------------------------------------------------------------
@@ -539,9 +531,7 @@ def _fallback_live_substance_payload(
     )
     return {
         "substance_id": substance_id,
-        "name": substance_names.get(
-            substance_id, _default_substance_name(substance_id, is_toxin=is_toxin)
-        ),
+        "name": substance_names.get(substance_id, _default_substance_name(substance_id, is_toxin=is_toxin)),
         "kind": kind,
         "active": False,
         "state": state,
@@ -613,9 +603,7 @@ def build_live_cell_details(
     validate_cell_coordinates(x, y, env.width, env.height)
 
     flora_names = {species.species_id: species.name for species in loop.config.flora_species}
-    herbivore_names = {
-        species.species_id: species.name for species in loop.config.herbivore_species
-    }
+    herbivore_names = {species.species_id: species.name for species in loop.config.herbivore_species}
 
     owned_substances: dict[int, list[SubstanceComponent]] = {}
     for entity in world.query(SubstanceComponent):
@@ -673,9 +661,7 @@ def build_live_cell_details(
                 if substance_key in visible_keys:
                     continue
                 visible_substances.append(
-                    _fallback_live_substance_payload(
-                        signal_id, is_toxin=False, substance_names=substance_names
-                    )
+                    _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
                 )
                 visible_keys.add(substance_key)
             for toxin_id in range(env.num_toxins):
@@ -685,9 +671,7 @@ def build_live_cell_details(
                 if substance_key in visible_keys:
                     continue
                 visible_substances.append(
-                    _fallback_live_substance_payload(
-                        toxin_id, is_toxin=True, substance_names=substance_names
-                    )
+                    _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
                 )
                 visible_keys.add(substance_key)
             visible_substances.sort(
@@ -704,9 +688,7 @@ def build_live_cell_details(
                 mycorrhizal_neighbours.append(
                     {
                         "entity_id": neighbour.entity_id,
-                        "name": flora_names.get(
-                            neighbour.species_id, f"Flora {neighbour.species_id}"
-                        ),
+                        "name": flora_names.get(neighbour.species_id, f"Flora {neighbour.species_id}"),
                         "x": neighbour.x,
                         "y": neighbour.y,
                         "inter_species": neighbour.species_id != plant.species_id,
@@ -755,9 +737,7 @@ def build_live_cell_details(
     signal_concentrations = [
         {
             "substance_id": signal_id,
-            "name": substance_names.get(
-                signal_id, _default_substance_name(signal_id, is_toxin=False)
-            ),
+            "name": substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False)),
             "value": float(env.signal_layers[signal_id, x, y]),
         }
         for signal_id in range(env.num_signals)
@@ -859,9 +839,7 @@ def build_preview_cell_details(
     effective_substance_names: dict[int, str] = (
         substance_names
         if substance_names is not None
-        else {
-            definition.substance_id: definition.name for definition in draft.substance_definitions
-        }
+        else {definition.substance_id: definition.name for definition in draft.substance_definitions}
     )
 
     rules_by_flora: dict[int, list[TriggerRule]] = {}
@@ -1023,9 +1001,7 @@ def build_live_dashboard_payload(
     toxin_overlay = env.toxin_layers.max(axis=0) if env.num_toxins > 0 else None
 
     flora_names = {species.species_id: species.name for species in loop.config.flora_species}
-    herbivore_names = {
-        species.species_id: species.name for species in loop.config.herbivore_species
-    }
+    herbivore_names = {species.species_id: species.name for species in loop.config.herbivore_species}
 
     owned_substances: dict[int, list[SubstanceComponent]] = {}
     for entity in world.query(SubstanceComponent):
@@ -1052,9 +1028,7 @@ def build_live_dashboard_payload(
             if float(env.signal_layers[signal_id, plant.x, plant.y]) > 0.0
         }
         local_toxin_ids = {
-            toxin_id
-            for toxin_id in range(env.num_toxins)
-            if float(env.toxin_layers[toxin_id, plant.x, plant.y]) > 0.0
+            toxin_id for toxin_id in range(env.num_toxins) if float(env.toxin_layers[toxin_id, plant.x, plant.y]) > 0.0
         }
         visible_signal_ids = sorted(
             local_signal_ids
@@ -1097,16 +1071,12 @@ def build_live_dashboard_payload(
     }
     for entity in world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
-        toxin_level = (
-            float(env.toxin_layers[:, swarm.x, swarm.y].max()) if env.num_toxins > 0 else 0.0
-        )
+        toxin_level = float(env.toxin_layers[:, swarm.x, swarm.y].max()) if env.num_toxins > 0 else 0.0
         swarms["x"].append(swarm.x)
         swarms["y"].append(swarm.y)
         swarms["population"].append(swarm.population)
         swarms["species_id"].append(swarm.species_id)
-        swarms["name"].append(
-            herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}")
-        )
+        swarms["name"].append(herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"))
         swarms["energy"].append(float(swarm.energy))
         swarms["energy_deficit"].append(
             max(
@@ -1120,9 +1090,7 @@ def build_live_dashboard_payload(
         swarms["intoxicated"].append(toxin_level > 0.0)
 
     live_flora_species_ids = {
-        sid
-        for sid in (_coerce_int(species_id, default=-1) for species_id in plants["species_id"])
-        if sid >= 0
+        sid for sid in (_coerce_int(species_id, default=-1) for species_id in plants["species_id"]) if sid >= 0
     }
     all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []
