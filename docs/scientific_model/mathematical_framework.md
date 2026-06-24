@@ -34,9 +34,43 @@ This phase ordering is not arbitrary; it enforces causal relationships (e.g., sw
 
 ```mermaid
 flowchart TD
-    E["X_t includes E_t"] --> T["Phase composition T_1..T_7"]
-    G["X_t includes G_t"] --> T
-    T --> X["X_(t+1)"]
+    %% Global State Ingress
+    subgraph State_In ["Global State Snapshot (Tick t)"]
+        E_t["Discrete ECS Entities<br><b>(E_t)</b>"]
+        G_t["Vectorized Fields<br><b>(G_t)</b>"]
+        P_t["Static Configuration Matrix<br><b>(P_t)</b>"]
+    end
+
+    %% Operator Pipeline Sequence
+    subgraph Pipeline ["The Phase Composition Chain (Right-to-Left Execution Sequence)"]
+        direction TB
+        T1["1. Flow Field Generation<br><b>T_flow_field</b>"]
+        T2["2. Camouflage Attenuation<br><b>T_camouflage</b>"]
+        T3["3. Flora Lifecycle & Growth<br><b>T_lifecycle</b>"]
+        T4["4. Herbivore Interaction & Grazing<br><b>T_interaction</b>"]
+        T5["5. Induced Defense Signaling<br><b>T_signaling</b>"]
+        T6["6. Telemetry Ingestion<br><b>T_telemetry</b>"]
+    end
+
+    %% Global State Egress
+    subgraph State_Out ["Mutated Global State (Tick t+1)"]
+        X_next["Unified State Array Object<br><b>X_(t+1)</b>"]
+    end
+
+    %% Spatial Distribution Links
+    E_t & G_t & P_t -->|Isbound to| T1
+    T1 --> T2 --> T3 --> T4 --> T5 --> T6
+    T6 -->|Commit Write Buffers| X_next
+
+    %% Visual Styling Classes
+    classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
+    classDef coreSys fill:#141224,stroke:#b388ff,stroke-width:2px,rx:6px,ry:6px;
+    classDef coreState fill:#1c1212,stroke:#ff5252,stroke-width:2px,rx:6px,ry:6px;
+
+    class E_t,G_t stateData
+    class P_t stateData
+    class T1,T2,T3,T4,T5,T6 coreSys
+    class X_next coreState
 ```
 
 ## 2. Flora Lifecycle and Symbiotic Dynamics

@@ -35,72 +35,67 @@ When a system phase computes new values, it reads from the read-buffer (`State_R
 Dynamic memory allocation during the hot simulation loop introduces prohibitive latency. The architecture imposes a strict upper bound constraint: the system accommodates a maximum of 16 distinct flora species, 16 herbivore species, and 16 substance mechanisms. Matrices (such as diet compatibility or trigger relationships) are pre-allocated at a fixed $(16 \times 16)$ scale during bootstrapping.
 
 ```mermaid
-graph TD
-    subgraph API["FastAPI Layer"]
-        A1[POST /api/scenario/load]
-        A2[POST /api/simulation/start]
-        A3[POST /api/simulation/pause]
-        A4[GET  /api/simulation/status]
-        A5[PUT  /api/simulation/wind]
-        A6[WS   /ws/simulation/stream]
-        A7[GET  /api/telemetry/export/csv]
-        A8[GET  /api/telemetry/export/json]
+flowchart TD
+    %% API Ingress Subgraph
+    subgraph API_Layer ["Asynchronous FastAPI Interface & Routing"]
+        A1["POST /api/scenario/load"]
+        A2["POST /api/simulation/start"]
+        A3["POST /api/simulation/pause"]
+        A6["WebSocket Stream Server<br><i>/ws/simulation/stream</i>"]
     end
 
-    subgraph Engine["Simulation Engine"]
-        L[SimulationLoop<br/>loop.py]
-        BIO[GridEnvironment<br/>biotope.py]
-        ECS[ECSWorld<br/>ecs.py]
-        FF[FlowField<br/>flow_field.py @njit]
-        LC[LifecycleSystem<br/>lifecycle.py]
-        INT[InteractionSystem<br/>interaction.py]
-        SIG[SignalingSystem<br/>signaling.py]
+    %% Engine Subgraph
+    subgraph Engine_Core ["Headless High-Performance Loop Engine"]
+        L["SimulationLoop<br><b>(loop.py)</b>"]
+        BIO["GridEnvironment CA Arrays<br><b>(biotope.py)</b>"]
+        ECS["ECSWorld Entity Indexer<br><b>(ecs.py)</b>"]
+        FF["FlowField Gradient Evaluator<br><b>(flow_field.py @njit)</b>"]
     end
 
-    subgraph Components["ECS Components"]
-        PC[PlantComponent]
-        SC[SwarmComponent]
-        SUB[SubstanceComponent]
+    %% Operational Systems
+    subgraph Pipeline_Systems ["Granular System Execution Arrays"]
+        LC["LifecycleSystem<br><i>(lifecycle.py)</i>"]
+        INT["InteractionSystem<br><i>(interaction.py)</i>"]
+        SIG["SignalingSystem<br><i>(signaling.py)</i>"]
     end
 
-    subgraph Telemetry["Telemetry"]
-        AN[TelemetryRecorder<br/>analytics.py]
-        COND[TerminationChecker<br/>conditions.py]
-        EXP[Export<br/>export.py]
+    %% ECS Schema Definitions
+    subgraph Component_Registry ["Data-Only Struct Components"]
+        PC["PlantComponent Array"]
+        SC["SwarmComponent Array"]
+        SUB["SubstanceComponent Array"]
     end
 
-    subgraph IO["I/O"]
-        SCN[scenario.py<br/>Pydantic load/save]
-        REP[ReplayBuffer<br/>replay.py msgpack]
+    %% Telemetry Array Operations
+    subgraph Data_Analytics ["Telemetry & IO Observability Substrates"]
+        AN["TelemetryRecorder<br><i>(analytics.py)</i>"]
+        COND["TerminationChecker<br><i>(conditions.py)</i>"]
+        REP["ReplayBuffer Logs<br><i>(replay.py msgpack)</i>"]
     end
 
-    A1 -->|SimulationConfig| L
-    A2 --> L
-    A3 --> L
-    A4 --> L
-    A5 -->|WindUpdatePayload| BIO
-    A6 -->|binary msgpack frames| REP
-    A7 & A8 --> EXP
+    %% Pipeline Connections (Spaced Layout)
+    A1 & A2 & A3 -->|Validated Config Injection| L
+    L --> BIO & ECS & FF
 
-    L --> BIO
-    L --> ECS
-    L --> FF
-    L --> LC
-    L --> INT
-    L --> SIG
-    L --> AN
-    L --> COND
+    BIO & ECS --> LC
+    FF & ECS --> INT
+    ECS --> SIG --> BIO
 
-    ECS --> PC
-    ECS --> SC
-    ECS --> SUB
+    ECS --> Component_Registry
+    Component_Registry --> PC & SC & SUB
 
-    LC --> PC
-    INT --> SC
-    INT --> PC
-    SIG --> SUB
-    SIG --> BIO
+    LC & INT & SIG --> AN
+    AN --> COND
+    COND --> REP
+    REP -->|Fast Binary Frames| A6
 
-    AN --> EXP
-    SCN -->|SimulationConfig| L
+    %% Class Attachments
+    classDef peripheral fill:#181818,stroke:#9e9e9e,stroke-width:2px,rx:6px,ry:6px;
+    classDef coreSys fill:#141224,stroke:#b388ff,stroke-width:2px,rx:6px,ry:6px;
+    classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
+
+    class A1,A2,A3,A6 peripheral
+    class L,LC,INT,SIG coreSys
+    class BIO,ECS,FF,PC,SC,SUB stateData
+    class AN,COND,REP peripheral
 ```

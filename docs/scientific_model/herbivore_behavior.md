@@ -64,6 +64,35 @@ If the plant entity existing at the swarm’s current coordinate possesses non-d
 
 Flow field evaluation involves reading across multiple continuous data layers (e.g., plant defensive volatile arrays, attractant gradients, terrain resistance matrices). If every herbivore swarm executed this continuous mathematical tracking while already sitting on a massive food source, the engine would waste immense memory bandwidth re-calculating target paths for entities that have already successfully attained their goal state.
 
+```mermaid
+flowchart TD
+    Start_Move([Evaluate Swarm Movement]) --> Check_Local{"Valid, Diet-Compatible Flora<br>Present on Immediate Tile?<br><i>O(1) Spatial Hash Lookup</i>"}
+
+    %% Anchoring Path
+    Check_Local -- Yes: Food Underfoot --> Trigger_Anchor["Trigger Anchoring Override State"]
+    Trigger_Anchor --> Set_Zero["Lock Delta Velocity Vector to Zero (vx=0, vy=0)"]
+    Set_Zero --> Execute_Feed["Transition Swarm State to FEEDING"]
+    Execute_Feed --> Skip_Field["Bypass Matrix Lookups & Navigation Loops"]
+
+    %% Flow Field Gradient Path
+    Check_Local -- No: Tile Depleted --> Evaluate_Nav["Fallback to Chemotactic Gradient Ascent"]
+    Evaluate_Nav --> Read_Arrays["Scan Global Guide Surface Fields<br><i>Read Multi-Layer Substance Arrays</i>"]
+    Read_Arrays --> Moore_Max["Sample Maximum Neighbor Cell Value<br><i>arg max F_t(u, v) over Moore Neighborhood</i>"]
+    Moore_Max --> Commit_Step["Update Coordinates to Target Neighbor Cell Index"]
+
+    %% Convergence
+    Skip_Field & Commit_Step --> End_Move([Movement Update Frame Finished])
+
+    %% Class Allocations
+    classDef shortcut fill:#112214,stroke:#00e676,stroke-width:2px,rx:6px,ry:6px;
+    classDef coreSys fill:#141224,stroke:#b388ff,stroke-width:2px,rx:6px,ry:6px;
+    classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
+
+    class Check_Local,Trigger_Anchor,Skip_Field shortcut
+    class Set_Zero,Execute_Feed,Commit_Step coreSys
+    class Read_Arrays,Moore_Max stateData
+```
+
 #### III. The Historical/Continuous Alternative
 
 The classic continuous modeling approach applies a constant, uninterrupted chemotaxis equation where the herbivore's velocity vector $\vec{v}$ is driven at all times by the gradient of an attractant field:
