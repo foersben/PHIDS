@@ -27,7 +27,7 @@ where:
 The deterministic progression of the system is the ordered composition of distinct phase operators:
 
 $$
-\mathcal{X}_{t+1} = \mathcal{T}_{telemetry} \circ \mathcal{T}_{signaling} \circ \mathcal{T}_{interaction} \circ \mathcal{T}_{lifecycle} \circ \mathcal{T}_{flow\_field} (\mathcal{X}_t)
+\mathcal{X}_{t+1} = \mathcal{T}_{termination\_check} \circ \mathcal{T}_{telemetry} \circ \mathcal{T}_{signaling} \circ \mathcal{T}_{interaction} \circ \mathcal{T}_{lifecycle} \circ \mathcal{T}_{camouflage} \circ \mathcal{T}_{flow\_field} (\mathcal{X}_t)
 $$
 
 This phase ordering is not arbitrary; it enforces causal relationships (e.g., swarms move based on *current* plant energy, signaling occurs based on *post-movement* herbivore presence).
@@ -50,6 +50,7 @@ flowchart TD
         T4["4. Herbivore Interaction & Grazing<br><b>T_interaction</b>"]
         T5["5. Induced Defense Signaling<br><b>T_signaling</b>"]
         T6["6. Telemetry Ingestion<br><b>T_telemetry</b>"]
+        T7["7. Termination Check<br><b>T_termination_check</b>"]
     end
 
     %% Global State Egress
@@ -59,8 +60,8 @@ flowchart TD
 
     %% Spatial Distribution Links
     E_t & G_t & P_t -->|Isbound to| T1
-    T1 --> T2 --> T3 --> T4 --> T5 --> T6
-    T6 -->|Commit Write Buffers| X_next
+    T1 --> T2 --> T3 --> T4 --> T5 --> T6 --> T7
+    T7 -->|Commit Write Buffers| X_next
 
     %% Visual Styling Classes
     classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
@@ -69,7 +70,7 @@ flowchart TD
 
     class E_t,G_t stateData
     class P_t stateData
-    class T1,T2,T3,T4,T5,T6 coreSys
+    class T1,T2,T3,T4,T5,T6,T7 coreSys
     class X_next coreState
 ```
 
@@ -177,10 +178,9 @@ Where:
 
 To preserve numerical sparsity and eliminate subnormal floating-point operations, any concentration $C_s^{t+1} < \varepsilon$ is explicitly truncated to zero. Toxin layers bypass this atmospheric diffusion, remaining localized to the emitting plant coordinate to model surface tissue defenses.
 
-> **Deep Dive:** See [Reaction-Diffusion & Partial Differential Equations](reaction_diffusion.md) for step-by-step examples of convolution kernels and gradient dispersion models.
-
-> **Deep Dive:** See [Herbivore Behavior & Kinematics](herbivore_behavior.md) for explicit movement momentum, probabilistic spatial routing, and capacity displacement rules.
-
-> **Deep Dive:** See [Flora & Symbiosis](flora_and_symbiosis.md) for reproductive dispersion equations, explicit energy checks, and Mycorrhizal (Root Network) transfer bypasses.
-
-> **Deep Dive:** See [Ecological Analytics](ecological_analytics.md) for how the PHIDS data output structurally evaluates these discrete implementations against classic continuous equations like the Lotka-Volterra models.
+> **Deep Dives:**
+>
+> - See [Reaction-Diffusion & Partial Differential Equations](reaction_diffusion.md) for step-by-step examples of convolution kernels and gradient dispersion models.
+> - See [Herbivore Behavior & Kinematics](herbivore_behavior.md) for explicit movement momentum, probabilistic spatial routing, and capacity displacement rules.
+> - See [Flora & Symbiosis](flora_and_symbiosis.md) for reproductive dispersion equations, explicit energy checks, and Mycorrhizal (Root Network) transfer bypasses.
+> - See [Ecological Analytics](ecological_analytics.md) for how the PHIDS data output structurally evaluates these discrete implementations against classic continuous equations like the Lotka-Volterra models.

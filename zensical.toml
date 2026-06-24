@@ -8,16 +8,14 @@ docs_dir = "docs"
 site_dir = "site"
 language = "en"
 
-extra_css = [
-    "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
-]
+extra_css = ["https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"]
 
 extra_javascript = [
     "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js",
     "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js",
     "https://unpkg.com/mermaid@10/dist/mermaid.min.js",
     "javascripts/katex.js",
-    "javascripts/mermaid.js"
+    # "javascripts/mermaid.js"
 ]
 
 [project.theme]

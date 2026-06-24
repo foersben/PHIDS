@@ -41,6 +41,8 @@ flowchart TD
         A1["POST /api/scenario/load"]
         A2["POST /api/simulation/start"]
         A3["POST /api/simulation/pause"]
+        A4["POST /api/simulation/reset"]
+        A5["POST /api/scenario/load-draft"]
         A6["WebSocket Stream Server<br><i>/ws/simulation/stream</i>"]
     end
 
@@ -70,11 +72,11 @@ flowchart TD
     subgraph Data_Analytics ["Telemetry & IO Observability Substrates"]
         AN["TelemetryRecorder<br><i>(analytics.py)</i>"]
         COND["TerminationChecker<br><i>(conditions.py)</i>"]
-        REP["ReplayBuffer Logs<br><i>(replay.py msgpack)</i>"]
+        REP["ReplayBuffer Logs<br><i>(replay.py/zarr_replay.py msgpack/Zarr)</i>"]
     end
 
     %% Pipeline Connections (Spaced Layout)
-    A1 & A2 & A3 -->|Validated Config Injection| L
+    A1 & A2 & A3 & A4 & A5 -->|Validated Config Injection| L
     L --> BIO & ECS & FF
 
     BIO & ECS --> LC
@@ -94,7 +96,7 @@ flowchart TD
     classDef coreSys fill:#141224,stroke:#b388ff,stroke-width:2px,rx:6px,ry:6px;
     classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
 
-    class A1,A2,A3,A6 peripheral
+    class A1,A2,A3,A4,A5,A6 peripheral
     class L,LC,INT,SIG coreSys
     class BIO,ECS,FF,PC,SC,SUB stateData
     class AN,COND,REP peripheral
