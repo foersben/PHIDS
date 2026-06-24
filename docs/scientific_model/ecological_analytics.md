@@ -82,4 +82,26 @@ A data grid providing the exact numeric breakdown per tick. This is powered by `
 
 The continuous narrative described above is executed within a strict deterministic framework. The implementation uses a double-buffering pattern (read state vs. write state) to prevent race conditions during execution.
 
-Entities read from $State_{t}$ and write to $State_{t+1}$. This means that biological events, such as metabolic depletions and plant deaths from herbivore feeding (Phase 3) or defense syntheses (Phase 4), do not immediately alter the flow field matrix. Instead, these energy and defense commitments are deferred to a specific buffer-swap phase (Phase 6). This guarantees spatial determinism and safe parallel execution across the cellular automata grid.
+#### I. Implementation Mechanics
+
+The core execution loop in `src/phids/engine/loop.py` structures a strict, non-overlapping sequence of phase updates. The engine relies fundamentally on a double-buffering architectural pattern: all system updates read properties exclusively from the read-state state array ($State_t$) and write altered values exclusively to a disconnected write-state array ($State_{t+1}$).
+
+Crucially, ecological events like plant biomass consumption or defensive synthesis occur during the middle phases, but the global navigation maps and environmental properties are not mutated on the fly. The method `self.env.rebuild_energy_layer()` is executed as an isolated operation near the end of the tick sequence (Phase 6), explicitly processing metabolic debt consolidations, plant mortality deletions, and defense synthesis allocations before swapping the buffers for the next tick.
+
+#### II. Why It Is Solved This Way
+
+If individual swarms mutated the environment or altered plant attributes inline while iterating through the entity loop, the simulation would lose spatial determinism. The system's outcomes would depend entirely on the order in which entities were stored in the underlying memory arrays. A swarm processed at index `0` would eat all local food, leaving a swarm at index `1` to starve, whereas reversing the array indices would reverse their fates. Inline mutation introduces severe race conditions and prevents parallel execution.
+
+#### III. The Historical/Continuous Alternative
+
+Traditional sequential loop architectures update agent states and environment matrices inline within a single shared array block. This approach makes it impossible to safely parallelize operations across multiple processor threads without introducing heavy mutex locks or thread synchronization barriers.
+
+#### IV. Computational Improvement
+
+* **Parallelization Mechanics:** Double-buffering allows the engine to eliminate all data hazards (Read-After-Write, Write-After-Read). Because $State_t$ is strictly read-only throughout the entirety of the tick execution, the interaction and lifecycle systems can be parallelized across multi-core architectures or vectorized via Numba's `prange` loops with zero synchronization overhead.
+* **Complexity:** The deferred reconstruction pass scales linearly at $O(N + E)$ (where $N$ is active populations and $E$ is environment grid tiles), avoiding the constant memory thrashing of writing back and forth to main memory lines.
+
+#### V. Biological Modeling Realism
+
+* **Ecological Concurrency:** In a real ecosystem, thousands of organisms act simultaneously within a given split-second window; they do not politely take sequential turns.
+* **Fair Resource Competition:** By executing all evaluations against a fixed snapshot of the world ($State_t$) and deferring commitments, the engine guarantees that all overlapping herbivores face fair, simultaneous exploitation competition for a plant's biomass. It ensures that resource depletion dynamics reflect genuine collective pressure rather than software-induced indexing artifacts.
