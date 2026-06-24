@@ -33,32 +33,70 @@ Where:
 
 ### Discretization for Cellular Automata
 
-Because PHIDS operates on a discrete grid with discrete time steps ($\Delta t$), we cannot solve the continuous PDE directly. Instead, we approximate it.
+Because PHIDS operates on a discrete grid with discrete time steps (\Delta t), we cannot solve the continuous PDE directly. Instead, we approximate it using a two-step computational fluid dynamics approach:
 
-The spatial diffusion ($\nabla^2 C$) is approximated using an **isotropic Gaussian convolution kernel**.
+#### I. Implementation Mechanics
 
-Let the 2D grid matrix of signal concentration at tick $t$ be $C^t$. The update for tick $t+1$ becomes:
+The biotope layer (`src/phids/engine/core/biotope.py`) handles volatile organic compounds (VOCs) and chemical signals using a two-tier operator loop.
 
-$$
-C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * C^t) + Q^t
-$$
-
-Where:
-
-- $\mathcal{K}_{iso}$ is a $3 \times 3$ Gaussian blur kernel.
-- $*$ denotes the 2D discrete convolution.
-- $\gamma$ is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
-- $Q^t$ is the matrix where cells containing active emitting plants have their concentration increased by a fixed emission rate.
-
-### Advection (Wind)
-
-To simulate wind, we apply a semi-Lagrangian backtracing step before diffusion. If the wind vector is $\mathbf{u} = (u_x, u_y)$, the concentration at cell $(x, y)$ is sampled from $(x - u_x, y - u_y)$ in the previous tick's read-buffer.
+**Step 1: Semi-Lagrangian Advection (Wind)**
+For every cell, the engine traces a trajectory backward in time along a localized wind vector field to determine the upstream concentration, interpolating the value from the read buffer. If the per-cell wind vector is $\mathbf{u} = (u_x, u_y)$, the advected concentration at cell $(x, y)$ is sampled from $(x - u_x, y - u_y)$ in the previous tick's read-buffer.
 
 $$
 \tilde{C}^{t}(x,y) = C^t(x - u_x, y - u_y)
 $$
 
-The full update is then the convolution of the advected field $\tilde{C}^{t}$.
+**Step 2: Isotropic Gaussian Convolution**
+The engine applies a discrete convolution step using a strictly odd-sized Gaussian kernel (3x3 by default). The kernel creation routine (`_make_gaussian_kernel()`) enforces this structural constraint via an explicit check:
+
+```python
+if size % 2 == 0:
+    raise ValueError("Kernel size must be odd to maintain central symmetry.")
+```
+
+Let the advected 2D grid matrix of signal concentration at tick $t$ be $\tilde{C}^t$. The update for tick $t+1$ becomes:
+
+$$
+C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * \tilde{C}^t) + Q^t
+$$
+
+Where:
+- $\mathcal{K}_{iso}$ is an odd-sized Gaussian blur kernel (e.g., $3 \times 3$).
+- $*$ denotes the 2D discrete convolution.
+- $\gamma$ is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
+- $Q^t$ is the matrix where cells containing active emitting plants have their concentration increased by a fixed emission rate.
+
+#### II. Why It Is Solved This Way
+
+Pure isotropic diffusion models chemical spread as a series of perfectly expanding, concentric circular uniform bubbles. In real-world ecosystems, wind completely alters this landscape.
+
+Furthermore, from a numerical computing standpoint, applying an even-sized convolution kernel to a discrete grid introduces a sub-pixel spatial phase shift on every single tick. Over hundreds of simulation frames, this asymmetry causes the chemical signals to unnaturally drift down and to the right, corrupting the biological fidelity of the paths.
+
+#### III. The Historical/Continuous Alternative
+
+The traditional method uses an explicit finite-difference upwind scheme to solve the continuous advection-diffusion equation:
+
+$$
+\frac{\partial C}{\partial t} + \vec{u} \cdot \nabla C = D \nabla^2 C
+$$
+
+Explicit schemes are bound by the strict Courant-Friedrichs-Lewy (CFL) stability condition:
+
+$$
+\Delta t \le \frac{\Delta x}{|\vec{u}|}
+$$
+
+If the wind speed spikes unexpectedly in a scenario, an explicit alternative collapses numerically, causing infinite chemical concentration spikes and system crashes.
+
+#### IV. Computational Improvement
+
+* **Complexity:** The semi-Lagrangian approach is *unconditionally stable*. It allows the simulation engine to utilize significantly larger time steps (\Delta t) without risk of numerical explosion, maintaining stable $O(W \times H)$ grid passes regardless of wind velocity.
+* **Kernel Minimization:** Restricting the convolution step to a tight, center-symmetric 3x3 kernel reduces the memory footprint and limits array cache misses. This keeps the execution pipeline bound to the immediate L1/L2 cache lines of modern processor cores during vectorization.
+
+#### V. Biological Modeling Realism
+
+* **Anisotropic Plant Communication:** Plants communicate via airborne volatile organic compounds (VOCs)—such as releasing green leaf volatiles or jasmonates when chewed by herbivores to prime defensive enzyme synthesis in neighboring flora.
+* **Realistic Signal Plumes:** By pairing wind-driven advection with symmetric diffusion, PHIDS accurately models directional, elongated chemical plumes. Downwind plants receive early warning signals and synthesize defenses long before upwind plants register any threat, perfectly mirroring canopy-level micro-climate communication patterns observed in forest ecology.
 
 ## Numerical Example
 
