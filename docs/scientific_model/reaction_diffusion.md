@@ -66,6 +66,31 @@ Where:
 - $\gamma$ is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
 - $Q^t$ is the matrix where cells containing active emitting plants have their concentration increased by a fixed emission rate.
 
+```mermaid
+flowchart LR
+    subgraph Step_1 ["Step I: Semi-Lagrangian Wind Advection"]
+        A["Target Grid Cell (x, y)"] -->|Trace Backward in Time| B["Upwind Coordinates<br>(x - u*dt, y - v*dt)"]
+        B -->|Bilinear Interpolation| C["Interpolated Signal Concentration Value<br><i>from Read Buffer (State_Read)</i>"]
+    end
+
+    subgraph Step_2 ["Step II: Center-Symmetric Diffusion & Cleansing"]
+        C --> D["Apply Odd-Sized Symmetric Gaussian Kernel<br><i>(3x3 Centered Convolution Matrix)</i>"]
+        D --> E["Apply Substance Cleansing Factor<br><i>Subtract Lambda Coefficient * Concentration</i>"]
+        E --> F{"Value Below Truncation<br>Bound (Value < epsilon)?"}
+        F -- Yes --> G["Hard Snap Grid Cell to Zero<br><i>Removes Floating-Point Underflows</i>"]
+        F -- No --> H["Write Concentration to Write Buffer<br><i>State_Write(x, y)</i>"]
+    end
+
+    %% Class Allocations
+    classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
+    classDef coreSys fill:#141224,stroke:#b388ff,stroke-width:2px,rx:6px,ry:6px;
+    classDef shortcut fill:#112214,stroke:#00e676,stroke-width:2px,rx:6px,ry:6px;
+
+    class A,B,C,D stateData
+    class E,H coreSys
+    class F,G shortcut
+```
+
 #### II. Why It Is Solved This Way
 
 Pure isotropic diffusion models chemical spread as a series of perfectly expanding, concentric circular uniform bubbles. In real-world ecosystems, wind completely alters this landscape.

@@ -34,24 +34,38 @@ To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial 
 Entities whose population or energy levels degrade past viable thresholds are unregistered from the Spatial Hash immediately, removing them from subsequent spatial lookups within the same tick. At the conclusion of system iterations, `ECSWorld.collect_garbage()` permanently deletes these entities, recovering resources and ensuring clean state space for subsequent ticks. This prevents the memory overhead typical in naive ECS implementations where dead entities remain stored indefinitely.
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Idle : Application starts
+flowchart LR
+    %% External Application States
+    subgraph App_Control ["Application Master State Controller"]
+        Idle(["Idle Space"]) -->|POST /load| Loaded(["Scenario Loaded"])
+        Loaded -->|POST /start| Running[["RUNNING HOT LOOP"]]
+        Running -->|POST /pause| Paused(["Simulation Paused"])
+        Paused -->|POST /resume| Running
+        Running -->|Termination Condition Met| Terminated(["Terminated State"])
+        Terminated -->|POST /reload| Loaded
+    end
 
-    Idle --> Loaded : POST /api/scenario/load
-    Loaded --> Running : POST /api/simulation/start
-    Running --> Paused : POST /api/simulation/pause
-    Paused --> Running : POST /api/simulation/pause
-    Running --> Terminated : Z1–Z7 condition met
-    Terminated --> Loaded : POST /api/scenario/load (reload)
+    %% Internal Hot Loop Pass Execution
+    subgraph Loop_Step ["Granular In-Tick Operational Ordering (SimulationLoop.step)"]
+        direction TB
+        S1["1. Compute Vector Guidance Field<br><i>flow_field.py @njit Pass</i>"]
+        S2["2. Attenuate Camouflage Profiles<br><i>Mask Flora Guidance Gradients</i>"]
+        S3["3. Execute Flora Lifecycle Pass<br><i>Resource Growth & Reproduction</i>"]
+        S4["4. Run Interaction Dynamics<br><i>Spatial Hash Grazing & Mitosis</i>"]
+        S5["5. Evaluate Inductions & Signaling<br><i>Reaction-Diffusion Convolutions</i>"]
+        S6["6. Telemetry Logging Output<br><i>Appends Record to Polars Data Block</i>"]
+    end
 
-    state Running {
-        [*] --> FlowField
-        FlowField --> Lifecycle : compute_flow_field (numba)
-        Lifecycle --> Interaction : grow / reproduce / cull
-        Interaction --> Signaling : feed / upkeep / mitosis
-        Signaling --> Telemetry : synthesise / relay / local toxins
-        Telemetry --> CheckTermination : record Polars row
-        CheckTermination --> FlowField : not terminated
-        CheckTermination --> [*] : terminated
-    }
+    %% Causal Link to Engine Core
+    Running ==>|Spins Continuous Tick Core| S1
+    S6 -->|Loop Back if Invariants Hold| S1
+
+    %% Class Allocations
+    classDef peripheral fill:#181818,stroke:#9e9e9e,stroke-width:2px,rx:6px,ry:6px;
+    classDef coreSys fill:#141224,stroke:#b388ff,stroke-width:2px,rx:6px,ry:6px;
+    classDef stateData fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
+
+    class Idle,Loaded,Paused,Terminated peripheral
+    class Running coreSys
+    class S1,S2,S3,S4,S5,S6 stateData
 ```
