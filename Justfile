@@ -17,6 +17,9 @@ lint:
     uv run ruff format .
     uv run mypy src/phids/
 
+check:
+    uv run pre-commit run --all-files
+
 format:
     uv run ruff format .
 
@@ -26,11 +29,16 @@ run:
 clean:
     find . -type d -name "__pycache__" -exec rm -rf {} +
     find . -type d -name "*.egg-info" -exec rm -rf {} +
-    rm -rf .pytest_cache .mypy_cache .coverage htmlcov .cache/uv site .ruff_cache .hypothesis .benchmarks .cache
+    rm -rf .cache site
 
 docs:
     uv run zensical build
 
+serve:
+    uv run zensical build
+    uv run zensical serve -a localhost:9000
+
+    
 install-extensions:
     @jq -r '.recommendations[]' .vscode/extensions.json | while read -r ext; do \
         code --install-extension "$$ext"; \

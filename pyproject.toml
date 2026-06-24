@@ -56,6 +56,7 @@ packages = ["src/phids"]
 src = ["src"]
 line-length = 120
 target-version = "py313"
+cache-dir = ".cache/ruff"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "ARG", "TCH", "FA", "N", "RUF", "D"]
@@ -75,6 +76,7 @@ python_version = "3.13"
 strict = true
 files = ["src/phids"]
 plugins = ["pydantic.mypy"]
+cache_dir = ".cache/mypy"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -91,11 +93,17 @@ addopts = [
     "--cov-fail-under=80",
     "--benchmark-disable-gc",
     "--benchmark-sort=mean",
+    "--benchmark-storage=.cache/benchmarks", # Store benchmark outputs here
 ]
+cache_dir = ".cache/pytest"
 
 [tool.coverage.run]
 source = ["src/phids"]
+data_file = ".cache/coverage"
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
+
+[tool.coverage.html]
+directory = ".cache/htmlcov"

@@ -7,13 +7,22 @@ preserving deterministic state isolation per test invocation.
 
 from __future__ import annotations
 
-import asyncio
-import contextlib
-from collections.abc import AsyncGenerator, Callable
+# ruff: noqa: I001, E402, TC003
 
+import asyncio
+from collections.abc import AsyncGenerator, Callable
+import contextlib
+import os
+
+# Configure Hypothesis storage directory inside the project's hidden .cache folder.
+# Must be set before importing hypothesis or pytest to override default creation.
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.environ["HYPOTHESIS_STORAGE_DIRECTORY"] = os.path.join(_PROJECT_ROOT, ".cache/hypothesis")
+
+from httpx import ASGITransport, AsyncClient
+from hypothesis import database, settings
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
 
 from phids.api import main as api_main
 from phids.api.main import app
@@ -31,10 +40,21 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 
+# Register and load a profile redirecting the Hypothesis example database
+settings.register_profile(
+    "default",
+    database=database.DirectoryBasedExampleDatabase(".cache/hypothesis"),
+)
+settings.load_profile("default")
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def safe_global_reset() -> AsyncGenerator[None]:
-    """Reset global API state and cancel dangling simulation tasks around each test."""
+    """Reset global API state and cancel dangling simulation tasks around each test.
+
+    Yields:
+        None after performing initial draft reset.
+    """
     reset_draft()
     yield
     task = api_main._sim_task
@@ -49,7 +69,11 @@ async def safe_global_reset() -> AsyncGenerator[None]:
 
 @pytest_asyncio.fixture
 async def api_client() -> AsyncGenerator[AsyncClient]:
-    """Provide a shared AsyncClient bound to the in-process FastAPI application."""
+    """Provide a shared AsyncClient bound to the in-process FastAPI application.
+
+    Yields:
+        An AsyncClient bound to the FastAPI app, using ASGITransport.
+    """
     client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
     try:
         yield client
@@ -59,21 +83,41 @@ async def api_client() -> AsyncGenerator[AsyncClient]:
 
 @pytest.fixture
 def empty_world() -> ECSWorld:
-    """Return a fresh ECS world with no entities registered."""
+    """Return a fresh ECS world with no entities registered.
+
+    Returns:
+        A pristine ECSWorld instance.
+    """
     return ECSWorld()
 
 
 @pytest.fixture
 def standard_biotope() -> GridEnvironment:
-    """Return a deterministic 50x50 environment with two signal and toxin layers."""
+    """Return a deterministic 50x50 environment with two signal and toxin layers.
+
+    Returns:
+        A GridEnvironment instance configured with a 50x50 grid shape,
+        2 layers for signal substances, and 2 layers for toxin substances.
+    """
     return GridEnvironment(width=50, height=50, num_signals=2, num_toxins=2)
 
 
 @pytest.fixture
 def config_builder() -> Callable[..., SimulationConfig]:
-    """Return a callable that builds the shared baseline SimulationConfig."""
+    """Return a callable that builds the shared baseline SimulationConfig.
 
+    Returns:
+        A builder function that returns a configured SimulationConfig instance.
+    """
     def _config(max_ticks: int = 5) -> SimulationConfig:
+        """Create a baseline SimulationConfig.
+
+        Args:
+            max_ticks: Maximum duration in ticks for the simulation.
+
+        Returns:
+            A SimulationConfig instance populated with test defaults.
+        """
         return SimulationConfig(
             grid_width=8,
             grid_height=8,
@@ -119,9 +163,20 @@ def config_builder() -> Callable[..., SimulationConfig]:
 
 @pytest.fixture
 def loop_config_builder() -> Callable[..., SimulationConfig]:
-    """Return a callable that builds the shared loop/termination SimulationConfig baseline."""
+    """Return a callable that builds the shared loop/termination SimulationConfig baseline.
 
+    Returns:
+        A builder function that returns a configured SimulationConfig instance.
+    """
     def _base_config(max_ticks: int = 20) -> SimulationConfig:
+        """Create a baseline SimulationConfig for loop and termination verification.
+
+        Args:
+            max_ticks: Maximum duration in ticks for the simulation.
+
+        Returns:
+            A SimulationConfig instance populated with test defaults.
+        """
         return SimulationConfig(
             grid_width=8,
             grid_height=8,
@@ -167,8 +222,12 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
 
 @pytest.fixture
 def add_plant() -> Callable[..., int]:
-    """Return a callable that spawns and registers a baseline plant entity."""
+    """Return a callable that spawns and registers a plant entity.
 
+    Returns:
+        A callable that creates a plant entity, attaches a PlantComponent to it,
+        registers its position in the world's spatial hash, and returns the entity ID.
+    """
     def _add_plant(
         world: ECSWorld,
         x: int,
@@ -184,6 +243,26 @@ def add_plant() -> Callable[..., int]:
         seed_max_dist: float = 2.0,
         seed_energy_cost: float = 2.0,
     ) -> int:
+        """Spawn a plant entity in the ECS world.
+
+        Args:
+            world: The ECSWorld registry instance.
+            x: Grid coordinate along the X-axis.
+            y: Grid coordinate along the Y-axis.
+            species_id: Identifier index of the flora species.
+            energy: Initial energy reserve for the plant entity.
+            max_energy: Maximum energy capacity for the plant entity.
+            base_energy: Base energy value used in lifecycle calculations.
+            growth_rate: Energy growth rate applied per tick.
+            survival_threshold: Energy threshold below which the entity dies.
+            reproduction_interval: Ticks required between reproduction checks.
+            seed_min_dist: Minimum dispersal distance for offspring seeds.
+            seed_max_dist: Maximum dispersal distance for offspring seeds.
+            seed_energy_cost: Energy cost deducted upon reproduction.
+
+        Returns:
+            The unique integer entity ID of the spawned plant.
+        """
         entity = world.create_entity()
         world.add_component(
             entity.entity_id,
@@ -211,8 +290,12 @@ def add_plant() -> Callable[..., int]:
 
 @pytest.fixture
 def add_swarm() -> Callable[..., int]:
-    """Return a callable that spawns and registers a baseline swarm entity."""
+    """Return a callable that spawns and registers a swarm entity.
 
+    Returns:
+        A callable that creates a swarm entity, attaches a SwarmComponent to it,
+        registers its position in the world's spatial hash, and returns the entity ID.
+    """
     def _add_swarm(
         world: ECSWorld,
         x: int,
@@ -227,12 +310,34 @@ def add_swarm() -> Callable[..., int]:
         reproduction_divisor: float = 1.0,
         reproduction_energy_divisor: float | None = None,
     ) -> int:
+        """Spawn a swarm entity in the ECS world.
+
+        Args:
+            world: The ECSWorld registry instance.
+            x: Grid coordinate along the X-axis.
+            y: Grid coordinate along the Y-axis.
+            species_id: Identifier index of the herbivore species.
+            population: Initial population headcount. Alias of `pop`.
+            pop: Initial population headcount. Alias of `population`.
+            energy: Initial energy reserve for the swarm entity.
+            energy_min: Minimum energy threshold per individual.
+            velocity: Movement cooldown period in ticks.
+            consumption_rate: Feeding speed multiplier per individual.
+            reproduction_divisor: Reproduction throttle divisor.
+            reproduction_energy_divisor: Explicit reproduction threshold override.
+
+        Returns:
+            The unique integer entity ID of the spawned swarm.
+
+        Raises:
+            ValueError: If both pop and population are specified with conflicting values.
+        """
         if pop is not None and population is not None and pop != population:
             raise ValueError("Specify either 'pop' or 'population' with the same value")
-        final_population = (
+        final_population: int = (
             population if population is not None else (pop if pop is not None else 10)
         )
-        final_reproduction_divisor = (
+        final_reproduction_divisor: float = (
             reproduction_energy_divisor
             if reproduction_energy_divisor is not None
             else reproduction_divisor
