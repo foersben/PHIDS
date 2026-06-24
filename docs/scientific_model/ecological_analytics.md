@@ -78,3 +78,8 @@ When running large Monte Carlo batches to evaluate scenario stability, tracking 
 ### Tabular Ledger
 
 A data grid providing the exact numeric breakdown per tick. This is powered by `Polars` for extreme performance, separating the specific death causes so scientists can definitively prove *what* caused the population collapse at Tick 450.
+## 4. State Buffering and Commit Phases
+
+The continuous narrative described above is executed within a strict deterministic framework. The implementation uses a double-buffering pattern (read state vs. write state) to prevent race conditions during execution.
+
+Entities read from $State_{t}$ and write to $State_{t+1}$. This means that biological events, such as metabolic depletions and plant deaths from herbivore feeding (Phase 3) or defense syntheses (Phase 4), do not immediately alter the flow field matrix. Instead, these energy and defense commitments are deferred to a specific buffer-swap phase (Phase 6). This guarantees spatial determinism and safe parallel execution across the cellular automata grid.

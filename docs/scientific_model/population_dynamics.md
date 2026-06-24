@@ -30,10 +30,10 @@ $$
 \text{Total Upkeep} = N_i \cdot m_i
 $$
 
-If $E_i < \text{Total Upkeep}$, the swarm suffers an **Energy Deficit**. Deficits manifest as immediate casualties. The population $N_i$ is reduced proportionately to the caloric shortfall, ensuring the swarm rapidly scales down to a biologically sustainable size rather than abruptly collapsing.
+If $E_i < \text{Total Upkeep}$, the swarm suffers an **Energy Deficit**. Deficits manifest as immediate casualties.
+Rather than a pure proportional calculation, the engine acts as a ceiling function for energy debt. The population $N_i$ is reduced to completely cover the caloric shortfall, ensuring no fractional energy deficits are carried over. If calculating proportional casualties leaves a remainder, the engine aggressively rounds up to force an extra casualty, clearing the debt and preserving the closed-system thermodynamic invariants of the biotope.
 
 If $N_i \le 0$, the entity is scheduled for garbage collection at the end of the phase.
-
 ### 2. Reproduction from Surplus
 
 If the swarm secures enough energy to fulfill its baseline viability ($E_{base} = N_i \cdot E_{min,i}$), the remaining *surplus* energy is converted into new individuals.
@@ -48,6 +48,8 @@ $$
 
 Cellular division within a macroscopic swarm occurs when the cluster population reaches $N_i \ge N_{split}$, prompting a physical bifurcation into two discrete ECS entities that share the parent's accumulated energy.
 
+To prevent immediate stacking artifacts and biologically represent the active dispersal phase of colony expansion, the implementation forces an active dispersal phase. The daughter colony is not placed at the exact same coordinate; instead, it undergoes a stochastic random walk step to an adjacent cell, mitigating immediate re-coalescence and localized overgrazing.
+
 ## Numerical Example
 
 Imagine a swarm of 10 herbivores with a baseline upkeep $m_i = 1.0$ and a reproduction cost $c_i = 5.0$.
@@ -58,7 +60,7 @@ Imagine a swarm of 10 herbivores with a baseline upkeep $m_i = 1.0$ and a reprod
 4.  **Reproduction:** The swarm converts the surplus into $\lfloor 25.0 / 5.0 \rfloor = 5$ new offspring.
 5.  **Tick Conclusion:** The swarm ends the tick with a population of **15** and $0.0$ surplus energy.
 
-If $N_{split} = 15$, the swarm will divide into two swarms of 7 and 8 individuals at the same coordinate.
+If $N_{split} = 15$, the swarm will divide into two swarms of 7 and 8 individuals. One swarm retains the parent's coordinate, while the daughter swarm is stochastically displaced to an adjacent cell to begin active dispersal.
 
 ## Alternatives Considered
 

@@ -33,32 +33,32 @@ Where:
 
 ### Discretization for Cellular Automata
 
-Because PHIDS operates on a discrete grid with discrete time steps ($\Delta t$), we cannot solve the continuous PDE directly. Instead, we approximate it.
+Because PHIDS operates on a discrete grid with discrete time steps (\Delta t), we cannot solve the continuous PDE directly. Instead, we approximate it using a two-step computational fluid dynamics approach:
 
-The spatial diffusion ($\nabla^2 C$) is approximated using an **isotropic Gaussian convolution kernel**.
-
-Let the 2D grid matrix of signal concentration at tick $t$ be $C^t$. The update for tick $t+1$ becomes:
-
-$$
-C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * C^t) + Q^t
-$$
-
-Where:
-
-- $\mathcal{K}_{iso}$ is a $3 \times 3$ Gaussian blur kernel.
-- $*$ denotes the 2D discrete convolution.
-- $\gamma$ is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
-- $Q^t$ is the matrix where cells containing active emitting plants have their concentration increased by a fixed emission rate.
-
-### Advection (Wind)
-
-To simulate wind, we apply a semi-Lagrangian backtracing step before diffusion. If the wind vector is $\mathbf{u} = (u_x, u_y)$, the concentration at cell $(x, y)$ is sampled from $(x - u_x, y - u_y)$ in the previous tick's read-buffer.
+**Step 1: Semi-Lagrangian Advection (Wind)**
+To simulate wind transport, we first apply a semi-Lagrangian backtracing step. If the per-cell wind vector is \mathbf{u} = (u_x, u_y), the advected concentration at cell $(x, y)$ is sampled from $(x - u_x, y - u_y)$ in the previous tick's read-buffer.
 
 $$
 \tilde{C}^{t}(x,y) = C^t(x - u_x, y - u_y)
 $$
 
-The full update is then the convolution of the advected field $\tilde{C}^{t}$.
+This computationally stable approach realistically models directional wind drift before isotropic diffusion blurs the signal, respecting heterogeneous wind fields across the grid without global-mean averaging artifacts.
+
+**Step 2: Isotropic Gaussian Convolution**
+The spatial diffusion (\nabla^2 C) is approximated using an **isotropic Gaussian convolution kernel** applied to the advected field \tilde{C}^{t}.
+
+Let the advected 2D grid matrix of signal concentration at tick $t$ be \tilde{C}^t$. The update for tick $t+1$ becomes:
+
+$$
+C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * \tilde{C}^t) + Q^t
+$$
+
+Where:
+
+- \mathcal{K}_{iso} is an odd-sized Gaussian blur kernel (e.g., $3 \times 3$). An odd-sized kernel is structurally necessary in the implementation to have a defined center pixel for matrix convolution; even-sized kernels would introduce sub-pixel phase shifts.
+- $*$ denotes the 2D discrete convolution.
+- \gamma is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
+- $Q^t$ is the matrix where cells containing active emitting plants have their concentration increased by a fixed emission rate.
 
 ## Numerical Example
 

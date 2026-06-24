@@ -41,16 +41,15 @@ At the start of the interaction phase, PHIDS aggregates the total population of 
 **Biological Rationale:**
 This is a computational surrogate for crowding-induced displacement. When too many grazers cram into a single patch, physical jostling forces the groups to scatter radially, expanding the foraging front and alleviating the localized density pressure.
 
-## 4. Trophic Anchoring (The Arrestment Reflex)
+## 4. Trophic Anchoring (The Arrestment Reflex & Anchoring Heuristic)
 
 When a swarm co-locates with a plant, it does not immediately move off the tile.
 
-**Algorithmic Resolution:**
-The system queries the Spatial Hash for entities at $(x,y)$. If it discovers a Plant Entity that is non-depleted and validated by the **Diet Compatibility Matrix** as a permitted food source, the swarm executes an **Anchoring** override.
+**Algorithmic Resolution (Anchoring Heuristic):**
+The system queries the Spatial Hash for entities at $(x,y)$. If it discovers a Plant Entity that is non-depleted and validated by the **Diet Compatibility Matrix** as a permitted food source, the swarm executes an **Anchoring** override. Crucially, this acts as an $O(1)$ performance optimization: if valid food is present underfoot, the swarm completely *skips* evaluating the flow-field gradient and tracking logic for that tick, staying on its current tile to feed.
 
 **Biological Rationale:**
-This models the *arrestment reflex*. An animal locating a highly dense food patch ceases long-distance locomotion to maximize caloric intake, staying in place until the resource is depleted or it is forced away by predators/toxins.
-
+This models the *arrestment reflex*. An animal locating a highly dense food patch ceases long-distance locomotion to maximize caloric intake, staying in place until the resource is depleted or it is forced away by predators/toxins. Computationally, short-circuiting the navigation system saves significant CPU cycles per tick, acting as a search fallback rather than a constant overriding force.
 ## 5. Mitosis & Clonal Bifurcation
 
 When an anchored swarm consumes immense amounts of energy, it converts the surplus into population. If $N_i \ge N_{split}$, the swarm physically divides.
