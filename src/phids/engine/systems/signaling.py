@@ -320,7 +320,7 @@ def run_signaling(
     trigger_conditions: dict[int, list[TriggerConditionSchema]],
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
-    _tick: int,
+    tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.

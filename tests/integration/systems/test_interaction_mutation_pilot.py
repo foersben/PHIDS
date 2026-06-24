@@ -43,7 +43,7 @@ def test_crowding_threshold_strict_gt_capacity(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, _k: [seq[weights.index(max(weights))]],
+        lambda seq, weights, k: [seq[weights.index(max(weights))]],  # noqa: ARG005
     )
 
     run_interaction(equal_world, env, diet_matrix=[[False]], tick=0)

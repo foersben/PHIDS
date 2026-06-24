@@ -313,7 +313,7 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, _k: [seq[weights.index(max(weights))]],
+        lambda seq, weights, k: [seq[weights.index(max(weights))]],  # noqa: ARG005
     )
 
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
@@ -376,7 +376,7 @@ def test_interaction_moved_swarm_does_not_feed_in_same_tick(
     monkeypatch.setattr(
         random,
         "choices",
-        lambda seq, weights, _k: [seq[weights.index(max(weights))]],
+        lambda seq, weights, k: [seq[weights.index(max(weights))]],  # noqa: ARG005
     )
 
     run_interaction(world, env, diet_matrix=[[True]], tick=0)

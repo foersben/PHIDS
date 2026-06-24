@@ -15,6 +15,7 @@ signal propagation, and metabolic attrition trajectories.
 
 from __future__ import annotations
 
+import asyncio  # noqa: TC003
 import json
 import logging
 import pathlib
@@ -57,7 +58,6 @@ from phids.api.websockets import SimulationStreamManager, UIStreamManager
 from phids.shared.logging_config import configure_logging
 
 if TYPE_CHECKING:
-    import asyncio
     from collections.abc import Awaitable, Callable
 
     from phids.engine.loop import SimulationLoop

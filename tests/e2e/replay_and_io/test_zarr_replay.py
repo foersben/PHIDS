@@ -233,7 +233,7 @@ class TestZarrReplayMigration:
         legacy_buf.save(replay_path)
         return replay_path
 
-    def test_zarr_load_legacy_msgpack(self, _temp_zarr_dir: Path, temp_legacy_bin: Path) -> None:
+    def test_zarr_load_legacy_msgpack(self, temp_zarr_dir: Path, temp_legacy_bin: Path) -> None:  # noqa: ARG002
         """Verify migration of legacy msgpack replay to Zarr."""
         buf = ZarrReplayBuffer.load(temp_legacy_bin)
 
@@ -328,7 +328,7 @@ class TestZarrReplayAPI:
         loaded_buf = ZarrReplayBuffer.load(export_path)
         assert len(loaded_buf) == len(zarr_buf)
 
-    def test_zarr_lazy_store_initialization(self, _temp_zarr_dir: Path) -> None:
+    def test_zarr_lazy_store_initialization(self, temp_zarr_dir: Path) -> None:  # noqa: ARG002
         """Verify store is created lazily on first append."""
         buf = ZarrReplayBuffer()
         # Store should not exist yet

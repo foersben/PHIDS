@@ -413,7 +413,7 @@ def run_interaction(
     world: ECSWorld,
     env: GridEnvironment,
     diet_matrix: list[list[bool]],
-    _tick: int,
+    tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one complete interaction tick, advancing all swarm entities through seven ordered phases.

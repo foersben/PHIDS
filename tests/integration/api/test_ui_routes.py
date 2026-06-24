@@ -452,7 +452,7 @@ def _patch_completed_batch_execution(
         job_id: str,
         output_dir: Path,
         on_progress: object | None = None,
-        _scenario_name: str | None = None,
+        scenario_name: str | None = None,  # noqa: ARG001
     ) -> batch_engine.BatchResult:
         if callable(on_progress):
             on_progress(1)
