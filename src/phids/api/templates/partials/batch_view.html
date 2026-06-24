@@ -58,6 +58,11 @@
 
     <div style="position:relative;height:220px;width:100%;"><canvas id="batch-agg-chart" style="display:block;"></canvas></div>
     <div id="batch-survival-wrap" style="position:relative;height:200px;width:100%;"><canvas id="batch-survival-chart" style="display:block;"></canvas></div>
+    
+    <div class="flex flex-wrap gap-2 text-xs pt-2 border-t border-slate-100 mt-3">
+      <span class="text-slate-400 text-[11px] self-center">Export:</span>
+      <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>TikZ</a>
+    </div>
   </div>
 
   <div id="batch-panel-table" class="space-y-3 hidden">
@@ -81,13 +86,12 @@
       <span class="text-[11px] text-slate-500 self-center">Tick decimation and columns update after clicking the button.</span>
     </div>
     <div id="batch-table-preview" class="max-h-72 overflow-auto rounded border border-slate-200"></div>
-  </div>
 
-  <div class="flex flex-wrap gap-2 text-xs">
-    <span class="text-slate-400 text-[11px] self-center">Export aggregate:</span>
-    <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>CSV</a>
-    <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>LaTeX Table</a>
-    <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>TikZ</a>
+    <div class="flex flex-wrap gap-2 text-xs pt-2 border-t border-slate-100 mt-3">
+      <span class="text-slate-400 text-[11px] self-center">Export:</span>
+      <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>CSV</a>
+      <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>LaTeX Table</a>
+    </div>
   </div>
 
   <script id="batch-aggregate-data" type="application/json">{{ aggregate | tojson }}</script>
