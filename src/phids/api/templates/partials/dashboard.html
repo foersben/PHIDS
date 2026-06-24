@@ -307,14 +307,16 @@
   function syncCanvasLayout(gridData) {
     const nextLayout = computeCanvasLayout(gridData);
     const dpr = window.devicePixelRatio || 1;
+    const targetWidth = nextLayout.drawWidth * dpr;
+    const targetHeight = nextLayout.drawHeight * dpr;
     if (
-      canvasLayout.drawWidth !== nextLayout.drawWidth
-      || canvasLayout.drawHeight !== nextLayout.drawHeight
+      canvas.width !== targetWidth
+      || canvas.height !== targetHeight
       || canvasLayout.gW !== nextLayout.gW
       || canvasLayout.gH !== nextLayout.gH
     ) {
-      canvas.width = nextLayout.drawWidth * dpr;
-      canvas.height = nextLayout.drawHeight * dpr;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
       canvas.style.width = `${nextLayout.drawWidth}px`;
       canvas.style.height = `${nextLayout.drawHeight}px`;
     }
