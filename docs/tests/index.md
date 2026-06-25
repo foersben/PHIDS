@@ -1,3 +1,11 @@
+---
+type: concept
+title: "Test Suite Architecture & Verification Rig"
+status: active
+version: 1.0
+description: "Documentation detailing the PHIDS test suite architecture and verification processes."
+---
+
 # Test Suite Architecture & Verification Rig
 ---
 
