@@ -1,22 +1,15 @@
-"""GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
+"""
+GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module implements the :class:`GridEnvironment`, a cellular automata biotope for PHIDS using
-NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of
-16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
-environment employs explicit read/write double-buffering to prevent race conditions and guarantee
-deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired
-resistance, and metabolic attrition. The convolution kernel is pre-computed and its tails are
-truncated to eliminate subnormal floats below ``SIGNAL_EPSILON``, maintaining computational
-efficiency and scientific accuracy. The architectural design is tightly coupled to the
-:class:`~phids.engine.core.ecs.ECSWorld` and flow-field systems, supporting O(1) spatial hash
-lookups and reproducible ecological dynamics.
+This module implements the GridEnvironment, a cellular automata biotope for PHIDS, using NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The environment employs explicit read/write double-buffering to prevent race conditions and guarantee deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired resistance, and metabolic attrition. The convolution kernel is pre-computed and truncated to eliminate subnormal floats, maintaining computational efficiency and scientific accuracy. The architectural design is tightly coupled to the ECSWorld and flow-field systems, supporting O(1) spatial hash lookups and reproducible ecological dynamics.
+
+This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the biotope's algorithmic mechanics and biological rationale.
 """
 
 from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
-from scipy.ndimage import map_coordinates  # type: ignore[import-untyped]
 from scipy.signal import convolve2d  # type: ignore[import-untyped]
 
 from phids.shared.constants import (
@@ -35,7 +28,9 @@ _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.8
 
 
-def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
+def _make_gaussian_kernel(
+    size: int = _KERNEL_SIZE, sigma: float = _SIGMA
+) -> npt.NDArray[np.float64]:
     """Return a normalised 2-D Gaussian kernel for VOC diffusion.
 
     Args:
@@ -113,7 +108,9 @@ class GridEnvironment:
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
         )
-        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(self.plant_energy_by_species)
+        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(
+            self.plant_energy_by_species
+        )
 
         # ------------------------------------------------------------------
         # Wind layers (dynamic, updated via REST API)
@@ -122,27 +119,26 @@ class GridEnvironment:
         self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # ------------------------------------------------------------------
-        # Signal layers  [num_signals, W, H] - read buffer
+        # Signal layers  [num_signals, W, H] – read buffer
         # ------------------------------------------------------------------
-        self.signal_layers: npt.NDArray[np.float64] = np.zeros((num_signals, width, height), dtype=np.float64)
+        self.signal_layers: npt.NDArray[np.float64] = np.zeros(
+            (num_signals, width, height), dtype=np.float64
+        )
         # Write buffer for double-buffering
         self._signal_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.signal_layers)
 
         # ------------------------------------------------------------------
         # Toxin layers  [num_toxins, W, H] (local plant-tissue fields)
         # ------------------------------------------------------------------
-        self.toxin_layers: npt.NDArray[np.float64] = np.zeros((num_toxins, width, height), dtype=np.float64)
+        self.toxin_layers: npt.NDArray[np.float64] = np.zeros(
+            (num_toxins, width, height), dtype=np.float64
+        )
         self._toxin_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.toxin_layers)
 
         # ------------------------------------------------------------------
-        # Flow-field gradient (scalar attraction field, WxH)
+        # Flow-field gradient (scalar attraction field, W×H)
         # ------------------------------------------------------------------
         self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-
-        # Pre-allocated scratch buffers for flow field JIT calculations
-        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Wind helpers
@@ -177,39 +173,41 @@ class GridEnvironment:
     def diffuse_signals(self) -> None:
         """Compute one diffusion tick for all signal layers.
 
-        This applies local semi-Lagrangian advection using per-cell wind vectors,
-        followed by isotropic Gaussian diffusion and decay. The transport update
-        respects heterogeneous wind fields across the grid and avoids global-mean
-        wind averaging artefacts.
+        This applies a 2-D convolution with a pre-computed Gaussian kernel,
+        advects the result by a bounded integer cell shift (zero-filled at
+        boundaries), and applies a sparsity threshold to zero small values.
         """
-        x_coords, y_coords = np.mgrid[0 : self.width, 0 : self.height]
-        upwind_x = x_coords.astype(np.float64) - self.wind_vector_x
-        upwind_y = y_coords.astype(np.float64) - self.wind_vector_y
+        # Compute mean wind shift in integer grid cells.
+        mean_vx: int = int(round(float(self.wind_vector_x.mean())))
+        mean_vy: int = int(round(float(self.wind_vector_y.mean())))
 
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
             if not np.any(layer >= SIGNAL_EPSILON):
                 self._signal_layers_write[s].fill(0.0)
                 continue
-
-            advected = map_coordinates(
-                layer,
-                [upwind_x, upwind_y],
-                order=1,
-                mode="constant",
-                cval=0.0,
-                prefilter=False,
+            convolved: npt.NDArray[np.float64] = convolve2d(
+                layer, DIFFUSION_KERNEL, mode="same", boundary="fill", fillvalue=0.0
             )
 
-            convolved = convolve2d(
-                advected,
-                DIFFUSION_KERNEL,
-                mode="same",
-                boundary="fill",
-                fillvalue=0.0,
-            )
+            shifted: npt.NDArray[np.float64] = np.zeros_like(convolved)
+            x_shift = mean_vx
+            y_shift = mean_vy
+            src_x_start = max(0, -x_shift)
+            src_x_end = self.width - max(0, x_shift)
+            dst_x_start = max(0, x_shift)
+            dst_x_end = self.width - max(0, -x_shift)
+            src_y_start = max(0, -y_shift)
+            src_y_end = self.height - max(0, y_shift)
+            dst_y_start = max(0, y_shift)
+            dst_y_end = self.height - max(0, -y_shift)
 
-            shifted = np.asarray(convolved, dtype=np.float64)
+            if src_x_start < src_x_end and src_y_start < src_y_end:
+                shifted[dst_x_start:dst_x_end, dst_y_start:dst_y_end] = convolved[
+                    src_x_start:src_x_end,
+                    src_y_start:src_y_end,
+                ]
+
             shifted *= SIGNAL_DECAY_FACTOR
             # Zero sub-threshold values to preserve matrix sparsity
             shifted[shifted < SIGNAL_EPSILON] = 0.0
@@ -271,7 +269,6 @@ class GridEnvironment:
 
     def to_dict(self) -> dict[str, object]:
         """Return a lightweight snapshot dict suitable for msgpack serialisation.
-
         Returns:
             dict: Mapping containing numpy arrays converted to nested lists.
         """

@@ -1,8 +1,6 @@
 """Operational utility for PHIDS diagnostics and request tracing.
 
-This script provides reproducible instrumentation around API traffic and runtime interactions.
-It is used to observe interface-level behavior without altering simulation state transitions
-in the engine core.
+This script provides reproducible instrumentation around API traffic and runtime interactions. It is used to observe interface-level behavior without altering simulation state transitions in the engine core.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ PAYLOAD = {
             "triggers": [],
         }
     ],
-    "herbivore_species": [
+    "predator_species": [
         {
             "species_id": 0,
             "name": "Herbivore",
@@ -60,8 +58,7 @@ PAYLOAD = {
 async def main() -> None:
     """Execute main within the PHIDS runtime workflow.
 
-    The function is documented to clarify its role in deterministic orchestration of
-    simulation, interface, or support behavior.
+    The function is documented to clarify its role in deterministic orchestration of simulation, interface, or support behavior.
 
     Returns:
         Computed output required by downstream simulation or interface routines.

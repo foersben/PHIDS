@@ -1,25 +1,17 @@
-"""Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
+"""
+Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
 
-This module implements the :class:`ECSWorld` registry, a flat entity-component system designed to
-maximise computational efficiency and biological fidelity in the PHIDS simulation engine. The ECS
-maintains a flat entity registry, per-component type indices for rapid multi-component queries,
-and a spatial hash grid enabling O(1) membership lookups for entities occupying a given cell. This
-architecture is essential for simulating plant-herbivore interactions, metabolic attrition, and
-systemic acquired resistance without incurring O(N²) locality costs. The design strictly adheres
-to data-oriented principles, avoiding Python object graphs in favour of flat dataclass-backed
-components and pre-allocated buffers (Rule of 16). The spatial hash is central to the
-simulation's ability to model emergent ecological phenomena with deterministic reproducibility
-and scientific rigour.
+This module implements the ECSWorld registry, a flat entity-component system designed to maximize computational efficiency and biological fidelity in the PHIDS simulation engine. The ECS maintains a flat entity registry, per-component indices for rapid queries, and a spatial hash grid enabling O(1) membership lookups for entities occupying a cell. This architecture is essential for simulating plant-herbivore interactions, metabolic attrition, and systemic acquired resistance without incurring O(N^2) locality costs. The design strictly adheres to data-oriented principles, avoiding Python object graphs in favor of NumPy-backed state matrices and pre-allocated buffers (Rule of 16). The spatial hash is central to the simulation's ability to model emergent ecological phenomena with deterministic reproducibility and scientific rigor.
+
+This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the ECS registry's algorithmic mechanics and biological rationale.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, TypeVar, cast
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
+from typing import Any, TypeVar, cast
 
 C = TypeVar("C")
 
@@ -34,9 +26,9 @@ class Entity:
     """Lightweight wrapper holding an entity id and attached components."""
 
     entity_id: int
-    _components: dict[type[object], object] = field(default_factory=dict, repr=False)
+    _components: dict[type[Any], Any] = field(default_factory=dict, repr=False)
 
-    def add_component(self, component: object) -> None:
+    def add_component(self, component: Any) -> None:
         """Attach a component instance keyed by its type.
 
         Args:
@@ -53,9 +45,9 @@ class Entity:
         Returns:
             The component instance for the entity.
         """
-        return cast("C", self._components[component_type])
+        return cast(C, self._components[component_type])
 
-    def has_component(self, component_type: type[object]) -> bool:
+    def has_component(self, component_type: type[Any]) -> bool:
         """Return True if the entity has a component of the given type.
 
         Args:
@@ -66,7 +58,7 @@ class Entity:
         """
         return component_type in self._components
 
-    def remove_component(self, component_type: type[object]) -> None:
+    def remove_component(self, component_type: type[Any]) -> None:
         """Detach a component of the given type (no-op if absent).
 
         Args:
@@ -95,16 +87,13 @@ class ECSWorld:
             _entities: Mapping of entity id to Entity.
             _component_index: Index mapping component types to entity id sets.
             _spatial_hash: Grid cell roster mapping (x, y) to entity id sets.
-            _entity_positions: Reverse index mapping entity ids to their current cell.
         """
         self._next_id: int = 0
         self._entities: dict[int, Entity] = {}
         # component_type -> set of entity ids
-        self._component_index: dict[type[object], set[int]] = defaultdict(set)
+        self._component_index: dict[type[Any], set[int]] = defaultdict(set)
         # (x, y) -> set of entity ids (Spatial Hash / Grid Cell Roster)
         self._spatial_hash: dict[tuple[int, int], set[int]] = defaultdict(set)
-        # entity_id -> (x, y) reverse lookup for O(1) spatial cleanup on move/destroy
-        self._entity_positions: dict[int, tuple[int, int]] = {}
 
     # ------------------------------------------------------------------
     # Entity lifecycle
@@ -134,10 +123,9 @@ class ECSWorld:
         # Clean component index
         for ctype in list(entity._components.keys()):
             self._component_index[ctype].discard(entity_id)
-        # O(1) spatial cleanup using the reverse position index.
-        position = self._entity_positions.pop(entity_id, None)
-        if position is not None:
-            self._remove_from_cell(entity_id, position)
+        # Clean spatial hash (search all cells – acceptable for sparse grids)
+        for cell_set in self._spatial_hash.values():
+            cell_set.discard(entity_id)
 
     def has_entity(self, entity_id: int) -> bool:
         """Return True if the entity exists.
@@ -165,7 +153,7 @@ class ECSWorld:
     # Component helpers
     # ------------------------------------------------------------------
 
-    def add_component(self, entity_id: int, component: object) -> None:
+    def add_component(self, entity_id: int, component: Any) -> None:
         """Attach a component to an entity and update the component index.
 
         Args:
@@ -176,7 +164,7 @@ class ECSWorld:
         entity.add_component(component)
         self._component_index[type(component)].add(entity_id)
 
-    def remove_component(self, entity_id: int, component_type: type[object]) -> None:
+    def remove_component(self, entity_id: int, component_type: type[Any]) -> None:
         """Detach a component of the specified type from an entity.
 
         Args:
@@ -187,7 +175,7 @@ class ECSWorld:
         entity.remove_component(component_type)
         self._component_index[component_type].discard(entity_id)
 
-    def query(self, *component_types: type[object]) -> Iterator[Entity]:
+    def query(self, *component_types: type[Any]) -> Iterator[Entity]:
         """Yield all entities that possess all listed component types.
 
         Args:
@@ -211,12 +199,7 @@ class ECSWorld:
             return
 
         # Start from the smallest set for efficiency
-        sets: list[set[int]] = []
-        for component_type in component_types:
-            indexed_ids = self._component_index.get(component_type)
-            if indexed_ids is None:
-                return
-            sets.append(indexed_ids)
+        sets = [self._component_index.get(ct, set()) for ct in component_types]
         smallest = min(sets, key=len)
         for eid in list(smallest):
             entity = self._entities.get(eid)
@@ -237,14 +220,7 @@ class ECSWorld:
             x: X coordinate of the cell.
             y: Y coordinate of the cell.
         """
-        new_position = (x, y)
-        old_position = self._entity_positions.get(entity_id)
-        if old_position == new_position:
-            return
-        if old_position is not None:
-            self._remove_from_cell(entity_id, old_position)
-        self._spatial_hash[new_position].add(entity_id)
-        self._entity_positions[entity_id] = new_position
+        self._spatial_hash[(x, y)].add(entity_id)
 
     def unregister_position(self, entity_id: int, x: int, y: int) -> None:
         """Remove an entity from a grid cell.
@@ -254,10 +230,9 @@ class ECSWorld:
             x: X coordinate of the cell.
             y: Y coordinate of the cell.
         """
-        position = (x, y)
-        self._remove_from_cell(entity_id, position)
-        if self._entity_positions.get(entity_id) == position:
-            self._entity_positions.pop(entity_id, None)
+        cell = self._spatial_hash.get((x, y))
+        if cell is not None:
+            cell.discard(entity_id)
 
     def move_entity(self, entity_id: int, old_x: int, old_y: int, new_x: int, new_y: int) -> None:
         """Atomically update spatial hash when an entity moves.
@@ -283,15 +258,6 @@ class ECSWorld:
             set[int]: Entity ids occupying the cell.
         """
         return self._spatial_hash.get((x, y), set())
-
-    def _remove_from_cell(self, entity_id: int, cell: tuple[int, int]) -> None:
-        """Detach an entity from a cell and prune empty cell buckets."""
-        roster = self._spatial_hash.get(cell)
-        if roster is None:
-            return
-        roster.discard(entity_id)
-        if not roster:
-            self._spatial_hash.pop(cell, None)
 
     # ------------------------------------------------------------------
     # Garbage collection

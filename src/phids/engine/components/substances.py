@@ -1,23 +1,7 @@
-"""Substance ECS component dataclass encoding chemical-defense synthesis and activation state.
+"""Substance ECS component dataclass.
 
-This module defines :class:`SubstanceComponent`, the data container attached to substance
-entities in the PHIDS ECS world. A substance entity is associated with a single owner plant
-entity and represents either a volatile organic compound (VOC) signal emitted into airborne
-signal layers for detection by neighbouring plants, or a defensive toxin emitted into local toxin
-layers to deter, repel, or kill co-located herbivore swarms. The substance lifecycle consists of
-a configurable synthesis delay (``synthesis_duration`` ticks during which the plant invests
-metabolic resources), followed by an active emission phase, and an optional aftereffect window
-(``aftereffect_ticks``) during which emission persists after the triggering herbivore has
-departed.
-
-Substances are dynamically created by the signaling system when a ``TriggerConditionSchema``
-rule is satisfied, and are garbage-collected when their owner plant dies or when the aftereffect
-window expires and the trigger condition is no longer met. The ``irreversible`` flag encodes
-constitutive systemic acquired resistance: once activated, the substance remains permanently
-emitting until owner death, regardless of subsequent herbivore presence. The nested
-``activation_condition`` predicate tree enables compound chemical-defense cascades, such as
-alarm-chain scenarios in which a secondary toxin activates only after a primary VOC signal is
-already present, modelling coordinated multi-species defense networks.
+Defines :class:`SubstanceComponent` for volatile signals and toxins emitted
+by plants in response to herbivore presence.
 """
 
 from __future__ import annotations
@@ -45,6 +29,9 @@ class SubstanceComponent:
         lethality_rate: Individuals eliminated per tick when lethal.
         repellent: Whether the toxin repels swarms.
         repellent_walk_ticks: Duration of repelled random-walk in ticks.
+        precursor_signal_id: Single required precursor signal id (-1 = none). Legacy.
+        precursor_signal_ids: All signal ids that must ALL be active before this
+            substance activates (AND logic).  Empty tuple = no precursor required.
         activation_condition: Optional nested activation predicate tree stored
             in JSON-serialisable form for runtime evaluation and tooltip display.
         energy_cost_per_tick: Energy drained from the owner plant per active tick.
@@ -66,9 +53,11 @@ class SubstanceComponent:
     lethality_rate: float = 0.0
     repellent: bool = False
     repellent_walk_ticks: int = 0
+    precursor_signal_id: int = -1
+    precursor_signal_ids: tuple[int, ...] = ()
     activation_condition: dict[str, object] | None = None
     energy_cost_per_tick: float = 0.0
     irreversible: bool = False
-    trigger_herbivore_species_id: int = -1
-    trigger_min_herbivore_population: int = 0
+    trigger_predator_species_id: int = -1
+    trigger_min_predator_population: int = 0
     triggered_this_tick: bool = False

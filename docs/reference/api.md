@@ -1,11 +1,3 @@
----
-type: reference
-title: "Python API Reference"
-status: active
-version: 0.1
-description: "Documentation for Python API Reference in the PHIDS framework."
----
-
 # Python API Reference
 
 This page exposes the current PHIDS Python API using `mkdocstrings`.

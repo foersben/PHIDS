@@ -12,9 +12,9 @@
   "mycorrhizal_growth_interval_ticks": 8,
   "mycorrhizal_signal_velocity": 1,
   "z2_flora_species_extinction": -1,
-  "z4_herbivore_species_extinction": -1,
+  "z4_predator_species_extinction": -1,
   "z6_max_total_flora_energy": -1.0,
-  "z7_max_total_herbivore_population": -1,
+  "z7_max_total_predator_population": -1,
   "flora_species": [
     {
       "species_id": 0,
@@ -31,8 +31,8 @@
       "camouflage_factor": 1.0,
       "triggers": [
         {
-          "herbivore_species_id": 0,
-          "min_herbivore_population": 4,
+          "predator_species_id": 0,
+          "min_predator_population": 4,
           "substance_id": 0,
           "synthesis_duration": 1,
           "is_toxin": false,
@@ -42,16 +42,16 @@
           "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
-            "kind": "herbivore_presence",
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 4
+            "kind": "enemy_presence",
+            "predator_species_id": 0,
+            "min_predator_population": 4
           },
           "energy_cost_per_tick": 0.45,
           "irreversible": false
         },
         {
-          "herbivore_species_id": 0,
-          "min_herbivore_population": 4,
+          "predator_species_id": 0,
+          "min_predator_population": 4,
           "substance_id": 3,
           "synthesis_duration": 2,
           "is_toxin": true,
@@ -71,14 +71,14 @@
                 "kind": "any_of",
                 "conditions": [
                   {
-                    "kind": "herbivore_presence",
-                    "herbivore_species_id": 1,
-                    "min_herbivore_population": 3
+                    "kind": "enemy_presence",
+                    "predator_species_id": 1,
+                    "min_predator_population": 3
                   },
                   {
-                    "kind": "herbivore_presence",
-                    "herbivore_species_id": 2,
-                    "min_herbivore_population": 3
+                    "kind": "enemy_presence",
+                    "predator_species_id": 2,
+                    "min_predator_population": 3
                   }
                 ]
               }
@@ -104,8 +104,8 @@
       "camouflage_factor": 0.55,
       "triggers": [
         {
-          "herbivore_species_id": 2,
-          "min_herbivore_population": 3,
+          "predator_species_id": 2,
+          "min_predator_population": 3,
           "substance_id": 1,
           "synthesis_duration": 2,
           "is_toxin": false,
@@ -122,9 +122,9 @@
                 "substance_id": 0
               },
               {
-                "kind": "herbivore_presence",
-                "herbivore_species_id": 0,
-                "min_herbivore_population": 5
+                "kind": "enemy_presence",
+                "predator_species_id": 0,
+                "min_predator_population": 5
               }
             ]
           },
@@ -132,8 +132,8 @@
           "irreversible": false
         },
         {
-          "herbivore_species_id": 2,
-          "min_herbivore_population": 3,
+          "predator_species_id": 2,
+          "min_predator_population": 3,
           "substance_id": 4,
           "synthesis_duration": 3,
           "is_toxin": true,
@@ -150,9 +150,9 @@
                 "substance_id": 1
               },
               {
-                "kind": "herbivore_presence",
-                "herbivore_species_id": 1,
-                "min_herbivore_population": 3
+                "kind": "enemy_presence",
+                "predator_species_id": 1,
+                "min_predator_population": 3
               }
             ]
           },
@@ -176,8 +176,8 @@
       "camouflage_factor": 1.0,
       "triggers": [
         {
-          "herbivore_species_id": 1,
-          "min_herbivore_population": 3,
+          "predator_species_id": 1,
+          "min_predator_population": 3,
           "substance_id": 2,
           "synthesis_duration": 1,
           "is_toxin": false,
@@ -187,9 +187,9 @@
           "repellent_walk_ticks": 0,
           "aftereffect_ticks": 5,
           "activation_condition": {
-            "kind": "herbivore_presence",
-            "herbivore_species_id": 1,
-            "min_herbivore_population": 3
+            "kind": "enemy_presence",
+            "predator_species_id": 1,
+            "min_predator_population": 3
           },
           "energy_cost_per_tick": 0.35,
           "irreversible": false
@@ -197,7 +197,7 @@
       ]
     }
   ],
-  "herbivore_species": [
+  "predator_species": [
     {
       "species_id": 0,
       "name": "Codling Moth",

@@ -1,3 +1,1 @@
 -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
--P windows-latest=ghcr.io/catthehacker/ubuntu:act-latest
--P macos-latest=ghcr.io/catthehacker/ubuntu:act-latest

@@ -37,7 +37,7 @@
         <select id="batch-chart-preset" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]">
           <option value="balanced" selected>Balanced overview</option>
           <option value="collapse_risk">Collapse risk focus</option>
-          <option value="herbivore_pressure">Herbivore pressure focus</option>
+          <option value="predator_pressure">Predator pressure focus</option>
           <option value="survival_only">Survival probability only</option>
         </select>
       </label>
@@ -56,13 +56,8 @@
       <span class="text-[11px] text-slate-500 self-center">Preset and labels are applied only after clicking the button.</span>
     </div>
 
-    <div style="position:relative;height:220px;width:100%;"><canvas id="batch-agg-chart" style="display:block;"></canvas></div>
-    <div id="batch-survival-wrap" style="position:relative;height:200px;width:100%;"><canvas id="batch-survival-chart" style="display:block;"></canvas></div>
-
-    <div class="flex flex-wrap gap-2 text-xs pt-2 border-t border-slate-100 mt-3">
-      <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>TikZ</a>
-    </div>
+    <div><canvas id="batch-agg-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas></div>
+    <div id="batch-survival-wrap"><canvas id="batch-survival-chart" height="180" style="display:block;width:100%;max-height:200px;"></canvas></div>
   </div>
 
   <div id="batch-panel-table" class="space-y-3 hidden">
@@ -75,8 +70,8 @@
           <option value="tick" selected>tick</option>
           <option value="flora_population_mean" selected>flora_population_mean</option>
           <option value="flora_population_std" selected>flora_population_std</option>
-          <option value="herbivore_population_mean" selected>herbivore_population_mean</option>
-          <option value="herbivore_population_std" selected>herbivore_population_std</option>
+          <option value="predator_population_mean" selected>predator_population_mean</option>
+          <option value="predator_population_std" selected>predator_population_std</option>
         </select>
       </label>
       <div class="text-[11px] text-slate-500 self-end">Hold <code>Ctrl</code>/<code>Cmd</code> to select multiple columns.</div>
@@ -86,12 +81,13 @@
       <span class="text-[11px] text-slate-500 self-center">Tick decimation and columns update after clicking the button.</span>
     </div>
     <div id="batch-table-preview" class="max-h-72 overflow-auto rounded border border-slate-200"></div>
+  </div>
 
-    <div class="flex flex-wrap gap-2 text-xs pt-2 border-t border-slate-100 mt-3">
-      <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>CSV</a>
-      <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>LaTeX Table</a>
-    </div>
+  <div class="flex flex-wrap gap-2 text-xs">
+    <span class="text-slate-400 text-[11px] self-center">Export aggregate:</span>
+    <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>CSV</a>
+    <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>LaTeX Table</a>
+    <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600" download>TikZ</a>
   </div>
 
   <script id="batch-aggregate-data" type="application/json">{{ aggregate | tojson }}</script>
@@ -120,74 +116,26 @@
     const agg = aggRaw ? JSON.parse(aggRaw.textContent || '{}') : null;
     if (!agg || !agg.ticks || agg.ticks.length === 0) return;
 
-    const labels = Array.isArray(agg.ticks) ? agg.ticks : [];
-
-    function _seriesWithLength(values, n) {
-      const src = Array.isArray(values) ? values : [];
-      const out = new Array(n).fill(0.0);
-      for (let i = 0; i < Math.min(src.length, n); i++) {
-        const v = Number(src[i]);
-        out[i] = Number.isFinite(v) ? v : 0.0;
-      }
-      return out;
-    }
-
-    function _sumSeriesMap(seriesMap, n) {
-      const out = new Array(n).fill(0.0);
-      if (!seriesMap || typeof seriesMap !== 'object') return out;
-      Object.values(seriesMap).forEach((series) => {
-        if (!Array.isArray(series)) return;
-        for (let i = 0; i < Math.min(series.length, n); i++) {
-          const v = Number(series[i]);
-          if (Number.isFinite(v)) out[i] += v;
-        }
-      });
-      return out;
-    }
-
-    const floraMean = _seriesWithLength(agg.flora_population_mean, labels.length);
-    const floraStd = _seriesWithLength(agg.flora_population_std, labels.length);
-    const herbivoreMeanRaw =
-      agg.herbivore_population_mean
-      || agg.swarm_population_mean
-      || agg.predator_population_mean
-      || _sumSeriesMap(agg.per_herbivore_pop_mean, labels.length);
-    const herbivoreStdRaw =
-      agg.herbivore_population_std
-      || agg.swarm_population_std
-      || agg.predator_population_std
-      || _sumSeriesMap(agg.per_herbivore_pop_std, labels.length);
-    const predMean = _seriesWithLength(herbivoreMeanRaw, labels.length);
-    const predStd = _seriesWithLength(herbivoreStdRaw, labels.length);
+    const labels = agg.ticks;
+    const floraMean = agg.flora_population_mean || [];
+    const floraStd = agg.flora_population_std || [];
+    const predMean = agg.predator_population_mean || [];
+    const predStd = agg.predator_population_std || [];
     const survivalSeries = (agg.survival_probability_curve || []).map((v) => 100.0 * v);
 
     const ctx = document.getElementById('batch-agg-chart');
     const survivalCtx = document.getElementById('batch-survival-chart');
     const survivalWrap = document.getElementById('batch-survival-wrap');
     if (!ctx || !survivalCtx || !survivalWrap) return;
-
-    function lockCanvasSize(canvasEl, targetHeight) {
-      const parentWidth = canvasEl.parentElement ? canvasEl.parentElement.clientWidth : 0;
-      canvasEl.width = Math.max(640, parentWidth || 800);
-      canvasEl.height = targetHeight;
-    }
-
-    lockCanvasSize(ctx, 220);
-    lockCanvasSize(survivalCtx, 200);
-
-    if (window.__phidsBatchViewController && typeof window.__phidsBatchViewController.destroy === 'function') {
-      window.__phidsBatchViewController.destroy();
-    }
-
-    let aggChart = null;
-    let survivalChart = null;
+    if (ctx._batchChart) ctx._batchChart.destroy();
+    if (survivalCtx._batchSurvivalChart) survivalCtx._batchSurvivalChart.destroy();
 
     const floraUpper = floraMean.map((v, i) => v + (floraStd[i] || 0));
     const floraLower = floraMean.map((v, i) => v - (floraStd[i] || 0));
     const predUpper = predMean.map((v, i) => v + (predStd[i] || 0));
     const predLower = predMean.map((v, i) => v - (predStd[i] || 0));
 
-    aggChart = new Chart(ctx, {
+    ctx._batchChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels,
@@ -195,15 +143,15 @@
           { label: 'Flora mean', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0 },
           { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
           { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Herbivore mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
-          { label: 'Herbivore +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Herbivore -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Predator mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
+          { label: 'Predator +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Predator -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
         ],
       },
       options: {
         animation: false,
-        responsive: false,
-        maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: {
           legend: {
             labels: {
@@ -219,7 +167,7 @@
       },
     });
 
-    survivalChart = new Chart(survivalCtx, {
+    survivalCtx._batchSurvivalChart = new Chart(survivalCtx, {
       type: 'line',
       data: {
         labels,
@@ -227,8 +175,8 @@
       },
       options: {
         animation: false,
-        responsive: false,
-        maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: { legend: { labels: { font: { size: 10 } } } },
         scales: {
           x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
@@ -249,11 +197,6 @@
     const csvExport = document.getElementById('batch-export-csv');
     const texExport = document.getElementById('batch-export-tex');
     const tikzExport = document.getElementById('batch-export-tikz');
-
-    if (chartPreset) {
-      // Enforce a deterministic default for each newly loaded batch detail.
-      chartPreset.value = 'balanced';
-    }
 
     function selectedColumnsCsv() {
       const selected = Array.from(colsSelect.options).filter((opt) => opt.selected).map((opt) => opt.value);
@@ -280,8 +223,8 @@
         tick: 'Tick',
         flora_population_mean: 'Flora mean',
         flora_population_std: 'Flora std',
-        herbivore_population_mean: 'Herbivore mean',
-        herbivore_population_std: 'Herbivore std',
+        predator_population_mean: 'Predator mean',
+        predator_population_std: 'Predator std',
       };
       let html = '<table class="min-w-full text-[11px]">';
       html += '<thead class="sticky top-0 bg-slate-100 text-slate-600"><tr>';
@@ -296,8 +239,8 @@
           if (col === 'tick') v = String(labels[i]);
           if (col === 'flora_population_mean') v = (floraMean[i] || 0).toFixed(2);
           if (col === 'flora_population_std') v = (floraStd[i] || 0).toFixed(2);
-          if (col === 'herbivore_population_mean') v = (predMean[i] || 0).toFixed(2);
-          if (col === 'herbivore_population_std') v = (predStd[i] || 0).toFixed(2);
+          if (col === 'predator_population_mean') v = (predMean[i] || 0).toFixed(2);
+          if (col === 'predator_population_std') v = (predStd[i] || 0).toFixed(2);
           html += `<td class="px-2 py-1 border-b border-slate-100">${v}</td>`;
         });
         html += `<td class="px-2 py-1 border-b border-slate-100">${surv.toFixed(1)}</td></tr>`;
@@ -308,8 +251,7 @@
 
     function applyChartSettings() {
       const preset = chartPreset.value;
-      const chart = aggChart;
-      if (!chart) return;
+      const chart = ctx._batchChart;
       chart.options.plugins.title = {
         display: (chartTitleInput.value || '').trim() !== '',
         text: chartTitleInput.value || '',
@@ -322,12 +264,12 @@
       chart.data.datasets.forEach((ds) => { ds.hidden = false; });
       survivalWrap.classList.remove('hidden');
       if (preset === 'collapse_risk') {
-        // hide herbivore series, keep flora and survival
+        // hide predator series, keep flora and survival
         chart.data.datasets[3].hidden = true;
         chart.data.datasets[4].hidden = true;
         chart.data.datasets[5].hidden = true;
       }
-      if (preset === 'herbivore_pressure') {
+      if (preset === 'predator_pressure') {
         // keep means only
         chart.data.datasets[1].hidden = true;
         chart.data.datasets[2].hidden = true;
@@ -342,7 +284,6 @@
         survivalWrap.classList.remove('hidden');
       }
       chart.update();
-      if (survivalChart) survivalChart.update('none');
       syncExportLinks();
     }
 
@@ -353,21 +294,6 @@
 
     applyChartBtn.addEventListener('click', applyChartSettings);
     applyTableBtn.addEventListener('click', applyTableSettings);
-
-    window.__phidsBatchViewController = {
-      destroy() {
-        applyChartBtn.removeEventListener('click', applyChartSettings);
-        applyTableBtn.removeEventListener('click', applyTableSettings);
-        if (aggChart) {
-          aggChart.destroy();
-          aggChart = null;
-        }
-        if (survivalChart) {
-          survivalChart.destroy();
-          survivalChart = null;
-        }
-      },
-    };
 
     phidsBatchTab('chart');
     applyChartSettings();

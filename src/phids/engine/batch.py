@@ -18,7 +18,7 @@ native code.
 
 Statistical aggregation is performed by :func:`aggregate_batch_telemetry`, which aligns
 the per-run telemetry row lists to the minimum observed tick count, stacks them into NumPy
-arrays, and computes per-tick mean and standard deviation for flora population, herbivore
+arrays, and computes per-tick mean and standard deviation for flora population, predator
 population, and per-species sub-populations. The resulting ``aggregate`` dictionary is
 serialised to ``{output_dir}/{job_id}_summary.json`` for persistent retrieval and
 Chart.js rendering of confidence bands in the batch dashboard.
@@ -36,53 +36,11 @@ import os
 import random
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import Any, Callable
 
 import numpy as np
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
 logger = logging.getLogger(__name__)
-
-type JSONScalar = None | bool | int | float | str
-type JSONValue = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
-type TelemetryRow = dict[str, object]
-type TelemetryRuns = list[list[TelemetryRow]]
-type BatchAggregate = dict[str, object]
-
-
-def _coerce_int(value: object) -> int:
-    """Convert telemetry scalar to int with stable fallback semantics."""
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, (int, float, str)):
-        try:
-            return int(value)
-        except ValueError:
-            return 0
-    return 0
-
-
-def _coerce_float(value: object) -> float:
-    """Convert telemetry scalar to float with stable fallback semantics."""
-    if isinstance(value, bool):
-        return float(value)
-    if isinstance(value, (int, float, str)):
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
-
-
-def _species_count(row: TelemetryRow, field: str, species_id: int) -> float:
-    """Read one species count from a telemetry row field map with numeric fallback."""
-    raw_map = row.get(field, {})
-    if not isinstance(raw_map, dict):
-        return 0.0
-    return _coerce_float(raw_map.get(species_id, 0.0))
-
 
 # ---------------------------------------------------------------------------
 # Default output directory
@@ -109,8 +67,8 @@ class BatchResult:
 
     job_id: str
     runs: int
-    per_run_telemetry: TelemetryRuns = field(default_factory=list)
-    aggregate: BatchAggregate = field(default_factory=dict)
+    per_run_telemetry: list[list[dict[str, Any]]] = field(default_factory=list)
+    aggregate: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -119,10 +77,10 @@ class BatchResult:
 
 
 def _run_single_headless(
-    scenario_dict: dict[str, object],
+    scenario_dict: dict[str, Any],
     max_ticks: int,
     seed: int,
-) -> list[TelemetryRow]:
+) -> list[dict[str, Any]]:
     """Execute a single deterministic simulation run without WebSocket or replay overhead.
 
     This function is the fundamental unit of computation for the batch engine.
@@ -148,7 +106,7 @@ def _run_single_headless(
         seed: Random seed for reproducibility and ensemble diversity.
 
     Returns:
-        list[TelemetryRow]: List of per-tick telemetry row dicts accumulated by
+        list[dict[str, Any]]: List of per-tick telemetry row dicts accumulated by
         :class:`~phids.telemetry.analytics.TelemetryRecorder`.
     """
     random.seed(seed)
@@ -167,7 +125,7 @@ def _run_single_headless(
                 break
 
     asyncio.run(_advance())
-    rows: list[TelemetryRow] = [cast("TelemetryRow", dict(row)) for row in loop.telemetry._rows]
+    rows: list[dict[str, Any]] = list(loop.telemetry._rows)
     logger.debug(
         "Headless run complete (seed=%d, ticks=%d, rows=%d)",
         seed,
@@ -178,8 +136,8 @@ def _run_single_headless(
 
 
 def _run_and_save(
-    args: tuple[dict[str, object], int, int, str, int, str],
-) -> list[TelemetryRow]:
+    args: tuple[dict[str, Any], int, int, str, int, str],
+) -> list[dict[str, Any]]:
     """Execute one headless run, optionally save replay, and return telemetry rows.
 
     This thin wrapper unpacks the argument tuple, calls :func:`_run_single_headless`,
@@ -194,9 +152,9 @@ def _run_and_save(
             ``(scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str)``.
 
     Returns:
-        list[TelemetryRow]: Per-tick telemetry rows for this run.
+        list[dict[str, Any]]: Per-tick telemetry rows for this run.
     """
-    scenario_dict, max_ticks, seed, job_id, run_index, _output_dir_str = args
+    scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str = args
     rows = _run_single_headless(scenario_dict, max_ticks, seed)
     logger.info("Batch run %d/%s complete (seed=%d, rows=%d)", run_index, job_id, seed, len(rows))
     return rows
@@ -208,8 +166,8 @@ def _run_and_save(
 
 
 def aggregate_batch_telemetry(
-    per_run: TelemetryRuns,
-) -> BatchAggregate:
+    per_run: list[list[dict[str, Any]]],
+) -> dict[str, Any]:
     """Compute per-tick statistical summaries across an ensemble of simulation runs.
 
     Aligns all runs to the minimum tick count observed in the ensemble (to handle
@@ -229,14 +187,14 @@ def aggregate_batch_telemetry(
             :func:`_run_single_headless`.
 
     Returns:
-        BatchAggregate: Aggregate summary with keys ``ticks``,
+        dict[str, Any]: Aggregate summary with keys ``ticks``,
         ``flora_population_mean``, ``flora_population_std``,
-        ``herbivore_population_mean``, ``herbivore_population_std``,
+        ``predator_population_mean``, ``predator_population_std``,
         ``total_flora_energy_mean``, ``total_flora_energy_std``,
         ``extinction_probability``, ``runs_completed``,
         ``survival_probability_curve``,
         ``per_flora_pop_mean``, ``per_flora_pop_std``,
-        ``per_herbivore_pop_mean``, ``per_herbivore_pop_std``.
+        ``per_predator_pop_mean``, ``per_predator_pop_std``.
     """
     if not per_run:
         return {}
@@ -244,20 +202,17 @@ def aggregate_batch_telemetry(
     # Align to minimum length to handle early termination
     min_len = min(len(rows) for rows in per_run)
     aligned = [rows[:min_len] for rows in per_run]
-    ticks = [_coerce_int(r.get("tick", 0)) for r in aligned[0]]
+    ticks = [r["tick"] for r in aligned[0]]
 
     # Stack aggregate scalar columns
     flora_pop = np.array(
-        [[_coerce_float(r.get("flora_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
+        [[r["flora_population"] for r in run] for run in aligned], dtype=np.float64
     )
-    herb_pop = np.array(
-        [[_coerce_float(r.get("herbivore_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
+    pred_pop = np.array(
+        [[r["predator_population"] for r in run] for run in aligned], dtype=np.float64
     )
     flora_energy = np.array(
-        [[_coerce_float(r.get("total_flora_energy", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
+        [[r["total_flora_energy"] for r in run] for run in aligned], dtype=np.float64
     )
 
     # Extinction probability: fraction of runs where flora hit zero at any tick
@@ -267,42 +222,38 @@ def aggregate_batch_telemetry(
 
     # Collect all per-species ids seen
     all_flora_ids: set[int] = set()
-    all_herb_ids: set[int] = set()
+    all_pred_ids: set[int] = set()
     for run in aligned:
         for row in run:
-            flora_map = row.get("plant_pop_by_species", {})
-            herb_map = row.get("swarm_pop_by_species", {})
-            if isinstance(flora_map, dict):
-                all_flora_ids.update(k for k in flora_map.keys() if isinstance(k, int))
-            if isinstance(herb_map, dict):
-                all_herb_ids.update(k for k in herb_map.keys() if isinstance(k, int))
+            all_flora_ids.update(row.get("plant_pop_by_species", {}).keys())
+            all_pred_ids.update(row.get("swarm_pop_by_species", {}).keys())
 
     per_flora_pop_mean: dict[int, list[float]] = {}
     per_flora_pop_std: dict[int, list[float]] = {}
     for fid in sorted(all_flora_ids):
         arr = np.array(
-            [[_species_count(r, "plant_pop_by_species", fid) for r in run] for run in aligned],
+            [[r.get("plant_pop_by_species", {}).get(fid, 0) for r in run] for run in aligned],
             dtype=np.float64,
         )
         per_flora_pop_mean[fid] = arr.mean(axis=0).tolist()
         per_flora_pop_std[fid] = arr.std(axis=0).tolist()
 
-    per_herb_pop_mean: dict[int, list[float]] = {}
-    per_herb_pop_std: dict[int, list[float]] = {}
-    for pid in sorted(all_herb_ids):
+    per_pred_pop_mean: dict[int, list[float]] = {}
+    per_pred_pop_std: dict[int, list[float]] = {}
+    for pid in sorted(all_pred_ids):
         arr = np.array(
-            [[_species_count(r, "swarm_pop_by_species", pid) for r in run] for run in aligned],
+            [[r.get("swarm_pop_by_species", {}).get(pid, 0) for r in run] for run in aligned],
             dtype=np.float64,
         )
-        per_herb_pop_mean[pid] = arr.mean(axis=0).tolist()
-        per_herb_pop_std[pid] = arr.std(axis=0).tolist()
+        per_pred_pop_mean[pid] = arr.mean(axis=0).tolist()
+        per_pred_pop_std[pid] = arr.std(axis=0).tolist()
 
-    result: BatchAggregate = {
+    result: dict[str, Any] = {
         "ticks": ticks,
         "flora_population_mean": flora_pop.mean(axis=0).tolist(),
         "flora_population_std": flora_pop.std(axis=0).tolist(),
-        "herbivore_population_mean": herb_pop.mean(axis=0).tolist(),
-        "herbivore_population_std": herb_pop.std(axis=0).tolist(),
+        "predator_population_mean": pred_pop.mean(axis=0).tolist(),
+        "predator_population_std": pred_pop.std(axis=0).tolist(),
         "total_flora_energy_mean": flora_energy.mean(axis=0).tolist(),
         "total_flora_energy_std": flora_energy.std(axis=0).tolist(),
         "extinction_probability": extinction_probability,
@@ -310,8 +261,8 @@ def aggregate_batch_telemetry(
         "runs_completed": len(per_run),
         "per_flora_pop_mean": {str(k): v for k, v in per_flora_pop_mean.items()},
         "per_flora_pop_std": {str(k): v for k, v in per_flora_pop_std.items()},
-        "per_herbivore_pop_mean": {str(k): v for k, v in per_herb_pop_mean.items()},
-        "per_herbivore_pop_std": {str(k): v for k, v in per_herb_pop_std.items()},
+        "per_predator_pop_mean": {str(k): v for k, v in per_pred_pop_mean.items()},
+        "per_predator_pop_std": {str(k): v for k, v in per_pred_pop_std.items()},
     }
     logger.info(
         "Batch aggregation complete (runs=%d, min_len=%d, extinction_prob=%.3f)",
@@ -322,7 +273,7 @@ def aggregate_batch_telemetry(
     return result
 
 
-def _sanitize_for_json(value: object) -> object:
+def _sanitize_for_json(value: Any) -> Any:
     """Recursively coerce aggregate values into strict JSON-compatible scalars.
 
     This sanitiser replaces all non-finite floating-point values (``NaN``,
@@ -334,7 +285,7 @@ def _sanitize_for_json(value: object) -> object:
         value: Arbitrary Python/NumPy value.
 
     Returns:
-        object: JSON-safe structure preserving the original shape.
+        Any: JSON-safe structure preserving the original shape.
     """
     if isinstance(value, dict):
         return {str(k): _sanitize_for_json(v) for k, v in value.items()}
@@ -344,9 +295,7 @@ def _sanitize_for_json(value: object) -> object:
         return _sanitize_for_json(value.item())
     if isinstance(value, float):
         return value if math.isfinite(value) else None
-    if isinstance(value, (str, int, bool)) or value is None:
-        return value
-    return str(value)
+    return value
 
 
 # ---------------------------------------------------------------------------
@@ -371,13 +320,12 @@ class BatchRunner:
 
     def execute_batch(
         self,
-        scenario_dict: dict[str, object],
+        scenario_dict: dict[str, Any],
         runs: int,
         max_ticks: int,
         job_id: str,
         output_dir: Path | None = None,
         on_progress: Callable[[int], None] | None = None,
-        scenario_name: str | None = None,
     ) -> BatchResult:
         """Execute ``runs`` independent simulation trajectories in parallel.
 
@@ -394,8 +342,6 @@ class BatchRunner:
             output_dir: Directory for output files; defaults to ``data/batches``.
             on_progress: Optional callback invoked with completed count as each
                 future resolves.
-            scenario_name: Optional display label persisted into the summary so
-                restored ledgers can retain operator-selected names.
 
         Returns:
             BatchResult: Completed result with all per-run telemetry and aggregate.
@@ -405,7 +351,7 @@ class BatchRunner:
 
         max_workers = min(runs, os.cpu_count() or 1)
         mp_ctx = multiprocessing.get_context("spawn")
-        per_run_telemetry: TelemetryRuns = []
+        per_run_telemetry: list[list[dict[str, Any]]] = []
         completed = 0
 
         logger.info(
@@ -417,10 +363,13 @@ class BatchRunner:
         )
 
         args_list = [
-            (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir)) for idx, seed in enumerate(range(runs))
+            (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir))
+            for idx, seed in enumerate(range(runs))
         ]
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers, mp_context=mp_ctx
+        ) as executor:
             futures = {executor.submit(_run_and_save, args): i for i, args in enumerate(args_list)}
             for future in concurrent.futures.as_completed(futures):
                 try:
@@ -435,9 +384,7 @@ class BatchRunner:
                     on_progress(completed)
 
         aggregate = aggregate_batch_telemetry(per_run_telemetry)
-        persisted_scenario_name = (scenario_name or str(scenario_dict.get("scenario_name", ""))).strip()
-        aggregate["scenario_name"] = persisted_scenario_name or "unnamed"
-        aggregate = cast("BatchAggregate", _sanitize_for_json(aggregate))
+        aggregate = _sanitize_for_json(aggregate)
 
         summary_path = save_dir / f"{job_id}_summary.json"
         with summary_path.open("w", encoding="utf-8") as fp:

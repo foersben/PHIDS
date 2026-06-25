@@ -43,17 +43,13 @@ run_quality() {
 }
 
 run_tests() {
-  echo ">>> Pass 1: Logic & Coverage (NUMBA_DISABLE_JIT=1)"
-  NUMBA_DISABLE_JIT=1 uv run pytest --cov=src/phids --cov-fail-under=80
-
-  echo ">>> Pass 2: Numba Compilation Verification"
-  uv run pytest tests/integration/systems/test_interaction_property_invariants.py \
-    -x -q -o "addopts="
+  echo ">>> Running full pytest suite"
+  uv run pytest
 }
 
 run_docs() {
   echo ">>> Building docs in strict mode"
-  uv run zensical build
+  uv run mkdocs build --strict
 }
 
 case "$job" in

@@ -1,46 +1,26 @@
-"""Pydantic v2 schemas for ECS components, species parameters, scenario configuration, and API models.
+"""Pydantic schemas for ECS components, configuration payloads, and REST API models.
 
-This module constitutes the validated ingress boundary for all externally supplied data entering
-the PHIDS runtime. It defines two categories of models: structural schemas that mirror ECS
-component state (``PlantComponentSchema``, ``SwarmComponentSchema``, ``SubstanceComponentSchema``)
-for serialisation and inspection endpoints, and configuration schemas (``FloraSpeciesParams``,
-``HerbivoreSpeciesParams``, ``DietCompatibilityMatrix``, ``SimulationConfig``) that parameterise
-``SimulationLoop`` construction. The former category supports REST and WebSocket state queries;
-the latter is validated once at ingress and then passed directly to the engine without further
-mutation.
-
-The activation-condition sub-schema forms a recursive algebraic type tree composed of
-``HerbivorePresenceConditionSchema``, ``SubstanceActiveConditionSchema``,
-``EnvironmentalSignalConditionSchema``, ``AllOfConditionSchema``, and ``AnyOfConditionSchema``
-nodes, discriminated by the ``kind`` literal field. This tree is evaluated at runtime by the
-signaling system to support compound chemical-defense cascades — for example, alarm-chain
-scenarios in which a secondary toxin activates only after a primary VOC signal is already present.
-
-``SimulationConfig`` is the authoritative configuration container; its ``model_validator`` enforces
-cross-field reference integrity between placement species identifiers and the declared species
-lists before any engine state is allocated. The ``DietCompatibilityMatrix`` validator enforces
-Rule-of-16 shape bounds on both dimensions of the herbivore-flora edibility matrix.
+This module defines payload and response models used by the REST API as well
+as schemata representing ECS components and species parameters.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from phids.shared.constants import (
     MAX_FLORA_SPECIES,
-    MAX_HERBIVORE_SPECIES,
+    MAX_PREDATOR_SPECIES,
     MAX_SUBSTANCE_TYPES,
-    SEED_DROP_HEIGHT_DEFAULT,
-    SEED_TERMINAL_VELOCITY_DEFAULT,
 )
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 SpeciesId = Annotated[int, Field(ge=0, lt=MAX_FLORA_SPECIES)]
-HerbivoreId = Annotated[int, Field(ge=0, lt=MAX_HERBIVORE_SPECIES)]
+PredatorId = Annotated[int, Field(ge=0, lt=MAX_PREDATOR_SPECIES)]
 SubstanceId = Annotated[int, Field(ge=0, lt=MAX_SUBSTANCE_TYPES)]
 
 
@@ -49,13 +29,7 @@ SubstanceId = Annotated[int, Field(ge=0, lt=MAX_SUBSTANCE_TYPES)]
 # ---------------------------------------------------------------------------
 
 
-class StrictBaseModel(BaseModel):
-    """Base class enabling strict Pydantic v2 validation for all nested fields."""
-
-    model_config = ConfigDict(strict=True)
-
-
-class PlantComponentSchema(StrictBaseModel):
+class PlantComponentSchema(BaseModel):
     """Pydantic schema for the Plant ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
@@ -67,20 +41,26 @@ class PlantComponentSchema(StrictBaseModel):
     base_energy: float = Field(..., gt=0.0, description="Initial energy E_i,j(0).")
     growth_rate: float = Field(..., ge=0.0, description="Per-tick growth rate r_i,j (%).")
     survival_threshold: float = Field(..., ge=0.0, description="Minimum energy B_i,j before death.")
-    reproduction_interval: int = Field(..., gt=0, description="Ticks between reproduction attempts (T_i).")
+    reproduction_interval: int = Field(
+        ..., gt=0, description="Ticks between reproduction attempts (T_i)."
+    )
     seed_min_dist: float = Field(..., ge=0.0, description="Minimum seed dispersal distance d_min.")
     seed_max_dist: float = Field(..., gt=0.0, description="Maximum seed dispersal distance d_max.")
     seed_energy_cost: float = Field(..., ge=0.0, description="Energy cost per reproduction event.")
     camouflage: bool = Field(default=False, description="Constitutive gradient attenuation flag.")
-    camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0, description="Gradient multiplier when camouflaged.")
+    camouflage_factor: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Gradient multiplier when camouflaged."
+    )
     last_reproduction_tick: int = Field(default=0, description="Last tick of reproduction.")
 
 
-class SwarmComponentSchema(StrictBaseModel):
+class SwarmComponentSchema(BaseModel):
     """Pydantic schema for the Herbivore Swarm ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
-    species_id: HerbivoreId = Field(..., description="Herbivore species index [0, MAX_HERBIVORE_SPECIES).")
+    species_id: PredatorId = Field(
+        ..., description="Predator species index [0, MAX_PREDATOR_SPECIES)."
+    )
     x: int = Field(..., ge=0, description="Grid x-coordinate.")
     y: int = Field(..., ge=0, description="Grid y-coordinate.")
     population: int = Field(..., gt=0, description="Current swarm head-count n(t).")
@@ -100,23 +80,36 @@ class SwarmComponentSchema(StrictBaseModel):
         description="Explicit mitosis threshold; 0 keeps legacy initial-population based split rule.",
     )
     repelled: bool = Field(default=False, description="Currently repelled by toxin.")
-    repelled_ticks_remaining: int = Field(default=0, description="Ticks remaining in repelled random-walk.")
+    repelled_ticks_remaining: int = Field(
+        default=0, description="Ticks remaining in repelled random-walk."
+    )
 
 
-class SubstanceComponentSchema(StrictBaseModel):
+class SubstanceComponentSchema(BaseModel):
     """Pydantic schema for a Substance (signal or toxin) ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
     substance_id: SubstanceId = Field(..., description="Substance layer index.")
     owner_plant_id: int = Field(..., description="ECS entity id of the producing plant.")
     is_toxin: bool = Field(default=False, description="True for toxins, False for signals.")
-    synthesis_remaining: int = Field(default=0, ge=0, description="Ticks before substance becomes active.")
+    synthesis_remaining: int = Field(
+        default=0, ge=0, description="Ticks before substance becomes active."
+    )
     active: bool = Field(default=False, description="Whether the substance is currently active.")
-    aftereffect_ticks: int = Field(default=0, ge=0, description="Remaining aftereffect duration T_k.")
+    aftereffect_ticks: int = Field(
+        default=0, ge=0, description="Remaining aftereffect duration T_k."
+    )
     lethal: bool = Field(default=False, description="Lethal toxin flag.")
-    lethality_rate: float = Field(default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i).")
+    lethality_rate: float = Field(
+        default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i)."
+    )
     repellent: bool = Field(default=False, description="Repellent toxin flag.")
-    repellent_walk_ticks: int = Field(default=0, ge=0, description="Random-walk duration k on repel trigger.")
+    repellent_walk_ticks: int = Field(
+        default=0, ge=0, description="Random-walk duration k on repel trigger."
+    )
+    precursor_signal_id: int = Field(
+        default=-1, description="Signal substance_id required before toxin activation (-1 = none)."
+    )
     energy_cost_per_tick: float = Field(
         default=0.0, ge=0.0, description="Energy cost drained from the owner plant per active tick."
     )
@@ -126,30 +119,34 @@ class SubstanceComponentSchema(StrictBaseModel):
     )
 
 
-class HerbivorePresenceConditionSchema(StrictBaseModel):
-    """Leaf predicate requiring a herbivore species at the owner's cell."""
+class EnemyPresenceConditionSchema(BaseModel):
+    """Leaf predicate requiring a predator species at the owner's cell."""
 
-    kind: Literal["herbivore_presence"] = "herbivore_presence"
-    herbivore_species_id: HerbivoreId
-    min_herbivore_population: int = Field(
+    kind: Literal["enemy_presence"] = "enemy_presence"
+    predator_species_id: PredatorId
+    min_predator_population: int = Field(
         default=1,
         gt=0,
-        description="Minimum co-located herbivore population required for this predicate.",
+        description="Minimum co-located predator population required for this predicate.",
     )
 
 
-class SubstanceActiveConditionSchema(StrictBaseModel):
+class SubstanceActiveConditionSchema(BaseModel):
     """Leaf predicate requiring another substance to already be active."""
 
     kind: Literal["substance_active"] = "substance_active"
-    substance_id: SubstanceId = Field(..., description="Active substance required for this predicate.")
+    substance_id: SubstanceId = Field(
+        ..., description="Active substance required for this predicate."
+    )
 
 
-class EnvironmentalSignalConditionSchema(StrictBaseModel):
+class EnvironmentalSignalConditionSchema(BaseModel):
     """Leaf predicate requiring a minimum ambient signal concentration at the owner's cell."""
 
     kind: Literal["environmental_signal"] = "environmental_signal"
-    signal_id: SubstanceId = Field(..., description="Signal layer identifier to read from the environment.")
+    signal_id: SubstanceId = Field(
+        ..., description="Signal layer identifier to read from the environment."
+    )
     min_concentration: float = Field(
         default=0.01,
         ge=0.0,
@@ -157,7 +154,7 @@ class EnvironmentalSignalConditionSchema(StrictBaseModel):
     )
 
 
-class AllOfConditionSchema(StrictBaseModel):
+class AllOfConditionSchema(BaseModel):
     """Boolean AND over nested activation predicates."""
 
     kind: Literal["all_of"] = "all_of"
@@ -168,7 +165,7 @@ class AllOfConditionSchema(StrictBaseModel):
     )
 
 
-class AnyOfConditionSchema(StrictBaseModel):
+class AnyOfConditionSchema(BaseModel):
     """Boolean OR over nested activation predicates."""
 
     kind: Literal["any_of"] = "any_of"
@@ -179,8 +176,8 @@ class AnyOfConditionSchema(StrictBaseModel):
     )
 
 
-type ConditionNode = Annotated[
-    HerbivorePresenceConditionSchema
+ConditionNode: TypeAlias = Annotated[
+    EnemyPresenceConditionSchema
     | SubstanceActiveConditionSchema
     | EnvironmentalSignalConditionSchema
     | AllOfConditionSchema
@@ -197,35 +194,50 @@ AnyOfConditionSchema.model_rebuild()
 # ---------------------------------------------------------------------------
 
 
-class TriggerConditionSchema(StrictBaseModel):
+class TriggerConditionSchema(BaseModel):
     """Trigger condition for substance synthesis (Interaction Matrix entry).
 
-    Maps a (plant species, herbivore species) pair to the substance that should
+    Maps a (plant species, predator species) pair to the substance that should
     be synthesised when the trigger conditions are met, together with all
     behavioural properties of the resulting substance.
     """
 
-    model_config = ConfigDict(extra="forbid")
-
-    herbivore_species_id: HerbivoreId
-    min_herbivore_population: int = Field(..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis.")
+    predator_species_id: PredatorId
+    min_predator_population: int = Field(
+        ..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis."
+    )
     substance_id: SubstanceId = Field(..., description="Substance to synthesise.")
     synthesis_duration: int = Field(..., gt=0, description="Ticks to synthesise T(s_x).")
     is_toxin: bool = Field(default=False, description="True for toxins, False for signals.")
     lethal: bool = Field(default=False, description="Lethal toxin flag.")
-    lethality_rate: float = Field(default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i).")
+    lethality_rate: float = Field(
+        default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i)."
+    )
     repellent: bool = Field(default=False, description="Repellent toxin flag.")
-    repellent_walk_ticks: int = Field(default=0, ge=0, description="Random-walk duration k on repel trigger.")
+    repellent_walk_ticks: int = Field(
+        default=0, ge=0, description="Random-walk duration k on repel trigger."
+    )
     aftereffect_ticks: int = Field(
         default=0,
         ge=0,
         description="Aftereffect duration T_k (signals linger after emission ceases).",
     )
+    precursor_signal_id: int = Field(
+        default=-1,
+        description="Single signal substance_id required before toxin activation (-1 = none). Legacy field.",
+    )
+    precursor_signal_ids: list[int] = Field(
+        default_factory=list,
+        description=(
+            "All signal substance_ids that must ALL be active before this substance activates "
+            "(AND logic). Empty list = no precursor required. Takes precedence over precursor_signal_id."
+        ),
+    )
     activation_condition: ConditionNode | None = Field(
         default=None,
         description=(
             "Optional nested predicate tree controlling whether the configured substance may activate. "
-            "Supports explicit all_of/any_of composition over herbivore_presence and substance_active leaves."
+            "Supports explicit all_of/any_of composition over enemy_presence and substance_active leaves."
         ),
     )
     energy_cost_per_tick: float = Field(
@@ -234,9 +246,31 @@ class TriggerConditionSchema(StrictBaseModel):
     irreversible: bool = Field(
         default=False,
         description=(
-            "If true, activation is irreversible: once active, the substance remains active until owner death."
+            "If true, activation is irreversible: once active, the substance remains active "
+            "until owner death."
         ),
     )
+
+    @model_validator(mode="after")
+    def _populate_activation_condition_from_legacy_precursors(self) -> TriggerConditionSchema:
+        """Translate deprecated precursor fields into the richer condition tree."""
+        if self.activation_condition is not None:
+            return self
+
+        signal_ids = self.precursor_signal_ids
+        if not signal_ids and self.precursor_signal_id >= 0:
+            signal_ids = [self.precursor_signal_id]
+
+        if not signal_ids:
+            return self
+
+        leaves = [
+            SubstanceActiveConditionSchema(substance_id=signal_id) for signal_id in signal_ids
+        ]
+        self.activation_condition = (
+            leaves[0] if len(leaves) == 1 else AllOfConditionSchema(conditions=leaves)
+        )
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +278,7 @@ class TriggerConditionSchema(StrictBaseModel):
 # ---------------------------------------------------------------------------
 
 
-class FloraSpeciesParams(StrictBaseModel):
+class FloraSpeciesParams(BaseModel):
     """Per-species parameters for flora."""
 
     species_id: SpeciesId
@@ -257,26 +291,16 @@ class FloraSpeciesParams(StrictBaseModel):
     seed_min_dist: float = Field(default=1.0, ge=0.0)
     seed_max_dist: float = Field(default=3.0, gt=0.0)
     seed_energy_cost: float = Field(default=5.0, ge=0.0)
-    seed_drop_height: float = Field(
-        default=SEED_DROP_HEIGHT_DEFAULT,
-        gt=0.0,
-        description=("Approximate seed release height used for wind-flight-time estimation in anemochorous dispersal."),
-    )
-    seed_terminal_velocity: float = Field(
-        default=SEED_TERMINAL_VELOCITY_DEFAULT,
-        gt=0.0,
-        description=("Approximate seed terminal fall velocity used for wind-driven downwind shift estimation."),
-    )
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
     # Trigger matrix: list of trigger conditions associated with this species
     triggers: list[TriggerConditionSchema] = Field(default_factory=list)
 
 
-class HerbivoreSpeciesParams(StrictBaseModel):
-    """Per-species parameters for herbivore swarms."""
+class PredatorSpeciesParams(BaseModel):
+    """Per-species parameters for predators (herbivore swarms)."""
 
-    species_id: HerbivoreId
+    species_id: PredatorId
     name: str
     energy_min: float = Field(..., gt=0.0)
     velocity: int = Field(..., gt=0)
@@ -303,25 +327,29 @@ class HerbivoreSpeciesParams(StrictBaseModel):
 # ---------------------------------------------------------------------------
 
 
-class DietCompatibilityMatrix(StrictBaseModel):
-    """Boolean matrix [herbivore_species, flora_species] indicating edibility."""
+class DietCompatibilityMatrix(BaseModel):
+    """Boolean matrix [predator_species, flora_species] indicating edibility."""
 
     rows: list[list[bool]] = Field(
         ...,
         description=(
-            "Outer index = herbivore species id, inner index = flora species id. "
-            "True means the herbivore can consume that flora species."
+            "Outer index = predator species id, inner index = flora species id. "
+            "True means the predator can consume that flora species."
         ),
     )
 
     @model_validator(mode="after")
     def _validate_shape(self) -> DietCompatibilityMatrix:
-        n_herbivore = len(self.rows)
-        if n_herbivore > MAX_HERBIVORE_SPECIES:
-            raise ValueError(f"DietCompatibilityMatrix has {n_herbivore} rows, max is {MAX_HERBIVORE_SPECIES}.")
+        n_pred = len(self.rows)
+        if n_pred > MAX_PREDATOR_SPECIES:
+            raise ValueError(
+                f"DietCompatibilityMatrix has {n_pred} rows, max is {MAX_PREDATOR_SPECIES}."
+            )
         for row in self.rows:
             if len(row) > MAX_FLORA_SPECIES:
-                raise ValueError(f"DietCompatibilityMatrix row length {len(row)} exceeds {MAX_FLORA_SPECIES}.")
+                raise ValueError(
+                    f"DietCompatibilityMatrix row length {len(row)} exceeds {MAX_FLORA_SPECIES}."
+                )
         return self
 
 
@@ -330,7 +358,7 @@ class DietCompatibilityMatrix(StrictBaseModel):
 # ---------------------------------------------------------------------------
 
 
-class InitialPlantPlacement(StrictBaseModel):
+class InitialPlantPlacement(BaseModel):
     """Single plant to place at simulation start."""
 
     species_id: SpeciesId
@@ -339,10 +367,10 @@ class InitialPlantPlacement(StrictBaseModel):
     energy: float = Field(..., gt=0.0)
 
 
-class InitialSwarmPlacement(StrictBaseModel):
+class InitialSwarmPlacement(BaseModel):
     """Single swarm to place at simulation start."""
 
-    species_id: HerbivoreId
+    species_id: PredatorId
     x: int = Field(..., ge=0)
     y: int = Field(..., ge=0)
     population: int = Field(..., gt=0)
@@ -354,7 +382,7 @@ class InitialSwarmPlacement(StrictBaseModel):
 # ---------------------------------------------------------------------------
 
 
-class SimulationConfig(StrictBaseModel):
+class SimulationConfig(BaseModel):
     """Complete simulation configuration payload (REST /api/scenario/load body)."""
 
     grid_width: int = Field(default=40, ge=1, le=80)
@@ -369,59 +397,65 @@ class SimulationConfig(StrictBaseModel):
     wind_y: float = Field(default=0.0, description="Initial wind vector y-component.")
 
     flora_species: list[FloraSpeciesParams] = Field(..., min_length=1, max_length=MAX_FLORA_SPECIES)
-    herbivore_species: list[HerbivoreSpeciesParams] = Field(..., min_length=1, max_length=MAX_HERBIVORE_SPECIES)
+    predator_species: list[PredatorSpeciesParams] = Field(
+        ..., min_length=1, max_length=MAX_PREDATOR_SPECIES
+    )
     diet_matrix: DietCompatibilityMatrix
 
     initial_plants: list[InitialPlantPlacement] = Field(default_factory=list)
     initial_swarms: list[InitialSwarmPlacement] = Field(default_factory=list)
 
     # Symbiotic network settings
-    mycorrhizal_inter_species: bool = Field(default=False, description="Allow inter-species root connections.")
-    mycorrhizal_connection_cost: float = Field(default=1.0, ge=0.0, description="Energy cost to establish a root link.")
+    mycorrhizal_inter_species: bool = Field(
+        default=False, description="Allow inter-species root connections."
+    )
+    mycorrhizal_connection_cost: float = Field(
+        default=1.0, ge=0.0, description="Energy cost to establish a root link."
+    )
     mycorrhizal_growth_interval_ticks: int = Field(
         default=8,
         ge=1,
         le=256,
-        description=("Ticks between mycorrhizal growth attempts. At most one new root link is formed per interval."),
+        description=(
+            "Ticks between mycorrhizal growth attempts. "
+            "At most one new root link is formed per interval."
+        ),
     )
-    mycorrhizal_signal_velocity: int = Field(default=1, gt=0, description="Signal transfer speed t_g (ticks per hop).")
+    mycorrhizal_signal_velocity: int = Field(
+        default=1, gt=0, description="Signal transfer speed t_g (ticks per hop)."
+    )
 
     # Termination conditions
     z2_flora_species_extinction: int = Field(
         default=-1, description="Halt when this flora species id goes extinct (-1 = disabled)."
     )
-    z4_herbivore_species_extinction: int = Field(
+    z4_predator_species_extinction: int = Field(
         default=-1,
-        description="Halt when this herbivore species id goes extinct (-1 = disabled).",
+        description="Halt when this predator species id goes extinct (-1 = disabled).",
     )
     z6_max_total_flora_energy: float = Field(
         default=-1.0, description="Halt when total flora energy exceeds this value (-1 = disabled)."
     )
-    z7_max_total_herbivore_population: int = Field(
+    z7_max_total_predator_population: int = Field(
         default=-1,
-        description="Halt when total herbivore population exceeds this value (-1 = disabled).",
-    )
-
-    # Replay backend selection
-    replay_backend: str = Field(
-        default="zarr",
-        description="Replay storage backend.",
-        pattern="^zarr$",
+        description="Halt when total predator population exceeds this value (-1 = disabled).",
     )
 
     @model_validator(mode="after")
     def _validate_species_ids(self) -> SimulationConfig:
         flora_ids = {s.species_id for s in self.flora_species}
-        herbivore_ids = {s.species_id for s in self.herbivore_species}
+        predator_ids = {s.species_id for s in self.predator_species}
         for plant_placement in self.initial_plants:
             if plant_placement.species_id not in flora_ids:
                 raise ValueError(
-                    f"InitialPlantPlacement references unknown flora species {plant_placement.species_id}."
+                    f"InitialPlantPlacement references unknown "
+                    f"flora species {plant_placement.species_id}."
                 )
         for swarm_placement in self.initial_swarms:
-            if swarm_placement.species_id not in herbivore_ids:
+            if swarm_placement.species_id not in predator_ids:
                 raise ValueError(
-                    f"InitialSwarmPlacement references unknown herbivore species {swarm_placement.species_id}."
+                    f"InitialSwarmPlacement references unknown predator species "
+                    f"{swarm_placement.species_id}."
                 )
         return self
 
@@ -431,31 +465,24 @@ class SimulationConfig(StrictBaseModel):
 # ---------------------------------------------------------------------------
 
 
-class SimulationStatusResponse(StrictBaseModel):
+class SimulationStatusResponse(BaseModel):
     """Response model for simulation state queries."""
 
     tick: int
-    tick_rate_hz: float
     running: bool
     paused: bool
     terminated: bool
     termination_reason: str | None = None
 
 
-class WindUpdatePayload(StrictBaseModel):
+class WindUpdatePayload(BaseModel):
     """REST payload for dynamically updating wind vectors."""
 
     wind_x: float
     wind_y: float
 
 
-class TickRateUpdatePayload(StrictBaseModel):
-    """REST payload for dynamically updating live simulation tick speed."""
-
-    tick_rate_hz: float = Field(default=10.0, gt=0.0)
-
-
-class BatchJobState(StrictBaseModel):
+class BatchJobState(BaseModel):
     """Runtime state record for a single Monte Carlo batch simulation job.
 
     Each batch job corresponds to ``N`` independent simulation runs dispatched
@@ -484,7 +511,7 @@ class BatchJobState(StrictBaseModel):
     max_ticks: int = 500
 
 
-class BatchStartPayload(StrictBaseModel):
+class BatchStartPayload(BaseModel):
     """HTTP request payload for initiating a Monte Carlo batch simulation job.
 
     Encapsulates the simulation scenario and batch execution parameters

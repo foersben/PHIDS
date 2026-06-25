@@ -1,29 +1,16 @@
-"""Shared compile-time constants for the PHIDS simulation engine.
+"""Shared constants for PHIDS.
 
-This module centralises all numeric sentinels, hard upper limits, and physical simulation
-parameters that must remain consistent across the engine core, API schemas, and telemetry
-sub-packages. The Rule-of-16 caps (``MAX_FLORA_SPECIES``, ``MAX_HERBIVORE_SPECIES``,
-``MAX_SUBSTANCE_TYPES``) govern the maximum cardinality of pre-allocated NumPy matrices in the
-``GridEnvironment`` and ECS world; exceeding these limits during scenario construction is
-intercepted by Pydantic validation at the API ingress boundary and is never permitted to reach
-the engine simulation loop. Grid dimension bounds (``GRID_W_MAX``, ``GRID_H_MAX``) define the
-maximum spatial extent of the biotope, constraining convolution and Jacobi propagation cost.
-
-The diffusion constants ``SIGNAL_EPSILON`` and ``SIGNAL_DECAY_FACTOR`` are performance
-invariants: after each Gaussian diffusion step, values below ``SIGNAL_EPSILON`` are zeroed to
-maintain matrix sparsity and avoid accumulation of subnormal floating-point values that would
-degrade Numba JIT-compiled kernel throughput. ``SUBSTANCE_EMIT_RATE`` controls the per-tick
-concentration increment applied to signal and toxin layers when an active ``SubstanceComponent``
-emits into the environment.
+This module defines compile-time limits (Rule of 16), grid bounds and
+other numeric sentinel values used across the codebase.
 """
 
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
-# Rule of 16 - hard upper limits for pre-allocated matrices
+# Rule of 16 – hard upper limits for pre-allocated matrices
 # ---------------------------------------------------------------------------
 MAX_FLORA_SPECIES: int = 16
-MAX_HERBIVORE_SPECIES: int = 16
+MAX_PREDATOR_SPECIES: int = 16
 MAX_SUBSTANCE_TYPES: int = 16
 
 # ---------------------------------------------------------------------------
@@ -43,13 +30,6 @@ SIGNAL_DECAY_FACTOR: float = 0.85  # per-tick airborne signal retention after di
 # ---------------------------------------------------------------------------
 EMPTY_CELL: int = -1
 MAX_TELEMETRY_TICKS: int = 10_000
-MAX_REPLAY_FRAMES: int = 2_000
-
-# ---------------------------------------------------------------------------
-# Seed dispersal defaults (global, species-overridable)
-# ---------------------------------------------------------------------------
-SEED_DROP_HEIGHT_DEFAULT: float = 1.25
-SEED_TERMINAL_VELOCITY_DEFAULT: float = 0.8
 
 # ---------------------------------------------------------------------------
 # Substance emission / dissipation rates
