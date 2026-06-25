@@ -26,9 +26,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Stored batch computations
-data/
-
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -172,7 +169,6 @@ cython_debug/
 
 # Local runtime output
 .logs/
-*.log
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
@@ -205,8 +201,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-*.zip
-
+# Batch processing results
+data/
 # PHIDS Archived files
 .archive/
 .github/workflows/secrets.env
