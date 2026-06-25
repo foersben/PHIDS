@@ -9,7 +9,6 @@ import numpy as np
 import polars as pl
 import pytest
 
-from phids.io.replay import deserialise_state, serialise_state
 from phids.telemetry.export import export_bytes_csv, export_bytes_json
 
 
@@ -62,40 +61,6 @@ def _enforce_budget(  # type: ignore[no-untyped-def]
     assert p95_ms <= fail_p95_ms, (
         f"{metric_prefix} p95 latency exceeded fail budget: {p95_ms:.3f}ms > {fail_p95_ms:.3f}ms"
     )
-
-
-@pytest.mark.benchmark
-def test_replay_state_roundtrip_serialization_benchmark(benchmark) -> None:  # type: ignore[no-untyped-def]
-    """Benchmark msgpack replay frame serialize+deserialize roundtrip on a representative snapshot."""
-    state = {
-        "tick": 42,
-        "terminated": False,
-        "termination_reason": None,
-        "state_revision": 3,
-        "plant_energy_layer": [[0.0, 1.0], [2.0, 3.0]],
-        "signal_layers": [[[0.1, 0.0], [0.2, 0.3]], [[0.0, 0.0], [0.0, 0.5]]],
-        "toxin_layers": [[[0.0, 0.0], [0.0, 0.1]]],
-        "flow_field": [[0.4, 0.2], [0.1, 0.0]],
-        "wind_vector_x": [[0.0, 0.1], [0.0, 0.1]],
-        "wind_vector_y": [[0.0, -0.1], [0.0, -0.1]],
-    }
-
-    def _roundtrip() -> dict[str, object]:
-        frame = serialise_state(state)
-        return deserialise_state(frame)
-
-    decoded = benchmark(_roundtrip)
-
-    _enforce_budget(
-        benchmark,
-        metric_prefix="replay_roundtrip",
-        warn_mean_ms=_budget_from_env("PHIDS_REPLAY_ROUNDTRIP_WARN_MEAN_MS", 2.0),
-        fail_mean_ms=_budget_from_env("PHIDS_REPLAY_ROUNDTRIP_FAIL_MEAN_MS", 12.0),
-        warn_p95_ms=_budget_from_env("PHIDS_REPLAY_ROUNDTRIP_WARN_P95_MS", 4.0),
-        fail_p95_ms=_budget_from_env("PHIDS_REPLAY_ROUNDTRIP_FAIL_P95_MS", 24.0),
-    )
-
-    assert decoded["tick"] == state["tick"]
 
 
 @pytest.mark.benchmark

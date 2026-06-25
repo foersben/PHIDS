@@ -83,7 +83,7 @@ class _FakeWebSocket:
 
 @pytest.mark.asyncio
 async def test_simulation_manager_reuses_snapshot_cache_for_unchanged_tick() -> None:
-    """Verifies msgpack+zlib cache reuse for repeated reads of one loop tick.
+    """Verifies json+zlib cache reuse for repeated reads of one loop tick.
 
     The binary stream manager must avoid recompressing the same state payload while the simulation
     tick remains unchanged. This invariant minimizes transport overhead without altering the encoded

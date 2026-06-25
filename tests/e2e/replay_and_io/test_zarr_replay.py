@@ -1,32 +1,31 @@
 """Comprehensive test suite for Zarr replay backend and legacy msgpack migration.
 
-This test module validates the ZarrReplayBuffer API compatibility with the legacy
+This test module validates the ReplayBuffer API compatibility with the legacy
 ReplayBuffer, field serialization round-trip fidelity, metadata persistence,
 retention policies, and backwards migration from msgpack-encoded replay files.
 """
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
+# ruff: noqa: I001
 
-import msgpack  # type: ignore[import-untyped]
+from pathlib import Path
+import tempfile
+
 import numpy as np
 import pytest
 
 try:
-    from phids.io.zarr_replay import ZarrReplayBuffer
+    from phids.io.zarr_replay import ReplayBuffer
 
     ZARR_AVAILABLE = True
 except ImportError:
     ZARR_AVAILABLE = False
 
-from phids.io.replay import ReplayBuffer
-
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
-class TestZarrReplayBuffer:
-    """Test ZarrReplayBuffer core functionality."""
+class TestReplayBuffer:
+    """Test ReplayBuffer core functionality."""
 
     @pytest.fixture
     def temp_zarr_dir(self) -> Path:
@@ -40,7 +39,7 @@ class TestZarrReplayBuffer:
     def test_zarr_create_and_append(self, temp_zarr_dir: Path) -> None:
         """Verify buffer creation and basic append operation."""
         store_path = temp_zarr_dir / "test.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
         assert len(buf) == 0
 
         state = {
@@ -56,7 +55,7 @@ class TestZarrReplayBuffer:
     def test_zarr_field_round_trip(self, temp_zarr_dir: Path) -> None:
         """Verify field arrays survive append and get_frame round-trip."""
         store_path = temp_zarr_dir / "test.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
 
         energy_field = np.random.rand(5, 5).astype(np.float32)
         signal_field = (np.random.rand(3, 5, 5) * 0.999 + 0.001).astype(np.float32)
@@ -86,7 +85,7 @@ class TestZarrReplayBuffer:
     def test_zarr_signal_epsilon_clipping(self, temp_zarr_dir: Path) -> None:
         """Verify subnormal signal tails are clipped to zero."""
         store_path = temp_zarr_dir / "test.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
 
         signal_field = np.array(
             [
@@ -118,7 +117,7 @@ class TestZarrReplayBuffer:
     def test_zarr_retention_policy(self, temp_zarr_dir: Path) -> None:
         """Verify max_frames retention policy prunes oldest frames."""
         store_path = temp_zarr_dir / "test.zarr"
-        buf = ZarrReplayBuffer(max_frames=3, spill_path=store_path)
+        buf = ReplayBuffer(max_frames=3, spill_path=store_path)
 
         for i in range(5):
             state = {
@@ -143,7 +142,7 @@ class TestZarrReplayBuffer:
     def test_zarr_get_out_of_range(self, temp_zarr_dir: Path) -> None:
         """Verify IndexError is raised for out-of-range frame access."""
         store_path = temp_zarr_dir / "test.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
         buf.append({"tick": 0})
 
         with pytest.raises(IndexError):
@@ -155,7 +154,7 @@ class TestZarrReplayBuffer:
     def test_zarr_multiple_appends(self, temp_zarr_dir: Path) -> None:
         """Verify sequential appends with varied field shapes."""
         store_path = temp_zarr_dir / "test.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
 
         for i in range(10):
             state = {
@@ -179,7 +178,7 @@ class TestZarrReplayBuffer:
     def test_zarr_append_raw_arrays(self, temp_zarr_dir: Path) -> None:
         """Verify raw-array replay append bypasses dict/list conversion requirements."""
         store_path = temp_zarr_dir / "raw.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
 
         class _Env:
             def __init__(self) -> None:
@@ -202,7 +201,7 @@ class TestZarrReplayBuffer:
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 class TestZarrReplayMigration:
-    """Test backwards-compatible migration from legacy msgpack replay format."""
+    """Test backwards-compatible migration from legacy replay format."""
 
     @pytest.fixture
     def temp_zarr_dir(self) -> Path:
@@ -213,76 +212,30 @@ class TestZarrReplayMigration:
         yield Path(tmpdir)
         shutil.rmtree(tmpdir, ignore_errors=True)
 
-    @pytest.fixture
-    def temp_legacy_bin(self, temp_zarr_dir: Path) -> Path:
-        """Create a legacy msgpack-encoded replay file."""
-        replay_path = temp_zarr_dir / "legacy.bin"
-
-        # Create legacy replay with msgpack format
-        legacy_buf = ReplayBuffer()
-        for i in range(5):
-            state = {
-                "tick": i,
-                "terminated": False,
-                "termination_reason": None,
-                "energy": float(i * 10),
-                "population": i + 1,
-            }
-            legacy_buf.append(state)
-
-        legacy_buf.save(replay_path)
-        return replay_path
-
-    def test_zarr_load_legacy_msgpack(self, temp_zarr_dir: Path, temp_legacy_bin: Path) -> None:  # noqa: ARG002
-        """Verify migration of legacy msgpack replay to Zarr."""
-        buf = ZarrReplayBuffer.load(temp_legacy_bin)
-
-        assert len(buf) == 5
-
-        # Verify first frame
-        frame_0 = buf.get_frame(0)
-        assert frame_0["tick"] == 0
-        assert frame_0["energy"] == 0.0
-        assert frame_0["population"] == 1
-
-        # Verify middle frame
-        frame_2 = buf.get_frame(2)
-        assert frame_2["tick"] == 2
-        assert frame_2["energy"] == 20.0
-        assert frame_2["population"] == 3
-
-        # Verify last frame
-        frame_4 = buf.get_frame(4)
-        assert frame_4["tick"] == 4
-        assert frame_4["energy"] == 40.0
-        assert frame_4["population"] == 5
-
     def test_zarr_load_native_zarr(self, temp_zarr_dir: Path) -> None:
         """Verify native Zarr store loads correctly."""
         store_path = temp_zarr_dir / "test.zarr"
 
         # Create native Zarr buffer
-        buf_save = ZarrReplayBuffer(spill_path=store_path)
+        buf_save = ReplayBuffer(spill_path=store_path)
         for i in range(3):
             buf_save.append({"tick": i, "data": i * 2})
 
         # Load it back
-        buf_load = ZarrReplayBuffer.load(store_path)
+        buf_load = ReplayBuffer.load(store_path)
         assert len(buf_load) == 3
         frame = buf_load.get_frame(1)
         assert frame["tick"] == 1
         assert frame["data"] == 2
 
-    def test_zarr_load_legacy_non_mapping_payload_raises(self, temp_zarr_dir: Path) -> None:
-        """Migration fails fast when a legacy frame decodes to a non-mapping payload."""
-        bad_path = temp_zarr_dir / "legacy_bad.bin"
-        bad_payload = msgpack.packb(123, use_bin_type=True)
-        with bad_path.open("wb") as fp:
-            fp.write(len(bad_payload).to_bytes(4, "little"))
-            fp.write(bad_payload)
+    def test_zarr_load_legacy_bin_fails(self, temp_zarr_dir: Path) -> None:
+        """Verify that attempting to load a legacy .bin file fails because it's not a zarr directory."""
+        legacy_path = temp_zarr_dir / "legacy.bin"
+        with legacy_path.open("wb") as fp:
+            fp.write(b"dummy legacy data")
 
-        with pytest.raises(ValueError, match="must decode to a mapping"):
-            ZarrReplayBuffer.load(bad_path)
+        with pytest.raises(ValueError, match=r"Replay path must be an existing directory:"):
+            ReplayBuffer.load(legacy_path)
 
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
@@ -299,9 +252,9 @@ class TestZarrReplayAPI:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_zarr_api_parity(self, temp_zarr_dir: Path) -> None:
-        """Verify ZarrReplayBuffer has feature parity with ReplayBuffer API."""
+        """Verify ReplayBuffer has feature parity with ReplayBuffer API."""
         store_path = temp_zarr_dir / "test.zarr"
-        zarr_buf = ZarrReplayBuffer(spill_path=store_path)
+        zarr_buf = ReplayBuffer(spill_path=store_path)
 
         # Test append
         state = {
@@ -325,12 +278,12 @@ class TestZarrReplayAPI:
         assert export_path.exists()
 
         # Test load
-        loaded_buf = ZarrReplayBuffer.load(export_path)
+        loaded_buf = ReplayBuffer.load(export_path)
         assert len(loaded_buf) == len(zarr_buf)
 
     def test_zarr_lazy_store_initialization(self, temp_zarr_dir: Path) -> None:  # noqa: ARG002
         """Verify store is created lazily on first append."""
-        buf = ZarrReplayBuffer()
+        buf = ReplayBuffer()
         # Store should not exist yet
         assert buf._root is None
 
@@ -355,7 +308,7 @@ class TestZarrReplayIntegration:
     def test_zarr_realistic_snapshot(self, temp_zarr_dir: Path) -> None:
         """Test with realistic GridEnvironment snapshot structure."""
         store_path = temp_zarr_dir / "realistic.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
 
         # Simulate realistic multi-species, multi-signal snapshot
         grid_w, grid_h = 40, 40
@@ -392,7 +345,7 @@ class TestZarrReplayIntegration:
     def test_zarr_large_buffer_compression(self, temp_zarr_dir: Path) -> None:
         """Verify compression reduces storage footprint for large replays."""
         store_path = temp_zarr_dir / "large.zarr"
-        buf = ZarrReplayBuffer(spill_path=store_path)
+        buf = ReplayBuffer(spill_path=store_path)
 
         # Generate large-scale frames
         for tick in range(20):

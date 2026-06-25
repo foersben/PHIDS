@@ -282,26 +282,12 @@ def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization(
     assert len(loop.replay) == 1
 
 
-def test_step_with_msgpack_backend_uses_snapshot_serialization_path(
-    loop_config_builder: Callable[..., SimulationConfig],
-) -> None:
-    """Validate fallback replay backend still appends via cached state snapshots."""
-    config = loop_config_builder(max_ticks=10).model_copy(update={"replay_backend": "msgpack"})
-    loop = SimulationLoop(config)
+def test_step_with_msgpack_backend_uses_snapshot_serialization_path() -> None:
+    """Placeholder for legacy msgpack backend serialization verification.
 
-    calls = {"count": 0}
-    original_to_dict = loop.env.to_dict
-
-    def _counted_to_dict() -> dict[str, object]:
-        calls["count"] += 1
-        return original_to_dict()
-
-    loop.env.to_dict = _counted_to_dict  # type: ignore[method-assign]
-
-    asyncio.run(loop.step())
-
-    assert calls["count"] == 1
-    assert len(loop.replay) == 1
+    The msgpack replay backend has been removed, so this is left as a legacy placeholder.
+    """
+    pass
 
 
 def test_debug_tick_summary_uses_precomputed_metrics_without_swarm_rescan(

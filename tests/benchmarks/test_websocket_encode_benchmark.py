@@ -69,7 +69,7 @@ def test_simulation_websocket_frame_encode_benchmark(  # type: ignore[no-untyped
     benchmark,
     loop_config_builder,
 ) -> None:
-    """Benchmark msgpack+zlib frame construction for the simulation binary websocket stream."""
+    """Benchmark json+zlib frame construction for the simulation binary websocket stream."""
     loop = SimulationLoop(loop_config_builder(max_ticks=20))
     manager = SimulationStreamManager()
 

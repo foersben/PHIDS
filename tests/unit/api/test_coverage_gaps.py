@@ -28,11 +28,11 @@ from phids.engine.systems.signaling import (
 from phids.engine.systems.signaling import (
     _co_located_swarm_population as signaling_co_located,
 )
-from phids.io.replay import ReplayBuffer
+from phids.io.zarr_replay import ReplayBuffer
 from phids.shared.constants import SIGNAL_EPSILON
 
 try:
-    from phids.io.zarr_replay import ZarrReplayBuffer
+    import zarr  # noqa: F401
 
     ZARR_AVAILABLE = True
 except ImportError:
@@ -123,44 +123,10 @@ def test_activation_condition_with_swarm_presence_and_substance_active(
     assert _check_activation_condition(plant, plant_id, composite, env, population_index, active) is True
 
 
-def test_replay_cleanup_spill_file_for_owned_and_non_owned_paths(tmp_path: Path) -> None:
-    """Verify spill-file deletion behaves correctly for owned vs non-owned telemetry paths."""
-    owned = ReplayBuffer(spill_to_disk=True)
-    owned_path = owned._ensure_spill_path()
-    owned_path.write_bytes(b"frame")
-    assert owned_path.exists()
-    owned._cleanup_spill_file()
-    assert not owned_path.exists()
-
-    explicit_path = tmp_path / "explicit.bin"
-    explicit_path.write_bytes(b"frame")
-    non_owned = ReplayBuffer(spill_to_disk=True, spill_path=explicit_path)
-    non_owned._cleanup_spill_file()
-    assert explicit_path.exists()
-
-
-def test_replay_get_frame_out_of_range_raises() -> None:
-    """Assert out of range index lookup raises IndexError on ReplayBuffer."""
-    buffer = ReplayBuffer()
-    buffer.append({"tick": 0})
-    with pytest.raises(IndexError):
-        buffer.get_frame(1)
-
-
-def test_replay_read_spilled_frame_incomplete_payload_raises(tmp_path: Path) -> None:
-    """Assert IndexError is raised when spilled telemetry index payload is corrupted."""
-    spill_path = tmp_path / "spill.bin"
-    spill_path.write_bytes(b"123")
-    buffer = ReplayBuffer(spill_to_disk=True, spill_path=spill_path)
-    buffer._spilled_index = [(0, 10)]
-    with pytest.raises(IndexError):
-        buffer.get_frame(0)
-
-
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 def test_zarr_cleanup_store_for_owned_paths() -> None:
     """Verify automatic cleanup of spilled telemetry store directory for owned paths."""
-    buffer = ZarrReplayBuffer()
+    buffer = ReplayBuffer()
     buffer._ensure_store()
     assert buffer._store_path is not None
     assert buffer._store_path.exists()
@@ -179,7 +145,7 @@ def test_zarr_load_metadata_falls_back_on_corrupt_blob(tmp_path: Path) -> None:
     root.create_group("frames/00000000")
     root.create_array("_metadata", data=np.frombuffer(b"not-json", dtype=np.uint8), chunks=(8,))
 
-    buffer = ZarrReplayBuffer(spill_path=store_path)
+    buffer = ReplayBuffer(spill_path=store_path)
     buffer._load_metadata()
     assert len(buffer) == 0
     assert buffer._frame_count == 1
@@ -189,7 +155,7 @@ def test_zarr_load_metadata_falls_back_on_corrupt_blob(tmp_path: Path) -> None:
 def test_zarr_signal_tail_clipping_on_append_and_read(tmp_path: Path) -> None:
     """Verify signaling concentration values below SIGNAL_EPSILON are clipped to zero on append."""
     store_path = tmp_path / "signal.zarr"
-    buffer = ZarrReplayBuffer(spill_path=store_path)
+    buffer = ReplayBuffer(spill_path=store_path)
     signal = np.array([[[SIGNAL_EPSILON * 0.5, SIGNAL_EPSILON * 2.0]]], dtype=np.float32)
     buffer.append({"tick": 0, "signal_layers": signal})
     frame = buffer.get_frame(0)
@@ -217,8 +183,8 @@ def test_collect_mycorrhizal_targets_respects_species_gate(add_plant: Callable[.
 
 @pytest.mark.skipif(not ZARR_AVAILABLE, reason="zarr not installed")
 def test_zarr_get_frame_out_of_bounds_raises(tmp_path: Path) -> None:
-    """Assert IndexError is raised on out-of-bounds frame lookup in ZarrReplayBuffer."""
-    buffer = ZarrReplayBuffer(spill_path=tmp_path / "frames.zarr")
+    """Assert IndexError is raised on out-of-bounds frame lookup in ReplayBuffer."""
+    buffer = ReplayBuffer(spill_path=tmp_path / "frames.zarr")
     buffer.append({"tick": 0, "value": 1})
     with pytest.raises(IndexError):
         buffer.get_frame(4)

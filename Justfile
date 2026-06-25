@@ -12,6 +12,10 @@ install:
 test:
     uv run pytest
 
+ci-test:
+    ./scripts/local_ci.sh tests
+
+
 lint:
     uv run ruff check --fix .
     uv run ruff format .

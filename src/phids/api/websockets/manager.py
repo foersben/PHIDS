@@ -17,7 +17,6 @@ import logging
 import zlib
 from typing import TYPE_CHECKING
 
-import msgpack  # type: ignore[import-untyped]
 from fastapi import WebSocket, WebSocketDisconnect
 
 if TYPE_CHECKING:
@@ -33,7 +32,7 @@ class SimulationStreamManager:
 
     The manager enforces the machine-facing stream contract for
     ``/ws/simulation/stream``: payloads are derived from ``SimulationLoop`` snapshots,
-    serialized with msgpack, compressed with zlib, and sent only when the tick changes.
+    serialized with json, compressed with zlib, and sent only when the tick changes.
     A single cached compressed payload is retained per ``(loop identity, tick)`` pair to
     avoid redundant encoding work under multiple subscribers.
 
@@ -61,7 +60,7 @@ class SimulationStreamManager:
         loop_id = id(loop)
         if loop_id != self._cache_loop_id or loop.tick != self._cache_tick:
             snapshot = loop.get_state_snapshot()
-            packed = msgpack.packb(snapshot, use_bin_type=True)
+            packed = json.dumps(snapshot).encode("utf-8")
             self._cache_payload = zlib.compress(packed, level=1)
             self._cache_loop_id = loop_id
             self._cache_tick = loop.tick

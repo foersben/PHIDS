@@ -18,7 +18,6 @@ dependencies = [
     "websockets>=14.0.0",
     "polars>=1.0.0",
     "pydantic>=2.10.0",
-    "msgpack>=1.1.0",
     "mcp>=1.26.0",
     "jinja2>=3.1.6",
     "pandas>=2.2.0",
@@ -96,7 +95,7 @@ addopts = [
     "--benchmark-storage=.cache/benchmarks", # Store benchmark outputs here
 ]
 cache_dir = ".cache/pytest"
-hypothesis_database_file = ".cache/hypothesis/db"
+
 
 [tool.coverage.run]
 source = ["src/phids"]

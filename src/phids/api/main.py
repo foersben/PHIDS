@@ -223,6 +223,10 @@ def _coerce_float(value: object, *, default: float = 0.0) -> float:
 def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
     """Construct deterministic fallback nomenclature for unlabeled substances.
 
+    Note: This is an intentional UI-layer fallback mechanism, not a schema gap.
+    `SubstanceComponentSchema` exists but is not strictly required in `SimulationConfig`
+    due to legacy serialization formats. This shim guarantees safe UI rendering.
+
     Args:
         substance_id: Substance-layer identifier.
         is_toxin: Flag distinguishing toxin and signal label prefixes.

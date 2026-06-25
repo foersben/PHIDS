@@ -35,7 +35,6 @@ from phids.engine import batch as batch_engine
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core import flow_field
 from phids.engine.loop import SimulationLoop
-from phids.io import replay
 from phids.io.scenario import load_scenario_from_json
 from phids.shared import logging_config
 from phids.telemetry import export as telemetry_export
@@ -968,25 +967,6 @@ def test_flow_field_helpers_compute_gradient_and_apply_camouflage() -> None:
         )[0, 0]
         == 0.0
     )
-
-
-def test_replay_buffer_roundtrip_and_truncated_load(tmp_path: Path) -> None:
-    """Verify replay buffer serialization round-trips and truncated files still load recoverable frames."""
-    replay_buffer = replay.ReplayBuffer()
-    replay_buffer.append({"tick": 0, "value": 1})
-    replay_buffer.append({"tick": 1, "value": 2})
-
-    replay_path = tmp_path / "state.replay"
-    replay_buffer.save(replay_path)
-    loaded_buffer = replay.ReplayBuffer.load(replay_path)
-    assert len(replay_buffer) == 2
-    assert loaded_buffer.get_frame(1)["value"] == 2
-    assert replay.deserialise_state(replay.serialise_state({"tick": 9})) == {"tick": 9}
-
-    truncated_path = tmp_path / "truncated.replay"
-    truncated_path.write_bytes(replay_path.read_bytes()[:-1])
-    truncated_loaded = replay.ReplayBuffer.load(truncated_path)
-    assert len(truncated_loaded) == 1
 
 
 def test_batch_engine_headless_aggregate_and_sanitize_helpers() -> None:

@@ -247,6 +247,7 @@
   let _lastData = null;
   let _lastTickSeen = -1;
   let _lastSpeciesSignature = '';
+  let _runId = '';
 
   // Colour palettes
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
@@ -925,7 +926,9 @@
   // Polling / update entry point
   // ---------------------------------------------------------------------------
   window.phidsTelemetryUpdate = function (data) {
-    if (_lastData) {
+    const isNewRun = data.run_id && data.run_id !== _runId;
+
+    if (_lastData && !isNewRun) {
       const existingLabels = _lastData.labels || [];
       const incomingLabels = data.labels || [];
       if (existingLabels.length > 0 && incomingLabels.length > 0) {
@@ -942,9 +945,10 @@
       }
     }
 
-    const shouldReset = _shouldResetSeries(_lastData, data);
+    const shouldReset = isNewRun || _shouldResetSeries(_lastData, data);
     if (shouldReset) {
       _resetTelemetryUiState();
+      _runId = data.run_id || '';
     }
 
     const merged = _mergeTelemetryData(shouldReset ? null : _lastData, data);
@@ -978,6 +982,9 @@
     const params = new URLSearchParams();
     if (_lastTickSeen >= 0) {
       params.set('since_tick', String(_lastTickSeen));
+    }
+    if (_runId) {
+      params.set('run_id', _runId);
     }
     const query = params.toString();
     const url = query ? `/api/telemetry/chartjs-data?${query}` : '/api/telemetry/chartjs-data';

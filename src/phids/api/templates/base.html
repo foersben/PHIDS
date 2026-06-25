@@ -160,6 +160,7 @@
           <button hx-post="/api/simulation/reset"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
+            hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
             class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors">
             ↺ Reset
           </button>

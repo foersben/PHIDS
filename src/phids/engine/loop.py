@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import uuid
 from typing import TYPE_CHECKING, Protocol, cast
 
 from phids.engine.components.plant import PlantComponent
@@ -28,7 +29,7 @@ from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
-from phids.io.replay import ReplayBuffer, ReplayState
+from phids.io.zarr_replay import ReplayBuffer, ReplayState
 from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.shared.logging_config import get_simulation_debug_interval
 from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
@@ -36,8 +37,6 @@ from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from phids.api.schemas import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
@@ -65,16 +64,6 @@ class _RawArrayReplayBackend(_ReplayBackend, Protocol):
         termination_state: tuple[bool, str | None],
     ) -> None: ...
 
-
-# Optional Zarr backend import
-_ImportedZarrReplayBuffer: Callable[..., _RawArrayReplayBackend] | None
-try:
-    from phids.io.zarr_replay import ZarrReplayBuffer as _ImportedZarrReplayBuffer
-
-    _ZarrReplayBuffer: Callable[..., _RawArrayReplayBackend] | None = _ImportedZarrReplayBuffer
-except ImportError:
-    _ImportedZarrReplayBuffer = None
-    _ZarrReplayBuffer = None
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +97,7 @@ class SimulationLoop:
         self._state_revision: int = 0
         self._cached_snapshot_tick: int = -1
         self._cached_snapshot: ReplayState | None = None
+        self.run_id: str = uuid.uuid4().hex
 
         # Build environment
         self.env = GridEnvironment(
@@ -123,19 +113,10 @@ class SimulationLoop:
 
         # Telemetry
         self.telemetry = TelemetryRecorder()
-        # Deterministic replay state frames; backend selected by config
-        self.replay: _ReplayBackend
-        self._replay_supports_raw_arrays = False
-        if config.replay_backend == "zarr" and _ZarrReplayBuffer is not None:
-            self.replay = _ZarrReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
-            self._replay_supports_raw_arrays = True
-            logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
-        else:
-            self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES, spill_to_disk=True)
-            if config.replay_backend == "zarr":
-                logger.warning(
-                    "Zarr backend requested but unavailable; falling back to msgpack. Install zarr with: uv add zarr"
-                )
+        # Deterministic replay state frames using Zarr
+        self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
+        self._replay_supports_raw_arrays = True
+        logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
 
         # Pre-compute species parameter lookups
         self._flora_params: dict[int, FloraSpeciesParams] = {sp.species_id: sp for sp in config.flora_species}

@@ -241,6 +241,7 @@ def test_render_status_badge_loaded_loop_states(
                 "flora_ids": [],
                 "herbivore_ids": [],
                 "series": {},
+                "run_id": "",
             },
             None,
         ),

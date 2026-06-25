@@ -5,9 +5,7 @@ API semantics while achieving superior memory efficiency and I/O performance for
 simulations. Zarr's chunked columnar storage model naturally maps to PHIDS field layers
 (plant energy per species, signal concentrations, toxin fields, flow-field gradients),
 enabling selective decompression and random access without materializing entire snapshots
-into Python memory. The implementation preserves backwards compatibility: the
-:class:`ZarrReplayBuffer` can automatically migrate legacy msgpack-encoded replay files to
-the Zarr schema, ensuring reproducibility across encoding transitions.
+into Python memory.
 
 The Zarr schema employs fixed-depth chunking across the spatial and temporal dimensions,
 with metadata groups for tick counters and termination state. Metadata (tick index,
@@ -36,7 +34,9 @@ from typing import Protocol, TypedDict, cast
 
 import numpy as np
 
-from phids.io.replay import ReplayState, ReplayValue, deserialise_state
+type ReplayScalar = None | bool | int | float | str
+type ReplayValue = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
+type ReplayState = dict[str, ReplayValue]
 
 try:
     import zarr
@@ -69,13 +69,10 @@ class _MetadataEntry(TypedDict):
     termination_reason: str | None
 
 
-class ZarrReplayBuffer:
-    """Append-only replay buffer using Zarr chunked storage.
+class ReplayBuffer:
+    """Append-only Zarr-backed buffer of chunked tick frames.
 
-    Provides identical API to :class:`phids.io.replay.ReplayBuffer` while using
-    Zarr arrays for field data and a consolidated metadata index for O(1) tick lookup.
-    All frames are immediately persistent to disk; there is no separate ``spill_to_disk``
-    flag because Zarr-backed storage is inherently disk-resident.
+    Provides backwards-compatible `ReplayBuffer` API semantics over a Zarr store.
 
     The schema is laid out as:
 
@@ -430,59 +427,28 @@ class ZarrReplayBuffer:
             raise ValueError("Zarr export requires a .zarr destination directory")
 
     @classmethod
-    def load(cls, path: str | Path) -> ZarrReplayBuffer:
-        """Load a Zarr replay store or migrate a legacy msgpack-encoded replay.
+    def load(cls, path: str | Path) -> ReplayBuffer:
+        """Load a Zarr replay store.
 
-        If the path is a .zarr directory, opens it directly. If it is a legacy
-        .bin file (from the old ``ReplayBuffer`` format), automatically migrates
-        the frames to Zarr and returns the migrated buffer.
+        If the path is a .zarr directory, opens it directly.
 
         Args:
-            path: Path to the Zarr directory or legacy .bin file.
+            path: Path to the Zarr directory.
 
         Returns:
-            ZarrReplayBuffer: Populated buffer ready for re-simulation.
+            ReplayBuffer: Zarr replay buffer attached to the loaded directory.
         """
         source = Path(path)
 
-        if source.suffix == ".zarr" and source.is_dir():
-            buf = cls(spill_path=source)
-            # Ensure metadata is loaded before returning
-            buf._ensure_store()
-            buf._load_metadata()
-            logger.info("Zarr replay loaded from %s (%d frames)", source, len(buf))
-            return buf
+        if not source.exists() or not source.is_dir():
+            raise ValueError(f"Replay path must be an existing directory: {path}")
 
-        if source.suffix == ".bin" or (source.suffix == "" and not source.is_dir()):
-            # Migrate legacy msgpack-encoded replay
-            logger.info("Migrating legacy msgpack replay from %s to Zarr", source)
-            buf = cls()
-
-            with source.open("rb") as fp:
-                frame_count = 0
-                while True:
-                    length_bytes = fp.read(4)
-                    if len(length_bytes) < 4:
-                        break
-                    length = int.from_bytes(length_bytes, "little")
-                    frame_data = fp.read(length)
-                    if len(frame_data) < length:
-                        logger.warning(
-                            "Legacy replay file %s ended mid-frame (expected=%d, got=%d)",
-                            source,
-                            length,
-                            len(frame_data),
-                        )
-                        break
-
-                    state = deserialise_state(frame_data)
-                    buf.append(state)
-                    frame_count += 1
-
-            logger.info("Legacy replay migrated: %d frames converted to Zarr", frame_count)
-            return buf
-
-        raise ValueError(f"Cannot load replay from {source}: unsupported format")
+        buf = cls(spill_path=source)
+        # Ensure metadata is loaded before returning
+        buf._ensure_store()
+        buf._load_metadata()
+        logger.info("Zarr replay loaded from %s (%d frames)", source, len(buf))
+        return buf
 
     def _cleanup_store(self) -> None:
         """Remove owned Zarr store on interpreter shutdown."""

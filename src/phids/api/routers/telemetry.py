@@ -98,7 +98,10 @@ async def export_telemetry_json() -> Response:
 
 
 @router.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
-async def telemetry_chartjs_data(since_tick: int | None = None) -> JSONResponse:
+async def telemetry_chartjs_data(
+    since_tick: int | None = None,
+    run_id: str | None = None,
+) -> JSONResponse:
     """Return per-species population and energy time series for browser charts.
 
     Returns:
@@ -106,10 +109,11 @@ async def telemetry_chartjs_data(since_tick: int | None = None) -> JSONResponse:
         numeric series extracted from the live telemetry buffer.
     """
     if api_main._sim_loop is None:
-        return JSONResponse({"labels": [], "flora_ids": [], "herbivore_ids": [], "series": {}})
+        return JSONResponse({"labels": [], "flora_ids": [], "herbivore_ids": [], "series": {}, "run_id": ""})
 
+    current_run_id = api_main._sim_loop.run_id
     rows = api_main._sim_loop.telemetry._rows
-    if since_tick is not None and rows:
+    if run_id == current_run_id and since_tick is not None and rows:
         latest_tick = int(rows[-1].get("tick", -1))
         # When the simulation was reset, client-side since_tick can be ahead of
         # the current run; return full rows so chart state can re-synchronize.
@@ -143,6 +147,7 @@ async def telemetry_chartjs_data(since_tick: int | None = None) -> JSONResponse:
             "flora_names": {str(k): v for k, v in flora_names.items()},
             "herbivore_names": {str(k): v for k, v in herbivore_names.items()},
             "series": series,
+            "run_id": current_run_id,
         }
     )
 

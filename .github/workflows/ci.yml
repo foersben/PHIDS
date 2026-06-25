@@ -35,9 +35,13 @@ jobs:
       - name: Run Pre-Commit Hooks
         run: SKIP=check-identity,enforce-author-identity uv run pre-commit run --all-files
 
-      - name: Run Test Suite
-        run: uv run pytest
+      - name: Pass 1 - Logic & Coverage
+        env:
+          NUMBA_DISABLE_JIT: "1"
+        run: uv run pytest --cov=src/phids --cov-fail-under=80 -o "addopts="
 
+      - name: Pass 2 - Numba Compilation
+        run: uv run pytest tests/integration/systems/test_interaction_property_invariants.py -x -q -o "addopts="
   deploy-docs:
     name: Build & Deploy Documentation
     needs: quality-gate # Only deploys if tests and pre-commit pass

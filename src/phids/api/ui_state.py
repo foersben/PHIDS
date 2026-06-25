@@ -16,7 +16,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 if TYPE_CHECKING:
     from phids.api.schemas import (
@@ -433,7 +433,7 @@ class DraftState:
                     repellent=sd.repellent,
                     repellent_walk_ticks=sd.repellent_walk_ticks,
                     aftereffect_ticks=sd.aftereffect_ticks,
-                    activation_condition=deepcopy(rule.activation_condition),
+                    activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                     energy_cost_per_tick=sd.energy_cost_per_tick,
                     irreversible=sd.irreversible,
                 )

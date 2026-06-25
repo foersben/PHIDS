@@ -49,7 +49,13 @@ SubstanceId = Annotated[int, Field(ge=0, lt=MAX_SUBSTANCE_TYPES)]
 # ---------------------------------------------------------------------------
 
 
-class PlantComponentSchema(BaseModel):
+class StrictBaseModel(BaseModel):
+    """Base class enabling strict Pydantic v2 validation for all nested fields."""
+
+    model_config = ConfigDict(strict=True)
+
+
+class PlantComponentSchema(StrictBaseModel):
     """Pydantic schema for the Plant ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
@@ -70,7 +76,7 @@ class PlantComponentSchema(BaseModel):
     last_reproduction_tick: int = Field(default=0, description="Last tick of reproduction.")
 
 
-class SwarmComponentSchema(BaseModel):
+class SwarmComponentSchema(StrictBaseModel):
     """Pydantic schema for the Herbivore Swarm ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
@@ -97,7 +103,7 @@ class SwarmComponentSchema(BaseModel):
     repelled_ticks_remaining: int = Field(default=0, description="Ticks remaining in repelled random-walk.")
 
 
-class SubstanceComponentSchema(BaseModel):
+class SubstanceComponentSchema(StrictBaseModel):
     """Pydantic schema for a Substance (signal or toxin) ECS component."""
 
     entity_id: int = Field(..., description="Unique ECS entity identifier.")
@@ -120,7 +126,7 @@ class SubstanceComponentSchema(BaseModel):
     )
 
 
-class HerbivorePresenceConditionSchema(BaseModel):
+class HerbivorePresenceConditionSchema(StrictBaseModel):
     """Leaf predicate requiring a herbivore species at the owner's cell."""
 
     kind: Literal["herbivore_presence"] = "herbivore_presence"
@@ -132,14 +138,14 @@ class HerbivorePresenceConditionSchema(BaseModel):
     )
 
 
-class SubstanceActiveConditionSchema(BaseModel):
+class SubstanceActiveConditionSchema(StrictBaseModel):
     """Leaf predicate requiring another substance to already be active."""
 
     kind: Literal["substance_active"] = "substance_active"
     substance_id: SubstanceId = Field(..., description="Active substance required for this predicate.")
 
 
-class EnvironmentalSignalConditionSchema(BaseModel):
+class EnvironmentalSignalConditionSchema(StrictBaseModel):
     """Leaf predicate requiring a minimum ambient signal concentration at the owner's cell."""
 
     kind: Literal["environmental_signal"] = "environmental_signal"
@@ -151,7 +157,7 @@ class EnvironmentalSignalConditionSchema(BaseModel):
     )
 
 
-class AllOfConditionSchema(BaseModel):
+class AllOfConditionSchema(StrictBaseModel):
     """Boolean AND over nested activation predicates."""
 
     kind: Literal["all_of"] = "all_of"
@@ -162,7 +168,7 @@ class AllOfConditionSchema(BaseModel):
     )
 
 
-class AnyOfConditionSchema(BaseModel):
+class AnyOfConditionSchema(StrictBaseModel):
     """Boolean OR over nested activation predicates."""
 
     kind: Literal["any_of"] = "any_of"
@@ -191,7 +197,7 @@ AnyOfConditionSchema.model_rebuild()
 # ---------------------------------------------------------------------------
 
 
-class TriggerConditionSchema(BaseModel):
+class TriggerConditionSchema(StrictBaseModel):
     """Trigger condition for substance synthesis (Interaction Matrix entry).
 
     Maps a (plant species, herbivore species) pair to the substance that should
@@ -238,7 +244,7 @@ class TriggerConditionSchema(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class FloraSpeciesParams(BaseModel):
+class FloraSpeciesParams(StrictBaseModel):
     """Per-species parameters for flora."""
 
     species_id: SpeciesId
@@ -267,7 +273,7 @@ class FloraSpeciesParams(BaseModel):
     triggers: list[TriggerConditionSchema] = Field(default_factory=list)
 
 
-class HerbivoreSpeciesParams(BaseModel):
+class HerbivoreSpeciesParams(StrictBaseModel):
     """Per-species parameters for herbivore swarms."""
 
     species_id: HerbivoreId
@@ -297,7 +303,7 @@ class HerbivoreSpeciesParams(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class DietCompatibilityMatrix(BaseModel):
+class DietCompatibilityMatrix(StrictBaseModel):
     """Boolean matrix [herbivore_species, flora_species] indicating edibility."""
 
     rows: list[list[bool]] = Field(
@@ -324,7 +330,7 @@ class DietCompatibilityMatrix(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class InitialPlantPlacement(BaseModel):
+class InitialPlantPlacement(StrictBaseModel):
     """Single plant to place at simulation start."""
 
     species_id: SpeciesId
@@ -333,7 +339,7 @@ class InitialPlantPlacement(BaseModel):
     energy: float = Field(..., gt=0.0)
 
 
-class InitialSwarmPlacement(BaseModel):
+class InitialSwarmPlacement(StrictBaseModel):
     """Single swarm to place at simulation start."""
 
     species_id: HerbivoreId
@@ -348,7 +354,7 @@ class InitialSwarmPlacement(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class SimulationConfig(BaseModel):
+class SimulationConfig(StrictBaseModel):
     """Complete simulation configuration payload (REST /api/scenario/load body)."""
 
     grid_width: int = Field(default=40, ge=1, le=80)
@@ -398,9 +404,9 @@ class SimulationConfig(BaseModel):
 
     # Replay backend selection
     replay_backend: str = Field(
-        default="msgpack",
-        description="Replay storage backend: 'msgpack' (legacy) or 'zarr' (optimized chunked).",
-        pattern="^(msgpack|zarr)$",
+        default="zarr",
+        description="Replay storage backend.",
+        pattern="^zarr$",
     )
 
     @model_validator(mode="after")
@@ -425,7 +431,7 @@ class SimulationConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class SimulationStatusResponse(BaseModel):
+class SimulationStatusResponse(StrictBaseModel):
     """Response model for simulation state queries."""
 
     tick: int
@@ -436,20 +442,20 @@ class SimulationStatusResponse(BaseModel):
     termination_reason: str | None = None
 
 
-class WindUpdatePayload(BaseModel):
+class WindUpdatePayload(StrictBaseModel):
     """REST payload for dynamically updating wind vectors."""
 
     wind_x: float
     wind_y: float
 
 
-class TickRateUpdatePayload(BaseModel):
+class TickRateUpdatePayload(StrictBaseModel):
     """REST payload for dynamically updating live simulation tick speed."""
 
     tick_rate_hz: float = Field(default=10.0, gt=0.0)
 
 
-class BatchJobState(BaseModel):
+class BatchJobState(StrictBaseModel):
     """Runtime state record for a single Monte Carlo batch simulation job.
 
     Each batch job corresponds to ``N`` independent simulation runs dispatched
@@ -478,7 +484,7 @@ class BatchJobState(BaseModel):
     max_ticks: int = 500
 
 
-class BatchStartPayload(BaseModel):
+class BatchStartPayload(StrictBaseModel):
     """HTTP request payload for initiating a Monte Carlo batch simulation job.
 
     Encapsulates the simulation scenario and batch execution parameters
