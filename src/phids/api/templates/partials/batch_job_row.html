@@ -1,12 +1,10 @@
 <!-- Single batch job row fragment for HTMX outerHTML swap on status polling -->
 <tr id="batch-row-{{ job.job_id }}"
   hx-get="/api/batch/status/{{ job.job_id }}"
-  hx-trigger="every 2s [job.status == 'running']"
+  hx-trigger="{% if job.status == 'running' %}every 2s{% else %}never{% endif %}"
   hx-swap="outerHTML"
   class="hover:bg-slate-50 cursor-pointer"
-  hx-get="/api/batch/view/{{ job.job_id }}"
-  hx-target="#batch-detail"
-  onclick="document.getElementById('batch-detail').classList.remove('hidden')">
+  onclick="phidsBatchOpenJob('{{ job.job_id }}')">
   <td class="py-1.5 pr-3 font-mono text-slate-700">{{ job.job_id }}</td>
   <td class="py-1.5 pr-3 text-slate-600">{{ job.scenario_name }}</td>
   <td class="py-1.5 pr-3">

@@ -128,15 +128,58 @@ function phidsBatchLoadPersisted() {
     });
 }
 
-// Ensure scripts inside HTMX-swapped batch detail fragments execute reliably.
-document.body.addEventListener('htmx:afterSwap', function (evt) {
-  const target = evt.detail && evt.detail.target;
-  if (!target || target.id !== 'batch-detail') return;
-  const scripts = target.querySelectorAll('script:not([type]), script[type="text/javascript"]');
-  scripts.forEach((scriptEl) => {
-    const replacement = document.createElement('script');
-    replacement.textContent = scriptEl.textContent;
-    scriptEl.replaceWith(replacement);
-  });
-});
+function phidsBatchOpenJob(jobId) {
+  if (!jobId) return;
+  const target = document.getElementById('batch-detail');
+  if (!target) return;
+
+  window.__phidsBatchDetailLoadSeq = (window.__phidsBatchDetailLoadSeq || 0) + 1;
+  const seq = window.__phidsBatchDetailLoadSeq;
+
+  if (window.__phidsBatchDetailAbortController) {
+    try {
+      window.__phidsBatchDetailAbortController.abort();
+    } catch (_err) {
+      // Ignore abort races.
+    }
+  }
+  const abortController = new AbortController();
+  window.__phidsBatchDetailAbortController = abortController;
+
+  target.innerHTML = '<p class="text-slate-400 text-xs">Loading batch aggregate…</p>';
+
+  fetch(`/api/batch/view/${jobId}`, {
+    signal: abortController.signal,
+    headers: { 'HX-Request': 'true' },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.text();
+    })
+    .then((html) => {
+      if (seq !== window.__phidsBatchDetailLoadSeq) return;
+
+      if (window.__phidsBatchViewController && typeof window.__phidsBatchViewController.destroy === 'function') {
+        window.__phidsBatchViewController.destroy();
+        delete window.__phidsBatchViewController;
+      }
+
+      target.innerHTML = html;
+
+      // Execute scripts exactly once for this loaded fragment.
+      const scripts = target.querySelectorAll('script:not([type]), script[type="text/javascript"]');
+      scripts.forEach((scriptEl) => {
+        const replacement = document.createElement('script');
+        replacement.textContent = scriptEl.textContent;
+        scriptEl.replaceWith(replacement);
+      });
+    })
+    .catch((error) => {
+      if (error && error.name === 'AbortError') return;
+      if (seq !== window.__phidsBatchDetailLoadSeq) return;
+      target.innerHTML = `<p class="text-red-500 text-xs">Failed to load batch aggregate: ${String(error)}</p>`;
+    });
+}
 </script>

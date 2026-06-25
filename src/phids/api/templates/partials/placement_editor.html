@@ -55,10 +55,10 @@
 
         <!-- Swarm species selector (visible when tool=swarm) -->
         <div id="swarm-tool-opts" class="hidden">
-          <label class="block text-xs font-medium text-slate-600 mb-1">Predator Species</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Herbivore Species</label>
           <select id="swarm-species-sel"
             class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            {% for pp in predator_species %}
+            {% for pp in herbivore_species %}
             <option value="{{ pp.species_id }}">{{ pp.name }} (id={{ pp.species_id }})</option>
             {% endfor %}
           </select>

@@ -1,21 +1,77 @@
-"""Signaling system: substance synthesis, activation and local toxin effects.
+"""Signaling system: substance synthesis, activation, emission, diffusion, and toxin effects.
 
-This module manages the lifecycle of VOC signals and defensive toxins,
-including trigger evaluation via the spatial hash, synthesis countdowns,
-delegation of airborne signal diffusion to :class:`GridEnvironment`,
-mycorrhizal signal relays and application of toxin effects to swarms.
+This module implements the third and final per-tick simulation phase of the PHIDS engine,
+governing the full lifecycle of volatile organic compound (VOC) signals and defensive toxins.
+The signaling phase is executed after both the lifecycle and interaction phases have committed
+their energy mutations, ensuring that plant survival status and herbivore co-location data reflect
+the current tick's resolved state before chemical-defense decisions are made.
+
+The phase proceeds through six ordered sub-steps. First, orphaned substance entities whose owner
+plants were destroyed in earlier phases are garbage-collected. Second, trigger-condition trees are
+evaluated for each living plant against the per-cell herbivore census index
+(``_build_swarm_population_index``): direct herbivore co-presence (``herbivore_presence`` nodes) or
+indirect conditions (``substance_active``, ``environmental_signal``, ``all_of``, ``any_of``
+composites) can independently satisfy a trigger. Third, synthesis countdown timers are decremented
+for triggered substances; substances with zero remaining countdown and satisfied activation
+conditions are transitioned to ``active`` state. Fourth, active substances emit concentration
+increments (``SUBSTANCE_EMIT_RATE``) into signal or toxin environment layers, deduct
+``energy_cost_per_tick`` from the owner plant, relay VOC signals through mycorrhizal root
+networks, and record toxin property aggregates for batch application. Fifth, toxin effects
+(lethality and repellency) are applied to all co-located swarms via ``_apply_toxin_to_swarms``,
+with immediate spatial-hash deregistration and garbage collection of swarms annihilated by
+chemical defense. Sixth, Gaussian diffusion is delegated to ``GridEnvironment.diffuse_signals``,
+which convolves each airborne signal layer with the pre-computed kernel and applies the
+``SIGNAL_EPSILON`` sparsity threshold to eliminate subnormal tail values.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, TypedDict, cast
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.biotope import GridEnvironment
-from phids.engine.core.ecs import ECSWorld
 from phids.shared.constants import SUBSTANCE_EMIT_RATE
+
+if TYPE_CHECKING:
+    from phids.api.schemas import TriggerConditionSchema
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.core.ecs import ECSWorld
+
+type ActivationNode = dict[str, object]
+
+
+class _ActiveToxinProps(TypedDict):
+    """Merged toxin properties for one active toxin layer during the current signaling pass."""
+
+    lethal: bool
+    lethality_rate: float
+    repellent: bool
+    repellent_walk_ticks: int
+
+
+def _coerce_int(value: object, default: int) -> int:
+    """Convert activation-node scalar payloads to int with deterministic fallback semantics."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float, str)):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _coerce_float(value: object, default: float) -> float:
+    """Convert activation-node scalar payloads to float with deterministic fallback semantics."""
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float, str)):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def _is_substance_active_for_owner(
@@ -40,30 +96,50 @@ def _build_swarm_population_index(world: ECSWorld) -> dict[tuple[int, int, int],
 def _check_activation_condition(
     plant: PlantComponent,
     owner_plant_id: int,
-    activation_condition: dict[str, Any] | None,
+    activation_condition: ActivationNode | None,
     env: GridEnvironment,
     swarm_population_by_cell_species: dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
-    Args:
+    Recursively traverses the condition tree rooted at ``activation_condition``, evaluating
+    ``herbivore_presence`` leaves against the per-cell herbivore census index, ``substance_active``
+    leaves against the owner's active substance set, ``environmental_signal`` leaves against
+    the current signal-layer concentration at the plant's coordinates, and ``all_of`` / ``any_of``
+    composites using short-circuit Boolean logic.
 
+    Args:
+        plant: The plant entity whose grid coordinates are used for spatial condition checks.
+        owner_plant_id: Entity identifier of the owning plant, used to look up currently active
+            substances in ``active_substance_ids_by_owner``.
+        activation_condition: JSON-serialisable condition node dictionary, or ``None`` for
+            unconditional activation.
+        env: ``GridEnvironment`` providing read access to signal-layer concentrations for
+            ``environmental_signal`` predicates.
+        swarm_population_by_cell_species: Pre-built census index mapping
+            ``(x, y, species_id)`` to aggregate swarm population; used for ``herbivore_presence``
+            evaluations without additional ECS world queries.
+        active_substance_ids_by_owner: Mapping from plant entity id to its set of currently
+            active substance layer indices; used for ``substance_active`` leaf evaluation.
+
+    Returns:
+        ``True`` when the condition tree evaluates to true; ``False`` otherwise.
     """
     if activation_condition is None:
         return True
 
     kind = activation_condition.get("kind")
-    if kind == "enemy_presence":
-        predator_species_id = int(activation_condition.get("predator_species_id", -1))
-        min_predator_population = int(activation_condition.get("min_predator_population", 1))
+    if kind == "herbivore_presence":
+        herbivore_species_id = _coerce_int(activation_condition.get("herbivore_species_id", -1), -1)
+        min_herbivore_population = _coerce_int(activation_condition.get("min_herbivore_population", 1), 1)
         return (
-            swarm_population_by_cell_species.get((plant.x, plant.y, predator_species_id), 0)
-            >= min_predator_population
+            swarm_population_by_cell_species.get((plant.x, plant.y, herbivore_species_id), 0)
+            >= min_herbivore_population
         )
 
     if kind == "substance_active":
-        substance_id = int(activation_condition.get("substance_id", -1))
+        substance_id = _coerce_int(activation_condition.get("substance_id", -1), -1)
         return _is_substance_active_for_owner(
             owner_plant_id,
             substance_id,
@@ -71,40 +147,44 @@ def _check_activation_condition(
         )
 
     if kind == "environmental_signal":
-        signal_id = int(activation_condition.get("signal_id", -1))
-        min_conc = float(activation_condition.get("min_concentration", 0.01))
+        signal_id = _coerce_int(activation_condition.get("signal_id", -1), -1)
+        min_conc = _coerce_float(activation_condition.get("min_concentration", 0.01), 0.01)
         if 0 <= signal_id < env.num_signals:
             return float(env.signal_layers[signal_id, plant.x, plant.y]) >= min_conc
         return False
 
     if kind == "all_of":
         conditions = activation_condition.get("conditions", [])
-        return bool(conditions) and all(
+        valid_conditions = (
+            [child for child in conditions if isinstance(child, dict)] if isinstance(conditions, list) else []
+        )
+        return bool(valid_conditions) and all(
             _check_activation_condition(
                 plant,
                 owner_plant_id,
-                child,
+                cast("ActivationNode", child),
                 env,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,
             )
-            for child in conditions
-            if isinstance(child, dict)
+            for child in valid_conditions
         )
 
     if kind == "any_of":
         conditions = activation_condition.get("conditions", [])
+        valid_conditions = (
+            [child for child in conditions if isinstance(child, dict)] if isinstance(conditions, list) else []
+        )
         return any(
             _check_activation_condition(
                 plant,
                 owner_plant_id,
-                child,
+                cast("ActivationNode", child),
                 env,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,
             )
-            for child in conditions
-            if isinstance(child, dict)
+            for child in valid_conditions
         )
 
     return False
@@ -133,7 +213,7 @@ def _apply_toxin_to_swarms(
     bulk destruction via ``world.collect_garbage``. Without this step, zero-population
     swarm entities would persist as "ghost" entries in the spatial hash until the interaction
     phase of the following tick purged them, thereby corrupting O(1) spatial-hash lookups and
-    confounding predator-presence evaluations in ``_check_activation_condition``.
+    confounding herbivore-presence evaluations in ``_check_activation_condition``.
 
     Args:
         sub_id: Toxin layer index.
@@ -179,15 +259,15 @@ def _co_located_swarm_population(
     world: ECSWorld,
     x: int,
     y: int,
-    predator_species_id: int,
+    herbivore_species_id: int,
 ) -> int:
-    """Return total population of a predator species at one grid cell.
+    """Return total population of a herbivore species at one grid cell.
 
     Args:
         world: ECSWorld used for spatial hash lookup.
         x: Grid x-coordinate.
         y: Grid y-coordinate.
-        predator_species_id: Predator species to aggregate.
+        herbivore_species_id: Herbivore species to aggregate.
 
     Returns:
         int: Sum of populations for matching swarms at ``(x, y)``.
@@ -200,60 +280,47 @@ def _co_located_swarm_population(
         if not co_entity.has_component(SwarmComponent):
             continue
         swarm: SwarmComponent = co_entity.get_component(SwarmComponent)
-        if swarm.species_id == predator_species_id:
+        if swarm.species_id == herbivore_species_id:
             total_population += swarm.population
     return total_population
 
 
-def _relay_signal_via_mycorrhizal(
+def _collect_mycorrhizal_targets(
     source_plant: PlantComponent,
-    signal_id: int,
-    amount: float,
-    env: GridEnvironment,
     world: ECSWorld,
     mycorrhizal_inter_species: bool,
-    signal_velocity: int,
-    tick: int,
-) -> None:
-    """Propagate a signal through root-network connections.
-
-    The signal is deposited directly into connected plant cells' signal
-    layers, bypassing airborne diffusion. Inter-species relay can be
-    disabled via ``mycorrhizal_inter_species``.
+) -> list[PlantComponent]:
+    """Return relay-eligible neighbouring plants connected via mycorrhiza.
 
     Args:
         source_plant: Originating plant component.
-        signal_id: Signal layer index.
-        amount: Amount to deposit at each neighbour.
-        env: GridEnvironment instance.
-        world: ECSWorld instance.
-        mycorrhizal_inter_species: Allow inter-species relay when True.
-        signal_velocity: Attenuation factor applied per hop.
-        tick: Current simulation tick (unused here but provided for parity).
+        world: ECSWorld for neighbour lookup.
+        mycorrhizal_inter_species: Whether cross-species relay is allowed.
+
+    Returns:
+        list[PlantComponent]: Relay targets that are alive and species-compatible.
     """
+    targets: list[PlantComponent] = []
     for neighbour_id in source_plant.mycorrhizal_connections:
         if not world.has_entity(neighbour_id):
             continue
         neighbour_entity = world.get_entity(neighbour_id)
         if not neighbour_entity.has_component(PlantComponent):
             continue
-        neighbour: PlantComponent = neighbour_entity.get_component(PlantComponent)
+        neighbour = neighbour_entity.get_component(PlantComponent)
         if not mycorrhizal_inter_species and neighbour.species_id != source_plant.species_id:
             continue
-        # Deposit signal at neighbour cell (scaled by velocity as simple attenuation)
-        if signal_id < env.num_signals:
-            env.signal_layers[signal_id, neighbour.x, neighbour.y] += amount / max(
-                1, signal_velocity
-            )
+        targets.append(neighbour)
+    return targets
 
 
 def run_signaling(
     world: ECSWorld,
     env: GridEnvironment,
-    trigger_conditions: dict[int, list[object]],
+    trigger_conditions: dict[int, list[TriggerConditionSchema]],
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
-    tick: int,
+    tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.
@@ -268,8 +335,6 @@ def run_signaling(
         tick: Current simulation tick.
         plant_death_causes: Mapping of death causes to their respective counts.
     """
-    from phids.api.schemas import TriggerConditionSchema  # avoid circular at module level
-
     dead_substances: list[int] = []
     dead_plants: list[int] = []
     dead_plant_ids: set[int] = set()
@@ -293,9 +358,7 @@ def run_signaling(
         sub = entity.get_component(SubstanceComponent)
         owner_substance_by_key[(sub.owner_plant_id, sub.substance_id)] = sub
         if sub.active:
-            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
-                sub.substance_id
-            )
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(sub.substance_id)
 
     swarm_population_by_cell_species = _build_swarm_population_index(world)
 
@@ -317,23 +380,17 @@ def run_signaling(
         plant: PlantComponent = entity.get_component(PlantComponent)
         triggers = trigger_conditions.get(plant.species_id, [])
 
-        for trig_raw in triggers:
-            if not isinstance(trig_raw, TriggerConditionSchema):
-                continue
-            trig: TriggerConditionSchema = trig_raw
-
-            # Check for predator presence at this cell via spatial hash.
-            predator_present = (
-                swarm_population_by_cell_species.get(
-                    (plant.x, plant.y, trig.predator_species_id), 0
-                )
-                >= trig.min_predator_population
+        for trig in triggers:
+            # Check for herbivore presence at this cell via spatial hash.
+            herbivore_present = (
+                swarm_population_by_cell_species.get((plant.x, plant.y, trig.herbivore_species_id), 0)
+                >= trig.min_herbivore_population
             )
 
             # Evaluate optional condition trees as an alternative trigger path.
             # This enables alarm-chain behavior where a plant reacts to an
             # already-active internal condition without requiring direct
-            # predator co-location on the same cell.
+            # herbivore co-location on the same cell.
             condition_met = False
             if trig.activation_condition is not None:
                 condition_met = _check_activation_condition(
@@ -345,7 +402,7 @@ def run_signaling(
                     active_substance_ids_by_owner,
                 )
 
-            triggered = predator_present or condition_met
+            triggered = herbivore_present or condition_met
 
             if not triggered:
                 continue
@@ -369,8 +426,6 @@ def run_signaling(
                     repellent_walk_ticks=trig.repellent_walk_ticks,
                     aftereffect_ticks=trig.aftereffect_ticks,
                     aftereffect_remaining_ticks=trig.aftereffect_ticks,
-                    precursor_signal_id=trig.precursor_signal_id,
-                    precursor_signal_ids=tuple(trig.precursor_signal_ids),
                     activation_condition=(
                         trig.activation_condition.model_dump(mode="json")
                         if trig.activation_condition is not None
@@ -378,9 +433,9 @@ def run_signaling(
                     ),
                     energy_cost_per_tick=trig.energy_cost_per_tick,
                     irreversible=trig.irreversible,
-                    trigger_predator_species_id=trig.predator_species_id,
-                    trigger_min_predator_population=trig.min_predator_population,
                 )
+                existing_sub.trigger_herbivore_species_id = trig.herbivore_species_id
+                existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
                 world.add_component(new_entity.entity_id, existing_sub)
                 owner_substance_by_key[(plant.entity_id, trig.substance_id)] = existing_sub
             else:
@@ -402,9 +457,7 @@ def run_signaling(
             continue
         if not sub.triggered_this_tick:
             continue
-        owner_entity = (
-            world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
-        )
+        owner_entity = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
         if owner_entity is None:
             dead_substances.append(entity.entity_id)
             continue
@@ -423,9 +476,7 @@ def run_signaling(
                 continue
             sub.active = True
             sub.aftereffect_remaining_ticks = sub.aftereffect_ticks
-            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(
-                sub.substance_id
-            )
+            active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(sub.substance_id)
 
     # ------------------------------------------------------------------
     # 2b. Irreversible induced defense lock
@@ -438,7 +489,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 3. Emit active signals / toxins into environment layers
     # ------------------------------------------------------------------
-    active_toxin_props: dict[int, dict[str, Any]] = {}
+    active_toxin_props: dict[int, _ActiveToxinProps] = {}
 
     for entity in list(world.query(SubstanceComponent)):
         sub = entity.get_component(SubstanceComponent)
@@ -448,14 +499,10 @@ def run_signaling(
         if not sub.triggered_this_tick:
             if not sub.irreversible and sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
-                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
-                    sub.substance_id
-                )
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
                 continue
 
-        owner_entity = (
-            world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
-        )
+        owner_entity = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
         if owner_entity is None:
             dead_substances.append(entity.entity_id)
             continue
@@ -493,9 +540,7 @@ def run_signaling(
                 dead_plants.append(plant.entity_id)
                 dead_plant_ids.add(plant.entity_id)
                 sub.active = False
-                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
-                    sub.substance_id
-                )
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
                 dead_substances.append(entity.entity_id)
                 continue
 
@@ -503,8 +548,7 @@ def run_signaling(
             if sub.substance_id < env.num_toxins:
                 env.toxin_layers[sub.substance_id, plant.x, plant.y] = min(
                     1.0,
-                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y])
-                    + SUBSTANCE_EMIT_RATE,
+                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + SUBSTANCE_EMIT_RATE,
                 )
                 if sub.substance_id not in active_toxin_props:
                     active_toxin_props[sub.substance_id] = {
@@ -516,32 +560,35 @@ def run_signaling(
                 else:
                     props = active_toxin_props[sub.substance_id]
                     props["lethal"] = bool(props["lethal"] or sub.lethal)
-                    props["lethality_rate"] = max(
-                        float(props["lethality_rate"]), sub.lethality_rate
-                    )
+                    props["lethality_rate"] = max(float(props["lethality_rate"]), sub.lethality_rate)
                     props["repellent"] = bool(props["repellent"] or sub.repellent)
                     props["repellent_walk_ticks"] = max(
                         int(props["repellent_walk_ticks"]),
                         sub.repellent_walk_ticks,
                     )
         else:
-            if sub.substance_id < env.num_signals:
-                env.signal_layers[sub.substance_id, plant.x, plant.y] = min(
-                    1.0,
-                    float(env.signal_layers[sub.substance_id, plant.x, plant.y])
-                    + SUBSTANCE_EMIT_RATE,
-                )
-            # Relay via mycorrhizal network
-            _relay_signal_via_mycorrhizal(
+            relay_targets = _collect_mycorrhizal_targets(
                 plant,
-                sub.substance_id,
-                SUBSTANCE_EMIT_RATE,
-                env,
                 world,
                 mycorrhizal_inter_species,
-                signal_velocity,
-                tick,
             )
+            relay_count = len(relay_targets)
+            airborne_amount = SUBSTANCE_EMIT_RATE / float(relay_count + 1)
+            if sub.substance_id < env.num_signals:
+                env.signal_layers[sub.substance_id, plant.x, plant.y] = (
+                    float(env.signal_layers[sub.substance_id, plant.x, plant.y]) + airborne_amount
+                )
+
+            if relay_count > 0:
+                relay_amount = SUBSTANCE_EMIT_RATE - airborne_amount
+                per_target_amount = relay_amount / float(relay_count)
+                for relay_target in relay_targets:
+                    if sub.substance_id < env.num_signals:
+                        env.signal_layers[
+                            sub.substance_id,
+                            relay_target.x,
+                            relay_target.y,
+                        ] += per_target_amount / max(1, signal_velocity)
 
     for sub_id, props in active_toxin_props.items():
         _apply_toxin_to_swarms(
@@ -586,9 +633,7 @@ def run_signaling(
             sub.aftereffect_remaining_ticks -= 1
             if sub.aftereffect_remaining_ticks <= 0:
                 sub.active = False
-                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(
-                    sub.substance_id
-                )
+                active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)
         else:
             sub.active = False
             active_substance_ids_by_owner.get(sub.owner_plant_id, set()).discard(sub.substance_id)

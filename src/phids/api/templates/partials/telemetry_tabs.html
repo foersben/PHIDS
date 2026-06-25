@@ -15,132 +15,228 @@
     </button>
   </div>
 
-  <div id="panel-ts" class="space-y-2">
-    <div id="ts-legend" class="flex flex-wrap gap-2 text-[11px]"></div>
-    <canvas id="ts-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas>
-    <canvas id="defense-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
-    <div class="flex flex-wrap gap-2 text-xs -mt-1">
-      <span class="text-slate-400 text-[11px] self-center">Defense export:</span>
-      <a id="defense-export-png" href="/api/export/defense_economy?format=png"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_defense_economy.png">PNG</a>
-      <a id="defense-export-tikz" href="/api/export/defense_economy?format=tex_tikz"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_defense_economy.tex">TikZ</a>
-    </div>
-    <canvas id="biomass-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
-    <div class="flex flex-wrap gap-2 text-xs -mt-1">
-      <span class="text-slate-400 text-[11px] self-center">Biomass export:</span>
-      <a id="biomass-export-png" href="/api/export/biomass_stack?format=png"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_biomass_stack.png">PNG</a>
-      <a id="biomass-export-tikz" href="/api/export/biomass_stack?format=tex_tikz"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_biomass_stack.tex">TikZ</a>
+  <div id="panel-ts" class="space-y-4">
+    <!-- Section 1: Population Dynamics Time Series -->
+    <div class="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/60">
+        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">👥 Population Dynamics</h3>
+        <div id="ts-legend" class="flex flex-wrap gap-2 text-[11px]"></div>
+      </div>
+
+      <div class="w-full">
+        <canvas id="ts-chart" height="200" style="display:block;width:100%;max-height:220px;"></canvas>
+      </div>
+
+      <!-- Settings & Actions for Population Dynamics -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+        <!-- Configuration Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-600 bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm">
+          <label class="flex flex-col">
+            <span class="font-medium text-slate-500 mb-1">Title</span>
+            <input id="ts-title" oninput="phidsTelemetryRefreshState()" placeholder="PHIDS - Population Time Series"
+              class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+          </label>
+          <label class="flex flex-col">
+            <span class="font-medium text-slate-500 mb-1">X Label</span>
+            <input id="ts-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Tick"
+              class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+          </label>
+          <label class="flex flex-col">
+            <span class="font-medium text-slate-500 mb-1">Y Label</span>
+            <input id="ts-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Population"
+              class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+          </label>
+        </div>
+
+        <!-- Export Actions -->
+        <div class="flex flex-wrap gap-2 items-center justify-start bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm text-xs">
+          <span class="text-slate-400 text-[11px] w-full mb-1 font-medium">Export Time Series:</span>
+          <a id="ts-export-csv" href="/api/export/timeseries?format=csv"
+            class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+            download="phids_timeseries.csv">CSV</a>
+          <a id="ts-export-png" href="/api/export/timeseries?format=png"
+            class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+            download="phids_timeseries.png">PNG</a>
+          <a id="ts-export-tikz" href="/api/export/timeseries?format=tex_tikz"
+            class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+            download="phids_timeseries.tex">TikZ</a>
+          <a id="ts-export-tex-table" href="/api/export/timeseries?format=tex_table"
+            class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+            download="phids_timeseries_table.tex">LaTeX Table</a>
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-slate-600">
-      <label>Title
-        <input id="ts-title" oninput="phidsTelemetryRefreshState()" placeholder="PHIDS - Population Time Series"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-      <label>X Label
-        <input id="ts-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Tick"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-      <label>Y Label
-        <input id="ts-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Population"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
+    <!-- Section 2: Metabolic & Defense Economy -->
+    <div class="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-200/60">
+        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">⚡ Metabolic & Defense Economy</h3>
+      </div>
+
+      <div class="w-full">
+        <canvas id="defense-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
+      </div>
+
+      <!-- Export Actions for Metabolic/Defense Economy -->
+      <div class="flex flex-wrap gap-2 items-center bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm text-xs">
+        <span class="text-slate-400 text-[11px] font-medium mr-1">Export Defense:</span>
+        <a id="defense-export-png" href="/api/export/defense_economy?format=png"
+          class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+          download="phids_defense_economy.png">PNG</a>
+        <a id="defense-export-tikz" href="/api/export/defense_economy?format=tex_tikz"
+          class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+          download="phids_defense_economy.tex">TikZ</a>
+      </div>
     </div>
 
-    <div class="flex flex-wrap gap-2 text-xs">
-      <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="ts-export-csv" href="/api/export/timeseries?format=csv"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_timeseries.csv">CSV</a>
-      <a id="ts-export-png" href="/api/export/timeseries?format=png"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_timeseries.png">PNG</a>
-      <a id="ts-export-tikz" href="/api/export/timeseries?format=tex_tikz"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_timeseries.tex">TikZ</a>
-      <a id="ts-export-tex-table" href="/api/export/timeseries?format=tex_table"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_timeseries_table.tex">LaTeX Table</a>
+    <!-- Section 3: Biomass Distribution -->
+    <div class="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-200/60">
+        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">🌿 Biomass Distribution</h3>
+      </div>
+
+      <div class="w-full">
+        <canvas id="biomass-chart" height="170" style="display:block;width:100%;max-height:190px;"></canvas>
+      </div>
+
+      <!-- Export Actions for Biomass Distribution -->
+      <div class="flex flex-wrap gap-2 items-center bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm text-xs">
+        <span class="text-slate-400 text-[11px] font-medium mr-1">Export Biomass:</span>
+        <a id="biomass-export-png" href="/api/export/biomass_stack?format=png"
+          class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+          download="phids_biomass_stack.png">PNG</a>
+        <a id="biomass-export-tikz" href="/api/export/biomass_stack?format=tex_tikz"
+          class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+          download="phids_biomass_stack.tex">TikZ</a>
+      </div>
     </div>
   </div>
 
-  <div id="panel-ps" class="space-y-2 hidden">
-    <div class="flex flex-wrap gap-3 items-center text-[11px] text-slate-600">
-      <label>
-        Prey (x):
-        <select id="ps-prey" onchange="phidsTelemetryRedrawPS()"
-          class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5"></select>
-      </label>
-      <label>
-        Predator (y):
-        <select id="ps-pred" onchange="phidsTelemetryRedrawPS()"
-          class="ml-1 text-[11px] rounded border border-slate-200 bg-white px-1 py-0.5"></select>
-      </label>
-    </div>
-    <canvas id="ps-chart" height="260" style="display:block;width:100%;max-height:280px;"></canvas>
+  <div id="panel-ps" class="space-y-4 hidden">
+    <div class="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200/60">
+        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">🔄 Phase Space Trajectory</h3>
+        <div class="flex flex-wrap gap-3 items-center text-[11px] text-slate-600">
+          <label class="flex items-center">
+            <span class="font-medium text-slate-500 mr-1">Prey (x):</span>
+            <select id="ps-prey" onchange="phidsTelemetryRedrawPS()"
+              class="text-[11px] rounded border border-slate-200 bg-white px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></select>
+          </label>
+          <label class="flex items-center">
+            <span class="font-medium text-slate-500 mr-1">Herbivore (y):</span>
+            <select id="ps-herbivore" onchange="phidsTelemetryRedrawPS()"
+              class="text-[11px] rounded border border-slate-200 bg-white px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></select>
+          </label>
+        </div>
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-slate-600">
-      <label>Title
-        <input id="ps-title" oninput="phidsTelemetryRefreshState()" placeholder="PHIDS - Lotka-Volterra Phase Space"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-      <label>X Label
-        <input id="ps-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Prey population"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-      <label>Y Label
-        <input id="ps-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Predator population"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-    </div>
+      <div class="w-full">
+        <canvas id="ps-chart" height="260" style="display:block;width:100%;max-height:280px;"></canvas>
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-600">
-      <label>X max (optional)
-        <input id="ps-x-max" type="number" min="0" step="0.1" oninput="phidsTelemetryRefreshState()"
-          placeholder="auto" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-      <label>Y max (optional)
-        <input id="ps-y-max" type="number" min="0" step="0.1" oninput="phidsTelemetryRefreshState()"
-          placeholder="auto" class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
-    </div>
+      <!-- Settings & Actions for Phase Space -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+        <div class="space-y-2">
+          <!-- Configuration Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-600 bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm">
+            <label class="flex flex-col">
+              <span class="font-medium text-slate-500 mb-1">Title</span>
+              <input id="ps-title" oninput="phidsTelemetryRefreshState()" placeholder="PHIDS - Lotka-Volterra Phase Space"
+                class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+            </label>
+            <label class="flex flex-col">
+              <span class="font-medium text-slate-500 mb-1">X Label</span>
+              <input id="ps-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Prey population"
+                class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+            </label>
+            <label class="flex flex-col">
+              <span class="font-medium text-slate-500 mb-1">Y Label</span>
+              <input id="ps-y-label" oninput="phidsTelemetryRefreshState()" placeholder="Herbivore population"
+                class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+            </label>
+          </div>
 
-    <div class="flex flex-wrap gap-2 text-xs" id="ps-export-bar">
-      <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="ps-export-png" href="/api/export/phasespace?format=png"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_phasespace.png">PNG</a>
-      <a id="ps-export-tikz" href="/api/export/phasespace?format=tex_tikz"
-        class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-        download="phids_phasespace.tex">TikZ</a>
+          <!-- Limits Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600 bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm">
+            <label class="flex flex-col">
+              <span class="font-medium text-slate-500 mb-1">X max (optional)</span>
+              <input id="ps-x-max" type="number" min="0" step="0.1" oninput="phidsTelemetryRefreshState()"
+                placeholder="auto" class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+            </label>
+            <label class="flex flex-col">
+              <span class="font-medium text-slate-500 mb-1">Y max (optional)</span>
+              <input id="ps-y-max" type="number" min="0" step="0.1" oninput="phidsTelemetryRefreshState()"
+                placeholder="auto" class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+            </label>
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-between gap-2">
+          <!-- Export Actions -->
+          <div class="flex flex-wrap gap-2 items-center justify-start bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm text-xs">
+            <span class="text-slate-400 text-[11px] w-full mb-1 font-medium">Export:</span>
+            <a id="ps-export-png" href="/api/export/phasespace?format=png"
+              class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+              download="phids_phasespace.png">PNG</a>
+            <a id="ps-export-tikz" href="/api/export/phasespace?format=tex_tikz"
+              class="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-colors font-medium border border-slate-200/40"
+              download="phids_phasespace.tex">TikZ</a>
+          </div>
+
+          <!-- Stability status -->
+          <div class="bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm flex items-center min-h-[50px]">
+            <div id="ps-stability-status" class="text-[11px] font-medium text-slate-500"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="ps-stability-status" class="text-[11px] text-slate-500"></div>
   </div>
 
-  <div id="panel-table" class="space-y-2 hidden">
-    <p class="text-[11px] text-slate-500">
-      The tabular preview follows active species visibility and updates every telemetry poll cycle.
-    </p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-600">
-      <label>Export tick interval
-        <input id="export-tick-interval" type="number" min="1" step="1" value="1"
-          oninput="phidsTelemetryRefreshState()"
-          class="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-[11px]" />
-      </label>
+  <div id="panel-table" class="space-y-4 hidden">
+    <div class="bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200/60">
+        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">🧾 Tabular Preview</h3>
+        <p class="text-[11px] text-slate-500">
+          Follows active species visibility and updates every telemetry poll cycle.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600 bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm max-w-sm">
+        <label class="flex flex-col">
+          <span class="font-medium text-slate-500 mb-1">Export tick interval</span>
+          <input id="export-tick-interval" type="number" min="1" step="1" value="1"
+            oninput="phidsTelemetryRefreshState()"
+            class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+        </label>
+      </div>
+
+      <div class="bg-white p-3 rounded-lg border border-slate-200/50 shadow-sm overflow-x-auto">
+        <div id="telemetry-table-preview"></div>
+      </div>
     </div>
-    <div id="telemetry-table-preview"></div>
   </div>
 </div>
 
 <script>
 (function () {
+  const POLLER_KEY = '__phidsTelemetryPoller';
+  const _poller = window[POLLER_KEY] || {
+    intervalId: null,
+    inFlight: false,
+    requestSeq: 0,
+    latestAppliedSeq: 0,
+    abortController: null,
+  };
+  if (_poller.intervalId) {
+    clearInterval(_poller.intervalId);
+    _poller.intervalId = null;
+  }
+  if (_poller.abortController) {
+    _poller.abortController.abort();
+    _poller.abortController = null;
+  }
+  window[POLLER_KEY] = _poller;
+
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
@@ -151,10 +247,11 @@
   let _lastData = null;
   let _lastTickSeen = -1;
   let _lastSpeciesSignature = '';
+  let _runId = '';
 
   // Colour palettes
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
-  const PREDATOR_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
+  const HERBIVORE_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
   const ENERGY_COLOUR    = '#60a5fa';
   const MAX_TELEMETRY_POINTS = 300;
 
@@ -172,10 +269,10 @@
   function _buildColumnSelection(data) {
     const cols = ['tick'];
     const floraIds = [];
-    const predIds = [];
+    const herbivoreIds = [];
 
     if (_isVisible('flora_total')) cols.push('flora_population');
-    if (_isVisible('pred_total')) cols.push('predator_population');
+    if (_isVisible('herbivore_total')) cols.push('herbivore_population');
     if (_isVisible('energy')) cols.push('total_flora_energy');
 
     (data.flora_ids || []).forEach(fid => {
@@ -186,29 +283,33 @@
         cols.push('defense_cost_' + fid);
       }
     });
-    (data.predator_ids || []).forEach(pid => {
+    (data.herbivore_ids || []).forEach(pid => {
       if (_isVisible('swarm_' + pid)) {
-        predIds.push(String(pid));
+        herbivoreIds.push(String(pid));
         cols.push('swarm_' + pid + '_pop');
       }
     });
 
-    return { columns: cols.join(','), floraIds: floraIds.join(','), predIds: predIds.join(',') };
+    return {
+      columns: cols.join(','),
+      floraIds: floraIds.join(','),
+      herbivoreIds: herbivoreIds.join(','),
+    };
   }
 
   function _selectedPhaseSpecies(data) {
     const preyEl = document.getElementById('ps-prey');
-    const predEl = document.getElementById('ps-pred');
+    const herbivoreEl = document.getElementById('ps-herbivore');
     const floraIds = data.flora_ids || [];
-    const predIds = data.predator_ids || [];
+    const herbivoreIds = data.herbivore_ids || [];
 
     const prey = preyEl && floraIds.includes(parseInt(preyEl.value, 10))
       ? parseInt(preyEl.value, 10)
       : (floraIds.length > 0 ? floraIds[0] : 0);
-    const pred = predEl && predIds.includes(parseInt(predEl.value, 10))
-      ? parseInt(predEl.value, 10)
-      : (predIds.length > 0 ? predIds[0] : 0);
-    return { prey, pred };
+    const herbivore = herbivoreEl && herbivoreIds.includes(parseInt(herbivoreEl.value, 10))
+      ? parseInt(herbivoreEl.value, 10)
+      : (herbivoreIds.length > 0 ? herbivoreIds[0] : 0);
+    return { prey, herbivore };
   }
 
   function _encodeParams(params) {
@@ -240,7 +341,7 @@
     const tsParams = _encodeParams({
       columns: sel.columns,
       flora_ids: sel.floraIds,
-      predator_ids: sel.predIds,
+      herbivore_ids: sel.herbivoreIds,
       title: tsTitle,
       x_label: tsX,
       y_label: tsY,
@@ -248,9 +349,9 @@
     });
     const psParams = _encodeParams({
       prey_species_id: species.prey,
-      predator_species_id: species.pred,
+      herbivore_species_id: species.herbivore,
       flora_ids: sel.floraIds,
-      predator_ids: sel.predIds,
+      herbivore_ids: sel.herbivoreIds,
       title: psTitle,
       x_label: psX,
       y_label: psY,
@@ -286,7 +387,7 @@
     const params = _encodeParams({
       columns: sel.columns,
       flora_ids: sel.floraIds,
-      predator_ids: sel.predIds,
+      herbivore_ids: sel.herbivoreIds,
       tick_interval: tickInterval,
     });
     fetch('/api/telemetry/table_preview?' + params)
@@ -344,14 +445,103 @@
     const labels = _tailWindow(data.labels || [], MAX_TELEMETRY_POINTS);
     const series = {};
     const srcSeries = data.series || {};
+    const targetLen = labels.length;
     Object.keys(srcSeries).forEach((key) => {
-      series[key] = _tailWindow(srcSeries[key], labels.length);
+      let values = _tailWindow(srcSeries[key], targetLen).map((value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : 0;
+      });
+      if (values.length < targetLen) {
+        const padding = new Array(targetLen - values.length).fill(0);
+        values = padding.concat(values);
+      }
+      series[key] = values;
     });
     return {
       ...data,
       labels,
       series,
     };
+  }
+
+  function _mergeTelemetryData(existing, incoming) {
+    if (!existing) return incoming;
+
+    const existingLabels = (existing.labels || []).map((tick) => Number(tick));
+    const incomingLabels = (incoming.labels || []).map((tick) => Number(tick));
+
+    const labelToIndex = new Map();
+    const labels = [];
+    existingLabels.forEach((tick) => {
+      if (!Number.isFinite(tick) || labelToIndex.has(tick)) return;
+      labelToIndex.set(tick, labels.length);
+      labels.push(tick);
+    });
+    incomingLabels.forEach((tick) => {
+      if (!Number.isFinite(tick) || labelToIndex.has(tick)) return;
+      labelToIndex.set(tick, labels.length);
+      labels.push(tick);
+    });
+
+    const allSeriesKeys = new Set([
+      ...Object.keys(existing.series || {}),
+      ...Object.keys(incoming.series || {}),
+    ]);
+    const series = {};
+    allSeriesKeys.forEach((key) => {
+      series[key] = new Array(labels.length).fill(0);
+    });
+
+    const fillSeries = (payload) => {
+      const payloadLabels = payload.labels || [];
+      const payloadSeries = payload.series || {};
+      payloadLabels.forEach((rawTick, i) => {
+        const tick = Number(rawTick);
+        if (!Number.isFinite(tick)) return;
+        const targetIndex = labelToIndex.get(tick);
+        if (targetIndex === undefined) return;
+        allSeriesKeys.forEach((key) => {
+          const values = payloadSeries[key] || [];
+          const value = Number(values[i]);
+          series[key][targetIndex] = Number.isFinite(value) ? value : 0;
+        });
+      });
+    };
+
+    fillSeries(existing);
+    fillSeries(incoming);
+
+    return {
+      labels,
+      series,
+      flora_ids: Array.from(new Set([...(existing.flora_ids || []), ...(incoming.flora_ids || [])])),
+      herbivore_ids: Array.from(
+        new Set([...(existing.herbivore_ids || []), ...(incoming.herbivore_ids || [])]),
+      ),
+      flora_names: { ...(existing.flora_names || {}), ...(incoming.flora_names || {}) },
+      herbivore_names: { ...(existing.herbivore_names || {}), ...(incoming.herbivore_names || {}) },
+    };
+  }
+
+  function _speciesSignature(data) {
+    return JSON.stringify({
+      flora: data.flora_ids || [],
+      herbivores: data.herbivore_ids || [],
+    });
+  }
+
+  function _shouldResetSeries(existing, incoming) {
+    if (!existing) return false;
+    if (_speciesSignature(existing) !== _speciesSignature(incoming)) return true;
+
+    const existingLabels = existing.labels || [];
+    const incomingLabels = incoming.labels || [];
+    if (existingLabels.length === 0 || incomingLabels.length === 0) return false;
+
+    const lastExisting = Number(existingLabels[existingLabels.length - 1]);
+    const firstIncoming = Number(incomingLabels[0]);
+    if (!Number.isFinite(lastExisting) || !Number.isFinite(firstIncoming)) return false;
+    return firstIncoming <= lastExisting;
   }
 
   // ---------------------------------------------------------------------------
@@ -448,23 +638,23 @@
       });
     });
 
-    // Aggregate predators
+    // Aggregate herbivores
     datasets.push({
-      label: 'Predators (total)',
-      data: data.series.predator_population || [],
+      label: 'Herbivores (total)',
+      data: data.series.herbivore_population || [],
       borderColor: '#ef4444', backgroundColor: 'transparent',
       borderWidth: 2, pointRadius: 0, borderDash: [4, 2],
-      hidden: _visible['pred_total'] === false, _key: 'pred_total',
+      hidden: _visible['herbivore_total'] === false, _key: 'herbivore_total',
     });
 
-    // Per-species predators
-    (data.predator_ids || []).forEach((pid, i) => {
+    // Per-species herbivores
+    (data.herbivore_ids || []).forEach((pid, i) => {
       const key = 'swarm_' + pid;
-      const name = (data.predator_names || {})[pid] || ('Predator ' + pid);
+      const name = (data.herbivore_names || {})[pid] || ('Herbivore ' + pid);
       datasets.push({
         label: name + ' pop',
         data: data.series['swarm_' + pid + '_pop'] || [],
-        borderColor: PREDATOR_COLOURS[i % PREDATOR_COLOURS.length],
+        borderColor: HERBIVORE_COLOURS[i % HERBIVORE_COLOURS.length],
         backgroundColor: 'transparent',
         borderWidth: 1.5, pointRadius: 0, borderDash: [3, 2],
         hidden: _visible[key] === false, _key: key,
@@ -521,7 +711,8 @@
       const ratio = [];
       for (let idx = 0; idx < n; idx++) {
         const denom = energy[idx] || 0;
-        ratio.push(denom > 0 ? defense[idx] / denom : 0.0);
+        const value = denom > 0 ? defense[idx] / denom : 0.0;
+        ratio.push(Number.isFinite(value) ? value : 0.0);
       }
       datasets.push({
         label: name + ' defense/energy',
@@ -628,20 +819,20 @@
   // ---------------------------------------------------------------------------
   function _populateDropdowns(data) {
     const preyEl = document.getElementById('ps-prey');
-    const predEl = document.getElementById('ps-pred');
-    if (!preyEl || !predEl) return;
+    const herbivoreEl = document.getElementById('ps-herbivore');
+    if (!preyEl || !herbivoreEl) return;
 
     const prevPrey = preyEl.value;
-    const prevPred = predEl.value;
+    const prevHerbivore = herbivoreEl.value;
 
     preyEl.innerHTML = (data.flora_ids || []).map(fid => {
       const name = (data.flora_names || {})[fid] || ('Flora ' + fid);
       return `<option value="${fid}" ${String(fid) === prevPrey ? 'selected' : ''}>${name}</option>`;
     }).join('');
 
-    predEl.innerHTML = (data.predator_ids || []).map(pid => {
-      const name = (data.predator_names || {})[pid] || ('Predator ' + pid);
-      return `<option value="${pid}" ${String(pid) === prevPred ? 'selected' : ''}>${name}</option>`;
+    herbivoreEl.innerHTML = (data.herbivore_ids || []).map(pid => {
+      const name = (data.herbivore_names || {})[pid] || ('Herbivore ' + pid);
+      return `<option value="${pid}" ${String(pid) === prevHerbivore ? 'selected' : ''}>${name}</option>`;
     }).join('');
   }
 
@@ -652,24 +843,25 @@
     _populateDropdowns(data);
 
     const preyEl = document.getElementById('ps-prey');
-    const predEl = document.getElementById('ps-pred');
+    const herbivoreEl = document.getElementById('ps-herbivore');
     const species = _selectedPhaseSpecies(data);
     if (preyEl) preyEl.value = String(species.prey);
-    if (predEl) predEl.value = String(species.pred);
+    if (herbivoreEl) herbivoreEl.value = String(species.herbivore);
     const preyId = species.prey;
-    const predId = species.pred;
+    const herbivoreId = species.herbivore;
 
     const preyKey = 'plant_' + preyId + '_pop';
-    const predKey = 'swarm_' + predId + '_pop';
+    const herbivoreKey = 'swarm_' + herbivoreId + '_pop';
     const xVals = data.series[preyKey] || data.series.flora_population || [];
-    const yVals = data.series[predKey] || data.series.predator_population || [];
+    const yVals = data.series[herbivoreKey] || data.series.herbivore_population || [];
 
     const n = Math.min(xVals.length, yVals.length);
     const points = [];
     for (let i = 0; i < n; i++) { points.push({ x: xVals[i], y: yVals[i] }); }
 
     const preyName = (data.flora_names || {})[preyId] || ('Flora ' + preyId);
-    const predName = (data.predator_names || {})[predId] || ('Predator ' + predId);
+    const herbivoreName =
+      (data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId);
 
     if (!_psChart) {
       _psChart = new Chart(ctx, {
@@ -709,7 +901,7 @@
       _key: 'end',
     }]);
     _psChart.options.scales.x.title.text = preyName + ' population';
-    _psChart.options.scales.y.title.text = predName + ' population';
+    _psChart.options.scales.y.title.text = herbivoreName + ' population';
     _psChart.update('none');
 
     _updateStabilityStatus(points);
@@ -734,13 +926,36 @@
   // Polling / update entry point
   // ---------------------------------------------------------------------------
   window.phidsTelemetryUpdate = function (data) {
-    const view = _windowData(data);
+    const isNewRun = data.run_id && data.run_id !== _runId;
+
+    if (_lastData && !isNewRun) {
+      const existingLabels = _lastData.labels || [];
+      const incomingLabels = data.labels || [];
+      if (existingLabels.length > 0 && incomingLabels.length > 0) {
+        const lastExistingTick = Number(existingLabels[existingLabels.length - 1]);
+        const incomingMaxTick = Math.max(...incomingLabels.map((tick) => Number(tick)));
+        if (
+          Number.isFinite(lastExistingTick)
+          && Number.isFinite(incomingMaxTick)
+          && incomingMaxTick < lastExistingTick
+          && _speciesSignature(_lastData) === _speciesSignature(data)
+        ) {
+          return;
+        }
+      }
+    }
+
+    const shouldReset = isNewRun || _shouldResetSeries(_lastData, data);
+    if (shouldReset) {
+      _resetTelemetryUiState();
+      _runId = data.run_id || '';
+    }
+
+    const merged = _mergeTelemetryData(shouldReset ? null : _lastData, data);
+    const view = _windowData(merged);
     const labels = view.labels || [];
     const latestTick = labels.length > 0 ? labels[labels.length - 1] : -1;
-    const speciesSignature = JSON.stringify({
-      flora: view.flora_ids || [],
-      predators: view.predator_ids || [],
-    });
+    const speciesSignature = _speciesSignature(view);
     if ((_lastTickSeen >= 0 && latestTick >= 0 && latestTick < _lastTickSeen) ||
       (_lastSpeciesSignature && speciesSignature !== _lastSpeciesSignature)) {
       _resetTelemetryUiState();
@@ -757,21 +972,58 @@
 
   // Periodic polling (every 2 s while visible)
   function _poll() {
-    fetch('/api/telemetry/chartjs-data')
+    if (_poller.inFlight) {
+      return;
+    }
+
+    _poller.inFlight = true;
+    _poller.requestSeq += 1;
+    const requestSeq = _poller.requestSeq;
+    const params = new URLSearchParams();
+    if (_lastTickSeen >= 0) {
+      params.set('since_tick', String(_lastTickSeen));
+    }
+    if (_runId) {
+      params.set('run_id', _runId);
+    }
+    const query = params.toString();
+    const url = query ? `/api/telemetry/chartjs-data?${query}` : '/api/telemetry/chartjs-data';
+
+    const abortController = new AbortController();
+    _poller.abortController = abortController;
+
+    fetch(url, { signal: abortController.signal })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d && d.labels && d.labels.length > 0) phidsTelemetryUpdate(d); })
-      .catch(() => {});
+      .then(d => {
+        if (requestSeq < _poller.latestAppliedSeq) return;
+        if (!d) return;
+        if (Array.isArray(d.labels) && d.labels.length === 0 && _lastData) return;
+        phidsTelemetryUpdate(d);
+        _poller.latestAppliedSeq = requestSeq;
+      })
+      .catch((err) => {
+        if (err && err.name === 'AbortError') return;
+        console.error('Telemetry poll failed', err);
+      })
+      .finally(() => {
+        if (requestSeq === _poller.requestSeq) {
+          _poller.inFlight = false;
+        }
+      });
   }
 
   // Start polling once DOM is ready
+  const _startPolling = function () {
+    _poll();
+    _poller.intervalId = setInterval(_poll, 2000);
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      _poll();
-      setInterval(_poll, 2000);
+      _startPolling();
     });
   } else {
-    _poll();
-    setInterval(_poll, 2000);
+    _startPolling();
   }
 })();
 </script>

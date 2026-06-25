@@ -1,3 +1,11 @@
+---
+type: reference
+title: "Module Map and Symbol Guide"
+status: active
+version: 0.1
+description: "Documentation for Module Map and Symbol Guide in the PHIDS framework."
+---
+
 # Module Map and Symbol Guide
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended
@@ -43,7 +51,7 @@ Key symbols:
 - `SimulationConfig`
 - `TriggerConditionSchema`
 - `FloraSpeciesParams`
-- `PredatorSpeciesParams`
+- `HerbivoreSpeciesParams`
 - `DietCompatibilityMatrix`
 - `SimulationStatusResponse`
 - `WindUpdatePayload`
@@ -267,7 +275,7 @@ Primary responsibility:
 Key constants:
 
 - `MAX_FLORA_SPECIES`
-- `MAX_PREDATOR_SPECIES`
+- `MAX_HERBIVORE_SPECIES`
 - `MAX_SUBSTANCE_TYPES`
 - `GRID_W_MAX`
 - `GRID_H_MAX`
@@ -373,5 +381,5 @@ Use the API reference when you need to know:
 ## Where to Read Next
 
 - For rendered symbol-level API docs: [`api.md`](api.md)
-- For contributor-facing documentation rules: [`../development/documentation-standards.md`](../development/documentation-standards.md)
-- For the repository-facing summary: [`../appendices/readme.md`](../appendices/readme.md)
+- For contributor-facing documentation rules: [`../development_guide/contribution_workflow.md`](../development_guide/contribution_workflow.md)
+- For the repository-facing summary:

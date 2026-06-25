@@ -146,6 +146,8 @@
   const CELL_DETAILS_URL = '/api/ui/cell-details';
 
   let simData = null;
+  let simPlantRows = [];
+  let simSwarmRows = [];
   let placementData = null;
   let hoveredCell = null;
   let tooltipAnchor = null;
@@ -233,8 +235,28 @@
     return Number(value).toFixed(digits);
   }
 
+  function isColumnarEntityTable(value) {
+    return !!value && !Array.isArray(value) && Array.isArray(value.x) && Array.isArray(value.y);
+  }
+
+  function asEntityRows(value, columns) {
+    if (!isColumnarEntityTable(value)) return [];
+    const count = value.x.length;
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      const row = {};
+      for (const column of columns) {
+        row[column] = Array.isArray(value[column]) ? value[column][i] : null;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
   function hasLiveSimData(data) {
-    return !!data && typeof data.tick === 'number' && Array.isArray(data.plants) && Array.isArray(data.swarms);
+    const hasPlants = isColumnarEntityTable(data?.plants);
+    const hasSwarms = isColumnarEntityTable(data?.swarms);
+    return !!data && typeof data.tick === 'number' && hasPlants && hasSwarms;
   }
 
   function currentGridData() {
@@ -285,14 +307,16 @@
   function syncCanvasLayout(gridData) {
     const nextLayout = computeCanvasLayout(gridData);
     const dpr = window.devicePixelRatio || 1;
+    const targetWidth = nextLayout.drawWidth * dpr;
+    const targetHeight = nextLayout.drawHeight * dpr;
     if (
-      canvasLayout.drawWidth !== nextLayout.drawWidth
-      || canvasLayout.drawHeight !== nextLayout.drawHeight
+      canvas.width !== targetWidth
+      || canvas.height !== targetHeight
       || canvasLayout.gW !== nextLayout.gW
       || canvasLayout.gH !== nextLayout.gH
     ) {
-      canvas.width = nextLayout.drawWidth * dpr;
-      canvas.height = nextLayout.drawHeight * dpr;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
       canvas.style.width = `${nextLayout.drawWidth}px`;
       canvas.style.height = `${nextLayout.drawHeight}px`;
     }
@@ -508,14 +532,16 @@
     if (!simData) return null;
     const x = cell.x;
     const y = cell.y;
-    const plantsAtCell = (simData.plants || []).filter(plant => plant.x === x && plant.y === y);
+    const plantRows = simPlantRows;
+    const swarmRows = simSwarmRows;
+    const plantsAtCell = plantRows.filter(plant => plant.x === x && plant.y === y);
     const touchingLinks = linksTouchingCell(simData.mycorrhizal_links || [], x, y);
     const plants = plantsAtCell.map(plant => {
       const neighbourLinks = linksTouchingCell(simData.mycorrhizal_links || [], plant.x, plant.y);
       const mycorrhizalNeighbours = neighbourLinks.map(link => {
         const otherX = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.x2) : Number(link.x1);
         const otherY = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.y2) : Number(link.y1);
-        const neighbourPlant = (simData.plants || []).find(other => other.x === otherX && other.y === otherY);
+        const neighbourPlant = plantRows.find(other => other.x === otherX && other.y === otherY);
         return {
           name: neighbourPlant?.name || `Plant @ (${otherX}, ${otherY})`,
           x: otherX,
@@ -589,7 +615,7 @@
         })),
       },
       plants,
-      swarms: (simData.swarms || [])
+      swarms: swarmRows
         .filter(swarm => swarm.x === x && swarm.y === y)
         .map(swarm => ({
           ...swarm,
@@ -683,6 +709,8 @@
   function drawSim(data) {
     const { gW, gH, cellW, cellH } = syncCanvasLayout(data);
     clearCanvas();
+    const plantRows = simPlantRows;
+    const swarmRows = simSwarmRows;
 
     const maxE = data.max_energy || 1;
     if (data.species_energy && data.species_energy.length > 0) {
@@ -722,27 +750,27 @@
     drawMycorrhizalLinks(data.mycorrhizal_links || []);
     drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
     drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
-    drawPlantActivity(data.plants || []);
+    drawPlantActivity(plantRows);
     drawGridLines();
 
-    drawSwarmMarkers(data.swarms || []);
+    drawSwarmMarkers(swarmRows);
 
     const floraLegend = (data.all_flora_species || data.species_energy || []).map(species => ({
       name: species.extinct ? `${species.name} (†)` : species.name,
       color: species.extinct ? '#94a3b8' : FLORA_COLORS[species.species_id % FLORA_COLORS.length],
     }));
-    const swarmLegend = (data.swarms || []).map(swarm => ({
-      name: swarm.name || `Predator ${swarm.species_id}`,
+    const swarmLegend = swarmRows.map(swarm => ({
+      name: swarm.name || `Herbivore ${swarm.species_id}`,
       color: SWARM_COLORS[swarm.species_id % SWARM_COLORS.length],
     }));
     const extras = [];
     if ((data.max_signal || 0) > 0) extras.push({ name: 'Signal cloud', color: SIGNAL_COLOR });
     if ((data.max_toxin || 0) > 0) extras.push({ name: 'Toxin cloud', color: TOXIN_COLOR });
     if ((data.mycorrhizal_links || []).length > 0) extras.push({ name: 'Root link', color: '#60a5fa' });
-    if ((data.plants || []).some(plant => (plant.active_signal_ids || []).length > 0)) {
+    if (plantRows.some(plant => (plant.active_signal_ids || []).length > 0)) {
       extras.push({ name: 'Signal emitter', color: SIGNAL_COLOR });
     }
-    if ((data.plants || []).some(plant => (plant.active_toxin_ids || []).length > 0)) {
+    if (plantRows.some(plant => (plant.active_toxin_ids || []).length > 0)) {
       extras.push({ name: 'Toxin emitter', color: TOXIN_COLOR });
     }
     updateLegend(floraLegend, swarmLegend, extras);
@@ -784,9 +812,9 @@
         name: flora.name,
         color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
       })),
-      (preview.predator_species || []).map(predator => ({
-        name: predator.name,
-        color: SWARM_COLORS[predator.species_id % SWARM_COLORS.length],
+      (preview.herbivore_species || []).map(herbivore => ({
+        name: herbivore.name,
+        color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
       }))
     );
     if ((preview.mycorrhizal_links || []).length > 0) {
@@ -795,9 +823,9 @@
           name: flora.name,
           color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
         })),
-        (preview.predator_species || []).map(predator => ({
-          name: predator.name,
-          color: SWARM_COLORS[predator.species_id % SWARM_COLORS.length],
+        (preview.herbivore_species || []).map(herbivore => ({
+          name: herbivore.name,
+          color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
         })),
         [{ name: 'Potential root link', color: '#60a5fa' }]
       );
@@ -926,7 +954,7 @@
       <ul class="mt-1 space-y-1">
         ${rules.map(rule => `
           <li class="rounded bg-slate-900/60 px-2 py-1">
-            <div>${escapeHtml(rule.substance_name)} ← ${escapeHtml(rule.predator_name)} ≥ ${escapeHtml(rule.min_predator_population)}</div>
+            <div>${escapeHtml(rule.substance_name)} ← ${escapeHtml(rule.herbivore_name)} ≥ ${escapeHtml(rule.min_herbivore_population)}</div>
             <div class="text-[10px] text-slate-400 mt-1">gate ${escapeHtml(rule.activation_condition_summary || 'unconditional')}</div>
           </li>`).join('')}
       </ul>`;
@@ -1157,6 +1185,30 @@
       }
       if (!data) return;
       simData = data;
+      simPlantRows = asEntityRows(data.plants || [], [
+        'entity_id',
+        'species_id',
+        'name',
+        'x',
+        'y',
+        'energy',
+        'root_link_count',
+        'active_signal_ids',
+        'active_toxin_ids',
+      ]);
+      simSwarmRows = asEntityRows(data.swarms || [], [
+        'x',
+        'y',
+        'population',
+        'species_id',
+        'name',
+        'energy',
+        'energy_deficit',
+        'repelled',
+        'repelled_ticks_remaining',
+        'toxin_level',
+        'intoxicated',
+      ]);
       tooltipCache.clear();
       stopPreviewPolling();
       const tickCounter = document.getElementById('tick-counter');
@@ -1179,6 +1231,8 @@
     ws.onclose = function () {
       if (!isActiveCanvas()) return;
       simData = null;
+      simPlantRows = [];
+      simSwarmRows = [];
       startPreviewPolling();
       wsRetryDelay = Math.min(wsRetryDelay * 1.5, 8000);
       frontendDiagnosticsUpdate({
