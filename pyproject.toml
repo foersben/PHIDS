@@ -46,7 +46,11 @@ dev = [
     "mkdocs-htmlproofer-plugin>=1.5.0",
     "pyyaml>=6.0.2",
     "types-PyYAML>=6.0.12.20240806",
+    "taskipy>=1.14.1",
 ]
+
+[tool.taskipy.tasks]
+setup = "python scripts/bootstrap.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/phids"]

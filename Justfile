@@ -4,6 +4,7 @@ default:
 setup:
     uv sync --all-groups
     uv run pre-commit install
+    uv run task setup
     @just install-extensions
 
 install:
@@ -27,11 +28,14 @@ check:
 act-ci:
     act -j quality-gate --secret-file .github/workflows/secrets.env
 
+# Simulate a workflow_dispatch for docker-publish locally (skips actual push — see docker-publish.yml)
 act-docker:
     act workflow_dispatch -j build-and-push --secret-file .github/workflows/secrets.env
 
+# Simulate a tag push event locally using an event payload JSON
+# act does not support --tag; use --eventpath with a push event payload instead
 act-release:
-    act push --tag v0.1.0 -j build-binaries --matrix os:ubuntu-latest --secret-file .github/workflows/secrets.env
+    act push --eventpath .github/act-events/push-tag.json -j build-binaries --matrix os:ubuntu-latest --secret-file .github/workflows/secrets.env
 
 format:
     uv run ruff format .
@@ -66,5 +70,5 @@ serve:
 
 install-extensions:
     @jq -r '.recommendations[]' .vscode/extensions.json | while read -r ext; do \
-        code --install-extension "$$ext"; \
+        code --install-extension "$ext"; \
     done

@@ -28,16 +28,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
@@ -58,7 +58,7 @@ jobs:
         run: .\dist\phids\phids.exe --help
 
       - name: Smoke-test HTTP endpoint (POSIX)
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && !env.ACT
         shell: bash
         run: |
           ./dist/phids/phids --host 127.0.0.1 --port 8001 > phids.log 2>&1 &
@@ -71,7 +71,7 @@ jobs:
           curl --fail --silent http://127.0.0.1:8001/ > /dev/null
 
       - name: Smoke-test HTTP endpoint (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && !env.ACT
         shell: pwsh
         run: |
           $process = Start-Process -FilePath ".\dist\phids\phids.exe" -ArgumentList @("--host", "127.0.0.1", "--port", "8001") -PassThru
@@ -128,7 +128,7 @@ jobs:
           merge-multiple: true
 
       - name: Attach archives to GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: release-assets/*
           generate_release_notes: true
