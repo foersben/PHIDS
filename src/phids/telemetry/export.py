@@ -924,19 +924,21 @@ def _tikz_phasespace(
             f"Herbivore {herbivore_species_id}",
         )
 
-    def get_x(r):
-        return (
+    def get_x(r: dict[str, object]) -> float:
+        val = (
             r.get("flora_population", 0)
             if prey_species_id == 0
-            else r.get("plant_pop_by_species", {}).get(prey_species_id, 0)
+            else getattr(r.get("plant_pop_by_species", {}), "get", lambda *_: 0)(prey_species_id, 0)
         )
+        return float(val) if isinstance(val, (int, float, str)) else 0.0
 
-    def get_y(r):
-        return (
+    def get_y(r: dict[str, object]) -> float:
+        val = (
             r.get("herbivore_population", 0)
             if herbivore_species_id == 0
-            else r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0)
+            else getattr(r.get("swarm_pop_by_species", {}), "get", lambda *_: 0)(herbivore_species_id, 0)
         )
+        return float(val) if isinstance(val, (int, float, str)) else 0.0
 
     coords = " ".join(f"({get_x(r)},{get_y(r)})" for r in rows)
 
