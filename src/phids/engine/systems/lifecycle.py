@@ -302,7 +302,7 @@ def run_lifecycle(
     """
     dead: list[int] = []
 
-    for entity in list(world.query(PlantComponent)):
+    for entity in world.query(PlantComponent):
         plant: PlantComponent = entity.get_component(PlantComponent)
         plant.last_energy_loss_cause = None
 

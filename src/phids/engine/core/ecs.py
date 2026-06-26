@@ -16,10 +16,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, TypeVar, cast
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
+from typing import TypeVar, cast
 
 C = TypeVar("C")
 
@@ -187,43 +184,46 @@ class ECSWorld:
         entity.remove_component(component_type)
         self._component_index[component_type].discard(entity_id)
 
-    def query(self, *component_types: type[object]) -> Iterator[Entity]:
-        """Yield all entities that possess all listed component types.
+    def query(self, *component_types: type[object]) -> list[Entity]:
+        """Return a list of all entities that possess all listed component types.
 
         Args:
             *component_types: Component classes/types to require.
 
-        Yields:
-            Entity: Entities matching the component set.
+        Returns:
+            list[Entity]: Materialized list of entities matching the component set.
         """
         if not component_types:
-            yield from self._entities.values()
-            return
+            return list(self._entities.values())
+
+        entities = self._entities
 
         # Fast path for single component query (highly common in hot loop)
         if len(component_types) == 1:
             ct = component_types[0]
-            # Copy the set to allow mutation during iteration
-            for eid in list(self._component_index.get(ct, set())):
-                entity = self._entities.get(eid)
-                if entity is not None and ct in entity._components:
-                    yield entity
-            return
+            # List comprehension with fast local variable lookups
+            # The set copy is not strictly needed for thread-safety but we iterate
+            # over the set elements safely.
+            return [
+                entities[eid]
+                for eid in self._component_index.get(ct, set())
+                if eid in entities and ct in entities[eid]._components
+            ]
 
         # Start from the smallest set for efficiency
         sets: list[set[int]] = []
         for component_type in component_types:
             indexed_ids = self._component_index.get(component_type)
-            if indexed_ids is None:
-                return
+            if not indexed_ids:
+                return []
             sets.append(indexed_ids)
+
         smallest = min(sets, key=len)
-        for eid in list(smallest):
-            entity = self._entities.get(eid)
-            if entity is None:
-                continue
-            if all(entity.has_component(ct) for ct in component_types):
-                yield entity
+        return [
+            entities[eid]
+            for eid in smallest
+            if eid in entities and all(ct in entities[eid]._components for ct in component_types)
+        ]
 
     # ------------------------------------------------------------------
     # Spatial Hash

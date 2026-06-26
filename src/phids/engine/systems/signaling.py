@@ -227,7 +227,7 @@ def _apply_toxin_to_swarms(
     """
     dead_swarms: list[int] = []
 
-    for entity in list(world.query(SwarmComponent)):
+    for entity in world.query(SwarmComponent):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
         toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
         if toxin_val <= 0.0:
@@ -342,7 +342,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 0. Garbage-collect orphaned substances before any trigger checks
     # ------------------------------------------------------------------
-    substance_entities = list(world.query(SubstanceComponent))
+    substance_entities = world.query(SubstanceComponent)
     for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if not world.has_entity(sub.owner_plant_id):
@@ -350,7 +350,7 @@ def run_signaling(
 
     world.collect_garbage(dead_substances)
     dead_substances.clear()
-    substance_entities = list(world.query(SubstanceComponent))
+    substance_entities = world.query(SubstanceComponent)
 
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent] = {}
     active_substance_ids_by_owner: dict[int, set[int]] = {}
@@ -376,7 +376,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 1. Evaluate trigger conditions for all plants
     # ------------------------------------------------------------------
-    for entity in list(world.query(PlantComponent)):
+    for entity in world.query(PlantComponent):
         plant: PlantComponent = entity.get_component(PlantComponent)
         triggers = trigger_conditions.get(plant.species_id, [])
 
@@ -451,7 +451,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 2. Advance synthesis timers & activate substances
     # ------------------------------------------------------------------
-    for entity in list(world.query(SubstanceComponent)):
+    for entity in world.query(SubstanceComponent):
         sub = entity.get_component(SubstanceComponent)
         if sub.active:
             continue
@@ -481,7 +481,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 2b. Irreversible induced defense lock
     # ------------------------------------------------------------------
-    for entity in list(world.query(SubstanceComponent)):
+    for entity in world.query(SubstanceComponent):
         sub = entity.get_component(SubstanceComponent)
         if sub.active and sub.irreversible:
             sub.triggered_this_tick = True
@@ -491,7 +491,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     active_toxin_props: dict[int, _ActiveToxinProps] = {}
 
-    for entity in list(world.query(SubstanceComponent)):
+    for entity in world.query(SubstanceComponent):
         sub = entity.get_component(SubstanceComponent)
         if not sub.active:
             continue
@@ -604,7 +604,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 4. Check aftereffects and deactivate expired substances
     # ------------------------------------------------------------------
-    for entity in list(world.query(SubstanceComponent)):
+    for entity in world.query(SubstanceComponent):
         sub = entity.get_component(SubstanceComponent)
         if not sub.active:
             continue
