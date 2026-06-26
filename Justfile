@@ -45,10 +45,16 @@ clean:
     rm -rf .cache site build dist .pytest_cache .mypy_cache .ruff_cache .hypothesis .coverage
     rm -rf .hypothesis .coverage
     @just clean-act
+    @just docker-clean
 
 clean-act:
     @docker container prune --force --filter "label=actor=act" 2>/dev/null || true
     @docker network prune --force --filter "label=actor=act" 2>/dev/null || true
+
+docker-clean:
+    @docker rm -f phids-local 2>/dev/null || true
+    @docker rmi -f phids:test phids:local 2>/dev/null || true
+    @docker image prune -f
 
 docs:
     uv run zensical build

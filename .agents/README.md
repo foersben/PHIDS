@@ -89,9 +89,11 @@ Agents operate within an ironclad set of core invariants located in `.agents/rul
 To prevent recursive loops or fragmented development, agents pass tasks via established workflows located in `.agents/workflows/`.
 
 ### The Vertical Slice Development Workflow
+
 This pipeline ensures a new ecological feature is implemented securely across the entire stack. A concept moves from the Scientific Architect's models directly into the Engine Developer's JIT loops, gets wired to Telemetry, exposed via the API Developer's UI, and strictly verified by QA—simultaneously.
 
 ### The Delegation Protocol
+
 When an agent encounters a structurally blocked task (e.g., an interactive MFA prompt, or a missing GPG key), they use the **Delegation Protocol**. Instead of guessing or failing silently, the agent outputs a highly structured markdown checklist of the exact context, instructions, and resumption signals for the human operator to complete the manual gate.
 
 ```mermaid
@@ -129,6 +131,7 @@ Our repository does not rely on agent promises; it relies on automated enforceme
 * **Validate OKF (`validate-okf`):** A critical gate enforcing our implementation of the Open Knowledge Format (OKF v0.1).
 
 ### The OKF Validation Pipeline
+
 The `validate_okf.py` script inspects all documentation files to guarantee they possess correct YAML frontmatter and that they do not contain dangling or escaping markdown links.
 
 ```mermaid
@@ -147,6 +150,7 @@ graph LR
 ```
 
 ### 🔗 Link Validation Reference Examples
+
 To ensure your documentation passes the `validate_okf.py` build gates, strictly format your links according to these rules:
 
 ```markdown
@@ -169,9 +173,13 @@ To ensure your documentation passes the `validate_okf.py` build gates, strictly 
 Multi-agent conversations are ephemeral. To maintain long-term coherence across sessions, agents persist their context using tightly controlled markdown files inside `.agents/memory/`.
 
 ### The Architecture State Map
+
 The `architecture_state_map.md` acts as our global lockfile. Before initiating major refactors, the Orchestrator checks this file to avoid clashing with ongoing migrations. **Protocol:** Agents must update this map when opening or closing major architectural tasks.
+
 * *Example Context:* Currently tracking the active migration to Python 3.13 and the switch to `uv` for dependency management.
 
 ### Agent Performance Journals
+
 Individual agents maintain their own hyper-focused journals (e.g., `bolt.md` for engine performance, `palette.md` for UI/UX lessons).
+
 * **Protocol:** These files are **not routine activity logs**. They are reserved exclusively for logging high-value architectural lessons structured as `Learning:` and `Action:` pairs. This prevents the logs from bloating while preserving crucial micro-lessons (like ECS query optimizations) for future reference.
