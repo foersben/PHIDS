@@ -71,6 +71,14 @@ Home = "index.md"
 ]
 
 [[project.nav]]
+"Testing Architecture" = [
+    { "Test Taxonomy" = "tests/test_taxonomy.md" },
+    { "System Mapping" = "tests/system_mapping.md" },
+    { "Quality Analysis" = "tests/quality_analysis.md" },
+    { "Gaps & Recommendations" = "tests/gaps_and_recommendations.md" },
+]
+
+[[project.nav]]
 Scenarios = [
     { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
     { "Curated Examples" = "scenario_guide/curated_examples.md" },
