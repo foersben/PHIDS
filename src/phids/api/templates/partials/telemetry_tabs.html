@@ -651,8 +651,21 @@
       maintainAspectRatio: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-        y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: yTitle, font: { size: 10 } } },
+        x: {
+          suggestedMin: 0,
+          suggestedMax: {{ max_x | default(100) }},
+          grace: '15%',
+          ticks: { maxTicksLimit: 8, font: { size: 10 } },
+          grid: { color: '#f1f5f9' }
+        },
+        y: {
+          suggestedMin: 0,
+          suggestedMax: {{ max_y | default(100) }},
+          grace: '15%',
+          ticks: { font: { size: 10 } },
+          grid: { color: '#f1f5f9' },
+          title: { display: true, text: yTitle, font: { size: 10 } }
+        },
       },
     };
   }
@@ -778,7 +791,7 @@
     if (!_defenseChart) {
       const opts = _baseLineChartOptions('Defense economy ratio');
       opts.plugins = { legend: { labels: { font: { size: 10 } } } };
-      opts.scales.y.min = 0;
+      opts.scales.y.suggestedMin = 0;
       _defenseChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: [] },
@@ -821,7 +834,7 @@
       opts.plugins = { legend: { labels: { font: { size: 10 } } } };
       opts.scales.x.stacked = true;
       opts.scales.y.stacked = true;
-      opts.scales.y.min = 0;
+      opts.scales.y.suggestedMin = 0;
       _biomassChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: [] },
@@ -927,8 +940,20 @@
           maintainAspectRatio: true,
           plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } },
           scales: {
-            x: { title: { display: true, text: '', font: { size: 10 } }, ticks: { font: { size: 10 } } },
-            y: { title: { display: true, text: '', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+            x: {
+              suggestedMin: 0,
+              suggestedMax: {{ max_x | default(100) }},
+              grace: '15%',
+              title: { display: true, text: '', font: { size: 10 } },
+              ticks: { font: { size: 10 } }
+            },
+            y: {
+              suggestedMin: 0,
+              suggestedMax: {{ max_y | default(100) }},
+              grace: '15%',
+              title: { display: true, text: '', font: { size: 10 } },
+              ticks: { font: { size: 10 } }
+            },
           },
         },
       });

@@ -17,7 +17,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.ui_state import get_draft
+from phids.api.ui_state import DraftState, get_draft
 from phids.shared.logging_config import get_recent_logs
 
 router = APIRouter()
@@ -104,13 +104,17 @@ async def root(request: Request) -> Response:
         TemplateResponse: Rendered `index.html` page shell seeded with the current draft scenario
         name.
     """
-    draft = get_draft()
+    draft: DraftState = get_draft()
+    max_x: int = api_main._sim_loop.env.width if api_main._sim_loop is not None else draft.grid_width
+    max_y: int = api_main._sim_loop.env.height if api_main._sim_loop is not None else draft.grid_height
     return api_main.templates.TemplateResponse(
         request,
         "index.html",
         {
             "scenario_name": draft.scenario_name,
             "default_tick_rate_hz": draft.tick_rate_hz,
+            "max_x": max_x,
+            "max_y": max_y,
         },
     )
 
@@ -125,7 +129,17 @@ async def ui_dashboard(request: Request) -> Response:
     Returns:
         TemplateResponse: Rendered `partials/dashboard.html` fragment.
     """
-    return api_main.templates.TemplateResponse(request, "partials/dashboard.html")
+    draft: DraftState = get_draft()
+    max_x: int = api_main._sim_loop.env.width if api_main._sim_loop is not None else draft.grid_width
+    max_y: int = api_main._sim_loop.env.height if api_main._sim_loop is not None else draft.grid_height
+    return api_main.templates.TemplateResponse(
+        request,
+        "partials/dashboard.html",
+        {
+            "max_x": max_x,
+            "max_y": max_y,
+        },
+    )
 
 
 @router.get("/ui/biotope", response_class=HTMLResponse, summary="Biotope config partial")
