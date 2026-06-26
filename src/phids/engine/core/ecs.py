@@ -187,15 +187,6 @@ class ECSWorld:
         if not component_types:
             yield from self._entities.values()
             return
-
-        # Fast path for single component queries
-        if len(component_types) == 1:
-            for eid in list(self._component_index.get(component_types[0], set())):
-                entity = self._entities.get(eid)
-                if entity is not None:
-                    yield entity
-            return
-
         # Start from the smallest set for efficiency
         sets = [self._component_index.get(ct, set()) for ct in component_types]
         smallest = min(sets, key=len)

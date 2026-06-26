@@ -43,6 +43,7 @@ def _compute_flow_field_impl(
     decay = 0.6
     max_iterations = width + height
     for _ in range(max_iterations):
+        max_diff = 0.0
         for x in range(width):
             for y in range(height):
                 neighbours_sum = 0.0
@@ -61,9 +62,17 @@ def _compute_flow_field_impl(
                     neighbour_count += 1
 
                 propagated = neighbours_sum / neighbour_count if neighbour_count > 0 else 0.0
-                nxt[x, y] = base[x, y] + (decay * propagated)
+                val = base[x, y] + (decay * propagated)
+                nxt[x, y] = val
+
+                diff = abs(val - current[x, y])
+                if diff > max_diff:
+                    max_diff = diff
 
         current, nxt = nxt, current
+
+        if max_diff < 1e-4:
+            break
 
     for x in range(width):
         for y in range(height):
