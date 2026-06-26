@@ -1,6 +1,6 @@
 minimum_pre_commit_version: "3.7.0"
 default_language_version:
-  python: python3
+  python: python3.13
 default_stages: [pre-commit]
 exclude: ^(site/|docs/legacy/|__pycache__/)
 
