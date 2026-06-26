@@ -60,9 +60,10 @@ TILE_CARRYING_CAPACITY = 500
 
 
 def _accumulate_tile_population(
-    tile_populations: dict[tuple[int, int], int],
+    tile_populations: list[int],
     x: int,
     y: int,
+    width: int,
     delta: int,
 ) -> None:
     """Apply a signed population delta to one tile-population cache entry.
@@ -70,25 +71,21 @@ def _accumulate_tile_population(
     This function maintains a lightweight, tick-local census of aggregate swarm populations per
     grid cell. The cache is used as an O(1) crowding-pressure oracle: rather than re-querying the
     spatial hash and summing component populations on every crowding check, each movement and
-    reproduction event issues a corrective delta to keep the cache consistent. Zero and negative
-    population tiles are evicted immediately to avoid unbounded memory growth across a simulation
-    run with many birth-death cycles. The function is intentionally side-effecting and operates
-    in-place on the shared ``tile_populations`` mapping passed by the outer interaction loop.
+    reproduction event issues a corrective delta to keep the cache consistent. The function is
+    intentionally side-effecting and operates in-place on the shared ``tile_populations`` flat
+    list passed by the outer interaction loop, which pre-allocates WxH capacity for cache locality.
 
     Args:
-        tile_populations: Mutable tick-local mapping of grid coordinates to total individual
-            counts, shared across all swarm iterations within a single ``run_interaction`` call.
+        tile_populations: Mutable flat list mapping (y * w + x) to total individual counts,
+            shared across all swarm iterations within a single ``run_interaction`` call.
         x: Grid column index of the cell to update.
         y: Grid row index of the cell to update.
+        width: Grid width to compute the flat index.
         delta: Signed integer change in population count; positive for births or arrivals,
             negative for deaths or departures.
     """
-    pos = (x, y)
-    next_population = tile_populations.get(pos, 0) + delta
-    if next_population > 0:
-        tile_populations[pos] = next_population
-    else:
-        tile_populations.pop(pos, None)
+    if 0 <= x < width and 0 <= y < (len(tile_populations) // width):
+        tile_populations[y * width + x] += delta
 
 
 @njit(cache=True)  # type: ignore[untyped-decorator]
@@ -476,17 +473,24 @@ def run_interaction(
             the key ``"death_herbivore_feeding"``.
     """
     dead_swarms: list[int] = []
-    tile_populations: dict[tuple[int, int], int] = {}
-    for entity in world.query(SwarmComponent):
+    tile_populations: list[int] = [0] * (env.width * env.height)
+    for eid in tuple(world._component_index.get(SwarmComponent, set())):
+        entity = world._entities.get(eid)
+        if entity is None or SwarmComponent not in entity._components:
+            continue
         indexed_swarm = entity.get_component(SwarmComponent)
         _accumulate_tile_population(
             tile_populations,
             indexed_swarm.x,
             indexed_swarm.y,
+            env.width,
             indexed_swarm.population,
         )
 
-    for entity in list(world.query(SwarmComponent)):
+    for eid in tuple(world._component_index.get(SwarmComponent, set())):
+        entity = world._entities.get(eid)
+        if entity is None or SwarmComponent not in entity._components:
+            continue
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
         has_moved = False
 
@@ -502,7 +506,12 @@ def run_interaction(
             old_x, old_y = swarm.x, swarm.y
 
             # 1. Crowding takes strict precedence (Physical Jostling)
-            if not swarm.repelled and tile_populations.get((swarm.x, swarm.y), 0) > TILE_CARRYING_CAPACITY:
+            if (
+                not swarm.repelled
+                and 0 <= swarm.x < env.width
+                and 0 <= swarm.y < env.height
+                and tile_populations[swarm.y * env.width + swarm.x] > TILE_CARRYING_CAPACITY
+            ):
                 swarm.repelled = True
                 swarm.repelled_ticks_remaining = 1
 
@@ -544,8 +553,8 @@ def run_interaction(
 
             if (nx, ny) != (old_x, old_y):
                 world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
-                _accumulate_tile_population(tile_populations, old_x, old_y, -swarm.population)
-                _accumulate_tile_population(tile_populations, nx, ny, swarm.population)
+                _accumulate_tile_population(tile_populations, old_x, old_y, env.width, -swarm.population)
+                _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
                 swarm.x, swarm.y = nx, ny
                 swarm.last_dx = nx - old_x
                 swarm.last_dy = ny - old_y
@@ -633,6 +642,7 @@ def run_interaction(
                 tile_populations,
                 swarm.x,
                 swarm.y,
+                env.width,
                 swarm.population - previous_population,
             )
             total_casualty_energy = casualties * swarm.energy_min
@@ -666,6 +676,7 @@ def run_interaction(
                     tile_populations,
                     swarm.x,
                     swarm.y,
+                    env.width,
                     swarm.population - previous_population,
                 )
                 swarm.energy -= new_individuals * cost_per_offspring
@@ -683,12 +694,14 @@ def run_interaction(
                 tile_populations,
                 swarm.x,
                 swarm.y,
+                env.width,
                 swarm.population - pre_split_population,
             )
             _accumulate_tile_population(
                 tile_populations,
                 offspring.x,
                 offspring.y,
+                env.width,
                 offspring.population,
             )
 
