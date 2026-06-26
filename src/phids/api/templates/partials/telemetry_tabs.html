@@ -303,12 +303,12 @@
     const floraIds = data.flora_ids || [];
     const herbivoreIds = data.herbivore_ids || [];
 
-    const prey = preyEl && floraIds.includes(parseInt(preyEl.value, 10))
-      ? parseInt(preyEl.value, 10)
-      : (floraIds.length > 0 ? floraIds[0] : 0);
-    const herbivore = herbivoreEl && herbivoreIds.includes(parseInt(herbivoreEl.value, 10))
-      ? parseInt(herbivoreEl.value, 10)
-      : (herbivoreIds.length > 0 ? herbivoreIds[0] : 0);
+    const preyVal = preyEl ? preyEl.value : null;
+    const herbivoreVal = herbivoreEl ? herbivoreEl.value : null;
+
+    const prey = preyVal === 'aggregate' ? 'aggregate' : (floraIds.includes(parseInt(preyVal, 10)) ? parseInt(preyVal, 10) : (floraIds.length > 0 ? floraIds[0] : 0));
+    const herbivore = herbivoreVal === 'aggregate' ? 'aggregate' : (herbivoreIds.includes(parseInt(herbivoreVal, 10)) ? parseInt(herbivoreVal, 10) : (herbivoreIds.length > 0 ? herbivoreIds[0] : 0));
+
     return { prey, herbivore };
   }
 
@@ -348,8 +348,8 @@
       tick_interval: tickInterval,
     });
     const psParams = _encodeParams({
-      prey_species_id: species.prey,
-      herbivore_species_id: species.herbivore,
+      prey_species_id: species.prey === 'aggregate' ? 0 : species.prey,
+      herbivore_species_id: species.herbivore === 'aggregate' ? 0 : species.herbivore,
       flora_ids: sel.floraIds,
       herbivore_ids: sel.herbivoreIds,
       title: psTitle,
@@ -464,20 +464,63 @@
     };
   }
 
+  const MAX_TELEMETRY_TICKS = 10000;
+
   function _mergeTelemetryData(existing, incoming) {
     if (!existing) return incoming;
 
-    const existingLabels = (existing.labels || []).map((tick) => Number(tick));
-    const incomingLabels = (incoming.labels || []).map((tick) => Number(tick));
+    const incomingLabels = incoming.labels || [];
+    if (incomingLabels.length === 0) return existing;
 
+    const existingLabels = existing.labels || [];
+    const lastExistingTick = existingLabels.length > 0 ? Number(existingLabels[existingLabels.length - 1]) : -1;
+    const firstIncomingTick = Number(incomingLabels[0]);
+
+    if (firstIncomingTick > lastExistingTick) {
+      // Fast path: incoming data is strictly contiguous/newer
+      existing.labels.push(...incomingLabels);
+      if (existing.labels.length > MAX_TELEMETRY_TICKS) {
+        existing.labels.splice(0, existing.labels.length - MAX_TELEMETRY_TICKS);
+      }
+
+      const allSeriesKeys = new Set([
+        ...Object.keys(existing.series || {}),
+        ...Object.keys(incoming.series || {}),
+      ]);
+
+      allSeriesKeys.forEach((key) => {
+        if (!existing.series[key]) {
+           // Pad existing with zeros if it's a new series
+           existing.series[key] = new Array(existingLabels.length - incomingLabels.length).fill(0);
+        }
+        const incomingValues = incoming.series[key] || new Array(incomingLabels.length).fill(0);
+        existing.series[key].push(...incomingValues);
+
+        if (existing.series[key].length > MAX_TELEMETRY_TICKS) {
+           existing.series[key].splice(0, existing.series[key].length - MAX_TELEMETRY_TICKS);
+        }
+      });
+
+      existing.flora_ids = Array.from(new Set([...(existing.flora_ids || []), ...(incoming.flora_ids || [])]));
+      existing.herbivore_ids = Array.from(new Set([...(existing.herbivore_ids || []), ...(incoming.herbivore_ids || [])]));
+      existing.flora_names = { ...(existing.flora_names || {}), ...(incoming.flora_names || {}) };
+      existing.herbivore_names = { ...(existing.herbivore_names || {}), ...(incoming.herbivore_names || {}) };
+      existing.run_id = incoming.run_id || existing.run_id;
+
+      return existing;
+    }
+
+    // Slow path: overlapping or out-of-order data (fallback to rebuilding)
     const labelToIndex = new Map();
     const labels = [];
     existingLabels.forEach((tick) => {
+      tick = Number(tick);
       if (!Number.isFinite(tick) || labelToIndex.has(tick)) return;
       labelToIndex.set(tick, labels.length);
       labels.push(tick);
     });
     incomingLabels.forEach((tick) => {
+      tick = Number(tick);
       if (!Number.isFinite(tick) || labelToIndex.has(tick)) return;
       labelToIndex.set(tick, labels.length);
       labels.push(tick);
@@ -511,15 +554,21 @@
     fillSeries(existing);
     fillSeries(incoming);
 
+    // Apply limit to slow path
+    if (labels.length > MAX_TELEMETRY_TICKS) {
+      const start = labels.length - MAX_TELEMETRY_TICKS;
+      labels.splice(0, start);
+      allSeriesKeys.forEach(key => series[key].splice(0, start));
+    }
+
     return {
       labels,
       series,
       flora_ids: Array.from(new Set([...(existing.flora_ids || []), ...(incoming.flora_ids || [])])),
-      herbivore_ids: Array.from(
-        new Set([...(existing.herbivore_ids || []), ...(incoming.herbivore_ids || [])]),
-      ),
+      herbivore_ids: Array.from(new Set([...(existing.herbivore_ids || []), ...(incoming.herbivore_ids || [])])),
       flora_names: { ...(existing.flora_names || {}), ...(incoming.flora_names || {}) },
       herbivore_names: { ...(existing.herbivore_names || {}), ...(incoming.herbivore_names || {}) },
+      run_id: incoming.run_id || existing.run_id,
     };
   }
 
@@ -609,6 +658,7 @@
   }
 
   function _buildTsChart(data) {
+    data = _windowData(data);
     const ctx = document.getElementById('ts-chart');
     if (!ctx) return;
 
@@ -697,6 +747,7 @@
   }
 
   function _buildDefenseChart(data) {
+    data = _windowData(data);
     const ctx = document.getElementById('defense-chart');
     if (!ctx) return;
     const labels = data.labels || [];
@@ -744,6 +795,7 @@
   }
 
   function _buildBiomassChart(data) {
+    data = _windowData(data);
     const ctx = document.getElementById('biomass-chart');
     if (!ctx) return;
     const labels = data.labels || [];
@@ -825,15 +877,19 @@
     const prevPrey = preyEl.value;
     const prevHerbivore = herbivoreEl.value;
 
-    preyEl.innerHTML = (data.flora_ids || []).map(fid => {
+    let preyHtml = `<option value="aggregate" ${prevPrey === 'aggregate' ? 'selected' : ''}>Flora (Aggregate)</option>`;
+    preyHtml += (data.flora_ids || []).map(fid => {
       const name = (data.flora_names || {})[fid] || ('Flora ' + fid);
       return `<option value="${fid}" ${String(fid) === prevPrey ? 'selected' : ''}>${name}</option>`;
     }).join('');
+    preyEl.innerHTML = preyHtml;
 
-    herbivoreEl.innerHTML = (data.herbivore_ids || []).map(pid => {
+    let herbivoreHtml = `<option value="aggregate" ${prevHerbivore === 'aggregate' ? 'selected' : ''}>Herbivores (Aggregate)</option>`;
+    herbivoreHtml += (data.herbivore_ids || []).map(pid => {
       const name = (data.herbivore_names || {})[pid] || ('Herbivore ' + pid);
       return `<option value="${pid}" ${String(pid) === prevHerbivore ? 'selected' : ''}>${name}</option>`;
     }).join('');
+    herbivoreEl.innerHTML = herbivoreHtml;
   }
 
   function _buildPsChart(data) {
@@ -850,24 +906,22 @@
     const preyId = species.prey;
     const herbivoreId = species.herbivore;
 
-    const preyKey = 'plant_' + preyId + '_pop';
-    const herbivoreKey = 'swarm_' + herbivoreId + '_pop';
-    const xVals = data.series[preyKey] || data.series.flora_population || [];
-    const yVals = data.series[herbivoreKey] || data.series.herbivore_population || [];
+    const xVals = preyId === 'aggregate' ? (data.series.flora_population || []) : (data.series['plant_' + preyId + '_pop'] || []);
+    const yVals = herbivoreId === 'aggregate' ? (data.series.herbivore_population || []) : (data.series['swarm_' + herbivoreId + '_pop'] || []);
 
     const n = Math.min(xVals.length, yVals.length);
     const points = [];
     for (let i = 0; i < n; i++) { points.push({ x: xVals[i], y: yVals[i] }); }
 
-    const preyName = (data.flora_names || {})[preyId] || ('Flora ' + preyId);
-    const herbivoreName =
-      (data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId);
+    const preyName = preyId === 'aggregate' ? 'Flora (Total)' : ((data.flora_names || {})[preyId] || ('Flora ' + preyId));
+    const herbivoreName = herbivoreId === 'aggregate' ? 'Herbivores (Total)' : ((data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId));
 
     if (!_psChart) {
       _psChart = new Chart(ctx, {
         type: 'scatter',
         data: { datasets: [] },
         options: {
+          parsing: false,
           animation: false,
           responsive: true,
           maintainAspectRatio: true,
@@ -879,6 +933,8 @@
         },
       });
     }
+
+    const hasExtinction = points.length > 0 && (points[points.length - 1].x === 0 || points[points.length - 1].y === 0);
 
     _syncDatasetsInPlace(_psChart, [{
       label: 'Trajectory',
@@ -895,9 +951,14 @@
       backgroundColor: '#22c55e', pointRadius: 6, showLine: false,
       _key: 'start',
     }, {
-      label: 'End',
+      label: hasExtinction ? 'Extinction' : 'End',
       data: points.length > 1 ? [points[points.length - 1]] : [],
-      backgroundColor: '#ef4444', pointRadius: 6, pointStyle: 'rectRot', showLine: false,
+      backgroundColor: hasExtinction ? '#000000' : '#ef4444',
+      pointRadius: hasExtinction ? 8 : 6,
+      pointStyle: hasExtinction ? 'crossRot' : 'rectRot',
+      showLine: false,
+      borderColor: hasExtinction ? '#ef4444' : 'transparent',
+      borderWidth: hasExtinction ? 3 : 0,
       _key: 'end',
     }]);
     _psChart.options.scales.x.title.text = preyName + ' population';
@@ -952,16 +1013,17 @@
     }
 
     const merged = _mergeTelemetryData(shouldReset ? null : _lastData, data);
+    _lastData = merged;
     const view = _windowData(merged);
-    const labels = view.labels || [];
+    const labels = merged.labels || [];
     const latestTick = labels.length > 0 ? labels[labels.length - 1] : -1;
-    const speciesSignature = _speciesSignature(view);
+    const speciesSignature = _speciesSignature(merged);
     if ((_lastTickSeen >= 0 && latestTick >= 0 && latestTick < _lastTickSeen) ||
       (_lastSpeciesSignature && speciesSignature !== _lastSpeciesSignature)) {
       _resetTelemetryUiState();
     }
 
-    _lastData = view;
+
     const psActive = !document.getElementById('panel-ps').classList.contains('hidden');
     _buildTsChart(view);
     if (psActive) _buildPsChart(view);

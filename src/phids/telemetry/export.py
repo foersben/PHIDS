@@ -551,14 +551,22 @@ def _plot_phasespace(
         x_max: Optional custom x-axis maximum value.
         y_max: Optional custom y-axis maximum value.
     """
-    x = [r.get("plant_pop_by_species", {}).get(prey_species_id, 0) for r in rows]
-    y = [r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0) for r in rows]
+    if prey_species_id == 0:
+        x = [r.get("flora_population", 0) for r in rows]
+        prey_name = "Flora (Total)"
+    else:
+        x = [r.get("plant_pop_by_species", {}).get(prey_species_id, 0) for r in rows]
+        prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
 
-    prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
-    herbivore_name = (herbivore_names or {}).get(
-        herbivore_species_id,
-        f"Herbivore {herbivore_species_id}",
-    )
+    if herbivore_species_id == 0:
+        y = [r.get("herbivore_population", 0) for r in rows]
+        herbivore_name = "Herbivores (Total)"
+    else:
+        y = [r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0) for r in rows]
+        herbivore_name = (herbivore_names or {}).get(
+            herbivore_species_id,
+            f"Herbivore {herbivore_species_id}",
+        )
 
     n = len(x)
     if n > 0:
@@ -903,17 +911,34 @@ def _tikz_phasespace(
     Returns:
         str: LaTeX ``tikzpicture`` source.
     """
-    prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
-    herbivore_name = (herbivore_names or {}).get(
-        herbivore_species_id,
-        f"Herbivore {herbivore_species_id}",
-    )
+    if prey_species_id == 0:
+        prey_name = "Flora (Total)"
+    else:
+        prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
 
-    coords = " ".join(
-        f"({r.get('plant_pop_by_species', {}).get(prey_species_id, 0)},"
-        f"{r.get('swarm_pop_by_species', {}).get(herbivore_species_id, 0)})"
-        for r in rows
-    )
+    if herbivore_species_id == 0:
+        herbivore_name = "Herbivores (Total)"
+    else:
+        herbivore_name = (herbivore_names or {}).get(
+            herbivore_species_id,
+            f"Herbivore {herbivore_species_id}",
+        )
+
+    def get_x(r):
+        return (
+            r.get("flora_population", 0)
+            if prey_species_id == 0
+            else r.get("plant_pop_by_species", {}).get(prey_species_id, 0)
+        )
+
+    def get_y(r):
+        return (
+            r.get("herbivore_population", 0)
+            if herbivore_species_id == 0
+            else r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0)
+        )
+
+    coords = " ".join(f"({get_x(r)},{get_y(r)})" for r in rows)
 
     x_bound = f"    xmax={float(x_max)},\n" if x_max is not None and x_max > 0 else ""
     y_bound = f"    ymax={float(y_max)},\n" if y_max is not None and y_max > 0 else ""
