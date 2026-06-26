@@ -1,15 +1,15 @@
 # 🌿 Plant-Herbivore Interaction & Defense Simulator (PHIDS)
 
-PHIDS is a deterministic ecological simulation framework for analyzing how plant populations
-accumulate energy, respond to herbivore pressure, activate chemically mediated defenses, and
-propagate information across both airborne and mycorrhizal channels. The project integrates a
-data-oriented engine core, strict state invariants, and reproducible telemetry surfaces so that
-scenario outcomes can be interpreted as traceable computational experiments rather than opaque
-animation artifacts.
+PHIDS is a deterministic ecological simulation framework for analyzing how plant populations accumulate energy, respond to herbivore pressure, activate chemically mediated defenses, and propagate information across both airborne and mycorrhizal channels. The project integrates a data-oriented engine core, strict state invariants, and reproducible telemetry surfaces so that scenario outcomes can be interpreted as traceable computational experiments rather than opaque animation artifacts.
 
-Current release line: `v0.4.0`.
+Current release line: `v0.6.0`.
 
-Live documentation: <https://foersben.github.io/PHIDS/>
+[![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
+[![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions)
+[![Coverage Status](https://coveralls.io/repos/github/foersben/PHIDS/badge.svg)](https://coveralls.io/github/foersben/PHIDS)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Live documentation: [https://foersben.github.io/PHIDS/](https://foersben.github.io/PHIDS/ "null")
 
 ---
 
@@ -17,104 +17,72 @@ Live documentation: <https://foersben.github.io/PHIDS/>
 
 PHIDS is engineered for three overlapping groups:
 
-- **Research-oriented users** who need transparent rule systems, deterministic phase ordering, and
-  exportable telemetry for ecological analysis.
-- **Scenario authors and operators** who construct and run simulations through a browser control
-  center or API workflows.
-- **Contributors** who extend engine behavior under explicit constraints (ECS locality,
-  vectorization, bounded dimensions, and reproducible quality gates).
+- **Research-oriented users (Ecologists & Biologists)** who need transparent rule systems, deterministic phase ordering, and exportable telemetry for ecological analysis of spatially localized trophic interactions.
+- **MLOps & Software Engineers** who care about the high-performance ECS, Numba JIT acceleration, Zarr data exports, and the strict FastAPI/HTMX architecture.
+- **Scenario authors and operators** who construct and run simulations through a browser control center, API workflows, or via AI-agent integrations.
 
-The core biological motifs currently represented include growth and reproduction dynamics,
-herbivore pressure, volatile signaling, local toxin defense, mycorrhizal relay, and
-population-level metabolic attrition.
+The core biological motifs currently represented include:
+
+### Lotka-Volterra Population Dynamics (Spatially Constrained)
+
+At its foundation, PHIDS models the classic predator-prey relationship described by Lotka-Volterra dynamics, but translates these principles from theoretical, perfectly-mixed continuous populations into a discrete, spatially-aware environment. Herbivores must actively seek out plants to consume caloric energy for survival and reproduction. Plants, in turn, accumulate energy through photosynthesis. Population scaling is driven by this strict, spatially-dependent metabolic accounting, leading to localized booms, crashes, and persistent oscillation patterns.
+
+### Reaction-Diffusion & Chemical Signaling
+
+Rather than assuming instant global communication, PHIDS utilizes continuous reaction-diffusion fields (coupled with semi-Lagrangian advection for local wind effects) to model the spread of biochemical compounds. Plants can synthesize airborne Volatile Organic Compounds (VOCs) to warn neighboring flora of herbivore pressure, or transmit distress signals via underground mycorrhizal networks. The dispersion of these signals is bound by physical diffusion rates, decay coefficients, and environmental factors, ensuring that ecological communication remains localized and delayed.
+
+### Chemotactic Foraging & Trophic Defenses
+
+Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Plants can counter this by deploying both baseline (constitutive) defenses, like camouflage that masks their caloric signature, and reactive (induced) defenses. When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem.
 
 ---
 
-## ⚙️ Runtime architecture in one page
+## ⚙️ Runtime Architecture & High-Performance Invariants
 
-PHIDS uses a deliberately layered runtime architecture centered on
-`src/phids/engine/loop.py` (`SimulationLoop`).
+Following recent massive architectural sweeps, PHIDS is engineered for uncompromised performance, strict data integrity, and determinism. It uses a deliberately layered runtime architecture centered on `src/phids/engine/loop.py` (`SimulationLoop`).
+
+### Strict Data Boundaries (Pydantic V2)
+
+The FastAPI ingress boundary is strictly guarded by **Pydantic V2** schemas (`_condition_adapter.validate_python`). Legacy `Any` types and defensive type-coercion shims have been completely eradicated from the codebase. All scenario configurations, species parameters, and recursive chemical-defense tree cascades are comprehensively validated mathematically before data ever reaches the simulation engine. This ensures a mathematically pure state runtime and prevents poisoned payloads from destabilizing long-running batch experiments.
+
+### Engine: ECS, Numba JIT & Deterministic Double-Buffering
 
 Primary state owners:
 
-- `src/phids/engine/core/ecs.py` (`ECSWorld`) — discrete entities and O(1) spatial hash queries
-- `src/phids/engine/core/biotope.py` (`GridEnvironment`) — vectorized field layers with
-  read/write buffering for diffusion-sensitive state, including local-wind
-  semi-Lagrangian signal advection
-- `src/phids/telemetry/analytics.py` and `src/phids/io/replay.py` — per-tick analytical and
-  replay outputs
+- `src/phids/engine/core/ecs.py` (`ECSWorld`) - discrete entities and  spatial hash queries.
+- `src/phids/engine/core/biotope.py` (`GridEnvironment`) - vectorized field layers with read/write double-buffering.
 
-Simulation tick phase order:
+To ensure exact determinism and reproducibility, the engine executes a strict phase sequence:
 
-1. flow field
-2. lifecycle
-3. interaction
-4. signaling
-5. telemetry / termination
+```mermaid
+graph TD
+    A[1. Flow Field Computation] --> B[2. Lifecycle & Growth]
+    B --> C[3. Trophic Interaction]
+    C --> D[4. Chemical Signaling & Diffusion]
+    D --> E[5. Termination Assessment]
+    E --> F[6. Buffer Commit & Telemetry Flush]
+    F -.->|Next Tick| A
+```
 
-This ordering is a semantic contract. Observable state at each phase boundary is defined by this
-sequence, not by ad-hoc update interleavings.
+Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. Furthermore, the engine employs  fast-path optimizations, such as the **"Anchoring Heuristic"**, which bypasses costly flow-field pathfinding for swarms currently positioned directly on food sources, drastically reducing CPU overhead during grazing events. Finally, the spatial `GridEnvironment` enforces the **Rule of 16** (maximum 16 species/substances) to ensure predictable  cache utilization and invariant execution times.
 
-Recent engine refinements ensure that heterogeneous wind fields now influence signal transport
-locally (rather than through global wind averaging), and lifecycle enforces same-pass viability
-cleanup for edge-case mycorrhizal connection costs to preserve causal telemetry attribution.
+### UI & WebSockets: FastAPI, HTMX & TailwindCSS
 
-For the canonical architecture chapter, see
-[`docs/architecture/index.md`](docs/architecture/index.md).
+The web-based control center is served by **FastAPI**, rendered via server-side templates with **HTMX**, and styled using **Tailwind CSS**. To allow the UI to render massive swarms and grids effortlessly without melting browser DOMs, the WebSocket telemetry streams (`/ws/ui/stream`) utilize strictly **columnar JSON payloads** with cache signatures. This prevents redundant encoding overhead on the server and ensures bounded in-place Chart.js updates on the client.
 
----
+### High-Performance Replay (Zarr & Polars)
 
-## 🧱 Non-negotiable modeling and engineering invariants
+Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS now defaults to the **Zarr** storage backend (`src/phids/io/zarr_replay.py`) for replay data and telemetry exports. This enables high-performance, chunked, and memory-decoupled visual slicing of long-running Monte Carlo batch simulations. Analysts can effortlessly load enormous multidimensional datasets into **Polars** or Pandas DataFrames seamlessly without memory exhaustion.
 
-PHIDS is not implemented as an unconstrained object-graph simulation. The current implementation
-follows explicit structural rules:
+### Agentic Integration: MCP Server Support
 
-- **Data-oriented entities**: runtime organisms and substances reside in `ECSWorld` components,
-  not deep behavioral object hierarchies.
-- **Vectorized fields**: spatial state uses NumPy arrays; native Python multi-dimensional lists
-  are not accepted for grid math.
-- **Buffered environmental updates**: field-level read/write discipline is enforced where diffusion
-  and field aggregation require deterministic visibility.
-- **Rule of 16 caps**: flora, herbivores, and substances are bounded to pre-allocated maximum
-  dimensions (`src/phids/shared/constants.py`).
-- **O(1) locality checks**: interaction and signaling must use spatial hash lookups rather than
-  O(N^2) global scans.
-- **Hot-path optimization discipline**: flow-field kernels remain Numba-oriented and benchmarked.
-- **Subnormal truncation policy**: diffusion tails below `SIGNAL_EPSILON` are zeroed to preserve
-  sparse numeric behavior and runtime stability.
-
-Project-level guidance is mirrored in [`AGENTS.md`](AGENTS.md) and
-[`docs/engine/index.md`](docs/engine/index.md).
+PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration) and query `recent_logs()`. This enables autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
 
 ---
 
-## 📡 Interfaces and control surfaces
+## 📊 Batch orchestration and aggregate analytics
 
-PHIDS intentionally exposes two complementary interfaces.
-
-### API surface
-
-- REST endpoints for scenario loading, simulation control, environmental updates, and export
-- WebSocket streams for simulation-state transport and UI-oriented lightweight frames
-
-See [`docs/interfaces/rest-and-websocket-surfaces.md`](docs/interfaces/rest-and-websocket-surfaces.md).
-
-### Server-rendered UI surface
-
-- HTMX/Jinja control center for scenario drafting, matrix editing, and live diagnostics
-- partial update routes for high-frequency operator interactions
-
-Critical boundary: the UI does not mutate live runtime state directly. Configuration first changes
-server-side `DraftState` (`src/phids/api/ui_state.py`) through `DraftService`
-(`src/phids/api/services/draft_service.py`), and only
-`POST /api/scenario/load-draft` commits that draft into a live `SimulationLoop`.
-
-See [`docs/ui/index.md`](docs/ui/index.md).
-
-### Batch evaluation control center
-
-The batch surface (`/ui/batch`) is designed for post-hoc statistical analysis rather than
-live-grid rendering. The operational flow is:
+The `/api/batch` routes expose an async job runner that orchestrates `SimulationLoop` instances outside the main thread, targeted at statistical analysis rather than live-grid rendering. The operational flow is:
 
 1. run `N` seeded trajectories from a validated draft;
 2. persist aggregate outputs to `data/batches/{job_id}_summary.json`;
@@ -129,22 +97,18 @@ The batch detail pane exposes:
 - chart presets (`Balanced overview`, `Collapse risk focus`, `Herbivore pressure focus`, `Survival probability only`) for rapid comparative evaluation;
 - export controls for `CSV`, `LaTeX table`, and `TikZ` with metadata overrides (including survival-focused TikZ export when the survival preset is active).
 
-Telemetry retention is intentionally bounded (`MAX_TELEMETRY_TICKS = 10000`) and table previews
-show a decimated recent-tail window to keep both backend memory and browser DOM usage stable under
-long-running observations.
+Telemetry retention is intentionally bounded (`MAX_TELEMETRY_TICKS = 10000`) and table previews show a decimated recent-tail window to keep both backend memory and browser DOM usage stable under long-running observations.
 
-Previously computed batches can be rehydrated into the in-memory ledger using the
-`Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).
+Previously computed batches can be rehydrated into the in-memory ledger using the `Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).
 
 Reference chapter:
-[`docs/ui/batch-runner-and-aggregate-analysis.md`](docs/ui/batch-runner-and-aggregate-analysis.md).
+[`docs/ui/batch-runner-and-aggregate-analysis.md`](docs/ui/batch-runner-and-aggregate-analysis.md)
 
 ---
 
 ## 🧪 Scenario model and curated examples
 
-Scenarios encode bounded experimental setups: grid dimensions, species parameterization,
-trigger-rule matrices, initial placements, wind conditions, and termination constraints.
+Scenarios encode bounded experimental setups: grid dimensions, species parameterization, trigger-rule matrices, initial placements, wind conditions, and termination constraints.
 
 Curated examples are provided under `examples/`, including:
 
@@ -164,22 +128,18 @@ Authoring references:
 
 ## 🚀 Quick start
 
-### 1) Environment setup (Python 3.12+)
+### 1) Environment setup (Python 3.13+)
 
-```bash
-uv sync --all-extras --dev
+Dependency management, environment isolation, pre-commit hooks, and development extensions are fully automated.
+
+```sh
+just setup
 ```
 
 ### 2) Start the application
 
-```bash
-uv run phids --reload
-```
-
-Equivalent direct ASGI launch remains available when needed:
-
-```bash
-uv run uvicorn phids.api.main:app --reload --app-dir src
+```sh
+just run
 ```
 
 Open:
@@ -187,129 +147,55 @@ Open:
 - UI: `http://127.0.0.1:8000/`
 - OpenAPI docs: `http://127.0.0.1:8000/docs`
 
-### 3) Focused validation pass
-
-```bash
-uv run pytest tests/integration/api/test_ui_routes.py -q
-uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q
-```
-
-### 4) Full local quality gate
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy
-uv run pytest
-uv run mkdocs build --strict
-```
-
-### 5) Install repository hook gates
-
-PHIDS uses a staged `pre-commit` regimen so that the commit boundary remains fast enough for
-iterative work while the push boundary still rehearses the expensive integrity checks that protect
-the engine, the documentation corpus, and the public contributor surface. The `pre-commit` stage
-enforces repository hygiene, Ruff linting/formatting, YAML and TOML validity, merge-conflict
-detection, secret scanning, and spelling review. The `pre-push` stage escalates to green,
-repository-wide executable validation through strict source `mypy`, `pytest`, and
-`mkdocs build --strict`, thereby
-turning each push into a compact rehearsal of the same scientific reproducibility standards
-expected from merge-ready work. The current type boundary checks `src/phids`.
-
-Install both hook types once per clone:
-
-```bash
-uv run pre-commit install --hook-type pre-commit --hook-type pre-push
-```
-
-Rehearse them manually when needed:
-
-```bash
-uv run pre-commit run --all-files
-uv run pre-commit run --all-files --hook-stage pre-push
-```
-
 ---
 
-## 🐳 Containerized execution
+## ✅ Development, Testing & CI behavior
 
-For local containerized development:
+We enforce strict quality gates to guarantee arithmetic invariants, memory safety, and simulation stability.
 
-```bash
-docker compose up --build
-```
+### Two-Pass Numba Testing Strategy
 
-The compose workflow mounts `src/` for iterative development. Optional cleanup:
+The ECS engine relies heavily on Numba JIT compilation. To ensure both logical correctness and memory-safe machine code generation, our CI pipeline (`scripts/local_ci.sh`) employs a strict **Two-Pass Testing Strategy**:
 
-```bash
-docker rm -f phids-local
-docker rmi -f phids:test phids:local
-docker image prune -f
-```
+1. **Pass 1: Logic & Coverage (`NUMBA_DISABLE_JIT=1`):** Tests are run with JIT explicitly disabled to enforce pure-Python line coverage and validate branch logic without compilation overhead masking interpreter coverage.
+2. **Pass 2: Compilation Verification:** Tests are re-run with JIT enabled to verify safe machine-code compilation, confirming parametric invariants and ensuring zero runtime segfaults during fast-math execution.
 
-Release and packaging policy:
-[`docs/development/containers-and-release-automation.md`](docs/development/containers-and-release-automation.md)
+### Property Hypothesis Testing
 
----
+To guarantee invariant ecosystem rules (e.g., mass conservation, correct condition tree algebraic evaluation), PHIDS utilizes property-based testing (via the `hypothesis` library). These pilot tests aggressively explore edge cases in the biological mechanics and trophic interaction rules.
 
-## ✅ Testing, benchmarks, and CI behavior
+### 🛠️ Local CI Emulation with nektos/act
 
-Current verified state (local full-suite run):
+To guarantee our pipeline remains green without committing and waiting for remote GitHub runners, PHIDS natively supports running exact GitHub actions locally via [nektos/act](https://github.com/nektos/act "null").
 
-- `196 passed`
-- repository-wide coverage: `89.65%`
-- all currently reported runtime modules in `src/phids/*` are at `>=80%` coverage
+#### Prerequisites
 
-Focused checks:
+1. **Docker Engine** must be running locally.
+2. **`act` CLI** installed on your system path (`brew install act` on macOS).
+3. **Secrets Setup**: Create a local mock environment file at `.github/workflows/secrets.env` containing standard testing variables to prevent unauthenticated step failures.
 
-```bash
-uv run pytest tests/integration/api/test_ui_routes.py -q
-uv run pytest tests/integration/systems/test_systems_behavior.py tests/integration/systems/test_termination_and_loop.py -q
-uv run pytest tests/benchmarks/test_flow_field_benchmark.py tests/benchmarks/test_spatial_hash_benchmark.py -q
-```
+#### Local Workflow Automation Targets
 
-Coverage-uplift regression checks (entrypoint + batch orchestration):
+We wrap our containerized pipeline actions within safe, isolated tasks in the `Justfile`:
 
-```bash
-uv run pytest tests/unit/cli/test_cli_main.py tests/integration/systems/test_batch_runner.py -q
-```
+- `just act-ci`: Evaluates formatting (Ruff), types (Mypy), and the Python suite utilizing the Two-Pass strategy.
+- `just act-docker`: Builds Alpine UV base images and simulates dispatch commands.
+- `just act-release`: Simulates compiling, staging, and packaging operating-system binaries inside an isolated container.
+- `just clean-act`: Garbages dangling containers or local bridge networks created during interrupted runs.
 
-If you want to list only modules below 80% after a full run:
+### Scripted local CI & `just` commands
 
-```bash
-uv run pytest tests/ --no-header 2>&1 | awk '/^src\/phids\// {gsub("%","",$4); if (($4+0) < 80) print $0}'
-```
+Useful `just` Commands:
 
-Representative route/system smoke slice:
-
-```bash
-uv run pytest -o addopts='' tests/integration/api/test_api_routes.py tests/integration/api/test_ui_routes.py tests/integration/systems/test_systems_behavior.py tests/e2e/scenarios/test_example_scenarios.py -q
-```
-
-Focused batch/UI smoke slice:
-
-```bash
-uv run pytest tests/integration/api/test_ui_routes.py tests/integration/api/test_api_routes.py -q
-```
-
-Scripted local CI:
-
-```bash
-./scripts/local_ci.sh all
-```
-
-Hook-only verification:
-
-```bash
-uv run pre-commit run --all-files
-uv run pre-commit run --all-files --hook-stage pre-push
-```
-
-Optional workflow rehearsal:
-
-```bash
-./scripts/run_ci_with_act.sh --dryrun
-```
+- `just setup`: Installs all dependency groups, provisions git hooks, and sets up editor extensions.
+- `just test`: Run the full test suite via pytest.
+- `just ci-test`: Run test suites through the local CI wrapper pipeline.
+- `just ci-local`: Execute the full multi-pass local verification script (linting, two-pass tests, docs compilation).
+- `just lint`: Automatically fix formatting and run static analysis (Ruff & Mypy).
+- `just check`: Run all pre-commit validation hooks across the repository codebase.
+- `just docs`: Compile production-ready static documentation artifacts.
+- `just serve`: Build and serve the live Zensical documentation corpus locally at localhost:9000.
+- `just clean`: Evict all transient build artifacts, interpreter caches, coverage data, and test environments.
 
 GitHub Actions policy summary:
 
@@ -319,8 +205,27 @@ GitHub Actions policy summary:
 
 References:
 
-- [`docs/development/github-actions-and-local-ci.md`](docs/development/github-actions-and-local-ci.md)
-- [`docs/development/contribution-workflow-and-quality-gates.md`](docs/development/contribution-workflow-and-quality-gates.md)
+- [`docs/development/github-actions-and-local-ci.md`](docs/development/github-actions-and-local-ci.md "null")
+- [`docs/development/contribution-workflow-and-quality-gates.md`](docs/development/contribution-workflow-and-quality-gates.md "null")
+
+---
+
+## 🐳 Containerized execution
+
+For local containerized development:
+
+```sh
+docker compose up --build
+```
+
+The compose workflow mounts `src/` for iterative development. To reset your environment and clear out old images:
+
+```sh
+just docker-clean
+```
+
+Release and packaging policy:
+[`docs/development/containers-and-release-automation.md`](docs/development/containers-and-release-automation.md)
 
 ---
 
@@ -332,13 +237,6 @@ The repository includes:
 - `.github/workflows/docker-publish.yml` for GHCR publication policy
 - `.github/workflows/release-binaries.yml` for bundled Linux/Windows/macOS artifacts
 
-### v0.4.0 release highlights
-
-- Engine thermodynamic invariants hardened in toxin lethality, starvation attrition, and reproduction-cost handling.
-- API export routes remain async-safe under load via threadpool offloading of heavy serialization paths.
-- Telemetry visualization now uses bounded in-place Chart.js updates, preventing long-run client memory growth.
-- Batch summaries persist strict JSON payloads (non-finite values normalized) for robust browser parsing.
-
 ### Release runbook (main + tag)
 
 The canonical automated release flow is:
@@ -346,13 +244,6 @@ The canonical automated release flow is:
 1. merge `develop` into `main` through a reviewed PR,
 2. push a semantic tag from `main` (for example `v0.4.0`),
 3. allow GitHub Actions to publish all release artifacts.
-
-```bash
-git checkout main
-git pull --ff-only origin main
-git tag v0.4.0
-git push origin v0.4.0
-```
 
 Expected automation outcomes:
 
@@ -375,12 +266,12 @@ Start here for full subsystem detail:
 - development: [`docs/development/index.md`](docs/development/index.md)
 - reference: [`docs/reference/index.md`](docs/reference/index.md)
 
-Published site: <https://foersben.github.io/PHIDS/>
+Published site: [https://foersben.github.io/PHIDS/](https://foersben.github.io/PHIDS/ "null")
 
-Serve docs locally:
+Serve docs locally for real-time authoring feedback:
 
-```bash
-uv run mkdocs serve
+```sh
+just serve
 ```
 
 ---
@@ -390,10 +281,10 @@ uv run mkdocs serve
 - simulation/math: `numpy`, `scipy`, `numba`
 - API/runtime: `fastapi`, `uvicorn`, `websockets`
 - CLI: `typer`
-- validation/modeling boundary: `pydantic`
-- telemetry/data processing: `polars`
-- serialization: `msgpack`
-- documentation: `mkdocs`, `mkdocs-material`, `mkdocstrings`
+- validation/modeling boundary: `pydantic` (V2)
+- telemetry/data processing: `polars`, `zarr`
+- serialization: `zarr` (high-density), `json` (columnar UI streams)
+- documentation: `zensical`
 
 ---
 
@@ -401,9 +292,15 @@ uv run mkdocs serve
 
 ```text
 src/phids/              canonical runtime package
-tests/                  unit, integration, and benchmark-sensitive coverage
+├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, Websockets
+├── engine/             The core determinism domain (ECS + Numba Double-Buffered grid fields)
+├── io/                 High-performance Zarr replays and scenario parsing
+├── telemetry/          Tick analytics, export routines, and Polars handlers
+├── shared/             Common utilities and logging configurations
+└── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
+tests/                  property-based invariant tests, two-pass Numba tests, and API integration
 examples/               curated scenario JSON files
-docs/                   MkDocs documentation corpus
+docs/                   Zensical documentation corpus
 scripts/                local CI and workflow rehearsal helpers
 packaging/              PyInstaller configuration
 ```
