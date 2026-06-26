@@ -404,7 +404,7 @@
       el.className = 'text-[11px] text-slate-500';
       return;
     }
-    const windowSize = Math.min(120, points.length);
+    const windowSize = Math.min(Math.floor(120 / (points.length / 120 > 0 ? (points.length > 2000 ? points.length / 2000 : 1) : 1)), points.length);
     const tail = points.slice(points.length - windowSize);
     const mid = Math.floor(tail.length / 2);
     const first = tail.slice(0, mid);
@@ -651,21 +651,8 @@
       maintainAspectRatio: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: {
-          suggestedMin: 0,
-          suggestedMax: {{ max_x | default(100) }},
-          grace: '15%',
-          ticks: { maxTicksLimit: 8, font: { size: 10 } },
-          grid: { color: '#f1f5f9' }
-        },
-        y: {
-          suggestedMin: 0,
-          suggestedMax: {{ max_y | default(100) }},
-          grace: '15%',
-          ticks: { font: { size: 10 } },
-          grid: { color: '#f1f5f9' },
-          title: { display: true, text: yTitle, font: { size: 10 } }
-        },
+        x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+        y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: yTitle, font: { size: 10 } } },
       },
     };
   }
@@ -924,7 +911,8 @@
 
     const n = Math.min(xVals.length, yVals.length);
     const points = [];
-    for (let i = 0; i < n; i++) { points.push({ x: xVals[i], y: yVals[i] }); }
+    const step = Math.max(1, Math.floor(n / 2000));
+    for (let i = 0; i < n; i+=step) { points.push({ x: xVals[i], y: yVals[i] }); }
 
     const preyName = preyId === 'aggregate' ? 'Flora (Total)' : ((data.flora_names || {})[preyId] || ('Flora ' + preyId));
     const herbivoreName = herbivoreId === 'aggregate' ? 'Herbivores (Total)' : ((data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId));
