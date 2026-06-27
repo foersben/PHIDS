@@ -85,6 +85,51 @@
     <p class="text-slate-400 text-xs">Select a job from the ledger to view aggregate results.</p>
   </div>
 
+  <!-- Batch Runner Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Monte Carlo Batch Runner Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <!-- Column 1: Monte Carlo Simulation Concept -->
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>🧠</span> Parallel Monte Carlo Engine
+        </h4>
+        <p class="text-slate-500">
+          The Batch Runner runs multiple independent simulation trajectories in parallel using a Python <code>ProcessPoolExecutor</code>.
+        </p>
+        <p class="text-slate-500">
+          Because individual loops are stochastic (containing random walk vectors, mitotic events, and probabilistic grazing), a single run does not represent the full system space. Running an ensemble reveals the statistical bounds of the ecosystem's state space, including stable attractors, oscillations, and extinction rates.
+        </p>
+      </div>
+
+      <!-- Column 2: Parameters & Draft State Binding -->
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>⚙️</span> Execution Parameters
+        </h4>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>Ensemble Size (Runs):</strong> Controls how many trajectories are simulated (1 to 256). More runs yield smoother aggregate statistical curves and narrower confidence bands.</li>
+          <li><strong>Max Ticks:</strong> Limits the depth of each trajectory. Runs terminate immediately if extinction criteria are met beforehand.</li>
+          <li><strong>Draft State Binding:</strong> Trajectories are initialized from the active <strong>DraftState</strong> configuration. Any unsaved edits made in the species tables or Placement Editor are automatically included at launch.</li>
+        </ul>
+      </div>
+
+      <!-- Column 3: Data Aggregation & Exports -->
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>📊</span> Statistical Outputs & Formats
+        </h4>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>Mean &plusmn; Standard Deviation (mean &plusmn; &sigma;):</strong> Visualized as shaded ribbons, showing the variance of the plant and herbivore populations over time.</li>
+          <li><strong>Extinction Probability:</strong> The percentage of runs where plant species population drops to zero.</li>
+          <li><strong>Export Formats:</strong> Export the aggregate data via <strong>CSV</strong> for data processing, <strong>LaTeX Table</strong> for publication documents, or <strong>TikZ (PGFPlots)</strong> for vector-graphics rendering in LaTeX layouts.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>

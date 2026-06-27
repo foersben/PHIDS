@@ -1,5 +1,6 @@
 <div id="diet-matrix-view">
   <h2 class="text-xl font-semibold text-slate-800 mb-4">🍽️ Diet Compatibility Matrix</h2>
+
   <p class="text-sm text-slate-500 mb-4">
     Rows = Herbivore species (E<sub>i</sub>), Columns = Flora species (P<sub>j</sub>).
     ✅ = herbivore can consume that flora.
@@ -47,4 +48,33 @@
     </table>
   </div>
   {% endif %}
+
+  <!-- Diet Matrix Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Diet Compatibility Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">How the Matrix Works:</p>
+        <p class="text-slate-500 mt-1">
+          Determines which herbivore species can graze on which flora species.
+        </p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>Checked (Compatible):</strong> The herbivore swarm will actively consume plant biomass/energy when sharing a cell with this plant species, gaining energy.</li>
+          <li><strong>Unchecked (Incompatible):</strong> The herbivore swarm ignores the plant and cannot feed on it, which may lead to starvation if no compatible food is available in the cell.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Toggling any checkbox immediately triggers a background save to the server-side draft.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        </p>
+      </div>
+    </div>
+  </div>
 </div>

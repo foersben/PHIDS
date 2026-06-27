@@ -102,15 +102,16 @@
   <div class="flex items-center justify-between mb-2">
     <div>
       <h2 class="text-xl font-semibold text-slate-800">⚡ Trigger Rules</h2>
-      <p class="text-sm text-slate-500 mt-1">
-        Each rule defines: when a <strong>plant species</strong> is attacked by a
-        <strong>herbivore</strong> with enough population, it synthesises a
-        <strong>substance</strong>. Multiple rules per (plant, herbivore) pair are allowed —
-        they fire simultaneously. Advanced activation gates are configured visually
-        as nested trees with <strong>all_of</strong> / <strong>any_of</strong> groups over
-        <strong>herbivore_presence</strong> and <strong>substance_active</strong> predicates.
-      </p>
     </div>
+  </div>
+
+  <div class="text-sm text-slate-500 mt-1">
+    Each rule defines: when a <strong>plant species</strong> is attacked by a
+    <strong>herbivore</strong> with enough population, it synthesises a
+    <strong>substance</strong>. Multiple rules per (plant, herbivore) pair are allowed —
+    they fire simultaneously. Advanced activation gates are configured visually
+    as nested trees with <strong>all_of</strong> / <strong>any_of</strong> groups over
+    <strong>herbivore_presence</strong> and <strong>substance_active</strong> predicates.
   </div>
 
   {% if not flora_species or not herbivore_species %}
@@ -323,12 +324,61 @@
 
   {% endif %}
 
-  <p class="text-xs text-slate-400 mt-2">
-    <strong>How it works:</strong> Each tick, the engine checks every plant's cell for herbivores.
-    If a matching herbivore swarm meets the minimum population, synthesis begins.
-    Synthesis takes N ticks (from the Substance config). Once synthesised, the
-    optional activation gate is evaluated. Gates can mix herbivore and substance predicates
-    visually through nested <em>all_of</em>/<em>any_of</em> groups.
-    Multiple rules on the same (plant, herbivore) pair fire simultaneously and independently.
-  </p>
+  <!-- Trigger Rules Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Trigger Rules & Gates Configuration Guide</h3>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <!-- Section 1: The Synthesis & Release Lifecycle -->
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>🔄</span> Rule Lifecycle & Synthesis
+        </h4>
+        <p class="text-slate-500">
+          The simulation engine evaluates active trigger rules per-cell at each simulation step (tick) following this timeline:
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>Attack Detection:</strong> An herbivore swarm of species <code class="bg-slate-50 px-0.5 rounded">H_i</code> enters a cell containing plant species <code class="bg-slate-50 px-0.5 rounded">P_j</code>. If the swarm population is &ge; the rule's minimum trigger headcount, synthesis begins.</li>
+          <li><strong>Active Synthesis:</strong> The plant spends the substance's configured energy cost per tick to produce the chemical. This phase lasts for the specified <code class="bg-slate-50 px-0.5 rounded">Synthesis Duration</code> (ticks).</li>
+          <li><strong>Activation Gating:</strong> Once synthesis is underway, the engine evaluates the rule's nested <strong>Activation Condition</strong>. If no condition is configured, the release is unconditional. If a gate exists, the chemical's active effects (repelling, poisoning, or signaling) are blocked until the gate evaluates to <strong>True</strong>.</li>
+          <li><strong>Dissipation & Aftereffects:</strong> When synthesis halts, the chemical continues to provide protection for the duration of the substance's <code class="bg-slate-50 px-0.5 rounded">Aftereffect Ticks</code>.</li>
+        </ul>
+      </div>
+
+      <!-- Section 2: Logic Gates & Conditions Decoded -->
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>🌿</span> Logic Gates & Predicates
+        </h4>
+        <p class="text-slate-500">
+          Gating structures are formed by connecting logical operators (Group nodes) to environmental measurements (Leaf nodes):
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>all_of (AND Gate):</strong> Evaluates to True only if all child predicate nodes within this block evaluate to True.</li>
+          <li><strong>any_of (OR Gate):</strong> Evaluates to True if at least one child predicate node within this block evaluate to True.</li>
+          <li><strong>herbivore_presence (Leaf):</strong> Checks the current cell's local herbivore population. Evaluates to True if the selected herbivore species meets or exceeds the target count.</li>
+          <li><strong>substance_active (Leaf):</strong> Checks if the selected substance is currently active (synthesizing or lingering) within the plant's own cell. This allows you to construct cascading defensive pathways (e.g., Substance A must be active to trigger Toxin B).</li>
+          <li><strong>environmental_signal (Leaf):</strong> Checks local volatile signaling concentration grids. Evaluates to True if the diffused chemical level at the plant's coordinates exceeds the minimum threshold.</li>
+        </ul>
+      </div>
+
+      <!-- Section 3: Modifying & Saving Rules -->
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>⚡</span> Applying Config changes
+        </h4>
+        <p class="text-slate-500">
+          The PHIDS builder is data-oriented. Understanding how changes apply is crucial:
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>Draft State:</strong> Adding a rule, deleting nodes, changing values, or configuring gates updates the in-memory <strong>DraftState</strong> configuration on the server.</li>
+          <li><strong>Live Commit:</strong> The active running simulation loop remains isolated from your draft edits. You must click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the top sticky header (or click <strong>▶ Start</strong> / <strong>↺ Reset</strong>) to compile these rules into Numba-compiled ECS system arrays.</li>
+          <li><strong>Parallel Execution:</strong> Multiple rules configured on the same (plant, herbivore) pair fire simultaneously and independently, allowing a single attack to trigger multiple signaling pathways at once.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>

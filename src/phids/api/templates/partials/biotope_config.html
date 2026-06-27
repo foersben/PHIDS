@@ -1,5 +1,6 @@
 <div id="biotope-config-view" class="max-w-2xl">
   <h2 class="text-xl font-semibold text-slate-800 mb-6">🌍 Biotope Configuration</h2>
+
   <div class="bg-white rounded-xl shadow-sm border p-6">
     <form hx-post="/api/config/biotope" hx-target="#biotope-config-view" hx-swap="outerHTML"
       hx-trigger="input changed delay:200ms from:input, change delay:200ms" class="grid grid-cols-2 gap-6">
@@ -113,7 +114,35 @@
           class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
 
-    </form>
     <p class="mt-4 text-xs text-slate-400">Changes apply automatically on field blur/change.</p>
+  </div>
+
+  <!-- Biotope Config Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Biotope Configuration Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">Core Biotope Fields Explained:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>📐 Grid Dimensions:</strong> Width & Height of the cellular automaton board (10x10 to 80x80). Changing these clears placements.</li>
+          <li><strong>⏱️ Max Ticks & Speed:</strong> Controls simulation termination limits and default tick rate in Hz.</li>
+          <li><strong>💨 Wind Vector:</strong> The directional vector (X, Y) determining the drift/advection direction of volatile signals and toxins across cells.</li>
+          <li><strong>🔬 Signal/Toxin Layers:</strong> Number of available slot layers for chemical signals or toxins (1 to 16).</li>
+          <li><strong>🤝 Mycorrhizal Inter-Species:</strong> If enabled, allows mycorrhizal networks (root links) to form between different plant species, enabling mutual resource sharing.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Edits to inputs auto-save to the backend draft immediately.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> To update the live running simulation, you must click <strong class="text-indigo-600">🔄 Load Draft</strong>, or start/reset the simulation loop.
+        </p>
+      </div>
+    </div>
   </div>
 </div>

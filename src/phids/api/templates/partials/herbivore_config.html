@@ -1,6 +1,10 @@
 <div id="herbivore-config-view">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-xl font-semibold text-slate-800">🐛 Herbivore Species</h2>
+  </div>
+
+  <div class="flex items-center justify-between mb-4">
+    <div></div>
     {% if herbivore_species|length < 16 %}
     <button hx-post="/api/config/herbivores" hx-target="#herbivore-config-view" hx-swap="outerHTML"
       hx-vals='{"name":"NewHerbivore","energy_min":"5","velocity":"2","consumption_rate":"10"}'
@@ -79,5 +83,33 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Herbivore Config Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Herbivore Species Configuration Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">Properties Explained:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>❤️ Energy Min:</strong> The threshold below which a swarm becomes energy-stressed and risks starvation/extinction.</li>
+          <li><strong>🏃 Speed (Velocity):</strong> Movement distance or step size per simulation tick across the grid cells.</li>
+          <li><strong>🍽️ Eating (Consumption) Rate:</strong> The rate of biomass/energy consumed per tick from compatible plants in the same cell.</li>
+          <li><strong>➗ Reprod. Divisor:</strong> The energy divisor determines how offspring are split and initialized during reproduction/mitosis phases.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Modifying any value in a table field immediately triggers a background save to the server-side draft.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        </p>
+      </div>
+    </div>
   </div>
 </div>

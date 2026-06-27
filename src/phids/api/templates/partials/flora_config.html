@@ -1,6 +1,10 @@
 <div id="flora-config-view">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-xl font-semibold text-slate-800">🌿 Flora Species</h2>
+  </div>
+
+  <div class="flex items-center justify-between mb-4">
+    <div></div>
     {% if flora_species|length < 16 %}
     <button hx-post="/api/config/flora" hx-target="#flora-config-view" hx-swap="outerHTML"
       hx-vals='{"name":"NewFlora","base_energy":"10","max_energy":"100","growth_rate":"5","survival_threshold":"1","reproduction_interval":"10","seed_min_dist":"1","seed_max_dist":"3","seed_energy_cost":"5"}'
@@ -94,5 +98,36 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Flora Config Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Flora Species Configuration Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">Properties Explained:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>⚡ Base Energy:</strong> The starting energy allocated to newly spawned/placed plants of this species.</li>
+          <li><strong>🔋 Max Energy:</strong> The maximum energy storage limit of the plant (cannot grow beyond this).</li>
+          <li><strong>📈 Growth Rate:</strong> Passive energy gain per simulation tick when the plant is not energy-stressed.</li>
+          <li><strong>❤️ Survival Threshold:</strong> Minimum energy requirement; if energy drops below this, the plant dies.</li>
+          <li><strong>🌱 Reprod. Interval & Costs:</strong> Cool-down ticks between reproduction attempts and the energy spent to seed offspring.</li>
+          <li><strong>🌳 Seed Distances:</strong> Minimum and maximum cell distance range where new seeds can land.</li>
+          <li><strong>🎭 Camouflage:</strong> Enables flow-field attenuation, reducing local flow visibility to avoid detection.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Modifying any value in a table field immediately triggers a background save to the server-side draft.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        </p>
+      </div>
+    </div>
   </div>
 </div>

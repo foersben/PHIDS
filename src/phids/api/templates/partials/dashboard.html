@@ -57,59 +57,157 @@
     </div>
   </div>
 
-  <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3" id="dashboard-faq">
-    <div>
-      <h2 class="text-lg font-semibold text-slate-700">❓ Guide</h2>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 space-y-6" id="dashboard-faq">
+    <div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📖</span>
+        <h2 class="text-base font-bold text-slate-800">PHIDS Reference Guide & Telemetry Interpreter</h2>
+      </div>
       <p class="text-xs text-slate-500 mt-1">
-        Reference for interpreting every live-grid overlay, tooltip section, diagnostic number, and how the displayed values are computed.
+        Comprehensive field reference for interpreting the live-grid overlays, cell behaviors, color codings, and telemetry diagrams.
       </p>
     </div>
-    <div class="space-y-2 text-sm text-slate-600">
-      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-        <summary class="cursor-pointer font-medium text-slate-700">How is each cell rendered?</summary>
-        <div class="mt-2 text-xs leading-5 text-slate-600">
-          Cell fill color is the current flora energy layer for each species; brighter fill means more stored plant energy in that grid cell.
-          Colored dots are herbivore swarms grouped by species. Blue lines are active mycorrhizal links between adjacent plants.
-          Blue rings indicate plants with visible signal activity (active, synthesizing, or lingering signal substances), and purple squares indicate analogous toxin activity.
-          Cyan/purple screen overlays show the current per-cell maximum signal/toxin concentration across all configured substance layers.
+
+    <!-- Grid Layout for Live Grid & Telemetry Explanations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs leading-relaxed text-slate-600">
+
+      <!-- Column 1: Live Grid Visual Language -->
+      <div class="space-y-4 bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-2">
+          <span class="text-emerald-500">📺</span> Live Grid Visual Language
+        </h3>
+
+        <div class="space-y-3">
+          <!-- Cells & Energy -->
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded flex-shrink-0 bg-emerald-600/80 border border-emerald-500/30 flex items-center justify-center text-[10px] text-white font-mono">E</div>
+            <div>
+              <h4 class="font-semibold text-slate-800 text-[11px]">Cell Fill & Species Energy</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                The cell background matches the species' assigned hue. Solid/saturated fills represent the presence of plants. Brighter/more saturated colors indicate higher stored plant energy levels relative to the species maximum capacity.
+              </p>
+            </div>
+          </div>
+
+          <!-- Swarms & Status Rings -->
+          <div class="flex gap-3">
+            <div class="relative w-6 h-6 flex-shrink-0 flex items-center justify-center">
+              <span class="w-3.5 h-3.5 rounded-full bg-rose-500 border border-slate-900"></span>
+              <span class="absolute w-5 h-5 rounded-full border border-yellow-300"></span>
+            </div>
+            <div>
+              <h4 class="font-semibold text-slate-800 text-[11px]">Herbivore Swarms & Threat Overlays</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                Colored dots represent herbivore swarms.
+                Swarms with a <span class="font-semibold text-yellow-500">yellow ring (<code class="bg-slate-100 px-1 py-0.5 rounded text-[10px]">#fde047</code>)</span> are actively <strong>repelled</strong> by local repellent substances.
+                Swarms with a <span class="font-semibold text-purple-400">purple ring (<code class="bg-slate-100 px-1 py-0.5 rounded text-[10px]">#f5d0fe</code>)</span> are <strong>intoxicated</strong> by lethal substances.
+              </p>
+            </div>
+          </div>
+
+          <!-- Mycorrhiza Links -->
+          <div class="flex gap-3">
+            <div class="w-6 h-6 flex-shrink-0 flex flex-col justify-around items-center">
+              <span class="w-5 h-1 rounded bg-blue-400"></span>
+              <span class="w-5 h-1 rounded bg-amber-500"></span>
+            </div>
+            <div>
+              <h4 class="font-semibold text-slate-800 text-[11px]">Mycorrhizal Networks (Root Links)</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                Lines connecting adjacent cell centers show active root channels.
+                <span class="font-semibold text-blue-400">Blue lines</span> indicate standard <strong>intra-species</strong> links sharing energy/signals within a species.
+                <span class="font-semibold text-amber-500">Orange/Yellow lines</span> indicate <strong>inter-species</strong> links, enabling exchange across different species boundaries.
+              </p>
+            </div>
+          </div>
+
+          <!-- Substance Emitters -->
+          <div class="flex gap-3">
+            <div class="w-6 h-6 flex-shrink-0 flex items-center justify-center gap-1">
+              <span class="w-4 h-4 rounded-full border-2 border-sky-400 flex-shrink-0"></span>
+              <span class="w-4 h-4 border-2 border-fuchsia-500 flex-shrink-0"></span>
+            </div>
+            <div>
+              <h4 class="font-semibold text-slate-800 text-[11px]">Substance Emitters & Activity Rings</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                Active synthesis of defenses triggers central glyphs:
+                a <span class="font-semibold text-sky-500">cyan circle</span> indicates active/recent <strong>signal emission</strong>, whereas a
+                <span class="font-semibold text-fuchsia-600">purple square</span> indicates active/recent <strong>toxin synthesis</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Chemical Diffusion Clouds -->
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded flex-shrink-0 bg-gradient-to-br from-sky-300/40 to-fuchsia-400/40 border border-slate-200"></div>
+            <div>
+              <h4 class="font-semibold text-slate-800 text-[11px]">Chemical Diffusion Clouds</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                Semi-transparent colored overlays display diffused chemical gradients:
+                <span class="font-semibold text-sky-400">Cyan screen overlays</span> show the concentration of volatile signaling chemicals;
+                <span class="font-semibold text-fuchsia-500">Purple screen overlays</span> show the concentration of defensive/offensive toxins.
+              </p>
+            </div>
+          </div>
         </div>
-      </details>
-      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-        <summary class="cursor-pointer font-medium text-slate-700">How should I read the top of the tooltip?</summary>
-        <div class="mt-2 text-xs leading-5 text-slate-600">
-          The header always identifies one grid cell only. The <strong>tick</strong> badge is the current simulation step of the live loop.
-          <strong>flow</strong> is the current flow-field value read from <code>env.flow_field[x, y]</code>.
-          <strong>wind</strong> is the uniform wind vector sampled from the environment wind matrices at that same cell.
-          <strong>signal peak</strong> is <code>max(signal_layers[:, x, y])</code>; <strong>toxin peak</strong> is <code>max(toxin_layers[:, x, y])</code>.
-          The “Signals here” and “Toxins here” lists then break those peaks back into per-substance concentrations for the hovered cell.
+      </div>
+
+      <!-- Column 2: Telemetry Diagrams Decoded -->
+      <div class="space-y-4 bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-2">
+          <span class="text-indigo-500">📊</span> Telemetry Diagrams Decoded
+        </h3>
+
+        <div class="space-y-3.5">
+          <!-- Timeseries Chart -->
+          <div>
+            <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1">
+              <span>📈</span> Population & Energy Timeseries
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              Plots populations (counts of plants/swarms) on the left Y-axis and accumulated energy on the right Y-axis over time. Useful for observing predator-prey oscillations (Lotka-Volterra dynamics) and tracking whether species face critical energy deficits or collapse.
+            </p>
+          </div>
+
+          <!-- Metabolic & Defense Economy -->
+          <div>
+            <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1">
+              <span>⚡</span> Metabolic & Defense Economy Ratio
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              Plots the ratio of <strong class="text-slate-700">defense_cost / plant_energy</strong> over time for each species.
+              The defense cost is computed as the sum of all active defenses/substances produced by the plant (calculated from <code class="bg-slate-100 px-0.5 rounded text-[10px]">SubstanceComponent.energy_cost_per_tick</code>).
+              Higher values show that the plant species is prioritizing survivability/defense over growth, reflecting metabolic stress.
+            </p>
+          </div>
+
+          <!-- Biomass Distribution -->
+          <div>
+            <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1">
+              <span>🌿</span> Stacked Biomass Distribution
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              A stacked area chart displaying the cumulative population proxy (biomass) of each plant species over time. This immediately reveals shifts in species composition, dominance, biodiversity, and resource sharing across the entire grid environment.
+            </p>
+          </div>
+
+          <!-- Phase Space Trajectory -->
+          <div>
+            <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1">
+              <span>🔄</span> Phase Space Trajectory
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              Plots prey population/energy (X-axis) against herbivore population (Y-axis) in a 2D state space. Stable ecological systems produce closed loops (limit cycles), while dying ecosystems spiral toward <strong class="text-slate-700">(0, 0)</strong>, mapping system attractors directly.
+            </p>
+          </div>
         </div>
-      </details>
-      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-        <summary class="cursor-pointer font-medium text-slate-700">What do the plant properties mean?</summary>
-        <div class="mt-2 text-xs leading-5 text-slate-600">
-          For each plant, <strong>energy / max energy</strong> is its current reserve relative to the species cap.
-          <strong>growth</strong> is the configured growth-rate parameter, <strong>camouflage</strong> reports whether the flow-field attenuation is enabled,
-          and <strong>root links</strong> is the number of current mycorrhizal neighbors. Each substance card shows whether it is active or just triggered,
-          whether it is lethal or repellent, how many synthesis/aftereffect ticks remain, and the <strong>gate</strong> line summarizing the activation predicate tree.
-        </div>
-      </details>
-      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-        <summary class="cursor-pointer font-medium text-slate-700">What do swarms and mycorrhiza properties mean?</summary>
-        <div class="mt-2 text-xs leading-5 text-slate-600">
-          Swarm <strong>population</strong> is current headcount, <strong>baseline</strong> is the spawn population used for growth/mitosis comparisons,
-          <strong>signal</strong> and <strong>toxin</strong> are the local overlay concentrations at the hovered cell, and status lines report whether the swarm is energy-stressed,
-          repelled, or intoxicated. The Mycorrhiza block counts all root links touching the hovered cell, lists whether inter-species links are allowed,
-          shows connection cost and signal velocity settings, and enumerates each linked neighbour cell.
-        </div>
-      </details>
-      <details class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-        <summary class="cursor-pointer font-medium text-slate-700">What does the diagnostics sidebar show?</summary>
-        <div class="mt-2 text-xs leading-5 text-slate-600">
-          <strong>Model</strong> shows draft counts, live entity counts, the newest telemetry record, and an energy-deficit watch driven by current swarm reserves.
-          <strong>Frontend</strong> reports the dashboard controller state and WebSocket/render status.
-          <strong>Backend</strong> shows recent in-memory PHIDS logs from API requests, draft mutations, engine transitions, telemetry, and websocket activity.
-        </div>
-      </details>
+      </div>
+    </div>
+
+    <!-- Quick Diagnostics Tips / Sidebar Info -->
+    <div class="bg-slate-100/50 rounded-lg p-3 text-[11px] border border-slate-200/40 text-slate-500 flex flex-wrap gap-x-6 gap-y-2 justify-between">
+      <div><strong>Tooltip Insights:</strong> Hover over any grid cell to view local wind vectors, flow-field metrics, signal/toxin concentration lists, plant camouflage states, and active predicate gates.</div>
+      <div><strong>Diagnostic Watch:</strong> The sidebar monitors draft counts, live loop states, and the current swarm energy-deficit to alert you of potential ecological collapse before it happens.</div>
     </div>
   </div>
 </div>

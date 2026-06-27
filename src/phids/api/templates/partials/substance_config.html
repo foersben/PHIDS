@@ -1,6 +1,10 @@
 <div id="substance-config-view">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-xl font-semibold text-slate-800">🧪 Substance Definitions</h2>
+  </div>
+
+  <div class="flex items-center justify-between mb-4">
+    <div></div>
     {% if substances|length < 16 %}
     <button hx-post="/api/config/substances" hx-target="#substance-config-view" hx-swap="outerHTML"
       hx-vals='{"name":"Signal","is_toxin":"false","lethal":"false","repellent":"false","synthesis_duration":"3","aftereffect_ticks":"0","lethality_rate":"0","repellent_walk_ticks":"3","energy_cost_per_tick":"1","min_herbivore_population":"5"}'
@@ -95,4 +99,33 @@
   <p class="mt-3 text-xs text-slate-400">
     Assign substances to (Flora, Herbivore) pairs in the ⚡ Trigger Matrix.
   </p>
+
+  <!-- Substance Config Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Substance Configuration Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">Substance Behaviors Explained:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>🧪 Type:</strong> Signals diffuse through cells to alert neighbors. Lethal Toxins kill herbivores. Repellent Toxins force herbivores to move away. Standard Toxins act as basic chemical deterrents.</li>
+          <li><strong>⏱️ Synth. Duration:</strong> Number of ticks the plant continues synthesizing the substance once triggered.</li>
+          <li><strong>⏳ Aftereffect:</strong> Remaining ticks the substance persists and is active in the plant's cells after synthesis stops.</li>
+          <li><strong>☠️ Lethality:</strong> The rate of population reduction per tick applied to swarms feeding on plants producing lethal toxins.</li>
+          <li><strong>⚡ Energy Cost:</strong> Active metabolic maintenance cost per tick incurred by plants while synthesizing the substance.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Modifying any value in a table field immediately triggers a background save to the server-side draft.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
