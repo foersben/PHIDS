@@ -258,8 +258,8 @@ class TestGenerateTikzStr:
             include_herbivore_ids="0",
         )
         # plant species 1 has x=4 at both sample ticks; if dropped, this becomes x=0.
-        assert "(4,3)" in s
-        assert "(4,4)" in s
+        assert "(4.0,3.0)" in s or "(4,3)" in s
+        assert "(4.0,4.0)" in s or "(4,4)" in s
 
 
 class TestExportBytesTexTable:

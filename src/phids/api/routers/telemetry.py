@@ -385,6 +385,12 @@ async def telemetry_chart(request: Request) -> Response:
         latest_metrics = api_main._sim_loop.telemetry.get_latest_metrics()
         live_summary = api_main._build_live_summary()
 
+    from phids.api.ui_state import DraftState, get_draft
+
+    draft: DraftState = get_draft()
+    max_x: int = api_main._sim_loop.env.width if api_main._sim_loop is not None else draft.grid_width
+    max_y: int = api_main._sim_loop.env.height if api_main._sim_loop is not None else draft.grid_height
+
     return api_main.templates.TemplateResponse(
         request,
         "partials/telemetry_chart.html",
@@ -394,5 +400,7 @@ async def telemetry_chart(request: Request) -> Response:
             "latest_metrics": latest_metrics,
             "live_summary": live_summary,
             "tick_value": api_main._sim_loop.tick if api_main._sim_loop is not None else 0,
+            "max_x": max_x,
+            "max_y": max_y,
         },
     )
