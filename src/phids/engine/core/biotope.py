@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
-from scipy.ndimage import map_coordinates  # type: ignore[import-untyped]
-from scipy.signal import convolve2d  # type: ignore[import-untyped]
+from numba import njit
 
 from phids.shared.constants import (
     GRID_H_MAX,
@@ -33,6 +32,69 @@ from phids.shared.constants import (
 # ---------------------------------------------------------------------------
 _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.8
+
+
+@njit
+def _numba_diffuse_signal_layer(
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+    decay: float,
+    epsilon: float,
+    kernel: npt.NDArray[np.float64],
+    write_buffer: npt.NDArray[np.float64],
+) -> None:
+    """JIT-compiled advection and convolution."""
+    advected = np.zeros((width, height), dtype=np.float64)
+
+    # 1. Semi-Lagrangian Advection (backward interpolation)
+    for x in range(width):
+        for y in range(height):
+            cx = float(x) - wind_x[x, y]
+            cy = float(y) - wind_y[x, y]
+
+            x0 = int(np.floor(cx))
+            y0 = int(np.floor(cy))
+            x1 = x0 + 1
+            y1 = y0 + 1
+
+            dx = cx - float(x0)
+            dy = cy - float(y0)
+
+            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
+            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
+            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
+            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
+
+            val_y0 = v00 * (1.0 - dx) + v10 * dx
+            val_y1 = v01 * (1.0 - dx) + v11 * dx
+            val = val_y0 * (1.0 - dy) + val_y1 * dy
+
+            advected[x, y] = val
+
+    # 2. Gaussian Diffusion (Convolution) & Decay
+    # We must support an arbitrarily sized symmetric 2D kernel.
+    k_w = kernel.shape[0]
+    k_h = kernel.shape[1]
+    k_w_half = k_w // 2
+    k_h_half = k_h // 2
+
+    for x in range(width):
+        for y in range(height):
+            v = 0.0
+            for i in range(-k_w_half, k_w_half + 1):
+                for j in range(-k_h_half, k_h_half + 1):
+                    ax = x - i
+                    ay = y - j
+                    if 0 <= ax < width and 0 <= ay < height:
+                        v += advected[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+
+            v *= decay
+            if v < epsilon:
+                v = 0.0
+            write_buffer[x, y] = v
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
@@ -182,38 +244,23 @@ class GridEnvironment:
         respects heterogeneous wind fields across the grid and avoids global-mean
         wind averaging artefacts.
         """
-        x_coords, y_coords = np.mgrid[0 : self.width, 0 : self.height]
-        upwind_x = x_coords.astype(np.float64) - self.wind_vector_x
-        upwind_y = y_coords.astype(np.float64) - self.wind_vector_y
-
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
             if not np.any(layer >= SIGNAL_EPSILON):
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
-            advected = map_coordinates(
+            _numba_diffuse_signal_layer(
+                self.width,
+                self.height,
                 layer,
-                [upwind_x, upwind_y],
-                order=1,
-                mode="constant",
-                cval=0.0,
-                prefilter=False,
-            )
-
-            convolved = convolve2d(
-                advected,
+                self.wind_vector_x,
+                self.wind_vector_y,
+                SIGNAL_DECAY_FACTOR,
+                SIGNAL_EPSILON,
                 DIFFUSION_KERNEL,
-                mode="same",
-                boundary="fill",
-                fillvalue=0.0,
+                self._signal_layers_write[s],
             )
-
-            shifted = np.asarray(convolved, dtype=np.float64)
-            shifted *= SIGNAL_DECAY_FACTOR
-            # Zero sub-threshold values to preserve matrix sparsity
-            shifted[shifted < SIGNAL_EPSILON] = 0.0
-            self._signal_layers_write[s] = shifted
 
         # Swap buffers
         self.signal_layers, self._signal_layers_write = (
