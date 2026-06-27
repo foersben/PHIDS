@@ -210,7 +210,7 @@ class ECSWorld:
                 if eid in entities and ct in entities[eid]._components
             ]
 
-        # Start from the smallest set for efficiency
+        # Fast path for multiple components using set intersection
         sets: list[set[int]] = []
         for component_type in component_types:
             indexed_ids = self._component_index.get(component_type)
@@ -218,10 +218,17 @@ class ECSWorld:
                 return []
             sets.append(indexed_ids)
 
-        smallest = min(sets, key=len)
+        # Sort by length to optimize intersection
+        sets.sort(key=len)
+        result_set = set(sets[0])
+        for s in sets[1:]:
+            result_set.intersection_update(s)
+            if not result_set:
+                return []
+
         return [
             entities[eid]
-            for eid in smallest
+            for eid in result_set
             if eid in entities and all(ct in entities[eid]._components for ct in component_types)
         ]
 

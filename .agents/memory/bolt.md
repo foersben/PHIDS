@@ -15,3 +15,7 @@ type: memory
 ## 2025-02-26 - Python Flat List vs Dict & NumPy for spatial indexing
 **Learning:** During profiling of the O(1) crowding lookups (`tile_populations`) in the interaction phase, I found that using a flat Python list (`[0] * (env.width * env.height)`) accessed via `list[y * width + x]` is ~2-3x faster than the original `dict` keyed by `(x, y)` tuples due to avoiding tuple creation and hashing overhead. Interestingly, it also marginally outperformed using a 2D NumPy array (`np.zeros((width, height), dtype=np.int32)`) for this specific workload, because modifying NumPy elements iteratively from pure Python incurs slight C-API overhead unless the operation is vectorized or fully JIT-compiled.
 **Action:** When tracking dense, integer-based scalar state that must be updated iteratively within pure Python logic without Numba or vectorization (like spatial population accumulation), pre-allocating a flat Python list often provides the fastest mutable caching structure.
+
+## 2024-05-24 - Optimize ECS component intersection queries
+Learning: Searching for multi-component entities by enumerating combinations over a list with `all()` is a significant bottleneck.
+Action: Sort component index sets by length `sets.sort(key=len)` and iteratively apply `.intersection_update()` down an initial `set()` to collapse lookup paths dynamically using fast C routines.
