@@ -40,7 +40,7 @@ from phids.telemetry.analytics import TelemetryRow
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import pandas as pd  # type: ignore[import-untyped]
+    import pandas as pd
     import polars as pl
     from matplotlib.axes import Axes
 
@@ -328,7 +328,7 @@ def generate_png_bytes(
     *,
     flora_names: dict[int, str] | None = None,
     herbivore_names: dict[int, str] | None = None,
-    prey_species_id: int = 0,
+    plant_species_id: int = 0,
     herbivore_species_id: int = 0,
     include_flora_ids: str | None = None,
     include_herbivore_ids: str | None = None,
@@ -347,7 +347,7 @@ def generate_png_bytes(
       species, sharing a common tick x-axis and a left y-axis for population counts.
       Total flora energy is plotted on a secondary y-axis.
     * ``"phasespace"`` — Lotka-Volterra phase-space scatter with ``showLine=True``
-      semantics, plotting the aggregate population of ``prey_species_id`` flora on
+      semantics, plotting the aggregate population of ``plant_species_id`` flora on
       the x-axis and the aggregate population of ``herbivore_species_id`` herbivores
       on the y-axis as a connected trajectory through time, revealing orbital cycles.
     * ``"defense_economy"`` — Per-species ratio of defense maintenance cost to
@@ -366,7 +366,7 @@ def generate_png_bytes(
             ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
         herbivore_names: Optional display names keyed by herbivore species id.
-        prey_species_id: Flora species id for phase-space x-axis.
+        plant_species_id: Flora species id for phase-space x-axis.
         herbivore_species_id: Herbivore species id for phase-space y-axis.
         include_flora_ids: Optional comma-separated list of flora species IDs to filter.
         include_herbivore_ids: Optional comma-separated list of herbivore species IDs to filter.
@@ -391,7 +391,7 @@ def generate_png_bytes(
     flora_filter = include_flora_ids
     herbivore_filter = include_herbivore_ids
     if plot_type == "phasespace":
-        flora_filter = _append_species_id(flora_filter, prey_species_id)
+        flora_filter = _append_species_id(flora_filter, plant_species_id)
         herbivore_filter = _append_species_id(herbivore_filter, herbivore_species_id)
     plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, herbivore_ids=herbivore_filter)
     fig, ax = plt.subplots(figsize=(10, 5), dpi=dpi)
@@ -420,7 +420,7 @@ def generate_png_bytes(
         _plot_phasespace(
             ax,
             plot_rows,
-            prey_species_id=prey_species_id,
+            plant_species_id=plant_species_id,
             herbivore_species_id=herbivore_species_id,
             flora_names=flora_names,
             herbivore_names=herbivore_names,
@@ -498,10 +498,10 @@ def _plot_timeseries(
         y_label: Optional custom y-axis label.
     """
     all_flora: set[int] = set()
-    all_pred: set[int] = set()
+    all_herbivores: set[int] = set()
     for r in rows:
         all_flora.update(r.get("plant_pop_by_species", {}).keys())
-        all_pred.update(r.get("swarm_pop_by_species", {}).keys())
+        all_herbivores.update(r.get("swarm_pop_by_species", {}).keys())
 
     for i, fid in enumerate(sorted(all_flora)):
         colour = _FLORA_COLOURS[i % len(_FLORA_COLOURS)]
@@ -509,7 +509,7 @@ def _plot_timeseries(
         y = [r.get("plant_pop_by_species", {}).get(fid, 0) for r in rows]
         ax.plot(ticks, y, color=colour, linewidth=1.5, label=name)
 
-    for i, pid in enumerate(sorted(all_pred)):
+    for i, pid in enumerate(sorted(all_herbivores)):
         colour = _HERBIVORE_COLOURS[i % len(_HERBIVORE_COLOURS)]
         name = (herbivore_names or {}).get(pid, f"Herbivore {pid}")
         y = [r.get("swarm_pop_by_species", {}).get(pid, 0) for r in rows]
@@ -526,7 +526,7 @@ def _plot_phasespace(
     ax: Axes,
     rows: TelemetryRows,
     *,
-    prey_species_id: int,
+    plant_species_id: int,
     herbivore_species_id: int,
     flora_names: dict[int, str] | None,
     herbivore_names: dict[int, str] | None,
@@ -541,7 +541,7 @@ def _plot_phasespace(
     Args:
         ax: Matplotlib Axes instance.
         rows: Raw telemetry rows.
-        prey_species_id: Flora species id to use as x-axis.
+        plant_species_id: Flora species id to use as x-axis.
         herbivore_species_id: Herbivore species id to use as y-axis.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
@@ -551,12 +551,12 @@ def _plot_phasespace(
         x_max: Optional custom x-axis maximum value.
         y_max: Optional custom y-axis maximum value.
     """
-    if prey_species_id == 0:
+    if plant_species_id == 0:
         x = [r.get("flora_population", 0) for r in rows]
-        prey_name = "Flora (Total)"
+        plant_name = "Flora (Total)"
     else:
-        x = [r.get("plant_pop_by_species", {}).get(prey_species_id, 0) for r in rows]
-        prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
+        x = [r.get("plant_pop_by_species", {}).get(plant_species_id, 0) for r in rows]
+        plant_name = (flora_names or {}).get(plant_species_id, f"Flora {plant_species_id}")
 
     if herbivore_species_id == 0:
         y = [r.get("herbivore_population", 0) for r in rows]
@@ -576,7 +576,7 @@ def _plot_phasespace(
         ax.plot(x[0], y[0], "go", markersize=8, label="Start", zorder=4)
         ax.plot(x[-1], y[-1], "rs", markersize=8, label="End", zorder=4)
 
-    ax.set_xlabel(x_label or f"Population - {prey_name}")
+    ax.set_xlabel(x_label or f"Population - {plant_name}")
     ax.set_ylabel(y_label or f"Population - {herbivore_name}")
     ax.set_title(title or "PHIDS - Lotka-Volterra Phase Space")
     if x_max is not None and x_max > 0:
@@ -713,7 +713,7 @@ def generate_tikz_str(
     *,
     flora_names: dict[int, str] | None = None,
     herbivore_names: dict[int, str] | None = None,
-    prey_species_id: int = 0,
+    plant_species_id: int = 0,
     herbivore_species_id: int = 0,
     include_flora_ids: str | None = None,
     include_herbivore_ids: str | None = None,
@@ -742,7 +742,7 @@ def generate_tikz_str(
             ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
         herbivore_names: Optional display names keyed by herbivore species id.
-        prey_species_id: Flora species id for phase-space x-axis.
+        plant_species_id: Flora species id for phase-space x-axis.
         herbivore_species_id: Herbivore species id for phase-space y-axis.
         include_flora_ids: Optional comma-separated list of flora species IDs to filter.
         include_herbivore_ids: Optional comma-separated list of herbivore species IDs to filter.
@@ -761,7 +761,7 @@ def generate_tikz_str(
     flora_filter = include_flora_ids
     herbivore_filter = include_herbivore_ids
     if plot_type == "phasespace":
-        flora_filter = _append_species_id(flora_filter, prey_species_id)
+        flora_filter = _append_species_id(flora_filter, plant_species_id)
         herbivore_filter = _append_species_id(herbivore_filter, herbivore_species_id)
     plot_rows = filter_telemetry_rows(rows, flora_ids=flora_filter, herbivore_ids=herbivore_filter)
     if plot_type == "timeseries":
@@ -776,7 +776,7 @@ def generate_tikz_str(
     if plot_type == "phasespace":
         return _tikz_phasespace(
             plot_rows,
-            prey_species_id=prey_species_id,
+            plant_species_id=plant_species_id,
             herbivore_species_id=herbivore_species_id,
             flora_names=flora_names,
             herbivore_names=herbivore_names,
@@ -884,7 +884,7 @@ def _tikz_timeseries(
 def _tikz_phasespace(
     rows: TelemetryRows,
     *,
-    prey_species_id: int,
+    plant_species_id: int,
     herbivore_species_id: int,
     flora_names: dict[int, str] | None,
     herbivore_names: dict[int, str] | None,
@@ -898,7 +898,7 @@ def _tikz_phasespace(
 
     Args:
         rows: Raw telemetry rows.
-        prey_species_id: Flora species id for x-axis.
+        plant_species_id: Flora species id for x-axis.
         herbivore_species_id: Herbivore species id for y-axis.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
@@ -911,10 +911,10 @@ def _tikz_phasespace(
     Returns:
         str: LaTeX ``tikzpicture`` source.
     """
-    if prey_species_id == 0:
-        prey_name = "Flora (Total)"
+    if plant_species_id == 0:
+        plant_name = "Flora (Total)"
     else:
-        prey_name = (flora_names or {}).get(prey_species_id, f"Flora {prey_species_id}")
+        plant_name = (flora_names or {}).get(plant_species_id, f"Flora {plant_species_id}")
 
     if herbivore_species_id == 0:
         herbivore_name = "Herbivores (Total)"
@@ -927,8 +927,8 @@ def _tikz_phasespace(
     def get_x(r: dict[str, object]) -> float:
         val = (
             r.get("flora_population", 0)
-            if prey_species_id == 0
-            else getattr(r.get("plant_pop_by_species", {}), "get", lambda *_: 0)(prey_species_id, 0)
+            if plant_species_id == 0
+            else getattr(r.get("plant_pop_by_species", {}), "get", lambda *_: 0)(plant_species_id, 0)
         )
         return float(val) if isinstance(val, (int, float, str)) else 0.0
 
@@ -948,7 +948,7 @@ def _tikz_phasespace(
     return (
         "\\begin{tikzpicture}\n"
         "\\begin{axis}[\n"
-        f"    xlabel={{{x_label or (prey_name + ' Population')}}},\n"
+        f"    xlabel={{{x_label or (plant_name + ' Population')}}},\n"
         f"    ylabel={{{y_label or (herbivore_name + ' Population')}}},\n"
         f"    title={{{title or 'PHIDS -- Lotka-Volterra Phase Space'}}},\n"
         + x_bound

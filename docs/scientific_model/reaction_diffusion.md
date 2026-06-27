@@ -61,6 +61,7 @@ C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * \tilde{C}^t) + Q^t
 $$
 
 Where:
+
 - $\mathcal{K}_{iso}$ is an odd-sized Gaussian blur kernel (e.g., $3 \times 3$).
 - $*$ denotes the 2D discrete convolution.
 - $\gamma$ is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
@@ -115,13 +116,13 @@ If the wind speed spikes unexpectedly in a scenario, an explicit alternative col
 
 #### IV. Computational Improvement
 
-* **Complexity:** The semi-Lagrangian approach is *unconditionally stable*. It allows the simulation engine to utilize significantly larger time steps (\Delta t) without risk of numerical explosion, maintaining stable $O(W \times H)$ grid passes regardless of wind velocity.
-* **Kernel Minimization:** Restricting the convolution step to a tight, center-symmetric 3x3 kernel reduces the memory footprint and limits array cache misses. This keeps the execution pipeline bound to the immediate L1/L2 cache lines of modern processor cores during vectorization.
+- **Complexity:** The semi-Lagrangian approach is *unconditionally stable*. It allows the simulation engine to utilize significantly larger time steps (\Delta t) without risk of numerical explosion, maintaining stable $O(W \times H)$ grid passes regardless of wind velocity.
+- **Kernel Minimization:** Restricting the convolution step to a tight, center-symmetric 3x3 kernel reduces the memory footprint and limits array cache misses. This keeps the execution pipeline bound to the immediate L1/L2 cache lines of modern processor cores during vectorization.
 
 #### V. Biological Modeling Realism
 
-* **Anisotropic Plant Communication:** Plants communicate via airborne volatile organic compounds (VOCs)—such as releasing green leaf volatiles or jasmonates when chewed by herbivores to prime defensive enzyme synthesis in neighboring flora.
-* **Realistic Signal Plumes:** By pairing wind-driven advection with symmetric diffusion, PHIDS accurately models directional, elongated chemical plumes. Downwind plants receive early warning signals and synthesize defenses long before upwind plants register any threat, perfectly mirroring canopy-level micro-climate communication patterns observed in forest ecology.
+- **Anisotropic Plant Communication:** Plants communicate via airborne volatile organic compounds (VOCs)—such as releasing green leaf volatiles or jasmonates when chewed by herbivores to prime defensive enzyme synthesis in neighboring flora.
+- **Realistic Signal Plumes:** By pairing wind-driven advection with symmetric diffusion, PHIDS accurately models directional, elongated chemical plumes. Downwind plants receive early warning signals and synthesize defenses long before upwind plants register any threat, perfectly mirroring canopy-level micro-climate communication patterns observed in forest ecology.
 
 ## Numerical Example
 
@@ -178,6 +179,9 @@ Where $\varepsilon$ is a configurable threshold (e.g., `1e-4`).
 
 ## Alternatives Considered
 
-- **Agent-Based Scent Particles:** We could spawn individual ECS entities representing "scent particles" that move randomly.
-    - *Why rejected:* Tracking millions of particles per tick destroys the $O(1)$ scaling constraint of the engine.
-    - *Our advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, we achieve mathematically accurate macro-dispersion in bounded time, regardless of how much substance is emitted.
+### Agent-Based Scent Particles
+
+We could spawn individual ECS entities representing "scent particles" that move randomly.
+
+- *Why rejected:* Tracking millions of particles per tick destroys the $O(1)$ scaling constraint of the engine.
+- *Our advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, we achieve mathematically accurate macro-dispersion in bounded time, regardless of how much substance is emitted.

@@ -54,13 +54,13 @@ Establishing a fungal web requires significant carbohydrate expenditure. Plants 
 
 Mycorrhizal networks bypass the airborne Volatile Organic Compound (VOC) diffusion model.
 
-1.  If Plant A is attacked, it triggers a signaling substance (Section 5.1, Reaction-Diffusion).
-2.  Plant A begins emitting VOCs into the air above it.
-3.  Simultaneously, Plant A injects the exact same signal concentration *directly* into the connected root node of Plant B.
+1. If Plant A is attacked, it triggers a signaling substance (Section 5.1, Reaction-Diffusion).
+2. Plant A begins emitting VOCs into the air above it.
+3. Simultaneously, Plant A injects the exact same signal concentration *directly* into the connected root node of Plant B.
 
 Because the signal travels over the Graph Structure of the Mycorrhiza at $t_{velocity}$ (hops per tick), it propagates significantly faster than atmospheric diffusion.
 
-Plant B receives the chemical warning of Herbivore predation without having to wait for the Gaussian convolution kernel to disperse the signal through the air, allowing Plant B to synthesize its own localized Toxins preemptively.
+Plant B receives the chemical warning of herbivory without having to wait for the Gaussian convolution kernel to disperse the signal through the air, allowing Plant B to synthesize its own localized Toxins preemptively.
 
 ## 3. Death & Telemetry Causation
 
@@ -68,10 +68,10 @@ In older OOP simulations, death is a simple variable boolean `True/False`. In PH
 
 Whenever a plant energy value falls beneath its survival threshold, it is scheduled for garbage collection by the ECS framework. Crucially, the engine tags exactly *why* the energy plummeted via the `last_energy_loss_cause` tracker:
 
--   **`death_reproduction`**: The plant over-extended dropping seeds.
--   **`death_mycorrhiza`**: The plant died trying to pay the cost of connecting to a fungal network.
--   **`death_defense_maintenance`**: The plant successfully synthesized a defensive toxin but lacked the caloric intake to maintain it.
--   **`death_herbivore_feeding`**: The plant was completely stripped of energy by a grazing swarm.
--   **`death_background_deficit`**: General starvation due to low growth or high thresholds.
+- **`death_reproduction`**: The plant over-extended dropping seeds.
+- **`death_mycorrhiza`**: The plant died trying to pay the cost of connecting to a fungal network.
+- **`death_defense_maintenance`**: The plant successfully synthesized a defensive toxin but lacked the caloric intake to maintain it.
+- **`death_herbivore_feeding`**: The plant was completely stripped of energy by a grazing swarm.
+- **`death_background_deficit`**: General starvation due to low growth or high thresholds.
 
-These tags are essential for interpreting whether an ecosystem collapsed due to predation or metabolic mismanagement.
+These tags are essential for interpreting whether an ecosystem collapsed due to herbivory or metabolic mismanagement.

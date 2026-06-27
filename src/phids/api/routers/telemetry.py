@@ -215,7 +215,7 @@ async def telemetry_table_preview(
 async def export_telemetry_format(
     data_type: str,
     format: str = "csv",
-    prey_species_id: int = 0,
+    plant_species_id: int = 0,
     herbivore_species_id: int = 0,
     columns: str | None = None,
     flora_ids: str | None = None,
@@ -232,7 +232,7 @@ async def export_telemetry_format(
     Args:
         data_type: Analytical projection to export, including time series and phase-space views.
         format: Output artifact encoding.
-        prey_species_id: Flora species identifier used on the phase-space x-axis.
+        plant_species_id: Flora species identifier used on the phase-space x-axis.
         herbivore_species_id: Herbivore species identifier used on the phase-space y-axis.
         columns: Optional comma-delimited dataframe column subset.
         flora_ids: Optional comma-delimited flora species subset.
@@ -307,7 +307,7 @@ async def export_telemetry_format(
                     normalized_data_type,
                     flora_names=flora_names,
                     herbivore_names=herbivore_names,
-                    prey_species_id=prey_species_id,
+                    plant_species_id=plant_species_id,
                     herbivore_species_id=herbivore_species_id,
                     include_flora_ids=flora_ids,
                     include_herbivore_ids=herbivore_ids,
@@ -333,7 +333,7 @@ async def export_telemetry_format(
                     normalized_data_type,
                     flora_names=flora_names,
                     herbivore_names=herbivore_names,
-                    prey_species_id=prey_species_id,
+                    plant_species_id=plant_species_id,
                     herbivore_species_id=herbivore_species_id,
                     include_flora_ids=flora_ids,
                     include_herbivore_ids=herbivore_ids,

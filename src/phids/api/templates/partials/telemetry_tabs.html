@@ -118,9 +118,9 @@
         <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">🔄 Phase Space Trajectory</h3>
         <div class="flex flex-wrap gap-3 items-center text-[11px] text-slate-600">
           <label class="flex items-center">
-            <span class="font-medium text-slate-500 mr-1">Prey (x):</span>
-            <select id="ps-prey" onchange="phidsTelemetryRedrawPS()"
-              class="text-[11px] rounded border border-slate-200 bg-white px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></select>
+            <span class="font-medium text-slate-500 mr-1">Plant (x):</span>
+            <select id="ps-plant" onchange="phidsTelemetryRedrawPS()"
+                    class="text-[11px] rounded border border-slate-200 bg-white px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></select>
           </label>
           <label class="flex items-center">
             <span class="font-medium text-slate-500 mr-1">Herbivore (y):</span>
@@ -146,7 +146,7 @@
             </label>
             <label class="flex flex-col">
               <span class="font-medium text-slate-500 mb-1">X Label</span>
-              <input id="ps-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Prey population"
+              <input id="ps-x-label" oninput="phidsTelemetryRefreshState()" placeholder="Plant population"
                 class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
             </label>
             <label class="flex flex-col">
@@ -298,18 +298,18 @@
   }
 
   function _selectedPhaseSpecies(data) {
-    const preyEl = document.getElementById('ps-prey');
+    const plantEl = document.getElementById('ps-plant');
     const herbivoreEl = document.getElementById('ps-herbivore');
     const floraIds = data.flora_ids || [];
     const herbivoreIds = data.herbivore_ids || [];
 
-    const preyVal = preyEl ? preyEl.value : null;
+    const plantVal = plantEl ? plantEl.value : null;
     const herbivoreVal = herbivoreEl ? herbivoreEl.value : null;
 
-    const prey = preyVal === 'aggregate' ? 'aggregate' : (floraIds.includes(parseInt(preyVal, 10)) ? parseInt(preyVal, 10) : (floraIds.length > 0 ? floraIds[0] : 0));
+    const plant = plantVal === 'aggregate' ? 'aggregate' : (floraIds.includes(parseInt(plantVal, 10)) ? parseInt(plantVal, 10) : (floraIds.length > 0 ? floraIds[0] : 0));
     const herbivore = herbivoreVal === 'aggregate' ? 'aggregate' : (herbivoreIds.includes(parseInt(herbivoreVal, 10)) ? parseInt(herbivoreVal, 10) : (herbivoreIds.length > 0 ? herbivoreIds[0] : 0));
 
-    return { prey, herbivore };
+    return { plant: plant, herbivore };
   }
 
   function _encodeParams(params) {
@@ -348,7 +348,7 @@
       tick_interval: tickInterval,
     });
     const psParams = _encodeParams({
-      prey_species_id: species.prey === 'aggregate' ? 0 : species.prey,
+      plant_species_id: species.plant === 'aggregate' ? 0 : species.plant,
       herbivore_species_id: species.herbivore === 'aggregate' ? 0 : species.herbivore,
       flora_ids: sel.floraIds,
       herbivore_ids: sel.herbivoreIds,
@@ -870,19 +870,19 @@
   // Phase-space chart
   // ---------------------------------------------------------------------------
   function _populateDropdowns(data) {
-    const preyEl = document.getElementById('ps-prey');
+    const plantEl = document.getElementById('ps-plant');
     const herbivoreEl = document.getElementById('ps-herbivore');
-    if (!preyEl || !herbivoreEl) return;
+    if (!plantEl || !herbivoreEl) return;
 
-    const prevPrey = preyEl.value;
+    const prevPlant = plantEl.value;
     const prevHerbivore = herbivoreEl.value;
 
-    let preyHtml = `<option value="aggregate" ${prevPrey === 'aggregate' ? 'selected' : ''}>Flora (Aggregate)</option>`;
-    preyHtml += (data.flora_ids || []).map(fid => {
+    let plantHtml = `<option value="aggregate" ${prevPlant === 'aggregate' ? 'selected' : ''}>Flora (Aggregate)</option>`;
+    plantHtml += (data.flora_ids || []).map(fid => {
       const name = (data.flora_names || {})[fid] || ('Flora ' + fid);
-      return `<option value="${fid}" ${String(fid) === prevPrey ? 'selected' : ''}>${name}</option>`;
+      return `<option value="${fid}" ${String(fid) === prevPlant ? 'selected' : ''}>${name}</option>`;
     }).join('');
-    preyEl.innerHTML = preyHtml;
+    plantEl.innerHTML = plantHtml;
 
     let herbivoreHtml = `<option value="aggregate" ${prevHerbivore === 'aggregate' ? 'selected' : ''}>Herbivores (Aggregate)</option>`;
     herbivoreHtml += (data.herbivore_ids || []).map(pid => {
@@ -898,15 +898,15 @@
 
     _populateDropdowns(data);
 
-    const preyEl = document.getElementById('ps-prey');
+    const plantEL = document.getElementById('ps-plant');
     const herbivoreEl = document.getElementById('ps-herbivore');
     const species = _selectedPhaseSpecies(data);
-    if (preyEl) preyEl.value = String(species.prey);
+    if (plantEL) plantEL.value = String(species.plant);
     if (herbivoreEl) herbivoreEl.value = String(species.herbivore);
-    const preyId = species.prey;
+    const plantId = species.plant;
     const herbivoreId = species.herbivore;
 
-    const xVals = preyId === 'aggregate' ? (data.series.flora_population || []) : (data.series['plant_' + preyId + '_pop'] || []);
+    const xVals = plantId === 'aggregate' ? (data.series.flora_population || []) : (data.series['plant_' + plantId + '_pop'] || []);
     const yVals = herbivoreId === 'aggregate' ? (data.series.herbivore_population || []) : (data.series['swarm_' + herbivoreId + '_pop'] || []);
 
     const n = Math.min(xVals.length, yVals.length);
@@ -918,7 +918,7 @@
       points.push({ x: xVals[n - 1], y: yVals[n - 1] });
     }
 
-    const preyName = preyId === 'aggregate' ? 'Flora (Total)' : ((data.flora_names || {})[preyId] || ('Flora ' + preyId));
+    const plantName = plantId === 'aggregate' ? 'Flora (Total)' : ((data.flora_names || {})[plantId] || ('Flora ' + plantId));
     const herbivoreName = herbivoreId === 'aggregate' ? 'Herbivores (Total)' : ((data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId));
 
     if (!_psChart) {
@@ -975,7 +975,7 @@
       borderWidth: hasExtinction ? 3 : 0,
       _key: 'end',
     }]);
-    _psChart.options.scales.x.title.text = preyName + ' population';
+    _psChart.options.scales.x.title.text = plantName + ' population';
     _psChart.options.scales.y.title.text = herbivoreName + ' population';
     _psChart.update('none');
 

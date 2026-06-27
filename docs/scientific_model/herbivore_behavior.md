@@ -25,6 +25,7 @@ If gradient ascent alone drove the system, the swarm would halt completely.
 
 **Algorithmic Resolution:**
 When $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
+
 - A 10:1 preference weight is given to continue moving in the current heading.
 - If no previous heading exists, isotropic random dispersal (Random Walk) is applied.
 
@@ -43,7 +44,7 @@ This is a computational surrogate for crowding-induced displacement. When too ma
 
 ## 4. Trophic Anchoring (The Arrestment Reflex & Anchoring Heuristic)
 
-#### I. Implementation Mechanics
+### I. Implementation Mechanics
 
 Before evaluating the global navigation vectors derived from substance gradients or pheromone trails, the herbivore interaction pipeline executes a short-circuit guard clause:
 
@@ -60,7 +61,7 @@ else:
 
 If the plant entity existing at the swarm’s current coordinate possesses non-depleted biomass compatible with the herbivore's diet matrix, the engine locks the swarm's movement vectors to zero for that tick. The swarm bypasses all gradient tracking, remaining anchored to the tile to feed.
 
-#### II. Why It Is Solved This Way
+### II. Why It Is Solved This Way
 
 Flow field evaluation involves reading across multiple continuous data layers (e.g., plant defensive volatile arrays, attractant gradients, terrain resistance matrices). If every herbivore swarm executed this continuous mathematical tracking while already sitting on a massive food source, the engine would waste immense memory bandwidth re-calculating target paths for entities that have already successfully attained their goal state.
 
@@ -93,7 +94,7 @@ flowchart TD
     class Read_Arrays,Moore_Max stateData
 ```
 
-#### III. The Historical/Continuous Alternative
+### III. The Historical/Continuous Alternative
 
 The classic continuous modeling approach applies a constant, uninterrupted chemotaxis equation where the herbivore's velocity vector $\vec{v}$ is driven at all times by the gradient of an attractant field:
 
@@ -103,15 +104,15 @@ $$
 
 Under this old model, animals are forced to continually shift and vibrate according to shifting chemical backgrounds, even while actively eating a plant.
 
-#### IV. Computational Improvement
+### IV. Computational Improvement
 
-* **Complexity:** Drops the navigation cost for actively feeding swarms from an $O(M)$ array look-up and interpolation phase (where $M$ is the number of substance layers or flow field vectors) to a flat $O(1)$ boolean evaluation of the local cell state.
-* **Numba Optimization:** When herbivore densities are high and resources are abundant, up to 90% of the active swarms bypass the memory-bound array index operations required for vector-field pathing. This allows the Numba-compiled execution loops to maximize CPU cache residency by processing feeding swarms via simple in-place array updates.
+- **Complexity:** Drops the navigation cost for actively feeding swarms from an $O(M)$ array look-up and interpolation phase (where $M$ is the number of substance layers or flow field vectors) to a flat $O(1)$ boolean evaluation of the local cell state.
+- **Numba Optimization:** When herbivore densities are high and resources are abundant, up to 90% of the active swarms bypass the memory-bound array index operations required for vector-field pathing. This allows the Numba-compiled execution loops to maximize CPU cache residency by processing feeding swarms via simple in-place array updates.
 
-#### V. Biological Modeling Realism
+### V. Biological Modeling Realism
 
-* **Optimal Foraging Theory (Marginal Value Theorem):** Biologically, an animal does not expend metabolic kinetic energy navigating along a distant odor plume when it is currently standing on a valid, calorie-dense food source.
-* **Patch Dynamics:** Enforcing an explicit "Anchoring Heuristic" accurately captures the behavioral dichotomy of animals: alternating between a highly stationary *exploitation state* (feeding) and a highly mobile *exploration state* (navigating via flow fields). The swarm will only resume flow-field tracking once its voracious grazing depletes the local tile's biomass below its target threshold, triggering an emergent, resource-driven departure from the patch.
+- **Optimal Foraging Theory (Marginal Value Theorem):** Biologically, an animal does not expend metabolic kinetic energy navigating along a distant odor plume when it is currently standing on a valid, calorie-dense food source.
+- **Patch Dynamics:** Enforcing an explicit "Anchoring Heuristic" accurately captures the behavioral dichotomy of animals: alternating between a highly stationary *exploitation state* (feeding) and a highly mobile *exploration state* (navigating via flow fields). The swarm will only resume flow-field tracking once its voracious grazing depletes the local tile's biomass below its target threshold, triggering an emergent, resource-driven departure from the patch.
 
 ## 5. Mitosis & Clonal Bifurcation
 
@@ -119,6 +120,7 @@ When an anchored swarm consumes immense amounts of energy, it converts the surpl
 
 **Algorithmic Resolution:**
 The system executes a binary fission:
+
 1. The parent swarm's population and energy are divided exactly in half ($N/2, E/2$).
 2. A new `SwarmComponent` is allocated carrying the remaining half.
 3. The new offspring swarm inherits identical phenotypic traits (consumption rate, metabolism).

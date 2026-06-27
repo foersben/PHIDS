@@ -66,6 +66,7 @@ Continuous models treat population counts as floating-point numbers, allowing a 
 * **Starvation Threshold Penalties:** Enforcing an aggressive ceiling function on starvation deaths accurately models the biological vulnerability of stressed colonies. When a collective swarm faces an energetic deficit, the structural cost of maintaining cohesion means that fractional shortages trigger rapid, cascading failure among the weakest individuals. This ensures that starvation curves remain sharp, punitive, and biologically authentic.
 
 If $N_i \le 0$, the entity is scheduled for garbage collection at the end of the phase.
+
 ### 2. Reproduction from Surplus
 
 If the swarm secures enough energy to fulfill its baseline viability ($E_{base} = N_i \cdot E_{min,i}$), the remaining *surplus* energy is converted into new individuals.
@@ -108,16 +109,19 @@ The naive continuous mathematical alternative assumes that a population splits p
 
 Imagine a swarm of 10 herbivores with a baseline upkeep $m_i = 1.0$ and a reproduction cost $c_i = 5.0$.
 
-1.  **Feeding Phase:** The swarm eats a plant, bringing its total energy $E_i$ to **35.0**.
-2.  **Metabolism Phase:** The swarm pays its upkeep ($10 \times 1.0 = 10.0$).
-3.  **Surplus Calculation:** The swarm has $35.0 - 10.0 = 25.0$ surplus energy.
-4.  **Reproduction:** The swarm converts the surplus into $\lfloor 25.0 / 5.0 \rfloor = 5$ new offspring.
-5.  **Tick Conclusion:** The swarm ends the tick with a population of **15** and $0.0$ surplus energy.
+1. **Feeding Phase:** The swarm eats a plant, bringing its total energy $E_i$ to **35.0**.
+2. **Metabolism Phase:** The swarm pays its upkeep ($10 \times 1.0 = 10.0$).
+3. **Surplus Calculation:** The swarm has $35.0 - 10.0 = 25.0$ surplus energy.
+4. **Reproduction:** The swarm converts the surplus into $\lfloor 25.0 / 5.0 \rfloor = 5$ new offspring.
+5. **Tick Conclusion:** The swarm ends the tick with a population of **15** and $0.0$ surplus energy.
 
 If $N_{split} = 15$, the swarm will divide into two swarms of 7 and 8 individuals. One swarm retains the parent's coordinate, while the daughter swarm is stochastically displaced to an adjacent cell to begin active dispersal.
 
 ## Alternatives Considered
 
-- **Continuous-Time ODE Solvers (Lotka-Volterra):** The classic Lotka-Volterra predator-prey equations ($\frac{dx}{dt} = \alpha x - \beta xy$) model the rate of change of continuous populations.
-    - *Why rejected:* ODEs treat populations as perfectly mixed, homogeneous continuous variables ($x = 42.5$ rabbits). They cannot capture discrete, localized spatial events, such as a specific herd of 10 herbivores navigating around a toxic plant at coordinate $(4, 12)$.
-    - *Our advantage:* The discrete ECS formulation provides the spatial granularity required for physical movement, local chemical triggers, and density-dependent crowding (e.g., cell capacity repulsion) while preserving mathematical determinism.
+### Continuous-Time ODE Solvers (Lotka-Volterra)
+
+The classic Lotka-Volterra predator-prey (here: herbivore-plant) equations ($\frac{dx}{dt} = \alpha x - \beta xy$) model the rate of change of continuous populations.
+
+* *Why rejected:* ODEs treat populations as perfectly mixed, homogeneous continuous variables ($x = 42.5$ rabbits). They cannot capture discrete, localized spatial events, such as a specific herd of 10 herbivores navigating around a toxic plant at coordinate $(4, 12)$.
+* *Our advantage:* The discrete ECS formulation provides the spatial granularity required for physical movement, local chemical triggers, and density-dependent crowding (e.g., cell capacity repulsion) while preserving mathematical determinism.

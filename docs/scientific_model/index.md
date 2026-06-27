@@ -10,7 +10,7 @@ description: "Documentation for Scientific Model in the PHIDS framework."
 
 This section formally details the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a rigorous, deterministic computational ecology model. The documentation here defines the theoretical foundations, the explicit mathematical representations of the biological mechanisms, and the bounded approximations underlying the execution of the system.
 
-PHIDS operates as a coupled hybrid dynamical system. Discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers. This section will guide you through the algorithmic translation of complex phenomena—resource acquisition, predation pressure, induced signaling, metabolic attrition, and swarm dispersal—into transparent, causal operator chains.
+PHIDS operates as a coupled hybrid dynamical system. Discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers. This section will guide you through the algorithmic translation of complex phenomena—resource acquisition, herbivory pressure, induced signaling, metabolic attrition, and swarm dispersal—into transparent, causal operator chains.
 
 ## Core Chapters
 
@@ -21,6 +21,7 @@ By prioritizing formal exposition, explicit boundaries, and the rationale behind
 ## Merged Legacy Concepts
 
 To preserve the historical intent of the model, the following legacy documents were consolidated into the `mathematical_framework.md`:
+
 - `foundations/research-scope.md`
 - `engine/formal-algorithmic-model.md`
 - `engine/flow-field.md`

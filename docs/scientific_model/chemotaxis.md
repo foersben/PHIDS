@@ -24,8 +24,8 @@ Rather than solving a separate navigation problem for every individual herbivore
 
 This scalar lattice is a spatial superposition of two primary potentials:
 
-1.  **Attractants ($E_t$):** The aggregate caloric energy of all flora species.
-2.  **Repellents ($T_t$):** The aggregate concentration of localized defensive toxins emitted by flora.
+1. **Attractants ($E_t$):** The aggregate caloric energy of all flora species.
+2. **Repellents ($T_t$):** The aggregate concentration of localized defensive toxins emitted by flora.
 
 ### Mathematical Formulation
 
@@ -71,17 +71,17 @@ $$
 
 The swarm is located at the center cell `(1,1)` with a scalar value of **$0.8$**.
 
-1.  The swarm evaluates all 9 cells (including its current location).
-2.  The maximum value within $\mathcal{N}(1,1)$ is **$2.1$** at coordinate `(0, 2)` (Top-Right relative to the swarm).
-3.  The swarm executes a movement to `(0, 2)`.
+1. The swarm evaluates all 9 cells (including its current location).
+2. The maximum value within $\mathcal{N}(1,1)$ is **$2.1$** at coordinate `(0, 2)` (Top-Right relative to the swarm).
+3. The swarm executes a movement to `(0, 2)`.
 
 If the center cell `(1,1)` had the highest value (e.g., it was currently situated on a high-energy plant), the swarm would remain stationary, an act defined as **Anchoring**.
 
 ## Alternatives Considered
 
 - **A* (A-Star) or Dijkstra Pathfinding:** Calculating optimal, obstacle-avoidant paths from every swarm to the nearest food source.
-    - *Why rejected:* Classic pathfinding scales poorly. Calculating paths for hundreds of swarms across a dynamic grid per tick would bottleneck the CPU, creating a computational complexity of $O(N \cdot M^2)$. Furthermore, swarms lack "global knowledge" of the map; their navigation is inherently sensory-driven.
-    - *Our advantage:* The unified Flow Field is calculated exactly *once* per tick via Numba JIT compilation. Every swarm simply samples its immediate adjacent cells via O(1) array reads. This perfectly mimics biological sensory constraints while maintaining extreme computational efficiency.
+  - *Why rejected:* Classic pathfinding scales poorly. Calculating paths for hundreds of swarms across a dynamic grid per tick would bottleneck the CPU, creating a computational complexity of $O(N \cdot M^2)$. Furthermore, swarms lack "global knowledge" of the map; their navigation is inherently sensory-driven.
+  - *Our advantage:* The unified Flow Field is calculated exactly *once* per tick via Numba JIT compilation. Every swarm simply samples its immediate adjacent cells via O(1) array reads. This perfectly mimics biological sensory constraints while maintaining extreme computational efficiency.
 
 ## Zero-Gradient Navigation (The Isotropic Search)
 

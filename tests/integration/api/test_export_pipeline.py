@@ -240,19 +240,19 @@ class TestGenerateTikzStr:
             _sample_rows(),
             "phasespace",
             title="Custom Phase",
-            x_label="Prey Axis",
-            y_label="Pred Axis",
+            x_label="Plant Axis",
+            y_label="Herbivore Axis",
         )
         assert "Custom Phase" in s
-        assert "Prey Axis" in s
-        assert "Pred Axis" in s
+        assert "Plant Axis" in s
+        assert "Herbivore Axis" in s
 
     def test_phasespace_keeps_selected_targets_even_when_visibility_filter_excludes(self) -> None:
         """Phase-space export preserves selected species ids even if UI visibility filters omit them."""
         s = generate_tikz_str(
             _sample_rows(),
             "phasespace",
-            prey_species_id=1,
+            plant_species_id=1,
             herbivore_species_id=0,
             include_flora_ids="0",
             include_herbivore_ids="0",

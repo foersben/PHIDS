@@ -92,7 +92,7 @@ Scenarios = [
     { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
     { "Requirements Traceability" = "reference/requirements-traceability.md" },
     { "Python API Reference" = "reference/api.md" },
-    { "Legacy Archive" = "legacy/index.md" },
+    # { "Legacy Archive" = "legacy/index.md" },
 ]
 
 [project.plugins.htmlproofer]

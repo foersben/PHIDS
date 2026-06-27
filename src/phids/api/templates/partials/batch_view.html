@@ -150,15 +150,15 @@
     const herbivoreMeanRaw =
       agg.herbivore_population_mean
       || agg.swarm_population_mean
-      || agg.predator_population_mean
+      || agg.herbivore_population_mean
       || _sumSeriesMap(agg.per_herbivore_pop_mean, labels.length);
     const herbivoreStdRaw =
       agg.herbivore_population_std
       || agg.swarm_population_std
-      || agg.predator_population_std
+      || agg.herbivore_population_std
       || _sumSeriesMap(agg.per_herbivore_pop_std, labels.length);
-    const predMean = _seriesWithLength(herbivoreMeanRaw, labels.length);
-    const predStd = _seriesWithLength(herbivoreStdRaw, labels.length);
+    const herbivoreMean = _seriesWithLength(herbivoreMeanRaw, labels.length);
+    const herbivoreStd = _seriesWithLength(herbivoreStdRaw, labels.length);
     const survivalSeries = (agg.survival_probability_curve || []).map((v) => 100.0 * v);
 
     const ctx = document.getElementById('batch-agg-chart');
@@ -184,8 +184,8 @@
 
     const floraUpper = floraMean.map((v, i) => v + (floraStd[i] || 0));
     const floraLower = floraMean.map((v, i) => v - (floraStd[i] || 0));
-    const predUpper = predMean.map((v, i) => v + (predStd[i] || 0));
-    const predLower = predMean.map((v, i) => v - (predStd[i] || 0));
+    const herbivoreUpper = herbivoreMean.map((v, i) => v + (herbivoreStd[i] || 0));
+    const herbivoreLower = herbivoreMean.map((v, i) => v - (herbivoreStd[i] || 0));
 
     aggChart = new Chart(ctx, {
       type: 'line',
@@ -195,9 +195,9 @@
           { label: 'Flora mean', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0 },
           { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
           { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Herbivore mean', data: predMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
-          { label: 'Herbivore +sigma', data: predUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Herbivore -sigma', data: predLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Herbivore mean', data: herbivoreMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
+          { label: 'Herbivore +sigma', data: herbivoreUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Herbivore -sigma', data: herbivoreLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
         ],
       },
       options: {
@@ -296,8 +296,8 @@
           if (col === 'tick') v = String(labels[i]);
           if (col === 'flora_population_mean') v = (floraMean[i] || 0).toFixed(2);
           if (col === 'flora_population_std') v = (floraStd[i] || 0).toFixed(2);
-          if (col === 'herbivore_population_mean') v = (predMean[i] || 0).toFixed(2);
-          if (col === 'herbivore_population_std') v = (predStd[i] || 0).toFixed(2);
+          if (col === 'herbivore_population_mean') v = (herbivoreMean[i] || 0).toFixed(2);
+          if (col === 'herbivore_population_std') v = (herbivoreStd[i] || 0).toFixed(2);
           html += `<td class="px-2 py-1 border-b border-slate-100">${v}</td>`;
         });
         html += `<td class="px-2 py-1 border-b border-slate-100">${surv.toFixed(1)}</td></tr>`;

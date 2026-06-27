@@ -5,7 +5,7 @@ scenario construction. The routes cover biotope parameters, flora and herbivore 
 substance definitions, diet-matrix compatibility toggles, trigger-rule condition trees, and
 placement-editor operations. The computational purpose is to maintain a rigorously validated draft
 representation before any transition into a live deterministic `SimulationLoop`. The biological
-purpose is to preserve explicit, inspectable parameterization of growth, predation, signaling,
+purpose is to preserve explicit, inspectable parameterization of growth, herbivory, signaling,
 mycorrhizal coupling, and toxic response mechanisms while retaining server-side authority over all
 configuration transformations.
 """
