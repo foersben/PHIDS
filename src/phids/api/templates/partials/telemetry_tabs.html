@@ -913,6 +913,10 @@
     const points = [];
     const step = Math.max(1, Math.floor(n / 2000));
     for (let i = 0; i < n; i+=step) { points.push({ x: xVals[i], y: yVals[i] }); }
+    // Ensure the very last point is always included for accurate extinction/end state rendering
+    if (n > 0 && (n - 1) % step !== 0) {
+      points.push({ x: xVals[n - 1], y: yVals[n - 1] });
+    }
 
     const preyName = preyId === 'aggregate' ? 'Flora (Total)' : ((data.flora_names || {})[preyId] || ('Flora ' + preyId));
     const herbivoreName = herbivoreId === 'aggregate' ? 'Herbivores (Total)' : ((data.herbivore_names || {})[herbivoreId] || ('Herbivore ' + herbivoreId));
@@ -922,7 +926,6 @@
         type: 'scatter',
         data: { datasets: [] },
         options: {
-          parsing: false,
           animation: false,
           responsive: true,
           maintainAspectRatio: true,
@@ -930,14 +933,12 @@
           scales: {
             x: {
               suggestedMin: 0,
-              suggestedMax: {{ max_x | default(100) }},
               grace: '15%',
               title: { display: true, text: '', font: { size: 10 } },
               ticks: { font: { size: 10 } }
             },
             y: {
               suggestedMin: 0,
-              suggestedMax: {{ max_y | default(100) }},
               grace: '15%',
               title: { display: true, text: '', font: { size: 10 } },
               ticks: { font: { size: 10 } }
