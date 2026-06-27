@@ -143,32 +143,32 @@
           <button hx-post="/api/simulation/start"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
-            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all">
             ▶ Start
           </button>
           <button hx-post="/api/simulation/pause"
             hx-target="#sim-status" hx-swap="outerHTML"
-            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors">
+            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all">
             ⏸ Pause
           </button>
           <button hx-post="/api/simulation/step"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
-            class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors">
+            class="px-4 py-2 bg-sky-500 hover:bg-sky-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-500 text-white rounded-lg text-sm font-medium transition-all">
             ⏭ Step
           </button>
           <button hx-post="/api/simulation/reset"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
             hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
-            class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors">
+            class="px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 text-white rounded-lg text-sm font-medium transition-all">
             ↺ Reset
           </button>
           <button hx-post="/api/scenario/load-draft"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
             hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
-            class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors">
+            class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all">
             🔄 Load Draft
           </button>
           <span id="sim-status"
