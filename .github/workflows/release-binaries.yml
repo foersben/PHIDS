@@ -68,19 +68,28 @@ jobs:
           }
           trap cleanup EXIT
           sleep 12
-          curl --fail --silent http://127.0.0.1:8001/ > /dev/null
+          if ! curl --fail --silent http://127.0.0.1:8001/ > /dev/null; then
+            echo "=== APPLICATION LOGS (phids.log) ==="
+            cat phids.log
+            exit 1
+          fi
 
       - name: Smoke-test HTTP endpoint (Windows)
         if: runner.os == 'Windows' && !env.ACT
         shell: pwsh
         run: |
-          $process = Start-Process -FilePath ".\dist\phids\phids.exe" -ArgumentList @("--host", "127.0.0.1", "--port", "8001") -PassThru
+          $process = Start-Process -FilePath ".\dist\phids\phids.exe" -ArgumentList @("--host", "127.0.0.1", "--port", "8001") -RedirectStandardOutput "phids.log" -RedirectStandardError "phids.log" -PassThru
           try {
             Start-Sleep -Seconds 12
             $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8001/"
             if ($response.StatusCode -ne 200) {
               throw "Unexpected status code $($response.StatusCode)"
             }
+          }
+          catch {
+            echo "=== APPLICATION LOGS (phids.log) ==="
+            if (Test-Path "phids.log") { Get-Content "phids.log" } else { echo "No log file found." }
+            throw
           }
           finally {
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue

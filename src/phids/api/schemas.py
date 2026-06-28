@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from phids.shared.constants import (
     MAX_FLORA_SPECIES,
@@ -284,6 +284,7 @@ class HerbivoreSpeciesParams(StrictBaseModel):
     reproduction_energy_divisor: float = Field(
         default=1.0,
         gt=0.0,
+        validation_alias=AliasChoices("reproduction_energy_divisor", "reproduction_divisor"),
         description="Denominator for φ(e_h,t) = floor(R(C_i,t) / E_min(e_h)).",
     )
     energy_upkeep_per_individual: float = Field(
