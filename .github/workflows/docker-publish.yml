@@ -14,7 +14,52 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
+  prepare:
+    name: Prepare Release Tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.eval.outputs.version }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Evaluate version
+        id: eval
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            NEW_VERSION=$(grep '^version =' pyproject.toml | cut -d '"' -f 2 | tr -d ' ')
+            LATEST_TAG=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "v0.0.0")
+
+            echo "Latest release tag: $LATEST_TAG"
+            echo "pyproject.toml version: v$NEW_VERSION"
+            if [[ "$LATEST_TAG" == "v"* ]]; then
+              OLD_V="${LATEST_TAG#v}"
+            else
+              OLD_V="$LATEST_TAG"
+            fi
+
+            IFS='.' read -r n_maj n_min n_patch <<< "$NEW_VERSION"
+            IFS='.' read -r o_maj o_min o_patch <<< "$OLD_V"
+
+            if [ "$n_maj" != "$o_maj" ]; then
+              echo "Error: Major version mismatch (new: $n_maj, old: $o_maj)"
+              exit 1
+            fi
+
+            if [ "$n_min" -le "$o_min" ]; then
+              echo "Error: Minor version not strictly higher (new: $n_min, old: $o_min)"
+              exit 1
+            fi
+
+            echo "version=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
   build-and-push:
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -52,8 +97,8 @@ jobs:
             latest=${{ startsWith(github.ref, 'refs/tags/v') }}
           tags: |
             type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}},value=${{ needs.prepare.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.prepare.outputs.version }}
             type=sha
 
       # Local-only build: verify Dockerfile compiles without pushing or calling GitHub API
