@@ -1,0 +1,223 @@
+{
+  "grid_width": 80,
+  "grid_height": 80,
+  "max_ticks": 2500,
+  "tick_rate_hz": 10.0,
+  "num_signals": 4,
+  "num_toxins": 4,
+  "wind_x": 0.2,
+  "wind_y": -0.1,
+  "mycorrhizal_inter_species": false,
+  "mycorrhizal_connection_cost": 0.5,
+  "mycorrhizal_growth_interval_ticks": 5,
+  "mycorrhizal_signal_velocity": 2,
+  "z2_flora_species_extinction": -1,
+  "z4_herbivore_species_extinction": -1,
+  "z6_max_total_flora_energy": -1.0,
+  "z7_max_total_herbivore_population": -1,
+  "flora_species": [
+    {
+      "species_id": 0,
+      "name": "Pioneer Grasses",
+      "base_energy": 10.0,
+      "max_energy": 50.0,
+      "growth_rate": 8.0,
+      "survival_threshold": 1.0,
+      "reproduction_interval": 5,
+      "seed_min_dist": 0.5,
+      "seed_max_dist": 2.0,
+      "seed_energy_cost": 2.0,
+      "camouflage": false,
+      "triggers": []
+    },
+    {
+      "species_id": 1,
+      "name": "Symbiotic Shrubs",
+      "base_energy": 15.0,
+      "max_energy": 75.0,
+      "growth_rate": 4.5,
+      "survival_threshold": 2.0,
+      "reproduction_interval": 8,
+      "seed_min_dist": 1.0,
+      "seed_max_dist": 3.0,
+      "seed_energy_cost": 4.0,
+      "camouflage": false,
+      "triggers": [
+        {
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 3,
+          "substance_id": 1,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 5,
+          "activation_condition": {
+            "kind": "herbivore_presence",
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 3
+          },
+          "energy_cost_per_tick": 0.5,
+          "irreversible": false
+        }
+      ]
+    },
+    {
+      "species_id": 2,
+      "name": "Ancient Trees",
+      "base_energy": 25.0,
+      "max_energy": 250.0,
+      "growth_rate": 1.5,
+      "survival_threshold": 5.0,
+      "reproduction_interval": 20,
+      "seed_min_dist": 1.5,
+      "seed_max_dist": 4.0,
+      "seed_energy_cost": 15.0,
+      "camouflage": false,
+      "triggers": []
+    },
+    {
+      "species_id": 3,
+      "name": "Toxic Weeds",
+      "base_energy": 12.0,
+      "max_energy": 60.0,
+      "growth_rate": 3.5,
+      "survival_threshold": 1.5,
+      "reproduction_interval": 7,
+      "seed_min_dist": 0.5,
+      "seed_max_dist": 2.5,
+      "seed_energy_cost": 3.0,
+      "camouflage": false,
+      "triggers": [
+        {
+          "herbivore_species_id": 2,
+          "min_herbivore_population": 2,
+          "substance_id": 2,
+          "synthesis_duration": 2,
+          "is_toxin": true,
+          "lethal": true,
+          "lethality_rate": 0.8,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 1,
+          "activation_condition": {
+            "kind": "herbivore_presence",
+            "herbivore_species_id": 2,
+            "min_herbivore_population": 2
+          },
+          "energy_cost_per_tick": 1.5,
+          "irreversible": true
+        }
+      ]
+    },
+    {
+      "species_id": 4,
+      "name": "Decoy Flora",
+      "base_energy": 8.0,
+      "max_energy": 40.0,
+      "growth_rate": 5.0,
+      "survival_threshold": 0.5,
+      "reproduction_interval": 6,
+      "seed_min_dist": 0.5,
+      "seed_max_dist": 3.0,
+      "seed_energy_cost": 2.5,
+      "camouflage": true,
+      "camouflage_factor": 0.1,
+      "triggers": [
+        {
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 1,
+          "substance_id": 0,
+          "synthesis_duration": 1,
+          "is_toxin": false,
+          "lethal": false,
+          "lethality_rate": 0.0,
+          "repellent": false,
+          "repellent_walk_ticks": 0,
+          "aftereffect_ticks": 10,
+          "activation_condition": null,
+          "energy_cost_per_tick": 0.1,
+          "irreversible": false
+        }
+      ]
+    },
+    {
+      "species_id": 5,
+      "name": "Fruiting Vines",
+      "base_energy": 14.0,
+      "max_energy": 80.0,
+      "growth_rate": 3.0,
+      "survival_threshold": 2.5,
+      "reproduction_interval": 12,
+      "seed_min_dist": 2.0,
+      "seed_max_dist": 8.0,
+      "seed_energy_cost": 8.0,
+      "camouflage": false,
+      "triggers": []
+    }
+  ],
+  "herbivore_species": [
+    {
+      "species_id": 0,
+      "name": "Locusts",
+      "energy_min": 2.0,
+      "velocity": 1,
+      "consumption_rate": 6.0,
+      "reproduction_energy_divisor": 1.0,
+      "energy_upkeep_per_individual": 0.2
+    },
+    {
+      "species_id": 1,
+      "name": "Bark Beetles",
+      "energy_min": 3.5,
+      "velocity": 3,
+      "consumption_rate": 3.0,
+      "reproduction_energy_divisor": 1.5,
+      "energy_upkeep_per_individual": 0.5
+    },
+    {
+      "species_id": 2,
+      "name": "Deer",
+      "energy_min": 8.0,
+      "velocity": 2,
+      "consumption_rate": 5.0,
+      "reproduction_energy_divisor": 2.0,
+      "energy_upkeep_per_individual": 0.3
+    },
+    {
+      "species_id": 3,
+      "name": "Hyper-Grazer",
+      "energy_min": 1.5,
+      "velocity": 1,
+      "consumption_rate": 2.0,
+      "reproduction_energy_divisor": 0.5,
+      "energy_upkeep_per_individual": 0.05,
+      "split_population_threshold": 3
+    }
+  ],
+  "diet_matrix": {
+    "rows": [
+      [true, true, false, false, false, true],
+      [false, false, true, false, false, false],
+      [true, true, false, false, false, true],
+      [true, false, false, false, false, false]
+    ]
+  },
+  "initial_plants": [
+    {"species_id": 0, "x": 10, "y": 10, "energy": 25.0},
+    {"species_id": 0, "x": 20, "y": 20, "energy": 25.0},
+    {"species_id": 1, "x": 30, "y": 30, "energy": 35.0},
+    {"species_id": 2, "x": 40, "y": 40, "energy": 100.0},
+    {"species_id": 3, "x": 50, "y": 50, "energy": 30.0},
+    {"species_id": 4, "x": 60, "y": 60, "energy": 20.0},
+    {"species_id": 5, "x": 70, "y": 70, "energy": 40.0}
+  ],
+  "initial_swarms": [
+    {"species_id": 0, "x": 10, "y": 10, "population": 5, "energy": 10.0},
+    {"species_id": 1, "x": 40, "y": 40, "population": 3, "energy": 15.0},
+    {"species_id": 2, "x": 30, "y": 30, "population": 4, "energy": 20.0},
+    {"species_id": 3, "x": 20, "y": 20, "population": 2, "energy": 5.0}
+  ]
+}
