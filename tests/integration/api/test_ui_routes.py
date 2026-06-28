@@ -961,7 +961,7 @@ def test_flow_field_helpers_compute_gradient_and_apply_camouflage() -> None:
     assert (
         flow_field._compute_flow_field_impl(
             np.array([[1e-6]], dtype=np.float64),
-            np.array([[0.0]], dtype=np.float64),
+            np.array([[[0.0]]], dtype=np.float64),
             1,
             1,
         )[0, 0]
