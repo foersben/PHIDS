@@ -28,6 +28,7 @@ CURATED_EXAMPLE_STEMS = {
     "rectangular_crossfire",
     "root_network_alarm_chain",
     "wind_tunnel_orchard",
+    "eternal_canopy_blueprint",
 }
 
 
