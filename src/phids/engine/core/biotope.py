@@ -32,7 +32,7 @@ from phids.shared.constants import (
 # Gaussian diffusion kernel (pre-computed, immutable)
 # ---------------------------------------------------------------------------
 _KERNEL_SIZE: int = 5
-_SIGMA: float = 0.8
+_SIGMA: float = 0.4
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:

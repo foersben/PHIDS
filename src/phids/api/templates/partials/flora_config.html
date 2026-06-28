@@ -108,15 +108,17 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
-        <p class="font-semibold text-slate-700">Properties Explained:</p>
+        <p class="font-semibold text-slate-700">Columns Explained:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>⚡ Base Energy:</strong> The starting energy allocated to newly spawned/placed plants of this species.</li>
-          <li><strong>🔋 Max Energy:</strong> The maximum energy storage limit of the plant (cannot grow beyond this).</li>
-          <li><strong>📈 Growth Rate:</strong> Passive energy gain per simulation tick when the plant is not energy-stressed.</li>
-          <li><strong>❤️ Survival Threshold:</strong> Minimum energy requirement; if energy drops below this, the plant dies.</li>
-          <li><strong>🌱 Reprod. Interval & Costs:</strong> Cool-down ticks between reproduction attempts and the energy spent to seed offspring.</li>
-          <li><strong>🌳 Seed Distances:</strong> Minimum and maximum cell distance range where new seeds can land.</li>
-          <li><strong>🎭 Camouflage:</strong> Enables flow-field attenuation, reducing local flow visibility to avoid detection.</li>
+          <li><strong>🆔 ID:</strong> Unique species index automatically assigned by the engine.</li>
+          <li><strong>🏷️ Name:</strong> Custom species name.</li>
+          <li><strong>⚡ Base E (Base Energy):</strong> The starting energy allocated to newly spawned or placed plants of this species.</li>
+          <li><strong>🔋 Max E (Max Energy):</strong> The maximum energy storage limit of the plant (growth halts here).</li>
+          <li><strong>📈 Growth (Growth Rate):</strong> Passive energy gain per simulation tick when not energy-stressed.</li>
+          <li><strong>❤️ Surv. Thr. (Survival Threshold):</strong> Minimum energy requirement; if energy drops below this, the plant dies of starvation.</li>
+          <li><strong>🌱 Repr. Int. (Reproduction Interval):</strong> Cool-down ticks between reproduction attempts. (Offspring cost and placement bounds are set upon species creation).</li>
+          <li><strong>🎭 Camo (Camouflage):</strong> Enables local chemical signal attenuation, reducing flow-field visibility to avoid herbivore detection.</li>
+          <li><strong>🛠️ Actions:</strong> Add new flora species (up to 16) or delete existing ones.</li>
         </ul>
       </div>
       <div>

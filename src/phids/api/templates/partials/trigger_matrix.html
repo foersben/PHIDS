@@ -63,4 +63,34 @@
     </table>
   </div>
   {% endif %}
+  <!-- Substance Trigger Matrix Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Substance Trigger Matrix Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">Matrix Layout & Interactions:</p>
+        <p class="text-slate-500 mt-1">
+          This grid couples plant defense with specific herbivore attacks.
+        </p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>Rows:</strong> The active flora/plant species in the simulation draft.</li>
+          <li><strong>Columns:</strong> The active herbivore species in the simulation draft.</li>
+          <li><strong>Dropdown Selection:</strong> Choose which substance is synthesized when the corresponding herbivore attacks the plant species.</li>
+          <li><strong>— none —:</strong> Disables automatic substance synthesis for this (flora, herbivore) pair.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Changing any dropdown selection immediately triggers a background save to the server-side draft.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        </p>
+      </div>
+    </div>
+  </div>
 </div>

@@ -108,13 +108,23 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
-        <p class="font-semibold text-slate-700">Substance Behaviors Explained:</p>
+        <p class="font-semibold text-slate-700">Columns Explained:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>🧪 Type:</strong> Signals diffuse through cells to alert neighbors. Lethal Toxins kill herbivores. Repellent Toxins force herbivores to move away. Standard Toxins act as basic chemical deterrents.</li>
-          <li><strong>⏱️ Synth. Duration:</strong> Number of ticks the plant continues synthesizing the substance once triggered.</li>
-          <li><strong>⏳ Aftereffect:</strong> Remaining ticks the substance persists and is active in the plant's cells after synthesis stops.</li>
-          <li><strong>☠️ Lethality:</strong> The rate of population reduction per tick applied to swarms feeding on plants producing lethal toxins.</li>
-          <li><strong>⚡ Energy Cost:</strong> Active metabolic maintenance cost per tick incurred by plants while synthesizing the substance.</li>
+          <li><strong>🆔 ID:</strong> The internal index (0 to 15) corresponding to the substance's dedicated layer index in signal/toxin grids.</li>
+          <li><strong>🏷️ Name:</strong> Human-readable label for custom identification.</li>
+          <li><strong>🧪 Type:</strong> Behavioral behavior of the chemical:
+            <ul class="list-[circle] list-inside pl-4 mt-0.5 space-y-0.5">
+              <li><strong class="text-slate-700">Signal:</strong> Volatile airborne chemical that diffuses to warn neighboring plants.</li>
+              <li><strong class="text-slate-700">Lethal Toxin:</strong> Local poison that kills grazing herbivores.</li>
+              <li><strong class="text-slate-700">Repellent Toxin:</strong> Local irritant that forces herbivores to move away.</li>
+              <li><strong class="text-slate-700">Toxin:</strong> Standard chemical deterrent affecting feeding efficiency.</li>
+            </ul>
+          </li>
+          <li><strong>⏱️ Synth. Dur.:</strong> Number of ticks the plant continues synthesizing the substance once triggered.</li>
+          <li><strong>⏳ Aftereffect:</strong> Remaining ticks the substance persists in plant cells after synthesis stops.</li>
+          <li><strong>☠️ Lethality:</strong> Rate of population reduction per tick applied to swarms feeding on plants producing lethal toxins.</li>
+          <li><strong>👥 Min Pop.:</strong> The minimum herbivore headcount required in the cell to trigger the substance's production.</li>
+          <li><strong>🛠️ Actions:</strong> Add new substances (up to 16) or delete existing ones.</li>
         </ul>
       </div>
       <div>

@@ -61,13 +61,15 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
-        <p class="font-semibold text-slate-700">How the Matrix Works:</p>
+        <p class="font-semibold text-slate-700">Matrix Layout & Interactions:</p>
         <p class="text-slate-500 mt-1">
-          Determines which herbivore species can graze on which flora species.
+          This grid maps feeding compatibility between herbivores (rows) and flora species (columns).
         </p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>Checked (Compatible):</strong> The herbivore swarm will actively consume plant biomass/energy when sharing a cell with this plant species, gaining energy.</li>
-          <li><strong>Unchecked (Incompatible):</strong> The herbivore swarm ignores the plant and cannot feed on it, which may lead to starvation if no compatible food is available in the cell.</li>
+          <li><strong>Rows:</strong> The active herbivore species in the simulation draft.</li>
+          <li><strong>Columns:</strong> The active flora/plant species in the simulation draft.</li>
+          <li><strong>☑️ Checked (Compatible):</strong> The herbivore swarm will graze on this flora species when present in the same cell, draining plant energy and replenishing the swarm's energy.</li>
+          <li><strong>☐ Unchecked (Incompatible):</strong> The herbivore swarm cannot feed on this plant species. Over-reliance on incompatible species will lead to swarm starvation and eventual extinction.</li>
         </ul>
       </div>
       <div>
