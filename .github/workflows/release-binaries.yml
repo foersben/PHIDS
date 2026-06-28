@@ -67,8 +67,15 @@ jobs:
             kill "$server_pid" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-          sleep 12
-          if ! curl --fail --silent http://127.0.0.1:8001/ > /dev/null; then
+          success=0
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8001/ > /dev/null; then
+              success=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$success" -eq 0 ]; then
             echo "=== APPLICATION LOGS (phids.log) ==="
             cat phids.log
             exit 1
@@ -78,17 +85,30 @@ jobs:
         if: runner.os == 'Windows' && !env.ACT
         shell: pwsh
         run: |
-          $process = Start-Process -FilePath ".\dist\phids\phids.exe" -ArgumentList @("--host", "127.0.0.1", "--port", "8001") -RedirectStandardOutput "phids.log" -RedirectStandardError "phids.log" -PassThru
+          $process = Start-Process -FilePath ".\dist\phids\phids.exe" -ArgumentList @("--host", "127.0.0.1", "--port", "8001") -RedirectStandardOutput "phids_out.log" -RedirectStandardError "phids_err.log" -PassThru
           try {
-            Start-Sleep -Seconds 12
-            $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8001/"
-            if ($response.StatusCode -ne 200) {
-              throw "Unexpected status code $($response.StatusCode)"
+            $success = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              try {
+                $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8001/" -ErrorAction Stop
+                if ($response.StatusCode -eq 200) {
+                  $success = $true
+                  break
+                }
+              } catch {
+                # Ignore connection errors and retry
+              }
+              Start-Sleep -Seconds 1
+            }
+            if (-not $success) {
+              throw "Failed to connect to the application within 30 seconds."
             }
           }
           catch {
-            echo "=== APPLICATION LOGS (phids.log) ==="
-            if (Test-Path "phids.log") { Get-Content "phids.log" } else { echo "No log file found." }
+            echo "=== APPLICATION LOGS STDOUT (phids_out.log) ==="
+            if (Test-Path "phids_out.log") { Get-Content "phids_out.log" } else { echo "No log file found." }
+            echo "=== APPLICATION LOGS STDERR (phids_err.log) ==="
+            if (Test-Path "phids_err.log") { Get-Content "phids_err.log" } else { echo "No log file found." }
             throw
           }
           finally {
