@@ -79,9 +79,10 @@ During the migration from legacy Object-Oriented implementations to the current 
 * **Scientific Model** — research scope, detailed breakdown of mathematical models (Chemotaxis, PDEs), biological reasoning, and equations:
   [`scientific_model/`](scientific_model/mathematical_framework.md)
 * **Technical Architecture** — system constraints, package boundaries, loop ownership, interfaces, and telemetry:
-  * [Trophic Optimizer](technical_architecture/trophic_optimizer.md)
+  * [Testing Architecture](technical_architecture/testing_architecture.md)
   [`technical_architecture/`](technical_architecture/system_architecture.md)
 * **Scenarios** — schema semantics, import/export, and curated examples:
+  * [Scenario Calibration (Trophic Optimizer)](scenario_guide/trophic_optimizer.md)
   [`scenario_guide/`](scenario_guide/scenario_authoring.md)
 * **Development & Reference** — API Reference, contribution workflows, agent orchestration (MCP), and historical archives:
   [`development_guide/`](development_guide/contribution_workflow.md)
