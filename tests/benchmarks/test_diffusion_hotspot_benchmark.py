@@ -33,6 +33,9 @@ def _enforce_budget(  # type: ignore[no-untyped-def]
     fail_p95_ms: float,
 ) -> None:
     """Apply warning and fail budget checks using pytest-benchmark timing statistics."""
+    if os.getenv("NUMBA_DISABLE_JIT") == "1":
+        return
+
     stats = benchmark.stats.stats
     rounds = np.asarray(getattr(stats, "data", []), dtype=np.float64)
     mean_ms = float(stats.mean) * 1000.0

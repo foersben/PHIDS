@@ -43,6 +43,12 @@ format:
 run:
     uv run phids --reload
 
+run-numba:
+    NUMBA_DISABLE_JIT=0 uv run phids --reload
+
+benchmark:
+    NUMBA_DISABLE_JIT=0 uv run pytest tests/benchmarks/ --benchmark-only
+
 clean:
     find . -type d -name "__pycache__" -exec rm -rf {} +
     find . -type d -name "*.egg-info" -exec rm -rf {} +
