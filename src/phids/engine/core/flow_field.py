@@ -1,9 +1,16 @@
-"""
-Flow-field gradient generation accelerated with Numba @njit for deterministic ecological simulation.
+"""Flow-field gradient generation accelerated with Numba ``@njit`` for deterministic ecological simulation.
 
-This module implements the flow-field gradient computation for PHIDS, leveraging Numba JIT compilation to accelerate iterative Jacobi propagation. The global attraction gradient is computed by combining plant attraction and toxin repulsion, then propagating values to neighbors. The scalar field is intended to populate GridEnvironment.flow_field, supporting O(1) spatial hash lookups and deterministic simulation of emergent ecological phenomena such as predator movement, systemic acquired resistance, and metabolic attrition. The design strictly adheres to data-oriented principles, using NumPy arrays and pre-allocated buffers, and truncates subnormal floats to maintain computational efficiency and scientific rigor. The module is central to the simulation's ability to model complex plant-herbivore interactions with maximal biological fidelity.
-
-This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the flow-field's algorithmic mechanics and biological rationale.
+This module implements the flow-field gradient computation for PHIDS, leveraging Numba JIT
+compilation to accelerate iterative Jacobi propagation. The global attraction gradient is
+computed by combining plant attraction and toxin repulsion base values, then propagating them
+across the grid via a multi-iteration neighbourhood averaging pass with configurable decay. The
+resulting scalar field is intended to populate ``GridEnvironment.flow_field``, supporting O(1)
+spatial hash-mediated swarm navigation and deterministic simulation of emergent plant-herbivore
+dynamics. The design strictly adheres to data-oriented principles, using pre-allocated NumPy
+arrays and truncating subnormal floats (values with absolute magnitude below 1e-4) to zero after
+propagation to maintain computational efficiency. Camouflage is applied post-computation via
+``apply_camouflage``, which attenuates the gradient at specific plant-occupied cells to model
+constitutive gradient masking.
 """
 
 from __future__ import annotations
@@ -18,6 +25,9 @@ def _compute_flow_field_impl(
     toxin_sum: npt.NDArray[np.float64],
     width: int,
     height: int,
+    base: npt.NDArray[np.float64] | None = None,
+    current: npt.NDArray[np.float64] | None = None,
+    nxt: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """Compute the attraction gradient using iterative Jacobi propagation.
 
@@ -26,13 +36,27 @@ def _compute_flow_field_impl(
         toxin_sum: 2-D array ``(W, H)`` of aggregated toxin concentration per cell.
         width: Grid width W.
         height: Grid height H.
+        base: Pre-allocated 2-D scratch array.
+        current: Pre-allocated 2-D scratch array.
+        nxt: Pre-allocated 2-D scratch array.
 
     Returns:
         npt.NDArray[np.float64]: Scalar attraction field of shape ``(W, H)``.
     """
-    base = np.zeros((width, height), dtype=np.float64)
-    current = np.zeros((width, height), dtype=np.float64)
-    nxt = np.zeros((width, height), dtype=np.float64)
+    if base is None:
+        base = np.zeros((width, height), dtype=np.float64)
+    else:
+        base.fill(0.0)
+
+    if current is None:
+        current = np.zeros((width, height), dtype=np.float64)
+    else:
+        current.fill(0.0)
+
+    if nxt is None:
+        nxt = np.zeros((width, height), dtype=np.float64)
+    else:
+        nxt.fill(0.0)
 
     for x in range(width):
         for y in range(height):
@@ -43,6 +67,8 @@ def _compute_flow_field_impl(
     decay = 0.6
     max_iterations = width + height
     for _ in range(max_iterations):
+        max_diff = 0.0  # Track maximum delta in this pass
+
         for x in range(width):
             for y in range(height):
                 neighbours_sum = 0.0
@@ -61,10 +87,21 @@ def _compute_flow_field_impl(
                     neighbour_count += 1
 
                 propagated = neighbours_sum / neighbour_count if neighbour_count > 0 else 0.0
-                nxt[x, y] = base[x, y] + (decay * propagated)
+                val = base[x, y] + (decay * propagated)
+                nxt[x, y] = val
+
+                # Evaluate convergence
+                diff = abs(val - current[x, y])
+                if diff > max_diff:
+                    max_diff = diff
 
         current, nxt = nxt, current
 
+        # Early stopping if convergence is reached
+        if max_diff < 1e-4:
+            break
+
+    # Truncate subnormal floats to exactly zero
     for x in range(width):
         for y in range(height):
             if abs(current[x, y]) < 1e-4:
@@ -81,6 +118,9 @@ def compute_flow_field(
     toxin_layers: npt.NDArray[np.float64],
     width: int,
     height: int,
+    base: npt.NDArray[np.float64] | None = None,
+    current: npt.NDArray[np.float64] | None = None,
+    nxt: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """Public wrapper: sum toxin layers and delegate to the Numba kernel.
 
@@ -89,13 +129,24 @@ def compute_flow_field(
         toxin_layers: Shape ``(num_toxins, W, H)`` toxin concentration layers.
         width: Grid width.
         height: Grid height.
+        base: Pre-allocated 2-D scratch array.
+        current: Pre-allocated 2-D scratch array.
+        nxt: Pre-allocated 2-D scratch array.
 
     Returns:
         npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
     """
+    if base is None:
+        base = np.zeros((width, height), dtype=np.float64)
+    if current is None:
+        current = np.zeros((width, height), dtype=np.float64)
+    if nxt is None:
+        nxt = np.zeros((width, height), dtype=np.float64)
+
     toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
     result = np.asarray(
-        _compute_flow_field(plant_energy, toxin_sum, width, height), dtype=np.float64
+        _compute_flow_field(plant_energy, toxin_sum, width, height, base, current, nxt),
+        dtype=np.float64,
     )
     return result
 

@@ -1,0 +1,1 @@
+"""Deprecated msgpack test module."""

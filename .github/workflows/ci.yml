@@ -1,102 +1,78 @@
-name: CI
+name: CI & Deployment Pipeline
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: ["main"]
-  workflow_dispatch:
-
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ "main", "develop" ]
 
 permissions:
   contents: read
+  pages: write      # Required for GitHub Pages
+  id-token: write   # Required for GitHub Pages
 
 env:
   UV_FROZEN: "true"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  quality:
-    name: Quality and hygiene
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Sync dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run Ruff lint
-        run: uv run ruff check .
-
-      - name: Run Ruff format check
-        run: uv run ruff format --check .
-
-  tests-py312:
-    name: Full test suite (Python 3.12)
+  quality-gate:
+    name: Code & Context Quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+      - name: Install uv & Python 3.13
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          python-version: '3.13'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-groups
 
-      - name: Sync dependencies
-        run: uv sync --all-extras --dev
+      - name: Run Pre-Commit Hooks
+        run: SKIP=check-identity,enforce-author-identity uv run pre-commit run --all-files
 
-      - name: Run full pytest suite
-        run: uv run pytest
+      - name: Pass 1 - Logic & Coverage
+        env:
+          NUMBA_DISABLE_JIT: "1"
+        run: uv run pytest --cov=src/phids --cov-fail-under=80 -o "addopts="
 
-
-  docs:
-    name: Strict docs build
+      - name: Pass 2 - Numba Compilation
+        run: uv run pytest tests/integration/systems/test_interaction_property_invariants.py -x -q -o "addopts="
+  deploy-docs:
+    name: Build & Deploy Documentation
+    needs: quality-gate # Only deploys if tests and pre-commit pass
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+      - name: Install uv & Python 3.13
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          python-version: '3.13'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Build Docs with Zensical
+        run: uv run zensical build --strict
+
+      - name: Upload artifact
+        if: ${{ !env.ACT }}
+        uses: actions/upload-pages-artifact@v3
         with:
-          python-version: "3.12"
+          path: ./site
 
-      - name: Sync dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Build docs in strict mode
-        run: uv run mkdocs build --strict
+      - name: Deploy to GitHub Pages
+        if: ${{ !env.ACT }}
+        id: deployment
+        uses: actions/deploy-pages@v4

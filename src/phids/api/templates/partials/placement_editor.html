@@ -55,10 +55,10 @@
 
         <!-- Swarm species selector (visible when tool=swarm) -->
         <div id="swarm-tool-opts" class="hidden">
-          <label class="block text-xs font-medium text-slate-600 mb-1">Predator Species</label>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Herbivore Species</label>
           <select id="swarm-species-sel"
             class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            {% for pp in predator_species %}
+            {% for pp in herbivore_species %}
             <option value="{{ pp.species_id }}">{{ pp.name }} (id={{ pp.species_id }})</option>
             {% endfor %}
           </select>
@@ -85,7 +85,39 @@
     </div>
 
   </div>
+
+  <!-- Placement Editor Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-4 space-y-3 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Placement Editor Guide</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+      <div>
+        <p class="font-semibold text-slate-700">What is this view?</p>
+        <p class="text-slate-500 mt-1">
+          This interactive canvas allows you to design initial spatial layouts by placing plant entities and herbivore swarms directly onto the grid.
+        </p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>🌿 Place Plant:</strong> Select a flora species and set its initial energy to seed it at a cell.</li>
+          <li><strong>🐛 Place Swarm:</strong> Select a herbivore species, set its initial population headcount, and set starting energy.</li>
+          <li><strong>🧹 Erase:</strong> Deletes entities from selected cells (removes plants first, then swarms).</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="text-slate-500 mt-1">
+          Placements are saved instantly to your current <strong>DraftState</strong> configuration.
+        </p>
+        <p class="text-slate-500 mt-1">
+          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
+
+
 
 <!-- Placement canvas interaction (vanilla JS) -->
 <script>

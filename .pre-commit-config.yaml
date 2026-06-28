@@ -1,6 +1,6 @@
 minimum_pre_commit_version: "3.7.0"
 default_language_version:
-  python: python3.12
+  python: python3.13
 default_stages: [pre-commit]
 exclude: ^(site/|docs/legacy/|__pycache__/)
 
@@ -9,52 +9,64 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        # Keep our OKF frontmatter template syntax clean
+        exclude: ^(\.agents/|docs/)
       - id: end-of-file-fixer
       - id: mixed-line-ending
         args: [--fix=lf]
       - id: check-yaml
         args: [--unsafe]
       - id: check-toml
-      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: check-case-conflict
-      - id: check-added-large-files
-        args: [--maxkb=512]
-      - id: detect-private-key
-      - id: debug-statements
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.2
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
     hooks:
-      - id: ruff-check
-        args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format
+      - id: gitleaks
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.3.0
     hooks:
       - id: codespell
+        additional_dependencies:
+          - tomli
         args: [--ignore-words=.codespell-ignore-words.txt]
 
   - repo: local
     hooks:
-      - id: mypy-strict
-        name: mypy (strict, project scope)
-        entry: uv run mypy
+      - id: ruff-check
+        name: Ruff Check
+        entry: uv run ruff check --fix
         language: system
-        pass_filenames: false
-        stages: [pre-push]
+        types: [python]
 
-      - id: pytest-suite
-        name: pytest (full suite)
-        entry: uv run pytest
+      - id: ruff-format
+        name: Ruff Format
+        entry: uv run ruff format
         language: system
-        pass_filenames: false
-        stages: [pre-push]
+        types: [python]
 
-      - id: mkdocs-strict
-        name: mkdocs build --strict
-        entry: uv run mkdocs build --strict
+      - id: mypy
+        name: Mypy
+        # Explicitly declare targets, block file string passing, and track changes
+        entry: uv run mypy src/phids scripts
+        language: system
+        files: ^(src/phids/|scripts/|pyproject\.toml)
+        pass_filenames: false
+        types: [python]
+
+      - id: validate-okf
+        name: Enforce Google Open Knowledge Format
+        entry: uv run python scripts/validate_okf.py
+        language: system
+        files: ^(docs/|\.agents/).*\.md$
+        pass_filenames: true
+
+      - id: enforce-author-identity
+        name: Enforce Author Identity
+        entry: bash -c '[ "$(git config --bool commit.gpgsign)" = "true" ]'
         language: system
         pass_filenames: false
-        stages: [pre-push]

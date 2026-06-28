@@ -1,16 +1,22 @@
-"""
-GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
+"""GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module implements the GridEnvironment, a cellular automata biotope for PHIDS, using NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The environment employs explicit read/write double-buffering to prevent race conditions and guarantee deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired resistance, and metabolic attrition. The convolution kernel is pre-computed and truncated to eliminate subnormal floats, maintaining computational efficiency and scientific accuracy. The architectural design is tightly coupled to the ECSWorld and flow-field systems, supporting O(1) spatial hash lookups and reproducible ecological dynamics.
-
-This module-level docstring is written in accordance with Google-style documentation standards, providing a comprehensive scholarly abstract of the biotope's algorithmic mechanics and biological rationale.
+This module implements the :class:`GridEnvironment`, a cellular automata biotope for PHIDS using
+NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of
+16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
+environment employs explicit read/write double-buffering to prevent race conditions and guarantee
+deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired
+resistance, and metabolic attrition. The convolution kernel is pre-computed and its tails are
+truncated to eliminate subnormal floats below ``SIGNAL_EPSILON``, maintaining computational
+efficiency and scientific accuracy. The architectural design is tightly coupled to the
+:class:`~phids.engine.core.ecs.ECSWorld` and flow-field systems, supporting O(1) spatial hash
+lookups and reproducible ecological dynamics.
 """
 
 from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
-from scipy.signal import convolve2d  # type: ignore[import-untyped]
+from numba import njit  # type: ignore[import-untyped]
 
 from phids.shared.constants import (
     GRID_H_MAX,
@@ -25,12 +31,81 @@ from phids.shared.constants import (
 # Gaussian diffusion kernel (pre-computed, immutable)
 # ---------------------------------------------------------------------------
 _KERNEL_SIZE: int = 5
-_SIGMA: float = 0.8
+# Effect of different _SIGMA values:
+# With _SIGMA = 0.8 (default): Weights at $d=2$ remain above 10^-4 after normalization,
+# so the signal immediately fills the entire 5x5 neighborhood in 1 tick.
+# With _SIGMA = 0.4: The weight at $d=2$ drops to ~10^-6. Because this is less than
+# SIGNAL_EPSILON, the signal is clipped at the borders and only spreads to a 3x3 footprint on tick 1.
+# With _SIGMA = 0.3: The weight at diagonal cells (d = sqrt(2) ~ 1.41) also drops
+# below SIGNAL_EPSILON, restricting the single-tick spread to just a cross shape.
+_SIGMA: float = 0.4
 
 
-def _make_gaussian_kernel(
-    size: int = _KERNEL_SIZE, sigma: float = _SIGMA
-) -> npt.NDArray[np.float64]:
+@njit  # type: ignore[untyped-decorator]
+def _numba_diffuse_signal_layer(
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+    decay: float,
+    epsilon: float,
+    kernel: npt.NDArray[np.float64],
+    write_buffer: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+) -> None:
+    """JIT-compiled advection and convolution using pre-allocated scratch."""
+    advected_scratch.fill(0.0)
+
+    # 1. Semi-Lagrangian Advection (backward interpolation)
+    for x in range(width):
+        for y in range(height):
+            cx = float(x) - wind_x[x, y]
+            cy = float(y) - wind_y[x, y]
+
+            x0 = int(np.floor(cx))
+            y0 = int(np.floor(cy))
+            x1 = x0 + 1
+            y1 = y0 + 1
+
+            dx = cx - float(x0)
+            dy = cy - float(y0)
+
+            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
+            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
+            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
+            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
+
+            val_y0 = v00 * (1.0 - dx) + v10 * dx
+            val_y1 = v01 * (1.0 - dx) + v11 * dx
+            val = val_y0 * (1.0 - dy) + val_y1 * dy
+
+            advected_scratch[x, y] = val
+
+    # 2. Gaussian Diffusion (Convolution) & Decay
+    # We must support an arbitrarily sized symmetric 2D kernel.
+    k_w = kernel.shape[0]
+    k_h = kernel.shape[1]
+    k_w_half = k_w // 2
+    k_h_half = k_h // 2
+
+    for x in range(width):
+        for y in range(height):
+            v = 0.0
+            for i in range(-k_w_half, k_w_half + 1):
+                for j in range(-k_h_half, k_h_half + 1):
+                    ax = x - i
+                    ay = y - j
+                    if 0 <= ax < width and 0 <= ay < height:
+                        v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+
+            v *= decay
+            if v < epsilon:
+                v = 0.0
+            write_buffer[x, y] = v
+
+
+def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
     """Return a normalised 2-D Gaussian kernel for VOC diffusion.
 
     Args:
@@ -108,9 +183,7 @@ class GridEnvironment:
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
         )
-        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(
-            self.plant_energy_by_species
-        )
+        self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(self.plant_energy_by_species)
 
         # ------------------------------------------------------------------
         # Wind layers (dynamic, updated via REST API)
@@ -119,26 +192,30 @@ class GridEnvironment:
         self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # ------------------------------------------------------------------
-        # Signal layers  [num_signals, W, H] – read buffer
+        # Signal layers  [num_signals, W, H] - read buffer
         # ------------------------------------------------------------------
-        self.signal_layers: npt.NDArray[np.float64] = np.zeros(
-            (num_signals, width, height), dtype=np.float64
-        )
+        self.signal_layers: npt.NDArray[np.float64] = np.zeros((num_signals, width, height), dtype=np.float64)
         # Write buffer for double-buffering
         self._signal_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.signal_layers)
 
         # ------------------------------------------------------------------
         # Toxin layers  [num_toxins, W, H] (local plant-tissue fields)
         # ------------------------------------------------------------------
-        self.toxin_layers: npt.NDArray[np.float64] = np.zeros(
-            (num_toxins, width, height), dtype=np.float64
-        )
+        self.toxin_layers: npt.NDArray[np.float64] = np.zeros((num_toxins, width, height), dtype=np.float64)
         self._toxin_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.toxin_layers)
 
         # ------------------------------------------------------------------
-        # Flow-field gradient (scalar attraction field, W×H)
+        # Flow-field gradient (scalar attraction field, WxH)
         # ------------------------------------------------------------------
         self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+
+        # Pre-allocated scratch buffers for flow field JIT calculations
+        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+
+        # Pre-allocated scratch buffer for diffusion JIT calculations
+        self._advected_scratch: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Wind helpers
@@ -173,45 +250,29 @@ class GridEnvironment:
     def diffuse_signals(self) -> None:
         """Compute one diffusion tick for all signal layers.
 
-        This applies a 2-D convolution with a pre-computed Gaussian kernel,
-        advects the result by a bounded integer cell shift (zero-filled at
-        boundaries), and applies a sparsity threshold to zero small values.
+        This applies local semi-Lagrangian advection using per-cell wind vectors,
+        followed by isotropic Gaussian diffusion and decay. The transport update
+        respects heterogeneous wind fields across the grid and avoids global-mean
+        wind averaging artefacts.
         """
-        # Compute mean wind shift in integer grid cells.
-        mean_vx: int = int(round(float(self.wind_vector_x.mean())))
-        mean_vy: int = int(round(float(self.wind_vector_y.mean())))
-
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
             if not np.any(layer >= SIGNAL_EPSILON):
                 self._signal_layers_write[s].fill(0.0)
                 continue
-            convolved: npt.NDArray[np.float64] = convolve2d(
-                layer, DIFFUSION_KERNEL, mode="same", boundary="fill", fillvalue=0.0
+
+            _numba_diffuse_signal_layer(
+                self.width,
+                self.height,
+                layer,
+                self.wind_vector_x,
+                self.wind_vector_y,
+                SIGNAL_DECAY_FACTOR,
+                SIGNAL_EPSILON,
+                DIFFUSION_KERNEL,
+                self._signal_layers_write[s],
+                self._advected_scratch,
             )
-
-            shifted: npt.NDArray[np.float64] = np.zeros_like(convolved)
-            x_shift = mean_vx
-            y_shift = mean_vy
-            src_x_start = max(0, -x_shift)
-            src_x_end = self.width - max(0, x_shift)
-            dst_x_start = max(0, x_shift)
-            dst_x_end = self.width - max(0, -x_shift)
-            src_y_start = max(0, -y_shift)
-            src_y_end = self.height - max(0, y_shift)
-            dst_y_start = max(0, y_shift)
-            dst_y_end = self.height - max(0, -y_shift)
-
-            if src_x_start < src_x_end and src_y_start < src_y_end:
-                shifted[dst_x_start:dst_x_end, dst_y_start:dst_y_end] = convolved[
-                    src_x_start:src_x_end,
-                    src_y_start:src_y_end,
-                ]
-
-            shifted *= SIGNAL_DECAY_FACTOR
-            # Zero sub-threshold values to preserve matrix sparsity
-            shifted[shifted < SIGNAL_EPSILON] = 0.0
-            self._signal_layers_write[s] = shifted
 
         # Swap buffers
         self.signal_layers, self._signal_layers_write = (
@@ -269,6 +330,7 @@ class GridEnvironment:
 
     def to_dict(self) -> dict[str, object]:
         """Return a lightweight snapshot dict suitable for msgpack serialisation.
+
         Returns:
             dict: Mapping containing numpy arrays converted to nested lists.
         """

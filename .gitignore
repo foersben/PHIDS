@@ -200,3 +200,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Batch processing results
+data/
+# PHIDS Archived files
+.archive/
+.github/workflows/secrets.env

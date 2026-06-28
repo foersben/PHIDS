@@ -1,0 +1,25 @@
+{
+  "ref": "refs/tags/v0.1.0",
+  "ref_name": "v0.1.0",
+  "ref_type": "tag",
+  "before": "0000000000000000000000000000000000000000",
+  "after": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "repository": {
+    "name": "PHIDS",
+    "full_name": "foersben/PHIDS",
+    "private": false,
+    "owner": {
+      "login": "foersben",
+      "name": "foersben"
+    },
+    "html_url": "https://github.com/foersben/PHIDS",
+    "default_branch": "main"
+  },
+  "pusher": {
+    "name": "foersben",
+    "email": "foersben@users.noreply.github.com"
+  },
+  "sender": {
+    "login": "foersben"
+  }
+}

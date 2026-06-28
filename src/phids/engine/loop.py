@@ -1,9 +1,16 @@
-"""
-Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
+"""Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
 
-This module implements the principal simulation driver for PHIDS, responsible for advancing the grid environment and ECS world through a rigorously ordered sequence of systems: flow field, lifecycle, interaction, signaling, and telemetry/termination. The simulation loop enforces deterministic update ordering via an asyncio lock, ensuring reproducibility and scientific validity. Double-buffering is employed to maintain a strict separation between read and write states, preventing race conditions and guaranteeing the integrity of biological phenomena such as systemic acquired resistance, metabolic attrition, and mitosis. Per-tick snapshots are captured for replay and telemetry, supporting comprehensive analysis of emergent behaviors and ecological dynamics. The architectural design reflects the project's commitment to data-oriented modeling, O(1) spatial hash lookups, and the Rule of 16 for memory allocation, thereby simulating complex plant-herbivore interactions with maximal computational efficiency and biological fidelity.
-
-This module-level docstring is written in accordance with Google-style documentation standards, providing a detailed scholarly abstract of the simulation loop's algorithmic mechanics and biological rationale.
+This module implements the principal simulation driver for PHIDS, responsible for advancing the
+grid environment and ECS world through a rigorously ordered sequence of systems: flow field,
+lifecycle, interaction, signaling, and telemetry/termination. The simulation loop enforces
+deterministic update ordering via an ``asyncio.Lock``, ensuring reproducibility and scientific
+validity. Double-buffering is employed to maintain a strict separation between read and write
+states, preventing race conditions and guaranteeing the integrity of biological phenomena such as
+systemic acquired resistance, metabolic attrition, and mitosis. Per-tick snapshots are captured
+for replay and telemetry, supporting comprehensive analysis of emergent behaviours and ecological
+dynamics. The architectural design reflects the project's commitment to data-oriented modelling,
+O(1) spatial hash lookups, and the Rule of 16 for memory allocation, thereby simulating complex
+plant-herbivore interactions with maximal computational efficiency and biological fidelity.
 """
 
 from __future__ import annotations
@@ -11,9 +18,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any
+import uuid
+from typing import TYPE_CHECKING, Protocol, cast
 
-from phids.api.schemas import SimulationConfig
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
@@ -22,10 +29,41 @@ from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
-from phids.io.replay import ReplayBuffer
-from phids.telemetry.analytics import TelemetryRecorder
-from phids.telemetry.conditions import TerminationResult, check_termination
+from phids.io.zarr_replay import ReplayBuffer, ReplayState
+from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.shared.logging_config import get_simulation_debug_interval
+from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
+from phids.telemetry.conditions import TerminationResult, check_termination
+from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
+
+if TYPE_CHECKING:
+    from phids.api.schemas import (
+        FloraSpeciesParams,
+        HerbivoreSpeciesParams,
+        SimulationConfig,
+        TriggerConditionSchema,
+    )
+
+
+class _ReplayBackend(Protocol):
+    """Structural contract shared by replay backends used by SimulationLoop."""
+
+    def append(self, state: ReplayState) -> None: ...
+
+    def __len__(self) -> int: ...
+
+
+class _RawArrayReplayBackend(_ReplayBackend, Protocol):
+    """Replay backend contract for direct environment-array ingestion."""
+
+    def append_raw_arrays(
+        self,
+        *,
+        tick: int,
+        env: GridEnvironment,
+        termination_state: tuple[bool, str | None],
+    ) -> None: ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +94,10 @@ class SimulationLoop:
         self.termination_reason: str | None = None
         self._lock: asyncio.Lock = asyncio.Lock()
         self._debug_tick_interval: int = get_simulation_debug_interval()
+        self._state_revision: int = 0
         self._cached_snapshot_tick: int = -1
-        self._cached_snapshot: dict[str, Any] | None = None
+        self._cached_snapshot: ReplayState | None = None
+        self.run_id: str = uuid.uuid4().hex
 
         # Build environment
         self.env = GridEnvironment(
@@ -73,12 +113,17 @@ class SimulationLoop:
 
         # Telemetry
         self.telemetry = TelemetryRecorder()
-        # Deterministic replay state frames (msgpack serialisation per tick)
-        self.replay = ReplayBuffer()
+        # Deterministic replay state frames using Zarr
+        self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
+        self._replay_supports_raw_arrays = True
+        logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
 
         # Pre-compute species parameter lookups
-        self._flora_params: dict[int, Any] = {sp.species_id: sp for sp in config.flora_species}
-        self._trigger_conditions: dict[int, list[Any]] = {
+        self._flora_params: dict[int, FloraSpeciesParams] = {sp.species_id: sp for sp in config.flora_species}
+        self._herbivore_params: dict[int, HerbivoreSpeciesParams] = {
+            sp.species_id: sp for sp in config.herbivore_species
+        }
+        self._trigger_conditions: dict[int, list[TriggerConditionSchema]] = {
             sp.species_id: list(sp.triggers) for sp in config.flora_species
         }
         self._diet_matrix: list[list[bool]] = config.diet_matrix.rows
@@ -86,11 +131,14 @@ class SimulationLoop:
         # Spawn initial entities
         self._spawn_initial_entities()
         logger.info(
-            "SimulationLoop initialised (grid=%dx%d, flora_species=%d, predator_species=%d, signals=%d, toxins=%d, tick_rate_hz=%.2f)",
+            (
+                "SimulationLoop initialised (grid=%dx%d, flora_species=%d, "
+                "herbivore_species=%d, signals=%d, toxins=%d, tick_rate_hz=%.2f)"
+            ),
             config.grid_width,
             config.grid_height,
             len(config.flora_species),
-            len(config.predator_species),
+            len(config.herbivore_species),
             config.num_signals,
             config.num_toxins,
             config.tick_rate_hz,
@@ -135,6 +183,8 @@ class SimulationLoop:
                 seed_min_dist=params.seed_min_dist,
                 seed_max_dist=params.seed_max_dist,
                 seed_energy_cost=params.seed_energy_cost,
+                seed_drop_height=params.seed_drop_height,
+                seed_terminal_velocity=params.seed_terminal_velocity,
                 camouflage=params.camouflage,
                 camouflage_factor=params.camouflage_factor,
             )
@@ -158,18 +208,12 @@ class SimulationLoop:
                 population=swarm_placement.population,
                 initial_population=swarm_placement.population,
                 energy=swarm_placement.energy,
-                energy_min=self._get_predator_energy_min(swarm_placement.species_id),
-                velocity=self._get_predator_velocity(swarm_placement.species_id),
-                consumption_rate=self._get_predator_consumption_rate(swarm_placement.species_id),
-                reproduction_energy_divisor=self._get_predator_reproduction_divisor(
-                    swarm_placement.species_id
-                ),
-                energy_upkeep_per_individual=self._get_predator_energy_upkeep(
-                    swarm_placement.species_id
-                ),
-                split_population_threshold=self._get_predator_split_threshold(
-                    swarm_placement.species_id
-                ),
+                energy_min=self._get_herbivore_energy_min(swarm_placement.species_id),
+                velocity=self._get_herbivore_velocity(swarm_placement.species_id),
+                consumption_rate=self._get_herbivore_consumption_rate(swarm_placement.species_id),
+                reproduction_energy_divisor=self._get_herbivore_reproduction_divisor(swarm_placement.species_id),
+                energy_upkeep_per_individual=self._get_herbivore_energy_upkeep(swarm_placement.species_id),
+                split_population_threshold=self._get_herbivore_split_threshold(swarm_placement.species_id),
             )
             self.world.add_component(entity.entity_id, swarm)
             self.world.register_position(entity.entity_id, swarm_placement.x, swarm_placement.y)
@@ -182,75 +226,90 @@ class SimulationLoop:
             spawned_swarms,
         )
 
-    def _get_predator_energy_min(self, species_id: int) -> float:
-        """Return the configured minimum energy for a predator species.
+    def _get_herbivore_energy_min(self, species_id: int) -> float:
+        """Return the configured minimum energy for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             float: Configured minimum energy if found, otherwise a sensible
             default of 1.0.
         """
-        for sp in self.config.predator_species:
-            if sp.species_id == species_id:
-                return sp.energy_min
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.energy_min)
         return 1.0
 
-    def _get_predator_velocity(self, species_id: int) -> int:
-        """Return the configured movement period (velocity) for a predator.
+    def _get_herbivore_velocity(self, species_id: int) -> int:
+        """Return the configured movement period (velocity) for a herbivore.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             int: Movement period in ticks; defaults to 1 when not found.
         """
-        for sp in self.config.predator_species:
-            if sp.species_id == species_id:
-                return sp.velocity
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return int(params.velocity)
         return 1
 
-    def _get_predator_consumption_rate(self, species_id: int) -> float:
-        """Return the per-tick consumption rate for a predator species.
+    def _get_herbivore_consumption_rate(self, species_id: int) -> float:
+        """Return the per-tick consumption rate for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             float: Consumption rate if present, otherwise 1.0 by default.
         """
-        for sp in self.config.predator_species:
-            if sp.species_id == species_id:
-                return sp.consumption_rate
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.consumption_rate)
         return 1.0
 
-    def _get_predator_reproduction_divisor(self, species_id: int) -> float:
-        """Return the configured reproduction divisor for a predator species.
+    def _get_herbivore_reproduction_divisor(self, species_id: int) -> float:
+        """Return the configured reproduction divisor for a herbivore species.
 
         Args:
-            species_id: Predator species identifier to look up.
+            species_id: Herbivore species identifier to look up.
 
         Returns:
             float: Reproduction divisor if present, otherwise 1.0.
         """
-        for sp in self.config.predator_species:
-            if sp.species_id == species_id:
-                return sp.reproduction_energy_divisor
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.reproduction_energy_divisor)
         return 1.0
 
-    def _get_predator_energy_upkeep(self, species_id: int) -> float:
-        """Return the configured per-individual metabolic upkeep scalar."""
-        for sp in self.config.predator_species:
-            if sp.species_id == species_id:
-                return sp.energy_upkeep_per_individual
+    def _get_herbivore_energy_upkeep(self, species_id: int) -> float:
+        """Return the configured per-individual metabolic upkeep scalar for a herbivore species.
+
+        Args:
+            species_id: Herbivore species identifier to look up.
+
+        Returns:
+            Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
+        """
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return float(params.energy_upkeep_per_individual)
         return 0.05
 
-    def _get_predator_split_threshold(self, species_id: int) -> int:
-        """Return the configured explicit mitosis population threshold."""
-        for sp in self.config.predator_species:
-            if sp.species_id == species_id:
-                return sp.split_population_threshold
+    def _get_herbivore_split_threshold(self, species_id: int) -> int:
+        """Return the configured explicit mitosis population threshold for a herbivore species.
+
+        Args:
+            species_id: Herbivore species identifier to look up.
+
+        Returns:
+            Configured split threshold if found; otherwise 0, which causes the interaction
+            system to apply the legacy initial-population-based mitosis rule.
+        """
+        params = self._herbivore_params.get(species_id)
+        if params is not None:
+            return int(params.split_population_threshold)
         return 0
 
     # ------------------------------------------------------------------
@@ -272,9 +331,7 @@ class SimulationLoop:
         Flips the ``paused`` boolean.
         """
         self.paused = not self.paused
-        logger.info(
-            "Simulation loop %s at tick %d", "paused" if self.paused else "resumed", self.tick
-        )
+        logger.info("Simulation loop %s at tick %d", "paused" if self.paused else "resumed", self.tick)
 
     def stop(self) -> None:
         """Halt the simulation by clearing the running flag."""
@@ -289,28 +346,97 @@ class SimulationLoop:
             and self.tick % self._debug_tick_interval == 0
         )
 
+    def _append_replay_frame(self) -> None:
+        """Append one replay frame using the backend-specific ingestion path."""
+        if self._replay_supports_raw_arrays:
+            replay_backend = cast("_RawArrayReplayBackend", self.replay)
+            replay_backend.append_raw_arrays(
+                tick=self.tick,
+                env=self.env,
+                termination_state=(self.terminated, self.termination_reason),
+            )
+            return
+        self.replay.append(self.get_state_snapshot())
+
     def _log_debug_tick_summary(
         self,
         *,
-        latest_metrics: dict[str, Any] | None,
+        latest_metrics: TelemetryRow | None,
+        tick_metrics: TickMetrics,
         phase_timings_ms: dict[str, float],
     ) -> None:
         """Emit a coarse DEBUG snapshot for the current tick."""
-        swarm_population = 0
-        for entity in self.world.query(SwarmComponent):
-            swarm_population += entity.get_component(SwarmComponent).population
+
+        def _metric_float(value: object, default: float) -> float:
+            if isinstance(value, bool):
+                return default
+            if isinstance(value, (int, float)):
+                return float(value)
+            if isinstance(value, str):
+                try:
+                    return float(value)
+                except ValueError:
+                    return default
+            return default
+
+        def _metric_int(value: object, default: int) -> int:
+            if isinstance(value, bool):
+                return default
+            if isinstance(value, int):
+                return value
+            if isinstance(value, float):
+                return int(value)
+            if isinstance(value, str):
+                try:
+                    return int(value)
+                except ValueError:
+                    return default
+            return default
+
+        flora_energy = (
+            _metric_float(
+                latest_metrics.get("total_flora_energy", tick_metrics.total_flora_energy),
+                float(tick_metrics.total_flora_energy),
+            )
+            if latest_metrics is not None
+            else float(tick_metrics.total_flora_energy)
+        )
+        flora_population = (
+            _metric_int(
+                latest_metrics.get("flora_population", tick_metrics.flora_population),
+                int(tick_metrics.flora_population),
+            )
+            if latest_metrics is not None
+            else int(tick_metrics.flora_population)
+        )
+        herbivore_clusters = (
+            _metric_int(
+                latest_metrics.get("herbivore_clusters", tick_metrics.herbivore_clusters),
+                int(tick_metrics.herbivore_clusters),
+            )
+            if latest_metrics is not None
+            else int(tick_metrics.herbivore_clusters)
+        )
+        herbivore_population = (
+            _metric_int(
+                latest_metrics.get("herbivore_population", tick_metrics.herbivore_population),
+                int(tick_metrics.herbivore_population),
+            )
+            if latest_metrics is not None
+            else int(tick_metrics.herbivore_population)
+        )
 
         logger.debug(
             (
                 "Tick summary (tick=%d, flora_energy=%.3f, flora_population=%d, "
-                "predator_clusters=%d, predator_population=%d, replay_frames=%d, "
+                "herbivore_clusters=%d, herbivore_population=%d, replay_frames=%d, "
                 "phase_timings_ms=%s)"
             ),
             self.tick,
-            float(latest_metrics.get("total_flora_energy", 0.0)) if latest_metrics else 0.0,
-            int(latest_metrics.get("flora_population", 0)) if latest_metrics else 0,
-            int(latest_metrics.get("predator_clusters", 0)) if latest_metrics else 0,
-            swarm_population,
+            flora_energy,
+            flora_population,
+            herbivore_clusters,
+            herbivore_population,
             len(self.replay),
             phase_timings_ms,
         )
@@ -357,6 +483,9 @@ class SimulationLoop:
                 self.env.toxin_layers,
                 self.env.width,
                 self.env.height,
+                self.env._flow_field_base,
+                self.env._flow_field_current,
+                self.env._flow_field_nxt,
             )
             if debug_summary:
                 phase_timings_ms["flow_field"] = (time.perf_counter() - phase_started) * 1000.0
@@ -375,7 +504,7 @@ class SimulationLoop:
                 self.world,
                 self.env,
                 self.tick,
-                self._flora_params,
+                cast("dict[int, object]", self._flora_params),
                 mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
                 mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
                 mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
@@ -415,34 +544,41 @@ class SimulationLoop:
                 phase_timings_ms["signaling"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # FIX: Commit all energy depletion from feeding and defense upkeep
-            # before telemetry reads it and the next tick's flow field evaluates it.
+            # Commit all energy depletion from feeding and defense upkeep before
+            # telemetry sampling and next-tick flow-field evaluation.
             self.env.rebuild_energy_layer()
+
+            # Build one shared metrics snapshot for telemetry and termination.
+            tick_metrics: TickMetrics = collect_tick_metrics(self.world)
 
             # --------------------------------------------------------
             # Phase 5: Telemetry
             # --------------------------------------------------------
-            self.telemetry.record(self.world, self.tick, plant_death_causes=plant_death_causes)
-            self.replay.append(self.get_state_snapshot())
+            self.telemetry.record(
+                self.world,
+                self.tick,
+                plant_death_causes=plant_death_causes,
+                tick_metrics=tick_metrics,
+            )
+            self._append_replay_frame()
             latest_metrics = self.telemetry.get_latest_metrics()
             if debug_summary:
-                phase_timings_ms["telemetry_replay"] = (
-                    time.perf_counter() - phase_started
-                ) * 1000.0
+                phase_timings_ms["telemetry_replay"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
             # --------------------------------------------------------
             # Phase 6: Termination check (double-buffer swap happens here
-            #          implicitly – all writes committed before check)
+            #          implicitly - all writes committed before check)
             # --------------------------------------------------------
             result = check_termination(
                 self.world,
                 self.tick,
                 max_ticks=self.config.max_ticks,
                 z2_flora_species=self.config.z2_flora_species_extinction,
-                z4_predator_species=self.config.z4_predator_species_extinction,
+                z4_herbivore_species=self.config.z4_herbivore_species_extinction,
                 z6_max_flora_energy=self.config.z6_max_total_flora_energy,
-                z7_max_predator_population=self.config.z7_max_total_predator_population,
+                z7_max_total_herbivore_population=self.config.z7_max_total_herbivore_population,
+                tick_metrics=tick_metrics,
             )
             if debug_summary:
                 phase_timings_ms["termination"] = (time.perf_counter() - phase_started) * 1000.0
@@ -451,6 +587,7 @@ class SimulationLoop:
             if debug_summary:
                 self._log_debug_tick_summary(
                     latest_metrics=latest_metrics,
+                    tick_metrics=tick_metrics,
                     phase_timings_ms=phase_timings_ms,
                 )
 
@@ -467,11 +604,11 @@ class SimulationLoop:
 
         The loop respects ``paused`` and sleeps to maintain ``tick_rate_hz``.
         """
-        tick_interval = 1.0 / self.config.tick_rate_hz
         self.start()
         logger.info("Simulation run loop entering background execution")
 
         while self.running and not self.terminated:
+            tick_interval = 1.0 / max(0.1, self.config.tick_rate_hz)
             if self.paused:
                 await asyncio.sleep(tick_interval)
                 continue
@@ -491,6 +628,20 @@ class SimulationLoop:
             self.termination_reason,
         )
 
+    def update_tick_rate(self, tick_rate_hz: float) -> float:
+        """Update live simulation tick speed while preserving safe lower bounds.
+
+        Args:
+            tick_rate_hz: Requested simulation ticks per second.
+
+        Returns:
+            Applied tick-rate value after clamping.
+        """
+        applied = max(0.1, float(tick_rate_hz))
+        self.config.tick_rate_hz = applied
+        logger.info("Simulation tick rate updated to %.2f Hz", applied)
+        return applied
+
     # ------------------------------------------------------------------
     # Wind update (REST API integration point)
     # ------------------------------------------------------------------
@@ -504,30 +655,40 @@ class SimulationLoop:
         """
         self.env.set_uniform_wind(vx, vy)
         # Wind can change snapshot content without advancing ticks.
+        self._state_revision += 1
         self._cached_snapshot_tick = -1
         self._cached_snapshot = None
         logger.info("Simulation wind updated to (vx=%.3f, vy=%.3f)", vx, vy)
+
+    @property
+    def state_revision(self) -> int:
+        """Return a monotonic token for non-tick state mutations relevant to stream payloads."""
+        return self._state_revision
 
     # ------------------------------------------------------------------
     # State snapshot for WebSocket streaming
     # ------------------------------------------------------------------
 
-    def get_state_snapshot(self) -> dict[str, Any]:
+    def get_state_snapshot(self) -> ReplayState:
         """Return a serialisable snapshot of the current grid state.
 
         Returns:
-            dict[str, Any]: Snapshot containing tick, termination state and
+            ReplayState: Snapshot containing tick, termination state and
             environment dictionary (from :meth:`GridEnvironment.to_dict`).
         """
         if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
             return self._cached_snapshot
 
-        snapshot = {
-            "tick": self.tick,
-            "terminated": self.terminated,
-            "termination_reason": self.termination_reason,
-            **self.env.to_dict(),
-        }
+        snapshot = cast(
+            "ReplayState",
+            {
+                "tick": self.tick,
+                "terminated": self.terminated,
+                "termination_reason": self.termination_reason,
+                "state_revision": self._state_revision,
+                **self.env.to_dict(),
+            },
+        )
         self._cached_snapshot_tick = self.tick
         self._cached_snapshot = snapshot
         return snapshot
