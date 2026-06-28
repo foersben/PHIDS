@@ -10,6 +10,16 @@
     </div>
   </div>
 
+  {% if flora_species|length == 0 and herbivore_species|length == 0 %}
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+    <span>Define at least one flora or herbivore species to place entities.</span>
+    <div class="flex gap-2 shrink-0">
+      <button hx-get="/ui/flora" hx-target="#main-workspace" hx-swap="innerHTML" class="px-3 py-1 bg-white border border-amber-300 rounded-lg hover:bg-amber-100 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">🌿 Add Flora</button>
+      <button hx-get="/ui/herbivores" hx-target="#main-workspace" hx-swap="innerHTML" class="px-3 py-1 bg-white border border-amber-300 rounded-lg hover:bg-amber-100 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">🐛 Add Herbivore</button>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
     <!-- Left: Canvas grid -->
