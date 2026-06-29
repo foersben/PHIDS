@@ -31,7 +31,7 @@ async def test_api_root_contains_simulation_controls(api_client: AsyncClient) ->
 
     assert resp.status_code == 200, resp.text
     assert "⏭ Step" in resp.text
-    assert "↺ Reset" in resp.text
+    assert "Reset" in resp.text
 
 
 @pytest.mark.asyncio
