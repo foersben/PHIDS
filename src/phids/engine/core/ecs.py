@@ -218,12 +218,15 @@ class ECSWorld:
                 return []
             sets.append(indexed_ids)
 
-        smallest = min(sets, key=len)
-        return [
-            entities[eid]
-            for eid in smallest
-            if eid in entities and all(ct in entities[eid]._components for ct in component_types)
-        ]
+        sets.sort(key=len)
+
+        # Copy the smallest set first to avoid modifying it or hitting size changes
+        # during dynamic multi-component iteration.
+        intersection = set(sets[0])
+        for s in sets[1:]:
+            intersection.intersection_update(s)
+
+        return [entities[eid] for eid in intersection if eid in entities]
 
     # ------------------------------------------------------------------
     # Spatial Hash
