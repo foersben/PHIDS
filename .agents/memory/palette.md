@@ -1,7 +1,1 @@
----
-type: memory
----
-
-## 2024-06-26 - [File Input A11y]
-**Learning:** When styling file upload inputs inside `<label>` wrappers with Tailwind, using `hidden` on the `<input>` removes it from the browser focus order entirely, breaking keyboard navigation. This issue was found on the sidebar scenario import.
-**Action:** Use `sr-only` instead of `hidden` on the input, and use Tailwind `has-[:focus-visible]:ring-2` on the parent wrapper to proxy the visual focus ring.
+## 2026-06-30 - [Accessibility: Nested Form Components] Learning: Deeply nested form elements in HTMX UI configurations (like trigger rules) often miss standardized focus states, causing navigation confusion for keyboard users. Action: When constructing or modifying form nodes, add explicit focus rings (e.g., `focus:outline-none focus-visible:ring-2`) for all interactive elements and dynamic ARIA labels for repetitive actions (e.g., delete buttons per row).
