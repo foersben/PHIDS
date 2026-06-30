@@ -22,7 +22,7 @@ from numba import njit  # type: ignore[import-untyped]
 
 def _compute_flow_field_impl(
     plant_energy: npt.NDArray[np.float64],
-    toxin_sum: npt.NDArray[np.float64],
+    toxin_layers: npt.NDArray[np.float64],
     width: int,
     height: int,
     base: npt.NDArray[np.float64] | None = None,
@@ -33,7 +33,7 @@ def _compute_flow_field_impl(
 
     Args:
         plant_energy: 2-D array ``(W, H)`` of aggregated plant energy per cell.
-        toxin_sum: 2-D array ``(W, H)`` of aggregated toxin concentration per cell.
+        toxin_layers: 3-D array ``(num_toxins, W, H)`` of toxin concentration layers.
         width: Grid width W.
         height: Grid height H.
         base: Pre-allocated 2-D scratch array.
@@ -58,9 +58,14 @@ def _compute_flow_field_impl(
     else:
         nxt.fill(0.0)
 
+    num_toxins = toxin_layers.shape[0]
+
     for x in range(width):
         for y in range(height):
-            base[x, y] = plant_energy[x, y] - toxin_sum[x, y]
+            t_sum = 0.0
+            for t in range(num_toxins):
+                t_sum += toxin_layers[t, x, y]
+            base[x, y] = plant_energy[x, y] - t_sum
             current[x, y] = base[x, y]
 
     # Iterative propagation lets attraction/repulsion travel multiple hops.
@@ -143,9 +148,10 @@ def compute_flow_field(
     if nxt is None:
         nxt = np.zeros((width, height), dtype=np.float64)
 
-    toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
+    # Note: Toxin summation is now handled inline inside the Numba JIT kernel
+    # to avoid the costly Python-level array allocation of `toxin_layers.sum(axis=0)` on every tick.
     result = np.asarray(
-        _compute_flow_field(plant_energy, toxin_sum, width, height, base, current, nxt),
+        _compute_flow_field(plant_energy, toxin_layers, width, height, base, current, nxt),
         dtype=np.float64,
     )
     return result
