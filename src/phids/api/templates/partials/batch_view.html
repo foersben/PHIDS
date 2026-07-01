@@ -61,7 +61,7 @@
 
     <div class="flex flex-wrap gap-2 text-xs pt-2 border-t border-slate-100 mt-3">
       <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>TikZ</a>
+      <a id="batch-export-tikz" href="/api/batch/export/{{ job_id }}?format=tex_tikz" aria-label="Export batch data as TikZ chart" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>TikZ</a>
     </div>
   </div>
 
@@ -89,8 +89,8 @@
 
     <div class="flex flex-wrap gap-2 text-xs pt-2 border-t border-slate-100 mt-3">
       <span class="text-slate-400 text-[11px] self-center">Export:</span>
-      <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>CSV</a>
-      <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>LaTeX Table</a>
+      <a id="batch-export-csv" href="/api/batch/export/{{ job_id }}?format=csv" aria-label="Export batch data as CSV" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>CSV</a>
+      <a id="batch-export-tex" href="/api/batch/export/{{ job_id }}?format=tex_table" aria-label="Export batch data as LaTeX Table" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" download>LaTeX Table</a>
     </div>
   </div>
 
