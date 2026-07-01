@@ -210,7 +210,7 @@ class ECSWorld:
                 if eid in entities and ct in entities[eid]._components
             ]
 
-        # Start from the smallest set for efficiency
+        # Sort sets by length to minimize intersection work
         sets: list[set[int]] = []
         for component_type in component_types:
             indexed_ids = self._component_index.get(component_type)
@@ -218,12 +218,13 @@ class ECSWorld:
                 return []
             sets.append(indexed_ids)
 
-        smallest = min(sets, key=len)
-        return [
-            entities[eid]
-            for eid in smallest
-            if eid in entities and all(ct in entities[eid]._components for ct in component_types)
-        ]
+        sets.sort(key=len)
+        # Use fast C-level set intersection update
+        intersected_ids = set(sets[0])
+        if len(sets) > 1:
+            intersected_ids.intersection_update(*sets[1:])
+
+        return [entities[eid] for eid in intersected_ids if eid in entities]
 
     # ------------------------------------------------------------------
     # Spatial Hash
