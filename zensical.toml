@@ -76,7 +76,7 @@ Scenarios = [
     { "Overview" = "scenario_guide/index.md" },
     { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
     { "Curated Examples" = "scenario_guide/curated_examples.md" },
-    { "Scenario Calibration (Trophic Optimizer)" = "scenario_guide/trophic_optimizer.md" },
+    { "Design Space Exploration (DSE)" = "scenario_guide/design_space_exploration.md" },
 ]
 
 [[project.nav]]
