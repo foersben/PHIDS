@@ -43,7 +43,7 @@ Inspect pre-configured blueprints designed to demonstrate specific ecological fe
 * **Trophic Collapse Scenario:** A demonstration of ecological breakdown when herbivore consumption rates breach flora regeneration thresholds.
 * **Volatile Warning Cascade:** A scenario highlighting chemical atmospheric warning diffusion across spatial grids.
 
-### 3. [Scenario Calibration (Trophic Optimizer)](trophic_optimizer.md)
+### 3. [Design Space Exploration (DSE)](design_space_exploration.md)
 
 Discover how the framework uses SciPy's Differential Evolution to find stable parameters autonomously:
 

@@ -82,7 +82,7 @@ During the migration from legacy Object-Oriented implementations to the current 
   * [Testing Architecture](technical_architecture/testing_architecture.md)
   [`technical_architecture/`](technical_architecture/system_architecture.md)
 * **Scenarios** — schema semantics, import/export, and curated examples:
-  * [Scenario Calibration (Trophic Optimizer)](scenario_guide/trophic_optimizer.md)
+  * [Design Space Exploration (DSE)](scenario_guide/design_space_exploration.md)
   [`scenario_guide/`](scenario_guide/scenario_authoring.md)
 * **Development & Reference** — API Reference, contribution workflows, agent orchestration (MCP), and historical archives:
   [`development_guide/`](development_guide/contribution_workflow.md)
