@@ -57,8 +57,9 @@ def _run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
     )
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def serve(
+    ctx: typer.Context,
     host: Annotated[
         str,
         typer.Option(help="Interface to bind the HTTP server to. Use 0.0.0.0 inside containers."),
@@ -78,12 +79,16 @@ def serve(
     containerized, and CI-managed runtime contexts.
 
     Args:
+        ctx: Typer context containing invoked subcommands.
         host: Interface address for HTTP binding.
         port: TCP port for HTTP binding.
         reload: Auto-reload flag for local development.
         log_level: Uvicorn logging verbosity.
         mcp: Whether to start the MCP stdio server instead of Uvicorn.
     """
+    if ctx.invoked_subcommand is not None:
+        return
+
     if mcp:
         from phids.mcp_server import run_mcp_server
 

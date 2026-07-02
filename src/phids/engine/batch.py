@@ -158,7 +158,7 @@ def _run_single_headless(
     from phids.engine.loop import SimulationLoop
 
     config = SimulationConfig.model_validate(scenario_dict)
-    loop = SimulationLoop(config)
+    loop = SimulationLoop(config, disable_replay=True)
 
     async def _advance() -> None:
         for _ in range(max_ticks):

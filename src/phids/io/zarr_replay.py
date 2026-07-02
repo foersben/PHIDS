@@ -30,7 +30,7 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Protocol, TypedDict, cast
+from typing import Any, Protocol, TypedDict, cast
 
 import numpy as np
 
@@ -67,6 +67,26 @@ class _MetadataEntry(TypedDict):
     tick: int
     terminated: bool
     termination_reason: str | None
+
+
+class NoOpReplayBuffer:
+    """A no-op replay buffer that does not store or write any frames, preventing disk usage during tuning."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the NoOpReplayBuffer (does nothing)."""
+        pass
+
+    def append(self, state: object) -> None:
+        """Append a state snapshot to the buffer (no-op)."""
+        pass
+
+    def append_raw_arrays(self, *args: Any, **kwargs: Any) -> None:
+        """Append raw environment arrays to the buffer (no-op)."""
+        pass
+
+    def __len__(self) -> int:
+        """Return the number of frames in the buffer (always 0)."""
+        return 0
 
 
 class ReplayBuffer:
