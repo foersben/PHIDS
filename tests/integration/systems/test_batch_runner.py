@@ -289,7 +289,7 @@ def test_run_single_headless_breaks_when_termination_detected(monkeypatch) -> No
         _rows = [{"tick": 0, "flora_population": 0, "herbivore_population": 0}]  # noqa: RUF012
 
     class _FakeLoop:
-        def __init__(self, _config: object) -> None:
+        def __init__(self, _config: object, **kwargs: object) -> None:
             self.telemetry = _FakeTelemetry()
             self.tick = 1
 

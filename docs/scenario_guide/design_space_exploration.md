@@ -21,18 +21,55 @@ The updated DSE treats ecosystem generation as a Mixed-Integer Non-Linear Progra
 *   **Pareto-Front Evaluation:** Instead of collapsing ecosystem health into a single scalar fitness score, the DSE returns a Pareto Front evaluating multi-objective tuples: (Volatility, Biomass, Database_Similarity).
 
 ```mermaid
+classDiagram
+    direction TD
+
+    class Genotype {
+        <<MINLP Structure>>
+    }
+
+    class StructuralGenes {
+        <<Stage 2: Discrete>>
+        +Enum Placement Strategy (Uniform, Clustered, Banded)
+        +bool[16][16] Diet Compatibility Matrix
+        +bool[16][16] Trigger Matrix
+    }
+
+    class ParametricGenes {
+        <<Stage 3: Continuous>>
+        +float Flora Growth Rate (g_j)
+        +float Metabolic Upkeep (m_i)
+        +float Reproduction Divisor (rho_i)
+        +float Seed Dispersal Radius
+    }
+
+    Genotype *-- StructuralGenes : "Defines Topology"
+    Genotype *-- ParametricGenes : "Defines Rates"
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef structural fill:#dbeafe,stroke:#2563eb,stroke-width:2px;
+    classDef parametric fill:#dcfce3,stroke:#16a34a,stroke-width:2px;
+
+    class StructuralGenes structural;
+    class ParametricGenes parametric;
+```
+
+```mermaid
 graph TD
-    A[Start: Initial Seed Population] --> B{Stage 1: Analytical Pre-Pruning}
-    B -- Infeasible --> C[Discard/Reject]
-    B -- Feasible --> D[Stage 2: Structural Search]
-    D --> E[Mutate: Placement Strategy & Boolean Interactions]
-    E --> F[Stage 3: Parametric Tuning]
-    F --> G[Fine-Tune: Growth Rates, Metabolism]
-    G --> H[Run Simulation]
-    H --> I[Pareto-Front Evaluation]
-    I -->|Objectives: Volatility, Biomass, DB Similarity| J{Convergence?}
-    J -- No --> D
-    J -- Yes --> K[Top Pareto Candidates]
+    A[Initialize Generation] --> B{Stage 1: Analytical Pre-Pruning<br/>Mathematical Bounds Check}
+    B -.->|If Max Plant Caloric Output < Min Herbivore Upkeep| C{Reject & Prune}
+    B -->|Feasible Bounds| D[Stage 2: Structural Search]
+    D --> E[Stage 3: Parametric Tuning]
+    E --> F[Simulation Replicates e.g., 20 runs]
+    F --> G{Evaluate Z1-Z7 Terminations<br/>Extinction/Runaway limits}
+    G --> H[Database Storage]
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef decision fill:#fef08a,stroke:#ca8a04,stroke-width:2px;
+    classDef prune fill:#fee2e2,stroke:#dc2626,stroke-width:2px;
+
+    class B,G decision;
+    class C prune;
 ```
 
 ## 2. Biological Database Connection (Two-Way Mapping)
@@ -43,21 +80,16 @@ To ground the theoretical mathematics in empirical data, the DSE features a dual
 *   **Mode B: Constrained (Nature-to-Design):** The user selects a specific real-world ecosystem (e.g., a Pine Forest) from the database. The database then locks the DSE into strict parameter bounds, forcing the structural optimizer to find equilibrium only within the biological variance of those specific species.
 
 ```mermaid
-graph TD
-    DB[(Biological Database)]
-    User([User])
+graph LR
+    G[Pareto-Efficient Genotypes] --> S[Simulated PHIDS Ecosystem]
+    S --> P[3-Objective Pareto Front<br/>1. Min Volatility/CV<br/>2. Max Biomass<br/>3. DB Similarity]
 
-    %% Mode A
-    User -.->|Mode A: Generative| DSE_A[Unrestricted DSE]
-    DSE_A --> MathEq[Stable Mathematical Equilibrium]
-    MathEq -->|KNN / Cosine Similarity| DB
-    DB --> Match[Closest Real-World Analogs]
+    P -->|Mode A: Generative<br/>KNN Matching| DB[(Biological SQLite DB)]
+    DB -->|Mode B: Constrained<br/>Lock Parameter Bounds| G
 
-    %% Mode B
-    User -.->|Mode B: Constrained| DB_Query[Select Specific Ecosystem]
-    DB_Query --> DB
-    DB -->|Strict Parameter Bounds| DSE_B[Bounded DSE]
-    DSE_B --> ConstrainedEq[Equilibrium within Biological Variance]
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef db fill:#f3f4f6,stroke:#4b5563,stroke-width:2px;
+    class DB db;
 ```
 
 ## 3. Spatial Initial Conditions (The Placement Gene)
@@ -101,6 +133,28 @@ The transition to this architecture will occur across the following five phases:
     Update Biotope/ECS generation to interpret placement strategies deterministically via seeds.
 
 ### Phase 3: The Multi-Stage DSE Algorithm
+
+```mermaid
+graph TD
+    A[Parent Population] --> B[Genetic Operators<br/>1. Crossover<br/>2. Continuous Mutation<br/>3. Structural Splicing]
+    B --> C[Evaluation & Fitness Assignment]
+    C --> D[NSGA-II Non-Dominated Sorting]
+
+    D --> E[Rank 1<br/>Pareto Front]
+    D --> F[Rank 2]
+    D --> G[Rank 3]
+
+    E --> H[Offspring Population]
+    F -.->|High Crowding Distance| H
+    G -.->|Discard| I[Discarded]
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef pareto fill:#dcfce3,stroke:#16a34a,stroke-width:2px;
+    classDef discard fill:#fee2e2,stroke:#dc2626,stroke-width:2px;
+
+    class E pareto;
+    class I discard;
+```
 
 *   **Task 3.1: Stage 1**
     Implement Analytical Pre-Pruning validators.
