@@ -72,11 +72,11 @@ class BioDatabase:
         if species_name not in self.data.flora:
             raise ValueError(f"Species {species_name} not found.")
         profile = self.data.flora[species_name].model_dump()
-        return {k: (v * 0.8, v * 1.2) for k, v in profile.items()}
+        return {k: (max(1e-4, v * 0.8), v * 1.2) for k, v in profile.items()}
 
     def mode_b_get_bounds_herbivore(self, species_name: str) -> dict[str, tuple[float, float]]:
         """Returns ±20% bounds for specific herbivore."""
         if species_name not in self.data.herbivores:
             raise ValueError(f"Species {species_name} not found.")
         profile = self.data.herbivores[species_name].model_dump()
-        return {k: (v * 0.8, v * 1.2) for k, v in profile.items()}
+        return {k: (max(1e-4, v * 0.8), v * 1.2) for k, v in profile.items()}

@@ -35,8 +35,10 @@ class AnalyticalPruner:
             for f_idx in edible_plants:
                 f_name = list(genotype.parametric.flora_traits.keys())[f_idx]
                 flora = genotype.parametric.flora_traits[f_name]
-                # Maximum bite size is constrained by the plant's max energy and herbivore's consumption rate
-                max_bite = min(flora.max_energy, herbivore.consumption_rate)
+                # Maximum bite size is constrained by the plant's available yield (max_energy - survival_threshold)
+                # and the herbivore's maximum consumption rate
+                available_energy = max(0.0, flora.max_energy - flora.survival_threshold)
+                max_bite = min(available_energy, herbivore.consumption_rate)
                 if max_bite > max_available_calories:
                     max_available_calories = max_bite
 

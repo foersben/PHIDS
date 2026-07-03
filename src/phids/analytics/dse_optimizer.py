@@ -56,8 +56,8 @@ class DSEOptimizer:
         # In a full implementation, you would register custom MINLP crossover/mutation here
         # that knows how to splice the DSEGenotype properly.
         self.toolbox.register("evaluate", self.evaluate_candidate_sync)
-        self.toolbox.register("mate", tools.cxSimulatedBinaryBounded, eta=20.0, low=0.0, up=1.0)
-        self.toolbox.register("mutate", tools.mutPolynomialBounded, eta=20.0, low=0.0, up=1.0, indpb=1.0 / 10.0)
+        self.toolbox.register("mate", tools.cxSimulatedBinaryBounded, eta=20.0, low=1e-4, up=1.0)
+        self.toolbox.register("mutate", tools.mutPolynomialBounded, eta=20.0, low=1e-4, up=1.0, indpb=1.0 / 10.0)
         self.toolbox.register("select", tools.selNSGA2)
 
     def evaluate_candidate_sync(self, individual: "creator.Individual") -> tuple[float, float, float]:
@@ -79,7 +79,8 @@ class DSEOptimizer:
         candidate_config = self.base_config.model_copy(deep=True)
         # (In production: Map genotype.parametric and genotype.structural to candidate_config here)
 
-        loop = SimulationLoop(candidate_config)
+        # Must disable Zarr replay during multithreaded DSE to prevent disk exhaustion
+        loop = SimulationLoop(candidate_config, disable_replay=True)
 
         await loop.step()
 
@@ -109,9 +110,9 @@ class DSEOptimizer:
             stability = 0.0
 
         # Fitness 3: Dispersion (Placeholder for ECS spatial spread calculation)
-        dispersion = float(
-            len(loop.world._spatial_hash.keys()) / (candidate_config.grid_width * candidate_config.grid_height)
-        )
+        dispersion = len(loop.world._spatial_hash.keys()) / (candidate_config.grid_width * candidate_config.grid_height)
+
+        del loop
 
         return (longevity, stability, dispersion)
 
@@ -120,7 +121,6 @@ class DSEOptimizer:
         import asyncio
 
         asyncio.run(self._warm_numba_cache())
-        """Run the optimization loop."""
 
         # In production: Initialize population with valid DSEGenotypes mapping
         # For now, we stub the DEAP population generation
