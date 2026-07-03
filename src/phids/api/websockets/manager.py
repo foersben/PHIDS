@@ -15,7 +15,7 @@ import asyncio
 import json
 import logging
 import zlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -221,3 +221,52 @@ class UIStreamManager:
             logger.info("WebSocket client disconnected from /ws/ui/stream")
         finally:
             await self._safe_close(websocket)
+
+
+# ---------------------------------------------------------------------------
+# DSE Stream Manager
+# ---------------------------------------------------------------------------
+
+
+class DSEStreamManager:
+    """Connection manager for real-time Design Space Exploration UI updates.
+
+    Broadcasts NSGA-II Pareto Front generation payloads directly to the active
+    HTMX client connection over ``/ws/dse/stream``.
+    """
+
+    def __init__(self) -> None:
+        """Initialise the DSE stream connection roster."""
+        self.active_dse_connections: list[WebSocket] = []
+
+    async def connect_dse(self, websocket: WebSocket) -> None:
+        """Accept and register a new DSE websocket connection."""
+        await websocket.accept()
+        self.active_dse_connections.append(websocket)
+        logger.info("DSE client connected (active=%d)", len(self.active_dse_connections))
+
+    def disconnect_dse(self, websocket: WebSocket) -> None:
+        """Remove a DSE websocket connection."""
+        if websocket in self.active_dse_connections:
+            self.active_dse_connections.remove(websocket)
+            logger.info("DSE client disconnected (active=%d)", len(self.active_dse_connections))
+
+    async def broadcast_dse(self, payload: dict[str, Any]) -> None:
+        """Broadcast a JSON DSE payload to all connected clients.
+
+        Args:
+            payload: JSON-serializable dictionary containing generation metrics.
+        """
+        disconnected: list[WebSocket] = []
+        for connection in self.active_dse_connections:
+            try:
+                await connection.send_json(payload)
+            except Exception as e:
+                logger.warning("DSE client failed receive, dropping connection. %s", str(e))
+                disconnected.append(connection)
+
+        for connection in disconnected:
+            self.disconnect_dse(connection)
+
+
+dse_stream_manager = DSEStreamManager()

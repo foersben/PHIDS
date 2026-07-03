@@ -1,7 +1,9 @@
+import asyncio
 import logging
 import random
+from collections.abc import Awaitable, Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from deap import base, creator, tools  # type: ignore[import-untyped]
@@ -116,10 +118,12 @@ class DSEOptimizer:
 
         return (longevity, stability, dispersion)
 
-    def run(self) -> list["creator.Individual"]:
+    def run(
+        self,
+        async_callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
+    ) -> list["creator.Individual"]:
         """Run the NSGA-II optimization."""
-        import asyncio
-
         asyncio.run(self._warm_numba_cache())
 
         # In production: Initialize population with valid DSEGenotypes mapping
@@ -169,7 +173,31 @@ class DSEOptimizer:
             pop = self.toolbox.select(pop + offspring, self.pop_size)
 
             # --- PHASE 4 HOOK PREPARATION ---
-            # Future location of WebSocket Pareto Front broadcast
-            # yield {"generation": gen, "pareto_front": [ind.fitness.values for ind in pop[:5]]}
+            if cancel_event and cancel_event.is_set():
+                logger.info("DSE Optimization cancelled by user.")
+                break
+
+            if async_callback:
+                payload = {
+                    "generation": gen,
+                    "pareto_front": [
+                        {
+                            "longevity": ind.fitness.values[0],
+                            "stability": ind.fitness.values[1],
+                            "dispersion": ind.fitness.values[2],
+                        }
+                        for ind in pop[:10]
+                    ],
+                }
+                try:
+                    # Run the async callback safely in the main event loop
+                    loop = asyncio.get_running_loop()
+                    import types
+
+                    coro = async_callback(payload)
+                    if isinstance(coro, types.CoroutineType):
+                        asyncio.run_coroutine_threadsafe(coro, loop)
+                except Exception as e:
+                    logger.error(f"Failed to dispatch DSE callback: {e}")
 
         return list(pop)
