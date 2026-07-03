@@ -1,0 +1,32 @@
+{
+  "flora": {
+    "Trifolium repens": {
+      "growth_rate": 0.15,
+      "max_energy": 20.0,
+      "survival_threshold": 2.0,
+      "seed_cost": 5.0,
+      "seed_dispersion_radius": 1.0
+    },
+    "Taxus baccata": {
+      "growth_rate": 0.05,
+      "max_energy": 100.0,
+      "survival_threshold": 10.0,
+      "seed_cost": 25.0,
+      "seed_dispersion_radius": 3.0
+    }
+  },
+  "herbivores": {
+    "Odocoileus virginianus": {
+      "metabolism_upkeep": 0.1,
+      "consumption_rate": 1.5,
+      "mitosis_threshold": 50.0,
+      "split_ratio": 0.5
+    },
+    "Schistocerca gregaria": {
+      "metabolism_upkeep": 0.25,
+      "consumption_rate": 2.0,
+      "mitosis_threshold": 15.0,
+      "split_ratio": 0.5
+    }
+  }
+}
