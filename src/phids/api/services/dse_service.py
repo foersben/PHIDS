@@ -1,14 +1,14 @@
 import asyncio
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from phids.api.websockets.manager import DSEStreamManager
-
 import logging
-from collections.abc import Awaitable, Callable
+import threading
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from phids.analytics.dse_optimizer import DSEOptimizer
 from phids.api.schemas import SimulationConfig
+
+if TYPE_CHECKING:
+    from phids.api.websockets.manager import DSEStreamManager
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +20,14 @@ class DSETaskManager:
         """Initialize the DSE Task Manager."""
         self.websocket_manager = websocket_manager
         self._active_task: asyncio.Task[Any] | None = None
-        self._cancel_event: asyncio.Event | None = None
+        self._cancel_event: threading.Event | None = None
 
-    def _broadcast_payload(self) -> Callable[[dict[str, Any]], Awaitable[None]]:
-        """Create a closure for broadcasting payload to websockets."""
+    def _broadcast_payload(self) -> Callable[[dict[str, Any]], None]:
+        """Create a synchronous closure that safely schedules the broadcast on the main event loop."""
+        main_loop = asyncio.get_running_loop()
 
-        async def callback(payload: dict[str, Any]) -> None:
-            await self.websocket_manager.broadcast_dse(payload)
+        def callback(payload: dict[str, Any]) -> None:
+            asyncio.run_coroutine_threadsafe(self.websocket_manager.broadcast_dse(payload), main_loop)
 
         return callback
 
@@ -36,15 +37,15 @@ class DSETaskManager:
             logger.warning("Attempted to start DSE task, but one is already running.")
             return
 
-        self._cancel_event = asyncio.Event()
+        self._cancel_event = threading.Event()
 
         optimizer = DSEOptimizer(base_config=config)
 
         def _run_optimizer() -> None:
             try:
-                # Run the CPU-bound optimizer with the async callback hook
+                # Run the CPU-bound optimizer with the sync callback hook
                 optimizer.run(
-                    async_callback=self._broadcast_payload(),
+                    sync_callback=self._broadcast_payload(),
                     cancel_event=self._cancel_event,
                 )
             except Exception:

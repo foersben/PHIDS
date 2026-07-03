@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import random
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any
 
@@ -120,8 +120,8 @@ class DSEOptimizer:
 
     def run(
         self,
-        async_callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
-        cancel_event: asyncio.Event | None = None,
+        sync_callback: Callable[[dict[str, Any]], None] | None = None,
+        cancel_event: Any = None,
     ) -> list["creator.Individual"]:
         """Run the NSGA-II optimization."""
         asyncio.run(self._warm_numba_cache())
@@ -177,7 +177,7 @@ class DSEOptimizer:
                 logger.info("DSE Optimization cancelled by user.")
                 break
 
-            if async_callback:
+            if sync_callback:
                 payload = {
                     "generation": gen,
                     "pareto_front": [
@@ -190,14 +190,8 @@ class DSEOptimizer:
                     ],
                 }
                 try:
-                    # Run the async callback safely in the main event loop
-                    loop = asyncio.get_running_loop()
-                    import types
-
-                    coro = async_callback(payload)
-                    if isinstance(coro, types.CoroutineType):
-                        asyncio.run_coroutine_threadsafe(coro, loop)
+                    sync_callback(payload)
                 except Exception as e:
-                    logger.error(f"Failed to dispatch DSE callback: {e}")
+                    logger.error("Failed to dispatch DSE callback: %s", e)
 
         return list(pop)
