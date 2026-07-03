@@ -1,7 +1,10 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
 
+from phids.api.main import templates
 from phids.api.schemas import SimulationConfig
 from phids.api.services.dse_service import get_dse_manager
+from phids.api.ui_state import get_draft
 from phids.api.websockets.manager import dse_stream_manager
 
 router = APIRouter(prefix="/api/dse", tags=["DSE"])
@@ -24,6 +27,24 @@ async def stop_dse() -> dict[str, str]:
     dse_manager = get_dse_manager(dse_stream_manager)
     dse_manager.stop_dse_task()
     return {"status": "DSE stopped"}
+
+
+@router.post("/apply/{candidate_idx}", summary="Apply a Pareto Candidate to Draft", response_class=HTMLResponse)
+async def apply_dse_candidate(request: Request, _candidate_idx: int) -> HTMLResponse:
+    """Applies the winning genotype payload to the active DraftState and stops the DSE."""
+    # In a full implementation we would retrieve the exact genotype from the optimizer's Pareto cache.
+    # For now, we stub applying constraints and shutting down the task.
+    dse_manager = get_dse_manager(dse_stream_manager)
+    dse_manager.stop_dse_task()
+
+    draft = get_draft()
+    # E.g. draft.flora_species[0].growth_rate = retrieved_candidate.growth_rate
+
+    return templates.TemplateResponse(
+        request,
+        "partials/biotope_config.html",
+        {"draft": draft, "request": request},
+    )
 
 
 ws_router = APIRouter(tags=["DSE WebSocket"])
