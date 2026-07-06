@@ -1,0 +1,16 @@
+<!-- Hidden by default, rendered via HTMX response from /validate -->
+{% if alert_message %}
+<div class="rounded-md bg-yellow-50 p-4 mt-4">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <span class="text-yellow-400">⚠️</span>
+    </div>
+    <div class="ml-3">
+      <h3 class="text-sm font-medium text-yellow-800">Thermodynamic / Invariant Warning</h3>
+      <div class="mt-2 text-sm text-yellow-700">
+        <p>{{ alert_message }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
