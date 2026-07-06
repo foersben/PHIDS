@@ -21,12 +21,14 @@ class DSETaskManager:
         self.websocket_manager = websocket_manager
         self._active_task: asyncio.Task[Any] | None = None
         self._cancel_event: threading.Event | None = None
+        self.pareto_cache: list[SimulationConfig] = []
 
-    def _broadcast_payload(self) -> Callable[[dict[str, Any]], None]:
+    def _broadcast_payload(self) -> Callable[[dict[str, Any], list[SimulationConfig]], None]:
         """Create a synchronous closure that safely schedules the broadcast on the main event loop."""
         main_loop = asyncio.get_running_loop()
 
-        def callback(payload: dict[str, Any]) -> None:
+        def callback(payload: dict[str, Any], configs: list[SimulationConfig]) -> None:
+            self.pareto_cache = configs
             asyncio.run_coroutine_threadsafe(self.websocket_manager.broadcast_dse(payload), main_loop)
 
         return callback

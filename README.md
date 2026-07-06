@@ -64,13 +64,25 @@ To ensure exact determinism and reproducibility, the engine executes a strict ph
 Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. Furthermore, the engine employs $O(1)$ fast-path optimizations, such as the **"Anchoring Heuristic"**, which bypasses costly flow-field pathfinding for swarms currently positioned directly on food sources, drastically reducing CPU overhead during grazing events. Finally, the spatial `GridEnvironment` enforces the **Rule of 16** (maximum 16 species/substances) to ensure predictable $L1/L2$ cache utilization and invariant execution times.
 
 ### UI & WebSockets: FastAPI, HTMX & TailwindCSS
+
 The web-based control center is served by **FastAPI**, rendered via server-side templates with **HTMX**, and styled using **Tailwind CSS**. To allow the UI to render massive swarms and grids effortlessly without melting browser DOMs, the WebSocket telemetry streams (`/ws/ui/stream`) utilize strictly **columnar JSON payloads** with cache signatures. This prevents redundant encoding overhead on the server and ensures bounded in-place Chart.js updates on the client.
 
 ### High-Performance Replay (Zarr & Polars)
+
 Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS now defaults to the **Zarr** storage backend (`src/phids/io/zarr_replay.py`) for replay data and telemetry exports. This enables high-performance, chunked, and memory-decoupled visual slicing of long-running Monte Carlo batch simulations. Analysts can effortlessly load enormous multidimensional datasets into **Polars** or Pandas DataFrames seamlessly without memory exhaustion.
 
 ### Agentic Integration: MCP Server Support
+
 PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration) and query `recent_logs()`. This enables autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
+
+### 🧬 Evolutionary Design Space Exploration (DSE)
+
+To discover stable Lotka-Volterra configurations in complex ecosystems, PHIDS implements an evolutionary **Design Space Exploration (DSE)** subsystem (`src/phids/analytics/dse_optimizer.py`).
+
+- **Genetic Algorithm Optimization:** Uses the **DEAP** library to execute multi-objective NSGA-II optimization, evaluating populations on longevity, stability, and spatial dispersion.
+- **Analytical Pre-Pruning:** Filters out structurally infeasible genomes (e.g., total caloric deficits, extreme reproduction costs) via `dse_pruning.py` before running simulations, saving CPU cycles.
+- **Biotope Database Tuning:** Integrates a curated species database (`bio_database.py`) supporting Mode A (nearest-species matching via Euclidean distance) and Mode B (clamped parameter bounds mutation).
+- **Asynchronous WebSocket Telemetry:** Runs evaluations in background worker threads, dispatching Pareto front updates real-time to HTMX UI clients over `/ws/dse/stream` using thread-safe event loop scheduling.
 
 ---
 
@@ -276,7 +288,7 @@ uv run zensical serve
 
 ## 🛠 Technology stack
 
-- simulation/math: `numpy`, `scipy`, `numba`
+- simulation/math: `numpy`, `scipy`, `numba`, `deap`
 - API/runtime: `fastapi`, `uvicorn`, `websockets`
 - CLI: `typer`
 - validation/modeling boundary: `pydantic` (V2)
@@ -292,6 +304,7 @@ uv run zensical serve
 src/phids/              canonical runtime package
 ├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, Websockets
 ├── engine/             The core determinism domain (ECS + Numba Double-Buffered grid fields)
+├── analytics/          Evolutionary Design Space Exploration (DSE) and database matching
 ├── io/                 High-performance Zarr replays and scenario parsing
 ├── telemetry/          Tick analytics, export routines, and Polars handlers
 ├── shared/             Common utilities and logging configurations

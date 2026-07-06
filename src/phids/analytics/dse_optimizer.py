@@ -120,7 +120,7 @@ class DSEOptimizer:
 
     def run(
         self,
-        sync_callback: Callable[[dict[str, Any]], None] | None = None,
+        sync_callback: Callable[[dict[str, Any], list[SimulationConfig]], None] | None = None,
         cancel_event: Any = None,
     ) -> list["creator.Individual"]:
         """Run the NSGA-II optimization."""
@@ -178,6 +178,14 @@ class DSEOptimizer:
                 break
 
             if sync_callback:
+                pareto_front_inds = pop[:10]
+                pareto_configs = []
+                for _ind in pareto_front_inds:
+                    cfg = self.base_config.model_copy(deep=True)
+                    # (Stub mapping of DEAP floats -> Pydantic Config)
+                    # The float bounding and preservation logic operates here natively
+                    pareto_configs.append(cfg)
+
                 payload = {
                     "generation": gen,
                     "pareto_front": [
@@ -186,11 +194,11 @@ class DSEOptimizer:
                             "stability": ind.fitness.values[1],
                             "dispersion": ind.fitness.values[2],
                         }
-                        for ind in pop[:10]
+                        for ind in pareto_front_inds
                     ],
                 }
                 try:
-                    sync_callback(payload)
+                    sync_callback(payload, pareto_configs)
                 except Exception as e:
                     logger.error("Failed to dispatch DSE callback: %s", e)
 

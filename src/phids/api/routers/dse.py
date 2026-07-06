@@ -30,15 +30,22 @@ async def stop_dse() -> dict[str, str]:
 
 
 @router.post("/apply/{candidate_idx}", summary="Apply a Pareto Candidate to Draft", response_class=HTMLResponse)
-async def apply_dse_candidate(request: Request, _candidate_idx: int) -> HTMLResponse:
+async def apply_dse_candidate(request: Request, candidate_idx: int) -> HTMLResponse:
     """Applies the winning genotype payload to the active DraftState and stops the DSE."""
-    # In a full implementation we would retrieve the exact genotype from the optimizer's Pareto cache.
-    # For now, we stub applying constraints and shutting down the task.
     dse_manager = get_dse_manager(dse_stream_manager)
     dse_manager.stop_dse_task()
 
     draft = get_draft()
-    # E.g. draft.flora_species[0].growth_rate = retrieved_candidate.growth_rate
+
+    # Securely retrieve the configuration from backend memory cache
+    # This prevents JSON serialization/deserialization truncation of subnormal floats
+    if 0 <= candidate_idx < len(dse_manager.pareto_cache):
+        winning_config = dse_manager.pareto_cache[candidate_idx]
+
+        # Merge the structural & parametric results back into the DraftState
+        draft.flora_species = winning_config.flora_species
+        draft.herbivore_species = winning_config.herbivore_species
+        draft.diet_matrix = winning_config.diet_matrix.rows
 
     return templates.TemplateResponse(
         request,
