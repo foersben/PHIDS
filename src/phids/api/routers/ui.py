@@ -289,6 +289,6 @@ async def ui_dse(request: Request) -> Response:
     """Render the Design Space Exploration (DSE) panel."""
     return api_main.templates.TemplateResponse(
         request,
-        "partials/dse_panel.html",
+        "dse/container.html",
         {},
     )
