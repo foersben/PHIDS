@@ -16,13 +16,14 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 if TYPE_CHECKING:
     from phids.api.schemas import (
         BatchJobState,
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
+        PlacementStrategy,
         SimulationConfig,
     )
 
@@ -371,6 +372,9 @@ class DraftState:
     diet_matrix: list[list[bool]] = dataclasses.field(default_factory=list)
     trigger_rules: list[TriggerRule] = dataclasses.field(default_factory=list)
     substance_definitions: list[SubstanceDefinition] = dataclasses.field(default_factory=list)
+    placement_mode: Literal["manual", "procedural"] = "manual"
+    flora_placement_strategy: PlacementStrategy | None = None
+    herbivore_placement_strategy: PlacementStrategy | None = None
     initial_plants: list[PlacedPlant] = dataclasses.field(default_factory=list)
     initial_swarms: list[PlacedSwarm] = dataclasses.field(default_factory=list)
     active_batch_jobs: dict[str, BatchJobState] = dataclasses.field(default_factory=dict)
@@ -466,6 +470,9 @@ class DraftState:
         ]
 
         config = SimulationConfig(
+            placement_mode=self.placement_mode,
+            flora_placement_strategy=self.flora_placement_strategy,
+            herbivore_placement_strategy=self.herbivore_placement_strategy,
             grid_width=self.grid_width,
             grid_height=self.grid_height,
             max_ticks=self.max_ticks,

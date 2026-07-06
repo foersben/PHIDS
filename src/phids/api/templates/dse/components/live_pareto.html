@@ -1,0 +1,85 @@
+<div class="bg-slate-900 p-4 rounded-lg shadow-inner text-slate-300 relative min-h-[250px]" id="dse-telemetry-panel">
+  <div class="flex justify-between items-center mb-3">
+    <h4 class="text-sm font-medium text-slate-100 flex items-center gap-2">
+      <span class="relative flex h-3 w-3" id="dse-status-indicator">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+      </span>
+      Live Evaluation Stream
+    </h4>
+    <div class="flex items-center gap-3">
+        <span class="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-indigo-400" id="dse-gen-counter">Gen: --</span>
+        <button type="button" class="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-2 py-1 rounded" hx-post="/api/dse/stop" onclick="window.stopDSEStream()">Stop DSE</button>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-xs text-left text-slate-400">
+      <thead class="text-xs text-slate-300 uppercase bg-slate-800/50">
+        <tr>
+          <th scope="col" class="px-2 py-2">Rank</th>
+          <th scope="col" class="px-2 py-2">Longevity</th>
+          <th scope="col" class="px-2 py-2">Stability (CV)</th>
+          <th scope="col" class="px-2 py-2">Dispersion</th>
+          <th scope="col" class="px-2 py-2 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody id="dse-pareto-table">
+        <tr class="border-b border-slate-800/50">
+          <td colspan="5" class="px-2 py-4 text-center text-slate-500 italic">Waiting for optimizer to initialize...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let dseSocket = null;
+
+  window.startDSEStream = function() {
+    if (dseSocket) { dseSocket.close(); }
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/dse/stream`;
+    dseSocket = new WebSocket(wsUrl);
+
+    dseSocket.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      if (data.generation) document.getElementById('dse-gen-counter').innerText = `Gen: ${data.generation}`;
+
+      if (data.pareto_front && data.pareto_front.length > 0) {
+        const tbody = document.getElementById('dse-pareto-table');
+        tbody.innerHTML = '';
+        data.pareto_front.forEach((candidate, idx) => {
+          const tr = document.createElement('tr');
+          tr.className = "border-b border-slate-800/50 hover:bg-slate-800/50 transition-colors";
+          tr.innerHTML = `
+            <td class="px-2 py-2 font-mono text-indigo-300">#${idx + 1}</td>
+            <td class="px-2 py-2">${candidate.longevity.toFixed(1)} t</td>
+            <td class="px-2 py-2">${candidate.stability.toFixed(3)}</td>
+            <td class="px-2 py-2">${(candidate.dispersion * 100).toFixed(1)}%</td>
+            <td class="px-2 py-2 text-right">
+              <button type="button"
+                      class="text-xs bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 hover:text-indigo-300 px-2 py-1 rounded transition-colors"
+                      hx-post="/api/dse/apply/${idx}"
+                      hx-target="#main-workspace"
+                      onclick="window.stopDSEStream()">
+                Apply to Draft
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+        htmx.process(document.getElementById('dse-pareto-table'));
+      }
+    };
+    dseSocket.onclose = function() {
+      const ind = document.getElementById('dse-status-indicator');
+      if (ind) ind.innerHTML = `<span class="relative inline-flex rounded-full h-3 w-3 bg-slate-500"></span>`;
+    };
+  };
+
+  window.stopDSEStream = function() {
+    if (dseSocket) { dseSocket.close(); dseSocket = null; }
+  };
+</script>

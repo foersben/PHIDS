@@ -1,0 +1,56 @@
+<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
+  <div>
+    <h4 class="text-sm font-medium leading-6 text-slate-900">Grid Dimensions</h4>
+    <div class="mt-2 flex gap-4">
+      <div>
+        <label for="dse-grid-width" class="block text-xs font-medium leading-6 text-slate-500">Width</label>
+        <input type="number" name="dse_grid_width" id="dse-grid-width" value="40" min="10" max="80" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+      <div>
+        <label for="dse-grid-height" class="block text-xs font-medium leading-6 text-slate-500">Height</label>
+        <input type="number" name="dse_grid_height" id="dse-grid-height" value="40" min="10" max="80" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h4 class="text-sm font-medium leading-6 text-slate-900">Stability Targets</h4>
+    <div class="mt-2 grid grid-cols-3 gap-2">
+      <div>
+        <label for="dse-target-ticks" class="block text-xs font-medium leading-6 text-slate-500" title="Minimum duration the ecosystem must survive.">Target Ticks</label>
+        <input type="number" name="dse_target_ticks" id="dse-target-ticks" value="1000" min="100" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+      <div>
+        <label for="dse-batch-replicates" class="block text-xs font-medium leading-6 text-slate-500" title="Number of parallel seeds run per genotype.">Replicates</label>
+        <input type="number" name="dse_batch_replicates" id="dse-batch-replicates" value="5" min="1" max="10" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+      <div>
+        <label for="dse-success-threshold" class="block text-xs font-medium leading-6 text-slate-500" title="Percentage of replicates that must hit Target Ticks.">Success %</label>
+        <input type="number" name="dse_success_threshold" id="dse-success-threshold" value="80" min="1" max="100" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+    </div>
+  </div>
+
+  <div class="sm:col-span-2 border-t border-slate-100 pt-6">
+    <h4 class="text-sm font-medium leading-6 text-slate-900">Spatial Distribution & Density Bounds</h4>
+    <div class="mt-4 grid grid-cols-2 gap-4">
+      <div>
+        <label for="dse-placement" class="block text-sm font-medium leading-6 text-slate-900">Placement Strategy</label>
+        <select id="dse-placement" name="dse_placement" class="mt-1 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+          <option value="dse_discovers">[ DSE Discovers ]</option>
+          <option value="uniform">Random Uniform</option>
+          <option value="clustered">Clustered Patchwork</option>
+          <option value="banded">Banded Elevation</option>
+        </select>
+      </div>
+      <div>
+        <label for="dse-flora-density" class="block text-sm font-medium leading-6 text-slate-900">Total Flora Density Bounds (%)</label>
+        <div class="mt-1 flex items-center gap-2">
+          <input type="number" name="dse_flora_density_min" value="5" min="1" max="100" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+          <span class="text-slate-500">to</span>
+          <input type="number" name="dse_flora_density_max" value="15" min="1" max="100" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

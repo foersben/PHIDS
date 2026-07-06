@@ -1,0 +1,54 @@
+<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
+  <div>
+    <h4 class="text-sm font-medium leading-6 text-slate-900">Species Complexity Limits</h4>
+    <div class="mt-2 space-y-4">
+      <div>
+        <label for="dse-num-flora" class="block text-sm font-medium leading-6 text-slate-900">Distinct Plant Species (1-16)</label>
+        <input type="number" name="dse_num_flora" id="dse-num-flora" value="2" min="1" max="16" class="mt-1 block w-1/2 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+      <div>
+        <label for="dse-num-herbivores" class="block text-sm font-medium leading-6 text-slate-900">Distinct Herbivore Swarms (1-16)</label>
+        <input type="number" name="dse_num_herbivores" id="dse-num-herbivores" value="2" min="1" max="16" class="mt-1 block w-1/2 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h4 class="text-sm font-medium leading-6 text-slate-900">Evolutionary Toolkit</h4>
+    <p class="text-xs text-slate-500 mb-3">Defines the mechanisms the DSE is allowed to mutate to reach equilibrium.</p>
+    <div class="space-y-3">
+      <div class="relative flex items-start">
+        <div class="flex h-6 items-center">
+          <input id="dse-allow-toxins" name="dse_allow_toxins" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600">
+        </div>
+        <div class="ml-3 text-sm leading-6">
+          <label for="dse-allow-toxins" class="font-medium text-slate-900">Allow Toxins (Lethal/Repellent)</label>
+        </div>
+      </div>
+      <div class="relative flex items-start">
+        <div class="flex h-6 items-center">
+          <input id="dse-allow-signals" name="dse_allow_signals" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600">
+        </div>
+        <div class="ml-3 text-sm leading-6">
+          <label for="dse-allow-signals" class="font-medium text-slate-900">Allow Airborne Signals</label>
+        </div>
+      </div>
+      <div class="relative flex items-start">
+        <div class="flex h-6 items-center">
+          <input id="dse-allow-cascades" name="dse_allow_cascades" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600">
+        </div>
+        <div class="ml-3 text-sm leading-6">
+          <label for="dse-allow-cascades" class="font-medium text-slate-900">Allow Multi-Level Cascades</label>
+        </div>
+      </div>
+      <div class="relative flex items-start">
+        <div class="flex h-6 items-center">
+          <input id="dse-allow-myco" name="dse_allow_myco" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600">
+        </div>
+        <div class="ml-3 text-sm leading-6">
+          <label for="dse-allow-myco" class="font-medium text-slate-900">Allow Mycorrhizal Networks</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -282,3 +282,13 @@ async def ui_placements(request: Request) -> Response:
             "initial_swarms": draft.initial_swarms,
         },
     )
+
+
+@router.get("/ui/dse", response_class=HTMLResponse, summary="DSE Optimizer partial")
+async def ui_dse(request: Request) -> Response:
+    """Render the Design Space Exploration (DSE) panel."""
+    return api_main.templates.TemplateResponse(
+        request,
+        "dse/container.html",
+        {},
+    )

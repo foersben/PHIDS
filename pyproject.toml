@@ -25,6 +25,8 @@ dependencies = [
     "zarr>=3.0.0",
     "typer>=0.16.0",
     "pandas-stubs~=3.0.3",
+    "deap>=1.4.4",
+    "optuna>=4.9.0",
 ]
 
 [project.scripts]

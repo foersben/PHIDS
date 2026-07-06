@@ -351,6 +351,42 @@ class InitialSwarmPlacement(StrictBaseModel):
 
 
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Procedural Placement Strategies
+# ---------------------------------------------------------------------------
+
+
+class UniformPlacement(StrictBaseModel):
+    """Randomly scattered entities."""
+
+    type: Literal["uniform"] = "uniform"
+    density: float = Field(..., ge=0.0, le=1.0)
+
+
+class ClusteredPlacement(StrictBaseModel):
+    """Groups of entities clustered around random centroids."""
+
+    type: Literal["clustered"] = "clustered"
+    cluster_count: int = Field(..., ge=1)
+    variance: float = Field(..., gt=0.0)
+
+
+class BandedPlacement(StrictBaseModel):
+    """Entities placed in dense lines/stripes."""
+
+    type: Literal["banded"] = "banded"
+    band_count: int = Field(..., ge=1)
+    orientation: Literal["horizontal", "vertical"] = "horizontal"
+
+
+PlacementStrategy = Annotated[
+    UniformPlacement | ClusteredPlacement | BandedPlacement,
+    Field(discriminator="type"),
+]
+
+
 # Global Configuration Payload
 # ---------------------------------------------------------------------------
 
@@ -372,6 +408,10 @@ class SimulationConfig(StrictBaseModel):
     flora_species: list[FloraSpeciesParams] = Field(..., min_length=1, max_length=MAX_FLORA_SPECIES)
     herbivore_species: list[HerbivoreSpeciesParams] = Field(..., min_length=1, max_length=MAX_HERBIVORE_SPECIES)
     diet_matrix: DietCompatibilityMatrix
+
+    placement_mode: Literal["manual", "procedural"] = "manual"
+    flora_placement_strategy: PlacementStrategy | None = None
+    herbivore_placement_strategy: PlacementStrategy | None = None
 
     initial_plants: list[InitialPlantPlacement] = Field(default_factory=list)
     initial_swarms: list[InitialSwarmPlacement] = Field(default_factory=list)
