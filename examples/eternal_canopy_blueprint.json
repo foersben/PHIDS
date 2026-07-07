@@ -28,7 +28,11 @@
       "seed_max_dist": 2.0,
       "seed_energy_cost": 2.0,
       "camouflage": false,
-      "triggers": []
+      "triggers": [],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 1,
@@ -46,23 +50,30 @@
         {
           "herbivore_species_id": 0,
           "min_herbivore_population": 3,
-          "substance_id": 1,
-          "synthesis_duration": 1,
-          "is_toxin": false,
-          "lethal": false,
-          "lethality_rate": 0.0,
-          "repellent": false,
-          "repellent_walk_ticks": 0,
           "aftereffect_ticks": 5,
           "activation_condition": {
             "kind": "herbivore_presence",
             "herbivore_species_id": 0,
             "min_herbivore_population": 3
           },
-          "energy_cost_per_tick": 0.5,
-          "irreversible": false
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 1,
+            "synthesis_duration": 1,
+            "is_toxin": false,
+            "lethal": false,
+            "lethality_rate": 0.0,
+            "repellent": false,
+            "repellent_walk_ticks": 0,
+            "energy_cost_per_tick": 0.5,
+            "irreversible": false
+          }
         }
-      ]
+      ],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 2,
@@ -76,7 +87,11 @@
       "seed_max_dist": 4.0,
       "seed_energy_cost": 15.0,
       "camouflage": false,
-      "triggers": []
+      "triggers": [],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 3,
@@ -94,23 +109,30 @@
         {
           "herbivore_species_id": 2,
           "min_herbivore_population": 2,
-          "substance_id": 2,
-          "synthesis_duration": 2,
-          "is_toxin": true,
-          "lethal": true,
-          "lethality_rate": 0.8,
-          "repellent": false,
-          "repellent_walk_ticks": 0,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "herbivore_presence",
             "herbivore_species_id": 2,
             "min_herbivore_population": 2
           },
-          "energy_cost_per_tick": 1.5,
-          "irreversible": true
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 2,
+            "synthesis_duration": 2,
+            "is_toxin": true,
+            "lethal": true,
+            "lethality_rate": 0.8,
+            "repellent": false,
+            "repellent_walk_ticks": 0,
+            "energy_cost_per_tick": 1.5,
+            "irreversible": true
+          }
         }
-      ]
+      ],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 4,
@@ -129,19 +151,26 @@
         {
           "herbivore_species_id": 0,
           "min_herbivore_population": 1,
-          "substance_id": 0,
-          "synthesis_duration": 1,
-          "is_toxin": false,
-          "lethal": false,
-          "lethality_rate": 0.0,
-          "repellent": false,
-          "repellent_walk_ticks": 0,
           "aftereffect_ticks": 10,
           "activation_condition": null,
-          "energy_cost_per_tick": 0.1,
-          "irreversible": false
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 0,
+            "synthesis_duration": 1,
+            "is_toxin": false,
+            "lethal": false,
+            "lethality_rate": 0.0,
+            "repellent": false,
+            "repellent_walk_ticks": 0,
+            "energy_cost_per_tick": 0.1,
+            "irreversible": false
+          }
         }
-      ]
+      ],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 5,
@@ -155,7 +184,11 @@
       "seed_max_dist": 8.0,
       "seed_energy_cost": 8.0,
       "camouflage": false,
-      "triggers": []
+      "triggers": [],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     }
   ],
   "herbivore_species": [
@@ -166,7 +199,12 @@
       "velocity": 1,
       "consumption_rate": 6.0,
       "reproduction_energy_divisor": 1.0,
-      "energy_upkeep_per_individual": 0.2
+      "energy_upkeep_per_individual": 0.2,
+      "resistances": {
+        "morphological_adaptation": 0.0,
+        "chemical_neutralization": 0.0,
+        "digestive_efficiency": 1.0
+      }
     },
     {
       "species_id": 1,
@@ -175,7 +213,12 @@
       "velocity": 3,
       "consumption_rate": 3.0,
       "reproduction_energy_divisor": 1.5,
-      "energy_upkeep_per_individual": 0.5
+      "energy_upkeep_per_individual": 0.5,
+      "resistances": {
+        "morphological_adaptation": 0.0,
+        "chemical_neutralization": 0.0,
+        "digestive_efficiency": 1.0
+      }
     },
     {
       "species_id": 2,
@@ -184,7 +227,12 @@
       "velocity": 2,
       "consumption_rate": 5.0,
       "reproduction_energy_divisor": 2.0,
-      "energy_upkeep_per_individual": 0.3
+      "energy_upkeep_per_individual": 0.3,
+      "resistances": {
+        "morphological_adaptation": 0.0,
+        "chemical_neutralization": 0.0,
+        "digestive_efficiency": 1.0
+      }
     },
     {
       "species_id": 3,
@@ -194,30 +242,122 @@
       "consumption_rate": 2.0,
       "reproduction_energy_divisor": 0.5,
       "energy_upkeep_per_individual": 0.05,
-      "split_population_threshold": 3
+      "split_population_threshold": 3,
+      "resistances": {
+        "morphological_adaptation": 0.0,
+        "chemical_neutralization": 0.0,
+        "digestive_efficiency": 1.0
+      }
     }
   ],
   "diet_matrix": {
     "rows": [
-      [true, true, false, false, false, true],
-      [false, false, true, false, false, false],
-      [true, true, false, false, false, true],
-      [true, false, false, false, false, false]
+      [
+        true,
+        true,
+        false,
+        false,
+        false,
+        true
+      ],
+      [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      [
+        true,
+        true,
+        false,
+        false,
+        false,
+        true
+      ],
+      [
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
     ]
   },
   "initial_plants": [
-    {"species_id": 0, "x": 10, "y": 10, "energy": 25.0},
-    {"species_id": 0, "x": 20, "y": 20, "energy": 25.0},
-    {"species_id": 1, "x": 30, "y": 30, "energy": 35.0},
-    {"species_id": 2, "x": 40, "y": 40, "energy": 100.0},
-    {"species_id": 3, "x": 50, "y": 50, "energy": 30.0},
-    {"species_id": 4, "x": 60, "y": 60, "energy": 20.0},
-    {"species_id": 5, "x": 70, "y": 70, "energy": 40.0}
+    {
+      "species_id": 0,
+      "x": 10,
+      "y": 10,
+      "energy": 25.0
+    },
+    {
+      "species_id": 0,
+      "x": 20,
+      "y": 20,
+      "energy": 25.0
+    },
+    {
+      "species_id": 1,
+      "x": 30,
+      "y": 30,
+      "energy": 35.0
+    },
+    {
+      "species_id": 2,
+      "x": 40,
+      "y": 40,
+      "energy": 100.0
+    },
+    {
+      "species_id": 3,
+      "x": 50,
+      "y": 50,
+      "energy": 30.0
+    },
+    {
+      "species_id": 4,
+      "x": 60,
+      "y": 60,
+      "energy": 20.0
+    },
+    {
+      "species_id": 5,
+      "x": 70,
+      "y": 70,
+      "energy": 40.0
+    }
   ],
   "initial_swarms": [
-    {"species_id": 0, "x": 10, "y": 10, "population": 5, "energy": 10.0},
-    {"species_id": 1, "x": 40, "y": 40, "population": 3, "energy": 15.0},
-    {"species_id": 2, "x": 30, "y": 30, "population": 4, "energy": 20.0},
-    {"species_id": 3, "x": 20, "y": 20, "population": 2, "energy": 5.0}
+    {
+      "species_id": 0,
+      "x": 10,
+      "y": 10,
+      "population": 5,
+      "energy": 10.0
+    },
+    {
+      "species_id": 1,
+      "x": 40,
+      "y": 40,
+      "population": 3,
+      "energy": 15.0
+    },
+    {
+      "species_id": 2,
+      "x": 30,
+      "y": 30,
+      "population": 4,
+      "energy": 20.0
+    },
+    {
+      "species_id": 3,
+      "x": 20,
+      "y": 20,
+      "population": 2,
+      "energy": 5.0
+    }
   ]
 }

@@ -26,7 +26,8 @@ def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
     plant_energy = np.zeros((1, 1), dtype=np.float64)
     toxin_sum = np.zeros((1, 1), dtype=np.float64)
 
-    flow = _compute_flow_field_impl(plant_energy, toxin_sum, width=1, height=1)
+    apparent = np.ones((1, 1), dtype=np.float64)
+    flow = _compute_flow_field_impl(plant_energy, apparent, toxin_sum, width=1, height=1)
 
     assert np.allclose(flow, np.zeros((1, 1), dtype=np.float64))
 
@@ -37,7 +38,8 @@ def test_compute_flow_field_impl_propagates_along_single_row() -> None:
     toxin_sum = np.zeros((1, 5), dtype=np.float64)
     plant_energy[0, 2] = 6.0
 
-    flow = _compute_flow_field_impl(plant_energy, toxin_sum, width=1, height=5)
+    apparent = np.ones((1, 5), dtype=np.float64)
+    flow = _compute_flow_field_impl(plant_energy, apparent, toxin_sum, width=1, height=5)
 
     assert flow[0, 2] > 0.0
     assert flow[0, 0] > 0.0
@@ -52,7 +54,8 @@ def test_compute_flow_field_impl_propagates_toxin_repulsion_along_single_column(
     toxin_sum = np.zeros((5, 1), dtype=np.float64)
     toxin_sum[2, 0] = 2.5
 
-    flow = _compute_flow_field_impl(plant_energy, toxin_sum, width=5, height=1)
+    apparent = np.ones((5, 1), dtype=np.float64)
+    flow = _compute_flow_field_impl(plant_energy, apparent, toxin_sum, width=5, height=1)
 
     assert flow[2, 0] < 0.0
     assert flow[0, 0] < 0.0
@@ -68,7 +71,8 @@ def test_compute_flow_field_propagates_plant_attraction_and_toxin_repulsion() ->
     plant_energy[1, 1] = 4.0
     toxin_layers[0, 1, 1] = 1.0
 
-    flow = compute_flow_field(plant_energy, toxin_layers, width=3, height=3)
+    apparent = np.ones((3, 3), dtype=np.float64)
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=3, height=3)
 
     assert flow[1, 1] > 0.0
     assert flow[0, 0] > 0.0
@@ -83,7 +87,8 @@ def test_compute_flow_field_sums_multiple_toxin_layers_and_handles_edges() -> No
     toxin_layers[0, 0, 0] = 1.0
     toxin_layers[1, 1, 1] = 2.0
 
-    flow = compute_flow_field(plant_energy, toxin_layers, width=2, height=2)
+    apparent = np.ones((2, 2), dtype=np.float64)
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=2, height=2)
 
     assert flow[1, 1] < 0.0
     assert flow[0, 0] > flow[1, 1]
@@ -100,9 +105,13 @@ def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
     plant_b = np.zeros(shape, dtype=np.float64)
     plant_b[2, 1] = 2.0
 
-    combined = _compute_flow_field_impl(plant_a + plant_b, zero_toxins, width=3, height=3)
-    separate_sum = _compute_flow_field_impl(plant_a, zero_toxins, width=3, height=3) + _compute_flow_field_impl(
+    apparent = np.ones((3, 3), dtype=np.float64)
+    combined = _compute_flow_field_impl(plant_a + plant_b, apparent, zero_toxins, width=3, height=3)
+    separate_sum = _compute_flow_field_impl(
+        plant_a, apparent, zero_toxins, width=3, height=3
+    ) + _compute_flow_field_impl(
         plant_b,
+        apparent,
         zero_toxins,
         width=3,
         height=3,
@@ -119,8 +128,9 @@ def test_compute_flow_field_wrapper_sums_toxin_layers_before_propagation() -> No
     toxin_layers[1, 0, 1] = 0.75
     toxin_layers[2, 1, 2] = 2.0
 
-    flow = compute_flow_field(plant_energy, toxin_layers, width=2, height=3)
-    expected = _compute_flow_field_impl(plant_energy, toxin_layers.sum(axis=0), width=2, height=3)
+    apparent = np.ones((2, 3), dtype=np.float64)
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=2, height=3)
+    expected = _compute_flow_field_impl(plant_energy, apparent, toxin_layers.sum(axis=0), width=2, height=3)
 
     assert np.allclose(flow, expected)
 
@@ -131,7 +141,8 @@ def test_compute_flow_field_reaches_cells_beyond_one_hop() -> None:
     toxin_layers = np.zeros((1, 7, 7), dtype=np.float64)
     plant_energy[0, 0] = 10.0
 
-    flow = compute_flow_field(plant_energy, toxin_layers, width=7, height=7)
+    apparent = np.ones((7, 7), dtype=np.float64)
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=7, height=7)
 
     assert flow[2, 2] > 0.0
 
@@ -161,7 +172,8 @@ def test_flow_field_generation_and_camouflage() -> None:
     toxin_layers = np.zeros((1, 2, 2), dtype=np.float64)
     toxin_layers[0, 0, 1] = 2.0
 
-    flow = compute_flow_field(plant_energy, toxin_layers, width=2, height=2)
+    apparent = np.ones((2, 2), dtype=np.float64)
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=2, height=2)
     assert flow.shape == (2, 2)
     assert flow[1, 0] > flow[0, 1]
 

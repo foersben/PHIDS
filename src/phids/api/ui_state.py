@@ -162,7 +162,7 @@ class TriggerRule:
 
     flora_species_id: int
     herbivore_species_id: int
-    substance_id: int
+    substance_id: int  # -1 means resource_withdrawal, else synthesize_substance
     min_herbivore_population: int = 5
     activation_condition: ActivationConditionNode | None = None
 
@@ -410,25 +410,40 @@ class DraftState:
 
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
+        from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
         for rule in self.trigger_rules:
-            sd = subs_by_id.get(rule.substance_id)
-            if sd is None:
-                logger.warning(
-                    (
-                        "Skipping trigger rule with missing substance definition "
-                        "(flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)"
-                    ),
-                    rule.flora_species_id,
-                    rule.herbivore_species_id,
-                    rule.substance_id,
+            if rule.substance_id == -1:
+                # Resource Withdrawal
+                action = ResourceWithdrawalAction(
+                    apparent_nutrition_factor=0.2,
                 )
-                continue
-            triggers_by_flora.setdefault(rule.flora_species_id, []).append(
-                TriggerConditionSchema(
-                    herbivore_species_id=rule.herbivore_species_id,
-                    min_herbivore_population=rule.min_herbivore_population,
+                aftereffect = 10  # hardcoded base withdrawal duration
+                triggers_by_flora.setdefault(rule.flora_species_id, []).append(
+                    TriggerConditionSchema(
+                        herbivore_species_id=rule.herbivore_species_id,
+                        min_herbivore_population=rule.min_herbivore_population,
+                        aftereffect_ticks=aftereffect,
+                        activation_condition=cast("Any", deepcopy(rule.activation_condition)),
+                        action=action,
+                    )
+                )
+            else:
+                sd = subs_by_id.get(rule.substance_id)
+                if sd is None:
+                    logger.warning(
+                        (
+                            "Skipping trigger rule with missing substance definition "
+                            "(flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)"
+                        ),
+                        rule.flora_species_id,
+                        rule.herbivore_species_id,
+                        rule.substance_id,
+                    )
+                    continue
+                action = SynthesizeSubstanceAction(
                     substance_id=rule.substance_id,
                     synthesis_duration=sd.synthesis_duration,
                     is_toxin=sd.is_toxin,
@@ -436,12 +451,18 @@ class DraftState:
                     lethality_rate=sd.lethality_rate,
                     repellent=sd.repellent,
                     repellent_walk_ticks=sd.repellent_walk_ticks,
-                    aftereffect_ticks=sd.aftereffect_ticks,
-                    activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                     energy_cost_per_tick=sd.energy_cost_per_tick,
                     irreversible=sd.irreversible,
+                )  # type: ignore
+                triggers_by_flora.setdefault(rule.flora_species_id, []).append(
+                    TriggerConditionSchema(
+                        herbivore_species_id=rule.herbivore_species_id,
+                        min_herbivore_population=rule.min_herbivore_population,
+                        aftereffect_ticks=sd.aftereffect_ticks,
+                        activation_condition=cast("Any", deepcopy(rule.activation_condition)),
+                        action=action,
+                    )
                 )
-            )
 
         flora_with_triggers: list[FloraSpeciesParams] = []
         for fp in self.flora_species:

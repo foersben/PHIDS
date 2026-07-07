@@ -74,6 +74,12 @@ class PlantComponentSchema(StrictBaseModel):
     camouflage: bool = Field(default=False, description="Constitutive gradient attenuation flag.")
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0, description="Gradient multiplier when camouflaged.")
     last_reproduction_tick: int = Field(default=0, description="Last tick of reproduction.")
+    apparent_nutrition_factor: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Current stress-induced nutrient discount."
+    )
+    withdrawal_ticks_remaining: int = Field(
+        default=0, ge=0, description="Ticks until apparent_nutrition_factor resets to 1.0."
+    )
 
 
 class SwarmComponentSchema(StrictBaseModel):
@@ -197,18 +203,10 @@ AnyOfConditionSchema.model_rebuild()
 # ---------------------------------------------------------------------------
 
 
-class TriggerConditionSchema(StrictBaseModel):
-    """Trigger condition for substance synthesis (Interaction Matrix entry).
+class SynthesizeSubstanceAction(StrictBaseModel):
+    """Action to synthesize a specific chemical substance."""
 
-    Maps a (plant species, herbivore species) pair to the substance that should
-    be synthesised when the trigger conditions are met, together with all
-    behavioural properties of the resulting substance.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    herbivore_species_id: HerbivoreId
-    min_herbivore_population: int = Field(..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis.")
+    type: Literal["synthesize_substance"] = "synthesize_substance"
     substance_id: SubstanceId = Field(..., description="Substance to synthesise.")
     synthesis_duration: int = Field(..., gt=0, description="Ticks to synthesise T(s_x).")
     is_toxin: bool = Field(default=False, description="True for toxins, False for signals.")
@@ -216,32 +214,65 @@ class TriggerConditionSchema(StrictBaseModel):
     lethality_rate: float = Field(default=0.0, ge=0.0, description="Individuals eliminated per tick β(s_x, C_i).")
     repellent: bool = Field(default=False, description="Repellent toxin flag.")
     repellent_walk_ticks: int = Field(default=0, ge=0, description="Random-walk duration k on repel trigger.")
-    aftereffect_ticks: int = Field(
-        default=0,
-        ge=0,
-        description="Aftereffect duration T_k (signals linger after emission ceases).",
-    )
-    activation_condition: ConditionNode | None = Field(
-        default=None,
-        description=(
-            "Optional nested predicate tree controlling whether the configured substance may activate. "
-            "Supports explicit all_of/any_of composition over herbivore_presence and substance_active leaves."
-        ),
-    )
     energy_cost_per_tick: float = Field(
         default=0.0, ge=0.0, description="Energy drained from the plant per tick while active."
     )
     irreversible: bool = Field(
         default=False,
-        description=(
-            "If true, activation is irreversible: once active, the substance remains active until owner death."
-        ),
+        description="If true, activation is irreversible: once active, the substance remains active until owner death.",
     )
 
 
-# ---------------------------------------------------------------------------
-# Species parameter schemas
-# ---------------------------------------------------------------------------
+class ResourceWithdrawalAction(StrictBaseModel):
+    """Action to trigger apparent nutrition withdrawal (stress response)."""
+
+    type: Literal["resource_withdrawal"] = "resource_withdrawal"
+    apparent_nutrition_factor: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Multiplier for energy apparent to herbivores and flow field."
+    )
+
+
+TriggerAction = Annotated[SynthesizeSubstanceAction | ResourceWithdrawalAction, Field(discriminator="type")]
+
+
+class TriggerConditionSchema(StrictBaseModel):
+    """Trigger condition for defense actions (Interaction Matrix entry).
+
+    Maps a (plant species, herbivore species) pair to an action that should
+    be executed when the trigger conditions are met.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    herbivore_species_id: HerbivoreId
+    min_herbivore_population: int = Field(..., gt=0, description="Minimum swarm size n_i,min to trigger synthesis.")
+    aftereffect_ticks: int = Field(
+        default=0,
+        ge=0,
+        description="Aftereffect duration T_k (action effect lingers after trigger ceases).",
+    )
+    activation_condition: ConditionNode | None = Field(
+        default=None,
+        description=(
+            "Optional nested predicate tree controlling whether the configured action may activate. "
+            "Supports explicit all_of/any_of composition over herbivore_presence and substance_active leaves."
+        ),
+    )
+    action: TriggerAction = Field(..., description="The action to perform when triggered.")
+
+
+class PassiveDefensesSchema(StrictBaseModel):
+    """Morphological (passive) defenses of a flora species."""
+
+    mechanical_damage_per_bite: float = Field(
+        default=0.0, ge=0.0, description="Thorns/spines damage per feeding event."
+    )
+    digestibility_modifier: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Lignin/silica calorie discount multiplier (e.g. 0.5 = 50% metabolized).",
+    )
 
 
 class FloraSpeciesParams(StrictBaseModel):
@@ -270,7 +301,27 @@ class FloraSpeciesParams(StrictBaseModel):
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
     # Trigger matrix: list of trigger conditions associated with this species
+    passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
     triggers: list[TriggerConditionSchema] = Field(default_factory=list)
+
+
+class HerbivoreResistancesSchema(StrictBaseModel):
+    """Herbivore resistances to passive plant defenses."""
+
+    morphological_adaptation: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Resistance to physical plant defenses like thorns or spines.",
+    )
+    chemical_neutralization: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Metabolic ability to neutralize ingested toxins and alkaloids."
+    )
+    digestive_efficiency: float = Field(
+        default=1.0,
+        ge=0.0,
+        description="Ability to extract calories from tough plant matter.",
+    )
 
 
 class HerbivoreSpeciesParams(StrictBaseModel):
@@ -292,6 +343,7 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         ge=0.0,
         description="Per-individual metabolic upkeep scalar applied every interaction tick.",
     )
+    resistances: HerbivoreResistancesSchema = Field(default_factory=HerbivoreResistancesSchema)
     split_population_threshold: int = Field(
         default=0,
         ge=0,

@@ -179,6 +179,10 @@ class GridEnvironment:
         self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
         self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
+        # Global aggregate apparent nutrition factor
+        self.apparent_nutrition_layer: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
+        self._apparent_nutrition_layer_write: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
+
         # Per-species energy layers (Rule of 16 pre-allocation)
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
@@ -303,6 +307,12 @@ class GridEnvironment:
         self._plant_energy_by_species_write[:] = self.plant_energy_by_species
         self._plant_energy_layer_write[:] = self.plant_energy_layer
 
+        self.apparent_nutrition_layer, self._apparent_nutrition_layer_write = (
+            self._apparent_nutrition_layer_write,
+            self.apparent_nutrition_layer,
+        )
+        self._apparent_nutrition_layer_write.fill(1.0)
+
     def set_plant_energy(self, x: int, y: int, species_id: int, value: float) -> None:
         """Set a species-specific energy contribution in the write buffer.
 
@@ -313,6 +323,10 @@ class GridEnvironment:
             value: Energy contribution (clamped to >= 0).
         """
         self._plant_energy_by_species_write[species_id, x, y] = max(0.0, value)
+
+    def set_apparent_nutrition(self, x: int, y: int, value: float) -> None:
+        """Set apparent nutrition factor in the write buffer."""
+        self._apparent_nutrition_layer_write[x, y] = value
 
     def clear_plant_energy(self, x: int, y: int, species_id: int) -> None:
         """Clear a species-specific energy contribution in the write buffer.

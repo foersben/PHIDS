@@ -407,14 +407,18 @@ def test_build_live_cell_details_substance_name_injection() -> None:
     injected mapping flows through to ``signal_concentrations`` and substance payloads,
     eliminating reliance on module-level mutable state.
     """
+    from phids.api.schemas import SynthesizeSubstanceAction
+
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
         min_herbivore_population=1,
-        substance_id=0,
-        synthesis_duration=1,
-        is_toxin=False,
         aftereffect_ticks=2,
-        energy_cost_per_tick=0.1,
+        action=SynthesizeSubstanceAction(
+            substance_id=0,
+            synthesis_duration=1,
+            is_toxin=False,
+            energy_cost_per_tick=0.1,
+        ),
     )
     config = _minimal_config(triggers=[trigger])
     loop = SimulationLoop(config)

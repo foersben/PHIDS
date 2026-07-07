@@ -488,6 +488,7 @@ class SimulationLoop:
             # --------------------------------------------------------
             self.env.flow_field = compute_flow_field(
                 self.env.plant_energy_layer,
+                self.env.apparent_nutrition_layer,
                 self.env.toxin_layers,
                 self.env.width,
                 self.env.height,
@@ -529,6 +530,8 @@ class SimulationLoop:
                 self.world,
                 self.env,
                 self._diet_matrix,
+                list(self.config.flora_species),
+                list(self.config.herbivore_species),
                 self.tick,
                 plant_death_causes=plant_death_causes,
             )

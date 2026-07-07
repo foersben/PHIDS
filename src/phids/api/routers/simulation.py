@@ -496,7 +496,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
                 TriggerRule(
                     flora_species_id=flora_spec.species_id,
                     herbivore_species_id=trig.herbivore_species_id,
-                    substance_id=trig.substance_id,
+                    substance_id=getattr(trig.action, "substance_id", -1),
                     min_herbivore_population=trig.min_herbivore_population,
                     activation_condition=(
                         trig.activation_condition.model_dump(mode="json")
@@ -505,25 +505,29 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
                     ),
                 )
             )
-            if trig.substance_id not in seen_substance_ids:
-                seen_substance_ids.add(trig.substance_id)
 
-                imported_substances.append(
-                    SubstanceDefinition(
-                        substance_id=trig.substance_id,
-                        name=f"Substance {trig.substance_id}",
-                        is_toxin=trig.is_toxin,
-                        lethal=trig.lethal,
-                        repellent=trig.repellent,
-                        synthesis_duration=trig.synthesis_duration,
-                        aftereffect_ticks=trig.aftereffect_ticks,
-                        lethality_rate=trig.lethality_rate,
-                        repellent_walk_ticks=trig.repellent_walk_ticks,
-                        energy_cost_per_tick=trig.energy_cost_per_tick,
-                        irreversible=trig.irreversible,
-                        min_herbivore_population=trig.min_herbivore_population,
+            from phids.api.schemas import SynthesizeSubstanceAction
+
+            if isinstance(trig.action, SynthesizeSubstanceAction):
+                if trig.action.substance_id not in seen_substance_ids:
+                    seen_substance_ids.add(trig.action.substance_id)
+
+                    imported_substances.append(
+                        SubstanceDefinition(
+                            substance_id=trig.action.substance_id,
+                            name=f"Substance {trig.action.substance_id}",
+                            is_toxin=trig.action.is_toxin,
+                            lethal=trig.action.lethal,
+                            repellent=trig.action.repellent,
+                            synthesis_duration=trig.action.synthesis_duration,
+                            aftereffect_ticks=trig.aftereffect_ticks,
+                            lethality_rate=trig.action.lethality_rate,
+                            repellent_walk_ticks=trig.action.repellent_walk_ticks,
+                            energy_cost_per_tick=trig.action.energy_cost_per_tick,
+                            irreversible=trig.action.irreversible,
+                            min_herbivore_population=trig.min_herbivore_population,
+                        )
                     )
-                )
 
     new_draft = DraftState(
         scenario_name=(file.filename or "imported").replace(".json", ""),
