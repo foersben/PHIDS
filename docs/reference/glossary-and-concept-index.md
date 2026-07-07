@@ -289,7 +289,7 @@ See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_executi
 
 ### Replay Buffer (`ReplayBuffer`)
 
-A msgpack-backed per-tick snapshot store in `phids.io.replay`. Each tick's environmental state is
+A Zarr-backed per-tick snapshot store in `phids.io.zarr_replay`. Each tick's environmental state is
 serialized and appended to the buffer after telemetry recording. The buffer supports offline
 replay, diff analysis, and export to external tooling.
 

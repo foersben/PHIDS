@@ -68,7 +68,7 @@ still track the actual codebase.
 | --- | --- | --- | --- |
 | Per-tick ecological summary metrics | `phids.telemetry.analytics`, `SimulationLoop` | `docs/telemetry/analytics-and-export-formats.md`, `docs/telemetry/index.md` | `tests/integration/systems/test_termination_and_loop.py`, `tests/unit/telemetry/test_telemetry_per_species.py` |
 | CSV and NDJSON export surfaces | `phids.telemetry.export`, `phids.api.main` | `docs/telemetry/analytics-and-export-formats.md`, `docs/interfaces/rest-and-websocket-surfaces.md` | `tests/unit/telemetry/test_export_helpers.py`, `tests/integration/api/test_api_simulation_and_scenario_routes.py` |
-| Deterministic replay snapshots | `phids.io.replay`, `SimulationLoop.get_state_snapshot`, `GridEnvironment.to_dict` | `docs/telemetry/replay-and-termination-semantics.md` | `tests/e2e/replay_and_io/test_replay_roundtrip.py`, `tests/unit/io/test_replay_buffer.py`, `tests/integration/systems/test_termination_and_loop.py` |
+| Deterministic replay snapshots | `phids.io.zarr_replay`, `SimulationLoop.get_state_snapshot`, `GridEnvironment.to_dict` | `docs/telemetry/replay-and-termination-semantics.md` | `tests/e2e/replay_and_io/test_zarr_replay.py`, `tests/integration/systems/test_termination_and_loop.py` |
 | Formal `Z1`–`Z7` termination semantics | `phids.telemetry.conditions`, `SimulationLoop` | `docs/telemetry/replay-and-termination-semantics.md`, `docs/telemetry/index.md` | `tests/integration/systems/test_termination_and_loop.py` |
 
 ## Quality and Documentation Requirements

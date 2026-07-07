@@ -246,17 +246,16 @@ Narrative docs:
 - `docs/scenarios/schema-and-curated-examples.md`
 - `docs/scenarios/scenario-authoring-and-trigger-semantics.md`
 
-### `phids.io.replay`
+### `phids.io.zarr_replay`
 
 Primary responsibility:
 
-- msgpack-based replay serialization and replay-file framing.
+- Zarr-based replay serialization and replay-file framing.
 
 Key symbols:
 
 - `ReplayBuffer`
-- `serialise_state`
-- `deserialise_state`
+- `ReplaySlice`
 
 Narrative docs:
 
