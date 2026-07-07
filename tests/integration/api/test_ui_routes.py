@@ -953,7 +953,8 @@ def test_flow_field_helpers_compute_gradient_and_apply_camouflage() -> None:
     toxin_layers = np.zeros((1, 3, 3), dtype=np.float64)
     toxin_layers[0, 0, 0] = 1.0
 
-    gradient = flow_field.compute_flow_field(plant_energy, toxin_layers, 3, 3)
+    apparent_nutrition_layer = np.ones((3, 3), dtype=np.float64)
+    gradient = flow_field.compute_flow_field(plant_energy, apparent_nutrition_layer, toxin_layers, 3, 3)
     assert gradient[2, 2] > gradient[0, 0]
     attenuated = gradient[2, 2]
     flow_field.apply_camouflage(gradient, 2, 2, 0.5)
@@ -961,6 +962,7 @@ def test_flow_field_helpers_compute_gradient_and_apply_camouflage() -> None:
     assert (
         flow_field._compute_flow_field_impl(
             np.array([[1e-6]], dtype=np.float64),
+            np.array([[1.0]], dtype=np.float64),
             np.array([[0.0]], dtype=np.float64),
             1,
             1,

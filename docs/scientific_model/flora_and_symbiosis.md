@@ -76,62 +76,38 @@ Whenever a plant energy value falls beneath its survival threshold, it is schedu
 
 These tags are essential for interpreting whether an ecosystem collapsed due to herbivory or metabolic mismanagement.
 
-
 ## The Defense Economy: Constitutive vs. Induced Defenses
 
-The PHIDS engine models the evolutionary resource allocation trade-offs plants make to survive grazing pressure. Defenses are categorized into two primary economic strategies:
+In ecological systems, plants must balance their energy budgets between growth and defense. The PHIDS engine models these evolutionary resource allocation trade-offs using two primary strategies:
 
-*   **Induced Defenses (Active Chemical Traits):** These are on-demand biological weapons like Volatile Organic Compounds (VOCs) and lethal Toxins. They are highly effective but metabolically expensive. In the ECS, these are represented as dynamically spawned `SubstanceComponent` entities. They require a synthesis lead time and impose a continuous maintenance penalty (`energy_cost_per_tick`) on the host plant's energy reserve while active.
-*   **Constitutive Defenses (Morphological Traits):** Governed by the `PassiveDefensesSchema`, these are permanent structural or chemical barriers integrated into the plant's tissue (e.g., lignin, silica, thorns). Because they are "always on," they require an evolutionary upfront cost (typically represented by a lower baseline `growth_rate` in the species configuration), but they impose **zero dynamic maintenance costs** during the runtime simulation loop.
+- **Induced Defenses (Active Chemical Traits):** These are on-demand biological weapons like Volatile Organic Compounds (VOCs) and lethal Toxins, represented in the ECS as dynamically spawned entities. They require a synthesis lead time and impose a continuous maintenance penalty (`energy_cost_per_tick`) on the host plant's energy reserve while active.
+- **Constitutive Defenses (Passive/Morphological Defenses):** Governed by the `PassiveDefensesSchema`, these are structural barriers permanently integrated into the plant's leaf or stem tissue (e.g., lignin, silica, thorns). While they require an upfront evolutionary trade-off (reducing the plant's continuous `growth_rate`), they impose zero dynamic maintenance costs at runtime.
+
+---
 
 ## Morphological Defense Barriers
 
 Constitutive defenses directly modify the trophic interaction loop without requiring spatial chemical diffusion.
 
-### Mechanical Trauma (Thorns, Spines, Prickles, and Trichomes)
-Configured via the `mechanical_damage_per_bite` parameter. Rather than acting as a binary edibility gate (which is handled by the `DietCompatibilityMatrix`), mechanical defenses inflict direct physical trauma on grazing swarms. When an herbivore swarm feeds on the plant, it takes immediate population reductions (casualties) proportional to the energy consumed and the severity of the plant's armament.
-
-### Quantitative Digestibility Reductions (Lignin, Silica, and Tannins)
-Configured via the `digestibility_modifier` parameter (ranging from 0.0 to 1.0). Anti-nutritional compounds structurally inhibit digestive enzymes or act as abrasive fillers. During the feeding interaction phase, the actual energy $\\Delta e$ removed from the plant is scaled down before it is added to the swarm's reproductive surplus budget:
-
-$$
-\Delta e_{\text{metabolized}} = \Delta e_{\text{consumed}} \cdot \text{digestibility\_modifier}
-$$
-
-A `digestibility_modifier` of $0.5$ forces an herbivore swarm to consume twice as much total biomass just to cover its baseline metabolic upkeep (`energy_upkeep_per_individual`), rapidly accelerating starvation kinetics despite heavy grazing activity.
-
-## The Defense Economy: Constitutive vs. Induced Defenses
-
-In ecological systems, plants must balance their energy budgets between growth and defense. The engine models the evolutionary resource allocation trade-offs plants make to survive grazing pressure. Defenses are categorized into two primary economic strategies:
-
-* **Induced Defenses (Active Chemical Traits):** These are on-demand biological weapons like Volatile Organic Compounds (VOCs) and lethal Toxins. They are highly effective but metabolically expensive. In the ECS, these are represented as dynamically spawned entities. They require a synthesis lead time and impose a continuous maintenance penalty (`energy_cost_per_tick`) on the host plant's energy reserve while active.
-* **Constitutive Defenses (Passive Traits):** Governed by the `PassiveDefensesSchema`, these are structural, morphological barriers permanently integrated into the leaf or stem tissue. Explain that while they require an upfront evolutionary trade-off (reducing the plant's continuous `growth_rate`), they impose zero dynamic maintenance costs at runtime.
-
-## Morphological Defense Barriers
-
-Constitutive defenses directly modify the trophic interaction loop without requiring spatial chemical diffusion.
-
-### Mechanical Trauma (Thorns, Spines, Prickles, and Trichomes)
+### Mechanical Attrition (`mechanical_damage_per_bite`)
 
 This parameter models structural plant defenses like thorns, spines, prickles, and trichomes (microscopic, needle-like hairs).
 
 !!! info "Biological Context"
     Unlike active toxins that cause systemic internal poisoning, mechanical defenses inflict immediate, localized physical trauma to the herbivore's mouthparts, digestive tract, or soft tissues during the act of feeding.
 
-Configured via the `mechanical_damage_per_bite` parameter. Rather than acting as a binary edibility gate (which is handled by the `DietCompatibilityMatrix`), mechanical defenses inflict direct physical trauma on grazing swarms. When an herbivore swarm feeds on the plant, it takes immediate population reductions (casualties) proportional to the energy consumed and the severity of the plant's armament.
+In the trophic loop, mechanical defenses do not alter diet compatibility. Herbivores continue grazing on these plants, but the swarm takes direct, immediate population reductions (casualties) proportional to the energy consumed and the severity of the plant's armament, slowly grinding down the swarm's population through physical attrition rather than chemical toxicity.
 
-### Quantitative Digestibility Reductions (Lignin, Silica, and Tannins)
+### Digestibility Modulation (`digestibility_modifier`)
 
-This parameter simulates Quantitative Defenses—compounds that do not directly harm the herbivore but make the plant biologically useless as a food source.
+This parameter simulates Quantitative Defenses—compounds that do not directly harm the herbivore but make the plant biologically less useful as a food source.
 
 !!! info "Biological Context"
-    Plants load their mature leaves with lignin, silica, or high concentrations of tannins. Lignin and silica make the cellular structure incredibly tough and difficult to break down. Tannins actively bind to the herbivore's digestive enzymes, preventing them from extracting proteins from the consumed plant matter.
+    Plants load their mature leaves with lignin, silica, or high concentrations of tannins. Lignin and silica make the cellular structure tough and difficult to break down, while tannins bind to digestive enzymes, preventing herbivores from extracting proteins from consumed plant matter.
 
-Configured via the `digestibility_modifier` parameter (ranging from 0.0 to 1.0). Anti-nutritional compounds structurally inhibit digestive enzymes or act as abrasive fillers. During the feeding interaction phase, the actual energy $\\Delta e$ removed from the plant is scaled down before it is added to the swarm's reproductive surplus budget:
+During the feeding interaction phase, the actual energy $\Delta e$ harvested from the plant is scaled down before being added to the swarm's reproductive surplus budget:
 
-$$
-\Delta e_{real} = \Delta e \cdot \text{digestibility\_modifier}
-$$
+$$\Delta e_{real} = \Delta e \cdot \text{digestibility\_modifier}$$
 
 !!! note "Engine Constraint"
-    A `digestibility_modifier` of 0.5 means that for every 10 units of $E_{max}$ the swarm bites off the plant, it only successfully metabolizes 5 units into its own surplus energy. The rest passes through as waste. This biologically forces the swarm to consume twice as much to meet its `metabolism_upkeep`, effectively starving highly active herbivores even while they are "eating."
+    A `digestibility_modifier` of 0.5 means that for every 10 units of $E_{max}$ the swarm bites off the plant, it only successfully metabolizes 5 units into its own surplus energy. The rest passes through as waste. This biologically forces the swarm to consume twice as much to meet its `metabolism_upkeep`, effectively starving highly active herbivores even while they are "eating."."

@@ -58,15 +58,53 @@ def test_interaction_anchoring_heuristic(
     initial_plant_energy = plant.energy
 
     # Tick the interaction system
-    from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+    from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        )
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+    from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[True, True]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[True, True]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # Swarm should have fed and remain anchored at (1,1)
     assert swarm.x == 1
@@ -110,11 +148,38 @@ def test_interaction_taste_rejection(
     swarm.move_cooldown = 1
 
     # Tick the interaction system
-    from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+    from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[True, False]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[True, False]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # Swarm should be repelled
     assert swarm.repelled is True
@@ -148,11 +213,38 @@ def test_interaction_starvation_ceil_casualty(
     swarm.energy_upkeep_per_individual = 0.5
     swarm.energy_min = 2.0
 
-    from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+    from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[False, False]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[False, False]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # Casualties: ceil(5 * 2.0 * 0.5 / 2.0) = 3
     # Population should be 5 - 3 = 2
@@ -182,11 +274,38 @@ def test_interaction_crowding_dispersal(
         swarm.initial_population = swarm.population
         swarm_entities.append(ent)
 
-    from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+    from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[False, False]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[False, False]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # At least some swarms should have moved due to crowding
     moved_count = 0
@@ -232,21 +351,75 @@ def test_interaction_random_fallback_and_missing_entity(
         patch("random.choice", side_effect=lambda x: x[0]),
         patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]),
     ):
-        from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+        from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[False, False]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[False, False]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # CASE B: flat field, inertia dx=1, dy=0
     swarm.last_dx = 1
     swarm.last_dy = 0
     with patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]):
-        from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+        from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[False, False]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[False, False]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # CASE C: non-flat field, not invert
     env.flow_field[1, 1] = 1.0
@@ -254,11 +427,38 @@ def test_interaction_random_fallback_and_missing_entity(
     swarm.last_dx = 0
     swarm.last_dy = 0
     with patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]):
-        from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams, PassiveDefensesSchema
-    dummy_flora = [FloraSpeciesParams(species_id=0, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1), FloraSpeciesParams(species_id=1, name="Dummy", base_energy=10, max_energy=20, growth_rate=1, survival_threshold=1, reproduction_interval=1)]
+        from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
+
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+        FloraSpeciesParams(
+            species_id=1,
+            name="Dummy",
+            base_energy=10,
+            max_energy=20,
+            growth_rate=1,
+            survival_threshold=1,
+            reproduction_interval=1,
+        ),
+    ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    run_interaction(world, env, diet_matrix=[[False, False]], flora_species_params=dummy_flora, herbivore_species_params=dummy_herbivore, tick=0)
+    run_interaction(
+        world,
+        env,
+        diet_matrix=[[False, False]],
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
 
     # CASE D: non-flat field, invert=True
     with patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]):

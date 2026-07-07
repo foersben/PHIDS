@@ -30,10 +30,10 @@ graph TD
     Root --> B2[Continuous / Parametric Genes <br/> Bounded Floats]
 
     B1 --> B1A[Placement Strategy <br/> Uniform, Clustered, Banded]
-    B1 --> B1B[Interaction Topologies <br/> Boolean Diet Matrices <br/> Toxin Trigger Maps]
+    B1 --> B1B[Interaction Topologies <br/> Boolean Diet Matrices <br/> Toxin Trigger Maps <br/> Senescence Rules]
 
-    B2 --> B2A[Flora Traits <br/> Growth Rates <br/> Seed Dispersion Radii]
-    B2 --> B2B[Herbivore Traits <br/> Metabolic Upkeep <br/> Mitosis Thresholds]
+    B2 --> B2A[Flora Traits <br/> Growth Rates <br/> Seed Dispersion Radii <br/> Passive Defenses]
+    B2 --> B2B[Herbivore Traits <br/> Metabolic Upkeep <br/> Mitosis Thresholds <br/> Resistances]
 ```
 
 ### 1.2 Mathematical Formulation
@@ -281,46 +281,24 @@ The transition to this architecture occurs across five phases:
 ## Updated Genotype Structures
 
 The MINLP genotype space has been expanded to include:
-*   **Passive Defenses:** Morphological parameters (`mechanical_damage_per_bite`, `digestibility_modifier`) attached to `FloraSpeciesParams`.
-*   **Resistances:** Counter-adaptations (`morphological_adaptation`, `chemical_neutralization`, `digestive_efficiency`) attached to `HerbivoreSpeciesParams`.
-*   **Senescence Rules:** Utilizing the new `resource_withdrawal` action within the `TriggerRule` discriminated union.
+
+* **Passive Defenses:** Morphological parameters (`mechanical_damage_per_bite`, `digestibility_modifier`) attached to `FloraSpeciesParams`.
+* **Resistances:** Counter-adaptations (`morphological_adaptation`, `chemical_neutralization`, `digestive_efficiency`) attached to `HerbivoreSpeciesParams`.
+* **Senescence Rules:** Utilizing the new `resource_withdrawal` action within the `TriggerRule` discriminated union.
 
 The underlying empirical database (`bio_database.json`) reflects this deeply nested schema layout:
-*   `base_metrics`
-*   `passive_defenses`
-*   `substances`
-*   `trigger_rules`
+
+* `base_metrics`
+* `passive_defenses`
+* `substances`
+* `trigger_rules`
 
 ### Multi-Level Cascade Trigger Example
 
 The PHIDS engine supports complex, multi-tiered defensive reactions by nesting activation conditions. For example:
 
-1.  **Herbivore Presence:** A swarm begins feeding.
-2.  **Activates Airborne Signal VOC:** The plant synthesizes an alarm signal.
-3.  **Neighboring Plant Detects VOC:** The signal diffuses across the grid. A neighboring plant's trigger rule (conditioned on `environmental_signal`) evaluates to true.
-4.  **Triggers Leaf Toxin Synthesis:** The neighbor preemptively synthesizes a lethal toxin.
-5.  **Prolonged Ingestion Triggers Root Resource Reallocation:** If the herbivore presence persists despite the toxin, a secondary rule (conditioned on both `herbivore_presence` AND `substance_active`) triggers a `resource_withdrawal` action, dimming the plant's chemotactic profile and forcing the swarm to disperse.
-
-
-## Updated Genotype Structures
-
-The MINLP genotype space has been expanded to include:
-*   **Passive Defenses:** Morphological parameters (`mechanical_damage_per_bite`, `digestibility_modifier`) attached to `FloraSpeciesParams`.
-*   **Resistances:** Counter-adaptations (`morphological_adaptation`, `chemical_neutralization`, `digestive_efficiency`) attached to `HerbivoreSpeciesParams`.
-*   **Senescence Rules:** Utilizing the new `resource_withdrawal` action within the `TriggerRule` discriminated union.
-
-The underlying empirical database (`bio_database.json`) reflects this deeply nested schema layout:
-*   `base_metrics`
-*   `passive_defenses`
-*   `substances`
-*   `trigger_rules`
-
-### Multi-Level Cascade Trigger Example
-
-The PHIDS engine supports complex, multi-tiered defensive reactions by nesting activation conditions. For example:
-
-1.  **Herbivore Presence:** A swarm begins feeding.
-2.  **Activates Airborne Signal VOC:** The plant synthesizes an alarm signal.
-3.  **Neighboring Plant Detects VOC:** The signal diffuses across the grid. A neighboring plant's trigger rule (conditioned on `environmental_signal`) evaluates to true.
-4.  **Triggers Leaf Toxin Synthesis:** The neighbor preemptively synthesizes a lethal toxin.
-5.  **Prolonged Ingestion Triggers Root Resource Reallocation:** If the herbivore presence persists despite the toxin, a secondary rule (conditioned on both `herbivore_presence` AND `substance_active`) triggers a `resource_withdrawal` action, dimming the plant's chemotactic profile and forcing the swarm to disperse.
+1. **Herbivore Presence:** A swarm begins feeding.
+2. **Activates Airborne Signal VOC:** The plant synthesizes an alarm signal.
+3. **Neighboring Plant Detects VOC:** The signal diffuses across the grid. A neighboring plant's trigger rule (conditioned on `environmental_signal`) evaluates to true.
+4. **Triggers Leaf Toxin Synthesis:** The neighbor preemptively synthesizes a lethal toxin.
+5. **Prolonged Ingestion Triggers Root Resource Reallocation:** If the herbivore presence persists despite the toxin, a secondary rule (conditioned on both `herbivore_presence` AND `substance_active`) triggers a `resource_withdrawal` action, dimming the plant's chemotactic profile and forcing the swarm to disperse.

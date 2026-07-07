@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from phids.api.schemas import TriggerConditionSchema
+from phids.api.schemas import SynthesizeSubstanceAction, TriggerConditionSchema
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
@@ -40,9 +40,11 @@ def test_herbivore_threshold_is_inclusive_at_exact_boundary(
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
         min_herbivore_population=4,
-        substance_id=1,
-        synthesis_duration=1,
-        is_toxin=False,
+        action=SynthesizeSubstanceAction(
+            substance_id=1,
+            synthesis_duration=1,
+            is_toxin=False,
+        ),
     )
 
     run_signaling(
@@ -72,9 +74,6 @@ def test_any_of_condition_triggers_when_one_branch_is_true(
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
         min_herbivore_population=99,
-        substance_id=1,
-        synthesis_duration=1,
-        is_toxin=False,
         activation_condition={
             "kind": "any_of",
             "conditions": [
@@ -86,6 +85,11 @@ def test_any_of_condition_triggers_when_one_branch_is_true(
                 {"kind": "substance_active", "substance_id": 13},
             ],
         },
+        action=SynthesizeSubstanceAction(
+            substance_id=1,
+            synthesis_duration=1,
+            is_toxin=False,
+        ),
     )
 
     run_signaling(
@@ -114,9 +118,6 @@ def test_all_of_condition_requires_every_child(
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
         min_herbivore_population=99,
-        substance_id=1,
-        synthesis_duration=1,
-        is_toxin=False,
         activation_condition={
             "kind": "all_of",
             "conditions": [
@@ -128,6 +129,11 @@ def test_all_of_condition_requires_every_child(
                 {"kind": "substance_active", "substance_id": 13},
             ],
         },
+        action=SynthesizeSubstanceAction(
+            substance_id=1,
+            synthesis_duration=1,
+            is_toxin=False,
+        ),
     )
 
     run_signaling(

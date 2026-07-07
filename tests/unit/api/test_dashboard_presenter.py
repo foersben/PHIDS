@@ -59,9 +59,11 @@ from phids.api.presenters.dashboard import (
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
+    HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
+    PassiveDefensesSchema,
     SimulationConfig,
     TriggerConditionSchema,
 )
@@ -93,6 +95,7 @@ def _flora(species_id: int, *, triggers: list[TriggerConditionSchema] | None = N
         seed_max_dist=2.0,
         seed_energy_cost=1.0,
         triggers=triggers or [],
+        passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
     )
 
 
@@ -105,6 +108,7 @@ def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
         velocity=1,
         consumption_rate=1.0,
         reproduction_energy_divisor=1.0,
+        resistances=HerbivoreResistancesSchema(),
     )
 
 

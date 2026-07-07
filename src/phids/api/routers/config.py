@@ -285,6 +285,12 @@ async def config_flora_update(
     seed_energy_cost: Annotated[float | None, Form()] = None,
     camouflage: Annotated[str | None, Form()] = None,
     camouflage_factor: Annotated[float | None, Form()] = None,
+    passive_defenses_mechanical_damage_per_bite: Annotated[
+        float | None, Form(alias="passive_defenses.mechanical_damage_per_bite")
+    ] = None,
+    passive_defenses_digestibility_modifier: Annotated[
+        float | None, Form(alias="passive_defenses.digestibility_modifier")
+    ] = None,
 ) -> Response:
     """Patch one flora species in the draft and render the updated flora table."""
     draft = get_draft()
@@ -326,6 +332,15 @@ async def config_flora_update(
         updates["camouflage"] = camouflage == "on"
     if camouflage_factor is not None:
         updates["camouflage_factor"] = max(0.0, min(1.0, camouflage_factor))
+
+    # Handle nested passive defenses
+    passive_updates: dict[str, object] = {}
+    if passive_defenses_mechanical_damage_per_bite is not None:
+        passive_updates["mechanical_damage_per_bite"] = max(0.0, passive_defenses_mechanical_damage_per_bite)
+    if passive_defenses_digestibility_modifier is not None:
+        passive_updates["digestibility_modifier"] = max(0.0, min(1.0, passive_defenses_digestibility_modifier))
+    if passive_updates:
+        updates["passive_defenses"] = fp.passive_defenses.model_copy(update=passive_updates)
 
     draft.flora_species[idx] = fp.model_copy(update=updates)
     api_main.logger.debug("Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))
@@ -399,6 +414,13 @@ async def config_herbivore_update(
     reproduction_energy_divisor: Annotated[float | None, Form()] = None,
     energy_upkeep_per_individual: Annotated[float | None, Form()] = None,
     split_population_threshold: Annotated[int | None, Form()] = None,
+    resistances_morphological_adaptation: Annotated[
+        float | None, Form(alias="resistances.morphological_adaptation")
+    ] = None,
+    resistances_chemical_neutralization: Annotated[
+        float | None, Form(alias="resistances.chemical_neutralization")
+    ] = None,
+    resistances_digestive_efficiency: Annotated[float | None, Form(alias="resistances.digestive_efficiency")] = None,
 ) -> Response:
     """Patch one herbivore species in the draft and render the updated herbivore table."""
     draft = get_draft()
@@ -432,6 +454,17 @@ async def config_herbivore_update(
         updates["energy_upkeep_per_individual"] = energy_upkeep_per_individual
     if split_population_threshold is not None:
         updates["split_population_threshold"] = split_population_threshold
+
+    # Handle nested resistances
+    resistances_updates: dict[str, object] = {}
+    if resistances_morphological_adaptation is not None:
+        resistances_updates["morphological_adaptation"] = max(0.0, min(1.0, resistances_morphological_adaptation))
+    if resistances_chemical_neutralization is not None:
+        resistances_updates["chemical_neutralization"] = max(0.0, min(1.0, resistances_chemical_neutralization))
+    if resistances_digestive_efficiency is not None:
+        resistances_updates["digestive_efficiency"] = max(0.0, resistances_digestive_efficiency)
+    if resistances_updates:
+        updates["resistances"] = pp.resistances.model_copy(update=resistances_updates)
 
     draft.herbivore_species[idx] = pp.model_copy(update=updates)
     api_main.logger.debug("Herbivore species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))

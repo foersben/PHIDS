@@ -18,7 +18,13 @@ from typing import cast
 
 import pytest
 
-from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams, SimulationConfig
+from phids.api.schemas import (
+    FloraSpeciesParams,
+    HerbivoreResistancesSchema,
+    HerbivoreSpeciesParams,
+    PassiveDefensesSchema,
+    SimulationConfig,
+)
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
@@ -50,6 +56,7 @@ def _flora(species_id: int, name: str | None = None) -> FloraSpeciesParams:
         seed_max_dist=2.0,
         seed_energy_cost=1.0,
         triggers=[],
+        passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
     )
 
 
@@ -61,6 +68,7 @@ def _herbivore(species_id: int, name: str | None = None) -> HerbivoreSpeciesPara
         velocity=1,
         consumption_rate=1.5,
         reproduction_energy_divisor=1.0,
+        resistances=HerbivoreResistancesSchema(),
     )
 
 

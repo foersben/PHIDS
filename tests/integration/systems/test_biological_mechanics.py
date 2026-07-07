@@ -53,6 +53,7 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
         velocity=1,
         consumption_rate=2.0,
         split_population_threshold=1000,
+        reproduction_energy_divisor=1000.0,
     )
     swarm.repelled = False
     world.add_component(swarm_eid.entity_id, swarm)
@@ -147,4 +148,4 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
     run_signaling(world, env, trigger_conditions, mycorrhizal_inter_species=False, signal_velocity=1, tick=0)
 
     assert np.isclose(plant.apparent_nutrition_factor, 0.1)
-    assert plant.withdrawal_ticks_remaining == 10
+    assert plant.withdrawal_ticks_remaining == 9

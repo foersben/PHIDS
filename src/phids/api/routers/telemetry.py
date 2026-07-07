@@ -117,7 +117,7 @@ async def telemetry_chartjs_data(
         latest_tick = int(rows[-1].get("tick", -1))
         # When the simulation was reset, client-side since_tick can be ahead of
         # the current run; return full rows so chart state can re-synchronize.
-        if latest_tick > since_tick:
+        if latest_tick >= since_tick:
             rows = [row for row in rows if int(row.get("tick", -1)) > since_tick]
     species = api_main._sim_loop.telemetry.get_species_ids()
     flora_ids = species["flora_ids"]

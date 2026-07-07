@@ -34,6 +34,7 @@ from phids.api.schemas import (
     InitialPlantPlacement,
     InitialSwarmPlacement,
     SimulationConfig,
+    SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )
 from phids.api.services.draft_service import DraftService
@@ -84,11 +85,13 @@ def _config_with_trigger() -> SimulationConfig:
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
         min_herbivore_population=3,
-        substance_id=0,
-        synthesis_duration=1,
-        is_toxin=False,
         aftereffect_ticks=2,
-        energy_cost_per_tick=0.4,
+        action=SynthesizeSubstanceAction(
+            substance_id=0,
+            synthesis_duration=1,
+            is_toxin=False,
+            energy_cost_per_tick=0.4,
+        ),
     )
     return SimulationConfig(
         grid_width=8,
