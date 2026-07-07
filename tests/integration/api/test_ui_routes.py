@@ -37,8 +37,12 @@ from phids.engine.core import flow_field
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
 from phids.shared import logging_config
-from phids.telemetry import export as telemetry_export
 from phids.telemetry.analytics import TelemetryRow  # noqa: TC001
+from phids.telemetry.export import core as telemetry_export_core
+from phids.telemetry.export import latex as telemetry_export_latex
+from phids.telemetry.export import png as telemetry_export_png
+from phids.telemetry.export import structured as telemetry_export_structured
+from phids.telemetry.export import tikz as telemetry_export_tikz
 
 draft_service = DraftService()
 
@@ -592,11 +596,11 @@ async def test_batch_routes_return_errors_for_missing_job_and_invalid_export_par
 def test_export_helper_parses_species_ids_and_filters_rows() -> None:
     """Verify species-ID helpers parse inputs and filter telemetry maps by requested flora/herbivore IDs."""
     rows = _sample_telemetry_rows()
-    assert telemetry_export._append_species_id("2", 0) == "0,2"
-    assert telemetry_export._parse_species_ids(" 1, bad, 2 ,, ") == {1, 2}
-    assert telemetry_export._parse_species_ids(None) is None
+    assert telemetry_export_core._append_species_id("2", 0) == "0,2"
+    assert telemetry_export_core._parse_species_ids(" 1, bad, 2 ,, ") == {1, 2}
+    assert telemetry_export_core._parse_species_ids(None) is None
 
-    filtered_rows = telemetry_export.filter_telemetry_rows(rows, flora_ids="1", herbivore_ids="1")
+    filtered_rows = telemetry_export_core.filter_telemetry_rows(rows, flora_ids="1", herbivore_ids="1")
     assert filtered_rows[0]["plant_pop_by_species"] == {1: 4}
     assert filtered_rows[1]["swarm_pop_by_species"] == {1: 2}
 
@@ -604,12 +608,12 @@ def test_export_helper_parses_species_ids_and_filters_rows() -> None:
 def test_export_helper_builds_and_filters_dataframes() -> None:
     """Verify telemetry rows convert to tabular form and support column projection and tick decimation."""
     rows = _sample_telemetry_rows()
-    dataframe = telemetry_export.telemetry_to_dataframe(rows)
+    dataframe = telemetry_export_core.telemetry_to_dataframe(rows)
     assert {"tick", "plant_0_pop", "plant_1_energy", "swarm_1_pop", "defense_cost_0"}.issubset(dataframe.columns)
 
-    narrowed = telemetry_export.filter_dataframe_columns(dataframe, "plant_0_pop")
+    narrowed = telemetry_export_core.filter_dataframe_columns(dataframe, "plant_0_pop")
     assert list(narrowed.columns) == ["tick", "plant_0_pop"]
-    decimated = telemetry_export.decimate_dataframe(dataframe, 2)
+    decimated = telemetry_export_core.decimate_dataframe(dataframe, 2)
     assert len(decimated) == 1
 
 
@@ -619,26 +623,26 @@ def test_export_helper_writes_csv_and_ndjson_files(tmp_path: Path) -> None:
     csv_path = tmp_path / "telemetry.csv"
     ndjson_path = tmp_path / "telemetry.ndjson"
 
-    telemetry_export.export_csv(frame, csv_path)
-    telemetry_export.export_json(frame, ndjson_path)
+    telemetry_export_structured.export_csv(frame, csv_path)
+    telemetry_export_structured.export_json(frame, ndjson_path)
 
     assert csv_path.read_text(encoding="utf-8").startswith("tick,")
     assert '"tick":0' in ndjson_path.read_text(encoding="utf-8")
-    assert telemetry_export.export_bytes_csv(frame).startswith(b"tick,")
-    assert b'"tick":0' in telemetry_export.export_bytes_json(frame)
+    assert telemetry_export_structured.export_bytes_csv(frame).startswith(b"tick,")
+    assert b'"tick":0' in telemetry_export_structured.export_bytes_json(frame)
 
 
 def test_export_helper_renders_tex_table_and_empty_state() -> None:
     """Verify TeX table export includes tabular structure and emits a no-data marker for empty telemetry."""
     rows = _sample_telemetry_rows()
-    latex_table = telemetry_export.export_bytes_tex_table(
+    latex_table = telemetry_export_latex.export_bytes_tex_table(
         rows,
         columns="tick,plant_0_pop",
         include_flora_ids="0",
         tick_interval=2,
     )
     assert b"\\toprule" in latex_table
-    assert telemetry_export.export_bytes_tex_table([], tick_interval=1) == b"% No telemetry data\n"
+    assert telemetry_export_latex.export_bytes_tex_table([], tick_interval=1) == b"% No telemetry data\n"
 
 
 def test_export_helper_generates_png_and_tikz_for_supported_chart_types() -> None:
@@ -654,7 +658,7 @@ def test_export_helper_generates_png_and_tikz_for_supported_chart_types() -> Non
         "biomass_stack",
         "survival_probability",
     ):
-        png = telemetry_export.generate_png_bytes(
+        png = telemetry_export_png.generate_png_bytes(
             rows,
             plot_type,
             flora_names=flora_names,
@@ -668,7 +672,7 @@ def test_export_helper_generates_png_and_tikz_for_supported_chart_types() -> Non
             y_max=20,
             dpi=40,
         )
-        tikz = telemetry_export.generate_tikz_str(
+        tikz = telemetry_export_tikz.generate_tikz_str(
             rows,
             plot_type,
             flora_names=flora_names,
@@ -684,16 +688,16 @@ def test_export_helper_generates_png_and_tikz_for_supported_chart_types() -> Non
         assert png.startswith(b"\x89PNG")
         assert "\\begin{tikzpicture}" in tikz
 
-    assert telemetry_export.generate_png_bytes([], "timeseries", dpi=40).startswith(b"\x89PNG")
+    assert telemetry_export_png.generate_png_bytes([], "timeseries", dpi=40).startswith(b"\x89PNG")
     with pytest.raises(ValueError):
-        telemetry_export.generate_png_bytes(rows, "unknown")
+        telemetry_export_png.generate_png_bytes(rows, "unknown")
     with pytest.raises(ValueError):
-        telemetry_export.generate_tikz_str(rows, "unknown")
+        telemetry_export_tikz.generate_tikz_str(rows, "unknown")
 
 
 def test_export_helper_maps_batch_aggregate_to_dataframe_columns() -> None:
     """Verify aggregate telemetry dictionaries map to labeled dataframe columns and empty aggregates stay empty."""
-    aggregate_frame = telemetry_export.aggregate_to_dataframe(
+    aggregate_frame = telemetry_export_core.aggregate_to_dataframe(
         {
             "ticks": [0, 1],
             "flora_population_mean": [10.0, 8.0],
@@ -710,7 +714,7 @@ def test_export_helper_maps_batch_aggregate_to_dataframe_columns() -> None:
     )
     assert not aggregate_frame.empty
     assert {"Grass_pop_mean", "Rabbit_pop_std"}.issubset(aggregate_frame.columns)
-    assert telemetry_export.aggregate_to_dataframe({}).empty
+    assert telemetry_export_core.aggregate_to_dataframe({}).empty
 
 
 def test_draft_singleton_helpers_and_substance_type_labels() -> None:
