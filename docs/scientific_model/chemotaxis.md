@@ -97,3 +97,17 @@ In biological systems, when an organism loses a scent trail, it transitions from
 
 **Algorithmic Resolution:**
 When PHIDS evaluates a zero-gradient neighborhood, the swarm enters a **Random Walk** state. It selects a neighboring cell from a uniform random distribution, effectively performing an isotropic search until it re-enters the active Flow Field. This behavior is also deployed when swarms are actively repelled by incompatible flora or localized toxins, forcing them to disperse blindly until they secure a safe sensory anchor.
+
+
+
+
+## Impact of Resource Reallocation on Chemotaxis
+
+When a plant triggers a `resource_withdrawal` action, its `apparent_nutrition_factor` scalar drops below 1.0. Inside the Numba JIT Chemotaxis Flow Field resolution loop (`flow_field.py`), the base attractant landscape matrix is scaled before diffusion:
+
+$$
+A[x, y] = E_{\text{plant}}[x, y] \cdot \text{apparent\_nutrition\_factor}[x, y]
+$$
+
+!!! info "Sensory Impact"
+    When a plant under pressure sets its apparent nutrition factor to 0.1, it "dims" its attractant profile to zero-gradient levels ($< 1 \times 10^{-6}$). In the Numba JIT solver, the plant's actual survival energy remains safe, but its signature in the chemotaxis Flow Field practically vanishes. To the herbivores' sensory systems, the coordinate looks barren. The grazing swarms immediately lose their sensory anchor and are forced to break their feeding anchor, transitioning via orthokinesis into an isotropic Random Walk to seek active gradients elsewhere, letting the plant recover. Once `withdrawal_ticks_remaining` expires, the factor returns to 1.0, and the plant "reappears" in the ecosystem.

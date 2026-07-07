@@ -29,9 +29,11 @@ def _minimal_scenario() -> dict:
     from phids.api.schemas import (
         DietCompatibilityMatrix,
         FloraSpeciesParams,
+        HerbivoreResistancesSchema,
         HerbivoreSpeciesParams,
         InitialPlantPlacement,
         InitialSwarmPlacement,
+        PassiveDefensesSchema,
         SimulationConfig,
     )
 
@@ -50,6 +52,7 @@ def _minimal_scenario() -> dict:
                 growth_rate=1.0,
                 survival_threshold=1.0,
                 reproduction_interval=20,
+                passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
             )
         ],
         herbivore_species=[
@@ -59,6 +62,7 @@ def _minimal_scenario() -> dict:
                 energy_min=1.0,
                 velocity=1,
                 consumption_rate=0.5,
+                resistances=HerbivoreResistancesSchema(),
             )
         ],
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),

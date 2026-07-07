@@ -377,7 +377,7 @@ def run_signaling(
     # 1. Evaluate trigger conditions for all plants
     # ------------------------------------------------------------------
     for entity in world.query(PlantComponent):
-        plant: PlantComponent = entity.get_component(PlantComponent)
+        plant = entity.get_component(PlantComponent)
         triggers = trigger_conditions.get(plant.species_id, [])
 
         for trig in triggers:
@@ -407,23 +407,36 @@ def run_signaling(
             if not triggered:
                 continue
 
+            from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+
+            if isinstance(trig.action, ResourceWithdrawalAction):
+                plant.apparent_nutrition_factor = trig.action.apparent_nutrition_factor
+                plant.withdrawal_ticks_remaining = trig.aftereffect_ticks
+                continue
+
+            # Action is synthesize_substance
+            if not isinstance(trig.action, SynthesizeSubstanceAction):
+                continue
+
+            substance_id = trig.action.substance_id
+
             # Ensure a substance entity exists for this (plant, substance_id) pair
-            existing_sub = owner_substance_by_key.get((plant.entity_id, trig.substance_id))
+            existing_sub = owner_substance_by_key.get((plant.entity_id, substance_id))
 
             if existing_sub is None:
                 # Spawn new substance entity with full properties from trigger
                 new_entity = world.create_entity()
                 existing_sub = SubstanceComponent(
                     entity_id=new_entity.entity_id,
-                    substance_id=trig.substance_id,
+                    substance_id=substance_id,
                     owner_plant_id=plant.entity_id,
-                    is_toxin=trig.is_toxin,
-                    synthesis_duration=trig.synthesis_duration,
-                    synthesis_remaining=trig.synthesis_duration,
-                    lethal=trig.lethal,
-                    lethality_rate=trig.lethality_rate,
-                    repellent=trig.repellent,
-                    repellent_walk_ticks=trig.repellent_walk_ticks,
+                    is_toxin=trig.action.is_toxin,
+                    synthesis_duration=trig.action.synthesis_duration,
+                    synthesis_remaining=trig.action.synthesis_duration,
+                    lethal=trig.action.lethal,
+                    lethality_rate=trig.action.lethality_rate,
+                    repellent=trig.action.repellent,
+                    repellent_walk_ticks=trig.action.repellent_walk_ticks,
                     aftereffect_ticks=trig.aftereffect_ticks,
                     aftereffect_remaining_ticks=trig.aftereffect_ticks,
                     activation_condition=(
@@ -431,13 +444,13 @@ def run_signaling(
                         if trig.activation_condition is not None
                         else None
                     ),
-                    energy_cost_per_tick=trig.energy_cost_per_tick,
-                    irreversible=trig.irreversible,
+                    energy_cost_per_tick=trig.action.energy_cost_per_tick,
+                    irreversible=trig.action.irreversible,
                 )
                 existing_sub.trigger_herbivore_species_id = trig.herbivore_species_id
                 existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
                 world.add_component(new_entity.entity_id, existing_sub)
-                owner_substance_by_key[(plant.entity_id, trig.substance_id)] = existing_sub
+                owner_substance_by_key[(plant.entity_id, substance_id)] = existing_sub
             else:
                 if (
                     not existing_sub.active
@@ -447,6 +460,16 @@ def run_signaling(
                     existing_sub.synthesis_remaining = existing_sub.synthesis_duration
 
             existing_sub.triggered_this_tick = True
+
+    # ------------------------------------------------------------------
+    # 1.5. Manage apparent nutrition recovery
+    # ------------------------------------------------------------------
+    for entity in world.query(PlantComponent):
+        plant = entity.get_component(PlantComponent)
+        if plant.withdrawal_ticks_remaining > 0:
+            plant.withdrawal_ticks_remaining -= 1
+            if plant.withdrawal_ticks_remaining <= 0:
+                plant.apparent_nutrition_factor = 1.0
 
     # ------------------------------------------------------------------
     # 2. Advance synthesis timers & activate substances

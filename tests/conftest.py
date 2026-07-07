@@ -29,9 +29,11 @@ from phids.api.main import app
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
+    HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
+    PassiveDefensesSchema,
     SimulationConfig,
 )
 from phids.api.ui_state import reset_draft
@@ -141,6 +143,7 @@ def config_builder() -> Callable[..., SimulationConfig]:
                     seed_max_dist=2.0,
                     seed_energy_cost=2.0,
                     triggers=[],
+                    passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
                 )
             ],
             herbivore_species=[
@@ -150,6 +153,7 @@ def config_builder() -> Callable[..., SimulationConfig]:
                     energy_min=1.0,
                     velocity=1,
                     consumption_rate=1.0,
+                    resistances=HerbivoreResistancesSchema(),
                 )
             ],
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
@@ -199,6 +203,7 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
                     seed_max_dist=2.0,
                     seed_energy_cost=1.0,
                     triggers=[],
+                    passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
                 )
             ],
             herbivore_species=[
@@ -208,6 +213,7 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
                     energy_min=1.0,
                     velocity=1,
                     consumption_rate=1.0,
+                    resistances=HerbivoreResistancesSchema(),
                 )
             ],
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),

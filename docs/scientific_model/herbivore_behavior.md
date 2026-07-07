@@ -128,3 +128,30 @@ The system executes a binary fission:
 
 **Biological Rationale:**
 Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony—such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
+
+
+
+
+
+## Co-Evolutionary Adaptations & Resistance Matrices
+
+To counter plant defenses, the PHIDS engine supports formal evolutionary arms races through the `HerbivoreResistancesSchema` attached to the `HerbivoreSpeciesParams` (with the dictionary mapping `resistances`).
+
+In nature, herbivores do not passively accept plant defenses; they co-evolve specialized adaptations to bypass them.
+
+!!! info "Biological Context"
+    **Mechanical Resistance:** Giraffes possess heavily keratinized, prehensile tongues and thick saliva, allowing them to strip acacia leaves completely ignoring massive thorns.
+    **Chemical Resistance:** Monarch caterpillars have evolved to sequester the deadly cardiac glycosides of milkweed without taking cellular damage. Ruminants (like deer or cattle) have specialized foregut fermentation chambers utilizing symbiotic bacteria to break down tough lignins that other herbivores cannot digest.
+
+These are represented by three primary parameters:
+*   `morphological_adaptation`: Resistance to physical trauma.
+*   `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
+*   `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
+
+During a feeding event, the actual mechanical damage suffered by the swarm is mitigated by its morphological adaptation:
+
+$$
+\text{Damage}_{\text{final}} = \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}})
+$$
+
+The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.

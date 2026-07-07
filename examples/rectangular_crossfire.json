@@ -33,23 +33,30 @@
         {
           "herbivore_species_id": 0,
           "min_herbivore_population": 4,
-          "substance_id": 0,
-          "synthesis_duration": 1,
-          "is_toxin": false,
-          "lethal": false,
-          "lethality_rate": 0.0,
-          "repellent": false,
-          "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
             "kind": "herbivore_presence",
             "herbivore_species_id": 0,
             "min_herbivore_population": 4
           },
-          "energy_cost_per_tick": 0.35,
-          "irreversible": false
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 0,
+            "synthesis_duration": 1,
+            "is_toxin": false,
+            "lethal": false,
+            "lethality_rate": 0.0,
+            "repellent": false,
+            "repellent_walk_ticks": 0,
+            "energy_cost_per_tick": 0.35,
+            "irreversible": false
+          }
         }
-      ]
+      ],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 1,
@@ -68,13 +75,6 @@
         {
           "herbivore_species_id": 0,
           "min_herbivore_population": 5,
-          "substance_id": 2,
-          "synthesis_duration": 2,
-          "is_toxin": true,
-          "lethal": false,
-          "lethality_rate": 0.0,
-          "repellent": true,
-          "repellent_walk_ticks": 5,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "any_of",
@@ -90,10 +90,24 @@
               }
             ]
           },
-          "energy_cost_per_tick": 0.85,
-          "irreversible": false
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 2,
+            "synthesis_duration": 2,
+            "is_toxin": true,
+            "lethal": false,
+            "lethality_rate": 0.0,
+            "repellent": true,
+            "repellent_walk_ticks": 5,
+            "energy_cost_per_tick": 0.85,
+            "irreversible": false
+          }
         }
-      ]
+      ],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     },
     {
       "species_id": 2,
@@ -112,32 +126,28 @@
         {
           "herbivore_species_id": 1,
           "min_herbivore_population": 4,
-          "substance_id": 1,
-          "synthesis_duration": 1,
-          "is_toxin": false,
-          "lethal": false,
-          "lethality_rate": 0.0,
-          "repellent": false,
-          "repellent_walk_ticks": 0,
           "aftereffect_ticks": 4,
           "activation_condition": {
             "kind": "herbivore_presence",
             "herbivore_species_id": 1,
             "min_herbivore_population": 4
           },
-          "energy_cost_per_tick": 0.3,
-          "irreversible": false
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 1,
+            "synthesis_duration": 1,
+            "is_toxin": false,
+            "lethal": false,
+            "lethality_rate": 0.0,
+            "repellent": false,
+            "repellent_walk_ticks": 0,
+            "energy_cost_per_tick": 0.3,
+            "irreversible": false
+          }
         },
         {
           "herbivore_species_id": 1,
           "min_herbivore_population": 4,
-          "substance_id": 3,
-          "synthesis_duration": 2,
-          "is_toxin": true,
-          "lethal": true,
-          "lethality_rate": 0.45,
-          "repellent": false,
-          "repellent_walk_ticks": 0,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "all_of",
@@ -153,10 +163,24 @@
               }
             ]
           },
-          "energy_cost_per_tick": 0.9,
-          "irreversible": false
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 3,
+            "synthesis_duration": 2,
+            "is_toxin": true,
+            "lethal": true,
+            "lethality_rate": 0.45,
+            "repellent": false,
+            "repellent_walk_ticks": 0,
+            "energy_cost_per_tick": 0.9,
+            "irreversible": false
+          }
         }
-      ]
+      ],
+      "passive_defenses": {
+        "mechanical_damage_per_bite": 0.0,
+        "digestibility_modifier": 1.0
+      }
     }
   ],
   "herbivore_species": [
@@ -166,7 +190,12 @@
       "energy_min": 4.5,
       "velocity": 2,
       "consumption_rate": 5.9,
-      "reproduction_energy_divisor": 1.1
+      "reproduction_energy_divisor": 1.1,
+      "resistances": {
+        "morphological_adaptation": 0.0,
+        "chemical_neutralization": 0.0,
+        "digestive_efficiency": 1.0
+      }
     },
     {
       "species_id": 1,
@@ -174,7 +203,12 @@
       "energy_min": 2.3,
       "velocity": 1,
       "consumption_rate": 3.7,
-      "reproduction_energy_divisor": 0.9
+      "reproduction_energy_divisor": 0.9,
+      "resistances": {
+        "morphological_adaptation": 0.0,
+        "chemical_neutralization": 0.0,
+        "digestive_efficiency": 1.0
+      }
     }
   ],
   "diet_matrix": {

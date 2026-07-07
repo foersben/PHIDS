@@ -14,12 +14,14 @@ def test_subnormal_clipping_is_strictly_less_than_boundary() -> None:
 
     at_boundary = _compute_flow_field_impl(
         np.array([[1e-4]], dtype=np.float64),
+        np.array([[1.0]], dtype=np.float64),
         toxin_sum,
         width=1,
         height=1,
     )
     below_boundary = _compute_flow_field_impl(
         np.array([[9.9e-5]], dtype=np.float64),
+        np.array([[1.0]], dtype=np.float64),
         toxin_sum,
         width=1,
         height=1,
@@ -34,10 +36,12 @@ def test_base_term_sign_is_plant_minus_toxin() -> None:
     attractive = _compute_flow_field_impl(
         np.array([[3.0]], dtype=np.float64),
         np.array([[1.0]], dtype=np.float64),
+        np.array([[1.0]], dtype=np.float64),
         width=1,
         height=1,
     )
     repulsive = _compute_flow_field_impl(
+        np.array([[1.0]], dtype=np.float64),
         np.array([[1.0]], dtype=np.float64),
         np.array([[3.0]], dtype=np.float64),
         width=1,
@@ -56,8 +60,8 @@ def test_wrapper_aggregates_all_toxin_layers_by_sum() -> None:
     toxin_layers[1, 0, 0] = 1.0
     toxin_layers[2, 1, 1] = 2.5
 
-    wrapped = compute_flow_field(plant_energy, toxin_layers, width=2, height=2)
-    explicit = _compute_flow_field_impl(plant_energy, toxin_layers.sum(axis=0), width=2, height=2)
+    wrapped = compute_flow_field(plant_energy, np.ones((2, 2)), toxin_layers, width=2, height=2)
+    explicit = _compute_flow_field_impl(plant_energy, np.ones((2, 2)), toxin_layers.sum(axis=0), width=2, height=2)
 
     assert np.allclose(wrapped, explicit)
 
@@ -68,6 +72,6 @@ def test_diffusion_reaches_cells_beyond_immediate_neighbors() -> None:
     toxin_layers = np.zeros((1, 7, 7), dtype=np.float64)
     plant_energy[0, 0] = 12.0
 
-    flow = compute_flow_field(plant_energy, toxin_layers, width=7, height=7)
+    flow = compute_flow_field(plant_energy, np.ones((7, 7)), toxin_layers, width=7, height=7)
 
     assert flow[2, 2] > 0.0

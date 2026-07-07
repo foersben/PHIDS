@@ -48,6 +48,8 @@ class PlantComponent:
         last_energy_loss_cause: Most recent energetically relevant action label
             used for death diagnostics attribution.
         mycorrhizal_connections: Set of connected plant entity ids.
+        apparent_nutrition_factor: Stress-induced nutrient discount modifier.
+        withdrawal_ticks_remaining: Ticks until nutrition factor reverts to 1.0.
     """
 
     entity_id: int
@@ -70,3 +72,5 @@ class PlantComponent:
     last_reproduction_tick: int = 0
     last_energy_loss_cause: str | None = None
     mycorrhizal_connections: set[int] = field(default_factory=set)
+    apparent_nutrition_factor: float = 1.0
+    withdrawal_ticks_remaining: int = 0

@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 import phids.api.main as api_main
-from phids.api.schemas import SimulationConfig, TriggerConditionSchema
+from phids.api.schemas import SimulationConfig, SynthesizeSubstanceAction, TriggerConditionSchema
 from phids.api.ui_state import DraftState, get_draft, set_draft
 
 if TYPE_CHECKING:
@@ -392,9 +392,11 @@ async def test_scenario_import_materializes_trigger_rules_and_substances(
                 TriggerConditionSchema(
                     herbivore_species_id=0,
                     min_herbivore_population=2,
-                    substance_id=1,
-                    synthesis_duration=3,
-                    is_toxin=False,
+                    action=SynthesizeSubstanceAction(
+                        substance_id=1,
+                        synthesis_duration=3,
+                        is_toxin=False,
+                    ),
                 )
             ]
         }
@@ -418,7 +420,7 @@ async def test_scenario_import_materializes_trigger_rules_and_substances(
     assert export_resp.status_code == 200, export_resp.text
     exported = json.loads(export_resp.text)
     assert len(exported["flora_species"][0]["triggers"]) == 1
-    assert exported["flora_species"][0]["triggers"][0]["substance_id"] == 1
+    assert exported["flora_species"][0]["triggers"][0]["action"]["substance_id"] == 1
 
 
 @pytest.mark.asyncio
