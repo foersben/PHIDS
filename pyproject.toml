@@ -86,7 +86,7 @@ plugins = ["pydantic.mypy"]
 cache_dir = ".cache/mypy"
 
 [tool.mutmut]
-paths_to_mutate = "src/phids/engine/systems/,src/phids/engine/core/"
+source_paths = "src/phids/engine/core/flow_field.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
