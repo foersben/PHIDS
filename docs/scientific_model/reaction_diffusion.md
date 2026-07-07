@@ -187,11 +187,16 @@ We could spawn individual ECS entities representing "scent particles" that move 
 - *Our advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, we achieve mathematically accurate macro-dispersion in bounded time, regardless of how much substance is emitted.
 
 
+
+
 ## Stress-Induced Resource Reallocation (Senescence)
 
-Under severe herbivory or toxic stress, plants actively break down chlorophyll and export labile nitrogen and carbohydrates into root storage networks, out of reach of aerial folivores.
+This is one of the most sophisticated survival mechanisms in botany, modeling Stress-Induced Senescence.
 
-In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1).
+!!! info "Biological Context"
+    When a plant is subjected to severe, prolonged stress—such as continuous herbivory, impending frost, or drought—it will actively break down the chlorophyll in its leaves and rapidly pull valuable resources (nitrogen, carbon, and sugars) deep into its root system or woody stems. To an approaching herbivore, the plant visually and chemically appears "dead" or nutritionally barren, prompting the herd to move on. Once the environmental stress passes, the plant flushes resources back into its canopy.
+
+In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). Instead of synthesizing a costly toxin, the plant triggers a `resource_withdrawal` action.
 
 This scalar directly alters the attraction landscape *before* the Gaussian convolution kernel diffuses sensory layers in the flow-field module.
 
