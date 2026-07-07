@@ -50,6 +50,7 @@ dev = [
     "pyyaml>=6.0.2",
     "types-PyYAML>=6.0.12.20240806",
     "taskipy>=1.14.1",
+    "mutmut>=2.4.0",
 ]
 
 [tool.taskipy.tasks]
@@ -83,6 +84,9 @@ strict = true
 files = ["src/phids"]
 plugins = ["pydantic.mypy"]
 cache_dir = ".cache/mypy"
+
+[tool.mutmut]
+paths_to_mutate = "src/phids/engine/systems/,src/phids/engine/core/"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
