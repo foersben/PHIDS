@@ -128,3 +128,26 @@ The system executes a binary fission:
 
 **Biological Rationale:**
 Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony—such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
+
+
+## Co-Evolutionary Adaptations & Resistance Matrices
+
+To counter plant defenses, the PHIDS engine supports formal evolutionary arms races through the `HerbivoreResistancesSchema` attached to the `HerbivoreSpeciesParams`.
+
+Herbivores evolve specific counter-adaptations to neutralize vegetation defenses, such as lepidopteran cardenolide sequestration, tough oral mucosa for browsing thorny acacia, or ungulate tannin-binding salivary proteins. These are represented by three primary parameters:
+
+*   `morphological_adaptation`: Resistance to physical trauma.
+*   `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
+*   `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
+
+During a feeding event, the actual mechanical damage suffered by the swarm is mitigated by its morphological adaptation:
+
+$$
+\text{Damage}_{\text{final}} = \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{morphological\_adaptation})
+$$
+
+Similarly, the actual metabolized energy is calculated by combining the plant's baseline digestibility with the herbivore's specific efficiency:
+
+$$
+\text{Net Digestibility} = \min(1.0, \max(0.0, \text{digestibility\_modifier} \cdot \text{digestive\_efficiency}))
+$$

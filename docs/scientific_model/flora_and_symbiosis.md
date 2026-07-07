@@ -75,3 +75,27 @@ Whenever a plant energy value falls beneath its survival threshold, it is schedu
 - **`death_background_deficit`**: General starvation due to low growth or high thresholds.
 
 These tags are essential for interpreting whether an ecosystem collapsed due to herbivory or metabolic mismanagement.
+
+
+## The Defense Economy: Constitutive vs. Induced Defenses
+
+The PHIDS engine models the evolutionary resource allocation trade-offs plants make to survive grazing pressure. Defenses are categorized into two primary economic strategies:
+
+*   **Induced Defenses (Active Chemical Traits):** These are on-demand biological weapons like Volatile Organic Compounds (VOCs) and lethal Toxins. They are highly effective but metabolically expensive. In the ECS, these are represented as dynamically spawned `SubstanceComponent` entities. They require a synthesis lead time and impose a continuous maintenance penalty (`energy_cost_per_tick`) on the host plant's energy reserve while active.
+*   **Constitutive Defenses (Morphological Traits):** Governed by the `PassiveDefensesSchema`, these are permanent structural or chemical barriers integrated into the plant's tissue (e.g., lignin, silica, thorns). Because they are "always on," they require an evolutionary upfront cost (typically represented by a lower baseline `growth_rate` in the species configuration), but they impose **zero dynamic maintenance costs** during the runtime simulation loop.
+
+## Morphological Defense Barriers
+
+Constitutive defenses directly modify the trophic interaction loop without requiring spatial chemical diffusion.
+
+### Mechanical Trauma (Thorns, Spines, Prickles, and Trichomes)
+Configured via the `mechanical_damage_per_bite` parameter. Rather than acting as a binary edibility gate (which is handled by the `DietCompatibilityMatrix`), mechanical defenses inflict direct physical trauma on grazing swarms. When an herbivore swarm feeds on the plant, it takes immediate population reductions (casualties) proportional to the energy consumed and the severity of the plant's armament.
+
+### Quantitative Digestibility Reductions (Lignin, Silica, and Tannins)
+Configured via the `digestibility_modifier` parameter (ranging from 0.0 to 1.0). Anti-nutritional compounds structurally inhibit digestive enzymes or act as abrasive fillers. During the feeding interaction phase, the actual energy $\\Delta e$ removed from the plant is scaled down before it is added to the swarm's reproductive surplus budget:
+
+$$
+\Delta e_{\text{metabolized}} = \Delta e_{\text{consumed}} \cdot \text{digestibility\_modifier}
+$$
+
+A `digestibility_modifier` of $0.5$ forces an herbivore swarm to consume twice as much total biomass just to cover its baseline metabolic upkeep (`energy_upkeep_per_individual`), rapidly accelerating starvation kinetics despite heavy grazing activity.

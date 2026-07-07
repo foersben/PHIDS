@@ -185,3 +185,16 @@ We could spawn individual ECS entities representing "scent particles" that move 
 
 - *Why rejected:* Tracking millions of particles per tick destroys the $O(1)$ scaling constraint of the engine.
 - *Our advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, we achieve mathematically accurate macro-dispersion in bounded time, regardless of how much substance is emitted.
+
+
+## Stress-Induced Resource Reallocation (Senescence)
+
+Under severe herbivory or toxic stress, plants actively break down chlorophyll and export labile nitrogen and carbohydrates into root storage networks, out of reach of aerial folivores.
+
+In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1).
+
+This scalar directly alters the attraction landscape *before* the Gaussian convolution kernel diffuses sensory layers in the flow-field module.
+
+### Impact on Chemotaxis
+
+See `docs/scientific_model/chemotaxis.md` for the exact mathematical effects on swarm navigation.
