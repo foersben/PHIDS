@@ -9,7 +9,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from phids.telemetry.export import export_bytes_csv, export_bytes_json
+from phids.telemetry.export.structured import export_bytes_csv, export_bytes_json
 
 
 def _budget_from_env(name: str, default_ms: float) -> float:

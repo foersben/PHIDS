@@ -24,7 +24,7 @@ DataFrame that preserves per-species breakdowns as typed scalar columns
 ``swarm_{id}_pop``). This columnar representation exposes the per-species data through
 the primary CSV and NDJSON export routes without requiring callers to reach into the raw
 ``_rows`` buffer or invoke the auxiliary
-:func:`~phids.telemetry.export.telemetry_to_dataframe` pandas-conversion helper. Species
+:func:`~phids.telemetry.export.core.telemetry_to_dataframe` pandas-conversion helper. Species
 identifiers observed across the accumulated session are unioned and sorted before columns
 are written, guaranteeing a consistent column order even when individual ticks contain
 sparse species sets.

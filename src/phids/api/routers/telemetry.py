@@ -18,17 +18,19 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 import phids.api.main as api_main
-from phids.telemetry.export import (
+from phids.telemetry.export.core import (
     decimate_dataframe,
-    export_bytes_csv,
-    export_bytes_json,
-    export_bytes_tex_table,
     filter_dataframe_columns,
     filter_telemetry_rows,
-    generate_png_bytes,
-    generate_tikz_str,
     telemetry_to_dataframe,
 )
+from phids.telemetry.export.latex import export_bytes_tex_table
+from phids.telemetry.export.png import generate_png_bytes
+from phids.telemetry.export.structured import (
+    export_bytes_csv,
+    export_bytes_json,
+)
+from phids.telemetry.export.tikz import generate_tikz_str
 
 router = APIRouter()
 

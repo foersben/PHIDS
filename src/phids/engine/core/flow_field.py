@@ -20,6 +20,7 @@ import numpy.typing as npt
 from numba import njit  # type: ignore[import-untyped]
 
 
+# pragma: no mutate start
 def _compute_flow_field_impl(
     plant_energy: npt.NDArray[np.float64],
     apparent_nutrition_layer: npt.NDArray[np.float64],
@@ -113,6 +114,7 @@ def _compute_flow_field_impl(
 
 
 _compute_flow_field = njit(cache=True)(_compute_flow_field_impl)
+# pragma: no mutate end
 
 
 def compute_flow_field(
