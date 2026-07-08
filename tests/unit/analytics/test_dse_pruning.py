@@ -23,7 +23,7 @@ def _build_test_genotype(
     parametric = ParametricGenes(
         flora_traits={
             "TestFlora": FloraProfile(
-                growth_rate=0.1,
+                growth_rate=50.0,
                 max_energy=flora_max_energy,
                 survival_threshold=flora_survival_threshold,
                 seed_cost=flora_seed_cost,

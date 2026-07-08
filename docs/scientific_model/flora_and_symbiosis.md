@@ -97,17 +97,3 @@ This parameter models structural plant defenses like thorns, spines, prickles, a
     Unlike active toxins that cause systemic internal poisoning, mechanical defenses inflict immediate, localized physical trauma to the herbivore's mouthparts, digestive tract, or soft tissues during the act of feeding.
 
 In the trophic loop, mechanical defenses do not alter diet compatibility. Herbivores continue grazing on these plants, but the swarm takes direct, immediate population reductions (casualties) proportional to the energy consumed and the severity of the plant's armament, slowly grinding down the swarm's population through physical attrition rather than chemical toxicity.
-
-### Digestibility Modulation (`digestibility_modifier`)
-
-This parameter simulates Quantitative Defenses—compounds that do not directly harm the herbivore but make the plant biologically less useful as a food source.
-
-!!! info "Biological Context"
-    Plants load their mature leaves with lignin, silica, or high concentrations of tannins. Lignin and silica make the cellular structure tough and difficult to break down, while tannins bind to digestive enzymes, preventing herbivores from extracting proteins from consumed plant matter.
-
-During the feeding interaction phase, the actual energy $\Delta e$ harvested from the plant is scaled down before being added to the swarm's reproductive surplus budget:
-
-$$\Delta e_{real} = \Delta e \cdot \text{digestibility\_modifier}$$
-
-!!! note "Engine Constraint"
-    A `digestibility_modifier` of 0.5 means that for every 10 units of $E_{max}$ the swarm bites off the plant, it only successfully metabolizes 5 units into its own surplus energy. The rest passes through as waste. This biologically forces the swarm to consume twice as much to meet its `metabolism_upkeep`, effectively starving highly active herbivores even while they are "eating."."

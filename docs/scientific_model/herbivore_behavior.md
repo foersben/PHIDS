@@ -133,6 +133,21 @@ Symmetric partitioning conserves absolute biomass during the split. Forcing the 
 
 
 
+## 6. Interaction Phase: Order of Operations
+
+During the interaction phase, when a swarm feeds on a plant, the extraction of energy and subsequent metabolic upkeep follow a strict 3-step sequence. This precise ordering is critical because it accurately models quantitative plant defenses, ensuring that poor food quality forces herbivores to consume more to meet baseline needs, potentially leading to starvation even while actively feeding.
+
+1. **Gross Intake:** The raw caloric mass extracted from the plant.
+   $$ \Delta e_{\text{raw}} = \text{bites\_taken} \times E_{\text{per\_bite}} $$
+
+2. **Digestion:** The energy successfully metabolized, scaled down by the plant's quantitative defenses (digestibility).
+   $$ \Delta e_{\text{real}} = \Delta e_{\text{raw}} \times \text{digestibility\_modifier} $$
+
+3. **Net Energy:** The final energy state after baseline metabolism is deducted from the current energy reserve plus the newly metabolized energy.
+   $$ E_{t+1} = E_t + \Delta e_{\text{real}} - \text{metabolism\_upkeep} $$
+
+   *(Explicit Note: If $\Delta e_{\text{real}} < \text{metabolism\_upkeep}$, this sequence can result in net starvation while actively feeding!)*
+
 ## Co-Evolutionary Adaptations & Resistance Matrices
 
 To counter plant defenses, the PHIDS engine supports formal evolutionary arms races through the `HerbivoreResistancesSchema` attached to the `HerbivoreSpeciesParams` (with the dictionary mapping `resistances`).
@@ -151,7 +166,7 @@ These are represented by three primary parameters:
 During a feeding event, the actual mechanical damage suffered by the swarm is mitigated by its morphological adaptation:
 
 $$
-\text{Damage}_{\text{final}} = \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}})
+\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}}) \rfloor
 $$
 
 The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.
