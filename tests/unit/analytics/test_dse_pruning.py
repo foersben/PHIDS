@@ -72,7 +72,7 @@ def test_dse_pruning_infeasible_caloric_deficit():
     """Herbivore that burns more than it can physically eat should fail."""
     genotype = _build_test_genotype(
         diet_matrix=[[True]],
-        herbivore_metabolism=50.0,  # Burns 5.0 per tick
+        herbivore_metabolism=5.0,  # Burns 5.0 per tick
         herbivore_consumption=2.0,  # Can only eat 2.0 per tick max
         flora_max_energy=20.0,
         flora_survival_threshold=2.0,

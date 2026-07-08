@@ -146,7 +146,7 @@ During the interaction phase, when a swarm feeds on a plant, the extraction of e
 3. **Net Energy:** The final energy state after baseline metabolism is deducted from the current energy reserve plus the newly metabolized energy.
    $$ E_{t+1} = E_t + \Delta e_{\text{real}} - \text{metabolism\_upkeep} $$
 
-   *(Explicit Note: If $ \Delta e_{\text{real}} < \text{metabolism\_upkeep} $, this sequence can result in net starvation while actively feeding!)*
+   *(Explicit Note: If $\Delta e_{\text{real}} < \text{metabolism\_upkeep}$, this sequence can result in net starvation while actively feeding!)*
 
 ## Co-Evolutionary Adaptations & Resistance Matrices
 

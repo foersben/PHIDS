@@ -24,7 +24,31 @@ class AnalyticalPruner:
                 logger.debug("Pruned: Herbivore %d has no edible plants in diet matrix.", h_idx)
                 return False
 
-        # Check 2: Global Thermodynamic Bound
+        # Check 2a: Individual Caloric Mass Conservation
+        # A herbivore's upkeep MUST be lower than the max energy it can consume in a tick
+        for h_idx in herbivore_ids:
+            edible_plants = [f_idx for f_idx in flora_ids if genotype.structural.diet_matrix[h_idx][f_idx]]
+            h_name = list(genotype.parametric.herbivore_traits.keys())[h_idx]
+            herbivore = genotype.parametric.herbivore_traits[h_name]
+
+            # Find the highest calorie density among edible plants
+            max_available_calories = 0.0
+            for f_idx in edible_plants:
+                f_name = list(genotype.parametric.flora_traits.keys())[f_idx]
+                flora = genotype.parametric.flora_traits[f_name]
+                # Maximum bite size is constrained by the plant's available yield (max_energy - survival_threshold)
+                # and the herbivore's maximum consumption rate
+                available_energy = max(0.0, flora.max_energy - flora.survival_threshold)
+                max_bite = min(available_energy, herbivore.consumption_rate)
+                if max_bite > max_available_calories:
+                    max_available_calories = max_bite
+
+            # If the best possible bite doesn't even cover base metabolism, inevitable extinction
+            if max_available_calories < herbivore.metabolism_upkeep:
+                logger.debug("Pruned: Caloric deficit for %s. Upkeep exceeds max available intake.", h_name)
+                return False
+
+        # Check 2b: Global Thermodynamic Bound
         # Maximum total caloric production of all plants per tick must exceed total initial herbivore metabolism.
         # Estimate N_max_tiles per plant species and initial population per herbivore based on placement.
         # Assuming a standard 40x40 grid bounds for DSE evaluation.
