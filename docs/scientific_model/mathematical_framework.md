@@ -106,16 +106,21 @@ To circumvent the computational constraints of $O(N^2)$ pathfinding, PHIDS calcu
 
 ### 3.1 Flow Field Generation
 
-The scalar field $F_t(x,y)$ driving chemotactic movement is a weighted superposition of attractive caloric energy and repulsive toxins:
+**a) The Theoretical Model (Continuous Thought):**
+The scalar potential surface $F(\mathbf{r})$ over a continuous domain models infinite superposition without grid masking artifacts:
 
 $$
-F_t(x,y) = \alpha E_t(x,y) - \beta \max_k T_{k,t}(x,y)
+F(\mathbf{r}) = \alpha E(\mathbf{r}) - \beta \sum_k T_k(\mathbf{r})
 $$
 
-Where:
+**b) The Numerical Mapping (Discrete Realization):**
+This continuous model is mapped to row-major NumPy array indices where the flow-field is evaluated per tick:
 
-- $E_t(x,y)$ is the aggregate flora energy.
-- $T_{k,t}(x,y)$ are the concentration layers of the various defensive toxins.
+$$
+F_t[x, y] = \alpha E_t[x, y] - \beta \sum_{k=1}^{N_T} T_{k,t}[x, y]
+$$
+
+This implementation uses `np.sum` inside the Numba `@njit` loop across the toxin layers to stack them additively, circumventing maximum-value masking where overlapping distinct toxins might otherwise shadow one another.
 
 ### 3.2 Swarm Advection and Behavior
 
@@ -163,20 +168,33 @@ For a given plant, local herbivore populations are evaluated against a specified
 
 ### 5.2 Reaction-Diffusion Formulation
 
-For airborne signaling substance $s$, the concentration $C_s$ diffuses and decays according to a discrete update:
+**a) The Theoretical Model (Continuous Thought):**
+The airborne signal transport is modeled by a continuous parabolic partial differential equation:
 
 $$
-C_s^{t+1} = C_s^t + \Delta t \left( D_s \nabla_h^2 C_s^t + Q_s^t - \lambda_s C_s^t \right)
+\frac{\partial C_s}{\partial t} = D_s \nabla^2 C_s - \lambda_s C_s + Q_s
 $$
 
 Where:
 
-- $D_s$ is the diffusion coefficient.
-- $\nabla_h^2$ represents the application of an isotropic Gaussian convolution kernel.
-- $Q_s^t$ is the source term from active plant emitters and root-network relay deposits.
-- $\lambda_s$ is the clearance/decay coefficient.
+- $\nabla^2$ is the Laplacian operator modeling spatial diffusion.
+- $\lambda_s$ is the infinitesimal decay rate governing atmospheric clearance.
+- $Q_s$ represents the continuous point sources from active emitting plants.
 
-To preserve numerical sparsity and eliminate subnormal floating-point operations, any concentration $C_s^{t+1} < \varepsilon$ is explicitly truncated to zero. Toxin layers bypass this atmospheric diffusion, remaining localized to the emitting plant coordinate to model surface tissue defenses.
+**b) The Numerical Mapping (Discrete Realization):**
+This continuous equation is translated into an explicit operator-splitting cellular automata execution, applied once per tick ($\Delta t = 1$):
+
+$$
+C_s^{t+1} = \gamma_s \cdot (\mathcal{K}_{iso} * C_s^t) + Q_s^t
+$$
+
+Where:
+
+- $\gamma_s = 1.0 - \text{decay\_rate}$ serves as the discrete multiplicative decay.
+- $\mathcal{K}_{iso} * C_s^t$ represents convolutional diffusion via a pre-computed Gaussian kernel matrix applied to the current concentration field.
+- $Q_s^t$ acts as a discrete mass injection source invariant (added after diffusion).
+
+To preserve numerical sparsity and protect the CPU from subnormal float slowdowns (denormalized values), any resultant concentration magnitude strictly below $1 \times 10^{-4}$ is truncated to exactly zero. Surface toxin layers entirely bypass this mechanism, remaining localized at the source coordinate.
 
 > **Deep Dives:**
 >

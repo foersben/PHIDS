@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 TelemetryRows = list["TelemetryRow"]
 
+
 def export_bytes_tex_table(
     rows: TelemetryRows,
     *,

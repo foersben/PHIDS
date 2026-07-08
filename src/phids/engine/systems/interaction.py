@@ -39,6 +39,7 @@ Attributes:
 
 from __future__ import annotations
 
+import math
 import random
 from typing import TYPE_CHECKING
 
@@ -608,10 +609,11 @@ def run_interaction(
                 # Apply mechanical damage
                 if mechanical_damage_per_bite > 0.0 and consumed > 0:
                     damage = mechanical_damage_per_bite * (1.0 - morphological_adaptation)
-                    swarm.population = max(0, swarm.population - int(damage))
+                    casualties = math.floor(damage)
+                    swarm.population = max(0, swarm.population - casualties)
                     # Note: tile_populations are accumulated for correctness.
                     # We will update tile_populations right here to be accurate.
-                    _accumulate_tile_population(tile_populations, swarm.x, swarm.y, env.width, -int(damage))
+                    _accumulate_tile_population(tile_populations, swarm.x, swarm.y, env.width, -casualties)
 
                 target_plant.energy -= consumed
                 env.set_plant_energy(
