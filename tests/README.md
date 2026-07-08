@@ -8,7 +8,10 @@ without creating monolithic test modules.
 
 - `tests/unit/`
   - `api/`: schemas, UI state, and presenter helper behavior
+  - `analytics/`: DSE optimizer and candidate-pruning unit checks
   - `engine/core/`: ECS, biotope, and flow-field deterministic unit checks
+  - `engine/systems/`: low-level interaction helper contracts (Numba-bypass stubs)
+  - `io/`: scenario I/O serialisation round-trips
   - `telemetry/`: per-species telemetry accumulation and metric-shape checks
   - `shared/`: logging and utility-layer invariants
   - `cli/`: command-line entrypoint and namespace compatibility tests

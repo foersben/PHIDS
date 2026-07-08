@@ -87,7 +87,13 @@ plugins = ["pydantic.mypy"]
 cache_dir = ".cache/mypy"
 
 [tool.mutmut]
-source_paths = "src/phids/engine/core/flow_field.py"
+source_paths = ["src/phids/engine/core/flow_field.py"]
+also_copy = ["src/"]
+pytest_add_cli_args = ["--override-ini=addopts="]
+pytest_add_cli_args_test_selection = [
+    "tests/unit/engine/core/test_flow_field_mutation_pilot.py",
+    "tests/unit/engine/core/test_flow_field.py",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -12,9 +12,11 @@ This document aggregates PHIDS test suite topography, taxonomy, system mapping, 
 
 ## Test Suite Taxonomy & Execution Topography
 
-The PHIDS testing rig is architecturally partitioned into five distinct lanes, mapping the flow of data from property-invariant validation to live transport stream resilience. This layered defense ensures that computational rules align with the biological model, data structures gracefully serialize, and the engine correctly protects constraints (e.g., the Rule of 16).
+The PHIDS testing rig is architecturally partitioned into seven distinct lanes, mapping the flow of data from property-invariant validation to live transport stream resilience. This layered defense ensures that computational rules align with the biological model, data structures gracefully serialize, and the engine correctly protects constraints (e.g., the Rule of 16).
 
 - **Unit Telemetry and Data Engineering:** Found in `tests/unit/telemetry/`, tests here ensure that Polars DataFrames correctly reflect cross-tick invariants. E.g., handling zeros correctly for absent species, preserving flat column paradigms over nested dicts, and maintaining data correctness.
+- **Unit Analytics (DSE):** Found in `tests/unit/analytics/`, tests verify the Differential Stability Explorer optimizer (`test_dse_optimizer.py`) and candidate-pruning logic (`test_dse_pruning.py`) using deterministic fixture parameter sets.
+- **Unit Engine Systems (Numba Helpers):** Found in `tests/unit/engine/systems/`, tests isolate low-level interaction helper contracts (`test_interaction_py_helpers.py`) using plain Python stubs that bypass the JIT boundary so branch semantics can be asserted without Numba's compilation overhead.
 - **Integration API and HTTP Boundaries:** Defined largely within `tests/integration/api/`, these tests enforce the outer perimeter. They ensure malformed payloads return specific (400, 422, 404) explicit HTTP codes before polluting internal state, validate type-coercion behaviors on builder routes, and protect hard limits like the maximum of 16 branches (Rule of 16).
 - **Property Invariants and Mathematics:** Managed within `tests/integration/systems/test_interaction_property_invariants.py`. These run deterministic, bounded parameterized loops enforcing exact closed-form solutions for metabolic attrition, reproduction bounds, and monotonic behaviors regarding populations and baseline energy.
 - **Hypothesis and Mutation Pilot Lanes:** Found in `tests/integration/systems/test_interaction_mutation_pilot.py` and `test_interaction_hypothesis_pilot.py`. These pilots use random-walk crowding boundaries, test edge cases (like 0 velocity floors or precise survival boundaries), and use Hypothesis-generated sequences to ensure constraints hold unconditionally under bounded inputs.
@@ -29,6 +31,12 @@ graph TD
         Interaction["Interaction System"]
         Signaling["Signaling & Diffusion"]
         Lifecycle["Lifecycle & Mitosis"]
+        NumbaHelpers["Numba Interaction Helpers"]
+    end
+
+    subgraph Analytics["Analytics & Optimisation"]
+        DSEOpt["DSE Optimizer"]
+        DSEPrune["DSE Candidate Pruning"]
     end
 
     subgraph Boundaries["API & Transport Layers"]
@@ -57,6 +65,15 @@ graph TD
         MCPTests["MCP Command Loop (test_cli_main.py)"]
     end
 
+    subgraph Unit_Analytics["Unit Analytics"]
+        DSEOptTests["DSE Optimizer (test_dse_optimizer.py)"]
+        DSEPruneTests["DSE Pruning (test_dse_pruning.py)"]
+    end
+
+    subgraph Unit_Engine_Systems["Unit Engine Systems"]
+        PyHelpersTests["Interaction Helpers (test_interaction_py_helpers.py)"]
+    end
+
     subgraph Benchmarks["Performance Budgets"]
         Bench["Millisecond Execution Budgets (tests/benchmarks)"]
     end
@@ -72,6 +89,10 @@ graph TD
     Lifecycle -.-> PropTests
     Lifecycle -.-> Hypothesis
     Signaling -.-> Bench
+    NumbaHelpers -.-> PyHelpersTests
+
+    DSEOpt -.-> DSEOptTests
+    DSEPrune -.-> DSEPruneTests
 
     API -.-> APITests
     WebSockets -.-> WSTests
