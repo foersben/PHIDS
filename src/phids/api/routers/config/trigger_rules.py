@@ -11,6 +11,7 @@ import phids.api.main as api_main
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     ActivationConditionNode,
+    DraftState,
     _condition_node_at_path,
     _parse_condition_path,
     get_draft,
@@ -20,7 +21,7 @@ router = APIRouter()
 draft_service = DraftService()
 
 
-def _render_trigger_rules_partial(request: Request, draft: object) -> Response:
+def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Response:
     """Render the canonical trigger-rules partial response."""
     return api_main.templates.TemplateResponse(
         request,
@@ -29,7 +30,7 @@ def _render_trigger_rules_partial(request: Request, draft: object) -> Response:
     )
 
 
-def _render_placement_list_partial(request: Request, draft: object) -> Response:
+def _render_placement_list_partial(request: Request, draft: DraftState) -> Response:
     """Render the canonical placement-ledger partial response."""
     return api_main.templates.TemplateResponse(
         request,

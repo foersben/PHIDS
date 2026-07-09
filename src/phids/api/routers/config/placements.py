@@ -10,13 +10,13 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.services.draft_service import DraftService
-from phids.api.ui_state import get_draft
+from phids.api.ui_state import DraftState, get_draft
 
 router = APIRouter()
 draft_service = DraftService()
 
 
-def _render_placement_list_partial(request: Request, draft: object) -> Response:
+def _render_placement_list_partial(request: Request, draft: DraftState) -> Response:
     """Render the canonical placement-ledger partial response."""
     return api_main.templates.TemplateResponse(
         request,
