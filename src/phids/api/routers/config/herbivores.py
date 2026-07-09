@@ -16,29 +16,6 @@ router = APIRouter()
 draft_service = DraftService()
 
 
-def _herbivore_update_payload(
-    *,
-    name: str | None,
-    energy_min: float | None,
-    velocity: int | None,
-    consumption_rate: float | None,
-    reproduction_energy_divisor: float | None,
-    energy_upkeep_per_individual: float | None,
-    split_population_threshold: int | None,
-) -> dict[str, object]:
-    """Collect herbivore patch fields with deterministic clamping semantics."""
-    updates = _herbivore_update_payload(
-        name=name,
-        energy_min=energy_min,
-        velocity=velocity,
-        consumption_rate=consumption_rate,
-        reproduction_energy_divisor=reproduction_energy_divisor,
-        energy_upkeep_per_individual=energy_upkeep_per_individual,
-        split_population_threshold=split_population_threshold,
-    )
-    return updates
-
-
 @router.post("/api/config/herbivores", response_class=HTMLResponse, summary="Add herbivore species to draft")
 async def config_herbivore_add(
     request: Request,

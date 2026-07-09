@@ -16,60 +16,6 @@ router = APIRouter()
 draft_service = DraftService()
 
 
-def _flora_update_payload(
-    *,
-    name: str | None,
-    base_energy: float | None,
-    max_energy: float | None,
-    growth_rate: float | None,
-    survival_threshold: float | None,
-    reproduction_interval: int | None,
-    seed_min_dist: float | None,
-    seed_max_dist: float | None,
-    seed_energy_cost: float | None,
-    camouflage: str | None,
-    camouflage_factor: float | None,
-) -> dict[str, object]:
-    """Collect flora patch fields with deterministic clamping semantics."""
-    updates = _flora_update_payload(
-        name=name,
-        base_energy=base_energy,
-        max_energy=max_energy,
-        growth_rate=growth_rate,
-        survival_threshold=survival_threshold,
-        reproduction_interval=reproduction_interval,
-        seed_min_dist=seed_min_dist,
-        seed_max_dist=seed_max_dist,
-        seed_energy_cost=seed_energy_cost,
-        camouflage=camouflage,
-        camouflage_factor=camouflage_factor,
-    )
-    return updates
-
-
-def _herbivore_update_payload(
-    *,
-    name: str | None,
-    energy_min: float | None,
-    velocity: int | None,
-    consumption_rate: float | None,
-    reproduction_energy_divisor: float | None,
-    energy_upkeep_per_individual: float | None,
-    split_population_threshold: int | None,
-) -> dict[str, object]:
-    """Collect herbivore patch fields with deterministic clamping semantics."""
-    updates = _herbivore_update_payload(
-        name=name,
-        energy_min=energy_min,
-        velocity=velocity,
-        consumption_rate=consumption_rate,
-        reproduction_energy_divisor=reproduction_energy_divisor,
-        energy_upkeep_per_individual=energy_upkeep_per_individual,
-        split_population_threshold=split_population_threshold,
-    )
-    return updates
-
-
 @router.post("/api/config/flora", response_class=HTMLResponse, summary="Add flora species to draft")
 async def config_flora_add(
     request: Request,
