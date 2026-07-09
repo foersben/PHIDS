@@ -133,20 +133,24 @@ Symmetric partitioning conserves absolute biomass during the split. Forcing the 
 
 
 
-## 6. Interaction Phase: Order of Operations
+### Feeding & Attrition Dynamics
 
-During the interaction phase, when a swarm feeds on a plant, the extraction of energy and subsequent metabolic upkeep follow a strict 3-step sequence. This precise ordering is critical because it accurately models quantitative plant defenses, ensuring that poor food quality forces herbivores to consume more to meet baseline needs, potentially leading to starvation even while actively feeding.
+#### The Theoretical Model (Continuous Thought)
+In a continuous biological model, herbivore populations grow or shrink based on net caloric intake versus metabolic burn, and suffer continuous attrition rates when feeding on heavily armored plants. A perfectly continuous solver allows for fractional survival (e.g., 0.4 of a herbivore remaining) and continuous caloric absorption.
 
-1. **Gross Intake:** The raw caloric mass extracted from the plant.
-   $$ \Delta e_{\text{raw}} = \text{bites\_taken} \times E_{\text{per\_bite}} $$
+#### The Numerical Mapping (Discrete Realization)
+Because PHIDS operates a rigid Entity-Component-System (ECS) spatial hash, populations must remain strict integers, and metabolic accounting must strictly govern the "Attrition Trap" (starving while eating due to low digestibility).
 
-2. **Digestion:** The energy successfully metabolized, scaled down by the plant's quantitative defenses (digestibility).
-   $$ \Delta e_{\text{real}} = \Delta e_{\text{raw}} \times \text{digestibility\_modifier} $$
+**Phase 1: Caloric Accounting (The Attrition Trap)**
+To simulate quantitative defenses (like high lignin), the digestibility modifier must scale the *gross* intake before baseline metabolism is paid.
+1. **Gross Intake:** $\Delta e_{\text{raw}} = \text{bites\_taken} \times E_{\text{per\_bite}}$
+2. **Digestion:** $\Delta e_{\text{real}} = \Delta e_{\text{raw}} \times \text{digestibility\_modifier}$
+3. **Net Energy:** $E_{t+1} = E_t + \Delta e_{\text{real}} - \text{metabolism\_upkeep}$
+*(If $\Delta e_{\text{real}}$ cannot cover the upkeep, the swarm mathematically loses energy despite feeding).*
 
-3. **Net Energy:** The final energy state after baseline metabolism is deducted from the current energy reserve plus the newly metabolized energy.
-   $$ E_{t+1} = E_t + \Delta e_{\text{real}} - \text{metabolism\_upkeep} $$
-
-   *(Explicit Note: If $\Delta e_{\text{real}} < \text{metabolism\_upkeep}$, this sequence can result in net starvation while actively feeding!)*
+**Phase 2: Mechanical Attrition (Integer Enforcement)**
+To prevent "ghost fractions" from breaking the simulation constraints, physical damage taken from plant defenses is cast using a strict mathematical floor function:
+$$\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}}) \rfloor$$
 
 ## Co-Evolutionary Adaptations & Resistance Matrices
 
@@ -162,11 +166,5 @@ These are represented by three primary parameters:
 *   `morphological_adaptation`: Resistance to physical trauma.
 *   `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
 *   `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
-
-During a feeding event, the actual mechanical damage suffered by the swarm is mitigated by its morphological adaptation:
-
-$$
-\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}}) \rfloor
-$$
 
 The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.

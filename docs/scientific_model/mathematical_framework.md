@@ -130,36 +130,20 @@ To circumvent the computational constraints of $O(N^2)$ pathfinding, PHIDS calcu
 
 ### 3.1 Flow Field Generation
 
-**a) The Theoretical Model (Continuous Thought):**
-The scalar potential surface $F(\mathbf{r})$ over a continuous domain models infinite superposition without grid masking artifacts:
+#### The Theoretical Model (Continuous Thought)
+In analytical chemical ecology, an organism's sensory orientation field is modeled as a continuous potential surface $F(\mathbf{r})$ over a spatial domain $\Omega \subset \mathbb{R}^2$. The movement vector is governed by the gradient of superposed attractive and repellent compounds. Because chemical concentrations in a physical space stack additively, the repellent field must be a summation:
 
-$$
-F(\mathbf{r}) = \alpha E(\mathbf{r}) - \beta \sum_k T_k(\mathbf{r})
-$$
+$$F(\mathbf{r}) = \alpha E(\mathbf{r}) - \beta \sum_{k} T_k(\mathbf{r})$$
 
-Where:
+Where $\mathbf{r} = (x,y)$, $E(\mathbf{r})$ is the continuous resource biomass, and $T_k(\mathbf{r})$ is the continuous concentration of active toxin species $k$. Summing the toxins mathematically prevents "sensory masking," ensuring that overlapping toxic plants create a stronger aggregate deterrent.
 
-- $F(\mathbf{r})$: The scalar potential field value at spatial coordinate vector $\mathbf{r}$.
-- $E(\mathbf{r})$: The continuous caloric attraction potential field derived from plant energy sources.
-- $T_k(\mathbf{r})$: The continuous chemical repulsion potential field for defensive toxin layer $k$.
-- $\alpha$: The positive coupling weight scaling attraction toward food resources.
-- $\beta$: The positive coupling weight scaling repulsion away from active toxins.
+#### The Numerical Mapping (Discrete Realization)
+To execute this within the constraints of an $O(1)$ spatial hash without continuous coordinate integration, the engine maps the potential to a discrete 2D scalar lattice grid matching the memory alignment of our double buffers:
 
-**b) The Numerical Mapping (Discrete Realization):**
-This continuous model is mapped to row-major NumPy array indices where the flow-field is evaluated per tick:
+$$F_t[x, y] = \alpha E_t[x, y] - \beta \sum_{k=1}^{N_T} T_{k,t}[x, y]$$
 
-$$
-F_t[x, y] = \alpha E_t[x, y] - \beta \sum_{k=1}^{N_T} T_{k,t}[x, y]
-$$
-
-Where:
-
-- $F_t[x, y]$: The discrete potential field value at grid coordinate cell $[x, y]$ at tick $t$.
-- $E_t[x, y]$: The discrete aggregate plant energy present at coordinate $[x, y]$ at tick $t$.
-- $T_{k,t}[x, y]$: The discrete concentration of toxin type $k$ at coordinate $[x, y]$ at tick $t$.
-- $N_T$: The total number of unique defensive toxin types/species tracked in the simulation.
-
-This implementation uses `np.sum` inside the Numba `@njit` loop across the toxin layers to stack them additively, circumventing maximum-value masking where overlapping distinct toxins might otherwise shadow one another.
+**Implementation Rules:**
+1. **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
 
 ### 3.2 Swarm Advection and Behavior
 
@@ -228,41 +212,25 @@ Induced defenses translate herbivore presence into local toxic and volatile chem
 For a given plant, local herbivore populations are evaluated against a specified minimum $n_{i,\text{min}}$. If triggered, a `SubstanceComponent` initiates a synthesis countdown. Upon activation, it emits toxins or volatile signals.
 - $n_{i,\text{min}}$: The minimum local population of herbivore species $i$ required to trigger the plant's defense response component.
 
-### 5.2 Reaction-Diffusion Formulation
+### 5.2 Airborne Signal Transport (Reaction-Diffusion)
 
-**a) The Theoretical Model (Continuous Thought):**
-The airborne signal transport is modeled by a continuous parabolic partial differential equation:
+#### The Theoretical Model (Continuous Thought)
+The physics of volatile organic compound (VOC) transport across a canopy through molecular diffusion, advection, and atmospheric decay is governed by a classic system of continuous parabolic Partial Differential Equations (PDEs):
 
-$$
-\frac{\partial C_s}{\partial t} = D_s \nabla^2 C_s - \lambda_s C_s + Q_s
-$$
+$$\frac{\partial C_s}{\partial t} = D_s \nabla^2 C_s - \lambda_s C_s + Q_s$$
 
-Where:
+Where $\nabla^2$ is the continuous Laplacian operator (dispersion), $\lambda_s$ is the continuous infinitesimal decay coefficient, and $Q_s$ is the continuous mass emission function.
 
-- $C_s$: Concentration of signaling substance $s$.
-- $t$: Continuous time.
-- $D_s$: Diffusion coefficient for signaling substance $s$.
-- $\nabla^2$: The Laplacian operator modeling spatial diffusion.
-- $\lambda_s$: The infinitesimal decay rate governing atmospheric clearance of substance $s$.
-- $Q_s$: The continuous source term representing the signal emission rate from active plants.
+#### The Numerical Mapping (Discrete Realization)
+Solving a continuous PDE over a vast spatial grid at 60 FPS is computationally prohibitive. PHIDS translates this into a discrete cellular automata operator-splitting sequence evaluated precisely once per tick ($\Delta t = 1$):
 
-**b) The Numerical Mapping (Discrete Realization):**
-This continuous equation is translated into an explicit operator-splitting cellular automata execution, applied once per tick ($\Delta t = 1$):
+$$C_s^{t+1} = \gamma_s \cdot \left( \mathcal{K}_{\text{iso}} * C_s^t \right) + Q_s^t$$
 
-$$
-C_s^{t+1} = \gamma_s \cdot (\mathcal{K}_{\text{iso}} * C_s^t) + Q_s^t
-$$
-
-Where:
-
-- $C_s^{t+1}$: The discrete concentration field of signaling substance $s$ at time step $t+1$.
-- $C_s^t$: The discrete concentration field of signaling substance $s$ at time step $t$.
-- $\gamma_s$: The discrete multiplicative atmospheric decay factor, calculated as $\gamma_s = 1.0 - \text{decay\_rate}_s$.
-- $\mathcal{K}_{\text{iso}}$: The pre-computed isotropic Gaussian convolution kernel matrix.
-- $*$: The 2D spatial convolution operator.
-- $Q_s^t$: The discrete point source mass injection at time step $t$.
-
-To preserve numerical sparsity and protect the CPU from subnormal float slowdowns (denormalized values), any resultant concentration magnitude strictly below $1 \times 10^{-4}$ is truncated to exactly zero. Surface toxin layers entirely bypass this mechanism, remaining localized at the source coordinate.
+**Implementation Rules:**
+1. **Discrete Decay ($\gamma_s$):** The continuous decay integral is converted into a single fractional retention scalar: $\gamma_s = 1.0 - \text{decay\_rate}_s$.
+2. **Convolutional Diffusion ($\mathcal{K}_{\text{iso}} * C_s^t$):** The Laplacian is mapped to a discrete 2D spatial convolution ($*$) using a fixed isotropic Gaussian kernel matrix via `scipy.signal.convolve2d`.
+3. **Source Invariant ($Q_s^t$):** The discrete mass matrix $Q_s^t$ injects emissions directly into the write-buffer *after* diffusion scaling is computed.
+4. **Subnormal Float Truncation:** When variables decay asymptotically ($C \times 0.85$ per tick), values eventually reach the IEEE 754 denormalized regime (e.g., $10^{-315}$). This forces the CPU out of hardware optimization and into slow software microcode. To protect the ALU pipelines, any cell concentration falling below an epsilon threshold ($< 1 \times 10^{-4}$) is explicitly clamped to exact `0.0`.
 
 > **Deep Dives:**
 >

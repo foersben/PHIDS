@@ -252,6 +252,20 @@ The transition to this architecture occurs across five phases:
 * **Task 2.2: Placement Resolution Logic**: Update Biotope/ECS generation to interpret placement strategies deterministically via seeds.
 
 ### Phase 3: The Multi-Stage DSE Algorithm
+
+### Thermodynamic Pre-Pruning (Stage 1)
+
+#### The Theoretical Model (Continuous Thought)
+Before running computationally expensive discrete simulations, the Design Space Exploration (DSE) evaluates the mathematical viability of a genome. An ecosystem cannot violate the laws of thermodynamics: the total theoretical caloric yield of the primary producers (plants) must exceed the baseline metabolic requirements of the consumers (herbivores).
+
+#### The Numerical Mapping (Discrete Realization)
+The DSE pre-pruner evaluates this bound using the exact variables mapped to the engine components, crucially factoring in the plant's `survival_threshold` (energy that cannot be legally harvested by a swarm).
+
+To pass pre-pruning, the genome must satisfy:
+$$\sum_{j \in \text{Flora}} \left( \max(0, E_{\text{max},j} - E_{\text{survival\_threshold},j}) \cdot \frac{g_j}{100} \cdot N_{\text{max\_tiles}, j} \right) > \sum_{i \in \text{Herbivores}} \left( m_i \cdot N_i^{(0)} \right)$$
+
+If the combined initial populations $N_i^{(0)}$ demand a metabolic upkeep $m_i$ that exceeds the grid's maximum possible generation per tick (derived from the growth rate $g_j$), the genome is instantly mathematically pruned.
+
 * **Task 3.1: Stage 1**: Implement Analytical Pre-Pruning validators.
 * **Task 3.2: Stage 2 & 3**: Build Structural and Parametric Search implementations (utilizing frameworks like DEAP or Optuna).
 * **Task 3.3: Pareto-Front Evaluation**: Establish multi-objective fitness evaluation via NSGA-II.
@@ -276,7 +290,7 @@ The transition to this architecture occurs across five phases:
     Ensure the DSE worker shares the Numba JIT cache with the main application, or pre-warms the cache before starting the evolutionary loop to prevent compilation stalls on the first generation.
 
 !!! warning "Constraint: The IEEE 754 Subnormal Float Problem"
-    Parameters must be protected from settling into asymptotic decay regimes (e.g., $< 1 \times 10^{-4}$). These denormalized values force the CPU arithmetic logic unit (ALU) into a slow microcode execution path, creating massive performance slowdowns. To solve this, always ensure variables in decay loops are explicitly clamped to exactly `0.0`. Exact zero is highly optimized; the subnormal fractional boundary is the problem.
+    When biological parameters decay infinitesimally close to zero, the CPU drops into 'subnormal' (denormalized) floating-point math, which incurs massive latency penalties. To prevent this, any value dropping below an epsilon threshold (e.g., $< 1 \times 10^{-4}$) must be explicitly clamped to exact `0.0`.
 
 
 ## Updated Genotype Structures
