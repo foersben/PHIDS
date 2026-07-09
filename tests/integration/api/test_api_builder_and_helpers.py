@@ -26,7 +26,7 @@ from phids.api.presenters.dashboard import (
     build_live_dashboard_payload,
     validate_cell_coordinates,
 )
-from phids.api.routers.config import config_trigger_rule_condition_node_update
+from phids.api.routers.config.trigger_rules import config_trigger_rule_condition_node_update
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
