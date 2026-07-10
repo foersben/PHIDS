@@ -42,8 +42,6 @@ To visualize how execution control and state flow traverse the system, we decomp
 
 The diagram below details the sequential phase flow, tracking how raw configuration inputs from the asynchronous API ingress are validated, bounded under structural constraints, processed in the engine core, and egressed as high-throughput compressed streams.
 
-<div align="center">
-
 ```mermaid
 flowchart TD
     %% Base Styling & Theme Definitions
@@ -79,8 +77,6 @@ flowchart TD
     D == Commit Double-Buffer Swap ==> E
     E == Dispatch Frame Logs ==> F
 ```
-
-</div>
 
 ### Module Mapping & State Transit
 
