@@ -37,9 +37,9 @@ $$
 
 Where:
 
-- $E_t(x,y)$ is the total plant energy available at the coordinate.
-- $T_{k,t}(x,y)$ is the concentration of the $k$-th toxin channel.
-- $\alpha, \beta$ are non-negative weighting constants.
+* $E_t(x,y)$ is the total plant energy available at the coordinate.
+* $T_{k,t}(x,y)$ is the concentration of the $k$-th toxin channel.
+* $\alpha, \beta$ are non-negative weighting constants.
 
 To create an "influence map" that swarms can detect from a short distance away, this baseline gradient undergoes a rapid, one-pass local 4-neighbor propagation (spreading) with a steep decay coefficient $\delta$ (e.g., $0.5$).
 
@@ -49,9 +49,7 @@ A swarm located at $(x, y)$ determines its next position by evaluating the Flow 
 
 The chosen transition $(x', y')$ satisfies the condition:
 
-$$
-(x',y') = \operatorname*{arg\,max}_{(u,v) \in \mathcal{N}(x,y)} F_t(u,v)
-$$
+$$(x',y') = \operatorname*{arg\,max}_{(u,v) \in \mathcal{N}(x,y)} F_t(u,v)$$
 
 Stochastic tie-handling breaks equivalencies when multiple neighbors share the maximum gradient.
 
@@ -79,17 +77,15 @@ If the center cell `(1,1)` had the highest value (e.g., it was currently situate
 
 ## Alternatives Considered
 
-- **A* (A-Star) or Dijkstra Pathfinding:** Calculating optimal, obstacle-avoidant paths from every swarm to the nearest food source.
-  - *Why rejected:* Classic pathfinding scales poorly. Calculating paths for hundreds of swarms across a dynamic grid per tick would bottleneck the CPU, creating a computational complexity of $O(N \cdot M^2)$. Furthermore, swarms lack "global knowledge" of the map; their navigation is inherently sensory-driven.
-  - *Our advantage:* The unified Flow Field is calculated exactly *once* per tick via Numba JIT compilation. Every swarm simply samples its immediate adjacent cells via O(1) array reads. This perfectly mimics biological sensory constraints while maintaining extreme computational efficiency.
+* **A* (A-Star) or Dijkstra Pathfinding:** Calculating optimal, obstacle-avoidant paths from every swarm to the nearest food source.
+  * *Why rejected:* Classic pathfinding scales poorly. Calculating paths for hundreds of swarms across a dynamic grid per tick would bottleneck the CPU, creating a computational complexity of $O(N \cdot M^2)$. Furthermore, swarms lack "global knowledge" of the map; their navigation is inherently sensory-driven.
+  * *Our advantage:* The unified Flow Field is calculated exactly *once* per tick via Numba JIT compilation. Every swarm simply samples its immediate adjacent cells via O(1) array reads. This perfectly mimics biological sensory constraints while maintaining extreme computational efficiency.
 
 ## Zero-Gradient Navigation (The Isotropic Search)
 
 A critical edge case in spatial ecology occurs when an organism is entirely outside the sensory horizon of any resource or predator. Mathematically, this happens when the entire Moore neighborhood evaluates to zero:
 
-$$
-\forall (u,v) \in \mathcal{N}(x,y), \; F_t(u,v) = 0.0
-$$
+$$\forall (u,v) \in \mathcal{N}(x,y), \; F_t(u,v) = 0.0$$
 
 If a swarm relied strictly on gradient ascent, a zero-gradient would result in indefinite paralysis (anchoring in an empty void).
 
@@ -98,16 +94,11 @@ In biological systems, when an organism loses a scent trail, it transitions from
 **Algorithmic Resolution:**
 When PHIDS evaluates a zero-gradient neighborhood, the swarm enters a **Random Walk** state. It selects a neighboring cell from a uniform random distribution, effectively performing an isotropic search until it re-enters the active Flow Field. This behavior is also deployed when swarms are actively repelled by incompatible flora or localized toxins, forcing them to disperse blindly until they secure a safe sensory anchor.
 
-
-
-
 ## Impact of Resource Reallocation on Chemotaxis
 
 When a plant triggers a `resource_withdrawal` action, its `apparent_nutrition_factor` scalar drops below 1.0. Inside the Numba JIT Chemotaxis Flow Field resolution loop (`flow_field.py`), the base attractant landscape matrix is scaled before diffusion:
 
-$$
-A[x, y] = E_{\text{plant}}[x, y] \cdot \text{apparent\_nutrition\_factor}[x, y]
-$$
+$$A[x, y] = E_{\text{plant}}[x, y] \cdot \text{apparent\_nutrition\_factor}[x, y]$$
 
 !!! info "Sensory Impact"
     When a plant under pressure sets its apparent nutrition factor to 0.1, it "dims" its attractant profile to zero-gradient levels ($< 1 \times 10^{-6}$). In the Numba JIT solver, the plant's actual survival energy remains safe, but its signature in the chemotaxis Flow Field practically vanishes. To the herbivores' sensory systems, the coordinate looks barren. The grazing swarms immediately lose their sensory anchor and are forced to break their feeding anchor, transitioning via orthokinesis into an isotropic Random Walk to seek active gradients elsewhere, letting the plant recover. Once `withdrawal_ticks_remaining` expires, the factor returns to 1.0, and the plant "reappears" in the ecosystem.

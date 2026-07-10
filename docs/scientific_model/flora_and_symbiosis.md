@@ -68,11 +68,11 @@ In older OOP simulations, death is a simple variable boolean `True/False`. In PH
 
 Whenever a plant energy value falls beneath its survival threshold, it is scheduled for garbage collection by the ECS framework. Crucially, the engine tags exactly *why* the energy plummeted via the `last_energy_loss_cause` tracker:
 
-- **`death_reproduction`**: The plant over-extended dropping seeds.
-- **`death_mycorrhiza`**: The plant died trying to pay the cost of connecting to a fungal network.
-- **`death_defense_maintenance`**: The plant successfully synthesized a defensive toxin but lacked the caloric intake to maintain it.
-- **`death_herbivore_feeding`**: The plant was completely stripped of energy by a grazing swarm.
-- **`death_background_deficit`**: General starvation due to low growth or high thresholds.
+* **`death_reproduction`**: The plant over-extended dropping seeds.
+* **`death_mycorrhiza`**: The plant died trying to pay the cost of connecting to a fungal network.
+* **`death_defense_maintenance`**: The plant successfully synthesized a defensive toxin but lacked the caloric intake to maintain it.
+* **`death_herbivore_feeding`**: The plant was completely stripped of energy by a grazing swarm.
+* **`death_background_deficit`**: General starvation due to low growth or high thresholds.
 
 These tags are essential for interpreting whether an ecosystem collapsed due to herbivory or metabolic mismanagement.
 
@@ -80,8 +80,8 @@ These tags are essential for interpreting whether an ecosystem collapsed due to 
 
 In ecological systems, plants must balance their energy budgets between growth and defense. The PHIDS engine models these evolutionary resource allocation trade-offs using two primary strategies:
 
-- **Induced Defenses (Active Chemical Traits):** These are on-demand biological weapons like Volatile Organic Compounds (VOCs) and lethal Toxins, represented in the ECS as dynamically spawned entities. They require a synthesis lead time and impose a continuous maintenance penalty (`energy_cost_per_tick`) on the host plant's energy reserve while active.
-- **Constitutive Defenses (Passive/Morphological Defenses):** Governed by the `PassiveDefensesSchema`, these are structural barriers permanently integrated into the plant's leaf or stem tissue (e.g., lignin, silica, thorns). While they require an upfront evolutionary trade-off (reducing the plant's continuous `growth_rate`), they impose zero dynamic maintenance costs at runtime.
+* **Induced Defenses (Active Chemical Traits):** These are on-demand biological weapons like Volatile Organic Compounds (VOCs) and lethal Toxins, represented in the ECS as dynamically spawned entities. They require a synthesis lead time and impose a continuous maintenance penalty (`energy_cost_per_tick`) on the host plant's energy reserve while active.
+* **Constitutive Defenses (Passive/Morphological Defenses):** Governed by the `PassiveDefensesSchema`, these are structural barriers permanently integrated into the plant's leaf or stem tissue (e.g., lignin, silica, thorns). While they require an upfront evolutionary trade-off (reducing the plant's continuous `growth_rate`), they impose zero dynamic maintenance costs at runtime.
 
 ---
 
@@ -89,11 +89,8 @@ In ecological systems, plants must balance their energy budgets between growth a
 
 Constitutive defenses directly modify the trophic interaction loop without requiring spatial chemical diffusion.
 
-### Mechanical Attrition (`mechanical_damage_per_bite`)
+### Mechanical Attrition & Digestibility
 
-This parameter models structural plant defenses like thorns, spines, prickles, and trichomes (microscopic, needle-like hairs).
+Constitutive defenses act strictly as quantitative or structural barriers during the feeding phase (e.g., lignin, thorns, silica). Rather than relying on discrete spatial collision volumes, these traits directly penalize the herbivore's metabolic intake and population count during the synchronous interaction loop.
 
-!!! info "Biological Context"
-    Unlike active toxins that cause systemic internal poisoning, mechanical defenses inflict immediate, localized physical trauma to the herbivore's mouthparts, digestive tract, or soft tissues during the act of feeding.
-
-In the trophic loop, mechanical defenses do not alter diet compatibility. Herbivores continue grazing on these plants, but the swarm takes direct, immediate population reductions (casualties) proportional to the energy consumed and the severity of the plant's armament, slowly grinding down the swarm's population through physical attrition rather than chemical toxicity.
+> **Deep Dive:** For the explicit continuous-to-discrete mathematical mapping detailing how quantitative digestibility reduces gross intake into net energy, and how physical damage scales to integer swarm casualties via the *Attrition Trap*, see **[Feeding & Attrition Dynamics in Herbivore Behavior](herbivore_behavior.md#feeding--attrition-dynamics)**.
