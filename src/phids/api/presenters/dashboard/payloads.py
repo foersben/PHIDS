@@ -133,7 +133,6 @@ def build_live_dashboard_payload(
         "grid_width": env.width,
         "grid_height": env.height,
         "max_energy": max_e,
-        "plant_energy": env.plant_energy_layer.tolist(),
         "species_energy": [
             {
                 "species_id": species_id,
