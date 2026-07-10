@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 from phids.api import main as api_main
 from phids.api.main import app
 from phids.api.presenters.dashboard import (
+    _default_substance_name,
+    _describe_activation_condition,
     build_draft_mycorrhizal_links,
     build_live_dashboard_payload,
     validate_cell_coordinates,
@@ -118,8 +120,8 @@ def _reset_state() -> None:
 
 def test_main_substance_name_helpers_default_and_draft_overrides() -> None:
     """Verify substance naming helpers use defaults and honor draft-provided override labels."""
-    assert api_main._default_substance_name(2, is_toxin=False) == "Signal 2"
-    assert api_main._default_substance_name(3, is_toxin=True) == "Toxin 3"
+    assert _default_substance_name(2, is_toxin=False) == "Signal 2"
+    assert _default_substance_name(3, is_toxin=True) == "Toxin 3"
 
     config = _config_with_trigger()
     api_main._set_simulation_substance_names(config)
@@ -223,7 +225,7 @@ def test_main_activation_condition_descriptions(
 ) -> None:
     """Verify activation-condition description rendering for supported condition kinds."""
     assert (
-        api_main._describe_activation_condition(
+        _describe_activation_condition(
             condition,
             herbivore_names=herbivore_names,
             substance_names=substance_names,
@@ -739,6 +741,7 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
 
     assert payload["all_flora_species"]
     assert payload["tick"] == expected_payload["tick"]
+    assert payload.get("contract_version") == expected_payload.get("contract_version")
     assert payload["grid_width"] == expected_payload["grid_width"]
     assert payload["grid_height"] == expected_payload["grid_height"]
     assert payload["all_flora_species"] == expected_payload["all_flora_species"]
@@ -778,17 +781,15 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
         "active_toxin_ids",
     }
     expected_swarm_columns = {
+        "entity_id",
+        "species_id",
+        "name",
         "x",
         "y",
         "population",
-        "species_id",
-        "name",
         "energy",
-        "energy_deficit",
         "repelled",
-        "repelled_ticks_remaining",
-        "toxin_level",
-        "intoxicated",
+        "local_toxin_exposure",
     }
     assert set(payload["plants"].keys()) == expected_plant_columns
     assert set(payload["swarms"].keys()) == expected_swarm_columns
