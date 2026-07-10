@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
 from phids.api.presenters.dashboard.helpers import _coerce_int
 from phids.api.presenters.dashboard.mycorrhizal import _build_live_mycorrhizal_links
 from phids.api.presenters.dashboard.substances import _is_live_substance_visible
@@ -9,27 +8,46 @@ from phids.api.presenters.dashboard.substances import _is_live_substance_visible
 if TYPE_CHECKING:
     from phids.engine.loop import SimulationLoop
 
-
 def build_live_dashboard_payload(
     loop: SimulationLoop,
     *,
     substance_names: dict[int, str],
 ) -> dict[str, object]:
-    """Generate the comprehensive dashboard JSON payload for a live simulation.
+    """Assemble the full JSON payload streamed to the browser canvas over the UI WebSocket.
 
-    This endpoint supplies the primary data stream consumed by the browser's
-    three.js / HTMX dashboard. It transforms the flattened SoA (Structure of Arrays)
-    Numba grids and ECS component lists into a hierarchical, object-oriented JSON schema
-    optimised for frontend rendering and data-binding.
+    This function constructs the authoritative rendering payload consumed by
+    ``/ws/ui/stream``.  It collects and serialises:
+
+    - Per-species plant energy layers from the double-buffered
+      :class:`~phids.engine.core.biotope.GridEnvironment`.
+    - All live plant entities as columnar arrays (parallel vectors keyed by field name)
+      with positions, energy, mycorrhizal connection counts, and active substance channel
+      identifiers.
+    - All live swarm entities as columnar arrays with positions, population, energy state,
+      repellency, and local toxin exposure.
+    - Signal and toxin field overlays (maximum projection across channels).
+    - Mycorrhizal network links as computed by :func:`_build_live_mycorrhizal_links`.
+    - Full flora species catalogue with per-species extinction flags, enabling the legend
+      to enumerate extinct species without repainting their absent energy layers.
+    - Simulation lifecycle state (``tick``, ``terminated``, ``running``, ``paused``).
+
+    The distinction between ``species_energy`` (extant species only) and ``all_flora_species``
+    (full configured catalogue with ``extinct`` flags) is a deliberate design invariant: the
+    canvas renderer must not composite extinct species layers onto the viewport, while the
+    operator-facing legend must retain full ecological history for interpretability.
 
     Args:
-        loop: The active :class:`~phids.engine.loop.SimulationLoop` instance.
-        substance_names: A mapping from numeric substance IDs to human-readable names.
+        loop: The active :class:`~phids.engine.loop.SimulationLoop` whose ECS world and
+            environment layers are serialised.
+        substance_names: Mapping from substance identifier to display name.  Injected by the
+            caller to eliminate implicit dependency on module-level mutable state.
 
     Returns:
-        A structured dictionary representing the global simulation state, including
-        environmental flow fields, topological entity lists, chemical concentrations,
-        and current tick status.
+        A dictionary conforming to the full canvas payload schema, including keys
+        ``tick``, ``grid_width``, ``grid_height``, ``max_energy``, ``species_energy``,
+        ``all_flora_species``, ``signal_overlay``, ``toxin_overlay``, ``max_signal``,
+        ``max_toxin``, ``plants``, ``mycorrhizal_links``, ``swarms``, ``terminated``,
+        ``termination_reason``, ``running``, and ``paused``.
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
@@ -99,57 +117,84 @@ def build_live_dashboard_payload(
         plants["active_toxin_ids"].append(visible_toxin_ids)
 
     swarms: dict[str, list[object]] = {
-        "entity_id": [],
-        "species_id": [],
-        "name": [],
         "x": [],
         "y": [],
         "population": [],
+        "species_id": [],
+        "name": [],
         "energy": [],
+        "energy_deficit": [],
         "repelled": [],
-        "local_toxin_exposure": [],
+        "repelled_ticks_remaining": [],
+        "toxin_level": [],
+        "intoxicated": [],
     }
     for entity in world.query(SwarmComponent):
         swarm = entity.get_component(SwarmComponent)
-        swarms["entity_id"].append(swarm.entity_id)
-        swarms["species_id"].append(swarm.species_id)
-        swarms["name"].append(herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"))
+        toxin_level = float(env.toxin_layers[:, swarm.x, swarm.y].max()) if env.num_toxins > 0 else 0.0
         swarms["x"].append(swarm.x)
         swarms["y"].append(swarm.y)
         swarms["population"].append(swarm.population)
+        swarms["species_id"].append(swarm.species_id)
+        swarms["name"].append(herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"))
         swarms["energy"].append(float(swarm.energy))
-        swarms["repelled"].append(swarm.repelled)
-        swarms["local_toxin_exposure"].append(
-            float(env.toxin_layers[:, swarm.x, swarm.y].max()) if env.num_toxins > 0 else 0.0
+        swarms["energy_deficit"].append(
+            max(
+                0.0,
+                float(swarm.population * swarm.energy_min - swarm.energy),
+            )
         )
+        swarms["repelled"].append(swarm.repelled)
+        swarms["repelled_ticks_remaining"].append(swarm.repelled_ticks_remaining)
+        swarms["toxin_level"].append(toxin_level)
+        swarms["intoxicated"].append(toxin_level > 0.0)
 
-    live_species_ids = set(
+    live_flora_species_ids = {
         sid for sid in (_coerce_int(species_id, default=-1) for species_id in plants["species_id"]) if sid >= 0
-    )
+    }
+    all_flora_species: list[dict[str, object]] = []
+    species_energy: list[dict[str, object]] = []
+    for species in loop.config.flora_species:
+        species_id = species.species_id
+        is_extinct = species_id not in live_flora_species_ids
+        all_flora_species.append(
+            {
+                "species_id": species_id,
+                "name": species.name,
+                "extinct": is_extinct,
+            }
+        )
+        if is_extinct:
+            continue
+        if species_id < env.plant_energy_by_species.shape[0]:
+            species_energy.append(
+                {
+                    "species_id": species_id,
+                    "name": species.name,
+                    "layer": env.plant_energy_by_species[species_id].tolist(),
+                }
+            )
+        else:
+            # Defensive fallback: species_id outside pre-allocated layer bounds.
+            species_energy.append(
+                {
+                    "species_id": species_id,
+                    "name": species.name,
+                    "layer": [[0.0] * env.height for _ in range(env.width)],
+                }
+            )
 
     return {
+        "contract_version": 1,
         "tick": loop.tick,
         "grid_width": env.width,
         "grid_height": env.height,
         "max_energy": max_e,
-        "species_energy": [
-            {
-                "species_id": species_id,
-                "layer": env.plant_energy_layer[species_id].tolist(),
-            }
-            for species_id in sorted(live_species_ids)
-        ],
-        "all_flora_species": [
-            {
-                "species_id": getattr(species, "species_id", -1),
-                "name": getattr(species, "name", ""),
-                "color": getattr(species, "color", "#000000"),
-                "extinct": getattr(species, "species_id", -1) not in live_species_ids,
-            }
-            for species in loop.config.flora_species
-        ],
-        "signal_overlay": signal_overlay.tolist() if signal_overlay is not None else None,
-        "toxin_overlay": toxin_overlay.tolist() if toxin_overlay is not None else None,
+        "plant_energy": env.plant_energy_layer.tolist(),
+        "species_energy": species_energy,
+        "all_flora_species": all_flora_species,
+        "signal_overlay": signal_overlay.tolist() if signal_overlay is not None else [],
+        "toxin_overlay": toxin_overlay.tolist() if toxin_overlay is not None else [],
         "max_signal": float(signal_overlay.max()) if signal_overlay is not None else 0.0,
         "max_toxin": float(toxin_overlay.max()) if toxin_overlay is not None else 0.0,
         "plants": plants,

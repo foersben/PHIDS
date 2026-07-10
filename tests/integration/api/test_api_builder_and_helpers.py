@@ -741,16 +741,19 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
 
     assert payload["all_flora_species"]
     assert payload["tick"] == expected_payload["tick"]
+    assert payload.get("contract_version") == expected_payload.get("contract_version")
     assert payload["grid_width"] == expected_payload["grid_width"]
     assert payload["grid_height"] == expected_payload["grid_height"]
     assert payload["all_flora_species"] == expected_payload["all_flora_species"]
 
     expected_top_level_keys = {
+        "contract_version",
         "tick",
         "grid_width",
         "grid_height",
         "max_energy",
         "species_energy",
+        "plant_energy",
         "all_flora_species",
         "signal_overlay",
         "toxin_overlay",
@@ -778,15 +781,17 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
         "active_toxin_ids",
     }
     expected_swarm_columns = {
-        "entity_id",
-        "species_id",
-        "name",
         "x",
         "y",
         "population",
+        "species_id",
+        "name",
         "energy",
+        "energy_deficit",
         "repelled",
-        "local_toxin_exposure",
+        "repelled_ticks_remaining",
+        "toxin_level",
+        "intoxicated",
     }
     assert set(payload["plants"].keys()) == expected_plant_columns
     assert set(payload["swarms"].keys()) == expected_swarm_columns
