@@ -128,7 +128,6 @@ def build_live_dashboard_payload(
     )
 
     return {
-        "contract_version": 2,
         "tick": loop.tick,
         "grid_width": env.width,
         "grid_height": env.height,

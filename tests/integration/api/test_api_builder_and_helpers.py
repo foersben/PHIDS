@@ -741,13 +741,11 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
 
     assert payload["all_flora_species"]
     assert payload["tick"] == expected_payload["tick"]
-
     assert payload["grid_width"] == expected_payload["grid_width"]
     assert payload["grid_height"] == expected_payload["grid_height"]
     assert payload["all_flora_species"] == expected_payload["all_flora_species"]
 
     expected_top_level_keys = {
-        "contract_version",
         "tick",
         "grid_width",
         "grid_height",
