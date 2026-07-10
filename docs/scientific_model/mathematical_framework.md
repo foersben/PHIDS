@@ -135,12 +135,28 @@ In analytical chemical ecology, an organism's sensory orientation field is model
 
 $$F(\mathbf{r}) = \alpha E(\mathbf{r}) - \beta \sum_{k} T_k(\mathbf{r})$$
 
-Where $\mathbf{r} = (x,y)$, $E(\mathbf{r})$ is the continuous resource biomass, and $T_k(\mathbf{r})$ is the continuous concentration of active toxin species $k$. Summing the toxins mathematically prevents "sensory masking," ensuring that overlapping toxic plants create a stronger aggregate deterrent.
+Where:
+
+- $F(\mathbf{r})$: The scalar potential field value at spatial coordinate vector $\mathbf{r} = (x,y)$.
+- $E(\mathbf{r})$: The continuous caloric attraction potential field derived from plant energy sources (resource biomass).
+- $T_k(\mathbf{r})$: The continuous chemical repulsion potential field (concentration) for defensive toxin layer $k$.
+- $\alpha$: The positive coupling weight scaling attraction toward food resources.
+- $\beta$: The positive coupling weight scaling repulsion away from active toxins.
+
+Summing the toxins mathematically prevents "sensory masking," ensuring that overlapping toxic plants create a stronger aggregate deterrent.
 
 #### The Numerical Mapping (Discrete Realization)
 To execute this within the constraints of an $O(1)$ spatial hash without continuous coordinate integration, the engine maps the potential to a discrete 2D scalar lattice grid matching the memory alignment of our double buffers:
 
 $$F_t[x, y] = \alpha E_t[x, y] - \beta \sum_{k=1}^{N_T} T_{k,t}[x, y]$$
+
+Where:
+
+- $F_t[x, y]$: The discrete potential field value at grid coordinate cell $[x, y]$ at tick $t$.
+- $E_t[x, y]$: The discrete aggregate plant energy present at coordinate $[x, y]$ at tick $t$.
+- $T_{k,t}[x, y]$: The discrete concentration of toxin type $k$ at coordinate $[x, y]$ at tick $t$.
+- $N_T$: The total number of unique defensive toxin types/species tracked in the simulation.
+- $\alpha, \beta$: The positive coupling weight scalars.
 
 **Implementation Rules:**
 1. **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
@@ -219,12 +235,28 @@ The physics of volatile organic compound (VOC) transport across a canopy through
 
 $$\frac{\partial C_s}{\partial t} = D_s \nabla^2 C_s - \lambda_s C_s + Q_s$$
 
-Where $\nabla^2$ is the continuous Laplacian operator (dispersion), $\lambda_s$ is the continuous infinitesimal decay coefficient, and $Q_s$ is the continuous mass emission function.
+Where:
+
+- $C_s$: Concentration of signaling substance $s$.
+- $t$: Continuous time.
+- $D_s$: Diffusion coefficient for signaling substance $s$.
+- $\nabla^2$: The continuous Laplacian operator modeling spatial diffusion (dispersion).
+- $\lambda_s$: The continuous infinitesimal decay rate governing atmospheric clearance of substance $s$.
+- $Q_s$: The continuous mass emission function (source term) from active plants.
 
 #### The Numerical Mapping (Discrete Realization)
 Solving a continuous PDE over a vast spatial grid at 60 FPS is computationally prohibitive. PHIDS translates this into a discrete cellular automata operator-splitting sequence evaluated precisely once per tick ($\Delta t = 1$):
 
 $$C_s^{t+1} = \gamma_s \cdot \left( \mathcal{K}_{\text{iso}} * C_s^t \right) + Q_s^t$$
+
+Where:
+
+- $C_s^{t+1}$: The discrete concentration field of signaling substance $s$ at time step $t+1$.
+- $C_s^t$: The discrete concentration field of signaling substance $s$ at time step $t$.
+- $\gamma_s$: The discrete multiplicative atmospheric decay factor.
+- $\mathcal{K}_{\text{iso}}$: The pre-computed isotropic Gaussian convolution kernel matrix.
+- $*$: The 2D spatial convolution operator.
+- $Q_s^t$: The discrete point source mass injection (emission) at time step $t$.
 
 **Implementation Rules:**
 1. **Discrete Decay ($\gamma_s$):** The continuous decay integral is converted into a single fractional retention scalar: $\gamma_s = 1.0 - \text{decay\_rate}_s$.

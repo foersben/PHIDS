@@ -152,6 +152,14 @@ To simulate quantitative defenses (like high lignin), the digestibility modifier
 To prevent "ghost fractions" from breaking the simulation constraints, physical damage taken from plant defenses is cast using a strict mathematical floor function:
 $$\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}}) \rfloor$$
 
+Where:
+- $\Delta e_{\text{raw}}$: Gross raw caloric intake extracted from the plant.
+- $\Delta e_{\text{real}}$: Net energy actually digested and absorbed by the swarm.
+- $\text{digestibility\_modifier}$: Scaler ($0.0 - 1.0$) representing constitutive defense reduction of calorie extraction.
+- $\text{Casualties}$: The exact integer count of swarm members killed by physical trauma.
+- $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
+- $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
+
 ## Co-Evolutionary Adaptations & Resistance Matrices
 
 To counter plant defenses, the PHIDS engine supports formal evolutionary arms races through the `HerbivoreResistancesSchema` attached to the `HerbivoreSpeciesParams` (with the dictionary mapping `resistances`).

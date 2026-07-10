@@ -266,6 +266,14 @@ $$\sum_{j \in \text{Flora}} \left( \max(0, E_{\text{max},j} - E_{\text{survival\
 
 If the combined initial populations $N_i^{(0)}$ demand a metabolic upkeep $m_i$ that exceeds the grid's maximum possible generation per tick (derived from the growth rate $g_j$), the genome is instantly mathematically pruned.
 
+Where:
+- $E_{\text{max},j}$: The maximum physiological energy capacity of flora species $j$.
+- $E_{\text{survival\_threshold},j}$: The absolute minimum energy flora species $j$ requires to live (unharvestable).
+- $g_j$: The percentage growth rate per tick for flora species $j$.
+- $N_{\text{max\_tiles}, j}$: The theoretical maximum grid coverage (carrying capacity) for flora species $j$.
+- $m_i$: The baseline metabolic upkeep requirement per tick for herbivore species $i$.
+- $N_i^{(0)}$: The initial spawned population count for herbivore species $i$.
+
 * **Task 3.1: Stage 1**: Implement Analytical Pre-Pruning validators.
 * **Task 3.2: Stage 2 & 3**: Build Structural and Parametric Search implementations (utilizing frameworks like DEAP or Optuna).
 * **Task 3.3: Pareto-Front Evaluation**: Establish multi-objective fitness evaluation via NSGA-II.
