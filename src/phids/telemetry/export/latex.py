@@ -1,3 +1,8 @@
+"""Telemetry export to LaTeX tabular environment.
+
+Formats telemetry dataframes into booktabs LaTeX tabular tables suitable for academic papers.
+"""
+
 from __future__ import annotations
 
 import logging

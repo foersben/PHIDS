@@ -1,3 +1,8 @@
+"""Unit tests for the Design Space Exploration (DSE) NSGA-II optimizer.
+
+Verifies fitness sorting and JIT compiler cache pre-warming logic.
+"""
+
 from unittest.mock import MagicMock, patch
 
 from deap import creator
@@ -6,7 +11,7 @@ from phids.analytics.dse_optimizer import DSEOptimizer
 from phids.api.schemas import SimulationConfig
 
 
-def test_dse_optimizer_fitness_max_sorting():
+def test_dse_optimizer_fitness_max_sorting() -> None:
     """Verify that DEAP FitnessMax properly sorts (longevity, stability, dispersion) tuples."""
     # We just need to check the creator logic from the module
     ind1 = creator.Individual()

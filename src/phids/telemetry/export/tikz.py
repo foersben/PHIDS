@@ -1,3 +1,9 @@
+"""Telemetry export to PGFPlots TikZ code.
+
+Generates self-contained tikzpicture environments containing PGFPlots chart specifications
+for LaTeX papers (time series, phase spaces, defense economy ratio, biomass stack, survival probability).
+"""
+
 from __future__ import annotations
 
 import logging

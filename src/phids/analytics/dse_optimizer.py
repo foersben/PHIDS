@@ -1,3 +1,9 @@
+"""NSGA-II multi-objective optimizer for Design Space Exploration (DSE).
+
+Contains class and methods to run a genetic algorithm over the MINLP genotype
+to find stable, high-biomass, and diverse plant-herbivore configurations.
+"""
+
 import asyncio
 import logging
 import random
@@ -26,10 +32,23 @@ creator.create("Individual", list, fitness=creator.FitnessMax, genotype=None)
 
 
 class DSEOptimizer:
-    """Multi-objective NSGA-II optimizer for ecosystem exploration."""
+    """Multi-objective NSGA-II optimizer for ecosystem exploration.
+
+    Attributes:
+        base_config: Base template simulation configuration.
+        pop_size: Size of the genetic algorithm population.
+        generations: Number of generations to iterate.
+        toolbox: DEAP toolbox for genetic operators registration.
+    """
 
     def __init__(self, base_config: SimulationConfig, pop_size: int = 50, generations: int = 20):
-        """Initialize the optimizer."""
+        """Initialize the optimizer.
+
+        Args:
+            base_config: The template simulation configuration schema.
+            pop_size: The number of individuals in the population. Defaults to 50.
+            generations: Number of evolutionary generations to run. Defaults to 20.
+        """
         self.base_config = base_config
         self.pop_size = pop_size
         self.generations = generations
@@ -55,6 +74,7 @@ class DSEOptimizer:
         logger.info("Numba JIT Cache warmed successfully.")
 
     def _setup_deap(self) -> None:
+        """Register operators, mating, mutation, selection, and evaluation to the toolbox."""
         # In a full implementation, you would register custom MINLP crossover/mutation here
         # that knows how to splice the DSEGenotype properly.
         self.toolbox.register("evaluate", self.evaluate_candidate_sync)
@@ -63,13 +83,27 @@ class DSEOptimizer:
         self.toolbox.register("select", tools.selNSGA2)
 
     def evaluate_candidate_sync(self, individual: "creator.Individual") -> tuple[float, float, float]:
-        """Synchronous wrapper for DEAP compatibility."""
+        """Synchronous wrapper for DEAP compatibility.
+
+        Args:
+            individual: The DEAP individual to evaluate.
+
+        Returns:
+            A tuple of float fitnesses: (longevity, stability, dispersion).
+        """
         import asyncio
 
         return asyncio.run(self.evaluate_candidate(individual))
 
     async def evaluate_candidate(self, individual: "creator.Individual") -> tuple[float, float, float]:
-        """Headless evaluation of a single MINLP Genotype."""
+        """Headless evaluation of a single MINLP Genotype.
+
+        Args:
+            individual: The DEAP individual holding a candidate genotype.
+
+        Returns:
+            A tuple of float fitnesses: (longevity, stability, dispersion).
+        """
         genotype: DSEGenotype | None = individual.genotype
 
         # Stage 1: Analytical Pre-Pruning
@@ -123,7 +157,15 @@ class DSEOptimizer:
         sync_callback: Callable[[dict[str, Any], list[SimulationConfig]], None] | None = None,
         cancel_event: Any = None,
     ) -> list["creator.Individual"]:
-        """Run the NSGA-II optimization."""
+        """Run the NSGA-II optimization loop.
+
+        Args:
+            sync_callback: Optional callable callback dispatched with Pareto front telemetry.
+            cancel_event: Optional asyncio/multiprocessing event to trigger early cancellation.
+
+        Returns:
+            The final evaluated population list of individuals.
+        """
         asyncio.run(self._warm_numba_cache())
 
         # In production: Initialize population with valid DSEGenotypes mapping

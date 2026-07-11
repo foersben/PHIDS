@@ -1,3 +1,8 @@
+"""Unit tests for the Design Space Exploration (DSE) analytical pre-pruner.
+
+Verifies mathematical bounds checking (caloric deficits, seed costs, diet matrices).
+"""
+
 from phids.analytics.bio_database import FloraProfile, HerbivoreProfile
 from phids.analytics.dse_genotype import DSEGenotype, ParametricGenes, StructuralGenes
 from phids.analytics.dse_pruning import AnalyticalPruner
