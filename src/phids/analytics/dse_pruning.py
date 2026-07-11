@@ -1,3 +1,9 @@
+"""Analytical pre-pruning system for Design Space Exploration (DSE).
+
+Contains validators to filter out structurally and thermodynamically unviable
+genotypes before running computationally expensive simulations.
+"""
+
 import logging
 
 from phids.analytics.dse_genotype import DSEGenotype
@@ -13,7 +19,20 @@ class AnalyticalPruner:
 
     @staticmethod
     def evaluate_feasibility(genotype: DSEGenotype) -> bool:
-        """Returns True if the genotype is mathematically viable, False if doomed."""
+        """Returns True if the genotype is mathematically viable, False if doomed.
+
+        Performs:
+        1. Structural diet checks (ensures no herbivore starves by design).
+        2. Individual caloric conservation checks.
+        3. Global thermodynamic bounds checks.
+        4. Flora self-termination (seed cost vs max yield) checks.
+
+        Args:
+            genotype: The candidate DSEGenotype to evaluate.
+
+        Returns:
+            True if the genotype is mathematically viable, False otherwise.
+        """
         herbivore_ids = list(range(len(genotype.parametric.herbivore_traits)))
         flora_ids = list(range(len(genotype.parametric.flora_traits)))
 

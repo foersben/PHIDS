@@ -1,3 +1,9 @@
+"""Telemetry export core helpers.
+
+Provides common data transformation utilities, color palettes, and filtering logic
+for exporting telemetry rows to LaTeX, TikZ, CSV, JSON, and PNG formats.
+"""
+
 from __future__ import annotations
 
 import logging

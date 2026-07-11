@@ -1,3 +1,9 @@
+"""Dashboard presenter for cell-specific details.
+
+Assembles tooltip and sidebar payloads representing active plants, swarms,
+mycorrhizal links, and diffused concentrations at a specific grid coordinate.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

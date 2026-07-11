@@ -1,3 +1,9 @@
+"""Integration tests for DSE API endpoints.
+
+Verifies that starting and stopping Design Space Exploration (DSE) is non-blocking
+and checks WebSocket stream connection dynamics.
+"""
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -7,12 +13,20 @@ from phids.api.schemas import SimulationConfig
 
 @pytest.fixture
 def client() -> TestClient:
-    """Return a TestClient instance."""
+    """Return a TestClient instance.
+
+    Returns:
+        TestClient: Fastapi test client.
+    """
     return TestClient(app)
 
 
 def test_dse_start_and_stop_endpoints_non_blocking(client: TestClient) -> None:
-    """Verifies that hitting the /api/dse/start endpoint returns instantly (non-blocking)."""
+    """Verifies that hitting the /api/dse/start endpoint returns instantly (non-blocking).
+
+    Args:
+        client: Fastapi test client fixture.
+    """
     # Grab a valid base configuration
     base_config = SimulationConfig.model_construct(
         flora_species=[], herbivore_species=[], diet_matrix=[], grid_width=10, grid_height=10, max_ticks=5
@@ -37,7 +51,11 @@ def test_dse_start_and_stop_endpoints_non_blocking(client: TestClient) -> None:
 
 
 def test_dse_websocket_connects_and_disconnects(client: TestClient) -> None:
-    """Verifies WS endpoint accepts connections and properly cleans up."""
+    """Verifies WS endpoint accepts connections and properly cleans up.
+
+    Args:
+        client: Fastapi test client fixture.
+    """
     from phids.api.websockets.manager import dse_stream_manager
 
     assert len(dse_stream_manager.active_dse_connections) == 0

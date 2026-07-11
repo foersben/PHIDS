@@ -1,3 +1,9 @@
+"""Integration tests for biological mechanics.
+
+Validates digestibility modulation, resource withdrawal, defensive triggers,
+and complex plant-herbivore interaction pathways in PHIDS.
+"""
+
 import numpy as np
 
 from phids.api.schemas import (

@@ -1,3 +1,9 @@
+"""DSE background task manager.
+
+Manages running, cancelling, and streaming live progress metrics from the Design Space
+Exploration (DSE) genetic algorithm task in a non-blocking background worker thread.
+"""
+
 import asyncio
 import logging
 import threading
@@ -14,17 +20,30 @@ logger = logging.getLogger(__name__)
 
 
 class DSETaskManager:
-    """Manages the background execution of the DSE Optimizer."""
+    """Manages the background execution of the DSE Optimizer.
+
+    Attributes:
+        websocket_manager: The websocket manager instance used to broadcast generation progress.
+        pareto_cache: Cache of the current Pareto front candidate configs.
+    """
 
     def __init__(self, websocket_manager: "DSEStreamManager") -> None:
-        """Initialize the DSE Task Manager."""
+        """Initialize the DSE Task Manager.
+
+        Args:
+            websocket_manager: WS stream manager for DSE metrics.
+        """
         self.websocket_manager = websocket_manager
         self._active_task: asyncio.Task[Any] | None = None
         self._cancel_event: threading.Event | None = None
         self.pareto_cache: list[SimulationConfig] = []
 
     def _broadcast_payload(self) -> Callable[[dict[str, Any], list[SimulationConfig]], None]:
-        """Create a synchronous closure that safely schedules the broadcast on the main event loop."""
+        """Create a synchronous closure that safely schedules the broadcast on the main event loop.
+
+        Returns:
+            A callback closure matching the DSE optimizer callback interface.
+        """
 
         def callback(payload: dict[str, Any], configs: list[SimulationConfig]) -> None:
             self.pareto_cache = configs
@@ -37,7 +56,11 @@ class DSETaskManager:
         return callback
 
     def start_dse_task(self, config: SimulationConfig) -> None:
-        """Start the DSE optimization in a background thread."""
+        """Start the DSE optimization in a background thread.
+
+        Args:
+            config: Base simulation config blueprint.
+        """
         if self._active_task is not None and not self._active_task.done():
             logger.warning("Attempted to start DSE task, but one is already running.")
             return
@@ -77,7 +100,14 @@ dse_task_manager: DSETaskManager | None = None
 
 
 def get_dse_manager(ws_manager: "DSEStreamManager") -> DSETaskManager:
-    """Return the global DSE Task Manager."""
+    """Return the global DSE Task Manager.
+
+    Args:
+        ws_manager: The websocket manager to initialize with.
+
+    Returns:
+        The singleton DSETaskManager instance.
+    """
     global dse_task_manager
     if dse_task_manager is None:
         dse_task_manager = DSETaskManager(ws_manager)

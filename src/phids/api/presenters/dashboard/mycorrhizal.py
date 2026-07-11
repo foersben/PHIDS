@@ -1,3 +1,9 @@
+"""Dashboard presenter for mycorrhizal root network links.
+
+Defines payloads and utility functions to build and filter root communication links
+between Manhattan-adjacent plant entities in both draft and live simulation modes.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

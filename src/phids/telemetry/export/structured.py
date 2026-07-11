@@ -1,3 +1,8 @@
+"""Telemetry export to structured formats.
+
+Exports telemetry dataframes into structured formats such as CSV and NDJSON.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

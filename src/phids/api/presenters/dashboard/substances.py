@@ -1,3 +1,9 @@
+"""Dashboard presenter for substances and chemical defense states.
+
+Serializes active signal and toxin components, manages state mapping (synthesis,
+active, aftereffect, field snapshot), and generates payloads for the UI.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -9,6 +15,15 @@ if TYPE_CHECKING:
 
 
 def _is_live_substance_visible(substance: SubstanceComponent) -> bool:
+    """Check if a live substance is in a state requiring UI visualization.
+
+    Args:
+        substance: The live SubstanceComponent to check.
+
+    Returns:
+        True if the substance is active, synthesizing, has remaining aftereffect,
+        or was triggered in the current tick.
+    """
     return (
         substance.active
         or substance.synthesis_remaining > 0
@@ -26,6 +41,19 @@ def _live_substance_state_payload(
     aftereffect_remaining_ticks: int,
     snapshot_only: bool = False,
 ) -> tuple[str, str]:
+    """Determine the UI state and label for a substance.
+
+    Args:
+        is_toxin: Whether the substance is a toxin (True) or signal (False).
+        active: Whether the substance is currently active.
+        triggered_this_tick: Whether the trigger fired in this tick.
+        synthesis_remaining: Remaining synthesis duration ticks.
+        aftereffect_remaining_ticks: Ticks remaining in the aftereffect phase.
+        snapshot_only: If True, indicates the substance is only present as diffused residue.
+
+    Returns:
+        A tuple of (state_key, state_label) strings representing the UI state.
+    """
     if snapshot_only:
         return ("field_snapshot", "visible field residue")
     if synthesis_remaining > 0 and not active:
@@ -45,6 +73,16 @@ def _serialize_live_substance(
     herbivore_names: dict[int, str],
     substance_names: dict[int, str],
 ) -> dict[str, object]:
+    """Serialize a live substance component into a UI-compatible dictionary.
+
+    Args:
+        substance: The live SubstanceComponent to serialize.
+        herbivore_names: Registry mapping herbivore IDs to names.
+        substance_names: Registry mapping substance IDs to names.
+
+    Returns:
+        A dictionary representation of the substance state.
+    """
     trigger_herbivore_name = None
     if substance.trigger_herbivore_species_id >= 0:
         trigger_herbivore_name = herbivore_names.get(
@@ -99,6 +137,16 @@ def _fallback_live_substance_payload(
     is_toxin: bool,
     substance_names: dict[int, str],
 ) -> dict[str, object]:
+    """Generate a fallback payload for diffused substance residues with no live owner.
+
+    Args:
+        substance_id: The ID of the diffused substance.
+        is_toxin: Whether the diffused substance is a toxin (True) or signal (False).
+        substance_names: Registry mapping substance IDs to names.
+
+    Returns:
+        A fallback dictionary representing the diffused field residue.
+    """
     return {
         "substance_id": substance_id,
         "name": substance_names.get(

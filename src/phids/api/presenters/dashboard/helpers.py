@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from phids.api.ui_state import DraftState, TriggerRule
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.loop import SimulationLoop
+
     class _MycorrhizalLinkPayload(TypedDict, total=False):
         x1: float
         y1: float
@@ -19,9 +20,8 @@ if TYPE_CHECKING:
         inter_species: bool
         plant_index_a: int
         plant_index_b: int
-
-
-
+        entity_id_a: int
+        entity_id_b: int
 
 
 def _coerce_int(value: object, *, default: int = -1) -> int:

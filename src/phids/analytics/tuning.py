@@ -25,6 +25,13 @@ class TrophicOptimizer:
     Mutates a given scenario blueprint to find a parameter regime that maximizes
     ecosystem survival over a large number of ticks, using population CV as a
     secondary stability metric.
+
+    Attributes:
+        blueprint: The baseline scenario configuration.
+        runs_per_eval: Number of concurrent stochastic runs per evaluation.
+        max_ticks: Target simulation duration per run.
+        bounds: List of min/max boundary value tuples for each parameter.
+        param_mapping: Mapping of float indices to blueprint keys.
     """
 
     def __init__(
@@ -74,14 +81,28 @@ class TrophicOptimizer:
             self.param_mapping.append(("herbivore_species", i, "reproduction_energy_divisor"))
 
     def _apply_params(self, x: np.ndarray) -> dict[str, Any]:
-        """Inject an array of values back into a deepcopy of the blueprint."""
+        """Inject an array of values back into a deepcopy of the blueprint.
+
+        Args:
+            x: A NumPy array containing the values to apply.
+
+        Returns:
+            The modified scenario configuration blueprint dictionary.
+        """
         config = cast("dict[str, Any]", json.loads(json.dumps(self.blueprint)))
         for val, (category, idx, key) in zip(x, self.param_mapping, strict=False):
             config[category][idx][key] = float(val)
         return config
 
     def _evaluate(self, x: np.ndarray) -> float:
-        """Evaluate fitness of a parameter vector over N concurrent simulations."""
+        """Evaluate fitness of a parameter vector over N concurrent simulations.
+
+        Args:
+            x: A NumPy array containing candidate parameter values.
+
+        Returns:
+            The calculated float fitness/stability score (lower is better).
+        """
         config = self._apply_params(x)
 
         # Disable logging overhead during mass evaluation
@@ -122,7 +143,7 @@ class TrophicOptimizer:
 
         # Target 80% survival rate
         target_survived = int(self.runs_per_eval * 0.8)
-        failure_penalty = float(max(0, target_survived - survived) * 1000.0)
+        failure_penalty = max(0, target_survived - survived) * 1000.0
 
         if survived > 0 and cvs:
             avg_cv = sum(cvs) / len(cvs)

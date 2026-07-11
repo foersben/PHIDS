@@ -1,9 +1,15 @@
+"""Unit tests for the live dashboard payload presenter.
+
+Verifies that the dashboard JSON payload adheres exactly to the frontend
+API contract, preventing visual regressions on the UI dashboard.
+"""
+
 from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload
 from phids.api.schemas import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams, SimulationConfig
 from phids.engine.loop import SimulationLoop
 
 
-def test_payload_contract_strictness():
+def test_payload_contract_strictness() -> None:
     """Verify that the dashboard payload matches the required contract exactly to prevent visual breakages."""
     config = SimulationConfig(
         grid_width=8,

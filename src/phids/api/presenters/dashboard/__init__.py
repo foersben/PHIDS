@@ -1,3 +1,9 @@
+"""Dashboard presenter package.
+
+Exposes helpers, presenters, and serializers for rendering the biotope
+dashboard, cell details, and mycorrhizal root network state in the UI.
+"""
+
 from phids.api.presenters.dashboard.cell_details import build_live_cell_details, build_preview_cell_details
 from phids.api.presenters.dashboard.helpers import (
     _default_substance_name,

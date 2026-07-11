@@ -1,3 +1,9 @@
+"""Dashboard presenter for full telemetry/UI payload.
+
+Assembles and serializes the complete live dashboard state (flora/swarm populations,
+environmental layers, mycorrhizal root connections) streamed to the UI client.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

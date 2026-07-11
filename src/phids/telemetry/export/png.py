@@ -1,3 +1,9 @@
+"""Telemetry export to PNG images.
+
+Renders publication-quality charts (time series, phase space, defense economy, biomass stacks,
+and survival probability) using Matplotlib headless Agg backend to raw PNG bytes.
+"""
+
 from __future__ import annotations
 
 import io

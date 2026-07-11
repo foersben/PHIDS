@@ -1,3 +1,9 @@
+"""Integration tests for PHIDS property invariants.
+
+Uses Hypothesis to verify that diet matrices reject configurations exceeding maximum species caps,
+and asserts thermodynamic invariants during simulated digestion cycles.
+"""
+
 import hypothesis.strategies as st
 import pytest
 from hypothesis import given
