@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 from phids.api import main as api_main
 from phids.api.main import app
-from phids.api.presenters.dashboard import (
+from phids.api.presenters import (
     build_draft_mycorrhizal_links,
     build_live_dashboard_payload,
     validate_cell_coordinates,

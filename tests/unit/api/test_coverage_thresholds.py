@@ -16,9 +16,9 @@ import pytest
 from fastapi import HTTPException
 
 from phids.api import main as api_main
-from phids.api.presenters.dashboard import (
+from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters.tooltips import (
     build_live_cell_details,
-    build_live_dashboard_payload,
     build_preview_cell_details,
 )
 from phids.api.services.draft_service import DraftService

@@ -8,7 +8,7 @@ import warnings
 import numpy as np
 import pytest
 
-from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters import build_live_dashboard_payload
 from phids.api.websockets.manager import SimulationStreamManager, UIStreamManager
 from phids.engine.loop import SimulationLoop
 

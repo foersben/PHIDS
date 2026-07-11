@@ -2,8 +2,8 @@
 
 This module constitutes the primary unit-test surface for
 :mod:`phids.api.presenters.dashboard`, validating the three public payload-assembly
-functions — :func:`~phids.api.presenters.dashboard.build_live_cell_details`,
-:func:`~phids.api.presenters.dashboard.build_preview_cell_details`, and
+functions — :func:`~phids.api.presenters.tooltips.build_live_cell_details`,
+:func:`~phids.api.presenters.tooltips.build_preview_cell_details`, and
 :func:`~phids.api.presenters.dashboard.build_live_dashboard_payload` — independently of
 the FastAPI HTTP layer.
 
@@ -19,7 +19,7 @@ Scientific Hypotheses Under Test
    must enumerate only extant flora species (preventing chromatic ghosts from extinct layers
    on the canvas), while ``all_flora_species`` must enumerate the full configured catalogue
    with explicit ``extinct`` flags for legend interpretability.
-4. **Substance state machine:** The :func:`~phids.api.presenters.dashboard._live_substance_state_payload`
+4. **Substance state machine:** The :func:`~phids.api.presenters.substances._live_substance_state_payload`
    helper must faithfully map the five-state (synthesizing → triggered → active → aftereffect
    → configured) substance lifecycle onto deterministic (state_key, state_label) pairs, as
    these tokens drive badge colouring and legend entries in the operator UI.
@@ -42,18 +42,18 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from phids.api.presenters.dashboard import (
-    _default_substance_name,
-    _describe_activation_condition,
+from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters.mycorrhiza import _links_touching_cell, build_draft_mycorrhizal_links
+from phids.api.presenters.substances import (
     _fallback_live_substance_payload,
     _is_live_substance_visible,
-    _links_touching_cell,
     _live_substance_state_payload,
     _serialize_live_substance,
-    build_draft_mycorrhizal_links,
-    build_live_cell_details,
-    build_live_dashboard_payload,
-    build_preview_cell_details,
+)
+from phids.api.presenters.tooltips import build_live_cell_details, build_preview_cell_details
+from phids.api.presenters.utils import (
+    _default_substance_name,
+    _describe_activation_condition,
     validate_cell_coordinates,
 )
 from phids.api.schemas import (

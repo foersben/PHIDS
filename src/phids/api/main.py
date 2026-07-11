@@ -34,7 +34,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import TypeAdapter, ValidationError
 
-from phids.api.presenters.dashboard import (
+from phids.api.presenters import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,

@@ -27,7 +27,7 @@ from httpx import AsyncClient  # noqa: TC002
 import phids.__main__ as phids_cli
 import phids.api.main as api_main
 import phids.api.ui_state as draft_state_module
-from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters import build_live_dashboard_payload
 from phids.api.schemas import BatchJobState, FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft

@@ -1,11 +1,3 @@
----
-type: memory
-title: "Chisel Memory"
-status: active
-version: 1.0
----
-
-## 2026-07-07 - Refactoring telemetry.export
-
-Learning: When splitting a monolithic file (like `telemetry/export.py`), `pytest` may fail with `AttributeError` or `ImportError` if integration tests still rely on an aliased import like `from phids.telemetry import export as telemetry_export` without updating all nested function calls.
-Action: Next time, when refactoring a file, proactively grep for all aliased imports of that module in the tests directory to ensure they are updated to match the new package structure.
+## 2024-07-10 - Presenters split
+Learning: The `phids.api.presenters.dashboard` module is quite large (1147 lines) and handles multiple distinct concerns: utility parsing, substance state machines, mycorrhizal network mapping, cell tooltip payloads (both live and draft), and the massive root dashboard payload.
+Action: Split it into a modular `phids.api.presenters` package. I'll create `phids.api.presenters.utils`, `phids.api.presenters.mycorrhiza`, `phids.api.presenters.substances`, `phids.api.presenters.tooltips`, and `phids.api.presenters.dashboard` to separate the logic, strictly type everything, and fix the imports.

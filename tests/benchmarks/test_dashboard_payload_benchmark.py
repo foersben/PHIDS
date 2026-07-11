@@ -1,7 +1,7 @@
 """Benchmark coverage for live dashboard payload assembly and JSON serialization.
 
 This benchmark measures the end-to-end cost of constructing the live dashboard
-payload in :func:`phids.api.presenters.dashboard.build_live_dashboard_payload`
+payload in :func:`phids.api.presenters.build_live_dashboard_payload`
 and serializing it with ``json.dumps``. The measurement reflects the dominant
 hot path used by the `/ws/ui/stream` JSON transport and therefore acts as a
 regression guard for UI-stream throughput under evolving payload contracts.
@@ -16,7 +16,7 @@ import warnings
 import numpy as np
 import pytest
 
-from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters import build_live_dashboard_payload
 from phids.engine.loop import SimulationLoop
 
 

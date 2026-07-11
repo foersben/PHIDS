@@ -8,7 +8,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
-from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
+from phids.api.presenters import build_draft_mycorrhizal_links
 from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import DraftState, get_draft
 

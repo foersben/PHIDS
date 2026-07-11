@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters import build_live_dashboard_payload
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.loop import SimulationLoop

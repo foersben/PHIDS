@@ -6,22 +6,16 @@ isolating these heavy serialisation routines from the FastAPI composition root, 
 a disciplined separation between HTTP dispatch concerns and the biological interpretation of
 simulation state.
 
-The canonical entry point is :mod:`phids.api.presenters.dashboard`, which exposes
-:func:`~phids.api.presenters.dashboard.build_live_cell_details`,
-:func:`~phids.api.presenters.dashboard.build_preview_cell_details`, and
-:func:`~phids.api.presenters.dashboard.build_live_dashboard_payload`.  Each function accepts
-explicit, dependency-injected arguments — most notably a ``substance_names`` mapping — rather than
-reading module-level mutable state, thereby supporting deterministic, side-effect-free unit testing
-without requiring a running FastAPI application.
+The canonical entry points are exposed from modules like :mod:`phids.api.presenters.dashboard`
+and :mod:`phids.api.presenters.tooltips`. Each function accepts explicit, dependency-injected
+arguments — most notably a ``substance_names`` mapping — rather than reading module-level mutable state,
+thereby supporting deterministic, side-effect-free unit testing without requiring a running FastAPI application.
 """
 
-from phids.api.presenters.dashboard import (
-    build_draft_mycorrhizal_links,
-    build_live_cell_details,
-    build_live_dashboard_payload,
-    build_preview_cell_details,
-    validate_cell_coordinates,
-)
+from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters.mycorrhiza import build_draft_mycorrhizal_links
+from phids.api.presenters.tooltips import build_live_cell_details, build_preview_cell_details
+from phids.api.presenters.utils import validate_cell_coordinates
 
 __all__ = [
     "build_draft_mycorrhizal_links",
