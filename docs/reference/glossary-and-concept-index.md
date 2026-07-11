@@ -402,14 +402,14 @@ See: [`telemetry/analytics-and-export-formats.md`](../technical_architecture/tel
 A Z-coded stopping criterion evaluated at the end of each tick by `check_termination()`. The
 currently implemented conditions are:
 
-| Code | Description |
-|------|-------------|
-| Z1   | Maximum tick count reached |
-| Z2   | Extinction of a configured flora species |
-| Z3   | Extinction of all flora |
-| Z4   | Extinction of a configured herbivore species |
-| Z5   | Extinction of all herbivores |
-| Z6   | Total flora energy exceeds a maximum threshold |
+| Code | Description                                            |
+|------|--------------------------------------------------------|
+| Z1   | Maximum tick count reached                             |
+| Z2   | Extinction of a configured flora species               |
+| Z3   | Extinction of all flora                                |
+| Z4   | Extinction of a configured herbivore species           |
+| Z5   | Extinction of all herbivores                           |
+| Z6   | Total flora energy exceeds a maximum threshold         |
 | Z7   | Total herbivore population exceeds a maximum threshold |
 
 See: [`telemetry/replay-and-termination-semantics.md`](../technical_architecture/telemetry.md)

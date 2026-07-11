@@ -20,12 +20,13 @@ Live documentation: <https://foersben.github.io/PHIDS/>
 
 ## 🔬 Scientific scope and audience
 
-PHIDS is engineered for three overlapping groups:
+PHIDS is an interdisciplinary simulation framework designed to abstract and compute complex system dynamics. It is engineered for five distinct target audiences and application domains:
 
-* **Research-oriented users (Ecologists & Biologists)** who need transparent rule systems, deterministic phase ordering, and
-  exportable telemetry for ecological analysis of spatially localized trophic interactions.
-* **MLOps & Software Engineers** who care about the high-performance ECS, Numba JIT acceleration, Zarr data exports, and the strict FastAPI/HTMX architecture.
-* **Scenario authors and operators** who construct and run simulations through a browser control center, API workflows, or via AI-agent integrations.
+* **Ecologists & Evolutionary Biologists** who require transparent rule systems and deterministic phase ordering to analyze spatially localized trophic interactions. The framework allows for the precise evaluation of discrete Lotka-Volterra population dynamics and the efficiency of chemically mediated defense strategies (constitutive, induced, and activated) across airborne and mycorrhizal channels.
+* **Cybersecurity Researchers & WSN Architects** who utilize biological paradigms as blueprints for technical systems. The simulator functions as a conceptual modeling environment where plants represent sensor nodes and herbivores represent network threats. This enables the design and optimization of distributed, collaborative security schemes, in-network anomaly detection, and energy-efficient load balancing for large-scale static Wireless Sensor Networks (WSNs).
+* **Applied Mathematicians & Complex Systems Theorists** who employ the simulator as a computational optimization game to study topological optimization. It provides a deterministic environment to evaluate graph partitioning schemes, spatial resource allocation, and the mathematical abstraction of biological complexity into solvable discrete-event models.
+* **Constraint Engineers & System Architects** who focus on strict software architecture and structural perfection. The engine provides a blueprint for building high-performance, predictable systems operating under severe constraints, utilizing a strictly typed Entity-Component-System (ECS), O(1) spatial hashing, Numba JIT acceleration, and the "Rule of 16" to ensure deterministic execution and prevent dynamic memory allocation latency.
+* **AI Orchestrators & MLOps Operators** who require headless, programmatic environments for autonomous agent interactions. The natively integrated Model Context Protocol (MCP) server allows external LLMs to read runtime snapshots, query logs, and execute self-evolving experiments, while the Zarr and Polars pipelines ensure memory-decoupled, high-density telemetry exports for batch analytics.
 
 The core biological motifs currently represented include:
 
