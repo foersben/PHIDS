@@ -1,27 +1,87 @@
+"""Dashboard presenter: ECS-to-JSON serialisation for live and draft grid payloads.
+
+This module implements the payload assembly layer that bridges the PHIDS simulation runtime —
+represented by a live :class:`~phids.engine.loop.SimulationLoop` or a server-side
+:class:`~phids.api.ui_state.DraftState` — and the structured JSON dictionaries consumed by the
+browser canvas renderer and the HTMX tooltip system.  The three public functions
+:func:`build_live_cell_details`, :func:`build_preview_cell_details`, and
+:func:`build_live_dashboard_payload` collectively constitute the *presenter layer*, deliberately
+isolating heavy data-transformation logic from the FastAPI route handlers that formerly owned it.
+
+Architectural Rationale
+-----------------------
+In the original architecture, the functions ``_build_live_cell_details``,
+``_build_preview_cell_details``, and ``_build_live_dashboard_payload`` resided in
+``phids.api.main`` alongside HTTP wiring, middleware, and WebSocket orchestration.  This
+co-location violated the single-responsibility principle: the HTTP layer should be concerned only
+with request validation, lifecycle control, and transport — not with traversing ECS component
+graphs or interpreting double-buffered environmental layers.  Relocating these functions to a
+dedicated presenter package restores a clean boundary: the route handlers now pass well-typed
+arguments to pure transformation functions, which are independently testable without spinning up
+a FastAPI application.
+
+Biological and Computational Semantics
+--------------------------------------
+The serialisation logic faithfully reflects the dual-representation architecture of PHIDS:
+
+- **Discrete entity state** is sourced from :class:`~phids.engine.core.ecs.ECSWorld` via
+  O(1) spatial hash lookups (``world.entities_at(x, y)``).  Per-plant substance components,
+  mycorrhizal network topology, and swarm energy bookkeeping are all decoded from ECS components,
+  preserving the data-oriented design invariant.
+- **Continuous field state** is sourced from the current read buffer of
+  :class:`~phids.engine.core.biotope.GridEnvironment` — specifically the ``signal_layers``,
+  ``toxin_layers``, ``wind_vector_x``, and ``wind_vector_y`` NumPy arrays.  These fields encode
+  diffused chemical plumes whose spatial extent arises from Gaussian diffusion kernels applied
+  each tick.
+- **Mycorrhizal network links** are serialised from live component connections or inferred from
+  draft plant adjacency, enabling both runtime and pre-simulation overlay rendering.
+
+Substance State Machine
+-----------------------
+The helper :func:`_live_substance_state_payload` encodes a five-state machine per substance:
+``synthesizing`` → ``triggered`` → ``active`` / ``aftereffect`` → ``configured``.  The
+``snapshot_only`` branch is reserved for grid cells where a non-zero field concentration is
+observable but no owning plant entity is registered at that coordinate (i.e., the chemical plume
+has diffused beyond the emitter's current position).
+
+Dependency Injection
+--------------------
+All public functions accept ``substance_names: dict[int, str]`` as a keyword-only argument.
+This replaces the former implicit dependency on the ``_sim_substance_names`` module-level global
+in ``phids.api.main``, making the functions deterministically testable with arbitrary name
+dictionaries and eliminating hidden coupling to mutable application state.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from fastapi import HTTPException
 
 if TYPE_CHECKING:
-    from typing import TypedDict
-
     from phids.api.ui_state import DraftState, TriggerRule
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.loop import SimulationLoop
-    class _MycorrhizalLinkPayload(TypedDict, total=False):
-        x1: float
-        y1: float
-        x2: float
-        y2: float
-        inter_species: bool
-        plant_index_a: int
-        plant_index_b: int
 
 
+class _MycorrhizalLinkPayload(TypedDict, total=False):
+    """Serializable link payload used by draft and live mycorrhizal helpers."""
 
+    plant_index_a: int
+    plant_index_b: int
+    entity_id_a: int
+    entity_id_b: int
+    x1: int
+    y1: int
+    x2: int
+    y2: int
+    inter_species: bool
+
+
+# ---------------------------------------------------------------------------
+# Pure utility helpers (self-contained copies; no import from phids.api.main)
+# ---------------------------------------------------------------------------
 
 
 def _coerce_int(value: object, *, default: int = -1) -> int:

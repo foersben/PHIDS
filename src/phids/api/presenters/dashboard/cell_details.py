@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.api.presenters.dashboard.helpers import _coerce_int, _default_substance_name, validate_cell_coordinates
+from phids.api.presenters.dashboard.helpers import (
+    _coerce_int,
+    _default_substance_name,
+    _describe_activation_condition,
+    validate_cell_coordinates,
+)
 from phids.api.presenters.dashboard.mycorrhizal import (
     _build_live_mycorrhizal_links,
     _links_touching_cell,
@@ -27,21 +32,35 @@ def build_live_cell_details(
     *,
     substance_names: dict[int, str],
 ) -> dict[str, object]:
-    """Build the detailed JSON payload for a single cell in a live simulation.
+    """Assemble a rich tooltip payload for a single live-simulation grid cell.
 
-    This presenter merges physical layer data (signal and toxin peaks), entity
-    component state (substance inventories, energy, population), and topological
-    networks (mycorrhizal connections) for all entities coincident at the given
-    coordinate.
+    This function traverses the ECS world and double-buffered environmental layers for cell
+    ``(x, y)``, collecting all plant entities (with their owned substance components and
+    mycorrhizal network neighbours), swarm entities (with energy and repellency state), and
+    per-channel signal and toxin concentrations.  The result is a structured dictionary
+    consumed by the HTMX tooltip partial rendered when the operator hovers over a canvas cell.
+
+    Entity lookups are performed via O(1) spatial hash queries (``world.entities_at(x, y)``),
+    preserving the architectural constraint against O(N²) distance scans.  Environmental field
+    values are read directly from the NumPy read buffer of
+    :class:`~phids.engine.core.biotope.GridEnvironment`.
 
     Args:
-        loop: The active :class:`~phids.engine.loop.SimulationLoop` instance.
-        x: Column coordinate of the queried cell.
-        y: Row coordinate of the queried cell.
-        substance_names: A mapping from numeric substance IDs to human-readable names.
+        loop: The active :class:`~phids.engine.loop.SimulationLoop` whose ECS world and
+            environment layers are queried.
+        x: Column index of the target cell.
+        y: Row index of the target cell.
+        substance_names: Mapping from substance identifier to display name.  Injected by the
+            caller to avoid implicit dependency on module-level mutable state.
 
     Returns:
-        A dictionary matching the HTMX UI schema for the cell details modal.
+        A dictionary with keys ``mode``, ``tick``, ``x``, ``y``, ``grid_width``,
+        ``grid_height``, ``flow_field``, ``wind``, ``signal_peak``, ``toxin_peak``,
+        ``signal_concentrations``, ``toxin_concentrations``, ``mycorrhiza``,
+        ``plants``, and ``swarms``.
+
+    Raises:
+        HTTPException: HTTP 404 if ``(x, y)`` lies outside the configured grid bounds.
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
@@ -59,6 +78,11 @@ def build_live_cell_details(
         substance = entity.get_component(SubstanceComponent)
         owned_substances.setdefault(substance.owner_plant_id, []).append(substance)
 
+    plant_lookup = {
+        plant.entity_id: plant
+        for entity in world.query(PlantComponent)
+        for plant in [entity.get_component(PlantComponent)]
+    }
     live_links = _build_live_mycorrhizal_links(loop)
     touching_links = _links_touching_cell(live_links, x, y)
 
@@ -102,60 +126,60 @@ def build_live_cell_details(
                 if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
                     continue
                 substance_key = (signal_id, False)
-                if substance_key not in visible_keys:
-                    visible_substances.append(
-                        _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
-                    )
+                if substance_key in visible_keys:
+                    continue
+                visible_substances.append(
+                    _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
+                )
+                visible_keys.add(substance_key)
             for toxin_id in range(env.num_toxins):
                 if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
                     continue
                 substance_key = (toxin_id, True)
-                if substance_key not in visible_keys:
-                    visible_substances.append(
-                        _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
-                    )
-
-            mycorrhizal_neighbours = []
-            for link in touching_links:
-                is_left = int(link["x1"]) == plant.x and int(link["y1"]) == plant.y
-                is_right = int(link["x2"]) == plant.x and int(link["y2"]) == plant.y
-                if not is_left and not is_right:
+                if substance_key in visible_keys:
                     continue
-                nx = int(link["x2"] if is_left else link["x1"])
-                ny = int(link["y2"] if is_left else link["y1"])
-                for nid in world.entities_at(nx, ny):
-                    if not world.has_entity(nid):
-                        continue
-                    n_entity = world.get_entity(nid)
-                    if n_entity.has_component(PlantComponent):
-                        n_plant = n_entity.get_component(PlantComponent)
-                        if (
-                            n_plant.entity_id in plant.mycorrhizal_connections
-                            or plant.entity_id in n_plant.mycorrhizal_connections
-                        ):
-                            mycorrhizal_neighbours.append(
-                                {
-                                    "entity_id": n_plant.entity_id,
-                                    "name": flora_names.get(n_plant.species_id, f"Flora {n_plant.species_id}"),
-                                    "x": n_plant.x,
-                                    "y": n_plant.y,
-                                    "inter_species": plant.species_id != n_plant.species_id,
-                                }
-                            )
-
+                visible_substances.append(
+                    _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
+                )
+                visible_keys.add(substance_key)
+            visible_substances.sort(
+                key=lambda payload: (
+                    payload.get("kind") == "toxin",
+                    _coerce_int(payload.get("substance_id", -1), default=-1),
+                )
+            )
+            mycorrhizal_neighbours = []
+            for neighbour_id in sorted(plant.mycorrhizal_connections):
+                neighbour = plant_lookup.get(neighbour_id)
+                if neighbour is None:
+                    continue
+                mycorrhizal_neighbours.append(
+                    {
+                        "entity_id": neighbour.entity_id,
+                        "name": flora_names.get(neighbour.species_id, f"Flora {neighbour.species_id}"),
+                        "x": neighbour.x,
+                        "y": neighbour.y,
+                        "inter_species": neighbour.species_id != plant.species_id,
+                    }
+                )
             plants.append(
                 {
                     "entity_id": plant.entity_id,
                     "species_id": plant.species_id,
                     "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
                     "energy": float(plant.energy),
+                    "max_energy": float(plant.max_energy),
+                    "base_energy": float(plant.base_energy),
+                    "growth_rate": float(plant.growth_rate),
+                    "camouflage": plant.camouflage,
+                    "camouflage_factor": float(plant.camouflage_factor),
                     "mycorrhizal_connections": len(plant.mycorrhizal_connections),
                     "mycorrhizal_neighbours": mycorrhizal_neighbours,
-                    "configured_trigger_rules": [],
                     "active_substances": visible_substances,
                 }
             )
-        elif entity.has_component(SwarmComponent):
+
+        if entity.has_component(SwarmComponent):
             swarm = entity.get_component(SwarmComponent)
             swarms.append(
                 {
@@ -163,11 +187,39 @@ def build_live_cell_details(
                     "species_id": swarm.species_id,
                     "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
                     "population": swarm.population,
+                    "initial_population": swarm.initial_population,
                     "energy": float(swarm.energy),
+                    "energy_min": float(swarm.energy_min),
+                    "energy_deficit": max(
+                        0.0,
+                        float(swarm.population * swarm.energy_min - swarm.energy),
+                    ),
                     "repelled": swarm.repelled,
-                    "local_toxin_exposure": (float(env.toxin_layers[:, x, y].max()) if env.num_toxins > 0 else 0.0),
+                    "repelled_ticks_remaining": swarm.repelled_ticks_remaining,
+                    "intoxicated": cell_toxin_peak > 0.0,
+                    "signal_level": cell_signal_peak,
+                    "toxin_level": cell_toxin_peak,
                 }
             )
+
+    signal_concentrations = [
+        {
+            "substance_id": signal_id,
+            "name": substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False)),
+            "value": float(env.signal_layers[signal_id, x, y]),
+        }
+        for signal_id in range(env.num_signals)
+        if float(env.signal_layers[signal_id, x, y]) > 0.0
+    ]
+    toxin_concentrations = [
+        {
+            "substance_id": toxin_id,
+            "name": substance_names.get(toxin_id, _default_substance_name(toxin_id, is_toxin=True)),
+            "value": float(env.toxin_layers[toxin_id, x, y]),
+        }
+        for toxin_id in range(env.num_toxins)
+        if float(env.toxin_layers[toxin_id, x, y]) > 0.0
+    ]
 
     return {
         "mode": "live",
@@ -177,25 +229,14 @@ def build_live_cell_details(
         "grid_width": env.width,
         "grid_height": env.height,
         "flow_field": float(env.flow_field[x, y]),
-        "wind": {"x": env.wind_vector_x[x, y], "y": env.wind_vector_y[x, y]},
+        "wind": {
+            "x": float(env.wind_vector_x[x, y]),
+            "y": float(env.wind_vector_y[x, y]),
+        },
         "signal_peak": cell_signal_peak,
         "toxin_peak": cell_toxin_peak,
-        "signal_concentrations": [
-            {
-                "substance_id": i,
-                "name": substance_names.get(i, _default_substance_name(i, is_toxin=False)),
-                "concentration": float(env.signal_layers[i, x, y]),
-            }
-            for i in range(env.num_signals)
-        ],
-        "toxin_concentrations": [
-            {
-                "substance_id": i,
-                "name": substance_names.get(i, _default_substance_name(i, is_toxin=True)),
-                "concentration": float(env.toxin_layers[i, x, y]),
-            }
-            for i in range(env.num_toxins)
-        ],
+        "signal_concentrations": signal_concentrations,
+        "toxin_concentrations": toxin_concentrations,
         "mycorrhiza": {
             "enabled": bool(touching_links),
             "link_count": len(touching_links),
@@ -223,22 +264,33 @@ def build_preview_cell_details(
     draft: DraftState,
     substance_names: dict[int, str] | None = None,
 ) -> dict[str, object]:
-    """Build the detailed JSON payload for a single cell in the draft editor.
+    """Assemble a tooltip payload for a single draft (pre-simulation) grid cell.
 
-    Unlike the live simulation payload, draft details do not include dynamic
-    engine state (like energy gradients or field diffusion). Instead, they map
-    configuration primitives (such as unresolved trigger rules) into the UI schema
-    so the operator can preview spatial rules before scenario initialization.
+    When no live simulation is running, the operator-facing canvas displays the draft
+    placement configuration.  This function resolves all plants, swarms, and configured
+    trigger rules at cell ``(x, y)`` from the provided :class:`~phids.api.ui_state.DraftState`,
+    including potential mycorrhizal root links inferred from adjacent plant positions.
+
+    The returned payload mirrors the structural contract of :func:`build_live_cell_details`
+    to allow the browser tooltip component to render both modes with a single template.
 
     Args:
-        x: Column coordinate of the queried cell.
-        y: Row coordinate of the queried cell.
-        draft: The current :class:`~phids.api.ui_state.DraftState`.
-        substance_names: Optional explicit substance name mapping. If not provided,
-            it is derived dynamically from the draft definitions.
+        x: Column index of the target cell.
+        y: Row index of the target cell.
+        draft: The server-side draft configuration to query.  Must be provided explicitly
+            to decouple this function from module-level singleton state.
+        substance_names: Optional mapping from substance identifier to display name.
+            If ``None``, substance names are resolved exclusively from
+            ``draft.substance_definitions``.
 
     Returns:
-        A dictionary matching the HTMX UI schema for the draft cell preview modal.
+        A dictionary with keys ``mode`` (``"draft"``), ``tick`` (``None``), ``x``, ``y``,
+        ``grid_width``, ``grid_height``, ``flow_field`` (``None``), ``wind``,
+        ``signal_peak``, ``toxin_peak``, ``signal_concentrations``, ``toxin_concentrations``,
+        ``mycorrhiza``, ``plants``, and ``swarms``.
+
+    Raises:
+        HTTPException: HTTP 404 if ``(x, y)`` lies outside the draft grid bounds.
     """
     validate_cell_coordinates(x, y, draft.grid_width, draft.grid_height)
 
@@ -251,6 +303,7 @@ def build_preview_cell_details(
         for index, species in enumerate(draft.herbivore_species)
     }
     substances = {definition.substance_id: definition for definition in draft.substance_definitions}
+    # Build effective substance_names from draft definitions when no explicit mapping is provided.
     effective_substance_names: dict[int, str] = (
         substance_names
         if substance_names is not None
@@ -274,8 +327,8 @@ def build_preview_cell_details(
             is_right = int(link["plant_index_b"]) == index
             if not is_left and not is_right:
                 continue
-            _other_index = int(link["plant_index_b"] if is_left else link["plant_index_a"])
-            other = draft.initial_plants[_other_index]
+            other_index = int(link["plant_index_b"] if is_left else link["plant_index_a"])
+            other = draft.initial_plants[other_index]
             mycorrhizal_neighbours.append(
                 {
                     "name": flora_names.get(other.species_id, f"Flora {other.species_id}"),
@@ -284,8 +337,6 @@ def build_preview_cell_details(
                     "inter_species": bool(link["inter_species"]),
                 }
             )
-        from phids.api.presenters.dashboard.helpers import _describe_activation_condition
-
         plants.append(
             {
                 "index": index,
@@ -308,16 +359,15 @@ def build_preview_cell_details(
                             f"Herbivore {rule.herbivore_species_id}",
                         ),
                         "min_herbivore_population": rule.min_herbivore_population,
+                        "activation_condition": rule.activation_condition,
                         "activation_condition_summary": _describe_activation_condition(
                             rule.activation_condition,
                             herbivore_names=herbivore_names,
                             substance_names=effective_substance_names,
                         ),
-                        "activation_condition": rule.activation_condition,
                     }
                     for rule in rules_by_flora.get(plant.species_id, [])
                 ],
-                "active_substances": [],
             }
         )
 

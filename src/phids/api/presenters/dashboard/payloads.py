@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 from phids.api.presenters.dashboard.helpers import _coerce_int
 from phids.api.presenters.dashboard.mycorrhizal import _build_live_mycorrhizal_links
 from phids.api.presenters.dashboard.substances import _is_live_substance_visible
 
 if TYPE_CHECKING:
     from phids.engine.loop import SimulationLoop
+
 
 def build_live_dashboard_payload(
     loop: SimulationLoop,

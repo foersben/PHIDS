@@ -1,16 +1,37 @@
-import pytest
 from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload
+from phids.api.schemas import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams, SimulationConfig
 from phids.engine.loop import SimulationLoop
-from phids.api.schemas import SimulationConfig, FloraSpeciesParams, HerbivoreSpeciesParams, DietCompatibilityMatrix
+
 
 def test_payload_contract_strictness():
     """Verify that the dashboard payload matches the required contract exactly to prevent visual breakages."""
-
     config = SimulationConfig(
         grid_width=8,
         grid_height=8,
-        flora_species=[FloraSpeciesParams(species_id=0, name="F", max_energy=10, growth_rate=1, survival_threshold=1, reproduction_interval=1, base_energy=1, seed_cost=1)],
-        herbivore_species=[HerbivoreSpeciesParams(species_id=0, name="H", energy_min=1, velocity=1, consumption_rate=1, energy_max=1, energy_initial=1, metabolism_upkeep=1)],
+        flora_species=[
+            FloraSpeciesParams(
+                species_id=0,
+                name="F",
+                max_energy=10,
+                growth_rate=1,
+                survival_threshold=1,
+                reproduction_interval=1,
+                base_energy=1,
+                seed_cost=1,
+            )
+        ],
+        herbivore_species=[
+            HerbivoreSpeciesParams(
+                species_id=0,
+                name="H",
+                energy_min=1,
+                velocity=1,
+                consumption_rate=1,
+                energy_max=1,
+                energy_initial=1,
+                metabolism_upkeep=1,
+            )
+        ],
         num_signals=2,
         num_toxins=2,
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
