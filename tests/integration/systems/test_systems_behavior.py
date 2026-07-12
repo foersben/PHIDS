@@ -1050,7 +1050,7 @@ def test_signaling_relay_splits_fixed_budget_across_air_and_roots() -> None:
     """Signal emission is mass-conservative across airborne and root-relay targets."""
     world = ECSWorld()
     env = GridEnvironment(width=7, height=5, num_signals=1, num_toxins=1)
-    env.diffuse_signals = lambda: None
+    env.diffuse_signals = lambda **_kwargs: None  # type: ignore[method-assign]
     source_id = _add_plant(world, 3, 2, species_id=0, energy=20.0)
     n1 = _add_plant(world, 2, 2, species_id=0, energy=20.0)
     n2 = _add_plant(world, 4, 2, species_id=0, energy=20.0)
@@ -1074,7 +1074,7 @@ def test_signaling_airborne_emission_is_not_hard_capped_at_one() -> None:
     """Airborne signal concentration can exceed unity under continuous forcing."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
-    env.diffuse_signals = lambda: None
+    env.diffuse_signals = lambda **_kwargs: None  # type: ignore[method-assign]
     _add_plant(world, 2, 2, species_id=0, energy=20.0)
     _add_swarm(world, 2, 2, species_id=0, pop=3)
     env.signal_layers[0, 2, 2] = 1.2

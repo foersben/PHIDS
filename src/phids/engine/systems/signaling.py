@@ -31,7 +31,6 @@ from typing import TYPE_CHECKING, TypedDict, cast
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.shared.constants import SUBSTANCE_EMIT_RATE
 
 if TYPE_CHECKING:
     from phids.api.schemas import TriggerConditionSchema
@@ -322,6 +321,8 @@ def run_signaling(
     signal_velocity: int,
     tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
+    substance_emit_rate: float = 0.1,
+    signal_decay_factor: float = 0.85,
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.
 
@@ -334,6 +335,10 @@ def run_signaling(
         signal_velocity: Ticks per hop for root-network relays.
         tick: Current simulation tick.
         plant_death_causes: Mapping of death causes to their respective counts.
+        substance_emit_rate: Concentration increment added per tick when an active
+            SubstanceComponent emits. Defaults to 0.1 (module-level constant value).
+        signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion
+            (0.0-1.0). Defaults to 0.85 (module-level constant value).
     """
     dead_substances: list[int] = []
     dead_plants: list[int] = []
@@ -571,7 +576,7 @@ def run_signaling(
             if sub.substance_id < env.num_toxins:
                 env.toxin_layers[sub.substance_id, plant.x, plant.y] = min(
                     1.0,
-                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + SUBSTANCE_EMIT_RATE,
+                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + substance_emit_rate,
                 )
                 if sub.substance_id not in active_toxin_props:
                     active_toxin_props[sub.substance_id] = {
@@ -596,14 +601,14 @@ def run_signaling(
                 mycorrhizal_inter_species,
             )
             relay_count = len(relay_targets)
-            airborne_amount = SUBSTANCE_EMIT_RATE / float(relay_count + 1)
+            airborne_amount = substance_emit_rate / float(relay_count + 1)
             if sub.substance_id < env.num_signals:
                 env.signal_layers[sub.substance_id, plant.x, plant.y] = (
                     float(env.signal_layers[sub.substance_id, plant.x, plant.y]) + airborne_amount
                 )
 
             if relay_count > 0:
-                relay_amount = SUBSTANCE_EMIT_RATE - airborne_amount
+                relay_amount = substance_emit_rate - airborne_amount
                 per_target_amount = relay_amount / float(relay_count)
                 for relay_target in relay_targets:
                     if sub.substance_id < env.num_signals:
@@ -664,7 +669,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 5. Diffusion (delegated to GridEnvironment)
     # ------------------------------------------------------------------
-    env.diffuse_signals()
+    env.diffuse_signals(signal_decay_factor=signal_decay_factor)
 
     # ------------------------------------------------------------------
     # 6. Garbage collect expired substance entities

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
@@ -22,11 +22,21 @@ draft_service = DraftService()
 
 
 def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Response:
-    """Render the canonical trigger-rules partial response."""
+    """Render the morphology-defense partial response since trigger rules live there now."""
     return api_main.templates.TemplateResponse(
         request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
+        "partials/morphology_defense_tab.html",
+        {
+            "flora_species": draft.flora_species,
+            "herbivore_species": draft.herbivore_species,
+            "substances": draft.substance_definitions,
+            "trigger_rules": draft.trigger_rules,
+            "trigger_rule_condition_summary": api_main._trigger_rules_template_context(draft).get(
+                "trigger_rule_condition_summary"
+            ),
+            "condition_group_kinds": ["all_of", "any_of"],
+            "condition_leaf_kinds": ["herbivore_presence", "substance_active", "environmental_signal"],
+        },
     )
 
 
@@ -49,7 +59,10 @@ async def config_trigger_rule_add(
     request: Request,
     flora_species_id: Annotated[int, Form()],
     herbivore_species_id: Annotated[int, Form()],
-    substance_id: Annotated[int, Form()],
+    substance_id: Annotated[int, Form()] = 0,
+    action_type: Annotated[Literal["synthesize_substance", "resource_withdrawal"], Form()] = "synthesize_substance",
+    apparent_nutrition_factor: Annotated[float, Form()] = 0.2,
+    aftereffect_ticks: Annotated[int, Form()] = 10,
     min_herbivore_population: Annotated[int, Form()] = 5,
     activation_condition_json: Annotated[str, Form()] = "",
 ) -> Response:
@@ -60,6 +73,9 @@ async def config_trigger_rule_add(
         flora_species_id=flora_species_id,
         herbivore_species_id=herbivore_species_id,
         substance_id=substance_id,
+        action_type=action_type,
+        apparent_nutrition_factor=apparent_nutrition_factor,
+        aftereffect_ticks=aftereffect_ticks,
         min_herbivore_population=max(1, min_herbivore_population),
         activation_condition=api_main._parse_activation_condition_json(activation_condition_json),
     )
@@ -83,6 +99,9 @@ async def config_trigger_rule_update(
     flora_species_id: Annotated[int | None, Form()] = None,
     herbivore_species_id: Annotated[int | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
+    action_type: Annotated[Literal["synthesize_substance", "resource_withdrawal"] | None, Form()] = None,
+    apparent_nutrition_factor: Annotated[float | None, Form()] = None,
+    aftereffect_ticks: Annotated[int | None, Form()] = None,
     min_herbivore_population: Annotated[int | None, Form()] = None,
     activation_condition_json: Annotated[str | None, Form()] = None,
 ) -> Response:
@@ -98,6 +117,9 @@ async def config_trigger_rule_update(
         flora_species_id=flora_species_id,
         herbivore_species_id=herbivore_species_id,
         substance_id=substance_id,
+        action_type=action_type,
+        apparent_nutrition_factor=apparent_nutrition_factor,
+        aftereffect_ticks=aftereffect_ticks,
         min_herbivore_population=min_herbivore_population,
         activation_condition=(
             api_main._parse_activation_condition_json(activation_condition_json)
@@ -153,11 +175,7 @@ async def config_trigger_rule_condition_child_add(
         )
     except IndexError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return api_main.templates.TemplateResponse(
-        request,
-        "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
-    )
+    return _render_trigger_rules_partial(request, draft)
 
 
 @router.put(

@@ -273,10 +273,23 @@
   }
 
   function frontendDiagnosticsUpdate(patch) {
+    const currentState = window.__phidsFrontendDiagnostics || {};
+    const notes = Array.isArray(currentState.notes) ? [...currentState.notes] : [];
+
+    if (patch && patch.notes) {
+      const newNotes = Array.isArray(patch.notes) ? patch.notes : [patch.notes];
+      newNotes.forEach(n => {
+        const text = String(n).startsWith('[') ? n : `[${new Date().toLocaleTimeString()}] ${n}`;
+        notes.unshift(text);
+      });
+      notes.splice(15);
+    }
+
     window.__phidsFrontendDiagnostics = Object.assign(
       {},
-      window.__phidsFrontendDiagnostics || {},
-      patch || {}
+      currentState,
+      patch || {},
+      { notes: notes }
     );
     window.dispatchEvent(new CustomEvent('phids:frontend-diagnostics', {
       detail: window.__phidsFrontendDiagnostics,
@@ -997,9 +1010,12 @@
         <div class="font-semibold ${accentClass} mb-1">${escapeHtml(title)}</div>
         <ul class="space-y-1">
           ${items.map(item => `
-            <li class="flex justify-between gap-3">
-              <span>${escapeHtml(item.name)}</span>
-              <span class="font-mono">${formatNumber(item.value, 3)}</span>
+            <li class="flex flex-col gap-1">
+              <div class="flex justify-between gap-3">
+                <span>${escapeHtml(item.name)}</span>
+                <span class="font-mono">${formatNumber(item.value, 3)}</span>
+              </div>
+              ${item.value_pct != null ? `<div class="h-1 w-full bg-slate-800 rounded overflow-hidden"><div class="h-full bg-current opacity-70" style="width: ${escapeHtml(item.value_pct)}%"></div></div>` : ''}
             </li>`).join('')}
         </ul>
       </div>`;
@@ -1034,7 +1050,7 @@
         <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-2 mt-2">
           <div class="flex items-center justify-between gap-3">
             <span class="font-semibold text-emerald-200">${escapeHtml(plant.name)}</span>
-            <span class="font-mono">${formatNumber(plant.energy, 1)} / ${formatNumber(plant.max_energy, 1)}</span>
+            <span class="font-mono">${escapeHtml(plant.energy_label || (formatNumber(plant.energy, 1) + ' / ' + formatNumber(plant.max_energy, 1)))}</span>
           </div>
           <div class="text-[10px] text-slate-300 mt-1">
             growth ${formatNumber(plant.growth_rate, 1)}% · camouflage ${plant.camouflage ? formatNumber(plant.camouflage_factor, 2) : 'off'} · root links ${plant.mycorrhizal_connections}
@@ -1082,10 +1098,11 @@
         <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-2 mt-2">
           <div class="flex items-center justify-between gap-3">
             <span class="font-semibold text-rose-200">${escapeHtml(swarm.name)}</span>
-            <span class="font-mono">pop ${escapeHtml(swarm.population)}</span>
+            <span class="font-mono" title="${escapeHtml(swarm.mitosis_label || '')}">pop ${escapeHtml(swarm.population)}</span>
           </div>
           <div class="text-[10px] text-slate-300 mt-1">
-            ${metrics.join(' · ')}
+            energy ${escapeHtml(swarm.energy_label || formatNumber(swarm.energy, 1))}
+            ${metrics.filter(m => !m.startsWith('energy')).length ? ' · ' + metrics.filter(m => !m.startsWith('energy')).join(' · ') : ''}
           </div>
           <div class="text-[10px] text-slate-400 mt-1">${escapeHtml(statusBits.join(' · ') || 'healthy / tracking')}</div>
         </div>`;

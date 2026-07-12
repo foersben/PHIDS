@@ -177,6 +177,16 @@ def build_live_cell_details(
                     "max_energy": float(plant.max_energy),
                     "base_energy": float(plant.base_energy),
                     "growth_rate": float(plant.growth_rate),
+                    # Relative metrics for UI tooltips
+                    "energy_ratio": (
+                        float(plant.energy) / float(plant.max_energy) if float(plant.max_energy) > 0.0 else 0.0
+                    ),
+                    "energy_label": (
+                        f"{plant.energy:.1f} / {plant.max_energy:.1f}"
+                        f" ({100.0 * float(plant.energy) / float(plant.max_energy):.1f}%)"
+                        if float(plant.max_energy) > 0.0
+                        else "N/A"
+                    ),
                     "camouflage": plant.camouflage,
                     "camouflage_factor": float(plant.camouflage_factor),
                     "mycorrhizal_connections": len(plant.mycorrhizal_connections),
@@ -200,6 +210,22 @@ def build_live_cell_details(
                         0.0,
                         float(swarm.population * swarm.energy_min - swarm.energy),
                     ),
+                    # Relative / contextual metrics for UI tooltips
+                    "starvation_threshold": float(swarm.population) * float(swarm.energy_min),
+                    "energy_label": (
+                        f"{swarm.energy:.1f} (Min: {float(swarm.population) * float(swarm.energy_min):.1f})"
+                    ),
+                    "mitosis_progress": (
+                        float(swarm.population) / float(swarm.split_population_threshold)
+                        if swarm.split_population_threshold > 0
+                        else None
+                    ),
+                    "mitosis_label": (
+                        f"{swarm.population} / {swarm.split_population_threshold}"
+                        f" ({100.0 * float(swarm.population) / float(swarm.split_population_threshold):.0f}%)"
+                        if swarm.split_population_threshold > 0
+                        else "No threshold"
+                    ),
                     "repelled": swarm.repelled,
                     "repelled_ticks_remaining": swarm.repelled_ticks_remaining,
                     "intoxicated": cell_toxin_peak > 0.0,
@@ -213,6 +239,7 @@ def build_live_cell_details(
             "substance_id": signal_id,
             "name": substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False)),
             "value": float(env.signal_layers[signal_id, x, y]),
+            "value_pct": min(100.0, float(env.signal_layers[signal_id, x, y]) * 100.0),
         }
         for signal_id in range(env.num_signals)
         if float(env.signal_layers[signal_id, x, y]) > 0.0
@@ -222,6 +249,7 @@ def build_live_cell_details(
             "substance_id": toxin_id,
             "name": substance_names.get(toxin_id, _default_substance_name(toxin_id, is_toxin=True)),
             "value": float(env.toxin_layers[toxin_id, x, y]),
+            "value_pct": min(100.0, float(env.toxin_layers[toxin_id, x, y]) * 100.0),
         }
         for toxin_id in range(env.num_toxins)
         if float(env.toxin_layers[toxin_id, x, y]) > 0.0

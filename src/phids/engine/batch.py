@@ -241,10 +241,21 @@ def aggregate_batch_telemetry(
     if not per_run:
         return {}
 
-    # Align to minimum length to handle early termination
-    min_len = min(len(rows) for rows in per_run)
-    aligned = [rows[:min_len] for rows in per_run]
-    ticks = [_coerce_int(r.get("tick", 0)) for r in aligned[0]]
+    # Pad to max length to handle early termination without data loss
+    max_len = max(len(rows) for rows in per_run)
+    longest_run = max(per_run, key=len)
+    ticks = [_coerce_int(r.get("tick", 0)) for r in longest_run]
+
+    aligned: list[list[TelemetryRow]] = []
+    for rows in per_run:
+        if len(rows) < max_len:
+            pad_count = max_len - len(rows)
+            last: TelemetryRow = dict(rows[-1]) if rows else {}
+            last["death_herbivore_feeding"] = 0.0
+            last["death_defense_maintenance"] = 0.0
+            aligned.append(rows + [last] * pad_count)
+        else:
+            aligned.append(rows)
 
     # Stack aggregate scalar columns
     flora_pop = np.array(
@@ -257,6 +268,14 @@ def aggregate_batch_telemetry(
     )
     flora_energy = np.array(
         [[_coerce_float(r.get("total_flora_energy", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+    death_herbivore = np.array(
+        [[_coerce_float(r.get("death_herbivore_feeding", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+    death_defense = np.array(
+        [[_coerce_float(r.get("death_defense_maintenance", 0.0)) for r in run] for run in aligned],
         dtype=np.float64,
     )
 
@@ -305,6 +324,8 @@ def aggregate_batch_telemetry(
         "herbivore_population_std": herb_pop.std(axis=0).tolist(),
         "total_flora_energy_mean": flora_energy.mean(axis=0).tolist(),
         "total_flora_energy_std": flora_energy.std(axis=0).tolist(),
+        "death_herbivore_feeding_mean": death_herbivore.mean(axis=0).tolist(),
+        "death_defense_maintenance_mean": death_defense.mean(axis=0).tolist(),
         "extinction_probability": extinction_probability,
         "survival_probability_curve": survival_probability_curve,
         "runs_completed": len(per_run),
@@ -314,9 +335,9 @@ def aggregate_batch_telemetry(
         "per_herbivore_pop_std": {str(k): v for k, v in per_herb_pop_std.items()},
     }
     logger.info(
-        "Batch aggregation complete (runs=%d, min_len=%d, extinction_prob=%.3f)",
+        "Batch aggregation complete (runs=%d, max_len=%d, extinction_prob=%.3f)",
         len(per_run),
-        min_len,
+        max_len,
         extinction_probability,
     )
     return result

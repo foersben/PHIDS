@@ -58,6 +58,12 @@ async def ui_diagnostics_model(request: Request) -> Response:
             if api_main._sim_loop is not None
             else None,
             "energy_deficit_swarms": api_main._build_energy_deficit_swarms(),
+            "wind": {
+                "vx": api_main._sim_loop.config.wind_x if api_main._sim_loop else get_draft().wind_x,
+                "vy": api_main._sim_loop.config.wind_y if api_main._sim_loop else get_draft().wind_y,
+            },
+            "initial_population": sum(sp.population for sp in get_draft().initial_swarms),
+            "initial_flora_count": len(get_draft().initial_plants),
         },
     )
 
@@ -242,20 +248,33 @@ async def ui_diet_matrix(request: Request) -> Response:
 
 @router.get("/ui/trigger-rules", response_class=HTMLResponse, summary="Trigger rules partial")
 async def ui_trigger_rules(request: Request) -> Response:
-    """Render the trigger-rule editor.
-
-    Args:
-        request: FastAPI request object used by the template renderer.
-
-    Returns:
-        TemplateResponse: Rendered `partials/trigger_rules.html` fragment populated from the draft
-        rule set and activation-condition tree summaries.
-    """
+    """Render the trigger-rule editor."""
     draft = get_draft()
     return api_main.templates.TemplateResponse(
         request,
         "partials/trigger_rules.html",
         api_main._trigger_rules_template_context(draft),
+    )
+
+
+@router.get("/ui/morphology-defense", response_class=HTMLResponse, summary="Morphology and Defense partial")
+async def ui_morphology_defense(request: Request) -> Response:
+    """Render the morphology and defense editor partial."""
+    draft = get_draft()
+    return api_main.templates.TemplateResponse(
+        request,
+        "partials/morphology_defense_tab.html",
+        {
+            "flora_species": draft.flora_species,
+            "herbivore_species": draft.herbivore_species,
+            "substances": draft.substance_definitions,
+            "trigger_rules": draft.trigger_rules,
+            "trigger_rule_condition_summary": api_main._trigger_rules_template_context(draft).get(
+                "trigger_rule_condition_summary"
+            ),
+            "condition_group_kinds": ["all_of", "any_of"],
+            "condition_leaf_kinds": ["herbivore_presence", "substance_active", "environmental_signal"],
+        },
     )
 
 

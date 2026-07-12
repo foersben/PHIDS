@@ -161,13 +161,13 @@ class TestAggregateBatchTelemetry:
         agg = aggregate_batch_telemetry(runs)
         assert agg["extinction_probability"] == 1.0
 
-    def test_ticks_aligned_to_minimum(self) -> None:
-        """Aggregate ticks are aligned to the shortest run (min-length truncation)."""
+    def test_ticks_padded_to_maximum(self) -> None:
+        """Aggregate ticks are padded to the longest run (max-length padding)."""
         from phids.engine.batch import aggregate_batch_telemetry
 
         runs = [self._make_rows(3, 5, 2), self._make_rows(5, 5, 2)]
         agg = aggregate_batch_telemetry(runs)
-        assert len(agg["ticks"]) == 3
+        assert len(agg["ticks"]) == 5
 
     def test_empty_input_returns_empty(self) -> None:
         """An empty per_run list returns an empty aggregate dict."""

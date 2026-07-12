@@ -106,3 +106,36 @@ Traditional sequential loop architectures update agent states and environment ma
 
 - **Ecological Concurrency:** In a real ecosystem, thousands of organisms act simultaneously within a given split-second window; they do not politely take sequential turns.
 - **Fair Resource Competition:** By executing all evaluations against a fixed snapshot of the world ($State_t$) and deferring commitments, the engine guarantees that all overlapping herbivores face fair, simultaneous exploitation competition for a plant's biomass. It ensures that resource depletion dynamics reflect genuine collective pressure rather than software-induced indexing artifacts.
+
+## 5. Absolute Physics vs. Relative Analytics
+
+During scenario configuration and telemetry review, it is common to question why the engine requires unscaled, absolute values (e.g., configuring `energy_min = 5.0` instead of a percentage).
+
+### The Mathematical Necessity of Absolute Bounds
+
+In Lotka-Volterra dynamics and spatially explicit cellular automata, physical limits and interaction thresholds define the carrying capacity of the environment. The engine must compute deterministic mass and energy transfers per tick based on *what is actually there*, rather than abstract percentages:
+
+- **Toxicity:** A plant emitting `0.1` units of lethal toxin applies an exact, absolute metabolic penalty to a grazing herbivore. If this were a "percentage", the damage formula would require a dynamic denominator (e.g., percentage of *what*? The plant's capacity? The herbivore's resistance?) which introduces unstable feedback loops into the integration algorithms.
+- **Biomass Thresholds:** A swarm must consume absolute biomass (e.g., `4.5` energy units per individual) to stave off starvation. Translating this to a relative percentage would require recalculating the threshold every time the herd population fluctuates, destroying Numba's vectorization capabilities.
+
+### Analytics & Design Space Exploration (DSE)
+
+While the engine computes physical absolutes, human operators exploring the scenario design space (DSE) rely on relative context. Therefore, PHIDS utilizes a decoupling pattern:
+
+- **Raw Telemetry:** The Zarr buffers and ECS engine record and evaluate strict absolutes.
+- **Relativization (Normalization):** The UI and analytics dashboards scale these raw limits on-the-fly (e.g., translating a plant's absolute energy of `45.0` against its genetic capacity of `50.0` to yield a `90%` health metric).
+
+This dichotomy ensures the underlying scientific model remains mathematically rigorous and computationally deterministic, while the analytical output remains cognitively accessible for researchers tuning the ecosystem.
+
+## 5. Ecological Parameter Relativization (Normalization)
+
+Within the mathematical engine, species and environmental interactions are strictly calculated using raw, absolute numerical primitives (e.g., specific Joules of energy, precise entity headcounts, and raw concentration floats). 
+
+However, from an analytical and design-space exploration (DSE) perspective, comparing a species with an absolute baseline energy of `5.0` to one with a baseline of `500.0` is ecologically opaque. A loss of `2.0` energy is devastating for the first, but trivial for the second. 
+
+To resolve this, the scientific framework employs **Relativization** (often referred to technically as normalization). Data points are transformed into dimensionless scales (ratios, percentages, and fractional multipliers) before presentation:
+
+- **Fractional Carrying Capacity (`energy_ratio`)**: Translates absolute biomass into a 0.0 to 1.0 fraction of the species' genetic maximum. This allows direct cross-species comparison of "ecological stress" regardless of their absolute size or metabolic requirements.
+- **Dimensionless Defense & Digestibility Scalars**: Instead of defining absolute lignin hardness, properties like `digestibility_modifier` are normalized to a `[0, 1]` coefficient. This simplifies the Lotka-Volterra interaction strength ($\beta$) into a proportional loss, ensuring that defensive evolutionary traits remain stable and bounded even if the global simulation scale is magnified by orders of magnitude.
+
+Relativization ensures that scientists and scenario authors can intuit the systemic pressures acting upon an ecosystem without needing to memorize the arbitrary absolute mathematical limits of the underlying physics engine.

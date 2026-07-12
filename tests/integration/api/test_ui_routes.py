@@ -1408,7 +1408,7 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval(
     assert 'name="z4_herbivore_species_extinction"' in resp.text
     assert 'name="z6_max_total_flora_energy"' in resp.text
     assert 'name="z7_max_total_herbivore_population"' in resp.text
-    assert 'hx-trigger="input changed delay:200ms from:input, change delay:200ms"' in resp.text
+    assert "hx-trigger=\"input changed delay:200ms from:input:not([type='range']), change delay:200ms\"" in resp.text
     assert get_draft().mycorrhizal_growth_interval_ticks == 1
     assert get_draft().z2_flora_species_extinction == 15
     assert get_draft().z4_herbivore_species_extinction == -1

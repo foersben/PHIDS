@@ -105,9 +105,58 @@
 {%- endmacro %}
 
 <div id="trigger-rules-view" class="space-y-4">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">🌿 Morphology & Defense</h2>
+    </div>
+  </div>
+
+  <!-- ── Morphology Settings ── -->
+  <div class="bg-white rounded-xl shadow-sm border overflow-auto mb-6">
+    <div class="px-4 py-3 border-b border-slate-200 bg-slate-50">
+      <h3 class="text-sm font-semibold text-slate-700">Passive Morphology</h3>
+      <p class="text-xs text-slate-500 mt-1">Constitutive defenses like thorns (Mechanical Damage) and lignin (Digestibility Modifier).</p>
+    </div>
+    <table class="w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase w-1/4">🌿 Plant</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase" title="Thorns/spines damage per bite">Mech. Damage</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase" title="Lignin/silica calorie multiplier">Digest. Mod.</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for fp in flora_species %}
+        <tr id="flora-morph-row-{{ fp.species_id }}">
+          <td class="px-3 py-2 text-slate-700 font-medium">{{ fp.name }}</td>
+          <td class="px-3 py-2">
+            <input type="number" value="{{ fp.passive_defenses.mechanical_damage_per_bite }}" step="0.1" min="0" name="passive_defenses.mechanical_damage_per_bite"
+              hx-put="/api/config/flora/{{ fp.species_id }}?view=morphology" hx-trigger="change"
+              hx-target="#flora-morph-row-{{ fp.species_id }}" hx-select="#flora-morph-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              class="border border-slate-300 focus:ring-2 focus:ring-indigo-400 rounded px-2 py-1 w-24">
+          </td>
+          <td class="px-3 py-2">
+            <div class="flex items-center gap-2">
+              <input type="range" min="0" max="1" step="0.05" id="morph-digest-slider-{{ fp.species_id }}"
+                data-sync-id="morph-digest-{{ fp.species_id }}" class="w-24 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer sync-slider"
+                value="{{ fp.passive_defenses.digestibility_modifier }}">
+              <input type="number" id="morph-digest-{{ fp.species_id }}" data-sync-id="morph-digest-slider-{{ fp.species_id }}"
+                value="{{ fp.passive_defenses.digestibility_modifier }}" step="0.1" min="0" max="1" name="passive_defenses.digestibility_modifier"
+                hx-put="/api/config/flora/{{ fp.species_id }}?view=morphology" hx-trigger="change"
+                hx-target="#flora-morph-row-{{ fp.species_id }}" hx-select="#flora-morph-row-{{ fp.species_id }}" hx-swap="outerHTML"
+                class="border border-slate-300 focus:ring-2 focus:ring-indigo-400 rounded px-2 py-1 w-16 sync-number">
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Active Trigger Rules ── -->
   <div class="flex items-center justify-between mb-2">
     <div>
-      <h2 class="text-xl font-semibold text-slate-800">⚡ Trigger Rules</h2>
+      <h3 class="text-lg font-semibold text-slate-800">⚡ Active Trigger Rules</h3>
     </div>
   </div>
 
@@ -140,7 +189,7 @@
     <h3 class="text-sm font-semibold text-indigo-700 mb-3">+ Add New Trigger Rule</h3>
     <form hx-post="/api/config/trigger-rules"
           hx-target="#trigger-rules-view" hx-swap="outerHTML"
-          class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 items-end">
+          class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
 
       <div>
         <label class="block text-xs font-medium text-slate-600 mb-1"
@@ -172,16 +221,45 @@
 
       <div>
         <label class="block text-xs font-medium text-slate-600 mb-1"
-          title="The chemical substance that will be synthesised">
+          title="Action type when rule is triggered">
+          🎯 Action Type
+        </label>
+        <select name="action_type"
+          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <option value="synthesize_substance">Synthesize Substance</option>
+          <option value="resource_withdrawal">Resource Withdrawal</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1"
+          title="The chemical substance that will be synthesised (if Synthesize Substance)">
           🧪 Substance
         </label>
         <select name="substance_id"
-          title="Substance to synthesise. Synthesis time and effects are taken from the Substance Definitions panel."
           class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
           {% for sub in substances %}
           <option value="{{ sub.substance_id }}">[{{ sub.type_label }}] {{ sub.name }}</option>
           {% endfor %}
         </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1"
+          title="Apparent nutrition factor during withdrawal (if Resource Withdrawal)">
+          📉 App. Nutrition
+        </label>
+        <input type="number" name="apparent_nutrition_factor" value="0.2" min="0" max="1" step="0.1"
+          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1"
+          title="Ticks the effect lasts (if Resource Withdrawal)">
+          ⏱️ Duration
+        </label>
+        <input type="number" name="aftereffect_ticks" value="10" min="1" step="1"
+          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
 
       <div>
@@ -200,22 +278,21 @@
         </div>
       </div>
 
-      <div class="xl:col-span-2">
+      <div class="xl:col-span-8">
         <label class="block text-xs font-medium text-slate-600 mb-1"
           title="Rules start unconditional. Use the visual builder below to add nested gates after creation.">
           Activation Gate
         </label>
-        <div class="rounded-lg border border-dashed border-indigo-300 bg-white/70 px-3 py-2 text-xs text-slate-500">
-          New rules start <strong>unconditional</strong>. After creating a rule, use the visual nested builder in the table below to add AND/OR groups, herbivore requirements, and required active substances.
+        <div class="rounded-lg border border-dashed border-indigo-300 bg-white/70 px-3 py-2 text-xs text-slate-500 flex justify-between items-center">
+          <span>New rules start <strong>unconditional</strong>. After creating a rule, use the visual nested builder below to add AND/OR groups and conditions.</span>
+          <button type="submit"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+            + Add Rule
+          </button>
         </div>
       </div>
 
-      <div class="flex items-end">
-        <button type="submit"
-          class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
-          + Add Rule
-        </button>
-      </div>
+
     </form>
   </div>
 
@@ -231,7 +308,13 @@
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Herbivore species that triggers synthesis when present">🐛 Herbivore</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
-            title="Substance synthesised in response">🧪 Substance</th>
+            title="Action type when rule is triggered">🎯 Action</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Substance synthesised in response (if Synthesize Substance)">🧪 Substance</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Apparent nutrition factor (if Resource Withdrawal)">📉 App. Nut.</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+            title="Duration ticks (if Resource Withdrawal)">⏱️ Dur.</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
             title="Minimum number of herbivore individuals needed at the plant cell">n<sub>min</sub></th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
@@ -273,6 +356,16 @@
             </select>
           </td>
           <td class="px-3 py-2">
+            <select name="action_type"
+              hx-put="/api/config/trigger-rules/{{ ridx }}" hx-trigger="change"
+              hx-target="#trigger-rules-view" hx-swap="outerHTML"
+              title="Action type"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 text-sm">
+              <option value="synthesize_substance" {% if rule.action_type == 'synthesize_substance' %}selected{% endif %}>Synthesize Substance</option>
+              <option value="resource_withdrawal" {% if rule.action_type == 'resource_withdrawal' %}selected{% endif %}>Resource Withdrawal</option>
+            </select>
+          </td>
+          <td class="px-3 py-2">
             <select name="substance_id"
               hx-put="/api/config/trigger-rules/{{ ridx }}" hx-trigger="change"
               hx-target="#trigger-rules-view" hx-swap="outerHTML"
@@ -285,6 +378,22 @@
               </option>
               {% endfor %}
             </select>
+          </td>
+          <td class="px-3 py-2">
+            <input type="number" name="apparent_nutrition_factor"
+              value="{{ rule.apparent_nutrition_factor }}" min="0" max="1" step="0.1"
+              hx-put="/api/config/trigger-rules/{{ ridx }}" hx-trigger="change"
+              hx-target="#trigger-rules-view" hx-swap="outerHTML"
+              title="Apparent nutrition factor"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16 text-sm">
+          </td>
+          <td class="px-3 py-2">
+            <input type="number" name="aftereffect_ticks"
+              value="{{ rule.aftereffect_ticks }}" min="1" step="1"
+              hx-put="/api/config/trigger-rules/{{ ridx }}" hx-trigger="change"
+              hx-target="#trigger-rules-view" hx-swap="outerHTML"
+              title="Duration ticks"
+              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-16 text-sm">
           </td>
           <td class="px-3 py-2">
             <div class="flex items-center gap-1 w-28">
@@ -399,6 +508,45 @@
           <li><strong>Draft State:</strong> Adding a rule, deleting nodes, changing values, or configuring gates updates the in-memory <strong>DraftState</strong> configuration on the server.</li>
           <li><strong>Live Commit:</strong> The active running simulation loop remains isolated from your draft edits. You must click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the top sticky header (or click <strong>▶ Start</strong> / <strong>↺ Reset</strong>) to compile these rules into Numba-compiled ECS system arrays.</li>
           <li><strong>Parallel Execution:</strong> Multiple rules configured on the same (plant, herbivore) pair fire simultaneously and independently, allowing a single attack to trigger multiple signaling pathways at once.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <!-- Passive Morphology Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="text-lg">📖</span>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Passive Morphology Guide</h3>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>🗡️</span> Mechanical Damage
+        </h4>
+        <p class="text-slate-500">
+          Constitutive defenses such as thorns, spines, and trichomes cause direct physical harm to attacking herbivores. This damage is applied instantly per grazing action.
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>Suitable Range:</strong> Typically <code class="bg-slate-50 px-0.5 rounded">[0.0, 5.0]</code>.</li>
+          <li><strong>0.0:</strong> Completely defenseless (soft tissues).</li>
+          <li><strong>1.0 - 2.0:</strong> Moderate defense, deters smaller swarms.</li>
+          <li><strong>> 3.0:</strong> Severe physical deterrent (heavy thorn cover).</li>
+        </ul>
+      </div>
+
+      <div class="space-y-2">
+        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
+          <span>🧱</span> Digestibility Modifier
+        </h4>
+        <p class="text-slate-500">
+          The accumulation of structural polymers like lignin and silica makes the plant tissues harder to digest, directly reducing the caloric/nutritional energy extracted by herbivores.
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
+          <li><strong>Suitable Range:</strong> Must be a multiplier within <code class="bg-slate-50 px-0.5 rounded">[0.0, 1.0]</code>.</li>
+          <li><strong>1.0:</strong> Fully digestible (100% caloric yield).</li>
+          <li><strong>0.4 - 0.8:</strong> Typical range for armored, woody, or mature tissues.</li>
+          <li><strong>0.0:</strong> Completely indigestible (yields 0 energy to the grazing herbivore).</li>
         </ul>
       </div>
     </div>

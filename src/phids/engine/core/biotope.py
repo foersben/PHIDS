@@ -1,7 +1,9 @@
 """GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module implements the :class:`GridEnvironment`, a cellular automata biotope for PHIDS using
-NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of
+This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients,
+wind fields, and apparent nutrition). It enforces strict read/write double-buffering across all layers
+to prevent race conditions and maintain exact tick-level determinism during concurrent simulation phases.
+No allocations are made during the diffusion loop. All layers are pre-allocated according to the Rule of
 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
 environment employs explicit read/write double-buffering to prevent race conditions and guarantee
 deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired
@@ -23,7 +25,6 @@ from phids.shared.constants import (
     GRID_W_MAX,
     MAX_FLORA_SPECIES,
     MAX_SUBSTANCE_TYPES,
-    SIGNAL_DECAY_FACTOR,
     SIGNAL_EPSILON,
 )
 
@@ -251,13 +252,18 @@ class GridEnvironment:
     # Diffusion
     # ------------------------------------------------------------------
 
-    def diffuse_signals(self) -> None:
+    def diffuse_signals(self, signal_decay_factor: float = 0.85) -> None:
         """Compute one diffusion tick for all signal layers.
 
         This applies local semi-Lagrangian advection using per-cell wind vectors,
         followed by isotropic Gaussian diffusion and decay. The transport update
         respects heterogeneous wind fields across the grid and avoids global-mean
         wind averaging artefacts.
+
+        Args:
+            signal_decay_factor: Per-tick airborne signal retention (0.0-1.0).
+                Defaults to the ``SIGNAL_DECAY_FACTOR`` module-level constant (0.85).
+                Pass ``loop.config.signal_decay_factor`` to use the scenario-level value.
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
@@ -271,7 +277,7 @@ class GridEnvironment:
                 layer,
                 self.wind_vector_x,
                 self.wind_vector_y,
-                SIGNAL_DECAY_FACTOR,
+                signal_decay_factor,
                 SIGNAL_EPSILON,
                 DIFFUSION_KERNEL,
                 self._signal_layers_write[s],

@@ -89,9 +89,9 @@
             </button>
           </li>
           <li>
-            <button hx-get="/ui/trigger-rules" hx-target="#main-workspace" hx-swap="innerHTML"
+            <button hx-get="/ui/morphology-defense" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
-              ⚡ Trigger Rules
+              🌿 Morphology & Defense
             </button>
           </li>
         </ul>
@@ -208,7 +208,7 @@
           </div>
           <button type="button" id="diagnostics-toggle"
             class="group inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-            <span class="font-mono text-slate-400 group-hover:text-slate-600">⟨</span>
+            <span class="font-mono text-slate-400 group-hover:text-slate-600">⟩</span>
             <span>Collapse</span>
           </button>
         </div>
@@ -230,18 +230,17 @@
       </div>
 
       <div id="diagnostics-collapsed-shell" class="hidden h-full flex-col items-center gap-3 bg-slate-50/90 px-2 py-3">
-        <div class="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 [writing-mode:vertical-rl] rotate-180">Diag</div>
+        <div>
+          <button type="button" id="diagnostics-expand-collapsed"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            title="Expand diagnostics" aria-label="Expand diagnostics">⟨</button>
+        </div>
         <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           data-tab-key="model" data-diagnostics-url="/ui/diagnostics/model" title="Model diagnostics" aria-label="Model diagnostics">◫</button>
         <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           data-tab-key="frontend" data-diagnostics-url="/ui/diagnostics/frontend" title="Frontend diagnostics" aria-label="Frontend diagnostics">⌘</button>
         <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           data-tab-key="backend" data-diagnostics-url="/ui/diagnostics/backend" title="Backend logs" aria-label="Backend logs">☰</button>
-        <div class="mt-auto">
-          <button type="button" id="diagnostics-expand-collapsed"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            title="Expand diagnostics" aria-label="Expand diagnostics">⟩</button>
-        </div>
       </div>
     </aside>
   </div>
@@ -263,7 +262,9 @@
       if (tickCounter) tickCounter.textContent = '0';
       htmx.ajax('GET', '/ui/dashboard', { target: '#main-workspace', swap: 'innerHTML' });
       const diagnostics = window.__phidsFrontendDiagnostics || {};
-      diagnostics.notes = ['Scenario loaded into live simulation and dashboard refresh requested.'];
+      const notes = Array.isArray(diagnostics.notes) ? diagnostics.notes : [];
+      notes.unshift(`[${new Date().toLocaleTimeString()}] Scenario loaded into live simulation and dashboard refresh requested.`);
+      diagnostics.notes = notes.slice(0, 15);
       diagnostics.renderMode = 'live';
       window.__phidsFrontendDiagnostics = diagnostics;
       if (typeof window.phidsRefreshDiagnostics === 'function') {
@@ -379,9 +380,17 @@
         localStorage.setItem(STORAGE_ACTIVE_TAB, activeTab);
         syncTabStyles();
         if (expand) setCollapsed(false);
-        if (!force && content.dataset.diagnosticsUrl === url && content.innerHTML.trim() && activeTab === content.dataset.tabKey) {
-          return;
+
+        if (!force) {
+          if (tabKey === 'backend') {
+            const scroller = content.querySelector('.overflow-auto');
+            // If the user has scrolled down to read older history, don't interrupt them with a refresh
+            if (scroller && scroller.scrollTop > 15) {
+              return;
+            }
+          }
         }
+
         content.dataset.diagnosticsUrl = url;
         content.dataset.tabKey = tabKey;
         htmx.ajax('GET', url, { target: '#diagnostics-content', swap: 'innerHTML' });
@@ -425,7 +434,9 @@
         if (url.startsWith('/ui/') && !url.startsWith('/ui/diagnostics/')) {
           const diagnostics = window.__phidsFrontendDiagnostics || {};
           diagnostics.activeView = url.replace('/ui/', '') || 'dashboard';
-          diagnostics.notes = [`HTMX requested ${url} for the main workspace.`];
+          const notes = Array.isArray(diagnostics.notes) ? diagnostics.notes : [];
+          notes.unshift(`[${new Date().toLocaleTimeString()}] HTMX requested ${url} for the main workspace.`);
+          diagnostics.notes = notes.slice(0, 15);
           window.__phidsFrontendDiagnostics = diagnostics;
           window.dispatchEvent(new CustomEvent('phids:frontend-diagnostics', { detail: diagnostics }));
         }
@@ -435,6 +446,62 @@
         if (!document.hidden) refreshDiagnostics(true);
       });
     })();
+  </script>
+  <script>
+    // Dual-control sync logic for UI parameters
+    document.addEventListener('input', (e) => {
+      // Sync from slider to number input
+      if (e.target.matches('input[type="range"].sync-slider')) {
+        const numberInput = document.getElementById(e.target.dataset.syncId);
+        if (numberInput) {
+          if (e.target.dataset.scale === 'log') {
+            const minSlider = parseFloat(e.target.min) || 0;
+            const maxSlider = parseFloat(e.target.max) || 100;
+            const minLog = Math.log(parseFloat(e.target.dataset.logMin) || 1);
+            const maxLog = Math.log(parseFloat(e.target.dataset.logMax) || 10000);
+
+            const scale = (maxLog - minLog) / (maxSlider - minSlider);
+            const val = Math.exp(minLog + scale * (parseFloat(e.target.value) - minSlider));
+
+            numberInput.value = Math.round(val);
+          } else {
+            numberInput.value = e.target.value;
+          }
+        }
+      }
+
+      // Sync from number input to slider
+      if (e.target.matches('input[type="number"].sync-number')) {
+        const sliderInput = document.getElementById(e.target.dataset.syncId);
+        if (sliderInput) {
+          if (sliderInput.dataset.scale === 'log') {
+            const minSlider = parseFloat(sliderInput.min) || 0;
+            const maxSlider = parseFloat(sliderInput.max) || 100;
+            const minLog = Math.log(parseFloat(sliderInput.dataset.logMin) || 1);
+            const maxLog = Math.log(parseFloat(sliderInput.dataset.logMax) || 10000);
+
+            const val = parseFloat(e.target.value);
+            if (val > 0) {
+              const scale = (maxLog - minLog) / (maxSlider - minSlider);
+              const targetVal = (Math.log(val) - minLog) / scale + minSlider;
+              sliderInput.value = targetVal;
+            }
+          } else {
+            sliderInput.value = e.target.value;
+          }
+        }
+      }
+    });
+
+    document.addEventListener('change', (e) => {
+      // When slider drag ends, notify HTMX via the number input
+      if (e.target.matches('input[type="range"].sync-slider')) {
+        const numberInput = document.getElementById(e.target.dataset.syncId);
+        if (numberInput) {
+          numberInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
   </script>
 </body>
 </html>

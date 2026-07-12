@@ -85,3 +85,79 @@ def test_destroy_entity_cleans_spatial_hash_without_full_scan(empty_world: ECSWo
 
     assert entity.entity_id not in world.entities_at(5, 7)
     assert (5, 7) not in world._spatial_hash
+
+
+class OtherMarker:
+    """Alternative test component for verifying multi-component ECS queries."""
+
+    def __init__(self, value: int) -> None:
+        """Initialise OtherMarker with integer payload."""
+        self.value = value
+
+
+def test_ecs_query_multi_component(empty_world: ECSWorld) -> None:
+    """Verifies that query() accurately matches entities possessing multiple components."""
+    world = empty_world
+    e1 = world.create_entity()
+    e2 = world.create_entity()
+    e3 = world.create_entity()
+
+    world.add_component(e1.entity_id, Marker(1))
+    world.add_component(e2.entity_id, Marker(2))
+    world.add_component(e2.entity_id, OtherMarker(20))
+    world.add_component(e3.entity_id, OtherMarker(30))
+
+    res = world.query(Marker, OtherMarker)
+    assert len(res) == 1
+    assert res[0].entity_id == e2.entity_id
+
+
+def test_ecs_query_empty_args_returns_all(empty_world: ECSWorld) -> None:
+    """Verifies that query() without args returns all living entities."""
+    world = empty_world
+    e1 = world.create_entity()
+    e2 = world.create_entity()
+
+    res = world.query()
+    assert len(res) == 2
+    ids = {e.entity_id for e in res}
+    assert ids == {e1.entity_id, e2.entity_id}
+
+
+def test_ecs_query_missing_component_returns_empty(empty_world: ECSWorld) -> None:
+    """Verifies that querying for a component type no entity possesses returns empty."""
+    world = empty_world
+    e1 = world.create_entity()
+    world.add_component(e1.entity_id, Marker(1))
+
+    res = world.query(OtherMarker)
+    assert res == []
+
+
+def test_ecs_remove_component(empty_world: ECSWorld) -> None:
+    """Verifies that removing a component updates the entity and the index."""
+    world = empty_world
+    e1 = world.create_entity()
+    world.add_component(e1.entity_id, Marker(1))
+
+    assert len(world.query(Marker)) == 1
+    world.remove_component(e1.entity_id, Marker)
+    assert len(world.query(Marker)) == 0
+    assert not e1.has_component(Marker)
+
+
+def test_ecs_unregister_position_guard(empty_world: ECSWorld) -> None:
+    """Verifies that unregister_position correctly manages the reverse position index."""
+    world = empty_world
+    e1 = world.create_entity()
+
+    world.register_position(e1.entity_id, 1, 1)
+
+    # Try unregistering from a position the entity is not currently associated with
+    world.unregister_position(e1.entity_id, 2, 2)
+    # The reverse index should remain intact because it didn't match (2,2)
+    assert world._entity_positions.get(e1.entity_id) == (1, 1)
+
+    # Now legitimately unregister
+    world.unregister_position(e1.entity_id, 1, 1)
+    assert e1.entity_id not in world._entity_positions

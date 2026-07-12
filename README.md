@@ -40,7 +40,10 @@ Rather than assuming instant global communication, PHIDS utilizes continuous rea
 
 ### Chemotactic Foraging & Trophic Defenses
 
-Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Plants can counter this by deploying both baseline (constitutive) defenses, like camouflage that masks their caloric signature, and reactive (induced) defenses. When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem.
+Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Plants can counter this by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
+
+* **Morphological Defenses (Passive):** Features like spines (inflicting mechanical damage) or tough lignin (digestibility modifiers that cause caloric attenuation during feeding).
+* **Chemical Defenses (Active):** When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem. Or, under high stress, a plant might initiate *resource withdrawal* to mask its apparent nutritional value.
 
 ---
 
@@ -120,7 +123,7 @@ Previously computed batches can be rehydrated into the in-memory ledger using th
 `Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).
 
 Reference chapter:
-[`docs/ui/batch-runner-and-aggregate-analysis.md`](docs/ui/batch-runner-and-aggregate-analysis.md).
+[`docs/scientific_model/ecological_analytics.md`](docs/scientific_model/ecological_analytics.md).
 
 ---
 
@@ -139,9 +142,9 @@ Curated examples are provided under `examples/`, including:
 
 Authoring references:
 
-* [`docs/scenarios/index.md`](docs/scenarios/index.md)
-* [`docs/scenarios/schema-and-curated-examples.md`](docs/scenarios/schema-and-curated-examples.md)
-* [`docs/scenarios/scenario-authoring-and-trigger-semantics.md`](docs/scenarios/scenario-authoring-and-trigger-semantics.md)
+* [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md)
+* [`docs/scenario_guide/curated_examples.md`](docs/scenario_guide/curated_examples.md)
+* [`docs/scenario_guide/scenario_authoring.md`](docs/scenario_guide/scenario_authoring.md)
 
 ---
 
@@ -226,8 +229,7 @@ GitHub Actions policy summary:
 
 References:
 
-* [`docs/development/github-actions-and-local-ci.md`](docs/development/github-actions-and-local-ci.md)
-* [`docs/development/contribution-workflow-and-quality-gates.md`](docs/development/contribution-workflow-and-quality-gates.md)
+* [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md)
 
 ---
 
@@ -248,7 +250,7 @@ docker image prune -f
 ```
 
 Release and packaging policy:
-[`docs/development/containers-and-release-automation.md`](docs/development/containers-and-release-automation.md)
+[`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md)
 
 ---
 
@@ -281,12 +283,10 @@ Expected automation outcomes:
 Start here for full subsystem detail:
 
 * docs home: [`docs/index.md`](docs/index.md)
-* architecture: [`docs/architecture/index.md`](docs/architecture/index.md)
-* engine: [`docs/engine/index.md`](docs/engine/index.md)
-* interfaces: [`docs/interfaces/index.md`](docs/interfaces/index.md)
-* scenarios: [`docs/scenarios/index.md`](docs/scenarios/index.md)
-* telemetry: [`docs/telemetry/index.md`](docs/telemetry/index.md)
-* development: [`docs/development/index.md`](docs/development/index.md)
+* scientific model: [`docs/scientific_model/index.md`](docs/scientific_model/index.md)
+* technical architecture: [`docs/technical_architecture/system_architecture.md`](docs/technical_architecture/system_architecture.md)
+* scenario guide: [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md)
+* development guide: [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md)
 * reference: [`docs/reference/index.md`](docs/reference/index.md)
 
 Published site: <https://foersben.github.io/PHIDS/>
@@ -333,12 +333,12 @@ packaging/              PyInstaller configuration
 
 ## 📄 Where to go next
 
-* Want to understand phase semantics? Start at [`docs/engine/index.md`](docs/engine/index.md).
-* Want to build or edit scenarios? Start at [`docs/scenarios/index.md`](docs/scenarios/index.md).
+* Want to understand phase semantics? Start at [`docs/technical_architecture/engine_execution.md`](docs/technical_architecture/engine_execution.md).
+* Want to build or edit scenarios? Start at [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md).
 * Want route and WebSocket details? Start at
-  [`docs/interfaces/rest-and-websocket-surfaces.md`](docs/interfaces/rest-and-websocket-surfaces.md).
+  [`docs/technical_architecture/interfaces_and_ui.md`](docs/technical_architecture/interfaces_and_ui.md).
 * Want contributor workflow and CI policy? Start at
-  [`docs/development/contribution-workflow-and-quality-gates.md`](docs/development/contribution-workflow-and-quality-gates.md).
+  [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
 
 ---
 
