@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "phids"
-version = "0.6.0"
+version = "0.7.0"
 description = "PHIDS – Plant-Herbivore Interaction & Defense Simulator"
 authors = [{ name = "Benjamin Förster", email = "mail@benjamin-foerster.de" }]
 readme = "README.md"
