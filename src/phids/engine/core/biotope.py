@@ -23,7 +23,6 @@ from phids.shared.constants import (
     GRID_W_MAX,
     MAX_FLORA_SPECIES,
     MAX_SUBSTANCE_TYPES,
-    SIGNAL_DECAY_FACTOR,
     SIGNAL_EPSILON,
 )
 
@@ -251,13 +250,18 @@ class GridEnvironment:
     # Diffusion
     # ------------------------------------------------------------------
 
-    def diffuse_signals(self) -> None:
+    def diffuse_signals(self, signal_decay_factor: float = 0.85) -> None:
         """Compute one diffusion tick for all signal layers.
 
         This applies local semi-Lagrangian advection using per-cell wind vectors,
         followed by isotropic Gaussian diffusion and decay. The transport update
         respects heterogeneous wind fields across the grid and avoids global-mean
         wind averaging artefacts.
+
+        Args:
+            signal_decay_factor: Per-tick airborne signal retention (0.0-1.0).
+                Defaults to the ``SIGNAL_DECAY_FACTOR`` module-level constant (0.85).
+                Pass ``loop.config.signal_decay_factor`` to use the scenario-level value.
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
@@ -271,7 +275,7 @@ class GridEnvironment:
                 layer,
                 self.wind_vector_x,
                 self.wind_vector_y,
-                SIGNAL_DECAY_FACTOR,
+                signal_decay_factor,
                 SIGNAL_EPSILON,
                 DIFFUSION_KERNEL,
                 self._signal_layers_write[s],

@@ -57,6 +57,26 @@
           class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
 
+      <!-- Diffusion / Emission Constants -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Fraction of signal concentration retained per tick after Gaussian diffusion (0.01-1.0). Lower = faster signal fade.">
+          Signal Decay Factor
+        </label>
+        <input type="number" name="signal_decay_factor" min="0.01" max="1.0" step="0.01"
+          value="{{ draft.signal_decay_factor }}"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1"
+          title="Concentration added to a signal or toxin layer per tick when an active substance emits (0.01-1.0).">
+          Substance Emit Rate
+        </label>
+        <input type="number" name="substance_emit_rate" min="0.01" max="1.0" step="0.01"
+          value="{{ draft.substance_emit_rate }}"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
       <div class="col-span-2 flex items-center gap-3">
         <input type="checkbox" name="mycorrhizal_inter_species" id="myco_inter"
           {% if draft.mycorrhizal_inter_species %}checked{% endif %}
@@ -125,23 +145,29 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
-        <p class="font-semibold text-slate-700">Core Biotope Fields Explained:</p>
+        <p class="font-semibold text-slate-700">Core Fields Explained:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>📐 Grid Dimensions:</strong> Width & Height of the cellular automaton board (10x10 to 80x80). Changing these clears placements.</li>
-          <li><strong>⏱️ Max Ticks & Speed:</strong> Controls simulation termination limits and default tick rate in Hz.</li>
-          <li><strong>💨 Wind Vector:</strong> The directional vector (X, Y) determining the drift/advection direction of volatile signals and toxins across cells.</li>
-          <li><strong>🔬 Signal/Toxin Layers:</strong> Number of available slot layers for chemical signals or toxins (1 to 16).</li>
-          <li><strong>🤝 Mycorrhizal Inter-Species:</strong> If enabled, allows mycorrhizal networks (root links) to form between different plant species, enabling mutual resource sharing.</li>
+          <li><strong>📐 Grid Dimensions:</strong> Width &amp; Height of the cellular automaton board (10×10 to 80×80). Larger grids allow more spatial heterogeneity but increase computation.</li>
+          <li><strong>⏱️ Max Ticks &amp; Speed:</strong> Controls simulation termination limits and default tick rate in Hz.</li>
+          <li><strong>💨 Wind Vector (X, Y):</strong> Drives semi-Lagrangian advection of airborne signal grids. Positive X shifts signals east; positive Y shifts them south. Wind does <em>not</em> affect mycorrhizal relay.</li>
+          <li><strong>🔬 Signal/Toxin Layers:</strong> Number of available slot layers for chemical signals or toxins (1–16). Governed by the Rule-of-16 for L1/L2 cache efficiency.</li>
+          <li><strong>🤝 Mycorrhizal Inter-Species:</strong> If enabled, root networks form between different plant species, enabling cross-species chemical alarm sharing.</li>
         </ul>
       </div>
       <div>
-        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
-        <p class="text-slate-500 mt-1">
-          Edits to inputs auto-save to the backend draft immediately.
-        </p>
-        <p class="text-slate-500 mt-1">
-          ⚠️ <strong>Crucial:</strong> To update the live running simulation, you must click <strong class="text-indigo-600">🔄 Load Draft</strong>, or start/reset the simulation loop.
-        </p>
+        <p class="font-semibold text-slate-700">Diffusion &amp; Emission Parameters:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>🌫️ Signal Decay Factor (0.01–1.0):</strong> The fraction of signal concentration retained per tick after Gaussian diffusion. Default <code>0.85</code> means 15% of airborne concentration dissipates each tick. Set to <code>1.0</code> for persistent signals; set to <code>0.3</code> for rapidly fading alerts. This directly controls how far chemical alarms can propagate spatially before becoming undetectable.</li>
+          <li><strong>📡 Substance Emit Rate (0.01–1.0):</strong> The concentration increment added to a signal or toxin layer per tick when an active substance emits. Higher values cause layers to saturate faster. For mycorrhizal relay, the total emit is split: <code>airborne = rate / (relay_targets + 1)</code>; the remainder is distributed across root-connected neighbours.</li>
+        </ul>
+        <p class="font-semibold text-slate-700 mt-3">Z-Rules (Termination Circuit-Breakers):</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>Z2 — Flora Extinction:</strong> Halts the simulation when a specific flora species index goes completely extinct. Set to <code>-1</code> to disable. Useful for testing whether a herbivore species can drive a flora species to zero.</li>
+          <li><strong>Z4 — Herbivore Extinction:</strong> Halts when a specific herbivore species goes extinct. Useful for measuring the effectiveness of a chemical defense strategy.</li>
+          <li><strong>Z6 — Total Flora Energy Cap:</strong> Halts if the total energy summed across all plants exceeds this value. Acts as an ecological carrying-capacity limiter to prevent unchecked plant growth.</li>
+          <li><strong>Z7 — Herbivore Population Cap:</strong> Halts if the total herbivore headcount across all swarms exceeds this value. Prevents runaway population explosions that would crash the simulation.</li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>

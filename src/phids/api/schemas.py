@@ -495,6 +495,28 @@ class SimulationConfig(StrictBaseModel):
         description="Halt when total herbivore population exceeds this value (-1 = disabled).",
     )
 
+    # Configurable diffusion / emission constants (runtime-overridable defaults from constants.py)
+    signal_decay_factor: float = Field(
+        default=0.85,
+        gt=0.0,
+        le=1.0,
+        description=(
+            "Per-tick airborne signal retention after Gaussian diffusion (0.0-1.0). "
+            "1.0 = no decay; values closer to 0.0 cause total dissipation each tick. "
+            "Exposed in the UI as Signal Decay (%)."
+        ),
+    )
+    substance_emit_rate: float = Field(
+        default=0.1,
+        gt=0.0,
+        le=1.0,
+        description=(
+            "Concentration increment added to a signal or toxin layer per tick "
+            "when an active SubstanceComponent emits into the environment. "
+            "Exposed in the UI as Substance Emit Rate (%)."
+        ),
+    )
+
     # Replay backend selection
     replay_backend: str = Field(
         default="zarr",

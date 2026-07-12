@@ -104,36 +104,34 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
     <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
       <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Substance Configuration Guide</h3>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Secondary Metabolites & Semiochemicals Guide</h3>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
-        <p class="font-semibold text-slate-700">Columns Explained:</p>
+        <p class="font-semibold text-slate-700">Substance Types & Dynamics:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>🆔 ID:</strong> The internal index (0 to 15) corresponding to the substance's dedicated layer index in signal/toxin grids.</li>
-          <li><strong>🏷️ Name:</strong> Human-readable label for custom identification.</li>
-          <li><strong>🧪 Type:</strong> Behavioral behavior of the chemical:
+          <li><strong>🆔 ID:</strong> The channel index (0-15) bound to the double-buffered grid arrays.</li>
+          <li><strong>🧪 Type (Action Profile):</strong> Defines the chemical class:
             <ul class="list-[circle] list-inside pl-4 mt-0.5 space-y-0.5">
-              <li><strong class="text-slate-700">Signal:</strong> Volatile airborne chemical that diffuses to warn neighboring plants.</li>
-              <li><strong class="text-slate-700">Lethal Toxin:</strong> Local poison that kills grazing herbivores.</li>
-              <li><strong class="text-slate-700">Repellent Toxin:</strong> Local irritant that forces herbivores to move away.</li>
-              <li><strong class="text-slate-700">Toxin:</strong> Standard chemical deterrent affecting feeding efficiency.</li>
+              <li><strong class="text-slate-700">Signal (VOC):</strong> Volatile Organic Compounds (e.g., green leaf volatiles). Emitted to the airborne layer, subjected to Gaussian diffusion and wind advection. Detectable by distant swarms and roots.</li>
+              <li><strong class="text-slate-700">Toxin (Alkaloid/Phenolic):</strong> Localized anti-herbivory compound (e.g., nicotine, tannins). Retained entirely in the cellular source layer (no airborne diffusion). Reduces digestive efficiency or induces mortality.</li>
+              <li><strong class="text-slate-700">Repellent Toxin:</strong> A compound that forces random-walk displacement (chemotactic repulsion) away from the cell.</li>
+              <li><strong class="text-slate-700">Lethal Toxin:</strong> Exerts direct per-tick mortality on grazing swarms.</li>
             </ul>
           </li>
-          <li><strong>⏱️ Synth. Dur.:</strong> Number of ticks the plant continues synthesizing the substance once triggered.</li>
-          <li><strong>⏳ Aftereffect:</strong> Remaining ticks the substance persists in plant cells after synthesis stops.</li>
-          <li><strong>☠️ Lethality:</strong> Rate of population reduction per tick applied to swarms feeding on plants producing lethal toxins.</li>
-          <li><strong>👥 Min Pop.:</strong> The minimum herbivore headcount required in the cell to trigger the substance's production.</li>
-          <li><strong>🛠️ Actions:</strong> Add new substances (up to 16) or delete existing ones.</li>
         </ul>
       </div>
       <div>
-        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="font-semibold text-slate-700">Synthesis & Kinetics:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>⏱️ Synth. Dur.:</strong> Active biosynthetic duration in ticks once triggered by herbivory (min 1). Controls the continuous emission rate.</li>
+          <li><strong>⏳ Aftereffect:</strong> Metabolic decay lag in ticks (min 0). Concentration levels remain elevated in plant tissues post-synthesis.</li>
+          <li><strong>👥 Min Pop.:</strong> The threshold grazing pressure (number of herbivores in the swarm) required to induce synthesis (min 1). Simulates the activation barrier of the jasmonic acid pathway.</li>
+          <li><strong>☠️ Lethality:</strong> Lethality Rate (min 0.0). Exerts direct per-tick mortality on grazing swarms (e.g. <code>0.05</code> = kills 5% of swarm per tick). Only applies to Lethal Toxins.</li>
+        </ul>
+        <p class="font-semibold text-slate-700 mt-3">Applying Changes:</p>
         <p class="text-slate-500 mt-1">
-          Modifying any value in a table field immediately triggers a background save to the server-side draft.
-        </p>
-        <p class="text-slate-500 mt-1">
-          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+          Edits autosave to the DraftState. ⚠️ You must click <strong class="text-indigo-600">🔄 Load Draft</strong> for parameters to inject into the live Numba arrays and JIT interaction loops.
         </p>
       </div>
     </div>

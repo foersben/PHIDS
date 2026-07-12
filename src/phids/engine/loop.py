@@ -550,6 +550,8 @@ class SimulationLoop:
                 self.config.mycorrhizal_signal_velocity,
                 self.tick,
                 plant_death_causes=plant_death_causes,
+                substance_emit_rate=self.config.substance_emit_rate,
+                signal_decay_factor=self.config.signal_decay_factor,
             )
             if debug_summary:
                 phase_timings_ms["signaling"] = (time.perf_counter() - phase_started) * 1000.0

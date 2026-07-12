@@ -106,3 +106,23 @@ Traditional sequential loop architectures update agent states and environment ma
 
 - **Ecological Concurrency:** In a real ecosystem, thousands of organisms act simultaneously within a given split-second window; they do not politely take sequential turns.
 - **Fair Resource Competition:** By executing all evaluations against a fixed snapshot of the world ($State_t$) and deferring commitments, the engine guarantees that all overlapping herbivores face fair, simultaneous exploitation competition for a plant's biomass. It ensures that resource depletion dynamics reflect genuine collective pressure rather than software-induced indexing artifacts.
+
+## 5. Absolute Physics vs. Relative Analytics
+
+During scenario configuration and telemetry review, it is common to question why the engine requires unscaled, absolute values (e.g., configuring `energy_min = 5.0` instead of a percentage).
+
+### The Mathematical Necessity of Absolute Bounds
+
+In Lotka-Volterra dynamics and spatially explicit cellular automata, physical limits and interaction thresholds define the carrying capacity of the environment. The engine must compute deterministic mass and energy transfers per tick based on *what is actually there*, rather than abstract percentages:
+
+- **Toxicity:** A plant emitting `0.1` units of lethal toxin applies an exact, absolute metabolic penalty to a grazing herbivore. If this were a "percentage", the damage formula would require a dynamic denominator (e.g., percentage of *what*? The plant's capacity? The herbivore's resistance?) which introduces unstable feedback loops into the integration algorithms.
+- **Biomass Thresholds:** A swarm must consume absolute biomass (e.g., `4.5` energy units per individual) to stave off starvation. Translating this to a relative percentage would require recalculating the threshold every time the herd population fluctuates, destroying Numba's vectorization capabilities.
+
+### Analytics & Design Space Exploration (DSE)
+
+While the engine computes physical absolutes, human operators exploring the scenario design space (DSE) rely on relative context. Therefore, PHIDS utilizes a decoupling pattern:
+
+- **Raw Telemetry:** The Zarr buffers and ECS engine record and evaluate strict absolutes.
+- **Relativization (Normalization):** The UI and analytics dashboards scale these raw limits on-the-fly (e.g., translating a plant's absolute energy of `45.0` against its genetic capacity of `50.0` to yield a `90%` health metric).
+
+This dichotomy ensures the underlying scientific model remains mathematically rigorous and computationally deterministic, while the analytical output remains cognitively accessible for researchers tuning the ecosystem.

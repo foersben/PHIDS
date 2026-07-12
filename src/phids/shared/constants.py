@@ -15,6 +15,10 @@ maintain matrix sparsity and avoid accumulation of subnormal floating-point valu
 degrade Numba JIT-compiled kernel throughput. ``SUBSTANCE_EMIT_RATE`` controls the per-tick
 concentration increment applied to signal and toxin layers when an active ``SubstanceComponent``
 emits into the environment.
+
+Both ``SIGNAL_DECAY_FACTOR`` and ``SUBSTANCE_EMIT_RATE`` serve as the canonical default values
+for their corresponding ``SimulationConfig`` fields and are retained here for backward
+compatibility and test fixture use.
 """
 
 from __future__ import annotations

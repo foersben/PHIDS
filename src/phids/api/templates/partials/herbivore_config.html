@@ -27,7 +27,7 @@
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Energy Min</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Speed</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Eating Rate</th>
-          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Repr. Divisor</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Split Threshold (Energy)</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase" title="Resistance to morphological defenses">Morph. Adapt.</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase" title="Metabolic ability to neutralize toxins">Chem. Neut.</th>
           <th class="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase" title="Ability to extract calories from tough matter">Digest. Eff.</th>
@@ -110,31 +110,29 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
     <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
       <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Herbivore Species Configuration Guide</h3>
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Herbivore Population & Adaptation Guide</h3>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
-        <p class="font-semibold text-slate-700">Columns Explained:</p>
+        <p class="font-semibold text-slate-700">Ecological Parameters Explained:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>🆔 ID:</strong> Unique species index automatically assigned by the engine.</li>
-          <li><strong>🏷️ Name:</strong> Custom species name.</li>
-          <li><strong>❤️ Energy Min:</strong> The threshold below which a swarm becomes energy-stressed and risks starvation/extinction.</li>
-          <li><strong>🏃 Speed (Velocity):</strong> Movement distance or step size per simulation tick across the grid cells.</li>
-          <li><strong>🍽️ Eating Rate (Consumption):</strong> The rate of biomass/energy consumed per tick from compatible plants in the same cell.</li>
-          <li><strong>➗ Repr. Divisor:</strong> The energy divisor determines how offspring are split and initialized during reproduction/mitosis phases.</li>
-          <li><strong>🛡️ Morph. Adapt. (Morphological Adaptation):</strong> Resistance to physical plant defenses (0.0 to 1.0).</li>
-          <li><strong>🧪 Chem. Neut. (Chemical Neutralization):</strong> Ability to neutralize ingested toxins (0.0 to 1.0).</li>
-          <li><strong>🍂 Digest. Eff. (Digestive Efficiency):</strong> Ability to extract calories from tough matter.</li>
-          <li><strong>🛠️ Actions:</strong> Add new herbivore species (up to 16) or delete existing ones.</li>
+          <li><strong>🆔 ID & 🏷️ Name:</strong> Species identifier and classification for tracking in telemetry buffers.</li>
+          <li><strong>❤️ Energy Min (Starvation Limit):</strong> The absolute minimum energy threshold required per capita before the swarm enters a starvation state, incurring mortality (min 0.1).</li>
+          <li><strong>🏃 Speed (Velocity):</strong> Movement period in ticks between relocations (min 1). A value of <code>1</code> = moves every tick (fastest). A value of <code>5</code> = rests 4 ticks and moves on the 5th.</li>
+          <li><strong>🍽️ Eating Rate (Consumption):</strong> Biomass extracted per tick from host flora (min 0.1). This directly influences the Lotka-Volterra interaction strength and energy transfer between trophic levels.</li>
+          <li><strong>➗ Split Threshold (Energy):</strong> The energy multiplier governing swarm mitosis (min 0.1). When a swarm's gathered energy exceeds <code>population * energy_min * divisor</code>, the swarm reproduces (population increases), allowing explosive exponential growth during periods of abundant food.</li>
         </ul>
       </div>
       <div>
-        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
+        <p class="font-semibold text-slate-700">Evolutionary Resistances (0.0 to 1.0):</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
+          <li><strong>🛡️ Morph. Adapt.:</strong> Resistance to constitutive morphological defenses (e.g., thorns, trichomes). A value of <code>1.0</code> implies complete immunity, allowing unhindered feeding despite physical barriers.</li>
+          <li><strong>🧪 Chem. Neut.:</strong> Metabolic capability to bind, sequester, or excrete induced toxic secondary metabolites (e.g., alkaloids, glucosinolates). Higher values mitigate the lethal effects of airborne or localized toxins.</li>
+          <li><strong>🍂 Digest. Eff.:</strong> Efficiency of breaking down complex polymers (lignin, cellulose). Influences baseline nutritional yield during grazing.</li>
+        </ul>
+        <p class="font-semibold text-slate-700 mt-3">Applying Changes:</p>
         <p class="text-slate-500 mt-1">
-          Modifying any value in a table field immediately triggers a background save to the server-side draft.
-        </p>
-        <p class="text-slate-500 mt-1">
-          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+          Edits autosave to the DraftState. ⚠️ You must click <strong class="text-indigo-600">🔄 Load Draft</strong> for parameters to inject into the live Numba arrays and JIT interaction loops.
         </p>
       </div>
     </div>

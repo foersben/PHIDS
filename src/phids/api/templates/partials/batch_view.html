@@ -383,4 +383,16 @@
     {% endif %}
   </p>
 {% endif %}
+
+  <!-- Info Board -->
+  <div class="mt-4 rounded-md bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+    <h3 class="font-semibold text-slate-700 mb-2">📊 Diagnostic Diagram Guide</h3>
+    <ul class="space-y-2 list-disc list-inside">
+      <li><strong>Balanced Overview / Stacked Biomass:</strong> Evaluates ecosystem energy transfer. Tracks Flora vs Herbivore population and biomass metrics to ensure energy is moving up the trophic chain and not becoming trapped.</li>
+      <li><strong>Phase Space:</strong> Maps Flora Population (X) against Herbivore Population (Y). A stable Lotka-Volterra ecosystem forms a closed, repeating orbital loop. Crashing ecosystems spiral into the origin (0,0).</li>
+      <li><strong>Collapse Risk Focus:</strong> Plots a survival probability curve (Kaplan-Meier estimator). Measures the exact probability that a scenario survives to tick <em>T</em> without hitting a terminal condition (Z2-Z7).</li>
+      <li><strong>Herbivore Pressure Focus:</strong> Maps total herbivore population specifically against <code>death_herbivore_feeding</code> events. Proves whether declining flora populations are due to active grazing pressure or simply poor baseline growth constraints.</li>
+      <li><strong>Defense Economy Ratio (Ledger):</strong> Isolates <code>death_defense_maintenance</code> events. Visualizes the metabolic burden of toxin synthesis to prove if flora are over-producing defenses and starving themselves to death.</li>
+    </ul>
+  </div>
 </div>

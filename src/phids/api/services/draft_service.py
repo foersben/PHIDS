@@ -130,6 +130,8 @@ class DraftService:
         mycorrhizal_connection_cost: float,
         mycorrhizal_growth_interval_ticks: int,
         mycorrhizal_signal_velocity: int,
+        signal_decay_factor: float = 0.85,
+        substance_emit_rate: float = 0.1,
     ) -> bool:
         """Normalize and persist global biotope parameters into the draft.
 
@@ -152,6 +154,8 @@ class DraftService:
             mycorrhizal_connection_cost: Requested root-link establishment cost.
             mycorrhizal_growth_interval_ticks: Requested root-growth interval.
             mycorrhizal_signal_velocity: Requested root-network signal velocity.
+            signal_decay_factor: Requested per-tick airborne signal retention (0.0-1.0).
+            substance_emit_rate: Requested concentration increment per active emit tick (0.0-1.0).
 
         Returns:
             ``True`` when at least one submitted scalar required clamping.
@@ -169,6 +173,8 @@ class DraftService:
         clamped_connection_cost = max(0.0, mycorrhizal_connection_cost)
         clamped_growth_interval = max(1, min(256, mycorrhizal_growth_interval_ticks))
         clamped_signal_velocity = max(1, mycorrhizal_signal_velocity)
+        clamped_signal_decay = max(0.01, min(1.0, signal_decay_factor))
+        clamped_substance_emit = max(0.01, min(1.0, substance_emit_rate))
 
         draft.grid_width = clamped_grid_width
         draft.grid_height = clamped_grid_height
@@ -186,6 +192,8 @@ class DraftService:
         draft.mycorrhizal_connection_cost = clamped_connection_cost
         draft.mycorrhizal_growth_interval_ticks = clamped_growth_interval
         draft.mycorrhizal_signal_velocity = clamped_signal_velocity
+        draft.signal_decay_factor = clamped_signal_decay
+        draft.substance_emit_rate = clamped_substance_emit
 
         return any(
             (
@@ -202,6 +210,8 @@ class DraftService:
                 clamped_connection_cost != mycorrhizal_connection_cost,
                 clamped_growth_interval != mycorrhizal_growth_interval_ticks,
                 clamped_signal_velocity != mycorrhizal_signal_velocity,
+                clamped_signal_decay != signal_decay_factor,
+                clamped_substance_emit != substance_emit_rate,
             )
         )
 

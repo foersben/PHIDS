@@ -335,6 +335,8 @@ class DraftState:
         z6_max_total_flora_energy: Halt when total flora energy exceeds this threshold (-1 disables).
         z7_max_total_herbivore_population: Halt when herbivore population exceeds this threshold
             (-1 disables).
+        signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion (0.0-1.0).
+        substance_emit_rate: Concentration increment added per tick when an active substance emits.
         mycorrhizal_inter_species: Allow root connections across species.
         mycorrhizal_connection_cost: Energy to establish a root link.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.
@@ -363,6 +365,8 @@ class DraftState:
     z4_herbivore_species_extinction: int = -1
     z6_max_total_flora_energy: float = -1.0
     z7_max_total_herbivore_population: int = -1
+    signal_decay_factor: float = 0.85
+    substance_emit_rate: float = 0.1
     mycorrhizal_inter_species: bool = False
     mycorrhizal_connection_cost: float = 1.0
     mycorrhizal_growth_interval_ticks: int = 8
@@ -515,6 +519,8 @@ class DraftState:
             z4_herbivore_species_extinction=self.z4_herbivore_species_extinction,
             z6_max_total_flora_energy=self.z6_max_total_flora_energy,
             z7_max_total_herbivore_population=self.z7_max_total_herbivore_population,
+            signal_decay_factor=self.signal_decay_factor,
+            substance_emit_rate=self.substance_emit_rate,
         )
         logger.info(
             (

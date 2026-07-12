@@ -34,6 +34,8 @@ async def config_biotope(
     mycorrhizal_connection_cost: Annotated[float, Form()] = 1.0,
     mycorrhizal_growth_interval_ticks: Annotated[int, Form()] = 8,
     mycorrhizal_signal_velocity: Annotated[int, Form()] = 1,
+    signal_decay_factor: Annotated[float, Form()] = 0.85,
+    substance_emit_rate: Annotated[float, Form()] = 0.1,
 ) -> Response:
     """Persist biotope parameters to the draft and return the updated partial.
 
@@ -56,6 +58,8 @@ async def config_biotope(
         mycorrhizal_connection_cost: Root-link energy cost.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.
         mycorrhizal_signal_velocity: Signal hops per tick.
+        signal_decay_factor: Per-tick airborne signal retention (0.0-1.0).
+        substance_emit_rate: Concentration increment per active emit tick (0.0-1.0).
 
     Returns:
         TemplateResponse: Updated biotope configuration partial.
@@ -79,6 +83,8 @@ async def config_biotope(
         mycorrhizal_connection_cost=mycorrhizal_connection_cost,
         mycorrhizal_growth_interval_ticks=mycorrhizal_growth_interval_ticks,
         mycorrhizal_signal_velocity=mycorrhizal_signal_velocity,
+        signal_decay_factor=signal_decay_factor,
+        substance_emit_rate=substance_emit_rate,
     )
     api_main.logger.debug(
         (
