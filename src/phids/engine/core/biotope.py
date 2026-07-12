@@ -1,7 +1,9 @@
 """GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module implements the :class:`GridEnvironment`, a cellular automata biotope for PHIDS using
-NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of
+This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients,
+wind fields, and apparent nutrition). It enforces strict read/write double-buffering across all layers
+to prevent race conditions and maintain exact tick-level determinism during concurrent simulation phases.
+No allocations are made during the diffusion loop. All layers are pre-allocated according to the Rule of
 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
 environment employs explicit read/write double-buffering to prevent race conditions and guarantee
 deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired

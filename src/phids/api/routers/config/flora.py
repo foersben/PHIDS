@@ -69,6 +69,7 @@ async def config_flora_add(
 async def config_flora_update(
     request: Request,
     species_id: int,
+    view: str = "flora",
     name: Annotated[str | None, Form()] = None,
     base_energy: Annotated[float | None, Form()] = None,
     max_energy: Annotated[float | None, Form()] = None,
@@ -139,6 +140,11 @@ async def config_flora_update(
 
     draft.flora_species[idx] = fp.model_copy(update=updates)
     api_main.logger.debug("Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))
+    if view == "morphology":
+        from phids.api.routers.config.trigger_rules import _render_trigger_rules_partial
+
+        return _render_trigger_rules_partial(request, draft)
+
     return api_main.templates.TemplateResponse(
         request,
         "partials/flora_config.html",

@@ -14,7 +14,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from phids.api.ui_state import (
     ActivationConditionNode,
@@ -558,7 +558,10 @@ class DraftService:
         draft: DraftState,
         flora_species_id: int,
         herbivore_species_id: int,
-        substance_id: int,
+        substance_id: int = 0,
+        action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance",
+        apparent_nutrition_factor: float = 0.2,
+        aftereffect_ticks: int = 10,
         min_herbivore_population: int = 5,
         activation_condition: ActivationConditionNode | None = None,
     ) -> None:
@@ -569,6 +572,9 @@ class DraftService:
             flora_species_id: Flora species identifier.
             herbivore_species_id: Herbivore species identifier.
             substance_id: Substance identifier synthesized by the rule.
+            action_type: "synthesize_substance" or "resource_withdrawal".
+            apparent_nutrition_factor: Factor for resource_withdrawal.
+            aftereffect_ticks: Duration of aftereffect.
             min_herbivore_population: Minimum herbivore population threshold.
             activation_condition: Optional nested activation-condition tree.
         """
@@ -577,6 +583,9 @@ class DraftService:
                 flora_species_id=flora_species_id,
                 herbivore_species_id=herbivore_species_id,
                 substance_id=substance_id,
+                action_type=action_type,
+                apparent_nutrition_factor=apparent_nutrition_factor,
+                aftereffect_ticks=aftereffect_ticks,
                 min_herbivore_population=min_herbivore_population,
                 activation_condition=deepcopy(activation_condition),
             )
@@ -621,6 +630,9 @@ class DraftService:
         flora_species_id: int | None = None,
         herbivore_species_id: int | None = None,
         substance_id: int | None = None,
+        action_type: Literal["synthesize_substance", "resource_withdrawal"] | None = None,
+        apparent_nutrition_factor: float | None = None,
+        aftereffect_ticks: int | None = None,
         min_herbivore_population: int | None = None,
         activation_condition: ActivationConditionNode | None = None,
     ) -> None:
@@ -632,6 +644,9 @@ class DraftService:
             flora_species_id: Optional replacement flora species identifier.
             herbivore_species_id: Optional replacement herbivore species identifier.
             substance_id: Optional replacement substance identifier.
+            action_type: Optional replacement action type.
+            apparent_nutrition_factor: Optional replacement nutrition factor.
+            aftereffect_ticks: Optional replacement aftereffect ticks.
             min_herbivore_population: Optional replacement threshold.
             activation_condition: Optional replacement condition tree.
 
@@ -645,6 +660,12 @@ class DraftService:
             rule.herbivore_species_id = herbivore_species_id
         if substance_id is not None:
             rule.substance_id = substance_id
+        if action_type is not None:
+            rule.action_type = action_type
+        if apparent_nutrition_factor is not None:
+            rule.apparent_nutrition_factor = apparent_nutrition_factor
+        if aftereffect_ticks is not None:
+            rule.aftereffect_ticks = aftereffect_ticks
         if min_herbivore_population is not None:
             rule.min_herbivore_population = min_herbivore_population
         if activation_condition is not None:

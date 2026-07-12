@@ -273,10 +273,23 @@
   }
 
   function frontendDiagnosticsUpdate(patch) {
+    const currentState = window.__phidsFrontendDiagnostics || {};
+    const notes = Array.isArray(currentState.notes) ? [...currentState.notes] : [];
+
+    if (patch && patch.notes) {
+      const newNotes = Array.isArray(patch.notes) ? patch.notes : [patch.notes];
+      newNotes.forEach(n => {
+        const text = String(n).startsWith('[') ? n : `[${new Date().toLocaleTimeString()}] ${n}`;
+        notes.unshift(text);
+      });
+      notes.splice(15);
+    }
+
     window.__phidsFrontendDiagnostics = Object.assign(
       {},
-      window.__phidsFrontendDiagnostics || {},
-      patch || {}
+      currentState,
+      patch || {},
+      { notes: notes }
     );
     window.dispatchEvent(new CustomEvent('phids:frontend-diagnostics', {
       detail: window.__phidsFrontendDiagnostics,

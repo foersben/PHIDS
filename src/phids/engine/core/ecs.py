@@ -1,12 +1,5 @@
 """Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
 
-This module implements the :class:`ECSWorld` registry, a flat entity-component system designed to
-maximise computational efficiency and biological fidelity in the PHIDS simulation engine. The ECS
-maintains a flat entity registry, per-component type indices for rapid multi-component queries,
-and a spatial hash grid enabling O(1) membership lookups for entities occupying a given cell. This
-architecture is essential for simulating plant-herbivore interactions, metabolic attrition, and
-systemic acquired resistance without incurring O(N²) locality costs. The design strictly adheres
-to data-oriented principles, avoiding Python object graphs in favour of flat dataclass-backed
 components and pre-allocated buffers (Rule of 16). The spatial hash is central to the
 simulation's ability to model emergent ecological phenomena with deterministic reproducibility
 and scientific rigour.

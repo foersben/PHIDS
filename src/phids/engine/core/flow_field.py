@@ -1,7 +1,9 @@
 """Flow-field gradient generation accelerated with Numba ``@njit`` for deterministic ecological simulation.
 
-This module implements the flow-field gradient computation for PHIDS, leveraging Numba JIT
-compilation to accelerate iterative Jacobi propagation. The global attraction gradient is
+This module provides the Jacobi iteration solver for pathfinding. It strictly adheres to Numba compilation
+constraints: no Python dictionaries, lists, or custom classes are used inside `@njit` kernels. All array
+operations rely on pre-allocated buffers and contiguous layouts to prevent memory allocation latency
+during the hot-path evaluation phase. The global attraction gradient is
 computed by combining plant attraction and toxin repulsion base values, then propagating them
 across the grid via a multi-iteration neighbourhood averaging pass with configurable decay. The
 resulting scalar field is intended to populate ``GridEnvironment.flow_field``, supporting O(1)
