@@ -49,7 +49,7 @@ def test_ecs_world_entity_lifecycle() -> None:
     world.destroy_entity(e1.entity_id)
     assert not world.has_entity(e1.entity_id)
 
-    # Re-using ids? ECSWorld just increments
+    # Reusing ids? ECSWorld just increments
     e2 = world.create_entity()
     assert e2.entity_id != e1.entity_id
 

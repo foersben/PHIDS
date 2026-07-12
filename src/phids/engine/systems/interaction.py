@@ -45,7 +45,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-from numba import njit  # type: ignore[import-untyped]
+from numba import njit
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
@@ -90,7 +90,7 @@ def _accumulate_tile_population(
         tile_populations[y * width + x] += delta
 
 
-@njit(cache=True)  # type: ignore[untyped-decorator]
+@njit(cache=True)
 def _choose_neighbour_by_flow_probability_jit(
     x: int,
     y: int,
@@ -234,7 +234,7 @@ def _choose_neighbour_by_flow_probability(
         weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
         return random.choices(candidates, weights=weights, k=1)[0]
 
-    return _choose_neighbour_by_flow_probability_jit(  # type: ignore[no-any-return]
+    return _choose_neighbour_by_flow_probability_jit(
         swarm.x,
         swarm.y,
         swarm.last_dx,
@@ -247,7 +247,7 @@ def _choose_neighbour_by_flow_probability(
     )
 
 
-@njit(cache=True)  # type: ignore[untyped-decorator]
+@njit(cache=True)
 def _random_walk_step_jit(
     x: int,
     y: int,
@@ -305,7 +305,7 @@ def _random_walk_step(
             candidates.append((x, y + 1))
         return random.choice(candidates)
 
-    return _random_walk_step_jit(x, y, width, height, random.random())  # type: ignore[no-any-return]
+    return _random_walk_step_jit(x, y, width, height, random.random())
 
 
 def _co_located_swarm_population(world: ECSWorld, x: int, y: int) -> int:
