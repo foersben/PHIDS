@@ -55,7 +55,7 @@ To balance raw computational throughput with human cognitive design-space explor
 
 ### The Engine Absolute (ECS)
 
-At the lowest level, the engine core and Zarr telemetry buffers operate strictly on **absolute numerical primitives** (e.g., `population = 450`, `energy = 5.2`, `signal_layer_peak = 0.85`). These unboxed arrays avoid the massive overhead of context-switching, relative percentage calculations, and bounds-checking inside the tight Numba JIT simulation loop. The physics simulation simply does not care what `100%` is—it solely computes mass/energy transfers based on absolute local concentrations.
+At the lowest level, the engine core and Zarr telemetry buffers operate strictly on **absolute numerical primitives** (e.g., `population = 450`, `energy = 5.2`, `signal_layer_peak = 0.85`). These unboxed arrays avoid the massive overhead of context-switching, relative percentage calculations, and bounds-checking inside the tight Numba JIT simulation loop. The physics simulation simply does not care what `100%` is–it solely computes mass/energy transfers based on absolute local concentrations.
 
 ### The Presenter Relative (API Layer)
 

@@ -1,85 +1,321 @@
 <div class="px-6 py-5 bg-slate-50 border-t border-slate-200" id="dse-panel-container">
-  <div class="flex items-start justify-between">
-    <div>
-      <h3 class="text-base font-semibold leading-6 text-slate-900 flex items-center gap-2">
-        <span class="text-xl">🧬</span> Design Space Exploration
-      </h3>
-      <p class="text-sm text-slate-500 mt-1 max-w-2xl">
-        Run the NSGA-II multithreaded evolutionary optimizer to discover mathematically stable ecosystem equilibria.
-      </p>
-    </div>
-  </div>
-
-  <div id="dse-alert-container">
+  <div id="dse-alert-container" class="mb-4">
     {% include 'dse/components/preflight_alert.html' ignore missing %}
   </div>
 
-  <div class="mt-6 bg-white border border-slate-200 rounded-lg shadow-sm">
-    <div class="border-b border-slate-200">
-      <nav class="-mb-px flex" aria-label="Tabs">
-        <!-- These would normally use HTMX to swap content, but for this implementation we simulate tab switching with Alpine.js or vanilla JS logic. -->
-        <button class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm border-indigo-500 text-indigo-600" onclick="showDSETab('tab-canvas')">
-          1. Canvas & Targets
-        </button>
-        <button class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" onclick="showDSETab('tab-complexity')">
-          2. Complexity Toolkit
-        </button>
-        <button class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" onclick="showDSETab('tab-exploration')">
-          3. Exploration Modes
-        </button>
-      </nav>
-    </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left Column: Configuration -->
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-base font-semibold leading-6 text-slate-900 flex items-center gap-2">
+          <span class="text-xl">🧬</span> Design Space Exploration
+        </h3>
+        <p class="text-sm text-slate-500 mt-1">
+          Run the NSGA-II multithreaded evolutionary optimizer to automatically find mathematically stable ecosystem configurations (Pareto Front) that maximise longevity, stability, and spatial dispersion.
+        </p>
+      </div>
 
-    <div class="p-6">
-      <div id="tab-canvas" class="dse-tab-content">
-        {% include 'dse/tabs/canvas_targets.html' %}
-      </div>
-      <div id="tab-complexity" class="dse-tab-content hidden">
-        {% include 'dse/tabs/complexity_toolkit.html' %}
-      </div>
-      <div id="tab-exploration" class="dse-tab-content hidden">
-        {% include 'dse/tabs/exploration_modes.html' %}
-      </div>
-    </div>
+      <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-6 space-y-6">
+        <div>
+          <h4 class="text-sm font-semibold leading-6 text-slate-900 border-b border-slate-200 pb-2 mb-4">Operation Mode</h4>
 
-    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-      <button type="button"
-              class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
-              hx-post="/api/dse/validate"
-              hx-target="#dse-alert-container">
-        Validate Invariants
-      </button>
+          <div class="space-y-4">
+            <div class="flex items-start">
+              <input id="dse-mode-generative" name="dse_exploration_mode" type="radio" value="generative" checked
+                     class="h-4 w-4 mt-1 border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                     onchange="document.getElementById('mode-b-options').classList.add('opacity-50', 'pointer-events-none')">
+              <label for="dse-mode-generative" class="ml-3 block text-sm font-medium leading-6 text-slate-900">
+                Mode A (Generative)
+                <p class="text-xs text-slate-500 font-normal">Searches unbounded parameter space, mapping results to closest known species via KNN.</p>
+              </label>
+            </div>
+            <div class="flex items-start">
+              <input id="dse-mode-constrained" name="dse_exploration_mode" type="radio" value="constrained"
+                     class="h-4 w-4 mt-1 border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                     onchange="document.getElementById('mode-b-options').classList.remove('opacity-50', 'pointer-events-none')">
+              <label for="dse-mode-constrained" class="ml-3 block text-sm font-medium leading-6 text-slate-900">
+                Mode B (Constrained)
+                <p class="text-xs text-slate-500 font-normal">Locks optimizer search space bounds to &plusmn;20% of a selected real-world archetype.</p>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="mode-b-options" class="opacity-50 pointer-events-none transition-opacity duration-200 mb-4">
+          <h4 class="text-sm font-semibold leading-6 text-slate-900 mb-4 border-b border-slate-200 pb-2">Ecosystem Composition</h4>
+
+          <div class="space-y-6">
+            <!-- Flora Composition -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <label class="block text-sm font-medium text-slate-700">Total Flora Species</label>
+                <input type="number" id="flora-count" name="mode_b_flora_count" value="1" min="1" max="16" class="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none" oninput="syncSlots('flora')">
+              </div>
+              <div id="flora-slots" class="space-y-2">
+                <div class="flex items-center gap-2 text-sm"><span class="text-slate-400 w-12 text-right">Slot 1</span> {% include 'dse/components/flora_slot.html' ignore missing %}</div>
+              </div>
+            </div>
+
+            <!-- Herbivore Composition -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <label class="block text-sm font-medium text-slate-700">Total Herbivore Swarms</label>
+                <input type="number" id="herbivore-count" name="mode_b_herbivore_count" value="1" min="1" max="16" class="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none" oninput="syncSlots('herbivore')">
+              </div>
+              <div id="herbivore-slots" class="space-y-2">
+                <div class="flex items-center gap-2 text-sm"><span class="text-slate-400 w-12 text-right">Slot 1</span> {% include 'dse/components/herbivore_slot.html' ignore missing %}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden Templates for JS -->
+          <template id="flora-template">
+            <div class="flex items-center gap-2 text-sm"><span class="text-slate-400 w-12 text-right slot-label"></span> {% include 'dse/components/flora_slot.html' ignore missing %}</div>
+          </template>
+          <template id="herbivore-template">
+            <div class="flex items-center gap-2 text-sm"><span class="text-slate-400 w-12 text-right slot-label"></span> {% include 'dse/components/herbivore_slot.html' ignore missing %}</div>
+          </template>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200">
+          <h4 class="text-sm font-semibold leading-6 text-slate-900 mb-4">Database Constraints</h4>
+          <div class="space-y-4">
+            <div class="flex items-start">
+              <input id="db-constraint-strict" name="db_constraint" type="radio" value="strict" checked
+                     class="h-4 w-4 mt-1 border-slate-300 text-indigo-600 focus:ring-indigo-600">
+              <label for="db-constraint-strict" class="ml-3 block text-sm font-medium leading-6 text-slate-900">
+                Strict Database Resemblance
+                <p class="text-xs text-slate-500 font-normal mt-0.5">DSE must generate parameters matching known biology (&plusmn;20%).</p>
+              </label>
+            </div>
+            <div class="flex items-start">
+              <input id="db-constraint-novel" name="db_constraint" type="radio" value="novel"
+                     class="h-4 w-4 mt-1 border-slate-300 text-indigo-600 focus:ring-indigo-600">
+              <label for="db-constraint-novel" class="ml-3 block text-sm font-medium leading-6 text-slate-900">
+                Allow Novel Generation
+                <p class="text-xs text-slate-500 font-normal mt-0.5">DSE can invent entirely new species traits and interaction topologies.</p>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Configuration Accordion -->
+      <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        <button type="button" class="w-full bg-slate-50 px-6 py-4 text-left text-sm font-semibold text-slate-700 flex justify-between items-center hover:bg-slate-100 transition-colors" onclick="document.getElementById('dse-advanced-config').classList.toggle('hidden')">
+          <span>⚙️ Advanced Configuration</span>
+          <span class="text-xs text-slate-400 font-normal">Click to expand</span>
+        </button>
+        <div id="dse-advanced-config" class="hidden p-6 space-y-6 border-t border-slate-200">
+
+          <!-- Group 1 -->
+          <div>
+            <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Canvas & Stability Targets</h5>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Grid Width</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('grid_width')" id="btn-lock-grid_width" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-grid_width" class="hidden">
+                    <input type="number" name="grid_width" value="100" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-grid_width" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Grid Height</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('grid_height')" id="btn-lock-grid_height" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-grid_height" class="hidden">
+                    <input type="number" name="grid_height" value="100" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-grid_height" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Target Ticks</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('target_ticks')" id="btn-lock-target_ticks" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-target_ticks" class="hidden">
+                    <input type="number" name="target_ticks" value="5000" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-target_ticks" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700" title="Must be a constant. The DSE cannot optimize its own validation logic.">Validation Batch Size</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 cursor-help" title="Strict Constant">🔒</span>
+                  <input type="number" name="batch_replicates" value="5" class="w-32 px-2 py-1 border border-slate-200 rounded text-xs text-right bg-slate-50 text-slate-500 cursor-not-allowed" readonly>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700" title="Must be a constant. The DSE cannot optimize its own validation logic.">Success Threshold (%)</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 cursor-help" title="Strict Constant">🔒</span>
+                  <input type="number" name="success_threshold" value="80" class="w-32 px-2 py-1 border border-slate-200 rounded text-xs text-right bg-slate-50 text-slate-500 cursor-not-allowed" readonly>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 2 -->
+          <div class="pt-4 border-t border-slate-100">
+            <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Complexity Limits</h5>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Max Flora Species</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('max_flora')" id="btn-lock-max_flora" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-max_flora" class="hidden">
+                    <input type="number" name="max_flora" value="4" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-max_flora" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Max Herbivore Swarms</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('max_herbivores')" id="btn-lock-max_herbivores" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-max_herbivores" class="hidden">
+                    <input type="number" name="max_herbivores" value="2" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-max_herbivores" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Max Toxins/Signals</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('max_substances')" id="btn-lock-max_substances" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-max_substances" class="hidden">
+                    <input type="number" name="max_substances" value="4" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-max_substances" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Multi-Level Signals</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('multi_level')" id="btn-lock-multi_level" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-multi_level" class="hidden flex justify-center w-32">
+                    <input type="checkbox" name="multi_level" class="h-4 w-4 border-slate-300 text-indigo-600 rounded focus:ring-indigo-600">
+                  </div>
+                  <span id="badge-multi_level" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Mycorrhizal Networks</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('mycorrhiza')" id="btn-lock-mycorrhiza" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-mycorrhiza" class="hidden flex justify-center w-32">
+                    <input type="checkbox" name="mycorrhiza" class="h-4 w-4 border-slate-300 text-indigo-600 rounded focus:ring-indigo-600">
+                  </div>
+                  <span id="badge-mycorrhiza" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 3 -->
+          <div class="pt-4 border-t border-slate-100">
+            <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Spatial Distribution</h5>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Placement Strategy</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('placement')" id="btn-lock-placement" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-placement" class="hidden">
+                    <select name="placement" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                      <option>Uniform</option>
+                      <option>Clustered</option>
+                      <option>Banded</option>
+                    </select>
+                  </div>
+                  <span id="badge-placement" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-700">Max Grid Density (%)</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="toggleLock('max_density')" id="btn-lock-max_density" class="text-slate-400 hover:text-indigo-600" title="Toggle Variable/Constant">🔓</button>
+                  <div id="wrapper-max_density" class="hidden">
+                    <input type="number" name="max_density" value="50" class="w-32 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <span id="badge-max_density" class="text-[10px] uppercase font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded w-32 text-center">Optimized</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <button type="button"
               id="btn-run-dse"
-              class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               hx-post="/api/dse/start"
               hx-target="#dse-live-dashboard"
               hx-swap="innerHTML"
               onclick="window.startDSEStream()">
-        Run Equilibrium Finder
+        <span class="mr-2">🧬</span> Run DSE Optimizer
       </button>
     </div>
-  </div>
 
-  <div id="dse-live-dashboard" class="mt-6">
-    <!-- Live Pareto dashboard will swap here when DSE starts -->
+    <!-- Right Column: Live Evaluation -->
+    <div class="h-full flex flex-col">
+      <div id="dse-live-dashboard" class="flex-grow flex flex-col rounded-lg overflow-hidden border border-slate-800 bg-slate-900">
+        {% include 'dse/components/live_pareto.html' ignore missing %}
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-function showDSETab(tabId) {
-    document.querySelectorAll('.dse-tab-content').forEach(tab => {
-        tab.classList.add('hidden');
-    });
-    document.getElementById(tabId).classList.remove('hidden');
+function syncSlots(type) {
+  const container = document.getElementById(`${type}-slots`);
+  const template = document.getElementById(`${type}-template`);
+  const countInput = document.getElementById(`${type}-count`);
 
-    // Update active tab styling
-    const buttons = event.target.parentElement.querySelectorAll('button');
-    buttons.forEach(btn => {
-        btn.classList.remove('border-indigo-500', 'text-indigo-600');
-        btn.classList.add('border-transparent', 'text-slate-500');
-    });
-    event.target.classList.add('border-indigo-500', 'text-indigo-600');
-    event.target.classList.remove('border-transparent', 'text-slate-500');
+  let targetCount = parseInt(countInput.value, 10);
+  if (isNaN(targetCount) || targetCount < 1) targetCount = 1;
+  if (targetCount > 16) targetCount = 16;
+
+  const currentCount = container.children.length;
+
+  if (targetCount > currentCount) {
+    // Add slots
+    for (let i = currentCount; i < targetCount; i++) {
+      const clone = template.content.cloneNode(true);
+      clone.querySelector('.slot-label').innerText = `Slot ${i + 1}`;
+      container.appendChild(clone);
+    }
+  } else if (targetCount < currentCount) {
+    // Remove slots from the bottom
+    for (let i = currentCount - 1; i >= targetCount; i--) {
+      container.removeChild(container.lastElementChild);
+    }
+  }
+}
+
+function toggleLock(fieldId) {
+  const btn = document.getElementById(`btn-lock-${fieldId}`);
+  const wrapper = document.getElementById(`wrapper-${fieldId}`);
+  const badge = document.getElementById(`badge-${fieldId}`);
+
+  if (wrapper.classList.contains('hidden')) {
+    // Switch to Locked/Constant
+    wrapper.classList.remove('hidden');
+    badge.classList.add('hidden');
+    btn.innerHTML = '🔒';
+    btn.classList.add('text-indigo-600');
+    btn.classList.remove('text-slate-400');
+  } else {
+    // Switch to Unlocked/Variable
+    wrapper.classList.add('hidden');
+    badge.classList.remove('hidden');
+    btn.innerHTML = '🔓';
+    btn.classList.remove('text-indigo-600');
+    btn.classList.add('text-slate-400');
+  }
 }
 </script>

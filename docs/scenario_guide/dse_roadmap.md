@@ -14,6 +14,17 @@ Because discovering a true multi-species equilibrium is computationally intensiv
 
 ---
 
+## Current Achieved UI State & Preparations
+
+As of the current iteration, significant milestones have been achieved in decoupling the underlying biological schema and building the UI foundations required for the DSE:
+
+* **Standalone Database UI:** The configuration interface no longer relies on manual JSON writing. It dynamically reads and writes biological templates through an interactive frontend dashboard.
+* **Graphical Trigger Builder:** Complex logic (like checking `Substance Active` or `Herbivore Presence` conditions) is now managed via graphical forms using implicit `ALL_OF` structures, ensuring syntax-perfect engine configurations.
+* **Trophic and Chemical Unification:** Herbivore diet matrices and Flora substance defenses are explicitly cross-referenced. Substances now exist as standalone entities in the master database rather than localized properties, allowing the DSE optimizer to freely swap and mutate toxins/signals independently from the host plants.
+* **Headless UI Validation:** To ensure rock-solid stability during rapid HTMX interaction and JSON parsing, a highly aggressive headless test suite validates DOM integrity and strictly checks Javascript bindings via background `node -c` subprocesses.
+
+---
+
 ## 1. The Pre-Flight Gatekeeper: Logical & Biological Invariants
 
 Before the DSE can spin up a background worker thread, the configuration must pass through a strict, real-time logical parser. Every adjustment made in the UI immediately triggers a system-wide revalidation. If an impossible constraint combination is detected, the UI locks the execution and provides an actionable, feasible adjustment to the user.
@@ -34,7 +45,7 @@ Ecosystems must be fully connected graphs.
 
 ### 1.3 Chemical Mechanism Integrity (Signals & Toxins)
 
-The biochemical defense network cannot contain "dead ends" or non-functional pathways.
+The substance defense network cannot contain "dead ends" or non-functional pathways.
 
 * **Signal Functional Continuity:** A signal (airborne or mycorrhizal) is only valid if it triggers a tangible outcome. If Signal A triggers Signal B, Signal B *must* eventually trigger a defense mechanism (e.g., a lethal or repellent Toxin). A signal that triggers nothing is invalid.
 * **Herbivore Susceptibility Alignment:** A defense mechanism (like a repellent or toxin) is only valid if there is at least one herbivore species in the simulation susceptible to it. For example, generating a repellent that targets a non-existent herbivore species represents a thermodynamic waste and is rejected by the pre-flight gatekeeper.
@@ -54,53 +65,36 @@ All relative parameters are logically chained in the pre-flight validator. If an
 
 ---
 
-## 2. The Configuration UI (Tabbed Layout)
+## 2. The Configuration UI (Unified Layout)
 
-To provide an intuitive Human-In-The-Loop (HITL) experience, the FastAPI/HTMX webview organizes the DSE configuration into modular, tabbed views nested at the bottom of the Biotope configuration menu.
+To provide an intuitive Human-In-The-Loop (HITL) experience, the FastAPI/HTMX webview organizes the DSE configuration into a streamlined, single-page layout.
 
-### Tab 1: The Canvas & Spatial Setup
+### Operation Modes & Exploration
 
-This tab defines the physical arena, placement rules, and validation targets.
+The user defines the parameter search space bounds and how closely the DSE must stick to real-world biology.
 
-* **Grid Dimensions (Mandatory):** Width and Height of the biotope.
-* **Biotope Configuration:** Specific outcome-affecting parameters (e.g., initial environmental signals, default decay rates) can be configured. Parameters left unselected are automatically chosen or optimized by the DSE. (Simulation runtime/performance options like speed in Hz are excluded from optimization).
-* **Spatial Distribution & Density:**
-  * *Placement Strategy:* Random Uniform, Clustered, or Banded.
-  * *Random Distribution Toggle:* Checkbox to randomize coordinates upon initialization.
-  * *Flora Density:* Configurable coverage percentage per plant species, bounded by total tile count.
-  * *Swarm Density:* Configurable swarm count, allowing multi-swarm overlap.
-* **Stability Targets (Mandatory):**
-  * *Target Ticks:* Minimum duration the ecosystem must survive to be considered stable (e.g., 5000 ticks).
-  * *Batch Replicates (Validation Batch Size):* Number of parallel seeds run per genotype to prove mathematical robustness (e.g., 5 replicates).
-  * *Success Threshold:* The percentage of replicates in the batch that must reach the Target Ticks (e.g., 80%).
+* **Mode A: Generative (Tabula Rasa):** The DSE has mathematical freedom to generate species parameters, bounds, and matrices from scratch to satisfy the stability targets. Post-run, KNN matching is used to name generated placeholder species with their closest real-world equivalents.
+* **Mode B: Constrained (Archetype Anchoring):**
+  * The user explicitly defines the exact number of **Total Flora Species** and **Total Herbivore Swarms**.
+  * An **Ecosystem Composition** builder dynamically creates a dropdown slot for each flora/herbivore.
+  * For each individual slot, the user can either select a specific database archetype (e.g., *Taxus baccata*) or leave it as `[DSE Invents]`.
+  * The optimizer anchors its search space bounds to &plusmn;20% for any specified archetypes, and optimizes freely for the `[DSE Invents]` slots.
 
-### Tab 2: Complexity & The Biochemical Toolkit
+### Advanced Configuration (Variable vs. Constant)
 
-This defines the structural complexity (the Integer/Boolean genes of the MINLP) the DSE is permitted to manipulate.
+Beneath the Operation Modes, users can expand an **Advanced Configuration** accordion to impose strict bounds on the optimization process. Every parameter features a **Lock Toggle (🔓/🔒)** allowing the user to decide if the value should be dynamically optimized by the DSE (Variable) or strictly enforced (Constant).
 
-* **Species Counts:**
-  * Number of distinct Plant species (up to 16).
-  * Number of distinct Herbivore swarms (up to 16).
-* **Biochemical Mechanism Configurator:**
-    * *Substance Counts:* Number of active toxins and signals.
-    * *Multi-Level Signals Toggle:* Checkbox to allow recursive signaling cascades.
-    * *Mycorrhiza Toggle:* Checkbox to allow root-network signaling.
-    * *Inter-Species Mycorrhiza Toggle:* Checkbox to allow mycorrhizal connections between different plant species.
-    * *Note:* The assignment of these substances (which plant uses what signal or toxin) depends on database records, diet matrices, and triggering/effect relationships.
-
-### Tab 3: Exploration & Database Matching
-
-Here, the user defines the parameter search space bounds and how closely the DSE must stick to real-world biology.
-
-* **Database Constraints Toggle:**
-  * `[x] Strict Database Resemblance:` The DSE is only allowed to generate parameters that resemble known individuals (plants/herbivores/toxins) from the database within a defined tolerance range (e.g., $\pm 20\%$).
-  * `[ ] Allow Novel Generation:` The DSE can freely invent entirely new parameters and interaction topologies, creating hypothetical placeholder species.
-* **Exploration Mode selection:**
-  * **Mode A: Generative (Tabula Rasa):** The DSE has mathematical freedom to generate species parameters, bounds, and matrices from scratch to satisfy the stability targets. Post-run, KNN matching is used to name generated placeholder species with their closest real-world equivalents.
-  * **Mode B: Constrained (Archetype Anchoring):**
-    * The user pre-selects specific species archetypes (e.g., *Taxus baccata*) from the database for a subset of slots, carrying over their real diet matrices, trigger rules, and substances.
-    * The remaining slots (Total Species Count minus pre-selected slots) are left to be filled by the DSE's evolutionary solver.
-    * User-configured archetype parameters can either be locked completely or set to mutate within a tight variance limit (e.g., $\pm 20\%$).
+* **Canvas & Stability Targets:**
+  * *Target Ticks (Variable/Constant):* Duration the ecosystem must survive.
+  * *Validation Batch Size (Strict Constant):* Number of replicates run per genotype.
+  * *Success Threshold (Strict Constant):* Required survival rate across the batch (e.g., 80%).
+* **Complexity Limits:**
+  * *Max Flora Species (Variable/Constant)*
+  * *Max Herbivore Swarms (Variable/Constant)*
+  * *Max Toxins/Signals (Variable/Constant)*
+* **Spatial Distribution:**
+  * *Placement Strategy (Variable/Constant):* Uniform, Clustered, or Banded.
+  * *Max Grid Density % (Variable/Constant)*
 
 ---
 
@@ -121,11 +115,7 @@ To prevent unmaintainable "god-modules" and ensure strict HTMX swapping logic, t
 
 ```text
 src/phids/api/templates/dse/
-├── container.html              # The main tab wrapper nested under Biotope Config
-├── tabs/
-│   ├── canvas_targets.html     # Tab 1: Grid, Density, Replication rules
-│   ├── complexity_toolkit.html # Tab 2: Species counts, Signals, Mycorrhiza
-│   └── exploration_modes.html  # Tab 3: Mode A/B toggles, DB Archetype Slots
+├── container.html              # The main 2-column layout for modes and live eval
 └── components/
     ├── archetype_slot.html     # Reusable DB dropdown component
     ├── preflight_alert.html    # The real-time parser warning box

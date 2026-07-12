@@ -60,7 +60,7 @@ module, which is the suitable denominator for individual-slice verification.
 
 ## Mutation Testing
 
-To ensure our test suite catches semantic edge cases—especially in Numba-compiled deterministic logic—we use `mutmut` to automatically mutate source code and verify that tests fail.
+To ensure our test suite catches semantic edge cases–especially in Numba-compiled deterministic logic–we use `mutmut` to automatically mutate source code and verify that tests fail.
 
 Currently, mutation testing is applied strictly to hot-path algorithms in `src/phids/engine/core/` (specifically `flow_field.py`, `ecs.py`, and `biotope.py`). Because these components are heavily optimized and often bypass standard Python class mechanisms (e.g. `GridEnvironment` methods and ECS double-buffering logic), unit tests must be exceptionally rigorous. Property-based tests are used to enforce exact normalized outputs and invariant state transitions.
 

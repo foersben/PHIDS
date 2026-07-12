@@ -1,3 +1,5 @@
+"""Data formatting and payload generation helpers for the UI dashboard."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

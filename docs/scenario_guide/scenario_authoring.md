@@ -8,7 +8,7 @@ description: "Documentation for Scenario Authoring & Schema in the PHIDS framewo
 
 # Scenario Authoring & Schema
 
-Scenarios in PHIDS form the strict boundaries of the ecological experiment. A scenario dictates the grid dimensions, initial biomass distributions, trophic links (who eats what), and the specific biochemical triggers deployed by flora when attacked. At the engine level, all scenarios are structurally validated against the `SimulationConfig` Pydantic schema before execution.
+Scenarios in PHIDS form the strict boundaries of the ecological experiment. A scenario dictates the grid dimensions, initial biomass distributions, trophic links (who eats what), and the specific substance triggers deployed by flora when attacked. At the engine level, all scenarios are structurally validated against the `SimulationConfig` Pydantic schema before execution.
 
 ## The Rule of 16 Configuration Bounds
 
@@ -36,7 +36,7 @@ flowchart TD
     subgraph PreAllocated_Matrices ["Fixed Cache-Resident Invariant Rule Matrices"]
         direction TB
         Diet_Matrix["Diet Compatibility Block Matrix<br><i>(Fixed 16x16 Contiguous Boolean Matrix)</i>"]
-        Trigger_Matrix["Biochemical Trigger Interaction Matrix<br><i>(Fixed 16x16 Contiguous Integer Lookup Matrix)</i>"]
+        Trigger_Matrix["Substance Trigger Interaction Matrix<br><i>(Fixed 16x16 Contiguous Integer Lookup Matrix)</i>"]
     end
 
     %% Structural Boundaries Check

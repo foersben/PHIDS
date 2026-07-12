@@ -1,0 +1,772 @@
+<div class="px-6 py-5 bg-slate-50 border-t border-slate-200 h-full flex flex-col" id="db-panel-container">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h3 class="text-base font-semibold leading-6 text-slate-900 flex items-center gap-2">
+        <span class="text-xl">🗃️</span> Bio-Database Catalog
+      </h3>
+      <p class="text-sm text-slate-500 mt-1">
+        Browse and configure the master list of biological archetypes, interactions, and mechanisms available to the simulator.
+      </p>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="relative rounded-md shadow-sm">
+        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <span class="text-slate-400">🔍</span>
+        </div>
+        <input type="text" id="db-search" class="block w-64 rounded-md border-0 py-1.5 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Search archetypes..." oninput="filterDatabase()">
+      </div>
+      <button type="button" onclick="openEditor('new')" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+        + Create Custom Archetype
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-b border-slate-200 mb-6">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+      <button onclick="switchDbTab('flora')" id="tab-btn-flora" class="border-indigo-500 text-indigo-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+        🌿 Flora Species
+      </button>
+      <button onclick="switchDbTab('herbivores')" id="tab-btn-herbivores" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+        🐛 Herbivores
+      </button>
+      <button onclick="switchDbTab('substances')" id="tab-btn-substances" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+        🧪 Substances
+      </button>
+    </nav>
+  </div>
+
+  <!-- Content Areas -->
+  <div class="flex-grow overflow-y-auto pr-2 pb-10">
+
+    <!-- Flora Tab -->
+    <div id="tab-content-flora" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {% for name, data in flora.items() %}
+      <div class="db-card bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden" data-search="{{ name | lower }}">
+        <div class="bg-emerald-50 px-4 py-3 border-b border-emerald-100 flex justify-between items-center group">
+          <h4 class="text-sm font-bold text-emerald-900">{{ name }}</h4>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">Flora</span>
+            <button onclick="openEditor('flora', '{{ name }}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-emerald-600 hover:text-emerald-800" title="Edit Archetype">✏️</button>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <h5 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Base Metrics</h5>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <dt class="text-slate-500">Growth Rate:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.base_metrics.growth_rate }}</dd>
+              <dt class="text-slate-500">Max Energy:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.base_metrics.max_energy }}</dd>
+              <dt class="text-slate-500">Survival Thresh:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.base_metrics.survival_threshold }}</dd>
+            </dl>
+          </div>
+          <div class="pt-3 border-t border-slate-100">
+            <h5 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Passive Defenses</h5>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <dt class="text-slate-500">Mech Damage:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.passive_defenses.mechanical_damage_per_bite }}</dd>
+              <dt class="text-slate-500">Digest Mod:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.passive_defenses.digestibility_modifier }}</dd>
+            </dl>
+          </div>
+          {% if data.trigger_rules %}
+          <div class="pt-3 border-t border-slate-100">
+            <h5 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Active Triggers</h5>
+            <div class="text-xs text-slate-600 bg-slate-50 p-2 rounded">
+              {{ data.trigger_rules | length }} rules configured.
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Herbivores Tab -->
+    <div id="tab-content-herbivores" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {% for name, data in herbivores.items() %}
+      <div class="db-card bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden" data-search="{{ name | lower }}">
+        <div class="bg-amber-50 px-4 py-3 border-b border-amber-100 flex justify-between items-center group">
+          <h4 class="text-sm font-bold text-amber-900">{{ name }}</h4>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">Herbivore</span>
+            <button onclick="openEditor('herbivores', '{{ name }}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-amber-600 hover:text-amber-800" title="Edit Archetype">✏️</button>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <h5 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Base Metrics</h5>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <dt class="text-slate-500">Metabolism:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.base_metrics.metabolism_upkeep }}</dd>
+              <dt class="text-slate-500">Consumption:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.base_metrics.consumption_rate }}</dd>
+              <dt class="text-slate-500">Mitosis Thresh:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.base_metrics.mitosis_threshold }}</dd>
+            </dl>
+          </div>
+          <div class="pt-3 border-t border-slate-100">
+            <h5 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Resistances</h5>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <dt class="text-slate-500">Morphological:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.resistances.morphological_adaptation }}</dd>
+              <dt class="text-slate-500">Chemical Neutral:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.resistances.chemical_neutralization }}</dd>
+              <dt class="text-slate-500">Digest Effic:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.resistances.digestive_efficiency }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Substances Tab -->
+    <div id="tab-content-substances" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {% for id, data in substances.items() %}
+      <div class="db-card bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden" data-search="{{ data.name | lower }} substance {{ id }} toxin signal">
+        <div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center group">
+          <h4 class="text-sm font-bold text-indigo-900">{{ data.name }} (ID: {{ id }})</h4>
+          <div class="flex items-center gap-2">
+            {% if data.is_toxin %}
+            <span class="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700">Toxin</span>
+            {% else %}
+            <span class="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">Signal</span>
+            {% endif %}
+            <button onclick="openEditor('substances', '{{ id }}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 hover:text-indigo-800" title="Edit Substance">✏️</button>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <h5 class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Properties</h5>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <dt class="text-slate-500">Lethal:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.lethal }}</dd>
+              <dt class="text-slate-500">Repellent:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.repellent }}</dd>
+              <dt class="text-slate-500">Energy Cost:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.energy_cost_per_tick }}</dd>
+              <dt class="text-slate-500">Synthesis Duration:</dt>
+              <dd class="text-right font-mono text-slate-900">{{ data.synthesis_duration }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not substances %}
+      <div class="col-span-full py-12 text-center text-sm text-slate-500">
+        No specific substances are currently defined by trigger rules in the database.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Editor Modal -->
+<div id="modal-editor" class="hidden relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity"></div>
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+      <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all w-full max-w-5xl h-[80vh] flex flex-col">
+
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+          <h3 class="text-lg font-semibold text-slate-900" id="editor-title">Create Archetype</h3>
+          <button type="button" onclick="closeEditor()" class="text-slate-400 hover:text-slate-500">
+            <span class="text-2xl">&times;</span>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-grow flex overflow-hidden">
+          <!-- Left: Basic Form -->
+          <div class="w-1/3 border-r border-slate-200 bg-slate-50 p-6 overflow-y-auto space-y-6 shrink-0 relative">
+            <div class="space-y-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Category</label>
+                <select id="edit-category" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" onchange="switchCategoryFields()">
+                  <option value="flora">Flora Species</option>
+                  <option value="herbivores">Herbivore</option>
+                  <option value="substances">Substance</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Species Name (ID)</label>
+                <input type="text" id="edit-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g. Taxus baccata">
+                <input type="hidden" id="edit-original-name">
+              </div>
+            </div>
+
+            <div id="form-flora-props" class="space-y-6">
+               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                 <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Base Metrics</h4>
+                 <div><label class="block text-xs text-slate-700">Growth Rate</label><input type="number" step="0.01" id="f-growth_rate" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Max Energy</label><input type="number" step="0.1" id="f-max_energy" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Survival Threshold</label><input type="number" step="0.1" id="f-survival_threshold" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Seed Cost</label><input type="number" step="0.1" id="f-seed_cost" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Seed Dispersion Radius</label><input type="number" step="0.1" id="f-seed_dispersion_radius" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+               </div>
+
+               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                 <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Passive Defenses</h4>
+                 <div><label class="block text-xs text-slate-700">Mechanical Damage per Bite</label><input type="number" step="0.1" id="f-mech_damage" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Digestibility Modifier</label><input type="number" step="0.01" id="f-digest_mod" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+               </div>
+            </div>
+
+            <div id="form-herbivore-props" class="hidden space-y-6">
+               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                 <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Base Metrics</h4>
+                 <div><label class="block text-xs text-slate-700">Metabolism Upkeep</label><input type="number" step="0.01" id="h-metabolism_upkeep" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Consumption Rate</label><input type="number" step="0.1" id="h-consumption_rate" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Mitosis Threshold</label><input type="number" step="0.1" id="h-mitosis_threshold" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Split Ratio</label><input type="number" step="0.01" id="h-split_ratio" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+               </div>
+
+               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                 <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Resistances</h4>
+                 <div><label class="block text-xs text-slate-700">Morphological Adaptation</label><input type="number" step="0.01" id="h-morph_adapt" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Chemical Neutralization</label><input type="number" step="0.01" id="h-chem_neut" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Digestive Efficiency</label><input type="number" step="0.01" id="h-digest_eff" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+               </div>
+
+               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                 <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Diet</h4>
+                 <div id="h-diet-checkboxes" class="space-y-2 max-h-32 overflow-y-auto">
+                    <!-- Populated by JS -->
+                 </div>
+               </div>
+            </div>
+
+            <div id="form-substance-props" class="hidden space-y-6">
+               <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                 <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Substance Configuration</h4>
+                 <div><label class="block text-xs text-slate-700">Substance Name</label><input type="text" id="s-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Energy Cost/Tick</label><input type="number" step="0.1" id="s-energy_cost_per_tick" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Synthesis Duration</label><input type="number" id="s-synthesis_duration" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Lethality Rate</label><input type="number" step="0.1" id="s-lethality_rate" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+                 <div><label class="block text-xs text-slate-700">Repellent Walk Ticks</label><input type="number" id="s-repellent_walk_ticks" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"></div>
+
+                 <div class="grid grid-cols-2 gap-2 pt-2">
+                   <label class="flex items-center text-xs text-slate-700 gap-1"><input type="checkbox" id="s-is_toxin" class="rounded text-indigo-600 border-slate-300"> Toxin</label>
+                   <label class="flex items-center text-xs text-slate-700 gap-1"><input type="checkbox" id="s-lethal" class="rounded text-indigo-600 border-slate-300"> Lethal</label>
+                   <label class="flex items-center text-xs text-slate-700 gap-1"><input type="checkbox" id="s-repellent" class="rounded text-indigo-600 border-slate-300"> Repellent</label>
+                   <label class="flex items-center text-xs text-slate-700 gap-1"><input type="checkbox" id="s-irreversible" class="rounded text-indigo-600 border-slate-300"> Irreversible</label>
+                 </div>
+               </div>
+            </div>
+          </div>
+
+          <!-- Right: Visual Rules Builder -->
+          <div class="w-2/3 flex flex-col bg-slate-100 shrink-0 relative">
+            <div class="px-6 py-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
+              <div>
+                <h4 class="text-sm font-semibold text-slate-900">Trigger Rules</h4>
+                <p class="text-xs text-slate-500">Configure reactive mechanisms and substance synthesis.</p>
+              </div>
+              <button type="button" onclick="addRuleCard()" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-300 hover:bg-indigo-50">
+                + Add Rule
+              </button>
+            </div>
+
+            <div id="rules-container" class="flex-grow p-6 overflow-y-auto space-y-6">
+              <!-- JS Injects Rule Cards Here -->
+            </div>
+
+            <!-- Disabled overlay for rules -->
+            <div id="rules-disabled-overlay" class="hidden absolute inset-y-0 right-0 w-full bg-slate-100 bg-opacity-90 flex items-center justify-center z-10">
+              <div class="text-slate-500 text-sm font-medium">Trigger rules are only applicable to Flora.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 rounded-b-lg shrink-0">
+          <span id="save-error" class="text-red-500 text-sm hidden self-center mr-auto"></span>
+          <button type="button" onclick="closeEditor()" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Cancel</button>
+          <button type="button" onclick="saveArchetype()" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Save to Database</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="db-json-flora" type="application/json">{{ flora | tojson }}</script>
+<script id="db-json-herbivores" type="application/json">{{ herbivores | tojson }}</script>
+<script id="db-json-substances" type="application/json">{{ substances | tojson }}</script>
+
+<script>
+function switchDbTab(tabName) {
+  // Update Buttons
+  ['flora', 'herbivores', 'substances'].forEach(t => {
+    const btn = document.getElementById(`tab-btn-${t}`);
+    if (t === tabName) {
+      btn.className = "border-indigo-500 text-indigo-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium";
+    } else {
+      btn.className = "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium";
+    }
+  });
+
+  // Update Content
+  ['flora', 'herbivores', 'substances'].forEach(t => {
+    document.getElementById(`tab-content-${t}`).classList.add('hidden');
+  });
+  document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+}
+
+function filterDatabase() {
+  const query = document.getElementById('db-search').value.toLowerCase();
+  const cards = document.querySelectorAll('.db-card');
+  cards.forEach(card => {
+    const searchString = card.getAttribute('data-search');
+    if (searchString.includes(query)) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+let ruleCounter = 0;
+let conditionCounters = {};
+
+function switchCategoryFields() {
+  const cat = document.getElementById('edit-category').value;
+  document.getElementById('form-flora-props').classList.toggle('hidden', cat !== 'flora');
+  document.getElementById('form-herbivore-props').classList.toggle('hidden', cat !== 'herbivores');
+  document.getElementById('form-substance-props').classList.toggle('hidden', cat !== 'substances');
+  document.getElementById('rules-disabled-overlay').classList.toggle('hidden', cat === 'flora');
+}
+
+function updateRulesEmptyState() {
+  const container = document.getElementById('rules-container');
+  if (container.children.length === 0) {
+    container.innerHTML = '<div id="rules-empty-state" class="text-center py-12 text-sm text-slate-500">No trigger rules configured. Click "+ Add Rule" to start.</div>';
+  } else {
+    const empty = document.getElementById('rules-empty-state');
+    if (empty) empty.remove();
+  }
+}
+
+function removeRule(id) {
+  document.getElementById(`rule-${id}`).remove();
+  updateRulesEmptyState();
+}
+
+function removeCondition(ruleId, condId) {
+  document.getElementById(`cond-${ruleId}-${condId}`).remove();
+}
+
+function updateActionType(ruleId) {
+  const type = document.getElementById(`action-type-${ruleId}`).value;
+  document.getElementById(`action-synth-${ruleId}`).classList.toggle('hidden', type !== 'synthesize_substance');
+  document.getElementById(`action-res-${ruleId}`).classList.toggle('hidden', type !== 'resource_withdrawal');
+}
+
+function addConditionToRule(ruleId, condData = null) {
+  if (!conditionCounters[ruleId]) conditionCounters[ruleId] = 0;
+  const condId = conditionCounters[ruleId]++;
+  const container = document.getElementById(`conditions-list-${ruleId}`);
+
+  const kind = condData ? condData.kind : 'herbivore_presence';
+
+  const html = `
+    <div id="cond-${ruleId}-${condId}" class="flex gap-2 items-start bg-slate-50 p-2 rounded border border-slate-200 condition-item">
+      <select class="cond-kind text-xs rounded border-slate-300 py-1" onchange="updateConditionKind(${ruleId}, ${condId})">
+        <option value="herbivore_presence" ${kind === 'herbivore_presence' ? 'selected' : ''}>Herbivore Presence</option>
+        <option value="substance_active" ${kind === 'substance_active' ? 'selected' : ''}>Substance Active</option>
+      </select>
+
+      <div id="cond-fields-${ruleId}-${condId}" class="flex-grow flex gap-2">
+        <!-- Rendered by JS -->
+      </div>
+
+      <button type="button" onclick="removeCondition(${ruleId}, ${condId})" class="text-slate-400 hover:text-red-500 text-xs shrink-0">&times;</button>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', html);
+  updateConditionKind(ruleId, condId, condData);
+}
+
+function updateConditionKind(ruleId, condId, condData = null) {
+  const kind = document.querySelector(`#cond-${ruleId}-${condId} .cond-kind`).value;
+  const fields = document.getElementById(`cond-fields-${ruleId}-${condId}`);
+  if (kind === 'herbivore_presence') {
+    const h_id = condData?.herbivore_species_id ?? 1;
+    const min_p = condData?.min_herbivore_population ?? 10;
+    fields.innerHTML = `
+      <input type="number" class="cond-herb-id text-xs rounded border-slate-300 py-1 w-20" placeholder="Species ID" value="${h_id}">
+      <input type="number" class="cond-min-pop text-xs rounded border-slate-300 py-1 w-20" placeholder="Min Pop" value="${min_p}">
+    `;
+  } else {
+    const s_id = condData?.substance_id ?? 0;
+    fields.innerHTML = `
+      <input type="number" class="cond-sub-id text-xs rounded border-slate-300 py-1 w-24" placeholder="Substance ID" value="${s_id}">
+    `;
+  }
+}
+
+function addRuleCard(ruleData = null) {
+  const id = ruleCounter++;
+  const container = document.getElementById('rules-container');
+  const empty = document.getElementById('rules-empty-state');
+  if (empty) empty.remove();
+
+  const h_id = ruleData?.herbivore_species_id ?? 1;
+  const min_pop = ruleData?.min_herbivore_population ?? 10;
+  const ticks = ruleData?.aftereffect_ticks ?? 20;
+  const a_type = ruleData?.action?.type ?? 'synthesize_substance';
+
+  const html = `
+    <div id="rule-${id}" class="rule-card bg-white border border-indigo-100 rounded-lg shadow-sm overflow-hidden">
+      <div class="bg-indigo-50 px-4 py-2 border-b border-indigo-100 flex justify-between items-center">
+        <h5 class="text-sm font-semibold text-indigo-900">Trigger Rule</h5>
+        <button type="button" onclick="removeRule(${id})" class="text-indigo-400 hover:text-red-500 text-sm">Remove</button>
+      </div>
+      <div class="p-4 space-y-4">
+        <!-- Core Triggers -->
+        <div class="grid grid-cols-3 gap-4">
+          <div><label class="block text-xs text-slate-500">Target Species ID</label><input type="number" class="rule-h-id mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${h_id}"></div>
+          <div><label class="block text-xs text-slate-500">Min Population</label><input type="number" class="rule-min-pop mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${min_pop}"></div>
+          <div><label class="block text-xs text-slate-500">Aftereffect Ticks</label><input type="number" class="rule-ticks mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ticks}"></div>
+        </div>
+
+        <!-- Conditions -->
+        <div class="border-t border-slate-100 pt-3">
+          <div class="flex justify-between items-center mb-2">
+             <h6 class="text-xs font-semibold text-slate-700">Extra Activation Conditions <span class="font-normal text-slate-400">(Implicit ALL_OF)</span></h6>
+             <button type="button" onclick="addConditionToRule(${id})" class="text-xs text-indigo-600 hover:text-indigo-800">+ Add Condition</button>
+          </div>
+          <div id="conditions-list-${id}" class="space-y-2"></div>
+        </div>
+
+        <!-- Action -->
+        <div class="border-t border-slate-100 pt-3">
+          <label class="block text-xs font-semibold text-slate-700 mb-2">Action Definition</label>
+          <select id="action-type-${id}" class="block w-full rounded border-slate-300 text-sm mb-3" onchange="updateActionType(${id})">
+            <option value="synthesize_substance" ${a_type === 'synthesize_substance' ? 'selected' : ''}>Synthesize Substance</option>
+            <option value="resource_withdrawal" ${a_type === 'resource_withdrawal' ? 'selected' : ''}>Resource Withdrawal</option>
+          </select>
+
+          <div id="action-synth-${id}" class="grid grid-cols-1 gap-x-4 gap-y-3 bg-slate-50 p-3 rounded border border-slate-200">
+            <div>
+              <label class="block text-xs text-slate-600">Substance (Select from Database)</label>
+              <select class="act-sub-id mt-1 block w-full rounded border-slate-300 text-sm py-1">
+                ${Object.entries(JSON.parse(document.getElementById('db-json-substances').textContent)).map(([sId, sData]) =>
+                  `<option value="${sId}" ${ruleData?.action?.substance_id == sId ? 'selected' : ''}>${sData.name} (ID: ${sId})</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div id="action-res-${id}" class="hidden bg-slate-50 p-3 rounded border border-slate-200">
+            <div><label class="block text-xs text-slate-600">Apparent Nutrition Factor</label><input type="number" step="0.1" class="act-nut-factor mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ruleData?.action?.apparent_nutrition_factor ?? 0.2}"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', html);
+  updateActionType(id);
+
+  if (ruleData?.activation_condition) {
+    const ac = ruleData.activation_condition;
+    if (ac.kind === 'all_of' && ac.conditions) {
+      ac.conditions.forEach(c => addConditionToRule(id, c));
+    } else {
+      addConditionToRule(id, ac);
+    }
+  }
+}
+
+function openEditor(category, name) {
+  document.getElementById('save-error').classList.add('hidden');
+  document.getElementById('modal-editor').classList.remove('hidden');
+  document.getElementById('rules-container').innerHTML = '';
+  ruleCounter = 0;
+  conditionCounters = {};
+
+  const floraDb = JSON.parse(document.getElementById('db-json-flora').textContent);
+
+  // Populate Herbivore Diet Checkboxes
+  const dietContainer = document.getElementById('h-diet-checkboxes');
+  dietContainer.innerHTML = '';
+  Object.keys(floraDb).forEach(floraName => {
+    dietContainer.innerHTML += `
+      <label class="flex items-center text-xs text-slate-700 gap-2">
+        <input type="checkbox" value="${floraName}" class="h-diet-cb rounded text-indigo-600 border-slate-300">
+        ${floraName}
+      </label>`;
+  });
+
+  if (category === 'new') {
+    document.getElementById('editor-title').innerText = "Create Archetype";
+    document.getElementById('edit-name').value = "";
+    document.getElementById('edit-original-name').value = "";
+    document.getElementById('edit-category').value = "flora";
+    document.getElementById('edit-category').disabled = false;
+    switchCategoryFields();
+
+    document.getElementById('f-growth_rate').value = "0.1";
+    document.getElementById('f-max_energy').value = "20.0";
+    document.getElementById('f-survival_threshold').value = "2.0";
+    document.getElementById('f-seed_cost').value = "5.0";
+    document.getElementById('f-seed_dispersion_radius').value = "1.0";
+    document.getElementById('f-mech_damage').value = "0.0";
+    document.getElementById('f-digest_mod').value = "1.0";
+
+    document.getElementById('h-metabolism_upkeep').value = "0.1";
+    document.getElementById('h-consumption_rate').value = "1.5";
+    document.getElementById('h-mitosis_threshold').value = "15.0";
+    document.getElementById('h-split_ratio').value = "0.5";
+    document.getElementById('h-morph_adapt').value = "0.0";
+    document.getElementById('h-chem_neut').value = "0.0";
+    document.getElementById('h-digest_eff').value = "1.0";
+
+    document.getElementById('s-name').value = "New Substance";
+    document.getElementById('s-energy_cost_per_tick').value = "0.1";
+    document.getElementById('s-synthesis_duration').value = "5";
+    document.getElementById('s-lethality_rate').value = "0.0";
+    document.getElementById('s-repellent_walk_ticks').value = "0";
+    document.getElementById('s-is_toxin').checked = false;
+    document.getElementById('s-lethal').checked = false;
+    document.getElementById('s-repellent').checked = false;
+    document.getElementById('s-irreversible').checked = false;
+
+    updateRulesEmptyState();
+    return;
+  }
+
+  document.getElementById('editor-title').innerText = "Edit Archetype";
+  document.getElementById('edit-category').value = category;
+  document.getElementById('edit-category').disabled = true;
+  switchCategoryFields();
+
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-original-name').value = name;
+
+  const dbData = JSON.parse(document.getElementById(`db-json-${category}`).textContent);
+  const data = dbData[name];
+
+  if (category === 'flora') {
+    document.getElementById('f-growth_rate').value = data.base_metrics?.growth_rate ?? 0.1;
+    document.getElementById('f-max_energy').value = data.base_metrics?.max_energy ?? 20.0;
+    document.getElementById('f-survival_threshold').value = data.base_metrics?.survival_threshold ?? 2.0;
+    document.getElementById('f-seed_cost').value = data.base_metrics?.seed_cost ?? 5.0;
+    document.getElementById('f-seed_dispersion_radius').value = data.base_metrics?.seed_dispersion_radius ?? 1.0;
+
+    document.getElementById('f-mech_damage').value = data.passive_defenses?.mechanical_damage_per_bite ?? 0.0;
+    document.getElementById('f-digest_mod').value = data.passive_defenses?.digestibility_modifier ?? 1.0;
+
+    if (data.trigger_rules) {
+      data.trigger_rules.forEach(rule => addRuleCard(rule));
+    }
+  } else if (category === 'herbivores') {
+    document.getElementById('h-metabolism_upkeep').value = data.base_metrics?.metabolism_upkeep ?? 0.1;
+    document.getElementById('h-consumption_rate').value = data.base_metrics?.consumption_rate ?? 1.5;
+    document.getElementById('h-mitosis_threshold').value = data.base_metrics?.mitosis_threshold ?? 15.0;
+    document.getElementById('h-split_ratio').value = data.base_metrics?.split_ratio ?? 0.5;
+
+    document.getElementById('h-morph_adapt').value = data.resistances?.morphological_adaptation ?? 0.0;
+    document.getElementById('h-chem_neut').value = data.resistances?.chemical_neutralization ?? 0.0;
+    document.getElementById('h-digest_eff').value = data.resistances?.digestive_efficiency ?? 1.0;
+
+    // Diet Checkboxes
+    if (data.diet) {
+      document.querySelectorAll('.h-diet-cb').forEach(cb => {
+        cb.checked = data.diet.includes(cb.value);
+      });
+    }
+  } else if (category === 'substances') {
+    document.getElementById('s-name').value = data.name || "Substance " + name;
+    document.getElementById('s-energy_cost_per_tick').value = data.energy_cost_per_tick ?? 0.0;
+    document.getElementById('s-synthesis_duration').value = data.synthesis_duration ?? 5;
+    document.getElementById('s-lethality_rate').value = data.lethality_rate ?? 0.0;
+    document.getElementById('s-repellent_walk_ticks').value = data.repellent_walk_ticks ?? 0;
+    document.getElementById('s-is_toxin').checked = data.is_toxin ?? false;
+    document.getElementById('s-lethal').checked = data.lethal ?? false;
+    document.getElementById('s-repellent').checked = data.repellent ?? false;
+    document.getElementById('s-irreversible').checked = data.irreversible ?? false;
+  }
+  updateRulesEmptyState();
+}
+
+function closeEditor() {
+  document.getElementById('modal-editor').classList.add('hidden');
+}
+
+function extractRules() {
+  const rules = [];
+  const subsDb = JSON.parse(document.getElementById('db-json-substances').textContent);
+
+  document.querySelectorAll('.rule-card').forEach(card => {
+    const r = {
+      herbivore_species_id: parseInt(card.querySelector('.rule-h-id').value) || 0,
+      min_herbivore_population: parseInt(card.querySelector('.rule-min-pop').value) || 0,
+      aftereffect_ticks: parseInt(card.querySelector('.rule-ticks').value) || 0,
+      action: {}
+    };
+
+    const condEls = card.querySelectorAll('.condition-item');
+    if (condEls.length > 0) {
+      const condList = Array.from(condEls).map(ce => {
+        const kind = ce.querySelector('.cond-kind').value;
+        if (kind === 'herbivore_presence') {
+          return {
+            kind: 'herbivore_presence',
+            herbivore_species_id: parseInt(ce.querySelector('.cond-herb-id').value) || 0,
+            min_herbivore_population: parseInt(ce.querySelector('.cond-min-pop').value) || 0
+          };
+        } else {
+          return {
+            kind: 'substance_active',
+            substance_id: parseInt(ce.querySelector('.cond-sub-id').value) || 0
+          };
+        }
+      });
+
+      if (condList.length === 1) {
+        r.activation_condition = condList[0];
+      } else {
+        r.activation_condition = {
+          kind: 'all_of',
+          conditions: condList
+        };
+      }
+    }
+
+    const typeSelect = card.querySelector('select[id^="action-type-"]');
+    r.action.type = typeSelect.value;
+
+    if (r.action.type === 'synthesize_substance') {
+      const sId = card.querySelector('.act-sub-id').value;
+      r.action.substance_id = parseInt(sId);
+
+      // Merge template
+      const template = subsDb[sId] || {};
+      r.action.synthesis_duration = template.synthesis_duration ?? 5;
+      r.action.is_toxin = template.is_toxin ?? false;
+      r.action.lethal = template.lethal ?? false;
+      r.action.lethality_rate = template.lethality_rate ?? 0.0;
+      r.action.repellent = template.repellent ?? false;
+      r.action.repellent_walk_ticks = template.repellent_walk_ticks ?? 0;
+      r.action.energy_cost_per_tick = template.energy_cost_per_tick ?? 0.0;
+      r.action.irreversible = template.irreversible ?? false;
+    } else {
+      r.action.apparent_nutrition_factor = parseFloat(card.querySelector('.act-nut-factor').value) || 0;
+    }
+
+    rules.push(r);
+  });
+  return rules;
+}
+
+async function saveArchetype() {
+  const errEl = document.getElementById('save-error');
+  errEl.classList.add('hidden');
+
+  const category = document.getElementById('edit-category').value;
+  const originalName = document.getElementById('edit-original-name').value;
+  const name = document.getElementById('edit-name').value.trim();
+
+  if (!name && category !== 'substances') {
+    errEl.innerText = "Name is required.";
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  let newEntry = {};
+
+  if (category === 'flora') {
+    newEntry.base_metrics = {
+      growth_rate: parseFloat(document.getElementById('f-growth_rate').value) || 0,
+      max_energy: parseFloat(document.getElementById('f-max_energy').value) || 0,
+      survival_threshold: parseFloat(document.getElementById('f-survival_threshold').value) || 0,
+      seed_cost: parseFloat(document.getElementById('f-seed_cost').value) || 0,
+      seed_dispersion_radius: parseFloat(document.getElementById('f-seed_dispersion_radius').value) || 0
+    };
+    newEntry.passive_defenses = {
+      mechanical_damage_per_bite: parseFloat(document.getElementById('f-mech_damage').value) || 0,
+      digestibility_modifier: parseFloat(document.getElementById('f-digest_mod').value) || 0
+    };
+    newEntry.trigger_rules = extractRules();
+  } else if (category === 'herbivores') {
+    newEntry.base_metrics = {
+      metabolism_upkeep: parseFloat(document.getElementById('h-metabolism_upkeep').value) || 0,
+      consumption_rate: parseFloat(document.getElementById('h-consumption_rate').value) || 0,
+      mitosis_threshold: parseFloat(document.getElementById('h-mitosis_threshold').value) || 0,
+      split_ratio: parseFloat(document.getElementById('h-split_ratio').value) || 0
+    };
+    newEntry.resistances = {
+      morphological_adaptation: parseFloat(document.getElementById('h-morph_adapt').value) || 0,
+      chemical_neutralization: parseFloat(document.getElementById('h-chem_neut').value) || 0,
+      digestive_efficiency: parseFloat(document.getElementById('h-digest_eff').value) || 0
+    };
+
+    const diet = [];
+    document.querySelectorAll('.h-diet-cb:checked').forEach(cb => diet.push(cb.value));
+    newEntry.diet = diet;
+  } else if (category === 'substances') {
+    if (!document.getElementById('s-name').value.trim()) {
+      errEl.innerText = "Substance Name is required.";
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const sId = originalName || Date.now().toString(); // Use timestamp as ID if new
+    newEntry = {
+      name: document.getElementById('s-name').value.trim(),
+      energy_cost_per_tick: parseFloat(document.getElementById('s-energy_cost_per_tick').value) || 0,
+      synthesis_duration: parseInt(document.getElementById('s-synthesis_duration').value) || 0,
+      lethality_rate: parseFloat(document.getElementById('s-lethality_rate').value) || 0,
+      repellent_walk_ticks: parseInt(document.getElementById('s-repellent_walk_ticks').value) || 0,
+      is_toxin: document.getElementById('s-is_toxin').checked,
+      lethal: document.getElementById('s-lethal').checked,
+      repellent: document.getElementById('s-repellent').checked,
+      irreversible: document.getElementById('s-irreversible').checked
+    };
+  }
+
+  const floraDb = JSON.parse(document.getElementById('db-json-flora').textContent);
+  const herbDb = JSON.parse(document.getElementById('db-json-herbivores').textContent);
+  const subsDb = JSON.parse(document.getElementById('db-json-substances').textContent);
+
+  const payload = {
+    flora: floraDb,
+    herbivores: herbDb,
+    substances: subsDb
+  };
+
+  const targetKey = category === 'substances' ? (originalName || Date.now().toString()) : name;
+
+  if (originalName && originalName !== targetKey && category !== 'substances') {
+    delete payload[category][originalName];
+  }
+  payload[category][targetKey] = newEntry;
+
+  try {
+    const resp = await fetch('/api/database/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (resp.ok) {
+      closeEditor();
+      htmx.ajax('GET', '/ui/database', { target: '#main-workspace', swap: 'innerHTML' });
+    } else {
+      errEl.innerText = "Failed to save: " + await resp.text();
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.innerText = "Network error: " + e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+</script>

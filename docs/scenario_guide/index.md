@@ -33,7 +33,7 @@ Understand how to define your custom ecosystem configurations. This guide detail
 
 * The Pydantic validation schema (`SimulationConfig`) ensuring configuration integrity before boot.
 * The **Rule of 16** constraint, which limits flora, herbivores, and chemical substances to pre-allocated static cache lines, avoiding dynamic memory allocation latency during hot execution loops.
-* How to define the **Diet Compatibility** and **Biochemical Trigger** matrices to construct complex trophic relationships.
+* How to define the **Diet Compatibility** and **Substance Trigger** matrices to construct complex trophic relationships.
 
 ### 2. [Curated Examples](curated_examples.md)
 
@@ -48,5 +48,8 @@ Inspect pre-configured blueprints designed to demonstrate specific ecological fe
 Discover how the framework uses SciPy's Differential Evolution to find stable parameters autonomously:
 
 * **Optimization Search:** Why genetic/evolutionary search beats Random Walk and Simulated Annealing in rugged biological landscapes.
-* **The Goldilocks Configuration:** The strict mathematical criteria (termination avoidance and low coefficient of variation) that define a stable ecosystem.
-* **The 'Train Small, Run Large' Paradigm:** How to optimize settings on a $40 \times 40$ matrix and scale them to a massive $100 \times 100$ spatial hash.
+* **Cost Function Design:** How we penalize extinction events, reward survival time, and avoid "boring" stable states (e.g., $100\%$ flora, $0$ herbivores).
+
+### 4. [Bio-Database & UI Architecture Roadmap](database_and_ui_roadmap.md)
+
+Explore the structural decoupling of archetypes, visual rule building, and our migration path toward true database persistence.

@@ -20,6 +20,8 @@ extra_javascript = [
 
 [project.theme]
 variant = "modern"
+logo = "assets/logo.png"
+favicon = "assets/logo.png"
 features = [
     "navigation.tabs",
     "navigation.sections",
@@ -53,6 +55,7 @@ Home = "index.md"
 
 [[project.nav]]
 "Scientific Model" = [
+    { "Overview" = "scientific_model/index.md" },
     { "Mathematical Framework" = "scientific_model/mathematical_framework.md" },
     { "Reaction-Diffusion PDEs" = "scientific_model/reaction_diffusion.md" },
     { "Chemotaxis & Flow Fields" = "scientific_model/chemotaxis.md" },
@@ -77,12 +80,18 @@ Scenarios = [
     { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
     { "Curated Examples" = "scenario_guide/curated_examples.md" },
     { "Design Space Exploration (DSE)" = "scenario_guide/design_space_exploration.md" },
-    { "Parameter Normalization Roadmap" = "scenario_guide/parameter_normalization_roadmap.md" },
+    { "Roadmaps & Pipelines" = [
+        { "DSE Roadmap" = "scenario_guide/dse_roadmap.md" },
+        { "Database & UI Roadmap" = "scenario_guide/database_and_ui_roadmap.md" },
+        { "Empirical Database Pipeline" = "scenario_guide/empirical_database_pipeline.md" },
+        { "Biological Accuracy Upgrade" = "scenario_guide/biological_accuracy_upgrade.md" }
+    ] }
 ]
 
 
 [[project.nav]]
 "Development & Reference" = [
+    { "Overview" = "reference/index.md" },
     { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
     { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
     { "Module Map" = "reference/module-map.md" },

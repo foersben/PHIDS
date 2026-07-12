@@ -8,6 +8,8 @@ description: "Documentation for PHIDS: Plant-Herbivore Interaction & Defense Sim
 
 # PHIDS: Plant-Herbivore Interaction & Defense Simulator
 
+<img src="assets/logo.png" align="right" width="200" alt="PHIDS Logo">
+
 ## Abstract
 
 The evolutionary arms race between flora and their herbivores is a primary driver of terrestrial biodiversity. Plants, though sessile, are not passive victims of herbivory; they deploy a sophisticated array of constitutive and induced chemical defenses to deter feeding, inhibit digestion, or signal distress to neighboring foliage. In turn, herbivores evolve physiological tolerance, behavioral avoidance, and localized foraging strategies to bypass these botanical defenses.
@@ -26,7 +28,7 @@ Traditional mathematical ecology models populations as continuous variables (e.g
 
 PHIDS is designed to investigate the complex, emergent phenomena that arise when we constrain these interactions to a physical grid. The simulator explicitly models:
 
-* **Chemotactic Foraging:** Herbivore swarms do not possess omniscient knowledge of the ecosystem. They must navigate the terrain by sensing localized chemical gradients—moving toward areas of high caloric reward while actively avoiding dense concentrations of toxic or repellent compounds.
+* **Chemotactic Foraging:** Herbivore swarms do not possess omniscient knowledge of the ecosystem. They must navigate the terrain by sensing localized chemical gradients–moving toward areas of high caloric reward while actively avoiding dense concentrations of toxic or repellent compounds.
 * **Constitutive vs. Induced Defenses:** Flora can possess baseline defenses (e.g., camouflage that masks their caloric gradient), but they can also deploy dynamic *induced* defenses. A plant may detect a minimum threshold of grazing pressure before synthesizing a targeted toxin or releasing an airborne alarm signal.
 * **Reaction-Diffusion Mechanics:** Airborne signals (VOCs) are modeled using partial differential equations (PDEs), specifically isotropic Gaussian convolutions. This simulates how chemical plumes drift on the wind, decaying over time, and priming the defensive responses of down-wind flora before herbivores physically arrive.
 * **Mycorrhizal Symbiosis:** Plants can form underground fungal networks. These root linkages allow for the instantaneous point-to-point transfer of chemical alarm signals, entirely bypassing atmospheric diffusion delays, but demanding high metabolic caloric upkeep from the participating plants.
@@ -68,23 +70,23 @@ During the migration from legacy Object-Oriented implementations to the current 
 
 ## Current Runtime Anchors
 
-* `phids.engine.loop.SimulationLoop` — orchestrates the ordered simulation phases.
-* `phids.engine.core.biotope.GridEnvironment` — owns vectorized environmental layers.
-* `phids.engine.core.ecs.ECSWorld` — stores entities and spatial-locality data.
-* `phids.api.ui_state.DraftState` — holds editable UI state before live loading.
-* `phids.telemetry.analytics.TelemetryRecorder` — records tick-level output metrics.
+* `phids.engine.loop.SimulationLoop` – orchestrates the ordered simulation phases.
+* `phids.engine.core.biotope.GridEnvironment` – owns vectorized environmental layers.
+* `phids.engine.core.ecs.ECSWorld` – stores entities and spatial-locality data.
+* `phids.api.ui_state.DraftState` – holds editable UI state before live loading.
+* `phids.telemetry.analytics.TelemetryRecorder` – records tick-level output metrics.
 
 ## Documentation Map
 
-* **Scientific Model** — research scope, detailed breakdown of mathematical models (Chemotaxis, PDEs), biological reasoning, and equations:
+* **Scientific Model** – research scope, detailed breakdown of mathematical models (Chemotaxis, PDEs), biological reasoning, and equations:
   [`scientific_model/`](scientific_model/mathematical_framework.md)
-* **Technical Architecture** — system constraints, package boundaries, loop ownership, interfaces, and telemetry:
+* **Technical Architecture** – system constraints, package boundaries, loop ownership, interfaces, and telemetry:
   * [Testing Architecture](technical_architecture/testing_architecture.md)
   [`technical_architecture/`](technical_architecture/system_architecture.md)
-* **Scenarios** — schema semantics, import/export, and curated examples:
+* **Scenarios** – schema semantics, import/export, and curated examples:
   * [Design Space Exploration (DSE)](scenario_guide/design_space_exploration.md)
   [`scenario_guide/`](scenario_guide/scenario_authoring.md)
-* **Development & Reference** — API Reference, contribution workflows, agent orchestration (MCP), and historical archives:
+* **Development & Reference** – API Reference, contribution workflows, agent orchestration (MCP), and historical archives:
   [`development_guide/`](development_guide/contribution_workflow.md)
 
 ## How to Read This Site

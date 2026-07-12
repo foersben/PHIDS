@@ -7,14 +7,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+  <style>
+    /* Enforce consistent Noto Color Emoji rendering across all OS platforms (Mac/Windows/Linux) */
+    body {
+      font-family: ui-sans-serif, system-ui, sans-serif, "Noto Color Emoji";
+    }
+  </style>
 </head>
 <body class="h-screen w-full flex bg-slate-50 text-slate-900 overflow-hidden">
 
   <!-- ── Sidebar ────────────────────────────────────────────────────── -->
   <aside class="w-64 bg-slate-900 text-slate-100 flex flex-col shadow-xl z-10 shrink-0">
-    <div class="p-4 border-b border-slate-700">
-      <h1 class="text-lg font-bold text-white">PHIDS</h1>
-      <p class="text-xs text-slate-400">Plant-Herbivore Interaction & Defense Simulator</p>
+    <div class="p-6 border-b border-slate-700 flex justify-center items-center bg-slate-900">
+      <img src="/static/logo.png" alt="PHIDS Logo" class="w-full aspect-square object-contain rounded-xl bg-slate-800 p-3 shadow-inner border border-slate-700">
     </div>
 
     <nav class="flex-1 overflow-y-auto p-4 space-y-6">
@@ -43,7 +51,7 @@
           <li>
             <button hx-get="/ui/batch" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
-              🧬 Batch Runner
+              🎲 Batch Runner
             </button>
           </li>
         </ul>
@@ -55,6 +63,12 @@
           Rule of 16 Entities
         </h2>
         <ul class="space-y-1">
+          <li>
+            <button hx-get="/ui/database" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors font-medium text-indigo-300">
+              🗃️ Bio-Database Catalog
+            </button>
+          </li>
           <li>
             <button hx-get="/ui/flora" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
@@ -91,7 +105,7 @@
           <li>
             <button hx-get="/ui/morphology-defense" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
-              🌿 Morphology & Defense
+              🛡️ Morphology & Defense
             </button>
           </li>
         </ul>

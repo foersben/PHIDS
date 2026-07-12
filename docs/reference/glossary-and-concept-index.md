@@ -77,8 +77,8 @@ See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
 
 The module-level constant in `interaction.py` (`TILE_CARRYING_CAPACITY = 500`) that defines the
 maximum aggregate biological population permitted on a single grid cell before crowding-induced
-dispersal is triggered. The check aggregates the `population` attribute of all co-located swarms —
-not the count of swarm entities — so that biologically dense tiles are correctly identified
+dispersal is triggered. The check aggregates the `population` attribute of all co-located swarms –
+not the count of swarm entities – so that biologically dense tiles are correctly identified
 regardless of swarm entity fragmentation.
 
 See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
@@ -468,9 +468,9 @@ See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 PHIDS exposes two intentionally distinct WebSocket endpoints:
 
-- `/ws/simulation/stream` — emits full per-tick environment snapshots encoded as msgpack + zlib,
+- `/ws/simulation/stream` – emits full per-tick environment snapshots encoded as msgpack + zlib,
   suitable for programmatic replay or external analysis,
-- `/ws/ui/stream` — emits lightweight JSON payloads optimized for canvas rendering in the browser
+- `/ws/ui/stream` – emits lightweight JSON payloads optimized for canvas rendering in the browser
   control center.
 
 See: [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)

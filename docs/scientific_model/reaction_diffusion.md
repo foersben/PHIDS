@@ -8,13 +8,13 @@ description: "Documentation for Reaction-Diffusion & Partial Differential Equati
 
 # Reaction-Diffusion & Partial Differential Equations
 
-The dispersion of Volatile Organic Compounds (VOCs)—airborne signals used by flora to warn neighbors of herbivore attacks—is mathematically modeled in PHIDS using a discrete Reaction-Diffusion system.
+The dispersion of Volatile Organic Compounds (VOCs)–airborne signals used by flora to warn neighbors of herbivore attacks–is mathematically modeled in PHIDS using a discrete Reaction-Diffusion system.
 
 ## Biological and Physical Context
 
 In nature, when a plant is damaged, it releases chemical compounds into the surrounding air. The concentration of these chemicals decreases as they spread outwards, a process driven by random molecular motion (diffusion) and air currents (advection). Simultaneously, these compounds naturally degrade or react with atmospheric elements over time (decay).
 
-To simulate this without tracking billions of individual molecules, physics and chemistry employ **Partial Differential Equations (PDEs)**—specifically, Reaction-Diffusion equations.
+To simulate this without tracking billions of individual molecules, physics and chemistry employ **Partial Differential Equations (PDEs)**–specifically, Reaction-Diffusion equations.
 
 ## The Mathematical Model
 
@@ -113,7 +113,7 @@ If the wind speed spikes unexpectedly in a scenario, an explicit alternative col
 
 #### V. Biological Modeling Realism
 
-* **Anisotropic Plant Communication:** Plants communicate via airborne volatile organic compounds (VOCs)—such as releasing green leaf volatiles or jasmonates when chewed by herbivores to prime defensive enzyme synthesis in neighboring flora.
+* **Anisotropic Plant Communication:** Plants communicate via airborne volatile organic compounds (VOCs)–such as releasing green leaf volatiles or jasmonates when chewed by herbivores to prime defensive enzyme synthesis in neighboring flora.
 * **Realistic Signal Plumes:** By pairing wind-driven advection with symmetric diffusion, PHIDS accurately models directional, elongated chemical plumes. Downwind plants receive early warning signals and synthesize defenses long before upwind plants register any threat, perfectly mirroring canopy-level micro-climate communication patterns observed in forest ecology.
 
 ## Numerical Example
@@ -181,7 +181,7 @@ We could spawn individual ECS entities representing "scent particles" that move 
 This is one of the most sophisticated survival mechanisms in botany, modeling Stress-Induced Senescence.
 
 !!! info "Biological Context"
-    When a plant is subjected to severe, prolonged stress—such as continuous herbivory, impending frost, or drought—it will actively break down the chlorophyll in its leaves and rapidly pull valuable resources (nitrogen, carbon, and sugars) deep into its root system or woody stems. To an approaching herbivore, the plant visually and chemically appears "dead" or nutritionally barren, prompting the herd to move on. Once the environmental stress passes, the plant flushes resources back into its canopy.
+    When a plant is subjected to severe, prolonged stress–such as continuous herbivory, impending frost, or drought–it will actively break down the chlorophyll in its leaves and rapidly pull valuable resources (nitrogen, carbon, and sugars) deep into its root system or woody stems. To an approaching herbivore, the plant visually and chemically appears "dead" or nutritionally barren, prompting the herd to move on. Once the environmental stress passes, the plant flushes resources back into its canopy.
 
 In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). Instead of synthesizing a costly toxin, the plant triggers a `resource_withdrawal` action.
 

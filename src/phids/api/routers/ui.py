@@ -311,3 +311,52 @@ async def ui_dse(request: Request) -> Response:
         "dse/container.html",
         {},
     )
+
+
+@router.get("/ui/database", response_class=HTMLResponse, summary="Bio-Database Catalog partial")
+async def ui_database(request: Request) -> Response:
+    """Render the Bio-Database Catalog for browsing and managing species.
+
+    Args:
+        request: FastAPI request object used by the template renderer.
+
+    Returns:
+        TemplateResponse: Rendered `database_dashboard.html` fragment containing database items.
+    """
+    import json
+    from pathlib import Path
+
+    db_path = Path("src/phids/analytics/bio_database.json")
+    try:
+        with open(db_path, encoding="utf-8") as f:
+            db_data = json.load(f)
+    except FileNotFoundError:
+        db_data = {"flora": {}, "herbivores": {}, "substances": {}}
+
+    return api_main.templates.TemplateResponse(
+        request,
+        "database_dashboard.html",
+        {
+            "flora": db_data.get("flora", {}),
+            "herbivores": db_data.get("herbivores", {}),
+            "substances": db_data.get("substances", {}),
+        },
+    )
+
+
+@router.post("/api/database/save", summary="Save Bio-Database")
+async def api_database_save(request: Request) -> Response:
+    """Save the current bio-database payload."""
+    import json
+    from pathlib import Path
+
+    db_path = Path("src/phids/analytics/bio_database.json")
+
+    try:
+        data = await request.json()
+        with open(db_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+        return Response(status_code=200)
+    except Exception as e:
+        return Response(content=str(e), status_code=400)

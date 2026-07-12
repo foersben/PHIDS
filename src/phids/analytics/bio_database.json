@@ -82,7 +82,8 @@
         "morphological_adaptation": 0.2,
         "chemical_neutralization": 0.5,
         "digestive_efficiency": 1.0
-      }
+      },
+      "diet": []
     },
     "Schistocerca gregaria": {
       "base_metrics": {
@@ -95,7 +96,21 @@
         "morphological_adaptation": 0.0,
         "chemical_neutralization": 0.1,
         "digestive_efficiency": 0.8
-      }
+      },
+      "diet": []
+    }
+  },
+  "substances": {
+    "1": {
+      "name": "Substance 1",
+      "is_toxin": true,
+      "lethal": true,
+      "lethality_rate": 2.0,
+      "repellent": false,
+      "repellent_walk_ticks": 0,
+      "energy_cost_per_tick": 0.5,
+      "synthesis_duration": 5,
+      "irreversible": true
     }
   }
 }
