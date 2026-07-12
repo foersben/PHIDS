@@ -4,7 +4,7 @@ exclude: ^(site/|docs/legacy/|__pycache__/)
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         # Keep our OKF frontmatter template syntax clean
@@ -21,12 +21,12 @@ repos:
       - id: check-case-conflict
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.2
+    rev: v8.30.0
     hooks:
       - id: gitleaks
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies:

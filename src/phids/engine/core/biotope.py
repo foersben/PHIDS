@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
-from numba import njit  # type: ignore[import-untyped]
+from numba import njit
 
 from phids.shared.constants import (
     GRID_H_MAX,
@@ -42,7 +42,7 @@ _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.4
 
 
-@njit  # type: ignore[untyped-decorator]
+@njit
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -271,7 +271,7 @@ class GridEnvironment:
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
-            _numba_diffuse_signal_layer(
+            _numba_diffuse_signal_layer(  # type: ignore[type-var, call-arg]
                 self.width,
                 self.height,
                 layer,
