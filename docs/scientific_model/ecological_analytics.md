@@ -126,3 +126,16 @@ While the engine computes physical absolutes, human operators exploring the scen
 - **Relativization (Normalization):** The UI and analytics dashboards scale these raw limits on-the-fly (e.g., translating a plant's absolute energy of `45.0` against its genetic capacity of `50.0` to yield a `90%` health metric).
 
 This dichotomy ensures the underlying scientific model remains mathematically rigorous and computationally deterministic, while the analytical output remains cognitively accessible for researchers tuning the ecosystem.
+
+## 5. Ecological Parameter Relativization (Normalization)
+
+Within the mathematical engine, species and environmental interactions are strictly calculated using raw, absolute numerical primitives (e.g., specific Joules of energy, precise entity headcounts, and raw concentration floats). 
+
+However, from an analytical and design-space exploration (DSE) perspective, comparing a species with an absolute baseline energy of `5.0` to one with a baseline of `500.0` is ecologically opaque. A loss of `2.0` energy is devastating for the first, but trivial for the second. 
+
+To resolve this, the scientific framework employs **Relativization** (often referred to technically as normalization). Data points are transformed into dimensionless scales (ratios, percentages, and fractional multipliers) before presentation:
+
+- **Fractional Carrying Capacity (`energy_ratio`)**: Translates absolute biomass into a 0.0 to 1.0 fraction of the species' genetic maximum. This allows direct cross-species comparison of "ecological stress" regardless of their absolute size or metabolic requirements.
+- **Dimensionless Defense & Digestibility Scalars**: Instead of defining absolute lignin hardness, properties like `digestibility_modifier` are normalized to a `[0, 1]` coefficient. This simplifies the Lotka-Volterra interaction strength ($\beta$) into a proportional loss, ensuring that defensive evolutionary traits remain stable and bounded even if the global simulation scale is magnified by orders of magnitude.
+
+Relativization ensures that scientists and scenario authors can intuit the systemic pressures acting upon an ecosystem without needing to memorize the arbitrary absolute mathematical limits of the underlying physics engine.

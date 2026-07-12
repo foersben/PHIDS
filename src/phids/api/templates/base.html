@@ -436,5 +436,61 @@
       });
     })();
   </script>
+  <script>
+    // Dual-control sync logic for UI parameters
+    document.addEventListener('input', (e) => {
+      // Sync from slider to number input
+      if (e.target.matches('input[type="range"].sync-slider')) {
+        const numberInput = document.getElementById(e.target.dataset.syncId);
+        if (numberInput) {
+          if (e.target.dataset.scale === 'log') {
+            const minSlider = parseFloat(e.target.min) || 0;
+            const maxSlider = parseFloat(e.target.max) || 100;
+            const minLog = Math.log(parseFloat(e.target.dataset.logMin) || 1);
+            const maxLog = Math.log(parseFloat(e.target.dataset.logMax) || 10000);
+
+            const scale = (maxLog - minLog) / (maxSlider - minSlider);
+            const val = Math.exp(minLog + scale * (parseFloat(e.target.value) - minSlider));
+
+            numberInput.value = Math.round(val);
+          } else {
+            numberInput.value = e.target.value;
+          }
+        }
+      }
+
+      // Sync from number input to slider
+      if (e.target.matches('input[type="number"].sync-number')) {
+        const sliderInput = document.getElementById(e.target.dataset.syncId);
+        if (sliderInput) {
+          if (sliderInput.dataset.scale === 'log') {
+            const minSlider = parseFloat(sliderInput.min) || 0;
+            const maxSlider = parseFloat(sliderInput.max) || 100;
+            const minLog = Math.log(parseFloat(sliderInput.dataset.logMin) || 1);
+            const maxLog = Math.log(parseFloat(sliderInput.dataset.logMax) || 10000);
+
+            const val = parseFloat(e.target.value);
+            if (val > 0) {
+              const scale = (maxLog - minLog) / (maxSlider - minSlider);
+              const targetVal = (Math.log(val) - minLog) / scale + minSlider;
+              sliderInput.value = targetVal;
+            }
+          } else {
+            sliderInput.value = e.target.value;
+          }
+        }
+      }
+    });
+
+    document.addEventListener('change', (e) => {
+      // When slider drag ends, notify HTMX via the number input
+      if (e.target.matches('input[type="range"].sync-slider')) {
+        const numberInput = document.getElementById(e.target.dataset.syncId);
+        if (numberInput) {
+          numberInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
+  </script>
 </body>
 </html>

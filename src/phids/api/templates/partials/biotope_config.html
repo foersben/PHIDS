@@ -3,7 +3,7 @@
 
   <div class="bg-white rounded-xl shadow-sm border p-6">
     <form hx-post="/api/config/biotope" hx-target="#biotope-config-view" hx-swap="outerHTML"
-      hx-trigger="input changed delay:200ms from:input, change delay:200ms" class="grid grid-cols-2 gap-6">
+      hx-trigger="input changed delay:200ms from:input:not([type='range']), change delay:200ms" class="grid grid-cols-2 gap-6">
 
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Grid Width</label>
@@ -61,20 +61,32 @@
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1"
           title="Fraction of signal concentration retained per tick after Gaussian diffusion (0.01-1.0). Lower = faster signal fade.">
-          Signal Decay Factor
+          Signal Decay Factor (%)
         </label>
-        <input type="number" name="signal_decay_factor" min="0.01" max="1.0" step="0.01"
-          value="{{ draft.signal_decay_factor }}"
-          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        <div class="flex items-center gap-2">
+          <input type="range" min="0.01" max="1.0" step="0.01" id="biotope-decay-slider"
+            data-sync-id="biotope-decay" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer sync-slider"
+            value="{{ draft.signal_decay_factor }}">
+          <input type="number" id="biotope-decay" data-sync-id="biotope-decay-slider"
+            name="signal_decay_factor" min="0.01" max="1.0" step="0.01"
+            value="{{ draft.signal_decay_factor }}"
+            class="w-20 border border-slate-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none sync-number">
+        </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1"
           title="Concentration added to a signal or toxin layer per tick when an active substance emits (0.01-1.0).">
-          Substance Emit Rate
+          Substance Emit Rate (%)
         </label>
-        <input type="number" name="substance_emit_rate" min="0.01" max="1.0" step="0.01"
-          value="{{ draft.substance_emit_rate }}"
-          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        <div class="flex items-center gap-2">
+          <input type="range" min="0.01" max="1.0" step="0.01" id="biotope-emit-slider"
+            data-sync-id="biotope-emit" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer sync-slider"
+            value="{{ draft.substance_emit_rate }}">
+          <input type="number" id="biotope-emit" data-sync-id="biotope-emit-slider"
+            name="substance_emit_rate" min="0.01" max="1.0" step="0.01"
+            value="{{ draft.substance_emit_rate }}"
+            class="w-20 border border-slate-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none sync-number">
+        </div>
       </div>
 
       <div class="col-span-2 flex items-center gap-3">

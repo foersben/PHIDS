@@ -42,61 +42,67 @@
           <td class="px-3 py-2">
             <input type="text" value="{{ fp.name }}"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               name="name"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-32">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ fp.base_energy }}" step="0.1" min="0.1" name="base_energy"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ fp.max_energy }}" step="0.1" min="0.1" name="max_energy"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ fp.growth_rate }}" step="0.1" min="0" name="growth_rate"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ fp.survival_threshold }}" step="0.1" min="0" name="survival_threshold"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ fp.reproduction_interval }}" step="1" min="1" name="reproduction_interval"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
             <input type="number" value="{{ fp.passive_defenses.mechanical_damage_per_bite }}" step="0.1" min="0" name="passive_defenses.mechanical_damage_per_bite"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
           </td>
           <td class="px-3 py-2">
-            <input type="number" value="{{ fp.passive_defenses.digestibility_modifier }}" step="0.1" min="0" max="1" name="passive_defenses.digestibility_modifier"
-              hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
-              class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-20">
+            <div class="flex items-center gap-1 w-24">
+              <input type="range" min="0" max="1" step="0.05" id="flora-digest-slider-{{ fp.species_id }}"
+                data-sync-id="flora-digest-{{ fp.species_id }}" class="w-10 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer sync-slider"
+                value="{{ fp.passive_defenses.digestibility_modifier }}">
+              <input type="number" id="flora-digest-{{ fp.species_id }}" data-sync-id="flora-digest-slider-{{ fp.species_id }}"
+                value="{{ fp.passive_defenses.digestibility_modifier }}" step="0.1" min="0" max="1" name="passive_defenses.digestibility_modifier"
+                hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
+                hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+                class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 w-14 sync-number">
+            </div>
           </td>
           <td class="px-3 py-2 text-center">
             <input type="checkbox" {% if fp.camouflage %}checked{% endif %} name="camouflage"
               hx-put="/api/config/flora/{{ fp.species_id }}" hx-trigger="change"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML"
               class="h-4 w-4 rounded border-slate-300 text-indigo-600">
           </td>
           <td class="px-3 py-2">
             <button hx-delete="/api/config/flora/{{ fp.species_id }}"
-              hx-target="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML swap:0.5s"
+              hx-target="#flora-row-{{ fp.species_id }}" hx-select="#flora-row-{{ fp.species_id }}" hx-swap="outerHTML swap:0.5s"
               hx-confirm="Delete {{ fp.name }}?"
               class="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
               Delete
