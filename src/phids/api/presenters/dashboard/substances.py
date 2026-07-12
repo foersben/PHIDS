@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.api.presenters.dashboard.helpers import _default_substance_name, _describe_activation_condition
+from phids.api.presenters.dashboard.shared import _default_substance_name, _describe_activation_condition
 
 if TYPE_CHECKING:
     from phids.engine.components.substances import SubstanceComponent
