@@ -259,16 +259,19 @@ def _set_simulation_substance_names(
         )
         return
 
+    from phids.api.schemas import SynthesizeSubstanceAction
+
     derived_names: dict[int, str] = {}
     for flora in config.flora_species:
         for trigger in flora.triggers:
-            derived_names.setdefault(
-                trigger.substance_id,
-                _default_substance_name(
-                    trigger.substance_id,
-                    is_toxin=trigger.is_toxin,
-                ),
-            )
+            if isinstance(trigger.action, SynthesizeSubstanceAction):
+                derived_names.setdefault(
+                    trigger.action.substance_id,
+                    _default_substance_name(
+                        trigger.action.substance_id,
+                        is_toxin=trigger.action.is_toxin,
+                    ),
+                )
     _sim_substance_names.clear()
     _sim_substance_names.update(derived_names)
 

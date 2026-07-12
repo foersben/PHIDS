@@ -19,7 +19,7 @@ import asyncio
 import logging
 import time
 import uuid
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
@@ -80,11 +80,12 @@ class SimulationLoop:
         config: Validated :class:`~phids.api.schemas.SimulationConfig`.
     """
 
-    def __init__(self, config: SimulationConfig) -> None:
+    def __init__(self, config: SimulationConfig, *, disable_replay: bool = False) -> None:
         """Initialise the SimulationLoop with the provided configuration.
 
         Args:
             config: Validated SimulationConfig instance from the API payload.
+            disable_replay: If True, disables Zarr replay recording to disk.
         """
         self.config = config
         self.tick: int = 0
@@ -114,9 +115,16 @@ class SimulationLoop:
         # Telemetry
         self.telemetry = TelemetryRecorder()
         # Deterministic replay state frames using Zarr
-        self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
-        self._replay_supports_raw_arrays = True
-        logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
+        if disable_replay:
+            from phids.io.zarr_replay import NoOpReplayBuffer
+
+            self.replay: Any = NoOpReplayBuffer()
+            self._replay_supports_raw_arrays = True
+            logger.info("Using NoOp replay backend (disabling disk storage)")
+        else:
+            self.replay = ReplayBuffer(max_frames=MAX_REPLAY_FRAMES)
+            self._replay_supports_raw_arrays = True
+            logger.info("Using Zarr replay backend (max_frames=%d)", MAX_REPLAY_FRAMES)
 
         # Pre-compute species parameter lookups
         self._flora_params: dict[int, FloraSpeciesParams] = {sp.species_id: sp for sp in config.flora_species}
@@ -480,6 +488,7 @@ class SimulationLoop:
             # --------------------------------------------------------
             self.env.flow_field = compute_flow_field(
                 self.env.plant_energy_layer,
+                self.env.apparent_nutrition_layer,
                 self.env.toxin_layers,
                 self.env.width,
                 self.env.height,
@@ -521,6 +530,8 @@ class SimulationLoop:
                 self.world,
                 self.env,
                 self._diet_matrix,
+                list(self.config.flora_species),
+                list(self.config.herbivore_species),
                 self.tick,
                 plant_death_causes=plant_death_causes,
             )
@@ -539,6 +550,8 @@ class SimulationLoop:
                 self.config.mycorrhizal_signal_velocity,
                 self.tick,
                 plant_death_causes=plant_death_causes,
+                substance_emit_rate=self.config.substance_emit_rate,
+                signal_decay_factor=self.config.signal_decay_factor,
             )
             if debug_summary:
                 phase_timings_ms["signaling"] = (time.perf_counter() - phase_started) * 1000.0

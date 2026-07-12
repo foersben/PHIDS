@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "phids"
 version = "0.6.0"
 description = "PHIDS – Plant-Herbivore Interaction & Defense Simulator"
+authors = [{ name = "Benjamin Förster", email = "mail@benjamin-foerster.de" }]
 readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
@@ -25,6 +26,8 @@ dependencies = [
     "zarr>=3.0.0",
     "typer>=0.16.0",
     "pandas-stubs~=3.0.3",
+    "deap>=1.4.4",
+    "optuna>=4.9.0",
 ]
 
 [project.scripts]
@@ -48,6 +51,8 @@ dev = [
     "pyyaml>=6.0.2",
     "types-PyYAML>=6.0.12.20240806",
     "taskipy>=1.14.1",
+    "mutmut>=2.4.0",
+    "beautifulsoup4>=4.15.0",
 ]
 
 [tool.taskipy.tasks]
@@ -64,7 +69,7 @@ cache-dir = ".cache/ruff"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "ARG", "TCH", "FA", "N", "RUF", "D"]
-ignore = ["ANN401", "D100", "D104"]
+ignore = ["ANN401"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -81,6 +86,23 @@ strict = true
 files = ["src/phids"]
 plugins = ["pydantic.mypy"]
 cache_dir = ".cache/mypy"
+
+[tool.mutmut]
+source_paths = [
+    "src/phids/engine/core/flow_field.py",
+    "src/phids/engine/core/ecs.py",
+    "src/phids/engine/core/biotope.py",
+]
+also_copy = ["src/"]
+pytest_add_cli_args = ["--override-ini=addopts="]
+pytest_add_cli_args_test_selection = [
+    "tests/unit/engine/core/test_flow_field_mutation_pilot.py",
+    "tests/unit/engine/core/test_flow_field.py",
+    "tests/unit/engine/core/test_ecs_world.py",
+    "tests/unit/engine/core/test_ecs_mutation_pilot.py",
+    "tests/unit/engine/core/test_biotope_diffusion.py",
+    "tests/unit/engine/core/test_biotope_state_mutation_pilot.py",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

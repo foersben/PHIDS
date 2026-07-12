@@ -58,6 +58,12 @@ async def ui_diagnostics_model(request: Request) -> Response:
             if api_main._sim_loop is not None
             else None,
             "energy_deficit_swarms": api_main._build_energy_deficit_swarms(),
+            "wind": {
+                "vx": api_main._sim_loop.config.wind_x if api_main._sim_loop else get_draft().wind_x,
+                "vy": api_main._sim_loop.config.wind_y if api_main._sim_loop else get_draft().wind_y,
+            },
+            "initial_population": sum(sp.population for sp in get_draft().initial_swarms),
+            "initial_flora_count": len(get_draft().initial_plants),
         },
     )
 
@@ -242,20 +248,33 @@ async def ui_diet_matrix(request: Request) -> Response:
 
 @router.get("/ui/trigger-rules", response_class=HTMLResponse, summary="Trigger rules partial")
 async def ui_trigger_rules(request: Request) -> Response:
-    """Render the trigger-rule editor.
-
-    Args:
-        request: FastAPI request object used by the template renderer.
-
-    Returns:
-        TemplateResponse: Rendered `partials/trigger_rules.html` fragment populated from the draft
-        rule set and activation-condition tree summaries.
-    """
+    """Render the trigger-rule editor."""
     draft = get_draft()
     return api_main.templates.TemplateResponse(
         request,
         "partials/trigger_rules.html",
         api_main._trigger_rules_template_context(draft),
+    )
+
+
+@router.get("/ui/morphology-defense", response_class=HTMLResponse, summary="Morphology and Defense partial")
+async def ui_morphology_defense(request: Request) -> Response:
+    """Render the morphology and defense editor partial."""
+    draft = get_draft()
+    return api_main.templates.TemplateResponse(
+        request,
+        "partials/morphology_defense_tab.html",
+        {
+            "flora_species": draft.flora_species,
+            "herbivore_species": draft.herbivore_species,
+            "substances": draft.substance_definitions,
+            "trigger_rules": draft.trigger_rules,
+            "trigger_rule_condition_summary": api_main._trigger_rules_template_context(draft).get(
+                "trigger_rule_condition_summary"
+            ),
+            "condition_group_kinds": ["all_of", "any_of"],
+            "condition_leaf_kinds": ["herbivore_presence", "substance_active", "environmental_signal"],
+        },
     )
 
 
@@ -282,3 +301,62 @@ async def ui_placements(request: Request) -> Response:
             "initial_swarms": draft.initial_swarms,
         },
     )
+
+
+@router.get("/ui/dse", response_class=HTMLResponse, summary="DSE Optimizer partial")
+async def ui_dse(request: Request) -> Response:
+    """Render the Design Space Exploration (DSE) panel."""
+    return api_main.templates.TemplateResponse(
+        request,
+        "dse/container.html",
+        {},
+    )
+
+
+@router.get("/ui/database", response_class=HTMLResponse, summary="Bio-Database Catalog partial")
+async def ui_database(request: Request) -> Response:
+    """Render the Bio-Database Catalog for browsing and managing species.
+
+    Args:
+        request: FastAPI request object used by the template renderer.
+
+    Returns:
+        TemplateResponse: Rendered `database_dashboard.html` fragment containing database items.
+    """
+    import json
+    from pathlib import Path
+
+    db_path = Path("src/phids/analytics/bio_database.json")
+    try:
+        with open(db_path, encoding="utf-8") as f:
+            db_data = json.load(f)
+    except FileNotFoundError:
+        db_data = {"flora": {}, "herbivores": {}, "substances": {}}
+
+    return api_main.templates.TemplateResponse(
+        request,
+        "database_dashboard.html",
+        {
+            "flora": db_data.get("flora", {}),
+            "herbivores": db_data.get("herbivores", {}),
+            "substances": db_data.get("substances", {}),
+        },
+    )
+
+
+@router.post("/api/database/save", summary="Save Bio-Database")
+async def api_database_save(request: Request) -> Response:
+    """Save the current bio-database payload."""
+    import json
+    from pathlib import Path
+
+    db_path = Path("src/phids/analytics/bio_database.json")
+
+    try:
+        data = await request.json()
+        with open(db_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+        return Response(status_code=200)
+    except Exception as e:
+        return Response(content=str(e), status_code=400)

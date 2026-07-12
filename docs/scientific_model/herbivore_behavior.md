@@ -8,7 +8,7 @@ description: "Documentation for Herbivore Behavior & Kinematics in the PHIDS fra
 
 # Herbivore Behavior & Kinematics
 
-Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors—movement, feeding, population scaling, and division—are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
+Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors–movement, feeding, population scaling, and division–are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
 
 ## 1. Locomotion & Probabilistic Sampling
 
@@ -26,11 +26,11 @@ If gradient ascent alone drove the system, the swarm would halt completely.
 **Algorithmic Resolution:**
 When $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
 
-- A 10:1 preference weight is given to continue moving in the current heading.
-- If no previous heading exists, isotropic random dispersal (Random Walk) is applied.
+* A 10:1 preference weight is given to continue moving in the current heading.
+* If no previous heading exists, isotropic random dispersal (Random Walk) is applied.
 
 **Biological Rationale:**
-This emulates *orthokinesis*—directional persistence. An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature.
+This emulates *orthokinesis*–directional persistence. An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature.
 
 ## 3. Capacity Limits & Physical Repulsion
 
@@ -98,27 +98,26 @@ flowchart TD
 
 The classic continuous modeling approach applies a constant, uninterrupted chemotaxis equation where the herbivore's velocity vector $\vec{v}$ is driven at all times by the gradient of an attractant field:
 
-$$
-\vec{v} = \chi \nabla C
-$$
+$$\vec{v} = \chi \nabla C$$
 
 Under this old model, animals are forced to continually shift and vibrate according to shifting chemical backgrounds, even while actively eating a plant.
 
 ### IV. Computational Improvement
 
-- **Complexity:** Drops the navigation cost for actively feeding swarms from an $O(M)$ array look-up and interpolation phase (where $M$ is the number of substance layers or flow field vectors) to a flat $O(1)$ boolean evaluation of the local cell state.
-- **Numba Optimization:** When herbivore densities are high and resources are abundant, up to 90% of the active swarms bypass the memory-bound array index operations required for vector-field pathing. This allows the Numba-compiled execution loops to maximize CPU cache residency by processing feeding swarms via simple in-place array updates.
+* **Complexity:** Drops the navigation cost for actively feeding swarms from an $O(M)$ array look-up and interpolation phase (where $M$ is the number of substance layers or flow field vectors) to a flat $O(1)$ boolean evaluation of the local cell state.
+* **Numba Optimization:** When herbivore densities are high and resources are abundant, up to 90% of the active swarms bypass the memory-bound array index operations required for vector-field pathing. This allows the Numba-compiled execution loops to maximize CPU cache residency by processing feeding swarms via simple in-place array updates.
 
 ### V. Biological Modeling Realism
 
-- **Optimal Foraging Theory (Marginal Value Theorem):** Biologically, an animal does not expend metabolic kinetic energy navigating along a distant odor plume when it is currently standing on a valid, calorie-dense food source.
-- **Patch Dynamics:** Enforcing an explicit "Anchoring Heuristic" accurately captures the behavioral dichotomy of animals: alternating between a highly stationary *exploitation state* (feeding) and a highly mobile *exploration state* (navigating via flow fields). The swarm will only resume flow-field tracking once its voracious grazing depletes the local tile's biomass below its target threshold, triggering an emergent, resource-driven departure from the patch.
+* **Optimal Foraging Theory (Marginal Value Theorem):** Biologically, an animal does not expend metabolic kinetic energy navigating along a distant odor plume when it is currently standing on a valid, calorie-dense food source.
+* **Patch Dynamics:** Enforcing an explicit "Anchoring Heuristic" accurately captures the behavioral dichotomy of animals: alternating between a highly stationary *exploitation state* (feeding) and a highly mobile *exploration state* (navigating via flow fields). The swarm will only resume flow-field tracking once its voracious grazing depletes the local tile's biomass below its target threshold, triggering an emergent, resource-driven departure from the patch.
 
 ## 5. Mitosis & Clonal Bifurcation
 
 When an anchored swarm consumes immense amounts of energy, it converts the surplus into population. If $N_i \ge N_{split}$, the swarm physically divides.
 
 **Algorithmic Resolution:**
+
 The system executes a binary fission:
 
 1. The parent swarm's population and energy are divided exactly in half ($N/2, E/2$).
@@ -127,4 +126,56 @@ The system executes a binary fission:
 4. The offspring is explicitly placed via a `_random_walk_step` in an adjacent tile.
 
 **Biological Rationale:**
-Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony—such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
+
+Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony–such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
+
+### Feeding & Attrition Dynamics
+
+#### The Theoretical Model (Continuous Thought)
+
+In a continuous biological model, herbivore populations grow or shrink based on net caloric intake versus metabolic burn, and suffer continuous attrition rates when feeding on heavily armored plants. A perfectly continuous solver allows for fractional survival (e.g., 0.4 of a herbivore remaining) and continuous caloric absorption.
+
+#### The Numerical Mapping (Discrete Realization)
+
+Because PHIDS operates a rigid Entity-Component-System (ECS) spatial hash, populations must remain strict integers, and metabolic accounting must strictly govern the "Attrition Trap" (starving while eating due to low digestibility).
+
+**Phase 1: Caloric Accounting (The Attrition Trap):**
+
+To simulate quantitative defenses (like high lignin), the digestibility modifier must scale the *gross* intake before baseline metabolism is paid.
+
+1. **Gross Intake:** $\Delta e_{\text{raw}} = \text{bites\_taken} \times E_{\text{per\_bite}}$
+2. **Digestion:** $\Delta e_{\text{real}} = \Delta e_{\text{raw}} \times \text{digestibility\_modifier}$
+3. **Net Energy:** $E_{t+1} = E_t + \Delta e_{\text{real}} - \text{metabolism\_upkeep}$
+*(If $\Delta e_{\text{real}}$ cannot cover the upkeep, the swarm mathematically loses energy despite feeding).*
+
+**Phase 2: Mechanical Attrition (Integer Enforcement):**
+
+To prevent "ghost fractions" from breaking the simulation constraints, physical damage taken from plant defenses is cast using a strict mathematical floor function:
+$$\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}}) \rfloor$$
+
+Where:
+
+* $\Delta e_{\text{raw}}$: Gross raw caloric intake extracted from the plant.
+* $\Delta e_{\text{real}}$: Net energy actually digested and absorbed by the swarm.
+* $\text{digestibility\_modifier}$: Scaler ($0.0 - 1.0$) representing constitutive defense reduction of calorie extraction.
+* $\text{Casualties}$: The exact integer count of swarm members killed by physical trauma.
+* $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
+* $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
+
+## Co-Evolutionary Adaptations & Resistance Matrices
+
+To counter plant defenses, the PHIDS engine supports formal evolutionary arms races through the `HerbivoreResistancesSchema` attached to the `HerbivoreSpeciesParams` (with the dictionary mapping `resistances`).
+
+In nature, herbivores do not passively accept plant defenses; they co-evolve specialized adaptations to bypass them.
+
+!!! info "Biological Context"
+    **Mechanical Resistance:** Giraffes possess heavily keratinized, prehensile tongues and thick saliva, allowing them to strip acacia leaves completely ignoring massive thorns.
+    **Chemical Resistance:** Monarch caterpillars have evolved to sequester the deadly cardiac glycosides of milkweed without taking cellular damage. Ruminants (like deer or cattle) have specialized foregut fermentation chambers utilizing symbiotic bacteria to break down tough lignins that other herbivores cannot digest.
+
+These are represented by three primary parameters:
+
+* `morphological_adaptation`: Resistance to physical trauma.
+* `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
+* `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
+
+The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.

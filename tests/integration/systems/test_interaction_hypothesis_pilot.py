@@ -8,6 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
@@ -84,7 +85,29 @@ def _run_attrition_only(
     swarm.reproduction_energy_divisor = 1_000_000.0
     swarm.split_population_threshold = 1000
 
-    run_interaction(world, env, diet_matrix=_NO_DIET_MATRIX, tick=0)
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10.0,
+            max_energy=20.0,
+            growth_rate=1.0,
+            survival_threshold=1.0,
+            reproduction_interval=1,
+        )
+    ]
+    dummy_herbivore = [
+        HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
+    ]
+
+    run_interaction(
+        world,
+        env,
+        diet_matrix=_NO_DIET_MATRIX,
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
     return world, swarm_id
 
 
@@ -116,7 +139,29 @@ def _run_reproduction_only(
     swarm.reproduction_energy_divisor = reproduction_divisor
     swarm.split_population_threshold = 1000
 
-    run_interaction(world, env, diet_matrix=_NO_DIET_MATRIX, tick=0)
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10.0,
+            max_energy=20.0,
+            growth_rate=1.0,
+            survival_threshold=1.0,
+            reproduction_interval=1,
+        )
+    ]
+    dummy_herbivore = [
+        HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
+    ]
+
+    run_interaction(
+        world,
+        env,
+        diet_matrix=_NO_DIET_MATRIX,
+        flora_species_params=dummy_flora,
+        herbivore_species_params=dummy_herbivore,
+        tick=0,
+    )
     return world, swarm_id
 
 
@@ -151,11 +196,33 @@ def _run_mitosis_only(
     swarm.reproduction_energy_divisor = 1_000_000.0
     swarm.split_population_threshold = split_population_threshold
 
+    dummy_flora = [
+        FloraSpeciesParams(
+            species_id=0,
+            name="Dummy",
+            base_energy=10.0,
+            max_energy=20.0,
+            growth_rate=1.0,
+            survival_threshold=1.0,
+            reproduction_interval=1,
+        )
+    ]
+    dummy_herbivore = [
+        HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
+    ]
+
     with patch(
         "phids.engine.systems.interaction._random_walk_step",
         return_value=offspring_pos,
     ):
-        run_interaction(world, env, diet_matrix=_NO_DIET_MATRIX, tick=0)
+        run_interaction(
+            world,
+            env,
+            diet_matrix=_NO_DIET_MATRIX,
+            flora_species_params=dummy_flora,
+            herbivore_species_params=dummy_herbivore,
+            tick=0,
+        )
     return world, swarm_id, offspring_pos, energy
 
 

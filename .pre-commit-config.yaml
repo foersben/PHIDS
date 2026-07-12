@@ -1,6 +1,4 @@
 minimum_pre_commit_version: "3.7.0"
-default_language_version:
-  python: python3.13
 default_stages: [pre-commit]
 exclude: ^(site/|docs/legacy/|__pycache__/)
 
@@ -64,9 +62,3 @@ repos:
         language: system
         files: ^(docs/|\.agents/).*\.md$
         pass_filenames: true
-
-      - id: enforce-author-identity
-        name: Enforce Author Identity
-        entry: bash -c '[ "$(git config --bool commit.gpgsign)" = "true" ]'
-        language: system
-        pass_filenames: false

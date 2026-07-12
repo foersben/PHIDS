@@ -16,13 +16,14 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 if TYPE_CHECKING:
     from phids.api.schemas import (
         BatchJobState,
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
+        PlacementStrategy,
         SimulationConfig,
     )
 
@@ -161,7 +162,10 @@ class TriggerRule:
 
     flora_species_id: int
     herbivore_species_id: int
-    substance_id: int
+    substance_id: int = 0
+    action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
+    apparent_nutrition_factor: float = 0.2
+    aftereffect_ticks: int = 10
     min_herbivore_population: int = 5
     activation_condition: ActivationConditionNode | None = None
 
@@ -334,6 +338,8 @@ class DraftState:
         z6_max_total_flora_energy: Halt when total flora energy exceeds this threshold (-1 disables).
         z7_max_total_herbivore_population: Halt when herbivore population exceeds this threshold
             (-1 disables).
+        signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion (0.0-1.0).
+        substance_emit_rate: Concentration increment added per tick when an active substance emits.
         mycorrhizal_inter_species: Allow root connections across species.
         mycorrhizal_connection_cost: Energy to establish a root link.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.
@@ -362,6 +368,8 @@ class DraftState:
     z4_herbivore_species_extinction: int = -1
     z6_max_total_flora_energy: float = -1.0
     z7_max_total_herbivore_population: int = -1
+    signal_decay_factor: float = 0.85
+    substance_emit_rate: float = 0.1
     mycorrhizal_inter_species: bool = False
     mycorrhizal_connection_cost: float = 1.0
     mycorrhizal_growth_interval_ticks: int = 8
@@ -371,6 +379,9 @@ class DraftState:
     diet_matrix: list[list[bool]] = dataclasses.field(default_factory=list)
     trigger_rules: list[TriggerRule] = dataclasses.field(default_factory=list)
     substance_definitions: list[SubstanceDefinition] = dataclasses.field(default_factory=list)
+    placement_mode: Literal["manual", "procedural"] = "manual"
+    flora_placement_strategy: PlacementStrategy | None = None
+    herbivore_placement_strategy: PlacementStrategy | None = None
     initial_plants: list[PlacedPlant] = dataclasses.field(default_factory=list)
     initial_swarms: list[PlacedSwarm] = dataclasses.field(default_factory=list)
     active_batch_jobs: dict[str, BatchJobState] = dataclasses.field(default_factory=dict)
@@ -406,25 +417,40 @@ class DraftState:
 
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
+        from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
         for rule in self.trigger_rules:
-            sd = subs_by_id.get(rule.substance_id)
-            if sd is None:
-                logger.warning(
-                    (
-                        "Skipping trigger rule with missing substance definition "
-                        "(flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)"
-                    ),
-                    rule.flora_species_id,
-                    rule.herbivore_species_id,
-                    rule.substance_id,
+            if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
+                # Resource Withdrawal
+                action = ResourceWithdrawalAction(
+                    apparent_nutrition_factor=rule.apparent_nutrition_factor,
                 )
-                continue
-            triggers_by_flora.setdefault(rule.flora_species_id, []).append(
-                TriggerConditionSchema(
-                    herbivore_species_id=rule.herbivore_species_id,
-                    min_herbivore_population=rule.min_herbivore_population,
+                aftereffect = rule.aftereffect_ticks
+                triggers_by_flora.setdefault(rule.flora_species_id, []).append(
+                    TriggerConditionSchema(
+                        herbivore_species_id=rule.herbivore_species_id,
+                        min_herbivore_population=rule.min_herbivore_population,
+                        aftereffect_ticks=aftereffect,
+                        activation_condition=cast("Any", deepcopy(rule.activation_condition)),
+                        action=action,
+                    )
+                )
+            else:
+                sd = subs_by_id.get(rule.substance_id)
+                if sd is None:
+                    logger.warning(
+                        (
+                            "Skipping trigger rule with missing substance definition "
+                            "(flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)"
+                        ),
+                        rule.flora_species_id,
+                        rule.herbivore_species_id,
+                        rule.substance_id,
+                    )
+                    continue
+                action = SynthesizeSubstanceAction(
                     substance_id=rule.substance_id,
                     synthesis_duration=sd.synthesis_duration,
                     is_toxin=sd.is_toxin,
@@ -432,12 +458,18 @@ class DraftState:
                     lethality_rate=sd.lethality_rate,
                     repellent=sd.repellent,
                     repellent_walk_ticks=sd.repellent_walk_ticks,
-                    aftereffect_ticks=sd.aftereffect_ticks,
-                    activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                     energy_cost_per_tick=sd.energy_cost_per_tick,
                     irreversible=sd.irreversible,
+                )  # type: ignore
+                triggers_by_flora.setdefault(rule.flora_species_id, []).append(
+                    TriggerConditionSchema(
+                        herbivore_species_id=rule.herbivore_species_id,
+                        min_herbivore_population=rule.min_herbivore_population,
+                        aftereffect_ticks=sd.aftereffect_ticks,
+                        activation_condition=cast("Any", deepcopy(rule.activation_condition)),
+                        action=action,
+                    )
                 )
-            )
 
         flora_with_triggers: list[FloraSpeciesParams] = []
         for fp in self.flora_species:
@@ -466,6 +498,9 @@ class DraftState:
         ]
 
         config = SimulationConfig(
+            placement_mode=self.placement_mode,
+            flora_placement_strategy=self.flora_placement_strategy,
+            herbivore_placement_strategy=self.herbivore_placement_strategy,
             grid_width=self.grid_width,
             grid_height=self.grid_height,
             max_ticks=self.max_ticks,
@@ -487,6 +522,8 @@ class DraftState:
             z4_herbivore_species_extinction=self.z4_herbivore_species_extinction,
             z6_max_total_flora_energy=self.z6_max_total_flora_energy,
             z7_max_total_herbivore_population=self.z7_max_total_herbivore_population,
+            signal_decay_factor=self.signal_decay_factor,
+            substance_emit_rate=self.substance_emit_rate,
         )
         logger.info(
             (

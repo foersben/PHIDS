@@ -1,7 +1,9 @@
 """Flow-field gradient generation accelerated with Numba ``@njit`` for deterministic ecological simulation.
 
-This module implements the flow-field gradient computation for PHIDS, leveraging Numba JIT
-compilation to accelerate iterative Jacobi propagation. The global attraction gradient is
+This module provides the Jacobi iteration solver for pathfinding. It strictly adheres to Numba compilation
+constraints: no Python dictionaries, lists, or custom classes are used inside `@njit` kernels. All array
+operations rely on pre-allocated buffers and contiguous layouts to prevent memory allocation latency
+during the hot-path evaluation phase. The global attraction gradient is
 computed by combining plant attraction and toxin repulsion base values, then propagating them
 across the grid via a multi-iteration neighbourhood averaging pass with configurable decay. The
 resulting scalar field is intended to populate ``GridEnvironment.flow_field``, supporting O(1)
@@ -20,8 +22,10 @@ import numpy.typing as npt
 from numba import njit  # type: ignore[import-untyped]
 
 
+# pragma: no mutate start
 def _compute_flow_field_impl(
     plant_energy: npt.NDArray[np.float64],
+    apparent_nutrition_layer: npt.NDArray[np.float64],
     toxin_sum: npt.NDArray[np.float64],
     width: int,
     height: int,
@@ -33,6 +37,7 @@ def _compute_flow_field_impl(
 
     Args:
         plant_energy: 2-D array ``(W, H)`` of aggregated plant energy per cell.
+        apparent_nutrition_layer: 2-D array ``(W, H)`` of apparent nutrition multipliers.
         toxin_sum: 2-D array ``(W, H)`` of aggregated toxin concentration per cell.
         width: Grid width W.
         height: Grid height H.
@@ -60,7 +65,7 @@ def _compute_flow_field_impl(
 
     for x in range(width):
         for y in range(height):
-            base[x, y] = plant_energy[x, y] - toxin_sum[x, y]
+            base[x, y] = (plant_energy[x, y] * apparent_nutrition_layer[x, y]) - toxin_sum[x, y]
             current[x, y] = base[x, y]
 
     # Iterative propagation lets attraction/repulsion travel multiple hops.
@@ -111,10 +116,12 @@ def _compute_flow_field_impl(
 
 
 _compute_flow_field = njit(cache=True)(_compute_flow_field_impl)
+# pragma: no mutate end
 
 
 def compute_flow_field(
     plant_energy: npt.NDArray[np.float64],
+    apparent_nutrition_layer: npt.NDArray[np.float64],
     toxin_layers: npt.NDArray[np.float64],
     width: int,
     height: int,
@@ -126,6 +133,7 @@ def compute_flow_field(
 
     Args:
         plant_energy: Shape ``(W, H)`` aggregate plant energy.
+        apparent_nutrition_layer: Shape ``(W, H)`` apparent nutrition modifiers.
         toxin_layers: Shape ``(num_toxins, W, H)`` toxin concentration layers.
         width: Grid width.
         height: Grid height.
@@ -145,7 +153,7 @@ def compute_flow_field(
 
     toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
     result = np.asarray(
-        _compute_flow_field(plant_energy, toxin_sum, width, height, base, current, nxt),
+        _compute_flow_field(plant_energy, apparent_nutrition_layer, toxin_sum, width, height, base, current, nxt),
         dtype=np.float64,
     )
     return result

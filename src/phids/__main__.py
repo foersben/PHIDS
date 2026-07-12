@@ -57,8 +57,9 @@ def _run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
     )
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def serve(
+    ctx: typer.Context,
     host: Annotated[
         str,
         typer.Option(help="Interface to bind the HTTP server to. Use 0.0.0.0 inside containers."),
@@ -78,12 +79,16 @@ def serve(
     containerized, and CI-managed runtime contexts.
 
     Args:
+        ctx: Typer context containing invoked subcommands.
         host: Interface address for HTTP binding.
         port: TCP port for HTTP binding.
         reload: Auto-reload flag for local development.
         log_level: Uvicorn logging verbosity.
         mcp: Whether to start the MCP stdio server instead of Uvicorn.
     """
+    if ctx.invoked_subcommand is not None:
+        return
+
     if mcp:
         from phids.mcp_server import run_mcp_server
 
@@ -91,6 +96,49 @@ def serve(
         return
 
     _run_server(host=host, port=port, reload=reload, log_level=log_level.value)
+
+
+@app.command()
+def tune(
+    blueprint_path: Annotated[
+        str,
+        typer.Argument(help="Path to the baseline scenario JSON blueprint."),
+    ],
+    grid_size: Annotated[int, typer.Option(help="Grid size for optimization runs (must be squared).")] = 80,
+    ticks: Annotated[int, typer.Option(help="Target simulation ticks per run.")] = 2500,
+    samples: Annotated[int, typer.Option(help="Number of concurrent simulation samples per evaluation.")] = 20,
+    out: Annotated[
+        str, typer.Option(help="Output path for the winning configuration JSON.")
+    ] = "examples/eternal_canopy.json",
+) -> None:
+    """Run the native PHIDS hyperparameter tuning pipeline to find a stable configuration."""
+    import json
+    from pathlib import Path
+
+    from phids.analytics.tuning import TrophicOptimizer
+
+    path = Path(blueprint_path)
+    if not path.exists():
+        typer.echo(f"Error: Blueprint file '{path}' not found.", err=True)
+        raise typer.Exit(code=1)
+
+    with path.open("r", encoding="utf-8") as fp:
+        blueprint = json.load(fp)
+
+    # Ensure grid size is clamped to user request
+    blueprint["grid_width"] = grid_size
+    blueprint["grid_height"] = grid_size
+
+    typer.echo(f"Initializing tuning pipeline with target {ticks} ticks and {samples} samples per evaluation...")
+    optimizer = TrophicOptimizer(blueprint=blueprint, runs_per_eval=samples, max_ticks=ticks)
+    best_config = optimizer.optimize()
+
+    out_path = Path(out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as fp:
+        json.dump(best_config, fp, indent=2)
+
+    typer.echo(f"Success! Optimized configuration written to {out_path.absolute()}")
 
 
 def main(argv: Sequence[str] | None = None) -> None:

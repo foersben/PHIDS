@@ -206,3 +206,5 @@ data/
 # PHIDS Archived files
 .archive/
 .github/workflows/secrets.env
+.benchmarks
+mutants/

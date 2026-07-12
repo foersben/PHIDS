@@ -7,14 +7,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+  <style>
+    /* Enforce consistent Noto Color Emoji rendering across all OS platforms (Mac/Windows/Linux) */
+    body {
+      font-family: ui-sans-serif, system-ui, sans-serif, "Noto Color Emoji";
+    }
+  </style>
 </head>
 <body class="h-screen w-full flex bg-slate-50 text-slate-900 overflow-hidden">
 
   <!-- ── Sidebar ────────────────────────────────────────────────────── -->
   <aside class="w-64 bg-slate-900 text-slate-100 flex flex-col shadow-xl z-10 shrink-0">
-    <div class="p-4 border-b border-slate-700">
-      <h1 class="text-lg font-bold text-white">PHIDS</h1>
-      <p class="text-xs text-slate-400">Plant-Herbivore Interaction & Defense Simulator</p>
+    <div class="p-6 border-b border-slate-700 flex justify-center items-center bg-slate-900">
+      <img src="/static/logo.png" alt="PHIDS Logo" class="w-full aspect-square object-contain rounded-xl bg-slate-800 p-3 shadow-inner border border-slate-700">
     </div>
 
     <nav class="flex-1 overflow-y-auto p-4 space-y-6">
@@ -43,7 +51,7 @@
           <li>
             <button hx-get="/ui/batch" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
-              🧬 Batch Runner
+              🎲 Batch Runner
             </button>
           </li>
         </ul>
@@ -55,6 +63,12 @@
           Rule of 16 Entities
         </h2>
         <ul class="space-y-1">
+          <li>
+            <button hx-get="/ui/database" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors font-medium text-indigo-300">
+              🗃️ Bio-Database Catalog
+            </button>
+          </li>
           <li>
             <button hx-get="/ui/flora" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
@@ -89,9 +103,24 @@
             </button>
           </li>
           <li>
-            <button hx-get="/ui/trigger-rules" hx-target="#main-workspace" hx-swap="innerHTML"
+            <button hx-get="/ui/morphology-defense" hx-target="#main-workspace" hx-swap="innerHTML"
               class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors">
-              ⚡ Trigger Rules
+              🛡️ Morphology & Defense
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Optimizer -->
+      <div>
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          Optimizer
+        </h2>
+        <ul class="space-y-1">
+          <li>
+            <button hx-get="/ui/dse" hx-target="#main-workspace" hx-swap="innerHTML"
+              class="w-full text-left px-3 py-2 rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/40 hover:text-indigo-200 text-sm transition-colors font-medium border border-indigo-500/30">
+              🧬 Run DSE Optimizer
             </button>
           </li>
         </ul>
@@ -193,7 +222,7 @@
           </div>
           <button type="button" id="diagnostics-toggle"
             class="group inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-            <span class="font-mono text-slate-400 group-hover:text-slate-600">⟨</span>
+            <span class="font-mono text-slate-400 group-hover:text-slate-600">⟩</span>
             <span>Collapse</span>
           </button>
         </div>
@@ -215,18 +244,17 @@
       </div>
 
       <div id="diagnostics-collapsed-shell" class="hidden h-full flex-col items-center gap-3 bg-slate-50/90 px-2 py-3">
-        <div class="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 [writing-mode:vertical-rl] rotate-180">Diag</div>
+        <div>
+          <button type="button" id="diagnostics-expand-collapsed"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            title="Expand diagnostics" aria-label="Expand diagnostics">⟨</button>
+        </div>
         <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           data-tab-key="model" data-diagnostics-url="/ui/diagnostics/model" title="Model diagnostics" aria-label="Model diagnostics">◫</button>
         <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           data-tab-key="frontend" data-diagnostics-url="/ui/diagnostics/frontend" title="Frontend diagnostics" aria-label="Frontend diagnostics">⌘</button>
         <button type="button" class="diagnostics-tab-collapsed h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           data-tab-key="backend" data-diagnostics-url="/ui/diagnostics/backend" title="Backend logs" aria-label="Backend logs">☰</button>
-        <div class="mt-auto">
-          <button type="button" id="diagnostics-expand-collapsed"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            title="Expand diagnostics" aria-label="Expand diagnostics">⟩</button>
-        </div>
       </div>
     </aside>
   </div>
@@ -248,7 +276,9 @@
       if (tickCounter) tickCounter.textContent = '0';
       htmx.ajax('GET', '/ui/dashboard', { target: '#main-workspace', swap: 'innerHTML' });
       const diagnostics = window.__phidsFrontendDiagnostics || {};
-      diagnostics.notes = ['Scenario loaded into live simulation and dashboard refresh requested.'];
+      const notes = Array.isArray(diagnostics.notes) ? diagnostics.notes : [];
+      notes.unshift(`[${new Date().toLocaleTimeString()}] Scenario loaded into live simulation and dashboard refresh requested.`);
+      diagnostics.notes = notes.slice(0, 15);
       diagnostics.renderMode = 'live';
       window.__phidsFrontendDiagnostics = diagnostics;
       if (typeof window.phidsRefreshDiagnostics === 'function') {
@@ -364,9 +394,17 @@
         localStorage.setItem(STORAGE_ACTIVE_TAB, activeTab);
         syncTabStyles();
         if (expand) setCollapsed(false);
-        if (!force && content.dataset.diagnosticsUrl === url && content.innerHTML.trim() && activeTab === content.dataset.tabKey) {
-          return;
+
+        if (!force) {
+          if (tabKey === 'backend') {
+            const scroller = content.querySelector('.overflow-auto');
+            // If the user has scrolled down to read older history, don't interrupt them with a refresh
+            if (scroller && scroller.scrollTop > 15) {
+              return;
+            }
+          }
         }
+
         content.dataset.diagnosticsUrl = url;
         content.dataset.tabKey = tabKey;
         htmx.ajax('GET', url, { target: '#diagnostics-content', swap: 'innerHTML' });
@@ -410,7 +448,9 @@
         if (url.startsWith('/ui/') && !url.startsWith('/ui/diagnostics/')) {
           const diagnostics = window.__phidsFrontendDiagnostics || {};
           diagnostics.activeView = url.replace('/ui/', '') || 'dashboard';
-          diagnostics.notes = [`HTMX requested ${url} for the main workspace.`];
+          const notes = Array.isArray(diagnostics.notes) ? diagnostics.notes : [];
+          notes.unshift(`[${new Date().toLocaleTimeString()}] HTMX requested ${url} for the main workspace.`);
+          diagnostics.notes = notes.slice(0, 15);
           window.__phidsFrontendDiagnostics = diagnostics;
           window.dispatchEvent(new CustomEvent('phids:frontend-diagnostics', { detail: diagnostics }));
         }
@@ -420,6 +460,62 @@
         if (!document.hidden) refreshDiagnostics(true);
       });
     })();
+  </script>
+  <script>
+    // Dual-control sync logic for UI parameters
+    document.addEventListener('input', (e) => {
+      // Sync from slider to number input
+      if (e.target.matches('input[type="range"].sync-slider')) {
+        const numberInput = document.getElementById(e.target.dataset.syncId);
+        if (numberInput) {
+          if (e.target.dataset.scale === 'log') {
+            const minSlider = parseFloat(e.target.min) || 0;
+            const maxSlider = parseFloat(e.target.max) || 100;
+            const minLog = Math.log(parseFloat(e.target.dataset.logMin) || 1);
+            const maxLog = Math.log(parseFloat(e.target.dataset.logMax) || 10000);
+
+            const scale = (maxLog - minLog) / (maxSlider - minSlider);
+            const val = Math.exp(minLog + scale * (parseFloat(e.target.value) - minSlider));
+
+            numberInput.value = Math.round(val);
+          } else {
+            numberInput.value = e.target.value;
+          }
+        }
+      }
+
+      // Sync from number input to slider
+      if (e.target.matches('input[type="number"].sync-number')) {
+        const sliderInput = document.getElementById(e.target.dataset.syncId);
+        if (sliderInput) {
+          if (sliderInput.dataset.scale === 'log') {
+            const minSlider = parseFloat(sliderInput.min) || 0;
+            const maxSlider = parseFloat(sliderInput.max) || 100;
+            const minLog = Math.log(parseFloat(sliderInput.dataset.logMin) || 1);
+            const maxLog = Math.log(parseFloat(sliderInput.dataset.logMax) || 10000);
+
+            const val = parseFloat(e.target.value);
+            if (val > 0) {
+              const scale = (maxLog - minLog) / (maxSlider - minSlider);
+              const targetVal = (Math.log(val) - minLog) / scale + minSlider;
+              sliderInput.value = targetVal;
+            }
+          } else {
+            sliderInput.value = e.target.value;
+          }
+        }
+      }
+    });
+
+    document.addEventListener('change', (e) => {
+      // When slider drag ends, notify HTMX via the number input
+      if (e.target.matches('input[type="range"].sync-slider')) {
+        const numberInput = document.getElementById(e.target.dataset.syncId);
+        if (numberInput) {
+          numberInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
   </script>
 </body>
 </html>

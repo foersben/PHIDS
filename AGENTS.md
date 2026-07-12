@@ -20,3 +20,6 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | `@git-operator` | Manages branches, commits, releases. | Git actions, commits, release tags. |
 | `@api-and-ui-developer` | HTMX, Jinja2, and FastAPI developer. | Dashboard UI, endpoints, websockets. |
 | `@telemetry-and-data-engineer`| Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |
+
+## Documentation Formatting Rules
+- **Dashes:** Always use the en-dash (`–`) instead of the em-dash (`–`) in all Markdown documentation and UI text.

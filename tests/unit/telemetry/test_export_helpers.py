@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
-from phids.telemetry.export import (
-    aggregate_to_dataframe,
+from phids.telemetry.export.core import aggregate_to_dataframe
+from phids.telemetry.export.structured import (
     export_bytes_csv,
     export_bytes_json,
     export_csv,

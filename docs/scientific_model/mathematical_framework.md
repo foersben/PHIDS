@@ -14,21 +14,28 @@ This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PH
 
 Let the global state of the biotope at discrete time step (tick) $t$ be defined as:
 
-$$
-\mathcal{X}_t = (\mathcal{E}_t, \mathcal{G}_t, \mathcal{P}_t)
-$$
+$$\mathcal{X}_t = (\mathcal{E}_t, \mathcal{G}_t, \mathcal{P}_t)$$
 
 where:
 
-- $\mathcal{E}_t$ represents the set of discrete biological entities (flora and herbivore swarms) managed by the ECS spatial hash.
-- $\mathcal{G}_t$ represents the continuous, vectorized environmental lattice fields (e.g., plant energy distributions, signal concentrations, toxin fields).
-- $\mathcal{P}_t$ is the static bundle of configuration parameters, including inter-species diet compatibility matrices and defensive interaction rules.
+* $\mathcal{X}_t$: The comprehensive global state tuple of the biotope at time step $t$.
+* $\mathcal{E}_t$: The set of discrete biological entities (flora and herbivore swarms) active in the spatial hash of the Entity-Component-System (ECS).
+* $\mathcal{G}_t$: The continuous, vectorized environmental lattice fields representing plant energy, signal concentrations, and toxins.
+* $\mathcal{P}_t$: The static configuration parameters (such as the inter-species diet compatibility matrix and plant defense parameters).
 
 The deterministic progression of the system is the ordered composition of distinct phase operators:
 
-$$
-\mathcal{X}_{t+1} = \mathcal{T}_{termination\_check} \circ \mathcal{T}_{telemetry} \circ \mathcal{T}_{signaling} \circ \mathcal{T}_{interaction} \circ \mathcal{T}_{lifecycle} \circ \mathcal{T}_{camouflage} \circ \mathcal{T}_{flow\_field} (\mathcal{X}_t)
-$$
+$$\mathcal{X}_{t+1} = \mathcal{T}_{\text{termination\_check}} \circ \mathcal{T}_{\text{telemetry}} \circ \mathcal{T}_{\text{signaling}} \circ \mathcal{T}_{\text{interaction}} \circ \mathcal{T}_{\text{lifecycle}} \circ \mathcal{T}_{\text{camouflage}} \circ \mathcal{T}_{\text{flow\_field}} (\mathcal{X}_t)$$
+
+Where:
+
+* $\mathcal{T}_{\text{flow\_field}}$: Generates the unified navigation potential landscape.
+* $\mathcal{T}_{\text{camouflage}}$: Adjusts the apparent attractiveness of camouflage-enabled flora.
+* $\mathcal{T}_{\text{lifecycle}}$: Evaluates flora growth, reproduction, and natural mortality rules.
+* $\mathcal{T}_{\text{interaction}}$: Resolves grazing, energy transfer, mechanical damage, and attrition.
+* $\mathcal{T}_{\text{signaling}}$: Computes diffusion, decay, and mycorrhizal transport of volatile substances.
+* $\mathcal{T}_{\text{telemetry}}$: Ingests current state variables into the Zarr replay buffers.
+* $\mathcal{T}_{\text{termination\_check}}$: Determines whether biotope survival or time bounds have been reached.
 
 This phase ordering is not arbitrary; it enforces causal relationships (e.g., swarms move based on *current* plant energy, signaling occurs based on *post-movement* herbivore presence).
 
@@ -59,7 +66,7 @@ flowchart TD
     end
 
     %% Spatial Distribution Links
-    E_t & G_t & P_t -->|Isbound to| T1
+    E_t & G_t & P_t -->|Is bound to| T1
     T1 --> T2 --> T3 --> T4 --> T5 --> T6 --> T7
     T7 -->|Commit Write Buffers| X_next
 
@@ -82,23 +89,35 @@ The state of flora entities evolves through a local, bounded integration process
 
 For a flora entity $i$ of species $j$, the energy reserve $E_{i,j}$ increases linearly per time step up to a physiological maximum:
 
-$$
-E_{i,j}^{t+1} = \min\left(E_{i,j}^t + E_{base,j} \frac{g_j}{100}, \; E_{max,j}\right)
-$$
+$$E_{i,j}^{t+1} = \min\left(E_{i,j}^t + E_{\text{base},j} \frac{g_j}{100}, \; E_{\text{max},j}\right)$$
 
-where $g_j$ is the species-specific growth rate.
+where:
+
+* $E_{i,j}^t$: The current energy reserve of flora entity $i$ of species $j$ at time step $t$.
+* $E_{i,j}^{t+1}$: The energy reserve of the flora entity at the next time step $t+1$.
+* $E_{\text{base},j}$: The baseline reference energy value for flora species $j$.
+* $g_j$: The growth rate percentage parameter for flora species $j$.
+* $E_{\text{max},j}$: The maximum physiological energy capacity of flora species $j$.
 
 ### 2.2 Reproduction & Dispersion
 
 Reproduction is gated by both an energetic threshold (the parent must survive the expenditure) and a deterministic tick interval.
 Offspring dispersion is modeled by a localized kernel:
 
-- **Calm conditions:** Sampling within a bounded annulus ($r_{min} \le r \le r_{max}$).
-- **Wind-active conditions:** A Gaussian kernel shifted by the local wind vector.
+* **Calm conditions:** Sampling within a bounded annulus ($r_{\text{min}} \le r \le r_{\text{max}}$).
+* **Wind-active conditions:** A Gaussian kernel shifted by the local wind vector.
+
+where:
+
+* $r$: The sampled dispersion radial distance from the parent plant to the offspring.
+* $r_{\text{min}}$: The minimum allowed dispersion radius parameter.
+* $r_{\text{max}}$: The maximum allowed dispersion radius parameter.
 
 ### 2.3 Symbiotic Relay Networks
 
-Flora may establish bidirectional mycorrhizal links with neighbors. These links bypass atmospheric diffusion, transferring signals via graph-based propagation at a fixed velocity $t_g$.
+Flora may establish bidirectional mycorrhizal links with neighbors. These links bypass atmospheric diffusion, transferring signals via graph-based propagation at a fixed velocity $t_g$:
+
+* $t_g$: The signal propagation velocity across mycorrhizal graph links (defined in graph edges or distance units per tick).
 
 ## 3. Global Flow-Field and Swarm Navigation
 
@@ -106,28 +125,57 @@ To circumvent the computational constraints of $O(N^2)$ pathfinding, PHIDS calcu
 
 ### 3.1 Flow Field Generation
 
-The scalar field $F_t(x,y)$ driving chemotactic movement is a weighted superposition of attractive caloric energy and repulsive toxins:
+#### The Theoretical Model (Continuous Thought)
 
-$$
-F_t(x,y) = \alpha E_t(x,y) - \beta \max_k T_{k,t}(x,y)
-$$
+In analytical chemical ecology, an organism's sensory orientation field is modeled as a continuous potential surface $F(\mathbf{r})$ over a spatial domain $\Omega \subset \mathbb{R}^2$. The movement vector is governed by the gradient of superposed attractive and repellent compounds. Because chemical concentrations in a physical space stack additively, the repellent field must be a summation:
+
+$$F(\mathbf{r}) = \alpha E(\mathbf{r}) - \beta \sum_{k} T_k(\mathbf{r})$$
 
 Where:
 
-- $E_t(x,y)$ is the aggregate flora energy.
-- $T_{k,t}(x,y)$ are the concentration layers of the various defensive toxins.
+* $F(\mathbf{r})$: The scalar potential field value at spatial coordinate vector $\mathbf{r} = (x,y)$.
+* $E(\mathbf{r})$: The continuous caloric attraction potential field derived from plant energy sources (resource biomass).
+* $T_k(\mathbf{r})$: The continuous chemical repulsion potential field (concentration) for defensive toxin layer $k$.
+* $\alpha$: The positive coupling weight scaling attraction toward food resources.
+* $\beta$: The positive coupling weight scaling repulsion away from active toxins.
+
+Summing the toxins mathematically prevents "sensory masking," ensuring that overlapping toxic plants create a stronger aggregate deterrent.
+
+#### The Numerical Mapping (Discrete Realization)
+
+To execute this within the constraints of an $O(1)$ spatial hash without continuous coordinate integration, the engine maps the potential to a discrete 2D scalar lattice grid matching the memory alignment of our double buffers:
+
+$$F_t[x, y] = \alpha E_t[x, y] - \beta \sum_{k=1}^{N_T} T_{k,t}[x, y]$$
+
+Where:
+
+* $F_t[x, y]$: The discrete potential field value at grid coordinate cell $[x, y]$ at tick $t$.
+* $E_t[x, y]$: The discrete aggregate plant energy present at coordinate $[x, y]$ at tick $t$.
+* $T_{k,t}[x, y]$: The discrete concentration of toxin type $k$ at coordinate $[x, y]$ at tick $t$.
+* $N_T$: The total number of unique defensive toxin types/species tracked in the simulation.
+* $\alpha, \beta$: The positive coupling weight scalars.
+
+**Implementation Rules:**
+
+1. **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
 
 ### 3.2 Swarm Advection and Behavior
 
 A swarm selects its target transition from its local Moore neighborhood $\mathcal{N}(x,y)$:
 
-$$
-(x',y') = \operatorname*{arg\,max}_{(u,v) \in \mathcal{N}(x,y)} F_t(u,v)
-$$
+$$(x',y') = \operatorname*{arg\,max}_{(u,v) \in \mathcal{N}(x,y)} F_t(u,v)$$
+
+Where:
+
+* $(x', y')$: The discrete target coordinate chosen for the swarm's next position.
+* $(x, y)$: The current discrete coordinate of the swarm entity.
+* $\mathcal{N}(x, y)$: The local Moore neighborhood representing the 8 surrounding cells and the current cell.
+* $F_t(u,v)$: The potential field value at candidate neighbor tile $(u, v)$ at tick $t$.
 
 This baseline gradient-ascent is overridden by biological responses:
 
-1. **Capacity Repulsion:** If tile population exceeds $C_{max}$, swarms engage in a brief random walk to model physical jostling.
+1. **Capacity Repulsion:** If tile population exceeds $C_{\text{max}}$, swarms engage in a brief random walk to model physical jostling.
+   * $C_{\text{max}}$: The maximum carrying capacity (in population units) allowed on a single tile before density-dependent repulsion is triggered.
 2. **Anchoring:** If a swarm co-locates with an energy-rich, diet-compatible plant, movement is suppressed to prioritize feeding.
 
 > **Deep Dive:** See [Chemotaxis & Flow Fields](chemotaxis.md) for a detailed explanation of unified scalar guidance, finite-neighborhood ascent, and biological equivalents.
@@ -140,16 +188,28 @@ Feeding and population dynamics are resolved locally via O(1) spatial-hash looku
 
 Energy transferred from plant $j$ to swarm $i$ with population $N_i$ and velocity $v_i$ is bounded by the plant's available energy and the swarm's consumption rate $r_i$:
 
-$$
-\Delta E_{i\leftarrow j} = \min\left( \frac{r_i}{\max(1, v_i)} N_i, \; E_j \right)
-$$
+$$\Delta E_{i\leftarrow j} = \min\left( \frac{r_i}{\max(1, v_i)} N_i, \; E_j \right)$$
+
+Where:
+
+* $\Delta E_{i\leftarrow j}$: The total energy quantity transferred from plant entity $j$ to herbivore swarm $i$ during the grazing interaction.
+* $r_i$: The consumption rate parameter (base bites taken per individual) of herbivore species $i$.
+* $v_i$: The current movement velocity of swarm $i$ (acting as a penalty to grazing dwell-time when moving fast).
+* $N_i$: The current population count of individuals in swarm $i$.
+* $E_j$: The current energy reserve of plant entity $j$.
 
 The velocity denominator accounts for reduced feeding dwell-time when moving rapidly.
 
 ### 4.2 Metabolism, Reproduction, and Mitosis
 
 Swarms continuously deplete energy proportional to $N_i$. Deficits manifest as immediate casualties rather than delayed starvation events.
-Conversely, if surplus energy exceeds baseline requirements ($E > N_i E_{min,i}$), it is converted into new individuals based on reproductive cost $\rho_i$. If $N_i$ reaches the configured split threshold, the entity undergoes mitosis, bifurcating into two independent swarms.
+Conversely, if surplus energy exceeds baseline requirements ($E_i^t > N_i E_{\text{min},i}$), it is converted into new individuals based on reproductive cost $\rho_i$. If $N_i$ reaches the configured split threshold, the entity undergoes mitosis, bifurcating into two independent swarms.
+
+Where:
+
+* $E_i^t$: The current total energy reserve of herbivore swarm $i$ at tick $t$.
+* $E_{\text{min},i}$: The minimum survival energy threshold per individual for herbivore species $i$.
+* $\rho_i$: The energy cost required to produce one new individual of herbivore species $i$.
 
 > **Deep Dive:** See [Population Dynamics vs. Continuous ODEs](population_dynamics.md) for an analysis of discrete modeling vs. continuous Lotka-Volterra implementations.
 
@@ -159,28 +219,52 @@ Induced defenses translate herbivore presence into local toxic and volatile chem
 
 ### 5.1 Trigger Evaluation
 
-For a given plant, local herbivore populations are evaluated against a specified minimum $n_{i,min}$. If triggered, a `SubstanceComponent` initiates a synthesis countdown. Upon activation, it emits toxins or volatile signals.
+For a given plant, local herbivore populations are evaluated against a specified minimum $n_{i,\text{min}}$. If triggered, a `SubstanceComponent` initiates a synthesis countdown. Upon activation, it emits toxins or volatile signals.
 
-### 5.2 Reaction-Diffusion Formulation
+* $n_{i,\text{min}}$: The minimum local population of herbivore species $i$ required to trigger the plant's defense response component.
 
-For airborne signaling substance $s$, the concentration $C_s$ diffuses and decays according to a discrete update:
+### 5.2 Airborne Signal Transport (Reaction-Diffusion)
 
-$$
-C_s^{t+1} = C_s^t + \Delta t \left( D_s \nabla_h^2 C_s^t + Q_s^t - \lambda_s C_s^t \right)
-$$
+#### The Theoretical Model (Continuous Thought)
+
+The physics of volatile organic compound (VOC) transport across a canopy through molecular diffusion, advection, and atmospheric decay is governed by a classic system of continuous parabolic Partial Differential Equations (PDEs):
+
+$$\frac{\partial C_s}{\partial t} = D_s \nabla^2 C_s - \lambda_s C_s + Q_s$$
 
 Where:
 
-- $D_s$ is the diffusion coefficient.
-- $\nabla_h^2$ represents the application of an isotropic Gaussian convolution kernel.
-- $Q_s^t$ is the source term from active plant emitters and root-network relay deposits.
-- $\lambda_s$ is the clearance/decay coefficient.
+* $C_s$: Concentration of signaling substance $s$.
+* $t$: Continuous time.
+* $D_s$: Diffusion coefficient for signaling substance $s$.
+* $\nabla^2$: The continuous Laplacian operator modeling spatial diffusion (dispersion).
+* $\lambda_s$: The continuous infinitesimal decay rate governing atmospheric clearance of substance $s$.
+* $Q_s$: The continuous mass emission function (source term) from active plants.
 
-To preserve numerical sparsity and eliminate subnormal floating-point operations, any concentration $C_s^{t+1} < \varepsilon$ is explicitly truncated to zero. Toxin layers bypass this atmospheric diffusion, remaining localized to the emitting plant coordinate to model surface tissue defenses.
+#### The Numerical Mapping (Discrete Realization)
+
+Solving a continuous PDE over a vast spatial grid at 60 FPS is computationally prohibitive. PHIDS translates this into a discrete cellular automata operator-splitting sequence evaluated precisely once per tick ($\Delta t = 1$):
+
+$$C_s^{t+1} = \gamma_s \cdot \left( \mathcal{K}_{\text{iso}} * C_s^t \right) + Q_s^t$$
+
+Where:
+
+* $C_s^{t+1}$: The discrete concentration field of signaling substance $s$ at time step $t+1$.
+* $C_s^t$: The discrete concentration field of signaling substance $s$ at time step $t$.
+* $\gamma_s$: The discrete multiplicative atmospheric decay factor.
+* $\mathcal{K}_{\text{iso}}$: The pre-computed isotropic Gaussian convolution kernel matrix.
+* $*$: The 2D spatial convolution operator.
+* $Q_s^t$: The discrete point source mass injection (emission) at time step $t$.
+
+**Implementation Rules:**
+
+1. **Discrete Decay ($\gamma_s$):** The continuous decay integral is converted into a single fractional retention scalar: $\gamma_s = 1.0 - \text{decay\_rate}_s$.
+2. **Convolutional Diffusion ($\mathcal{K}_{\text{iso}} * C_s^t$):** The Laplacian is mapped to a discrete 2D spatial convolution ($*$) using a fixed isotropic Gaussian kernel matrix via `scipy.signal.convolve2d`.
+3. **Source Invariant ($Q_s^t$):** The discrete mass matrix $Q_s^t$ injects emissions directly into the write-buffer *after* diffusion scaling is computed.
+4. **Subnormal Float Truncation:** When variables decay asymptotically ($C \times 0.85$ per tick), values eventually reach the IEEE 754 denormalized regime (e.g., $10^{-315}$). This forces the CPU out of hardware optimization and into slow software microcode. To protect the ALU pipelines, any cell concentration falling below an epsilon threshold ($< 1 \times 10^{-4}$) is explicitly clamped to exact `0.0`.
 
 > **Deep Dives:**
 >
-> - See [Reaction-Diffusion & Partial Differential Equations](reaction_diffusion.md) for step-by-step examples of convolution kernels and gradient dispersion models.
-> - See [Herbivore Behavior & Kinematics](herbivore_behavior.md) for explicit movement momentum, probabilistic spatial routing, and capacity displacement rules.
-> - See [Flora & Symbiosis](flora_and_symbiosis.md) for reproductive dispersion equations, explicit energy checks, and Mycorrhizal (Root Network) transfer bypasses.
-> - See [Ecological Analytics](ecological_analytics.md) for how the PHIDS data output structurally evaluates these discrete implementations against classic continuous equations like the Lotka-Volterra models.
+> * See [Reaction-Diffusion & Partial Differential Equations](reaction_diffusion.md) for step-by-step examples of convolution kernels and gradient dispersion models.
+> * See [Herbivore Behavior & Kinematics](herbivore_behavior.md) for explicit movement momentum, probabilistic spatial routing, and capacity displacement rules.
+> * See [Flora & Symbiosis](flora_and_symbiosis.md) for reproductive dispersion equations, explicit energy checks, and Mycorrhizal (Root Network) transfer bypasses.
+> * See [Ecological Analytics](ecological_analytics.md) for how the PHIDS data output structurally evaluates these discrete implementations against classic continuous equations like the Lotka-Volterra models.

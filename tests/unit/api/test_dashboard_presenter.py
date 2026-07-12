@@ -59,9 +59,11 @@ from phids.api.presenters.dashboard import (
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
+    HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
+    PassiveDefensesSchema,
     SimulationConfig,
     TriggerConditionSchema,
 )
@@ -93,6 +95,7 @@ def _flora(species_id: int, *, triggers: list[TriggerConditionSchema] | None = N
         seed_max_dist=2.0,
         seed_energy_cost=1.0,
         triggers=triggers or [],
+        passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
     )
 
 
@@ -105,6 +108,7 @@ def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
         velocity=1,
         consumption_rate=1.0,
         reproduction_energy_divisor=1.0,
+        resistances=HerbivoreResistancesSchema(),
     )
 
 
@@ -407,14 +411,18 @@ def test_build_live_cell_details_substance_name_injection() -> None:
     injected mapping flows through to ``signal_concentrations`` and substance payloads,
     eliminating reliance on module-level mutable state.
     """
+    from phids.api.schemas import SynthesizeSubstanceAction
+
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
         min_herbivore_population=1,
-        substance_id=0,
-        synthesis_duration=1,
-        is_toxin=False,
         aftereffect_ticks=2,
-        energy_cost_per_tick=0.1,
+        action=SynthesizeSubstanceAction(
+            substance_id=0,
+            synthesis_duration=1,
+            is_toxin=False,
+            energy_cost_per_tick=0.1,
+        ),
     )
     config = _minimal_config(triggers=[trigger])
     loop = SimulationLoop(config)

@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "0 5 2 * *" # Runs at 05:00 UTC on the 2nd day of every month
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "0 5 2 * *"
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "0 5 2 * *"

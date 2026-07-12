@@ -21,7 +21,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 import phids.api.main as api_main
 from phids.api.schemas import BatchJobState, BatchStartPayload
 from phids.api.ui_state import get_draft
-from phids.telemetry.export import decimate_dataframe, filter_dataframe_columns, generate_tikz_str
+from phids.telemetry.export.core import decimate_dataframe, filter_dataframe_columns
+from phids.telemetry.export.tikz import generate_tikz_str
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -267,7 +268,7 @@ async def batch_export(
 
     aggregate = _load_aggregate_json(summary_path)
 
-    from phids.telemetry.export import aggregate_to_dataframe
+    from phids.telemetry.export.core import aggregate_to_dataframe
 
     df = aggregate_to_dataframe(aggregate)
     if tick_interval < 1:

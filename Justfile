@@ -13,6 +13,9 @@ install:
 test:
     uv run pytest
 
+mutate:
+    uv run mutmut run
+
 ci-test:
     ./scripts/local_ci.sh tests
 

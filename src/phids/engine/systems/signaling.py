@@ -31,7 +31,6 @@ from typing import TYPE_CHECKING, TypedDict, cast
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.shared.constants import SUBSTANCE_EMIT_RATE
 
 if TYPE_CHECKING:
     from phids.api.schemas import TriggerConditionSchema
@@ -322,6 +321,8 @@ def run_signaling(
     signal_velocity: int,
     tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
+    substance_emit_rate: float = 0.1,
+    signal_decay_factor: float = 0.85,
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.
 
@@ -334,6 +335,10 @@ def run_signaling(
         signal_velocity: Ticks per hop for root-network relays.
         tick: Current simulation tick.
         plant_death_causes: Mapping of death causes to their respective counts.
+        substance_emit_rate: Concentration increment added per tick when an active
+            SubstanceComponent emits. Defaults to 0.1 (module-level constant value).
+        signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion
+            (0.0-1.0). Defaults to 0.85 (module-level constant value).
     """
     dead_substances: list[int] = []
     dead_plants: list[int] = []
@@ -377,7 +382,7 @@ def run_signaling(
     # 1. Evaluate trigger conditions for all plants
     # ------------------------------------------------------------------
     for entity in world.query(PlantComponent):
-        plant: PlantComponent = entity.get_component(PlantComponent)
+        plant = entity.get_component(PlantComponent)
         triggers = trigger_conditions.get(plant.species_id, [])
 
         for trig in triggers:
@@ -407,23 +412,36 @@ def run_signaling(
             if not triggered:
                 continue
 
+            from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+
+            if isinstance(trig.action, ResourceWithdrawalAction):
+                plant.apparent_nutrition_factor = trig.action.apparent_nutrition_factor
+                plant.withdrawal_ticks_remaining = trig.aftereffect_ticks
+                continue
+
+            # Action is synthesize_substance
+            if not isinstance(trig.action, SynthesizeSubstanceAction):
+                continue
+
+            substance_id = trig.action.substance_id
+
             # Ensure a substance entity exists for this (plant, substance_id) pair
-            existing_sub = owner_substance_by_key.get((plant.entity_id, trig.substance_id))
+            existing_sub = owner_substance_by_key.get((plant.entity_id, substance_id))
 
             if existing_sub is None:
                 # Spawn new substance entity with full properties from trigger
                 new_entity = world.create_entity()
                 existing_sub = SubstanceComponent(
                     entity_id=new_entity.entity_id,
-                    substance_id=trig.substance_id,
+                    substance_id=substance_id,
                     owner_plant_id=plant.entity_id,
-                    is_toxin=trig.is_toxin,
-                    synthesis_duration=trig.synthesis_duration,
-                    synthesis_remaining=trig.synthesis_duration,
-                    lethal=trig.lethal,
-                    lethality_rate=trig.lethality_rate,
-                    repellent=trig.repellent,
-                    repellent_walk_ticks=trig.repellent_walk_ticks,
+                    is_toxin=trig.action.is_toxin,
+                    synthesis_duration=trig.action.synthesis_duration,
+                    synthesis_remaining=trig.action.synthesis_duration,
+                    lethal=trig.action.lethal,
+                    lethality_rate=trig.action.lethality_rate,
+                    repellent=trig.action.repellent,
+                    repellent_walk_ticks=trig.action.repellent_walk_ticks,
                     aftereffect_ticks=trig.aftereffect_ticks,
                     aftereffect_remaining_ticks=trig.aftereffect_ticks,
                     activation_condition=(
@@ -431,13 +449,13 @@ def run_signaling(
                         if trig.activation_condition is not None
                         else None
                     ),
-                    energy_cost_per_tick=trig.energy_cost_per_tick,
-                    irreversible=trig.irreversible,
+                    energy_cost_per_tick=trig.action.energy_cost_per_tick,
+                    irreversible=trig.action.irreversible,
                 )
                 existing_sub.trigger_herbivore_species_id = trig.herbivore_species_id
                 existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
                 world.add_component(new_entity.entity_id, existing_sub)
-                owner_substance_by_key[(plant.entity_id, trig.substance_id)] = existing_sub
+                owner_substance_by_key[(plant.entity_id, substance_id)] = existing_sub
             else:
                 if (
                     not existing_sub.active
@@ -447,6 +465,16 @@ def run_signaling(
                     existing_sub.synthesis_remaining = existing_sub.synthesis_duration
 
             existing_sub.triggered_this_tick = True
+
+    # ------------------------------------------------------------------
+    # 1.5. Manage apparent nutrition recovery
+    # ------------------------------------------------------------------
+    for entity in world.query(PlantComponent):
+        plant = entity.get_component(PlantComponent)
+        if plant.withdrawal_ticks_remaining > 0:
+            plant.withdrawal_ticks_remaining -= 1
+            if plant.withdrawal_ticks_remaining <= 0:
+                plant.apparent_nutrition_factor = 1.0
 
     # ------------------------------------------------------------------
     # 2. Advance synthesis timers & activate substances
@@ -548,7 +576,7 @@ def run_signaling(
             if sub.substance_id < env.num_toxins:
                 env.toxin_layers[sub.substance_id, plant.x, plant.y] = min(
                     1.0,
-                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + SUBSTANCE_EMIT_RATE,
+                    float(env.toxin_layers[sub.substance_id, plant.x, plant.y]) + substance_emit_rate,
                 )
                 if sub.substance_id not in active_toxin_props:
                     active_toxin_props[sub.substance_id] = {
@@ -573,14 +601,14 @@ def run_signaling(
                 mycorrhizal_inter_species,
             )
             relay_count = len(relay_targets)
-            airborne_amount = SUBSTANCE_EMIT_RATE / float(relay_count + 1)
+            airborne_amount = substance_emit_rate / float(relay_count + 1)
             if sub.substance_id < env.num_signals:
                 env.signal_layers[sub.substance_id, plant.x, plant.y] = (
                     float(env.signal_layers[sub.substance_id, plant.x, plant.y]) + airborne_amount
                 )
 
             if relay_count > 0:
-                relay_amount = SUBSTANCE_EMIT_RATE - airborne_amount
+                relay_amount = substance_emit_rate - airborne_amount
                 per_target_amount = relay_amount / float(relay_count)
                 for relay_target in relay_targets:
                     if sub.substance_id < env.num_signals:
@@ -641,7 +669,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 5. Diffusion (delegated to GridEnvironment)
     # ------------------------------------------------------------------
-    env.diffuse_signals()
+    env.diffuse_signals(signal_decay_factor=signal_decay_factor)
 
     # ------------------------------------------------------------------
     # 6. Garbage collect expired substance entities

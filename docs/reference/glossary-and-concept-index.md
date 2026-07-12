@@ -77,8 +77,8 @@ See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
 
 The module-level constant in `interaction.py` (`TILE_CARRYING_CAPACITY = 500`) that defines the
 maximum aggregate biological population permitted on a single grid cell before crowding-induced
-dispersal is triggered. The check aggregates the `population` attribute of all co-located swarms —
-not the count of swarm entities — so that biologically dense tiles are correctly identified
+dispersal is triggered. The check aggregates the `population` attribute of all co-located swarms –
+not the count of swarm entities – so that biologically dense tiles are correctly identified
 regardless of swarm entity fragmentation.
 
 See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
@@ -289,7 +289,7 @@ See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_executi
 
 ### Replay Buffer (`ReplayBuffer`)
 
-A msgpack-backed per-tick snapshot store in `phids.io.replay`. Each tick's environmental state is
+A Zarr-backed per-tick snapshot store in `phids.io.zarr_replay`. Each tick's environmental state is
 serialized and appended to the buffer after telemetry recording. The buffer supports offline
 replay, diff analysis, and export to external tooling.
 
@@ -402,14 +402,14 @@ See: [`telemetry/analytics-and-export-formats.md`](../technical_architecture/tel
 A Z-coded stopping criterion evaluated at the end of each tick by `check_termination()`. The
 currently implemented conditions are:
 
-| Code | Description |
-|------|-------------|
-| Z1   | Maximum tick count reached |
-| Z2   | Extinction of a configured flora species |
-| Z3   | Extinction of all flora |
-| Z4   | Extinction of a configured herbivore species |
-| Z5   | Extinction of all herbivores |
-| Z6   | Total flora energy exceeds a maximum threshold |
+| Code | Description                                            |
+|------|--------------------------------------------------------|
+| Z1   | Maximum tick count reached                             |
+| Z2   | Extinction of a configured flora species               |
+| Z3   | Extinction of all flora                                |
+| Z4   | Extinction of a configured herbivore species           |
+| Z5   | Extinction of all herbivores                           |
+| Z6   | Total flora energy exceeds a maximum threshold         |
 | Z7   | Total herbivore population exceeds a maximum threshold |
 
 See: [`telemetry/replay-and-termination-semantics.md`](../technical_architecture/telemetry.md)
@@ -468,9 +468,9 @@ See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 PHIDS exposes two intentionally distinct WebSocket endpoints:
 
-- `/ws/simulation/stream` — emits full per-tick environment snapshots encoded as msgpack + zlib,
+- `/ws/simulation/stream` – emits full per-tick environment snapshots encoded as msgpack + zlib,
   suitable for programmatic replay or external analysis,
-- `/ws/ui/stream` — emits lightweight JSON payloads optimized for canvas rendering in the browser
+- `/ws/ui/stream` – emits lightweight JSON payloads optimized for canvas rendering in the browser
   control center.
 
 See: [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)

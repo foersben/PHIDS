@@ -18,17 +18,19 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 import phids.api.main as api_main
-from phids.telemetry.export import (
+from phids.telemetry.export.core import (
     decimate_dataframe,
-    export_bytes_csv,
-    export_bytes_json,
-    export_bytes_tex_table,
     filter_dataframe_columns,
     filter_telemetry_rows,
-    generate_png_bytes,
-    generate_tikz_str,
     telemetry_to_dataframe,
 )
+from phids.telemetry.export.latex import export_bytes_tex_table
+from phids.telemetry.export.png import generate_png_bytes
+from phids.telemetry.export.structured import (
+    export_bytes_csv,
+    export_bytes_json,
+)
+from phids.telemetry.export.tikz import generate_tikz_str
 
 router = APIRouter()
 
@@ -117,7 +119,7 @@ async def telemetry_chartjs_data(
         latest_tick = int(rows[-1].get("tick", -1))
         # When the simulation was reset, client-side since_tick can be ahead of
         # the current run; return full rows so chart state can re-synchronize.
-        if latest_tick > since_tick:
+        if latest_tick >= since_tick:
             rows = [row for row in rows if int(row.get("tick", -1)) > since_tick]
     species = api_main._sim_loop.telemetry.get_species_ids()
     flora_ids = species["flora_ids"]

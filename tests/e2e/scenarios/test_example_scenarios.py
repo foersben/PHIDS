@@ -26,14 +26,26 @@ CURATED_EXAMPLE_STEMS = {
     "meadow_defense",
     "mixed_forest_understory",
     "rectangular_crossfire",
+    "rectangular_crossfire_extended",
     "root_network_alarm_chain",
     "wind_tunnel_orchard",
+    "eternal_canopy_blueprint",
 }
 
 
 @pytest.mark.parametrize("path", EXAMPLE_PATHS, ids=lambda path: path.stem)
 def test_example_scenarios_validate(path: Path) -> None:
-    """Verify each curated scenario has initial placements and respects Rule-of-16 species caps."""
+    """Verify each curated scenario has initial placements and respects Rule-of-16 species caps.
+
+    The Rule of 16 is a design constraint in PHIDS limiting the number of active species to 16 to prevent combinatorial
+    explosion in the interaction matrix and maintain computational tractability. This test enforces that all curated
+    scenarios adhere to this limit, ensuring that initial placements are specified and the number of flora and herbivore
+    species does not exceed 16. This validation supports reproducible and rigorous analysis of emergent ecological
+    dynamics within the PHIDS simulation framework.
+
+    Args:
+        path: The path to the scenario file.
+    """
     config = load_scenario_from_json(path)
 
     assert config.initial_plants, f"{path.name} should include plant placements"
@@ -45,7 +57,17 @@ def test_example_scenarios_validate(path: Path) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("path", EXAMPLE_PATHS, ids=lambda path: path.stem)
 async def test_example_scenarios_step_without_runtime_errors(path: Path) -> None:
-    """Verify curated scenarios step without runtime errors and expose consistent snapshot dimensions."""
+    """Verify curated scenarios step without runtime errors and expose consistent snapshot dimensions.
+
+    This test ensures deterministic behavior for each curated scenario by verifying that the simulation loop
+    can execute without runtime errors and produces consistent state snapshot dimensions across simulation steps.
+    Each scenario is initialized with its specific configuration and stepped for a limited number of iterations
+    or until termination, with runtime errors and snapshot consistency asserted at each step. This validation
+    supports reproducible and rigorous analysis of emergent ecological dynamics within the PHIDS simulation framework.
+
+    Args:
+        path: The path to the scenario file.
+    """
     config = load_scenario_from_json(path)
     loop = SimulationLoop(config)
 

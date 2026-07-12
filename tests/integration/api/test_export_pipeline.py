@@ -2,12 +2,12 @@
 
 This test module validates the correctness of all export functions in
 :mod:`phids.telemetry.export`. The suite covers per-species DataFrame
-flattening via :func:`~phids.telemetry.export.telemetry_to_dataframe`,
+flattening via :func:`~phids.telemetry.export.core.telemetry_to_dataframe`,
 headless matplotlib PNG rendering via
-:func:`~phids.telemetry.export.generate_png_bytes`, PGFPlots TikZ source
-generation via :func:`~phids.telemetry.export.generate_tikz_str`, and
+:func:`~phids.telemetry.export.png.generate_png_bytes`, PGFPlots TikZ source
+generation via :func:`~phids.telemetry.export.tikz.generate_tikz_str`, and
 booktabs LaTeX table serialisation via
-:func:`~phids.telemetry.export.export_bytes_tex_table`. Correctness is
+:func:`~phids.telemetry.export.latex.export_bytes_tex_table`. Correctness is
 asserted at both the structural level (non-empty output, expected column names,
 expected LaTeX keywords) and the logical level (correct population values,
 correct phase-space coordinates, correct export format routing).
@@ -22,12 +22,10 @@ import pytest
 if TYPE_CHECKING:
     from phids.telemetry.analytics import TelemetryRow
 
-from phids.telemetry.export import (
-    export_bytes_tex_table,
-    generate_png_bytes,
-    generate_tikz_str,
-    telemetry_to_dataframe,
-)
+from phids.telemetry.export.core import telemetry_to_dataframe
+from phids.telemetry.export.latex import export_bytes_tex_table
+from phids.telemetry.export.png import generate_png_bytes
+from phids.telemetry.export.tikz import generate_tikz_str
 
 
 def _sample_rows() -> list[TelemetryRow]:

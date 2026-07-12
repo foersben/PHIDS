@@ -6,19 +6,22 @@ without creating monolithic test modules.
 
 ## Directory map
 
-- `tests/unit/`
-  - `api/`: schemas, UI state, and presenter helper behavior
-  - `engine/core/`: ECS, biotope, and flow-field deterministic unit checks
-  - `telemetry/`: per-species telemetry accumulation and metric-shape checks
-  - `shared/`: logging and utility-layer invariants
-  - `cli/`: command-line entrypoint and namespace compatibility tests
-- `tests/integration/`
-  - `api/`: route/websocket/export behavior across FastAPI boundaries and UI builder flows
-  - `systems/`: multi-system simulation interactions, loop semantics, and batch orchestration
-- `tests/e2e/`
-  - `scenarios/`: curated scenario fixture execution and compatibility checks
-  - `replay_and_io/`: replay persistence and zarr roundtrip compatibility tests
-- `tests/benchmarks/`: deterministic performance-regression benchmarks
+* `tests/unit/`
+  * `api/`: schemas, UI state, and presenter helper behavior
+  * `analytics/`: DSE optimizer and candidate-pruning unit checks
+  * `engine/core/`: ECS, biotope, and flow-field deterministic unit checks
+  * `engine/systems/`: low-level interaction helper contracts (Numba-bypass stubs)
+  * `io/`: scenario I/O serialisation round-trips
+  * `telemetry/`: per-species telemetry accumulation and metric-shape checks
+  * `shared/`: logging and utility-layer invariants
+  * `cli/`: command-line entrypoint and namespace compatibility tests
+* `tests/integration/`
+  * `api/`: route/websocket/export behavior across FastAPI boundaries and UI builder flows
+  * `systems/`: multi-system simulation interactions, loop semantics, and batch orchestration
+* `tests/e2e/`
+  * `scenarios/`: curated scenario fixture execution and compatibility checks
+  * `replay_and_io/`: replay persistence and zarr roundtrip compatibility tests
+* `tests/benchmarks/`: deterministic performance-regression benchmarks
 
 ## Migration approach
 
@@ -39,8 +42,8 @@ operations because a single early failure obscures downstream regressions and sl
 
 Preferred naming pattern:
 
-- `test_<surface>_<condition>_<expected_behavior>` for API/integration checks.
-- `test_<symbol>_<branch_or_invariant>` for pure helper and unit checks.
+* `test_<surface>_<condition>_<expected_behavior>` for API/integration checks.
+* `test_<symbol>_<branch_or_invariant>` for pure helper and unit checks.
 
 ## Targeted coverage workflow
 
@@ -54,3 +57,23 @@ scripts/target_cov.zsh tests/unit/api/test_ui_state.py phids.api.services.draft_
 
 This keeps fast debugging (`-o addopts=''`) and applies `--cov-fail-under=80` only to the selected
 module, which is the suitable denominator for individual-slice verification.
+
+## Mutation Testing
+
+To ensure our test suite catches semantic edge cases–especially in Numba-compiled deterministic logic–we use `mutmut` to automatically mutate source code and verify that tests fail.
+
+Currently, mutation testing is applied strictly to hot-path algorithms in `src/phids/engine/core/` (specifically `flow_field.py`, `ecs.py`, and `biotope.py`). Because these components are heavily optimized and often bypass standard Python class mechanisms (e.g. `GridEnvironment` methods and ECS double-buffering logic), unit tests must be exceptionally rigorous. Property-based tests are used to enforce exact normalized outputs and invariant state transitions.
+
+Run the mutation testing pilot locally using:
+
+```zsh
+uv run mutmut run
+```
+
+This will run the targeted test selection defined in `pyproject.toml` using `pytest_add_cli_args_test_selection`. The CLI flags disable the usual coverage requirements (via `--override-ini=addopts=""`) to speed up execution time.
+
+Review the remaining surviving mutants (where tests passed despite code modifications) with:
+
+```zsh
+uv run mutmut results
+```

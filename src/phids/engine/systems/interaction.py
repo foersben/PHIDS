@@ -39,6 +39,7 @@ Attributes:
 
 from __future__ import annotations
 
+import math
 import random
 from typing import TYPE_CHECKING
 
@@ -50,6 +51,7 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 
 if TYPE_CHECKING:
+    from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
 
@@ -410,6 +412,8 @@ def run_interaction(
     world: ECSWorld,
     env: GridEnvironment,
     diet_matrix: list[list[bool]],
+    flora_species_params: list[FloraSpeciesParams],
+    herbivore_species_params: list[HerbivoreSpeciesParams],
     tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
@@ -466,6 +470,8 @@ def run_interaction(
         diet_matrix: Boolean compatibility matrix indexed as ``[herbivore_species_id][flora_species_id]``;
             a ``True`` entry at position ``[i][j]`` indicates that herbivore species ``i`` is able
             to consume flora species ``j``.
+        flora_species_params: List of flora configuration schemas.
+        herbivore_species_params: List of herbivore configuration schemas.
         tick: Current simulation tick index; reserved for future tick-conditional logic and
             diagnostic instrumentation.
         plant_death_causes: Optional mutable mapping from string cause identifiers to integer
@@ -584,10 +590,30 @@ def run_interaction(
                     continue
 
                 effective_velocity = max(1, swarm.velocity)
-                consumed = min(
-                    (swarm.consumption_rate / effective_velocity) * swarm.population,
-                    target_plant.energy,
-                )
+                potential_consumption = (swarm.consumption_rate / effective_velocity) * swarm.population
+                consumed = min(potential_consumption, target_plant.energy)
+
+                # Fetch parameters for passive defense / resistance
+                plant_params = flora_species_params[target_plant.species_id]
+                swarm_params = herbivore_species_params[swarm.species_id]
+
+                digestibility_modifier = getattr(plant_params.passive_defenses, "digestibility_modifier", 1.0)
+                digestive_efficiency = getattr(swarm_params.resistances, "digestive_efficiency", 1.0)
+                mechanical_damage_per_bite = getattr(plant_params.passive_defenses, "mechanical_damage_per_bite", 0.0)
+                morphological_adaptation = getattr(swarm_params.resistances, "morphological_adaptation", 0.0)
+
+                # Calculate metabolized energy
+                net_digestibility = min(1.0, max(0.0, digestibility_modifier * digestive_efficiency))
+                metabolized_energy = consumed * net_digestibility
+
+                # Apply mechanical damage
+                if mechanical_damage_per_bite > 0.0 and consumed > 0:
+                    damage = mechanical_damage_per_bite * (1.0 - morphological_adaptation)
+                    casualties = math.floor(damage)
+                    swarm.population = max(0, swarm.population - casualties)
+                    # Note: tile_populations are accumulated for correctness.
+                    # We will update tile_populations right here to be accurate.
+                    _accumulate_tile_population(tile_populations, swarm.x, swarm.y, env.width, -casualties)
 
                 target_plant.energy -= consumed
                 env.set_plant_energy(
@@ -596,7 +622,7 @@ def run_interaction(
                     target_plant.species_id,
                     target_plant.energy,
                 )
-                swarm.energy += consumed
+                swarm.energy += metabolized_energy
 
                 if consumed > 0:
                     ate_anything = True

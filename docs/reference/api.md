@@ -58,7 +58,7 @@ This page exposes the current PHIDS Python API using `mkdocstrings`.
 
 ::: phids.telemetry.export
 
-::: phids.io.replay
+::: phids.io.zarr_replay
 
 ## Shared utilities
 

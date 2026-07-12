@@ -1,7 +1,9 @@
 """GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module implements the :class:`GridEnvironment`, a cellular automata biotope for PHIDS using
-NumPy arrays to represent all state layers. All layers are pre-allocated according to the Rule of
+This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients,
+wind fields, and apparent nutrition). It enforces strict read/write double-buffering across all layers
+to prevent race conditions and maintain exact tick-level determinism during concurrent simulation phases.
+No allocations are made during the diffusion loop. All layers are pre-allocated according to the Rule of
 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
 environment employs explicit read/write double-buffering to prevent race conditions and guarantee
 deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired
@@ -23,7 +25,6 @@ from phids.shared.constants import (
     GRID_W_MAX,
     MAX_FLORA_SPECIES,
     MAX_SUBSTANCE_TYPES,
-    SIGNAL_DECAY_FACTOR,
     SIGNAL_EPSILON,
 )
 
@@ -179,6 +180,10 @@ class GridEnvironment:
         self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
         self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
+        # Global aggregate apparent nutrition factor
+        self.apparent_nutrition_layer: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
+        self._apparent_nutrition_layer_write: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
+
         # Per-species energy layers (Rule of 16 pre-allocation)
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
@@ -247,13 +252,18 @@ class GridEnvironment:
     # Diffusion
     # ------------------------------------------------------------------
 
-    def diffuse_signals(self) -> None:
+    def diffuse_signals(self, signal_decay_factor: float = 0.85) -> None:
         """Compute one diffusion tick for all signal layers.
 
         This applies local semi-Lagrangian advection using per-cell wind vectors,
         followed by isotropic Gaussian diffusion and decay. The transport update
         respects heterogeneous wind fields across the grid and avoids global-mean
         wind averaging artefacts.
+
+        Args:
+            signal_decay_factor: Per-tick airborne signal retention (0.0-1.0).
+                Defaults to the ``SIGNAL_DECAY_FACTOR`` module-level constant (0.85).
+                Pass ``loop.config.signal_decay_factor`` to use the scenario-level value.
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
@@ -267,7 +277,7 @@ class GridEnvironment:
                 layer,
                 self.wind_vector_x,
                 self.wind_vector_y,
-                SIGNAL_DECAY_FACTOR,
+                signal_decay_factor,
                 SIGNAL_EPSILON,
                 DIFFUSION_KERNEL,
                 self._signal_layers_write[s],
@@ -303,6 +313,12 @@ class GridEnvironment:
         self._plant_energy_by_species_write[:] = self.plant_energy_by_species
         self._plant_energy_layer_write[:] = self.plant_energy_layer
 
+        self.apparent_nutrition_layer, self._apparent_nutrition_layer_write = (
+            self._apparent_nutrition_layer_write,
+            self.apparent_nutrition_layer,
+        )
+        self._apparent_nutrition_layer_write.fill(1.0)
+
     def set_plant_energy(self, x: int, y: int, species_id: int, value: float) -> None:
         """Set a species-specific energy contribution in the write buffer.
 
@@ -313,6 +329,10 @@ class GridEnvironment:
             value: Energy contribution (clamped to >= 0).
         """
         self._plant_energy_by_species_write[species_id, x, y] = max(0.0, value)
+
+    def set_apparent_nutrition(self, x: int, y: int, value: float) -> None:
+        """Set apparent nutrition factor in the write buffer."""
+        self._apparent_nutrition_layer_write[x, y] = value
 
     def clear_plant_energy(self, x: int, y: int, species_id: int) -> None:
         """Clear a species-specific energy contribution in the write buffer.

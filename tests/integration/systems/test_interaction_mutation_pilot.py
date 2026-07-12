@@ -7,11 +7,41 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
-from phids.engine.systems.interaction import TILE_CARRYING_CAPACITY, run_interaction
+from phids.engine.systems.interaction import TILE_CARRYING_CAPACITY
+from phids.engine.systems.interaction import run_interaction as _run_interaction
+
+_dummy_flora = [
+    FloraSpeciesParams(
+        species_id=0,
+        name="Dummy",
+        base_energy=10.0,
+        max_energy=20.0,
+        growth_rate=1.0,
+        survival_threshold=1.0,
+        reproduction_interval=1,
+    )
+]
+_dummy_herbivore = [
+    HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
+]
+
+
+def run_interaction(world: ECSWorld, env: GridEnvironment, diet_matrix: list[list[bool]], tick: int = 0) -> None:
+    """Wrapper function to execute interaction with default flora/herbivore parameters."""
+    _run_interaction(
+        world,
+        env,
+        diet_matrix=diet_matrix,
+        flora_species_params=_dummy_flora,
+        herbivore_species_params=_dummy_herbivore,
+        tick=tick,
+    )
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable

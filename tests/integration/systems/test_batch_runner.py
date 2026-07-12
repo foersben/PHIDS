@@ -29,9 +29,11 @@ def _minimal_scenario() -> dict:
     from phids.api.schemas import (
         DietCompatibilityMatrix,
         FloraSpeciesParams,
+        HerbivoreResistancesSchema,
         HerbivoreSpeciesParams,
         InitialPlantPlacement,
         InitialSwarmPlacement,
+        PassiveDefensesSchema,
         SimulationConfig,
     )
 
@@ -50,6 +52,7 @@ def _minimal_scenario() -> dict:
                 growth_rate=1.0,
                 survival_threshold=1.0,
                 reproduction_interval=20,
+                passive_defenses=PassiveDefensesSchema(mechanical_damage_per_bite=0.0, digestibility_modifier=1.0),
             )
         ],
         herbivore_species=[
@@ -59,6 +62,7 @@ def _minimal_scenario() -> dict:
                 energy_min=1.0,
                 velocity=1,
                 consumption_rate=0.5,
+                resistances=HerbivoreResistancesSchema(),
             )
         ],
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
@@ -157,13 +161,13 @@ class TestAggregateBatchTelemetry:
         agg = aggregate_batch_telemetry(runs)
         assert agg["extinction_probability"] == 1.0
 
-    def test_ticks_aligned_to_minimum(self) -> None:
-        """Aggregate ticks are aligned to the shortest run (min-length truncation)."""
+    def test_ticks_padded_to_maximum(self) -> None:
+        """Aggregate ticks are padded to the longest run (max-length padding)."""
         from phids.engine.batch import aggregate_batch_telemetry
 
         runs = [self._make_rows(3, 5, 2), self._make_rows(5, 5, 2)]
         agg = aggregate_batch_telemetry(runs)
-        assert len(agg["ticks"]) == 3
+        assert len(agg["ticks"]) == 5
 
     def test_empty_input_returns_empty(self) -> None:
         """An empty per_run list returns an empty aggregate dict."""
@@ -289,7 +293,7 @@ def test_run_single_headless_breaks_when_termination_detected(monkeypatch) -> No
         _rows = [{"tick": 0, "flora_population": 0, "herbivore_population": 0}]  # noqa: RUF012
 
     class _FakeLoop:
-        def __init__(self, _config: object) -> None:
+        def __init__(self, _config: object, **_kwargs: object) -> None:
             self.telemetry = _FakeTelemetry()
             self.tick = 1
 
