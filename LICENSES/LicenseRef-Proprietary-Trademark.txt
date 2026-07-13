@@ -1,0 +1,7 @@
+PHIDS Proprietary Trademark and Asset License
+
+Copyright (C) 2026 Benjamin Förster. All Rights Reserved.
+
+This document covers the proprietary asset protection for the branding elements of the PHIDS simulator engine. The visual assets, logo design, icons, and the name "PHIDS" are strictly proprietary.
+
+No permissions are granted under the open-source or commercial code licensing tiers of this repository to replicate, modify, or commercially redistribute these specific visual branding assets without prior written authorization from the copyright holder.
