@@ -604,7 +604,7 @@ def _render_status_badge_html() -> str:
         label, colour = "Loaded", "bg-indigo-100 text-indigo-600"
 
     return (
-        f'<span id="sim-status" '
+        f'<span id="sim-status" style="display:none!important" '
         f'hx-get="/api/ui/status-badge" hx-trigger="every 2s" hx-swap="outerHTML" '
         f'class="text-xs px-2 py-1 rounded {colour}">{label}</span>'
     )
