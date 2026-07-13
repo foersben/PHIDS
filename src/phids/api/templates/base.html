@@ -380,6 +380,9 @@
         rail.classList.toggle('w-[4.25rem]', collapsed);
         if (expandedShell) expandedShell.classList.toggle('hidden', collapsed);
         if (collapsedShell) collapsedShell.classList.toggle('hidden', !collapsed);
+
+        // Ensure flex layout transitions have settled, then trigger a chart resize
+        setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 250);
       }
 
       function syncTabStyles() {
