@@ -29,6 +29,19 @@ PHIDS establishes a strict barrier between the simulation currently under constr
 
 The administrative control center intentionally avoids the complexity of a Single Page Application (SPA) like React or Vue. By leveraging HTMX, server-side Jinja templates directly replace DOM fragments in response to user events.
 
+### Live Simulation Dashboard
+The live dashboard is the primary view for observing an actively running simulation. It features a real-time rendered `<canvas>` grid depicting spatial entities (Flora, Swarms, signals, toxins).
+
+**Canvas Grid Resize Feature:**
+To accommodate varying screen sizes and grid dimensions, the dashboard provides a "Resize" toggle. When enabled, a slider allows the operator to dynamically adjust the canvas height as a percentage of the viewport (30% to 100%). This preference is persisted locally in the browser via `localStorage` (key: `phids.canvas.heightPct` and `phids.canvas.resizeEnabled`), ensuring the grid layout remains consistent across sessions.
+
+### Placement Editor
+The placement editor is part of the Draft State configuration UI. It provides an interactive `<canvas>` where operators can paint Flora and Herbivore swarms directly onto the grid before loading the scenario into the live engine.
+
+**Canvas Grid Resize Feature:**
+Similar to the live dashboard, the placement editor features an independent grid resizing control. The operator can toggle resizing and adjust the height slider to scale the interactive canvas. This state is isolated from the live dashboard and stored in its own `localStorage` keys (`phids.placement.heightPct` and `phids.placement.resizeEnabled`), allowing the user to maintain different layout preferences for authoring versus monitoring.
+
+
 When a user clicks a checkbox to update the Diet Compatibility Matrix, the backend modifies the `DraftState` and responds immediately with a re-rendered partial HTML table. This architectural choice establishes the server as the absolute, single source of truth for the experimental schema, ensuring UI state cannot desynchronize from backend limits.
 
 ## WebSocket Streaming
