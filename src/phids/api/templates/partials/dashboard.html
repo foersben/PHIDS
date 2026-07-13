@@ -9,12 +9,21 @@
         </p>
       </div>
       <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap justify-end">
-
         <span id="canvas-legend" class="flex gap-3 flex-wrap justify-end"></span>
-        <span id="canvas-mode-badge"
-          class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
-          Preview
-        </span>
+        <div class="w-px h-4 bg-slate-300 mx-1 hidden sm:block"></div>
+        <!-- Grid resize controls -->
+        <label id="canvas-resize-toggle-label" class="flex items-center gap-1.5 cursor-pointer select-none" title="Enable grid height resize">
+          <input type="checkbox" id="canvas-resize-enabled" class="rounded text-indigo-500" style="cursor:pointer">
+          <span class="text-slate-500">Resize</span>
+        </label>
+        <div id="canvas-resize-controls" class="flex items-center gap-2" style="display:none!important">
+          <span class="text-slate-400">Height:</span>
+          <input type="range" id="canvas-height-slider"
+            min="30" max="100" step="5" value="62"
+            class="w-28 accent-indigo-500"
+            title="Grid height as % of viewport">
+          <span id="canvas-height-label" class="w-10 text-center text-slate-500 tabular-nums">62%</span>
+        </div>
       </div>
     </div>
 
@@ -320,8 +329,8 @@
     window.removeEventListener('resize', handleResize);
     if (resizeToggle) resizeToggle.removeEventListener('change', handleResizeToggle);
     if (heightSlider) heightSlider.removeEventListener('input', handleHeightSlider);
-    const globalResizeContainer = document.getElementById('global-resize-container');
-    if (globalResizeContainer) globalResizeContainer.style.display = 'none';
+    const globalModeBadgeContainer = document.getElementById('global-mode-badge-container');
+    if (globalModeBadgeContainer) globalModeBadgeContainer.style.display = 'none';
     document.body.removeEventListener('htmx:afterSwap', handleAfterSwap);
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseleave', handleMouseLeave);
@@ -385,9 +394,11 @@
     return { gW, gH };
   }
 
+  // --- Global mode badge visibility ---
+  const globalModeBadgeContainer = document.getElementById('global-mode-badge-container');
+  if (globalModeBadgeContainer) globalModeBadgeContainer.style.display = 'flex';
+
   // --- Grid resize controls ---
-  const globalResizeContainer = document.getElementById('global-resize-container');
-  if (globalResizeContainer) globalResizeContainer.style.display = 'flex';
   const resizeToggle = document.getElementById('canvas-resize-enabled');
   const resizeControls = document.getElementById('canvas-resize-controls');
   const heightSlider = document.getElementById('canvas-height-slider');
@@ -952,7 +963,7 @@
       Loaded: 'bg-indigo-100 text-indigo-600',
     };
     modeBadge.textContent = status;
-    modeBadge.className = `px-2 py-0.5 rounded-full font-medium text-xs ${statusColors[status] || 'bg-slate-100 text-slate-500'}`;
+    modeBadge.className = `px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap ${statusColors[status] || 'bg-slate-100 text-slate-500'}`;
   }
 
   function drawPreview(preview) {
@@ -1004,8 +1015,8 @@
     const swarms = (preview.swarms || []).length;
     modeBadge.textContent = plants + swarms > 0 ? `Preview (${plants}🌿 ${swarms}🐛)` : 'Draft – No placements';
     modeBadge.className = plants + swarms > 0
-      ? 'px-2 py-0.5 rounded-full font-medium text-xs bg-blue-100 text-blue-700'
-      : 'px-2 py-0.5 rounded-full font-medium text-xs bg-amber-100 text-amber-700';
+      ? 'px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap bg-blue-100 text-blue-700'
+      : 'px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap bg-amber-100 text-amber-700';
     speciesBarsEl.classList.add('hidden');
     speciesBarsEl.innerHTML = '';
   }

@@ -201,20 +201,8 @@
             🔄 Load Draft
           </button>
 
-          <div id="global-resize-container" class="flex items-center gap-3 text-xs text-slate-500 mr-2" style="display:none;">
-            <!-- Global Grid resize controls (used by dashboard) -->
-            <label id="canvas-resize-toggle-label" class="flex items-center gap-1.5 cursor-pointer select-none" title="Enable grid height resize">
-              <input type="checkbox" id="canvas-resize-enabled" class="rounded text-indigo-500" style="cursor:pointer">
-              <span class="text-slate-500">Resize</span>
-            </label>
-            <div id="canvas-resize-controls" class="flex items-center gap-2" style="display:none!important">
-              <span class="text-slate-400">Height:</span>
-              <input type="range" id="canvas-height-slider"
-                min="30" max="100" step="5" value="62"
-                class="w-28 accent-indigo-500"
-                title="Grid height as % of viewport">
-              <span id="canvas-height-label" class="w-10 text-center text-slate-500 tabular-nums">62%</span>
-            </div>
+          <div id="global-mode-badge-container" class="flex items-center gap-3 text-xs text-slate-500 mr-2" style="display:none;">
+            <span id="canvas-mode-badge" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium whitespace-nowrap">Preview</span>
             <div class="w-px h-4 bg-slate-300 ml-1"></div>
           </div>
           <span id="sim-status"
