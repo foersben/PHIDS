@@ -35,6 +35,7 @@ Attributes:
     TILE_CARRYING_CAPACITY: Maximum aggregate individual count permitted on a single grid cell
         before crowding-induced dispersal is triggered. Acts as an upper bound on local population
         density, preventing simulation degeneracy under unconstrained growth.
+
 """
 
 from __future__ import annotations
@@ -85,6 +86,7 @@ def _accumulate_tile_population(
         width: Grid width to compute the flat index.
         delta: Signed integer change in population count; positive for births or arrivals,
             negative for deaths or departures.
+
     """
     if 0 <= x < width and 0 <= y < (len(tile_populations) // width):
         tile_populations[y * width + x] += delta
@@ -330,6 +332,7 @@ def _co_located_swarm_population(world: ECSWorld, x: int, y: int) -> int:
         The non-negative integer sum of ``SwarmComponent.population`` across all live swarm
         entities co-located at ``(x, y)``, representing the instantaneous local population
         density for crowding-pressure evaluation.
+
     """
     total_population = 0
     for entity_id in world.entities_at(x, y):
@@ -379,6 +382,7 @@ def _perform_mitosis(
 
     See Also:
         _random_walk_step
+
     """
     offspring_population = swarm.population // 2
     retained_population = swarm.population - offspring_population
@@ -455,10 +459,9 @@ def run_interaction(
     any resulting energy deficit is liquidated by computing casualties as ⌈deficit / energy_min⌉
     and reducing the population accordingly, with residual energy redistributed among survivors.
     Reproduction converts swarm-scale surplus energy above the per-capita baseline into new
-    individuals at the configured cost per offspring. Colony fission via ``_perform_mitosis`` is
-    triggered when population exceeds ``split_population_threshold`` (or twice the initial
-    population when that field is zero), registering the daughter entity in the ECS world and
-    spatial hash. Deceased swarms are collected in a deferred ``dead_swarms`` list and purged
+    triggered when population exceeds ``split_population_threshold``. Upon splitting, half the
+    daughter entity in the ECS world and spatial hash. Deceased swarms are collected in a deferred
+    ``dead_swarms`` list and purged
     from the ECS registry in a single ``collect_garbage`` call at the end of the tick, avoiding
     iterator invalidation during traversal.
 
@@ -477,6 +480,7 @@ def run_interaction(
         plant_death_causes: Optional mutable mapping from string cause identifiers to integer
             occurrence counts; when provided, herbivory-induced plant deaths are recorded under
             the key ``"death_herbivore_feeding"``.
+
     """
     dead_swarms: list[int] = []
     tile_populations: list[int] = [0] * (env.width * env.height)
@@ -710,10 +714,8 @@ def run_interaction(
         # ----------------------------------------------------------------
         # 7. Mitosis
         # ----------------------------------------------------------------
-        split_threshold = (
-            swarm.split_population_threshold if swarm.split_population_threshold > 0 else 2 * swarm.initial_population
-        )
-        if swarm.population >= split_threshold:
+        threshold = swarm.split_population_threshold
+        if swarm.population >= threshold:
             pre_split_population = swarm.population
             offspring = _perform_mitosis(swarm, world, env)
             _accumulate_tile_population(

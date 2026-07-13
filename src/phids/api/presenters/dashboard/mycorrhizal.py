@@ -48,6 +48,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
     Returns:
         A list of link dictionaries, each containing ``plant_index_a``, ``plant_index_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, and ``inter_species`` fields.
+
     """
     links: list[_MycorrhizalLinkPayload] = []
     for left_index, left in enumerate(draft.initial_plants):
@@ -88,6 +89,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     Returns:
         A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, and ``inter_species`` fields.
+
     """
     from phids.engine.components.plant import PlantComponent
 
@@ -137,6 +139,7 @@ def _links_touching_cell(links: list[_MycorrhizalLinkPayload], x: int, y: int) -
 
     Returns:
         The subset of ``links`` where either endpoint matches ``(x, y)``.
+
     """
     return [link for link in links if (link["x1"] == x and link["y1"] == y) or (link["x2"] == x and link["y2"] == y)]
 

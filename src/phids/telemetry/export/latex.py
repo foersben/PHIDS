@@ -48,6 +48,7 @@ def export_bytes_tex_table(
 
     Returns:
         bytes: UTF-8 encoded LaTeX ``tabular`` source.
+
     """
     filtered_rows = filter_telemetry_rows(rows, flora_ids=include_flora_ids, herbivore_ids=include_herbivore_ids)
     df = telemetry_to_dataframe(filtered_rows)

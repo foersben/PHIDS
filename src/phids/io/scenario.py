@@ -43,6 +43,7 @@ def load_scenario_from_dict(data: JSONMapping) -> SimulationConfig:
 
     Raises:
         pydantic.ValidationError: If the configuration is invalid.
+
     """
     config = SimulationConfig.model_validate(dict(data))
     logger.debug(
@@ -63,6 +64,7 @@ def load_scenario_from_json(path: str | Path) -> SimulationConfig:
 
     Returns:
         SimulationConfig: Validated Pydantic configuration instance.
+
     """
     source = Path(path)
     raw = source.read_text(encoding="utf-8")
@@ -85,6 +87,7 @@ def scenario_to_json(config: SimulationConfig, path: str | Path | None = None) -
 
     Returns:
         str: JSON representation of the configuration.
+
     """
     serialised = config.model_dump_json(indent=2)
     if path is not None:

@@ -20,6 +20,7 @@ class FloraProfile(BaseModel):
         survival_threshold: Energy reserve threshold below which the plant dies.
         seed_cost: Caloric cost to reproduce/drop a seed.
         seed_dispersion_radius: Maximum radius for seed dispersal.
+
     """
 
     growth_rate: float
@@ -37,6 +38,7 @@ class HerbivoreProfile(BaseModel):
         consumption_rate: Feeding consumption rate per tick.
         mitosis_threshold: Energy threshold required to undergo mitosis.
         split_ratio: Energy and population allocation ratio on split.
+
     """
 
     metabolism_upkeep: float
@@ -51,6 +53,7 @@ class BioDatabaseModel(BaseModel):
     Attributes:
         flora: Dictionary mapping flora species names to their profiles.
         herbivores: Dictionary mapping herbivore species names to their profiles.
+
     """
 
     flora: dict[str, FloraProfile]
@@ -62,6 +65,7 @@ class BioDatabase:
 
     Attributes:
         data: The validated BioDatabaseModel payload loaded from JSON.
+
     """
 
     def __init__(self, db_path: str = "src/phids/analytics/bio_database.json"):
@@ -69,6 +73,7 @@ class BioDatabase:
 
         Args:
             db_path: Path to the bio_database.json file.
+
         """
         with open(Path(db_path)) as f:
             self.data = BioDatabaseModel(**json.load(f))
@@ -82,6 +87,7 @@ class BioDatabase:
 
         Returns:
             The float distance value.
+
         """
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(v1, v2, strict=True)))
 
@@ -93,6 +99,7 @@ class BioDatabase:
 
         Returns:
             The name of the closest flora species found in the database.
+
         """
         best_match = None
         min_dist = float("inf")
@@ -113,6 +120,7 @@ class BioDatabase:
 
         Returns:
             The name of the closest herbivore species found in the database.
+
         """
         best_match = None
         min_dist = float("inf")
@@ -135,6 +143,7 @@ class BioDatabase:
 
         Raises:
             ValueError: If the species_name is not found in the database.
+
         """
         if species_name not in self.data.flora:
             raise ValueError(f"Species {species_name} not found.")
@@ -152,6 +161,7 @@ class BioDatabase:
 
         Raises:
             ValueError: If the species_name is not found in the database.
+
         """
         if species_name not in self.data.herbivores:
             raise ValueError(f"Species {species_name} not found.")

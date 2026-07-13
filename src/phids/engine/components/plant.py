@@ -50,6 +50,7 @@ class PlantComponent:
         mycorrhizal_connections: Set of connected plant entity ids.
         apparent_nutrition_factor: Stress-induced nutrient discount modifier.
         withdrawal_ticks_remaining: Ticks until nutrition factor reverts to 1.0.
+
     """
 
     entity_id: int

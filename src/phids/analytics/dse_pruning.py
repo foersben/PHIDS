@@ -32,6 +32,7 @@ class AnalyticalPruner:
 
         Returns:
             True if the genotype is mathematically viable, False otherwise.
+
         """
         herbivore_ids = list(range(len(genotype.parametric.herbivore_traits)))
         flora_ids = list(range(len(genotype.parametric.flora_traits)))

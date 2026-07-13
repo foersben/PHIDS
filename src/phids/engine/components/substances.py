@@ -51,6 +51,7 @@ class SubstanceComponent:
         irreversible: Whether activation remains permanently on once active.
         triggered_this_tick: Whether the trigger condition was satisfied in the
             current signaling pass.
+
     """
 
     entity_id: int

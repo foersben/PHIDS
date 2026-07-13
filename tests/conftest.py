@@ -315,6 +315,7 @@ def add_swarm() -> Callable[..., int]:
         consumption_rate: float = 1.0,
         reproduction_divisor: float = 1.0,
         reproduction_energy_divisor: float | None = None,
+        split_population_threshold: int = 1000,
     ) -> int:
         """Spawn a swarm entity in the ECS world.
 
@@ -331,6 +332,7 @@ def add_swarm() -> Callable[..., int]:
             consumption_rate: Feeding speed multiplier per individual.
             reproduction_divisor: Reproduction throttle divisor.
             reproduction_energy_divisor: Explicit reproduction threshold override.
+            split_population_threshold: Mitosis split population size limit.
 
         Returns:
             The unique integer entity ID of the spawned swarm.
@@ -360,6 +362,7 @@ def add_swarm() -> Callable[..., int]:
                 velocity=velocity,
                 consumption_rate=consumption_rate,
                 reproduction_energy_divisor=final_reproduction_divisor,
+                split_population_threshold=split_population_threshold,
             ),
         )
         world.register_position(entity.entity_id, x, y)

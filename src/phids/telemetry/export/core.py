@@ -70,6 +70,7 @@ def _append_species_id(csv_ids: str | None, species_id: int) -> str:
 
     Returns:
         str: Normalized CSV list including ``species_id``.
+
     """
     ids = _parse_species_ids(csv_ids) or set()
     ids.add(int(species_id))
@@ -80,11 +81,12 @@ def decimate_dataframe(df: pd.DataFrame, tick_interval: int) -> pd.DataFrame:
     """Return a tick-decimated DataFrame using stride semantics.
 
     Args:
-        df: Input DataFrame.
+        df: The structured Polars DataFrame constructed from recorded telemetry row objects.
         tick_interval: Row stride; values below 1 are treated as 1.
 
     Returns:
         pd.DataFrame: Decimated DataFrame.
+
     """
     stride = max(1, int(tick_interval))
     if stride <= 1 or df.empty:
@@ -100,6 +102,7 @@ def _parse_species_ids(raw: str | None) -> set[int] | None:
 
     Returns:
         Optional set[int]: Parsed ids; ``None`` when input is empty.
+
     """
     if raw is None or raw.strip() == "":
         return None
@@ -124,12 +127,13 @@ def filter_telemetry_rows(
     """Filter per-species nested telemetry dictionaries by id.
 
     Args:
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         flora_ids: Optional CSV flora species-id list.
         herbivore_ids: Optional CSV herbivore species-id list.
 
     Returns:
         TelemetryRows: Row list with filtered species dictionaries.
+
     """
     flora_keep = _parse_species_ids(flora_ids)
     herbivore_keep = _parse_species_ids(herbivore_ids)
@@ -162,6 +166,7 @@ def filter_dataframe_columns(df: pd.DataFrame, columns: str | None) -> pd.DataFr
 
     Returns:
         pd.DataFrame: Filtered DataFrame containing only existing columns.
+
     """
     if columns is None or columns.strip() == "" or df.empty:
         return df
@@ -190,6 +195,7 @@ def telemetry_to_dataframe(rows: TelemetryRows) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Wide-format DataFrame with one row per tick and one column per
         scalar metric or per-species measurement.
+
     """
     import pandas as pd  # local import to keep dependency optional at module load
 
@@ -251,6 +257,7 @@ def aggregate_to_dataframe(
 
     Returns:
         pd.DataFrame: Wide-format DataFrame ready for export.
+
     """
     import pandas as pd
 

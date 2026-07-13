@@ -414,9 +414,9 @@ def test_reproduction_population_is_monotone_in_initial_energy(
         (7, 4, 8, False),
         (8, 4, 8, True),
         (9, 4, 8, True),
-        (9, 5, 0, False),
-        (10, 5, 0, True),
-        (11, 5, 0, True),
+        (9, 5, 10, False),
+        (10, 5, 10, True),
+        (11, 5, 10, True),
     ],
 )
 def test_mitosis_threshold_and_partition_invariants(

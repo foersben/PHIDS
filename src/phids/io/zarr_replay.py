@@ -77,7 +77,16 @@ class NoOpReplayBuffer:
         pass
 
     def append(self, state: object) -> None:
-        """Append a state snapshot to the buffer (no-op)."""
+        """Append a state snapshot to the buffer (no-op).
+
+        Args:
+            state: The simulation state object to append.
+
+        Args:
+        world: The ECSWorld registry containing current entity state.
+        env: The GridEnvironment containing current spatial field states.
+        metrics: The TickMetrics snapshot to append for this tick.
+        """
         pass
 
     def append_raw_arrays(self, *args: Any, **kwargs: Any) -> None:

@@ -23,6 +23,7 @@ def _is_live_substance_visible(substance: SubstanceComponent) -> bool:
     Returns:
         True if the substance is active, synthesizing, has remaining aftereffect,
         or was triggered in the current tick.
+
     """
     return (
         substance.active
@@ -53,6 +54,7 @@ def _live_substance_state_payload(
 
     Returns:
         A tuple of (state_key, state_label) strings representing the UI state.
+
     """
     if snapshot_only:
         return ("field_snapshot", "visible field residue")
@@ -82,6 +84,7 @@ def _serialize_live_substance(
 
     Returns:
         A dictionary representation of the substance state.
+
     """
     trigger_herbivore_name = None
     if substance.trigger_herbivore_species_id >= 0:
@@ -146,6 +149,7 @@ def _fallback_live_substance_payload(
 
     Returns:
         A fallback dictionary representing the diffused field residue.
+
     """
     return {
         "substance_id": substance_id,
