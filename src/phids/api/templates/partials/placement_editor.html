@@ -13,7 +13,7 @@
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
     <!-- Left: Canvas grid -->
-    <div class="xl:col-span-2 bg-white rounded-xl shadow-sm border p-4">
+    <div id="placement-canvas-container" class="xl:col-span-2 bg-white rounded-xl shadow-sm border p-4 w-full overflow-x-auto">
       <div class="flex items-center justify-between mb-2 gap-4">
         <p class="text-xs text-slate-500">
           Click on the grid to place entities. Select tool and species below.
@@ -36,7 +36,7 @@
       </div>
       <div class="relative inline-block">
         <canvas id="placement-canvas" width="800" height="800"
-          style="width:100%;max-width:800px;image-rendering:pixelated;background:#0f172a;cursor:crosshair;"
+          style="image-rendering:pixelated;background:#0f172a;cursor:crosshair;"
           class="rounded border border-slate-300"></canvas>
       </div>
 
@@ -146,7 +146,7 @@
   const canvas = document.getElementById('placement-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const canvasHost = canvas.parentElement;
+  const canvasHost = document.getElementById("placement-canvas-container");
 
   // Grid dimensions from the draft
   let gridW = {{ draft.grid_width }};
@@ -217,10 +217,18 @@
   }
 
   function computeLayout() {
-    const maxWidth = Math.max(160, Math.min(800, Math.floor(canvasHost?.clientWidth || 800)));
+    const frameRect = canvasHost.getBoundingClientRect();
+    const styles = window.getComputedStyle(canvasHost);
+    const paddingX = parseFloat(styles.paddingLeft || '0') + parseFloat(styles.paddingRight || '0');
+    const paddingY = parseFloat(styles.paddingTop || '0') + parseFloat(styles.paddingBottom || '0');
+
+    // Calculate stable max width based on the parent container, minus padding
+    const maxWidth = Math.max(160, Math.floor((frameRect.width || canvasHost.clientWidth || 800) - paddingX));
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 900;
     const heightPct = getHeightPct();
-    const maxHeight = Math.max(160, Math.min(800, Math.floor(viewportHeight * heightPct)));
+
+    const maxHeight = Math.max(160, Math.floor(viewportHeight * heightPct * 0.94 - paddingY));
+
     const cellSize = Math.max(1, Math.floor(Math.min(maxWidth / gridW, maxHeight / gridH)));
     return {
       cellSize,
