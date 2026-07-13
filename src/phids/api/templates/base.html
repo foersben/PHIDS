@@ -200,6 +200,23 @@
             class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all">
             🔄 Load Draft
           </button>
+
+          <div id="global-resize-container" class="flex items-center gap-3 text-xs text-slate-500 mr-2" style="display:none;">
+            <!-- Global Grid resize controls (used by dashboard) -->
+            <label id="canvas-resize-toggle-label" class="flex items-center gap-1.5 cursor-pointer select-none" title="Enable grid height resize">
+              <input type="checkbox" id="canvas-resize-enabled" class="rounded text-indigo-500" style="cursor:pointer">
+              <span class="text-slate-500">Resize</span>
+            </label>
+            <div id="canvas-resize-controls" class="flex items-center gap-2" style="display:none!important">
+              <span class="text-slate-400">Height:</span>
+              <input type="range" id="canvas-height-slider"
+                min="30" max="100" step="5" value="62"
+                class="w-28 accent-indigo-500"
+                title="Grid height as % of viewport">
+              <span id="canvas-height-label" class="w-10 text-center text-slate-500 tabular-nums">62%</span>
+            </div>
+            <div class="w-px h-4 bg-slate-300 ml-1"></div>
+          </div>
           <span id="sim-status"
             hx-get="/api/ui/status-badge" hx-trigger="every 2s" hx-swap="outerHTML"
             class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500">Idle</span>

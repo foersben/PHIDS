@@ -9,19 +9,7 @@
         </p>
       </div>
       <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap justify-end">
-        <!-- Grid resize controls -->
-        <label id="canvas-resize-toggle-label" class="flex items-center gap-1.5 cursor-pointer select-none" title="Enable grid height resize">
-          <input type="checkbox" id="canvas-resize-enabled" class="rounded text-indigo-500" style="cursor:pointer">
-          <span class="text-slate-500">Resize</span>
-        </label>
-        <div id="canvas-resize-controls" class="flex items-center gap-2" style="display:none!important">
-          <span class="text-slate-400">Height:</span>
-          <input type="range" id="canvas-height-slider"
-            min="30" max="100" step="5" value="62"
-            class="w-28 accent-indigo-500"
-            title="Grid height as % of viewport">
-          <span id="canvas-height-label" class="w-10 text-center text-slate-500 tabular-nums">62%</span>
-        </div>
+
         <span id="canvas-legend" class="flex gap-3 flex-wrap justify-end"></span>
         <span id="canvas-mode-badge"
           class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
@@ -330,6 +318,10 @@
     if (reconnectTimer) clearTimeout(reconnectTimer);
     teardownSocket();
     window.removeEventListener('resize', handleResize);
+    if (resizeToggle) resizeToggle.removeEventListener('change', handleResizeToggle);
+    if (heightSlider) heightSlider.removeEventListener('input', handleHeightSlider);
+    const globalResizeContainer = document.getElementById('global-resize-container');
+    if (globalResizeContainer) globalResizeContainer.style.display = 'none';
     document.body.removeEventListener('htmx:afterSwap', handleAfterSwap);
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseleave', handleMouseLeave);
@@ -394,6 +386,8 @@
   }
 
   // --- Grid resize controls ---
+  const globalResizeContainer = document.getElementById('global-resize-container');
+  if (globalResizeContainer) globalResizeContainer.style.display = 'flex';
   const resizeToggle = document.getElementById('canvas-resize-enabled');
   const resizeControls = document.getElementById('canvas-resize-controls');
   const heightSlider = document.getElementById('canvas-height-slider');
@@ -423,25 +417,27 @@
   }
 
   // Toggle checkbox event listener: Shows or hides the height slider controls.
-  // The layout itself is kept at the last chosen size to prevent jarring jumps.
-  if (resizeToggle) {
-    resizeToggle.addEventListener('change', () => {
-      const enabled = resizeToggle.checked;
-      localStorage.setItem(RESIZE_EN_KEY, String(enabled));
-      if (resizeControls) resizeControls.style.display = enabled ? '' : 'none';
-    });
+  function handleResizeToggle() {
+    const enabled = resizeToggle.checked;
+    localStorage.setItem(RESIZE_EN_KEY, String(enabled));
+    if (resizeControls) resizeControls.style.display = enabled ? '' : 'none';
   }
 
   // Range slider input event listener: Resizes the canvas stage dynamically
-  // based on the slider value and redraws the contents immediately to avoid blank frame frames.
+  function handleHeightSlider() {
+    const pct = parseInt(heightSlider.value, 10);
+    if (heightLabel) heightLabel.textContent = pct + '%';
+    localStorage.setItem(RESIZE_LS_KEY, String(pct));
+    syncCanvasLayout(currentGridData());
+    draw();
+  }
+
+  if (resizeToggle) {
+    resizeToggle.addEventListener('change', handleResizeToggle);
+  }
+
   if (heightSlider) {
-    heightSlider.addEventListener('input', () => {
-      const pct = parseInt(heightSlider.value, 10);
-      if (heightLabel) heightLabel.textContent = pct + '%';
-      localStorage.setItem(RESIZE_LS_KEY, String(pct));
-      syncCanvasLayout(currentGridData());
-      draw();
-    });
+    heightSlider.addEventListener('input', handleHeightSlider);
   }
   // --- End resize controls ---
 
