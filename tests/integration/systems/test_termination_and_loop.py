@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Integration tests for SimulationLoop determinism, termination conditions, and tick ordering.
 
 This module validates the end-to-end behaviour of :class:`~phids.engine.loop.SimulationLoop`

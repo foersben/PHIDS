@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit tests for GridEnvironment VOC diffusion, subnormal-float threshold, and local wind advection.
 
 This module validates the diffusion mechanics of :class:`~phids.engine.core.biotope.GridEnvironment`.

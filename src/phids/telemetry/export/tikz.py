@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry export to PGFPlots TikZ code.
 
 Generates self-contained tikzpicture environments containing PGFPlots chart specifications

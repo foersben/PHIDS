@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Pydantic v2 schemas for ECS components, species parameters, scenario configuration, and API models.
 
 This module constitutes the validated ingress boundary for all externally supplied data entering

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Benchmark coverage for signal diffusion hotspot behavior in GridEnvironment."""
 
 from __future__ import annotations

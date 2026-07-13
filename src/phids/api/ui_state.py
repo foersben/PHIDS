@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Server-side draft state model for the HTMX scenario-builder UI in PHIDS.
 
 This module implements :class:`DraftState`, a server-side configuration accumulator for the PHIDS

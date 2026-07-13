@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Test coverage for PHIDS curated example scenarios and scenario validation invariants.
 
 This module implements integration tests for PHIDS curated example scenarios. The test suite verifies scenario

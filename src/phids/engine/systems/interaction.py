@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Interaction system: swarm gradient navigation, herbivory, metabolic attrition, and mitosis.
 
 This module implements the second of three ordered per-tick simulation phases in the PHIDS engine.

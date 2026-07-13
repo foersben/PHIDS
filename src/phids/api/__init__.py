@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """API sub-package implementing the dual HTTP/WebSocket interface surface for PHIDS.
 
 This sub-package assembles the complete operator-facing runtime control surface for the PHIDS

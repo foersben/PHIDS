@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Plant ECS component dataclass encoding per-entity flora runtime state.
 
 This module defines :class:`PlantComponent`, the data container attached to every flora entity in

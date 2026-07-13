@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Integration tests for biological mechanics.
 
 Validates digestibility modulation, resource withdrawal, defensive triggers,

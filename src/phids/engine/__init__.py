@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Engine sub-package housing the deterministic PHIDS simulation runtime.
 
 The engine package exposes the three architectural pillars of the PHIDS computational model.

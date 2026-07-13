@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Dashboard presenter for full telemetry/UI payload.
 
 Assembles and serializes the complete live dashboard state (flora/swarm populations,

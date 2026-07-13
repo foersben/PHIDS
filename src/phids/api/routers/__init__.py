@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Router partition for the PHIDS HTTP surface.
 
 This package separates low-risk route families from the application composition root so that the

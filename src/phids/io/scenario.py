@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Scenario I/O helpers for loading, validating, and serialising ``SimulationConfig`` instances.
 
 This module provides three convenience functions that bridge external JSON representations of

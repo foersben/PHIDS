@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """ECS component dataclasses for the PHIDS simulation engine.
 
 This sub-package provides the three canonical ECS component types used throughout the PHIDS

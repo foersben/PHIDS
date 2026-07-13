@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry route partition for PHIDS analytical transport.
 
 This module isolates the observation and export endpoints that expose telemetry beyond the core
