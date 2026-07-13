@@ -5,7 +5,7 @@ dashboard, cell details, and mycorrhizal root network state in the UI.
 """
 
 from phids.api.presenters.dashboard.cell_details import build_live_cell_details, build_preview_cell_details
-from phids.api.presenters.dashboard.helpers import (
+from phids.api.presenters.dashboard.shared import (
     _default_substance_name,
     _describe_activation_condition,
     validate_cell_coordinates,

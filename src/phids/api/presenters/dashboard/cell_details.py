@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.api.presenters.dashboard.helpers import (
+from phids.api.presenters.dashboard.shared import (
     _coerce_int,
     _default_substance_name,
     _describe_activation_condition,
