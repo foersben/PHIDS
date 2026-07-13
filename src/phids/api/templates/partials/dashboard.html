@@ -8,7 +8,20 @@
           Hover any grid field to inspect plant energy, swarm state, signal clouds, toxins, and trigger status.
         </p>
       </div>
-      <div class="flex items-center gap-3 text-xs text-slate-500">
+      <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap justify-end">
+        <!-- Grid resize controls -->
+        <label id="canvas-resize-toggle-label" class="flex items-center gap-1.5 cursor-pointer select-none" title="Enable grid height resize">
+          <input type="checkbox" id="canvas-resize-enabled" class="rounded text-indigo-500" style="cursor:pointer">
+          <span class="text-slate-500">Resize</span>
+        </label>
+        <div id="canvas-resize-controls" class="flex items-center gap-2" style="display:none!important">
+          <span class="text-slate-400">Height:</span>
+          <input type="range" id="canvas-height-slider"
+            min="30" max="100" step="5" value="62"
+            class="w-28 accent-indigo-500"
+            title="Grid height as % of viewport">
+          <span id="canvas-height-label" class="w-10 text-center text-slate-500 tabular-nums">62%</span>
+        </div>
         <span id="canvas-legend" class="flex gap-3 flex-wrap justify-end"></span>
         <span id="canvas-mode-badge"
           class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
@@ -380,6 +393,58 @@
     return { gW, gH };
   }
 
+  // --- Grid resize controls ---
+  const resizeToggle = document.getElementById('canvas-resize-enabled');
+  const resizeControls = document.getElementById('canvas-resize-controls');
+  const heightSlider = document.getElementById('canvas-height-slider');
+  const heightLabel = document.getElementById('canvas-height-label');
+
+  // Keys used for local storage persistence of resize configurations.
+  const RESIZE_LS_KEY = 'phids.canvas.heightPct';
+  const RESIZE_EN_KEY = 'phids.canvas.resizeEnabled';
+
+  // Restore previous resize preferences from localStorage, falling back to a 62% default.
+  const savedPct = parseInt(localStorage.getItem(RESIZE_LS_KEY) || '62', 10);
+  const savedEnabled = localStorage.getItem(RESIZE_EN_KEY) === 'true';
+  if (heightSlider) heightSlider.value = String(savedPct);
+  if (heightLabel) heightLabel.textContent = savedPct + '%';
+  if (resizeToggle) resizeToggle.checked = savedEnabled;
+  if (resizeControls) resizeControls.style.display = savedEnabled ? '' : 'none';
+
+  /**
+   * Retrieves the target height multiplier as a percentage of the viewport height.
+   * Note: The checkbox controls whether the resize slider UI is visible to the user,
+   * but the last chosen height multiplier is kept active for the layout.
+   *
+   * @returns {number} Float value representing the percentage multiplier (between 0.3 and 1.0).
+   */
+  function getHeightPct() {
+    return Math.max(0.3, Math.min(1.0, parseInt(heightSlider ? heightSlider.value : '62', 10) / 100));
+  }
+
+  // Toggle checkbox event listener: Shows or hides the height slider controls.
+  // The layout itself is kept at the last chosen size to prevent jarring jumps.
+  if (resizeToggle) {
+    resizeToggle.addEventListener('change', () => {
+      const enabled = resizeToggle.checked;
+      localStorage.setItem(RESIZE_EN_KEY, String(enabled));
+      if (resizeControls) resizeControls.style.display = enabled ? '' : 'none';
+    });
+  }
+
+  // Range slider input event listener: Resizes the canvas stage dynamically
+  // based on the slider value and redraws the contents immediately to avoid blank frame frames.
+  if (heightSlider) {
+    heightSlider.addEventListener('input', () => {
+      const pct = parseInt(heightSlider.value, 10);
+      if (heightLabel) heightLabel.textContent = pct + '%';
+      localStorage.setItem(RESIZE_LS_KEY, String(pct));
+      syncCanvasLayout(currentGridData());
+      draw();
+    });
+  }
+  // --- End resize controls ---
+
   function computeCanvasLayout(gridData) {
     const { gW, gH } = gridDims(gridData || {});
     const frameRect = canvasFrame.getBoundingClientRect();
@@ -387,19 +452,16 @@
     const paddingX = parseFloat(stageStyles.paddingLeft || '0') + parseFloat(stageStyles.paddingRight || '0');
     const paddingY = parseFloat(stageStyles.paddingTop || '0') + parseFloat(stageStyles.paddingBottom || '0');
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 900;
+    const heightPct = getHeightPct();
     const availableWidth = Math.max(
       160,
       Math.floor((frameRect.width || canvasFrame.clientWidth || 960) - paddingX)
     );
+    // Always use the stable viewport-fraction path (no frameRect.top dependency)
+    // so scrolling never causes the canvas to flicker or resize.
     const availableHeight = Math.max(
       160,
-      Math.floor(
-        Math.min(
-          viewportHeight * 0.62,
-          viewportHeight - frameRect.top - 80,
-          760
-        ) - paddingY
-      )
+      Math.floor(viewportHeight * heightPct * 0.94 - paddingY)
     );
     const cellSize = Math.max(1, Math.floor(Math.min(availableWidth / gW, availableHeight / gH)));
     const drawWidth = cellSize * gW;
