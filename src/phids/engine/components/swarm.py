@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Herbivore swarm ECS component dataclass encoding per-entity herbivore runtime state.
 
 This module defines :class:`SwarmComponent`, the data container attached to every herbivore

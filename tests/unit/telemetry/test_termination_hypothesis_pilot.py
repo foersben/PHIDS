@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Bounded Hypothesis pilot for termination parity between world scans and TickMetrics."""
 
 from __future__ import annotations

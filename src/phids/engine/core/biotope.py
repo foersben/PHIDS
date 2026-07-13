@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
 This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients,

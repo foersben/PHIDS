@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Termination condition evaluators (Z1-Z7) for deterministic simulation halting.
 
 This module implements the rule-based termination logic that determines when a PHIDS simulation

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Lifecycle system: plant growth, mycorrhizal network formation, reproduction, and death.
 
 This module implements the first of three ordered per-tick simulation phases executed by the

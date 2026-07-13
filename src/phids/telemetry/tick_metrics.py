@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Tick-level ECS aggregation structures for shared telemetry and termination evaluation.
 
 This module defines the :class:`TickMetrics` dataclass and the corresponding

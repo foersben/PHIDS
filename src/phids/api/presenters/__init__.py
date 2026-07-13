@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Presenter sub-package for PHIDS API payload assembly.
 
 This package encapsulates the transformation of live ECS world state and draft configuration data

@@ -344,6 +344,6 @@ packaging/              PyInstaller configuration
 
 ---
 
-## 📄 License
+## 📄 Licensing
 
-MIT. See [`LICENSE`](LICENSE).
+This project is dual-licensed. It is publicly available under the strict copyleft terms of the EUPL-1.2. For commercial use, integration into proprietary closed-source software, or network-based monetization outside the scope of the EUPL, a proprietary commercial license is available.

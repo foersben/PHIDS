@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit tests for the Design Space Exploration (DSE) analytical pre-pruner.
 
 Verifies mathematical bounds checking (caloric deficits, seed costs, diet matrices).

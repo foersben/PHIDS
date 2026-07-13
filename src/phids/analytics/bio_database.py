@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Biological database component for matching traits and parameters.
 
 Provides Pydantic models for flora and herbivore profiles, and the main

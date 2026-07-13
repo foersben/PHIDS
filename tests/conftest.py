@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Shared pytest fixtures for PHIDS test modules.
 
 This fixture module provides lightweight, reusable ECS and biotope constructors

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Model Context Protocol surface for PHIDS diagnostics.
 
 This module provides a compact stdio-based MCP server that exposes read-only

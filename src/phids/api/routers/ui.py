@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """UI HTML route partition for the PHIDS control surface.
 
 This module contains the server-rendered HTML endpoints that drive the HTMX and Jinja control

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Draft-state mutation service for PHIDS scenario-builder workflows.
 
 This module concentrates all imperative mutation procedures applied to the UI draft state into a

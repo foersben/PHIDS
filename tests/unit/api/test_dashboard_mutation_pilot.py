@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Focused mutation-pilot regressions for dashboard presenter branch-critical unions."""
 
 from __future__ import annotations

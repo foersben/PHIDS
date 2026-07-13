@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry analytics: accumulate per-tick Lotka-Volterra metrics into a Polars DataFrame.
 
 The :class:`TelemetryRecorder` accumulates per-tick population and energy metrics into an

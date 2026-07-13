@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Shared compile-time constants for the PHIDS simulation engine.
 
 This module centralises all numeric sentinels, hard upper limits, and physical simulation

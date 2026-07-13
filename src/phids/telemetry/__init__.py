@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry sub-package for simulation observation, termination, and export.
 
 This sub-package implements the three analytical layers that enable scientific interpretation of

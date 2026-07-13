@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Headless Monte Carlo batch processing engine for PHIDS ecosystem simulations.
 
 This module implements the :class:`BatchRunner`, which executes a configurable number of
