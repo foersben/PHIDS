@@ -25,6 +25,7 @@ def _build_runtime_snapshot() -> dict[str, Any]:
     Returns:
         dict[str, Any]: Compact summary containing scenario metadata, grid
         dimensions, species counts, and top-level tick configuration.
+
     """
     draft = get_draft()
     return {
@@ -47,6 +48,7 @@ def runtime_snapshot() -> dict[str, Any]:
 
     Returns:
         dict[str, Any]: Read-only summary of the currently loaded draft state.
+
     """
     return _build_runtime_snapshot()
 
@@ -61,6 +63,7 @@ def recent_logs(limit: int = 80) -> list[dict[str, str]]:
     Returns:
         list[dict[str, str]]: Most recent diagnostic log entries in descending
         recency order.
+
     """
     return get_recent_logs(limit=limit)
 

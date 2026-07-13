@@ -55,7 +55,36 @@ def _numba_diffuse_signal_layer(
     write_buffer: npt.NDArray[np.float64],
     advected_scratch: npt.NDArray[np.float64],
 ) -> None:
-    """JIT-compiled advection and convolution using pre-allocated scratch."""
+    """JIT-compiled advection and convolution (diffusion) kernel.
+
+    Why is this function written so explicitly?
+    -------------------------------------------
+    This function is wrapped with Numba's `@njit` (nopython mode) to achieve C-level performance
+    for the reaction-diffusion partial differential equations (PDEs) running every tick.
+    Numba has extremely strict constraints:
+
+    1. No High-Level Libraries: We cannot use `scipy.ndimage.map_coordinates` for advection
+       or `scipy.ndimage.convolve` for diffusion. Everything must be implemented from scratch.
+    2. Explicit Math: The "lengthy" code (like manual bounds checking and `val_y0 * (1.0 - dy)`)
+       is a manual Bilinear Interpolation. By writing out the nested `for` loops and scalar
+       operations explicitly, Numba's LLVM compiler can aggressively optimize and vectorize
+       the execution.
+    3. Memory Constraints: We cannot allocate arrays (`np.zeros`) inside the JIT loop without
+       incurring massive overhead. Therefore, `write_buffer` and `advected_scratch` are
+       pre-allocated outside the loop and passed by reference to be mutated in-place.
+
+    Args:
+        width: Grid width.
+        height: Grid height.
+        layer: Current concentration of the signal.
+        wind_x: X-component of the wind field for advection.
+        wind_y: Y-component of the wind field for advection.
+        decay: Evaporation/decay rate of the signal.
+        epsilon: Minimum concentration threshold to zero-out noise.
+        kernel: 2D diffusion kernel for spreading the signal.
+        write_buffer: Pre-allocated output array (mutated in-place).
+        advected_scratch: Pre-allocated intermediate array for the advection step (mutated in-place).
+    """
     advected_scratch.fill(0.0)
 
     # 1. Semi-Lagrangian Advection (backward interpolation)
@@ -240,8 +269,8 @@ class GridEnvironment:
         """Update the wind vector at a single grid cell.
 
         Args:
-            x: X coordinate.
-            y: Y coordinate.
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
             vx: X component of the wind.
             vy: Y component of the wind.
         """
@@ -323,24 +352,30 @@ class GridEnvironment:
         """Set a species-specific energy contribution in the write buffer.
 
         Args:
-            x: X coordinate.
-            y: Y coordinate.
-            species_id: Species index.
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
+            species_id: The integer index representing the specific phylogenetic species associated with this operation.
             value: Energy contribution (clamped to >= 0).
         """
         self._plant_energy_by_species_write[species_id, x, y] = max(0.0, value)
 
     def set_apparent_nutrition(self, x: int, y: int, value: float) -> None:
-        """Set apparent nutrition factor in the write buffer."""
+        """Set apparent nutrition factor in the write buffer.
+
+        Args:
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
+            value: The apparent nutrition value to store.
+        """
         self._apparent_nutrition_layer_write[x, y] = value
 
     def clear_plant_energy(self, x: int, y: int, species_id: int) -> None:
         """Clear a species-specific energy contribution in the write buffer.
 
         Args:
-            x: X coordinate.
-            y: Y coordinate.
-            species_id: Species index.
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
+            species_id: The integer index representing the specific phylogenetic species associated with this operation.
         """
         self._plant_energy_by_species_write[species_id, x, y] = 0.0
 

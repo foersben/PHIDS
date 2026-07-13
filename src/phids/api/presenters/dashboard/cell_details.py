@@ -67,6 +67,7 @@ def build_live_cell_details(
 
     Raises:
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the configured grid bounds.
+
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
@@ -325,6 +326,7 @@ def build_preview_cell_details(
 
     Raises:
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the draft grid bounds.
+
     """
     validate_cell_coordinates(x, y, draft.grid_width, draft.grid_height)
 

@@ -47,6 +47,7 @@ class TickMetrics:
         plant_energy_by_species: Flora aggregate energy keyed by species ID.
         swarm_pop_by_species: Herbivore population keyed by species ID.
         defense_cost_by_species: Active defense-maintenance costs keyed by flora species ID.
+
     """
 
     flora_population: int = 0
@@ -72,6 +73,7 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
 
     Returns:
         TickMetrics: Shared aggregate metrics suitable for telemetry and termination.
+
     """
     metrics = TickMetrics()
 

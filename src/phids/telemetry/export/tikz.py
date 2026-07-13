@@ -69,6 +69,7 @@ def generate_tikz_str(
 
     Raises:
         ValueError: If ``plot_type`` is not a supported chart mode.
+
     """
     flora_filter = include_flora_ids
     herbivore_filter = include_herbivore_ids
@@ -136,7 +137,7 @@ def _tikz_timeseries(
     """Build PGFPlots code for a multi-species population time series chart.
 
     Args:
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
         title: Optional custom chart title.
@@ -145,6 +146,7 @@ def _tikz_timeseries(
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
+
     """
     all_flora: set[int] = set()
     all_herbivores: set[int] = set()
@@ -200,7 +202,7 @@ def _tikz_phasespace(
     """Build PGFPlots code for a Lotka-Volterra phase-space chart.
 
     Args:
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         plant_species_id: Flora species id for x-axis.
         herbivore_species_id: Herbivore species id for y-axis.
         flora_names: Optional display names for flora species.
@@ -213,6 +215,7 @@ def _tikz_phasespace(
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
+
     """
     if plant_species_id == 0:
         plant_name = "Flora (Total)"
@@ -275,7 +278,7 @@ def _tikz_defense_economy(
     """Build PGFPlots code for per-species defense economy trajectories.
 
     Args:
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         flora_names: Optional display names for flora species.
         title: Optional chart title override.
         x_label: Optional x-axis label override.
@@ -283,6 +286,7 @@ def _tikz_defense_economy(
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
+
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -329,7 +333,7 @@ def _tikz_biomass_stack(
     """Build PGFPlots code for stacked-biomass proxy trajectories.
 
     Args:
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         flora_names: Optional display names for flora species.
         title: Optional chart title override.
         x_label: Optional x-axis label override.
@@ -337,6 +341,7 @@ def _tikz_biomass_stack(
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
+
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -377,13 +382,14 @@ def _tikz_survival_probability(
     """Build PGFPlots code for batch survival probability trajectories.
 
     Args:
-        rows: Raw telemetry rows containing ``survival_probability``.
+        rows: Telemetry records enriched with batch 'survival_probability' metrics.
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
 
     Returns:
         str: LaTeX ``tikzpicture`` source.
+
     """
     coords = " ".join(f"({r.get('tick', 0)},{100.0 * float(r.get('survival_probability', 0.0))})" for r in rows)
     return (

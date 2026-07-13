@@ -103,9 +103,9 @@ class SwarmComponentSchema(StrictBaseModel):
         description="[Absolute] Per-individual metabolic upkeep scalar applied each tick.",
     )
     split_population_threshold: int = Field(
-        default=0,
-        ge=0,
-        description="[Absolute] Explicit mitosis population threshold; 0 keeps legacy legacy split rule.",
+        default=10,
+        gt=0,
+        description="[Absolute] Explicit mitosis population threshold.",
     )
     repelled: bool = Field(default=False, description="Currently repelled by toxin.")
     repelled_ticks_remaining: int = Field(default=0, description="Ticks remaining in repelled random-walk.")
@@ -347,9 +347,9 @@ class HerbivoreSpeciesParams(StrictBaseModel):
     )
     resistances: HerbivoreResistancesSchema = Field(default_factory=HerbivoreResistancesSchema)
     split_population_threshold: int = Field(
-        default=0,
-        ge=0,
-        description="Explicit population threshold for mitosis; 0 keeps legacy thresholding.",
+        default=10,
+        gt=0,
+        description="Explicit population threshold for mitosis.",
     )
 
 
@@ -589,6 +589,7 @@ class BatchJobState(StrictBaseModel):
         started_at: ISO-8601 timestamp of job creation.
         finished_at: ISO-8601 timestamp of completion, or ``None`` if pending.
         max_ticks: Maximum tick count per individual run.
+
     """
 
     job_id: str
@@ -613,6 +614,7 @@ class BatchStartPayload(StrictBaseModel):
         runs: Number of independent simulation runs to execute in parallel.
         max_ticks: Maximum simulation tick count per run.
         scenario_name: Optional display label for the ledger.
+
     """
 
     runs: int = Field(default=10, ge=1, le=256, description="Number of parallel Monte Carlo runs.")

@@ -124,6 +124,7 @@ def _check_activation_condition(
 
     Returns:
         ``True`` when the condition tree evaluates to true; ``False`` otherwise.
+
     """
     if activation_condition is None:
         return True
@@ -215,7 +216,7 @@ def _apply_toxin_to_swarms(
     confounding herbivore-presence evaluations in ``_check_activation_condition``.
 
     Args:
-        sub_id: Toxin layer index.
+        sub_id: The integer index corresponding to the specific toxin concentration array layer.
         lethal: Whether the toxin can kill individuals.
         lethality_rate: Lethal attrition factor.
         repellent: Whether the toxin marks swarms as repelled.
@@ -223,6 +224,7 @@ def _apply_toxin_to_swarms(
         env: GridEnvironment providing per-cell toxin concentrations via
             ``env.toxin_layers``.
         world: ECSWorld to iterate swarms, update the spatial hash, and execute GC.
+
     """
     dead_swarms: list[int] = []
 
@@ -264,12 +266,13 @@ def _co_located_swarm_population(
 
     Args:
         world: ECSWorld used for spatial hash lookup.
-        x: Grid x-coordinate.
-        y: Grid y-coordinate.
+        x: The X-axis spatial grid coordinate.
+        y: The Y-axis spatial grid coordinate.
         herbivore_species_id: Herbivore species to aggregate.
 
     Returns:
         int: Sum of populations for matching swarms at ``(x, y)``.
+
     """
     total_population = 0
     for co_eid in world.entities_at(x, y):
@@ -298,6 +301,7 @@ def _collect_mycorrhizal_targets(
 
     Returns:
         list[PlantComponent]: Relay targets that are alive and species-compatible.
+
     """
     targets: list[PlantComponent] = []
     for neighbour_id in source_plant.mycorrhizal_connections:
@@ -327,7 +331,7 @@ def run_signaling(
     """Execute one signaling tick, handling synthesis, emission and diffusion.
 
     Args:
-        world: ECS world registry.
+        world: The central ECSWorld instance containing all entity component mappings and active systems.
         env: Grid environment holding signal/toxin layers.
         trigger_conditions: Mapping of flora species_id to trigger schemas.
         mycorrhizal_inter_species: Whether inter-species mycorrhizal signaling
@@ -339,6 +343,7 @@ def run_signaling(
             SubstanceComponent emits. Defaults to 0.1 (module-level constant value).
         signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion
             (0.0-1.0). Defaults to 0.85 (module-level constant value).
+
     """
     dead_substances: list[int] = []
     dead_plants: list[int] = []

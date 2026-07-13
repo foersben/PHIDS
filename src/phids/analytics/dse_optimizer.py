@@ -39,6 +39,7 @@ class DSEOptimizer:
         pop_size: Size of the genetic algorithm population.
         generations: Number of generations to iterate.
         toolbox: DEAP toolbox for genetic operators registration.
+
     """
 
     def __init__(self, base_config: SimulationConfig, pop_size: int = 50, generations: int = 20):
@@ -48,6 +49,7 @@ class DSEOptimizer:
             base_config: The template simulation configuration schema.
             pop_size: The number of individuals in the population. Defaults to 50.
             generations: Number of evolutionary generations to run. Defaults to 20.
+
         """
         self.base_config = base_config
         self.pop_size = pop_size
@@ -90,6 +92,7 @@ class DSEOptimizer:
 
         Returns:
             A tuple of float fitnesses: (longevity, stability, dispersion).
+
         """
         import asyncio
 
@@ -103,6 +106,7 @@ class DSEOptimizer:
 
         Returns:
             A tuple of float fitnesses: (longevity, stability, dispersion).
+
         """
         genotype: DSEGenotype | None = individual.genotype
 
@@ -165,6 +169,7 @@ class DSEOptimizer:
 
         Returns:
             The final evaluated population list of individuals.
+
         """
         asyncio.run(self._warm_numba_cache())
 

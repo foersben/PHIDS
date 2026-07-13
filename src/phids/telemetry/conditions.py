@@ -38,6 +38,7 @@ class TerminationResult:
     Attributes:
         terminated: True when a termination condition has been met.
         reason: Human-readable explanation for termination.
+
     """
 
     terminated: bool
@@ -59,7 +60,7 @@ def check_termination(
     """Evaluate termination conditions and return the first triggered one.
 
     Args:
-        world: ECS world registry.
+        world: The central ECSWorld instance containing all entity component mappings and active systems.
         tick: Current simulation tick.
         max_ticks: Z1 - maximum allowed ticks (halt when reached).
         z2_flora_species: Species id that triggers Z2 on extinction (-1 disables).
@@ -72,6 +73,7 @@ def check_termination(
 
     Returns:
         TerminationResult: Object indicating whether termination occurred and why.
+
     """
     # Z1 - maximum tick count
     if tick >= max_ticks:

@@ -195,7 +195,7 @@
         "chemical_neutralization": 0.0,
         "digestive_efficiency": 1.0
       },
-      "split_population_threshold": 0
+      "split_population_threshold": 10
     },
     {
       "species_id": 1,
@@ -210,7 +210,7 @@
         "chemical_neutralization": 0.0,
         "digestive_efficiency": 1.0
       },
-      "split_population_threshold": 0
+      "split_population_threshold": 10
     }
   ],
   "diet_matrix": {

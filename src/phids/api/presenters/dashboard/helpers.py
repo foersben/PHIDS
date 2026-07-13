@@ -37,6 +37,7 @@ def _coerce_int(value: object, *, default: int = -1) -> int:
 
     Returns:
         Coerced integer, or ``default`` if the input cannot be converted.
+
     """
     if isinstance(value, bool):
         return default
@@ -80,6 +81,7 @@ def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
 
     Returns:
         A human-readable label of the form ``"Toxin N"`` or ``"Signal N"``.
+
     """
     return f"{'Toxin' if is_toxin else 'Signal'} {substance_id}"
 
@@ -109,6 +111,7 @@ def _describe_activation_condition(
     Returns:
         A human-readable condition summary string.  Returns ``"unconditional"`` when
         ``condition`` is ``None`` or when a combinator node has no valid children.
+
     """
     if condition is None:
         return "unconditional"
@@ -170,6 +173,7 @@ def validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
 
     Raises:
         HTTPException: HTTP 404 if the coordinates fall outside ``[0, width) x [0, height)``.
+
     """
     if not (0 <= x < width and 0 <= y < height):
         raise HTTPException(
@@ -199,6 +203,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
     Returns:
         A list of link dictionaries, each containing ``plant_index_a``, ``plant_index_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, and ``inter_species`` fields.
+
     """
     links: list[_MycorrhizalLinkPayload] = []
     for left_index, left in enumerate(draft.initial_plants):
@@ -239,6 +244,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     Returns:
         A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, and ``inter_species`` fields.
+
     """
     from phids.engine.components.plant import PlantComponent
 
@@ -288,6 +294,7 @@ def _links_touching_cell(links: list[_MycorrhizalLinkPayload], x: int, y: int) -
 
     Returns:
         The subset of ``links`` where either endpoint matches ``(x, y)``.
+
     """
     return [link for link in links if (link["x1"] == x and link["y1"] == y) or (link["x2"] == x and link["y2"] == y)]
 
@@ -310,6 +317,7 @@ def _is_live_substance_visible(substance: SubstanceComponent) -> bool:
 
     Returns:
         ``True`` if the substance is in a non-quiescent state; ``False`` otherwise.
+
     """
     return (
         bool(substance.active)
@@ -354,6 +362,7 @@ def _live_substance_state_payload(
     Returns:
         A two-tuple ``(state_key, state_label)`` where ``state_key`` is a machine-readable
         token and ``state_label`` is a human-readable UI description.
+
     """
     if snapshot_only:
         return ("field_snapshot", "visible field residue")
@@ -395,6 +404,7 @@ def _serialize_live_substance(
     Returns:
         A dictionary conforming to the substance payload schema expected by the browser
         tooltip and dashboard components.
+
     """
     state, state_label = _live_substance_state_payload(
         is_toxin=bool(substance.is_toxin),
@@ -461,6 +471,7 @@ def _fallback_live_substance_payload(
     Returns:
         A substance payload dictionary in the ``"field_snapshot"`` state with all dynamic
         fields set to zero or ``False``.
+
     """
     kind = "toxin" if is_toxin else "signal"
     state, state_label = _live_substance_state_payload(
@@ -535,6 +546,7 @@ def build_live_cell_details(
 
     Raises:
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the configured grid bounds.
+
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
@@ -765,6 +777,7 @@ def build_preview_cell_details(
 
     Raises:
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the draft grid bounds.
+
     """
     validate_cell_coordinates(x, y, draft.grid_width, draft.grid_height)
 
@@ -930,6 +943,7 @@ def build_live_dashboard_payload(
         ``all_flora_species``, ``signal_overlay``, ``toxin_overlay``, ``max_signal``,
         ``max_toxin``, ``plants``, ``mycorrhizal_links``, ``swarms``, ``terminated``,
         ``termination_reason``, ``running``, and ``paused``.
+
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent

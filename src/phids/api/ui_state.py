@@ -60,6 +60,7 @@ class SubstanceDefinition:
         energy_cost_per_tick: Energy drained from the plant per active tick.
         irreversible: Keep the substance active permanently once activated.
         min_herbivore_population: Minimum swarm size to trigger synthesis.
+
     """
 
     substance_id: int
@@ -82,6 +83,7 @@ class SubstanceDefinition:
         Returns:
             str: One of ``"Signal"``, ``"Lethal Toxin"``,
                 ``"Repellent Toxin"``, or ``"Toxin"``.
+
         """
         if not self.is_toxin:
             return "Signal"
@@ -103,9 +105,10 @@ class PlacedPlant:
 
     Args:
         species_id: Flora species index.
-        x: Grid x-coordinate.
-        y: Grid y-coordinate.
+        x: The X-axis spatial grid coordinate.
+        y: The Y-axis spatial grid coordinate.
         energy: Initial energy reserve.
+
     """
 
     species_id: int
@@ -120,10 +123,11 @@ class PlacedSwarm:
 
     Args:
         species_id: Herbivore species index.
-        x: Grid x-coordinate.
-        y: Grid y-coordinate.
+        x: The X-axis spatial grid coordinate.
+        y: The Y-axis spatial grid coordinate.
         population: Initial swarm population.
         energy: Initial energy reserve.
+
     """
 
     species_id: int
@@ -158,6 +162,7 @@ class TriggerRule:
         substance_id: Substance layer index to synthesise.
         min_herbivore_population: Minimum swarm size to trigger this rule.
         activation_condition: Optional JSON-serialisable predicate tree.
+
     """
 
     flora_species_id: int
@@ -353,6 +358,7 @@ class DraftState:
         initial_plants: Plants placed on the grid before simulation start.
         initial_swarms: Swarms placed on the grid before simulation start.
         active_batch_jobs: Registry of batch simulation jobs keyed by job_id.
+
     """
 
     scenario_name: str = _DEFAULT_SCENARIO_NAME
@@ -398,6 +404,7 @@ class DraftState:
 
         Raises:
             ValueError: If no flora or herbivore species defined.
+
         """
         from phids.api.schemas import (
             DietCompatibilityMatrix,
@@ -591,6 +598,7 @@ def get_draft() -> DraftState:
 
     Returns:
         DraftState: The active draft configuration.
+
     """
     global _draft
     if _draft is None:
@@ -604,6 +612,7 @@ def set_draft(state: DraftState) -> None:
 
     Args:
         state: New :class:`DraftState` to activate.
+
     """
     global _draft
     _draft = state

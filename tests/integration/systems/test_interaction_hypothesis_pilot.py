@@ -341,7 +341,7 @@ def test_mitosis_threshold_partition_and_energy_halving_hold_for_bounded_hypothe
         energy_min=energy_min,
     )
 
-    split_threshold = split_population_threshold if split_population_threshold > 0 else 2 * initial_population
+    split_threshold = split_population_threshold
     should_split = population >= split_threshold
 
     swarms = [entity.get_component(SwarmComponent) for entity in world.query(SwarmComponent)]

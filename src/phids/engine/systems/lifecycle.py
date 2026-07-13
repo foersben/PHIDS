@@ -41,6 +41,7 @@ def _grow(plant: PlantComponent, tick: int) -> None:
     Args:
         plant: PlantComponent to update.
         tick: Current simulation tick (unused; kept for call-site parity).
+
     """
     del tick
     growth_amount = plant.base_energy * (plant.growth_rate / 100.0)
@@ -65,6 +66,7 @@ def _attempt_reproduction(
 
     Returns:
         list[PlantComponent]: Newly created plant components (empty if none).
+
     """
     from phids.api.schemas import FloraSpeciesParams  # local import avoids circulars
 
@@ -176,7 +178,7 @@ def _establish_mycorrhizal_connections(
     global bottleneck.
 
     Args:
-        world: ECSWorld registry.
+        world: The central ECSWorld instance containing all entity component mappings and active systems.
         env: GridEnvironment (used to update plant energy buffers).
         connection_cost: Energy cost per connection establishment.
         inter_species: Allow connections between different species.
@@ -189,6 +191,7 @@ def _establish_mycorrhizal_connections(
         ``dead_entity_ids`` contains plants that crossed the survival threshold
         due to connection costs and were removed from spatial registration and
         energy layers in this same lifecycle pass.
+
     """
     excluded = excluded_entity_ids or set()
     plants: list[PlantComponent] = [
@@ -299,6 +302,7 @@ def run_lifecycle(
             attempts. At most one new link is created per attempt.
         mycorrhizal_inter_species: Allow inter-species root connections.
         plant_death_causes: Mapping of death causes to their respective counts.
+
     """
     dead: list[int] = []
 

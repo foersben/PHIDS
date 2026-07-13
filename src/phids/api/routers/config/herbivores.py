@@ -25,7 +25,7 @@ async def config_herbivore_add(
     consumption_rate: Annotated[float, Form()] = 10.0,
     reproduction_energy_divisor: Annotated[float, Form()] = 1.0,
     energy_upkeep_per_individual: Annotated[float, Form()] = 0.05,
-    split_population_threshold: Annotated[int, Form()] = 0,
+    split_population_threshold: Annotated[int, Form()] = 10,
 ) -> Response:
     """Add one herbivore species to the draft and render the updated herbivore table."""
     draft = get_draft()

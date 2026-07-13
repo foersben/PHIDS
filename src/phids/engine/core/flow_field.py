@@ -39,14 +39,15 @@ def _compute_flow_field_impl(
         plant_energy: 2-D array ``(W, H)`` of aggregated plant energy per cell.
         apparent_nutrition_layer: 2-D array ``(W, H)`` of apparent nutrition multipliers.
         toxin_sum: 2-D array ``(W, H)`` of aggregated toxin concentration per cell.
-        width: Grid width W.
-        height: Grid height H.
+        width: The horizontal bounds of the simulation grid environment.
+        height: The vertical bounds of the simulation grid environment.
         base: Pre-allocated 2-D scratch array.
         current: Pre-allocated 2-D scratch array.
         nxt: Pre-allocated 2-D scratch array.
 
     Returns:
         npt.NDArray[np.float64]: Scalar attraction field of shape ``(W, H)``.
+
     """
     if base is None:
         base = np.zeros((width, height), dtype=np.float64)
@@ -135,14 +136,15 @@ def compute_flow_field(
         plant_energy: Shape ``(W, H)`` aggregate plant energy.
         apparent_nutrition_layer: Shape ``(W, H)`` apparent nutrition modifiers.
         toxin_layers: Shape ``(num_toxins, W, H)`` toxin concentration layers.
-        width: Grid width.
-        height: Grid height.
+        width: The horizontal bounds of the simulation grid environment.
+        height: The vertical bounds of the simulation grid environment.
         base: Pre-allocated 2-D scratch array.
         current: Pre-allocated 2-D scratch array.
         nxt: Pre-allocated 2-D scratch array.
 
     Returns:
         npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
+
     """
     if base is None:
         base = np.zeros((width, height), dtype=np.float64)
@@ -169,8 +171,9 @@ def apply_camouflage(
 
     Args:
         flow_field: Mutable gradient array ``(W, H)``.
-        x: X coordinate.
-        y: Y coordinate.
+        x: The X-axis spatial grid coordinate.
+        y: The Y-axis spatial grid coordinate.
         factor: Multiplier in [0, 1]; 0 = invisible, 1 = no attenuation.
+
     """
     flow_field[x, y] *= factor

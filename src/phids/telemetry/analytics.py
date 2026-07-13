@@ -88,6 +88,7 @@ class TelemetryRecorder:
 
         Args:
             max_rows: Maximum in-memory tick rows retained in the rolling window.
+
         """
         self._rows: list[TelemetryRow] = []
         self._df: pl.DataFrame | None = None
@@ -115,6 +116,7 @@ class TelemetryRecorder:
             tick: Current simulation tick index.
             plant_death_causes: Per-tick plant death diagnostics keyed by cause.
             tick_metrics: Optional pre-collected tick metrics; if omitted, they are gathered from the world.
+
         """
         metrics = tick_metrics or collect_tick_metrics(world)
 
@@ -161,6 +163,7 @@ class TelemetryRecorder:
 
         Returns:
             TelemetryRow | None: Most recent metrics row or ``None``.
+
         """
         if not self._rows:
             return None
@@ -177,6 +180,7 @@ class TelemetryRecorder:
         Returns:
             dict[str, list[int]]: Keys ``"flora_ids"`` and ``"herbivore_ids"``
             each mapping to a sorted list of integer species identifiers.
+
         """
         flora_ids: set[int] = set()
         herbivore_ids: set[int] = set()
@@ -215,6 +219,7 @@ class TelemetryRecorder:
         Returns:
             pl.DataFrame: DataFrame containing aggregate and per-species flat
             telemetry columns for all accumulated ticks.
+
         """
         if self._df is None:
             logger.debug("Materialising telemetry dataframe from %d rows", len(self._rows))

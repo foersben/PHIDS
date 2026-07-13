@@ -25,6 +25,7 @@ class DSETaskManager:
     Attributes:
         websocket_manager: The websocket manager instance used to broadcast generation progress.
         pareto_cache: Cache of the current Pareto front candidate configs.
+
     """
 
     def __init__(self, websocket_manager: "DSEStreamManager") -> None:
@@ -32,6 +33,7 @@ class DSETaskManager:
 
         Args:
             websocket_manager: WS stream manager for DSE metrics.
+
         """
         self.websocket_manager = websocket_manager
         self._active_task: asyncio.Task[Any] | None = None
@@ -43,6 +45,7 @@ class DSETaskManager:
 
         Returns:
             A callback closure matching the DSE optimizer callback interface.
+
         """
 
         def callback(payload: dict[str, Any], configs: list[SimulationConfig]) -> None:
@@ -60,6 +63,7 @@ class DSETaskManager:
 
         Args:
             config: Base simulation config blueprint.
+
         """
         if self._active_task is not None and not self._active_task.done():
             logger.warning("Attempted to start DSE task, but one is already running.")
@@ -107,6 +111,7 @@ def get_dse_manager(ws_manager: "DSEStreamManager") -> DSETaskManager:
 
     Returns:
         The singleton DSETaskManager instance.
+
     """
     global dse_task_manager
     if dse_task_manager is None:

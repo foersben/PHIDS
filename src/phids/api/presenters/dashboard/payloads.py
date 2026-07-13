@@ -56,6 +56,7 @@ def build_live_dashboard_payload(
         ``all_flora_species``, ``signal_overlay``, ``toxin_overlay``, ``max_signal``,
         ``max_toxin``, ``plants``, ``mycorrhizal_links``, ``swarms``, ``terminated``,
         ``termination_reason``, ``running``, and ``paused``.
+
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
