@@ -205,9 +205,8 @@
             <span id="canvas-mode-badge" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium whitespace-nowrap">Preview</span>
             <div class="w-px h-4 bg-slate-300 ml-1"></div>
           </div>
-          <span id="sim-status"
-            hx-get="/api/ui/status-badge" hx-trigger="every 2s" hx-swap="outerHTML"
-            class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500">Idle</span>
+          <span id="sim-status" style="display:none!important"></span>
+
         </div>
       </header>
 
