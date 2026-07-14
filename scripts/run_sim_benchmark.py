@@ -264,13 +264,28 @@ def run_compare(
                 else:
                     tps = "N/A"
                     dur_str = "N/A"
-                print(f"{ref:<30} | {mode:<10} | {dur_str:<16} | {ticks_val:<11} | {tps:<11}")
+                print(f"{ref:<40} | {mode:<10} | {dur_str:<16} | {ticks_val:<11} | {tps:<11}")
 
         print("\n" + "-" * 80)
         print(f"Evaluation Summary: {scenario_name}")
         print("-" * 80)
         print(f"- Baseline Version:  {base_ref}")
         print(f"- Optimized Version: {opt_ref}")
+
+        mismatch_modes = []
+        for mode in modes:
+            k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+            b_ticks = scenario_res[base_ref].get(k_ticks)
+            o_ticks = scenario_res[opt_ref].get(k_ticks)
+            if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
+                mismatch_modes.append(mode)
+
+        if mismatch_modes:
+            print(f"- [WARNING]: TICK COUNT MISMATCH DETECTED ({', '.join(mismatch_modes)})")
+            print("             The simulations terminated at different points.")
+            print("             Comparing 'Avg Ticks/s' is highly biased as the")
+            print("             computational load per tick often changes over time.")
+
         print("-" * 80)
 
         for mode in modes:
@@ -315,6 +330,23 @@ def run_compare(
         print("=" * 80)
         print(f"- Baseline Version:  {base_ref}")
         print(f"- Optimized Version: {opt_ref}")
+
+        global_mismatches = False
+        for scenario_path in scenarios:
+            scen_res = results[scenario_path]
+            for mode in modes:
+                k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+                b_ticks = scen_res[base_ref].get(k_ticks)
+                o_ticks = scen_res[opt_ref].get(k_ticks)
+                if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
+                    global_mismatches = True
+                    break
+
+        if global_mismatches:
+            print("- [WARNING]: TICK MISMATCHES DETECTED IN ONE OR MORE SCENARIOS")
+            print("             The overall average speed comparison is biased.")
+            print("             Behavioral outcomes diverged between the branches.")
+
         print("-" * 80)
 
         for mode in modes:
