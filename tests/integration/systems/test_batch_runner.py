@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Tests for the headless Monte Carlo batch runner.
 
 This test module validates the correctness of :mod:`phids.engine.batch`,

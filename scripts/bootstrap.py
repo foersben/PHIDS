@@ -41,7 +41,7 @@ def bootstrap() -> None:
     else:
         # mkdir(parents=True) will automatically create .cache/ and act-artifacts/ if missing
         cache_dir.mkdir(parents=True, exist_ok=True)
-        gitkeep_file.write_text("# act artifact store — contents are gitignored\n")
+        gitkeep_file.write_text("# act artifact store - contents are gitignored\n")
         print("   🆕 Restored .cache/act-artifacts/ and .gitkeep file.")
 
     print("\n🎉 Local setup complete! You can now run your local 'act' workflows safely.")

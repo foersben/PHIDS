@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Substance ECS component dataclass encoding chemical-defense synthesis and activation state.
 
 This module defines :class:`SubstanceComponent`, the data container attached to substance
@@ -51,6 +54,7 @@ class SubstanceComponent:
         irreversible: Whether activation remains permanently on once active.
         triggered_this_tick: Whether the trigger condition was satisfied in the
             current signaling pass.
+
     """
 
     entity_id: int

@@ -9,7 +9,7 @@ data-oriented engine core, strict state invariants, and reproducible telemetry s
 scenario outcomes can be interpreted as traceable computational experiments rather than opaque
 animation artifacts.
 
-Current release line: `v0.7.0`.
+Current release line: `v0.8.0`.
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions)
@@ -42,7 +42,7 @@ Rather than assuming instant global communication, PHIDS utilizes continuous rea
 
 ### Chemotactic Foraging & Trophic Defenses
 
-Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis–sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Plants can counter this by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
+Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis-sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Plants can counter this by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
 
 * **Morphological Defenses (Passive):** Features like spines (inflicting mechanical damage) or tough lignin (digestibility modifiers that cause caloric attenuation during feeding).
 * **Chemical Defenses (Active):** When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem. Or, under high stress, a plant might initiate *resource withdrawal* to mask its apparent nutritional value.
@@ -61,8 +61,8 @@ The FastAPI ingress boundary is strictly guarded by **Pydantic V2** schemas (`_c
 
 Primary state owners:
 
-* `src/phids/engine/core/ecs.py` (`ECSWorld`) – discrete entities and $O(1)$ spatial hash queries.
-* `src/phids/engine/core/biotope.py` (`GridEnvironment`) – vectorized field layers with read/write double-buffering.
+* `src/phids/engine/core/ecs.py` (`ECSWorld`) - discrete entities and $O(1)$ spatial hash queries.
+* `src/phids/engine/core/biotope.py` (`GridEnvironment`) - vectorized field layers with read/write double-buffering.
 
 To ensure exact determinism and reproducibility, the engine executes a strict phase sequence:
 
@@ -344,6 +344,11 @@ packaging/              PyInstaller configuration
 
 ---
 
-## 📄 License
+## 📄 Licensing
 
-MIT. See [`LICENSE`](LICENSE).
+This project is dual-licensed under the following terms:
+
+* **Open-Source Tier:** Available for academic, scientific, and non-commercial validation under the copyleft terms of the [EUPL-1.2](./LICENSE).
+* **Commercial Tier:** For integration into proprietary closed-source systems, SaaS distribution, or monetization outside the scope of the EUPL-1.2, a proprietary commercial license is required.
+
+  Please contact [Benjamin Förster](https://foersben.github.io/PHIDS/) to request a commercial license template and pricing.

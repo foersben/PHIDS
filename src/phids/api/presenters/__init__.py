@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Presenter sub-package for PHIDS API payload assembly.
 
 This package encapsulates the transformation of live ECS world state and draft configuration data
@@ -10,7 +13,7 @@ The canonical entry point is :mod:`phids.api.presenters.dashboard`, which expose
 :func:`~phids.api.presenters.dashboard.build_live_cell_details`,
 :func:`~phids.api.presenters.dashboard.build_preview_cell_details`, and
 :func:`~phids.api.presenters.dashboard.build_live_dashboard_payload`.  Each function accepts
-explicit, dependency-injected arguments — most notably a ``substance_names`` mapping — rather than
+explicit, dependency-injected arguments - most notably a ``substance_names`` mapping - rather than
 reading module-level mutable state, thereby supporting deterministic, side-effect-free unit testing
 without requiring a running FastAPI application.
 """

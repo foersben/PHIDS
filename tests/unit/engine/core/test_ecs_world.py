@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit tests for the PHIDS Entity-Component-System registry and spatial hash invariants.
 
 This module validates the core data-structural invariants of :class:`~phids.engine.core.ecs.ECSWorld`:
@@ -5,7 +8,7 @@ correct entity lifecycle management (creation, destruction, component attachment
 component index consistency under entity garbage collection, and the O(1) spatial hash operations
 (``register_position``, ``move_entity``, ``entities_at``, ``unregister_position``) that underpin
 all locality-based ecological interactions in the PHIDS engine. The hypothesis under test is that
-the spatial hash provides strictly consistent membership semantics — an entity registered at
+the spatial hash provides strictly consistent membership semantics - an entity registered at
 coordinates (x, y) must appear in ``entities_at(x, y)`` and must not appear at any other
 coordinate, and must be absent from all cells after garbage collection removes it.
 """

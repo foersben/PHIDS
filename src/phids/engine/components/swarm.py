@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Herbivore swarm ECS component dataclass encoding per-entity herbivore runtime state.
 
 This module defines :class:`SwarmComponent`, the data container attached to every herbivore
@@ -40,12 +43,13 @@ class SwarmComponent:
         consumption_rate: Per-tick consumption scalar.
         reproduction_energy_divisor: Species-level growth throttle.
         energy_upkeep_per_individual: Metabolic upkeep scalar applied each tick.
-        split_population_threshold: Explicit population threshold for mitosis (<=0 keeps legacy rule).
+        split_population_threshold: Explicit population threshold for mitosis.
         repelled: Whether the swarm is currently repelled by toxin.
         repelled_ticks_remaining: Remaining ticks of repelled behavior.
         move_cooldown: Ticks remaining until the next movement.
         last_dx: Last movement delta on the x-axis (-1, 0, 1).
         last_dy: Last movement delta on the y-axis (-1, 0, 1).
+
     """
 
     entity_id: int

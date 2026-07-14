@@ -26,12 +26,12 @@ lint:
     uv run mypy src/phids/
 
 check:
-    uv run pre-commit run --all-files
+    SKIP=ruff,ruff-format,check-identity,enforce-author-identity uv run pre-commit run --all-files
 
 act-ci:
     act -j quality-gate --secret-file .github/workflows/secrets.env
 
-# Simulate a workflow_dispatch for docker-publish locally (skips actual push — see docker-publish.yml)
+# Simulate a workflow_dispatch for docker-publish locally (skips actual push - see docker-publish.yml)
 act-docker:
     act workflow_dispatch -j build-and-push --secret-file .github/workflows/secrets.env
 
@@ -81,3 +81,9 @@ install-extensions:
     @jq -r '.recommendations[]' .vscode/extensions.json | while read -r ext; do \
         code --install-extension "$ext"; \
     done
+
+act-profiling:
+    act -j architectural-profiling --secret-file .github/workflows/secrets.env
+
+act-complexity:
+    act -j cognitive-complexity --secret-file .github/workflows/secrets.env

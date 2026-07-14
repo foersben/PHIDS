@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Test coverage for PHIDS DraftState and UI state mutation invariants.
 
 This module implements unit tests for the PHIDS DraftState and UI state mutation logic.

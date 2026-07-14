@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Genotype definitions representing the ecosystem design space.
 
 Defines structural and parametric genes representing discrete choices and
@@ -18,6 +21,7 @@ class StructuralGenes(BaseModel):
         herbivore_placement: Spatial distribution strategy for herbivores.
         diet_matrix: A 16x16 boolean matrix defining diet compatibility.
         trigger_matrix: A 16x16 integer mapping of defensive trigger rules.
+
     """
 
     flora_placement: PlacementStrategy
@@ -40,6 +44,7 @@ class StructuralGenes(BaseModel):
 
         Raises:
             ValueError: If the matrix violates the 16x16 dimension limits.
+
         """
         if len(matrix) > 16 or any(len(row) > 16 for row in matrix):
             raise ValueError("Matrix violates the Rule of 16 bounds.")
@@ -52,6 +57,7 @@ class ParametricGenes(BaseModel):
     Attributes:
         flora_traits: Dictionary mapping flora species to their trait profiles.
         herbivore_traits: Dictionary mapping herbivore species to their trait profiles.
+
     """
 
     flora_traits: dict[str, FloraProfile]
@@ -65,6 +71,7 @@ class DSEGenotype(BaseModel):
         scenario_name: Name of the candidate scenario.
         structural: The structural/discrete genes component.
         parametric: The parametric/continuous genes component.
+
     """
 
     scenario_name: str = "DSE_Candidate"

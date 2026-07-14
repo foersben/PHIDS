@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Dashboard presenter for full telemetry/UI payload.
 
 Assembles and serializes the complete live dashboard state (flora/swarm populations,
@@ -8,8 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.api.presenters.dashboard.helpers import _coerce_int
 from phids.api.presenters.dashboard.mycorrhizal import _build_live_mycorrhizal_links
+from phids.api.presenters.dashboard.shared import _coerce_int
 from phids.api.presenters.dashboard.substances import _is_live_substance_visible
 
 if TYPE_CHECKING:
@@ -56,6 +59,7 @@ def build_live_dashboard_payload(
         ``all_flora_species``, ``signal_overlay``, ``toxin_overlay``, ``max_signal``,
         ``max_toxin``, ``plants``, ``mycorrhizal_links``, ``swarms``, ``terminated``,
         ``termination_reason``, ``running``, and ``paused``.
+
     """
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent

@@ -8,7 +8,7 @@ description: "Roadmap for Database and UI in PHIDS."
 
 # Bio-Database & UI Architecture Roadmap
 
-The Bio-Database serves as the definitive catalog of biological archetypes–the raw genetic material available to the simulation engine and the Design Space Exploration (DSE) optimizer. 
+The Bio-Database serves as the definitive catalog of biological archetypes-the raw genetic material available to the simulation engine and the Design Space Exploration (DSE) optimizer.
 
 ## Current Achieved State (v0.6)
 

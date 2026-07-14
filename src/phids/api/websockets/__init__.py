@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """WebSocket transport managers for PHIDS API streaming surfaces.
 
 This package encapsulates connection-oriented orchestration for the binary simulation stream and

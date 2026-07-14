@@ -67,7 +67,7 @@ still track the actual codebase.
 | Per-tick ecological summary metrics | `phids.telemetry.analytics`, `SimulationLoop` | `docs/technical_architecture/telemetry.md` | `tests/integration/systems/test_termination_and_loop.py`, `tests/unit/telemetry/test_telemetry_per_species.py` |
 | CSV and NDJSON export surfaces | `phids.telemetry.export`, `phids.api.main` | `docs/technical_architecture/telemetry.md`, `docs/technical_architecture/interfaces_and_ui.md` | `tests/unit/telemetry/test_export_helpers.py`, `tests/integration/api/test_api_simulation_and_scenario_routes.py` |
 | Deterministic replay snapshots | `phids.io.zarr_replay`, `SimulationLoop.get_state_snapshot`, `GridEnvironment.to_dict` | `docs/technical_architecture/telemetry.md` | `tests/e2e/replay_and_io/test_zarr_replay.py`, `tests/integration/systems/test_termination_and_loop.py` |
-| Formal `Z1`–`Z7` termination semantics | `phids.telemetry.conditions`, `SimulationLoop` | `docs/technical_architecture/telemetry.md` | `tests/integration/systems/test_termination_and_loop.py` |
+| Formal `Z1`-`Z7` termination semantics | `phids.telemetry.conditions`, `SimulationLoop` | `docs/technical_architecture/telemetry.md` | `tests/integration/systems/test_termination_and_loop.py` |
 
 ## Quality and Documentation Requirements
 

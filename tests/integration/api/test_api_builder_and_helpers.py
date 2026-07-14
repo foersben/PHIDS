@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Experimental validation suite for test api builder and helpers.
 
 This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Biotope configuration routes."""
 
 from __future__ import annotations
@@ -40,15 +43,15 @@ async def config_biotope(
     """Persist biotope parameters to the draft and return the updated partial.
 
     Args:
-        request: Starlette request.
-        grid_width: Grid width.
-        grid_height: Grid height.
-        max_ticks: Tick budget.
+        request: The raw Starlette ASGI request object used for accessing underlying state.
+        grid_width: The horizontal bounds of the simulation grid environment.
+        grid_height: The vertical bounds of the simulation grid environment.
+        max_ticks: The maximum number of simulation ticks (time steps) allowed for the execution budget.
         tick_rate_hz: WebSocket stream rate.
         wind_x: Uniform wind x-component.
         wind_y: Uniform wind y-component.
-        num_signals: Signal layer count.
-        num_toxins: Toxin layer count.
+        num_signals: The total number of distinct signal (e.g. chemotactic gradients) layers maintained.
+        num_toxins: The total number of distinct toxin (e.g. harmful localized concentrations) layers maintained.
         z2_flora_species_extinction: Flora species id for Z2 termination (-1 disables).
         z4_herbivore_species_extinction: Herbivore species id for Z4 termination (-1 disables).
         z6_max_total_flora_energy: Total flora energy threshold for Z6 termination (-1 disables).

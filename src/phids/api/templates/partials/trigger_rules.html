@@ -114,7 +114,7 @@
   <div class="text-sm text-slate-500 mt-1">
     Each rule defines: when a <strong>plant species</strong> is attacked by a
     <strong>herbivore</strong> with enough population, it synthesises a
-    <strong>substance</strong>. Multiple rules per (plant, herbivore) pair are allowed —
+    <strong>substance</strong>. Multiple rules per (plant, herbivore) pair are allowed -
     they fire simultaneously. Advanced activation gates are configured visually
     as nested trees with <strong>all_of</strong> / <strong>any_of</strong> groups over
     <strong>herbivore_presence</strong> and <strong>substance_active</strong> predicates.
@@ -308,7 +308,7 @@
               {{ render_condition_node(ridx, '', rule.activation_condition, herbivore_species, substances, condition_group_kinds, condition_leaf_kinds) }}
             {% else %}
             <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 space-y-3">
-              <div class="text-xs text-slate-500">No activation gate yet — this rule activates as soon as synthesis completes.</div>
+              <div class="text-xs text-slate-500">No activation gate yet - this rule activates as soon as synthesis completes.</div>
               <div class="flex flex-wrap gap-2">
                 {% for option in condition_group_kinds + condition_leaf_kinds %}
                 <form hx-post="/api/config/trigger-rules/{{ ridx }}/condition/root"
