@@ -241,15 +241,15 @@ def run_compare(
 
     for scenario_path in scenarios:
         scenario_name = os.path.basename(scenario_path)
-        print("\n" + "=" * 80)
+        print("\n" + "=" * 100)
         print(f"Results for Scenario: {scenario_name}")
-        print("=" * 80)
+        print("=" * 100)
         headers = (
             f"{'Commit / Ref':<40} | {'JIT Mode':<10} | "
             f"{'Avg Duration (s)':<16} | {'Total Ticks':<11} | {'Avg Ticks/s':<11}"
         )
         print(headers)
-        print("-" * 80)
+        print("-" * 100)
 
         scenario_res = results[scenario_path]
         for ref, res in scenario_res.items():
@@ -266,9 +266,9 @@ def run_compare(
                     dur_str = "N/A"
                 print(f"{ref:<40} | {mode:<10} | {dur_str:<16} | {ticks_val:<11} | {tps:<11}")
 
-        print("\n" + "-" * 80)
+        print("\n" + "-" * 100)
         print(f"Evaluation Summary: {scenario_name}")
-        print("-" * 80)
+        print("-" * 100)
         print(f"- Baseline Version:  {base_ref}")
         print(f"- Optimized Version: {opt_ref}")
 
@@ -286,7 +286,7 @@ def run_compare(
             print("             Comparing 'Avg Ticks/s' is highly biased as the")
             print("             computational load per tick often changes over time.")
 
-        print("-" * 80)
+        print("-" * 100)
 
         for mode in modes:
             key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
@@ -322,12 +322,12 @@ def run_compare(
                 print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower}.")
             else:
                 print(f"{mode} Mode: N/A (runs failed)")
-            print("-" * 80)
+            print("-" * 100)
 
     if len(scenarios) > 1:
-        print("\n" + "=" * 80)
+        print("\n" + "=" * 100)
         print("Overall Folder Evaluation Summary")
-        print("=" * 80)
+        print("=" * 100)
         print(f"- Baseline Version:  {base_ref}")
         print(f"- Optimized Version: {opt_ref}")
 
@@ -347,7 +347,7 @@ def run_compare(
             print("             The overall average speed comparison is biased.")
             print("             Behavioral outcomes diverged between the branches.")
 
-        print("-" * 80)
+        print("-" * 100)
 
         for mode in modes:
             key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
@@ -394,7 +394,7 @@ def run_compare(
                 print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower} overall.")
             else:
                 print(f"{mode} Mode (All Scenarios Combined): N/A (some runs failed)")
-            print("-" * 80)
+            print("-" * 100)
 
 
 if __name__ == "__main__":
