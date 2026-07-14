@@ -62,7 +62,7 @@ repos:
       - id: ruff
         name: Ruff Code Quality Linting
         args: [ --fix, --show-fixes ]
-        stages: [ commit ]
+        stages: [ pre-commit ]
       - id: ruff-format
         name: Ruff Layout Formatting
-        stages: [ commit ]
+        stages: [ pre-commit ]
