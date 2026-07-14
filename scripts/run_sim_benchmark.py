@@ -245,7 +245,7 @@ def run_compare(
         print(f"Results for Scenario: {scenario_name}")
         print("=" * 80)
         headers = (
-            f"{'Commit / Ref':<39} | {'JIT Mode':<10} | "
+            f"{'Commit / Ref':<40} | {'JIT Mode':<10} | "
             f"{'Avg Duration (s)':<16} | {'Total Ticks':<11} | {'Avg Ticks/s':<11}"
         )
         print(headers)
