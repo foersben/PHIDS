@@ -135,6 +135,9 @@ To protect the simulation engine from performance regressions across refactoring
 #### Features
 
 * **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. Your active branch and uncommitted modifications remain completely untouched.
+* **Worktree Benchmarking:** Use the exact string `worktree` as a reference to automatically benchmark against your current, uncommitted working tree state without relying on the virtual clone.
+* **Directory Support:** Pass a directory instead of a single scenario file to automatically locate and benchmark every JSON scenario inside the folder, generating an overall folder evaluation summary.
+* **JIT-Only Mode:** Use `just bench-compare-jit` or pass `--jit-only` to skip the slow pure Python evaluations, drastically cutting down testing time.
 * **Warmup Phase:** Simulates 10 warmup ticks prior to starting the timer to allow JIT compilation to complete, ensuring the JIT measurements track execution throughput, not compiling latency.
 * **Statistical Averaging:** Supports repeating the benchmark runs multiple times to compute average durations, reducing measurement noise.
 
@@ -143,13 +146,27 @@ To protect the simulation engine from performance regressions across refactoring
 Run the comparison benchmark directly using:
 
 ```bash
-just bench-compare <ref1> <ref2> <scenario_path> [ticks] [repeats] [warmup]
+just bench-compare <ref1> <ref2> <scenario_or_dir> [ticks] [repeats] [warmup]
 ```
 
-Example comparing two commit hashes with 500 ticks repeated 3 times:
+Or run the faster JIT-only alternative:
 
 ```bash
-just bench-compare 17d6980299102e5259fd752ade5ab2f1430b0e17 f3d066a886e994934066fafd6be4ba12899e772e examples/rectangular_crossfire_extended.json 500 3
+just bench-compare-jit <ref1> <ref2> <scenario_or_dir> [ticks] [repeats] [warmup]
+```
+
+**Examples:**
+
+Comparing two commit hashes using a single scenario (500 ticks repeated 3 times):
+
+```bash
+just bench-compare 17d6980 f3d066a examples/rectangular_crossfire_extended.json 500 3
+```
+
+Comparing an old commit against your current uncommitted changes using all scenarios in a folder (JIT-only):
+
+```bash
+just bench-compare-jit 17d6980 worktree examples/ 100 5
 ```
 
 ### Concurrency, WebSockets, & State Pollution

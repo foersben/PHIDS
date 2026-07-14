@@ -245,7 +245,7 @@ def run_compare(
         print(f"Results for Scenario: {scenario_name}")
         print("=" * 80)
         headers = (
-            f"{'Commit / Ref':<30} | {'JIT Mode':<10} | "
+            f"{'Commit / Ref':<39} | {'JIT Mode':<10} | "
             f"{'Avg Duration (s)':<16} | {'Total Ticks':<11} | {'Avg Ticks/s':<11}"
         )
         print(headers)
@@ -372,12 +372,18 @@ if __name__ == "__main__":
     1. A single run benchmark on the current directory
     2. A branch comparison between two git refs/commits
     3. A virtual repository clone using git --shared for efficient comparison
+    4. Support for 'worktree' keyword to safely benchmark the current uncommitted state
     """
     parser = argparse.ArgumentParser(description="PHIDS Simulation Benchmark and Branch Comparer")
 
     parser.add_argument("scenario", help="Path to scenario JSON file or directory containing JSON files")
     parser.add_argument("ticks", type=int, nargs="?", default=100, help="Number of ticks to simulate")
-    parser.add_argument("--compare", nargs=2, metavar=("REF1", "REF2"), help="Compare two git refs/commits")
+    parser.add_argument(
+        "--compare",
+        nargs=2,
+        metavar=("REF1", "REF2"),
+        help="Compare two git refs/commits (use 'worktree' for current uncommitted state)",
+    )
     parser.add_argument("--repeats", "-r", type=int, default=1, help="Number of times to repeat the run for averaging")
     parser.add_argument(
         "--warmup", "-w", type=int, default=10, help="Number of warmup ticks to compile JIT before timing"
