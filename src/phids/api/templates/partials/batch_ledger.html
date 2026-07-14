@@ -36,7 +36,7 @@
             <span class="text-slate-500">{{ job.completed }}/{{ job.total }}</span>
           </div>
         </td>
-        <td class="py-1.5 pr-3 text-slate-400">{{ job.started_at[:16] if job.started_at else '—' }}</td>
+        <td class="py-1.5 pr-3 text-slate-400">{{ job.started_at[:16] if job.started_at else '-' }}</td>
         <td class="py-1.5">
           {% if job.status == 'done' %}
           <div class="flex gap-1" onclick="event.stopPropagation()">

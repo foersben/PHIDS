@@ -15,8 +15,8 @@ component access, maintaining strict separation between signal propagation and e
 
 Swarm movement is governed by probabilistic sampling over the 4-connected Von-Neumann
 neighbourhood, weighted by the scalar flow-field gradient encoded in ``GridEnvironment.flow_field``.
-When the local gradient range falls below the numerical threshold of 1x10^-6 — indicating a
-chemically flat or saturated zone — movement inertia encoded in ``SwarmComponent.last_dx`` /
+When the local gradient range falls below the numerical threshold of 1x10^-6 - indicating a
+chemically flat or saturated zone - movement inertia encoded in ``SwarmComponent.last_dx`` /
 ``SwarmComponent.last_dy`` introduces a directional persistence bias, approximating the
 klinokinetic orientation behaviour observed in real arthropod foragers navigating low-stimulus
 environments. Tile carrying capacity (``TILE_CARRYING_CAPACITY``) imposes a local density ceiling
@@ -355,15 +355,15 @@ def _perform_mitosis(
 ) -> SwarmComponent:
     """Split an oversized swarm into two equal daughter colonies via binary fission.
 
-    Colony fission — the division of a supercolony that has exceeded its reproductive threshold
-    into two independent daughter swarms — is a fundamental demographic event in social insect
+    Colony fission - the division of a supercolony that has exceeded its reproductive threshold
+    into two independent daughter swarms - is a fundamental demographic event in social insect
     biology and clonal arthropod populations. This function implements the discrete analogue of
     that process within the ECS framework: the parent swarm retains ⌊n/2⌋ individuals and half
     the accumulated energy, while a new entity carrying a ``SwarmComponent`` with the complementary
     moiety is allocated, registered in the ECS world, and inserted into the spatial hash at a
-    stochastically sampled adjacent cell. All heritable phenotypic parameters — ``energy_min``,
+    stochastically sampled adjacent cell. All heritable phenotypic parameters - ``energy_min``,
     ``velocity``, ``consumption_rate``, ``reproduction_energy_divisor``,
-    ``energy_upkeep_per_individual``, and ``split_population_threshold`` — are copied verbatim to
+    ``energy_upkeep_per_individual``, and ``split_population_threshold`` - are copied verbatim to
     the offspring, reflecting the clonal genetic identity of the daughter colony. The energy
     partition is strictly symmetric (each colony receives exactly half of the parent pool) to
     conserve total simulated biomass across the fission event. Offspring placement via
@@ -428,9 +428,9 @@ def run_interaction(
 
     This function is the primary entry point for the interaction system and orchestrates the full
     herbivore-flora encounter resolution cycle for a single simulation tick. The seven sequential
-    sub-phases — movement cooldown, gradient-directed navigation with anchoring, herbivorous
+    sub-phases - movement cooldown, gradient-directed navigation with anchoring, herbivorous
     feeding, metabolic attrition, mortality evaluation, net-assimilation reproduction, and colony
-    fission — are applied atomically to each swarm entity in sequence. The ordering is a strict
+    fission - are applied atomically to each swarm entity in sequence. The ordering is a strict
     architectural invariant grounded in ecological causality: entities must first attempt movement
     before feeding is evaluated (stationary swarms only feed), and reproduction is assessed only
     after attrition has resolved the energy budget, ensuring that population gains are never

@@ -102,7 +102,7 @@ jobs:
             type=sha
 
       # Local-only build: verify Dockerfile compiles without pushing or calling GitHub API
-      - name: Build Docker image (local act only — no push)
+      - name: Build Docker image (local act only - no push)
         if: ${{ env.ACT }}
         run: |
           docker buildx build --platform linux/amd64 -t phids:act-local . --load

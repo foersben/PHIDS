@@ -16,7 +16,7 @@ The activation-condition sub-schema forms a recursive algebraic type tree compos
 ``HerbivorePresenceConditionSchema``, ``SubstanceActiveConditionSchema``,
 ``EnvironmentalSignalConditionSchema``, ``AllOfConditionSchema``, and ``AnyOfConditionSchema``
 nodes, discriminated by the ``kind`` literal field. This tree is evaluated at runtime by the
-signaling system to support compound chemical-defense cascades — for example, alarm-chain
+signaling system to support compound chemical-defense cascades - for example, alarm-chain
 scenarios in which a secondary toxin activates only after a primary VOC signal is already present.
 
 ``SimulationConfig`` is the authoritative configuration container; its ``model_validator`` enforces

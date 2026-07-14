@@ -61,7 +61,7 @@ def test_signal_diffusion_fast_path_clears_stale_write_buffer_state() -> None:
     buffer; otherwise, the subsequent double-buffer swap would resurrect stale concentration mass from
     a previous tick, constituting a ghost-plume artefact. The test seeds a non-zero signal, advances
     one diffusion tick, manually quiesces the read layer, and verifies that a second diffusion pass
-    yields a strictly zero field — confirming that the fast path does not preserve stale write-buffer
+    yields a strictly zero field - confirming that the fast path does not preserve stale write-buffer
     state across buffer swaps.
     """
     env = GridEnvironment(width=6, height=6, num_signals=1, num_toxins=1)

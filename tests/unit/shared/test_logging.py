@@ -4,7 +4,7 @@
 """Tests for PHIDS structured logging, in-memory log buffer, and simulation debug interval configuration.
 
 This module validates the observability infrastructure of the PHIDS runtime. The primary
-hypotheses are: (1) ``configure_logging`` is idempotent — repeated calls do not add duplicate
+hypotheses are: (1) ``configure_logging`` is idempotent - repeated calls do not add duplicate
 handlers or alter the effective log level; (2) ``InMemoryLogHandler`` accumulates structured
 entries in FIFO order up to the configured capacity and returns them newest-first from
 ``get_recent_logs``; (3) ``get_simulation_debug_interval`` correctly reads and validates the

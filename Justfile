@@ -31,7 +31,7 @@ check:
 act-ci:
     act -j quality-gate --secret-file .github/workflows/secrets.env
 
-# Simulate a workflow_dispatch for docker-publish locally (skips actual push — see docker-publish.yml)
+# Simulate a workflow_dispatch for docker-publish locally (skips actual push - see docker-publish.yml)
 act-docker:
     act workflow_dispatch -j build-and-push --secret-file .github/workflows/secrets.env
 
