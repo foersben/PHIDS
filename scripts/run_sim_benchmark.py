@@ -296,6 +296,61 @@ def run_compare(
                 print(f"{mode} Mode: N/A (runs failed)")
             print("-" * 80)
 
+    if len(scenarios) > 1:
+        print("\n" + "=" * 80)
+        print("Overall Folder Evaluation Summary")
+        print("=" * 80)
+        print(f"- Baseline Version:  {base_ref}")
+        print(f"- Optimized Version: {opt_ref}")
+        print("-" * 80)
+
+        for mode in modes:
+            key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
+            key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+
+            total_base_dur = 0.0
+            total_base_ticks = 0
+            total_opt_dur = 0.0
+            total_opt_ticks = 0
+
+            all_valid = True
+            for scenario_path in scenarios:
+                scen_res = results[scenario_path]
+                b_dur_val = scen_res[base_ref][key_dur]
+                b_ticks_val = scen_res[base_ref][key_ticks]
+                o_dur_val = scen_res[opt_ref][key_dur]
+                o_ticks_val = scen_res[opt_ref][key_ticks]
+
+                if (
+                    b_dur_val is not None
+                    and o_dur_val is not None
+                    and b_ticks_val is not None
+                    and o_ticks_val is not None
+                    and b_dur_val > 0
+                    and o_dur_val > 0
+                ):
+                    total_base_dur += float(b_dur_val)
+                    total_base_ticks += int(b_ticks_val)
+                    total_opt_dur += float(o_dur_val)
+                    total_opt_ticks += int(o_ticks_val)
+                else:
+                    all_valid = False
+
+            if all_valid and total_base_dur > 0 and total_opt_dur > 0:
+                base_tps = (total_base_ticks / repeats) / total_base_dur
+                opt_tps = (total_opt_ticks / repeats) / total_opt_dur
+
+                diff_pct = ((opt_tps - base_tps) / base_tps) * 100
+                faster_slower = "faster" if diff_pct >= 0 else "slower"
+
+                print(f"{mode} Mode (All Scenarios Combined):")
+                print(f"  * Baseline:  {base_tps:.2f} ticks/s ({total_base_dur:.4f}s total)")
+                print(f"  * Optimized: {opt_tps:.2f} ticks/s ({total_opt_dur:.4f}s total)")
+                print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower} overall.")
+            else:
+                print(f"{mode} Mode (All Scenarios Combined): N/A (some runs failed)")
+            print("-" * 80)
+
 
 if __name__ == "__main__":
     """Command-line interface for running PHIDS benchmarks.
