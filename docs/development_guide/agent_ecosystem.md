@@ -26,8 +26,8 @@ MCP defines the strict technical surface connecting the repository tooling to th
 
 It consists of three distinct classes:
 
-- **Resources**: Read-only contexts providing state visibility without execution side effects (e.g., test suite reports, architectural constraints, legacy provenance).
-- **Tools**: Executable actions governed by safety barriers. These actively modify the repository or the runtime environment.
-- **Prompts**: Standardized instructions utilized during specific triage operations to improve consistency.
+- **Resources**: Read-only contexts providing state visibility without execution side effects. For example, `phids://config/draft.json` exposes the full active scenario draft configuration without spending a tool-call budget.
+- **Tools**: Executable actions governed by safety barriers. These actively inspect the repository or the runtime environment. Available tools include `runtime_snapshot` (enhanced counts and dimensions), `inspect_telemetry_schema` (Zarr data layout visibility), `validate_okf_compliance` (pre-commit aligned constraint verification), and `query_diagnostic_logs`.
+- **Prompts**: Standardized instructions utilized during specific triage operations to improve consistency (e.g., `analyze_simulation_drift` for debugging workflow bootstrapping).
 
 Agents do not execute generic, arbitrary operations; rather, they rely on specifically registered MCP Tools assigned to their governance role to affect the repository deterministically.

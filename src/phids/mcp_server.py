@@ -78,11 +78,8 @@ def _draft_to_json(draft: DraftState) -> str:
     """
 
     def _default(obj: object) -> Any:
-        # Pydantic BaseModel instances expose model_dump(); call via class method
-        # lookup to satisfy both mypy and ruff's getattr-constant rule.
-        model_dump = type(obj).__dict__.get("model_dump")
-        if callable(model_dump):
-            return model_dump(obj)
+        if hasattr(obj, "model_dump"):
+            return cast("Any", obj).model_dump()
         # Nested stdlib dataclasses that slipped past dataclasses.asdict recursion
         if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
             return dataclasses.asdict(obj)
