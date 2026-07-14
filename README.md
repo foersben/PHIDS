@@ -85,7 +85,7 @@ Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS 
 
 ### Agentic Integration: MCP Server Support
 
-PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely read the active configuration (`phids://config/draft.json`), inspect execution parameters (`runtime_snapshot`), validate telemetry structures (`inspect_telemetry_schema`), query structured logs (`query_diagnostic_logs`), and enforce architectural constraints (`validate_okf_compliance`). This enables autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
+PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration) and query `recent_logs()`. This enables autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
 
 ### 🧬 Evolutionary Design Space Exploration (DSE)
 
@@ -346,4 +346,9 @@ packaging/              PyInstaller configuration
 
 ## 📄 Licensing
 
-This project is dual-licensed. It is publicly available under the strict copyleft terms of the EUPL-1.2. For commercial use, integration into proprietary closed-source software, or network-based monetization outside the scope of the EUPL, a proprietary commercial license is available.
+This project is dual-licensed under the following terms:
+
+* **Open-Source Tier:** Available for academic, scientific, and non-commercial validation under the copyleft terms of the [EUPL-1.2](./LICENSE).
+* **Commercial Tier:** For integration into proprietary closed-source systems, SaaS distribution, or monetization outside the scope of the EUPL-1.2, a proprietary commercial license is required.
+
+  Please contact [Benjamin Förster](https://foersben.github.io/PHIDS/) to request a commercial license template and pricing.

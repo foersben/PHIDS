@@ -9,11 +9,11 @@ the engine's single-writer architecture.
 
 Architecture overview
 ---------------------
-- **Resources** – Declarative, passively-read context feeds that consuming
+- **Resources** - Declarative, passively-read context feeds that consuming
   agents can cache and reference without spending a tool-call budget.
-- **Tools** – Targeted execution primitives for read-only inspection,
+- **Tools** - Targeted execution primitives for read-only inspection,
   validation, and diagnostics.
-- **Prompts** – Pre-baked guidance fragments that wire the above surfaces
+- **Prompts** - Pre-baked guidance fragments that wire the above surfaces
   into coherent agentic workflows.
 
 The MCP server runs as a headless stdio process completely decoupled from the
@@ -49,7 +49,7 @@ mcp = FastMCP(
     instructions=(
         "Read-only MCP surface for the PHIDS plant-herbivore simulation engine. "
         "Use the phids://config/draft.json resource for passive context reads before "
-        "invoking tools. Tools are scoped to inspection and validation only – never "
+        "invoking tools. Tools are scoped to inspection and validation only - never "
         "attempt to mutate engine state through this interface."
     ),
 )
@@ -89,7 +89,7 @@ def _draft_to_json(draft: DraftState) -> str:
 
 
 # ===========================================================================
-# 1. RESOURCES – declarative context data feeds
+# 1. RESOURCES - declarative context data feeds
 # ===========================================================================
 
 
@@ -109,7 +109,7 @@ def active_draft_resource() -> str:
 
 
 # ===========================================================================
-# 2. TOOLS – actionable inspection primitives
+# 2. TOOLS - actionable inspection primitives
 # ===========================================================================
 
 
@@ -163,8 +163,8 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
             directory.
 
     Returns:
-        dict[str, Any]: On success – ``status``, ``store_path``, ``frame_count``,
-        ``tree_keys``, and ``store_attrs``.  On failure – ``status`` and
+        dict[str, Any]: On success - ``status``, ``store_path``, ``frame_count``,
+        ``tree_keys``, and ``store_attrs``.  On failure - ``status`` and
         ``message``.
 
     """
@@ -197,8 +197,8 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
                 elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
                     inner = meta_obj["_metadata"]
                     frame_count = len(inner) if isinstance(inner, list) else 0
-            except Exception:  # pragma: no cover – corrupt metadata
-                frame_count = -1  # Corrupt metadata – indicate uncertainty
+            except Exception:  # pragma: no cover - corrupt metadata
+                frame_count = -1  # Corrupt metadata - indicate uncertainty
 
         store_attrs: dict[str, Any] = dict(root.attrs) if root.attrs else {}
 
@@ -283,7 +283,7 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
 
 
 # ===========================================================================
-# 3. PROMPTS – pre-baked agent guidance
+# 3. PROMPTS - pre-baked agent guidance
 # ===========================================================================
 
 
