@@ -173,31 +173,36 @@ def run_compare(
     results: dict[str, dict[str, dict[str, float | int | None]]] = {}
     try:
         for ref in [ref1, ref2]:
-            print(f"\n[Virtual Clone] Checking out '{ref}'...")
-            git_cmd(["checkout", "-f", ref], cwd=clone_path)
-
-            # Since checking out old commits might delete the script copy, re-copy it to be safe
-            shutil.copy2(__file__, os.path.join(clone_path, "scripts", "run_sim_benchmark.py"))
+            if ref.lower() == "worktree":
+                print(f"\n[Working Tree] Using current uncommitted state for '{ref}'...")
+                target_cwd = "."
+                env_label = "Working Tree"
+            else:
+                print(f"\n[Virtual Clone] Checking out '{ref}'...")
+                git_cmd(["checkout", "-f", ref], cwd=clone_path)
+                # Since checking out old commits might delete the script copy, re-copy it to be safe
+                shutil.copy2(__file__, os.path.join(clone_path, "scripts", "run_sim_benchmark.py"))
+                target_cwd = clone_path
+                env_label = "Virtual Clone"
 
             for scenario_path in scenarios:
                 if scenario_path not in results:
                     results[scenario_path] = {}
 
                 print(
-                    f"[Virtual Clone] Running benchmark on '{ref}' (JIT enabled) "
-                    f"for {os.path.basename(scenario_path)}..."
+                    f"[{env_label}] Running benchmark on '{ref}' (JIT enabled) for {os.path.basename(scenario_path)}..."
                 )
                 jit_dur, jit_ticks = run_in_subprocess(
-                    clone_path, scenario_path, num_ticks, disable_jit=False, repeats=repeats, warmup=warmup
+                    target_cwd, scenario_path, num_ticks, disable_jit=False, repeats=repeats, warmup=warmup
                 )
 
                 if not jit_only:
                     print(
-                        f"[Virtual Clone] Running benchmark on '{ref}' (JIT disabled) "
+                        f"[{env_label}] Running benchmark on '{ref}' (JIT disabled) "
                         f"for {os.path.basename(scenario_path)}..."
                     )
                     nojit_dur, nojit_ticks = run_in_subprocess(
-                        clone_path, scenario_path, num_ticks, disable_jit=True, repeats=repeats, warmup=warmup
+                        target_cwd, scenario_path, num_ticks, disable_jit=True, repeats=repeats, warmup=warmup
                     )
                 else:
                     nojit_dur, nojit_ticks = None, 0
@@ -214,8 +219,16 @@ def run_compare(
 
     # Determine more recent vs less recent commit/ref using git logs
     try:
-        time_ref1 = int(git_cmd(["log", "-1", "--format=%ct", ref1]))
-        time_ref2 = int(git_cmd(["log", "-1", "--format=%ct", ref2]))
+        if ref1.lower() == "worktree":
+            time_ref1 = float("inf")
+        else:
+            time_ref1 = float(git_cmd(["log", "-1", "--format=%ct", ref1]))
+
+        if ref2.lower() == "worktree":
+            time_ref2 = float("inf")
+        else:
+            time_ref2 = float(git_cmd(["log", "-1", "--format=%ct", ref2]))
+
         if time_ref1 >= time_ref2:
             opt_ref, base_ref = ref1, ref2
         else:
