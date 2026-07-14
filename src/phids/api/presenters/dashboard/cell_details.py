@@ -11,16 +11,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.api.presenters.dashboard.helpers import (
-    _coerce_int,
-    _default_substance_name,
-    _describe_activation_condition,
-    validate_cell_coordinates,
-)
 from phids.api.presenters.dashboard.mycorrhizal import (
     _build_live_mycorrhizal_links,
     _links_touching_cell,
     build_draft_mycorrhizal_links,
+)
+from phids.api.presenters.dashboard.shared import (
+    _coerce_int,
+    _default_substance_name,
+    _describe_activation_condition,
+    validate_cell_coordinates,
 )
 from phids.api.presenters.dashboard.substances import (
     _fallback_live_substance_payload,
