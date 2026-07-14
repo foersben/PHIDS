@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Experimental validation suite for the PHIDS dashboard presenter layer.
 
 This module constitutes the primary unit-test surface for

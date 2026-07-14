@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Simulation systems sub-package executing per-tick ecological phase logic.
 
 This sub-package implements the three ordered update phases that constitute each simulation tick

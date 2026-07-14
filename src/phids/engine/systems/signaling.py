@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Signaling system: substance synthesis, activation, emission, diffusion, and toxin effects.
 
 This module implements the third and final per-tick simulation phase of the PHIDS engine,

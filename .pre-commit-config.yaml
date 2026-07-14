@@ -33,6 +33,11 @@ repos:
           - tomli
         args: [--ignore-words=.codespell-ignore-words.txt]
 
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.1.2  # The stable 2026 release version
+    hooks:
+      - id: reuse
+
   - repo: local
     hooks:
       - id: ruff-check

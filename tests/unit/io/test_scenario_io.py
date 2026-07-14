@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit checks for scenario helper serialization and deserialization.
 
 This module validates that scenario helper utilities preserve schema-consistent values across

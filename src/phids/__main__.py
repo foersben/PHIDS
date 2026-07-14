@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Command-line entry point for the PHIDS runtime server.
 
 This module defines the process boundary between operating-system invocation and the PHIDS API runtime. It formalizes

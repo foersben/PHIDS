@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
 
 This module implements the principal simulation driver for PHIDS, responsible for advancing the

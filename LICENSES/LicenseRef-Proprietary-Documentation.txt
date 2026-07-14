@@ -1,0 +1,7 @@
+PHIDS Proprietary Documentation License
+
+Copyright (C) 2026 Benjamin Förster. All Rights Reserved.
+
+This document establishes the proprietary copyright protection for all technical documentation, scientific ecosystem model blueprints, mathematical specifications, and agentic framework architectures associated with the PHIDS project.
+
+While the underlying software engine code is provided under a dual-licensing model, no rights are granted under any open-source or commercial code tiers to copy, adapt, translate, or redistribute this written documentation without explicit written authorization from the author.

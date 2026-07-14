@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
 
 components and pre-allocated buffers (Rule of 16). The spatial hash is central to the

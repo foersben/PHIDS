@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Central logging configuration for PHIDS.
 
 The package uses a single idempotent logging bootstrap so API, UI, engine,

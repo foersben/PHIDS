@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Test coverage for PHIDS flow-field computation and signal/toxin propagation invariants.
 
 This module implements unit tests for the PHIDS flow-field computation and signal/toxin

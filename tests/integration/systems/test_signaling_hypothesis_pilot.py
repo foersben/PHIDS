@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Bounded Hypothesis pilot for signaling activation-condition Boolean semantics."""
 
 from __future__ import annotations

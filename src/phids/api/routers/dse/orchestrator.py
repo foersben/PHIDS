@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """DSE orchestrator endpoints.
 
 Defines routes to start, stop, and stream real-time results from the Design Space

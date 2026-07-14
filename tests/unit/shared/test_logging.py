@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Tests for PHIDS structured logging, in-memory log buffer, and simulation debug interval configuration.
 
 This module validates the observability infrastructure of the PHIDS runtime. The primary

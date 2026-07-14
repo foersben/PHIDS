@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Benchmark coverage for live dashboard payload assembly and JSON serialization.
 
 This benchmark measures the end-to-end cost of constructing the live dashboard

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit regression tests for termination-logic branch semantics.
 
 These checks target mutation-prone boundaries and branch ordering in

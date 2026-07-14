@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry export to LaTeX tabular environment.
 
 Formats telemetry dataframes into booktabs LaTeX tabular tables suitable for academic papers.

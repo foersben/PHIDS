@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """FastAPI composition root governing live runtime state and API boundary coordination.
 
 This module defines the canonical PHIDS application object and the mutable singleton references that

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit checks for telemetry export helper round-trips across file and bytes outputs."""
 
 from __future__ import annotations

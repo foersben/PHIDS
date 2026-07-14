@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Performance benchmarks for the O(1) spatial hash entity-at-cell query.
 
 This module measures the wall-clock latency of ``ECSWorld.entities_at(x, y)`` under a 2000-entity

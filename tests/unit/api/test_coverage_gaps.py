@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Targeted branch-coverage tests for low-coverage runtime modules.
 
 The assertions in this module focus on deterministic edge conditions in private helpers

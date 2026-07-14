@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Dashboard presenter for substances and chemical defense states.
 
 Serializes active signal and toxin components, manages state mapping (synthesis,

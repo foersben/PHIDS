@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Input/output sub-package for scenario loading and deterministic replay serialisation.
 
 This sub-package provides two I/O interfaces that bridge persisted configuration data and the

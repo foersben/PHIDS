@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Focused pilot tests for GridEnvironment methods targeted by mutmut."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Unit tests for the PHIDS Entity-Component-System registry and spatial hash invariants.
 
 This module validates the core data-structural invariants of :class:`~phids.engine.core.ecs.ECSWorld`:
