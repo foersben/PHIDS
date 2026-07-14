@@ -127,6 +127,10 @@ cache_dir = ".cache/pytest"
 [tool.coverage.run]
 source = ["src/phids"]
 data_file = ".cache/coverage"
+omit = [
+    "src/phids/api/templates/*",
+    "src/phids/api/static/*",
+]
 
 [tool.coverage.report]
 show_missing = true
