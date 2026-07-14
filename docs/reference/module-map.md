@@ -317,7 +317,7 @@ Narrative docs:
 
 Primary responsibility:
 
-* `Z1`–`Z7` termination checks.
+* `Z1`-`Z7` termination checks.
 
 Key symbols:
 

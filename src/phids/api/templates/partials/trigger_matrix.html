@@ -46,7 +46,7 @@
               class="border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
               <option value="-1"
                 {% if trigger_matrix[flora_idx][herbivore_idx] == -1 %}selected{% endif %}>
-                — none —
+                - none -
               </option>
               {% for sub in substances %}
               <option value="{{ sub.substance_id }}"
@@ -79,7 +79,7 @@
           <li><strong>Rows:</strong> The active flora/plant species in the simulation draft.</li>
           <li><strong>Columns:</strong> The active herbivore species in the simulation draft.</li>
           <li><strong>Dropdown Selection:</strong> Choose which substance is synthesized when the corresponding herbivore attacks the plant species.</li>
-          <li><strong>— none —:</strong> Disables automatic substance synthesis for this (flora, herbivore) pair.</li>
+          <li><strong>- none -:</strong> Disables automatic substance synthesis for this (flora, herbivore) pair.</li>
         </ul>
       </div>
       <div>

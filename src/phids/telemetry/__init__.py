@@ -11,8 +11,8 @@ Chart.js visualisation and Monte Carlo ensemble aggregation. The conditions modu
 (``check_termination``) implements seven rule-based termination criteria (Z1 through Z7) that
 halt simulation execution when configured population, energy, or extinction thresholds are
 reached, enabling hypothesis-driven experimental design with explicit stopping rules. The export
-module provides four output format converters — CSV, NDJSON, PNG (headless Agg matplotlib), and
-PGFPlots LaTeX — that transform Polars and pandas DataFrames into publication-ready artifacts for
+module provides four output format converters - CSV, NDJSON, PNG (headless Agg matplotlib), and
+PGFPlots LaTeX - that transform Polars and pandas DataFrames into publication-ready artifacts for
 peer-reviewed manuscript submission.
 
 The telemetry sub-package is intentionally read-only with respect to engine state: it samples ECS

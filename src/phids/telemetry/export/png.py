@@ -46,14 +46,14 @@ def generate_png_bytes(
 
     Supports five ``plot_type`` modes:
 
-    * ``"timeseries"`` — Overlaid line chart with one series per flora and herbivore
+    * ``"timeseries"`` - Overlaid line chart with one series per flora and herbivore
       species, sharing a common tick x-axis and a left y-axis for population counts.
-    * ``"phasespace"`` — Lotka-Volterra phase-space scatter with ``showLine=True``
+    * ``"phasespace"`` - Lotka-Volterra phase-space scatter with ``showLine=True``
       semantics.
-    * ``"defense_economy"`` — Line chart plotting defense cost divided by total energy
+    * ``"defense_economy"`` - Line chart plotting defense cost divided by total energy
       capacity per flora species.
-    * ``"biomass_stack"`` — Stacked area chart approximating carrying capacity share.
-    * ``"survival_probability"`` — Aggregate batch survival probability (requires ensemble rows).
+    * ``"biomass_stack"`` - Stacked area chart approximating carrying capacity share.
+    * ``"survival_probability"`` - Aggregate batch survival probability (requires ensemble rows).
 
     Args:
         rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
