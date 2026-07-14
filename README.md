@@ -51,7 +51,7 @@ Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage 
 
 ---
 
-## ⚙️ Runtime architecture & strictness improvements (Phase 4)
+## ⚙️ Runtime architecture & strictness improvements
 
 Following recent massive architectural sweeps (Phases 1-4), PHIDS is engineered for uncompromised performance, strict data integrity, and determinism. It uses a deliberately layered runtime architecture centered on `src/phids/engine/loop.py` (`SimulationLoop`).
 
