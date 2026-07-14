@@ -346,4 +346,9 @@ packaging/              PyInstaller configuration
 
 ## 📄 Licensing
 
-This project is dual-licensed. It is publicly available under the strict copyleft terms of the EUPL-1.2. For commercial use, integration into proprietary closed-source software, or network-based monetization outside the scope of the EUPL, a proprietary commercial license is available.
+This project is dual-licensed under the following terms:
+
+* **Open-Source Tier:** Available for academic, scientific, and non-commercial validation under the copyleft terms of the [EUPL-1.2](./LICENSE).
+* **Commercial Tier:** For integration into proprietary closed-source systems, SaaS distribution, or monetization outside the scope of the EUPL-1.2, a proprietary commercial license is required.
+
+  Please contact [Benjamin Förster](https://foersben.github.io/PHIDS/) to request a commercial license template and pricing.
