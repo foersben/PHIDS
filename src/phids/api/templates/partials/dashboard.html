@@ -356,7 +356,7 @@
   }
 
   function formatNumber(value, digits = 2) {
-    if (value == null || Number.isNaN(Number(value))) return '—';
+    if (value == null || Number.isNaN(Number(value))) return '-';
     return Number(value).toFixed(digits);
   }
 
@@ -1013,7 +1013,7 @@
 
     const plants = (preview.plants || []).length;
     const swarms = (preview.swarms || []).length;
-    modeBadge.textContent = plants + swarms > 0 ? `Preview (${plants}🌿 ${swarms}🐛)` : 'Draft – No placements';
+    modeBadge.textContent = plants + swarms > 0 ? `Preview (${plants}🌿 ${swarms}🐛)` : 'Draft - No placements';
     modeBadge.className = plants + swarms > 0
       ? 'px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap bg-blue-100 text-blue-700'
       : 'px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap bg-amber-100 text-amber-700';

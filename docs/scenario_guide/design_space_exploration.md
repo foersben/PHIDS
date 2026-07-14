@@ -163,7 +163,7 @@ Ecosystem stability isn't just a single score. An ecosystem with 1,000 rabbits a
 2. **Maximize Biomass**: We want a healthy amount of total living material.
 3. **Database Similarity**: We want the parameters to look like real-world biology (so we aren't creating "fantasy" creatures).
 
-We use an algorithm called **NSGA-II (Non-dominated Sorting Genetic Algorithm)**. Instead of looking for a single winner, NSGA-II finds a **Pareto Front**–a set of "elite" configurations that represent the best possible trade-offs. For example, one elite might have maximum biomass but slightly higher volatility, while another has perfect stability but lower biomass.
+We use an algorithm called **NSGA-II (Non-dominated Sorting Genetic Algorithm)**. Instead of looking for a single winner, NSGA-II finds a **Pareto Front**-a set of "elite" configurations that represent the best possible trade-offs. For example, one elite might have maximum biomass but slightly higher volatility, while another has perfect stability but lower biomass.
 
 ```mermaid
 graph TD

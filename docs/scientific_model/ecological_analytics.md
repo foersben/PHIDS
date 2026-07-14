@@ -12,7 +12,7 @@ PHIDS converts simulation ticks into comparable, analytical artifacts. The prima
 
 ## 1. The Lotka-Volterra Paradigm
 
-The core engine tracks aggregate metrics–total flora energy, total flora population, and total herbivore population-at the conclusion of every tick.
+The core engine tracks aggregate metrics-total flora energy, total flora population, and total herbivore population-at the conclusion of every tick.
 
 These aggregates are directly inspired by the **Lotka-Volterra Equations**, standard continuous-time herbivore-plant models defined by:
 

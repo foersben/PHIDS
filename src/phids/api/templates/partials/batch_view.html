@@ -3,7 +3,7 @@
 {% if job %}
   <div class="flex flex-wrap items-center gap-3">
     <h2 class="text-base font-semibold text-slate-700">
-      Job <code class="font-mono text-indigo-600">{{ job.job_id }}</code> — {{ job.scenario_name }}
+      Job <code class="font-mono text-indigo-600">{{ job.job_id }}</code> - {{ job.scenario_name }}
     </h2>
     <span class="rounded-full px-2 py-0.5 text-[11px] font-medium
       {% if job.status == 'done' %}bg-emerald-100 text-emerald-700
@@ -504,7 +504,7 @@
 {% else %}
   <p class="text-slate-400 text-sm">
     {% if job and job.status in ('running', 'queued') %}
-    Aggregation not yet available — job is still running ({{ job.completed }}/{{ job.total }}).
+    Aggregation not yet available - job is still running ({{ job.completed }}/{{ job.total }}).
     {% else %}
     No aggregate data found for this job.
     {% endif %}

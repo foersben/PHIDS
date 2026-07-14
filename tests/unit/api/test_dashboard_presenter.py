@@ -5,9 +5,9 @@
 
 This module constitutes the primary unit-test surface for
 :mod:`phids.api.presenters.dashboard`, validating the three public payload-assembly
-functions — :func:`~phids.api.presenters.dashboard.build_live_cell_details`,
+functions - :func:`~phids.api.presenters.dashboard.build_live_cell_details`,
 :func:`~phids.api.presenters.dashboard.build_preview_cell_details`, and
-:func:`~phids.api.presenters.dashboard.build_live_dashboard_payload` — independently of
+:func:`~phids.api.presenters.dashboard.build_live_dashboard_payload` - independently of
 the FastAPI HTTP layer.
 
 Scientific Hypotheses Under Test
@@ -186,7 +186,7 @@ def test_validate_cell_coordinates_rejects_out_of_bounds() -> None:
 
 
 # ---------------------------------------------------------------------------
-# _live_substance_state_payload — state machine table tests
+# _live_substance_state_payload - state machine table tests
 # ---------------------------------------------------------------------------
 
 
@@ -479,7 +479,7 @@ def test_build_preview_cell_details_reports_placed_entities() -> None:
     """
     draft = DraftState.default()
     draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
-    draft_service.add_plant_placement(draft, 0, 5, 5, 10.0)  # Different cell — must not appear.
+    draft_service.add_plant_placement(draft, 0, 5, 5, 10.0)  # Different cell - must not appear.
     draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 15.0)
     payload = build_preview_cell_details(2, 2, draft=draft)
 
@@ -536,7 +536,7 @@ def test_build_preview_cell_details_mycorrhizal_links_in_draft() -> None:
     """
     draft = DraftState.default()
     draft_service.add_plant_placement(draft, 0, 2, 2, 10.0)
-    draft_service.add_plant_placement(draft, 0, 2, 3, 10.0)  # Adjacent — forms a link.
+    draft_service.add_plant_placement(draft, 0, 2, 3, 10.0)  # Adjacent - forms a link.
 
     payload = build_preview_cell_details(2, 2, draft=draft)
     assert payload["mycorrhiza"]["link_count"] == 1
@@ -906,7 +906,7 @@ def test_is_live_substance_visible_aftereffect_returns_true() -> None:
 def test_is_live_substance_visible_triggered_this_tick_returns_true() -> None:
     """Verifies that a substance triggered in the current tick is immediately visible.
 
-    The triggered state is the initiation moment of the defense response — the tick on
+    The triggered state is the initiation moment of the defense response - the tick on
     which the herbivore-presence condition first satisfies the trigger rule.  Immediate
     visibility ensures the operator sees the defense response at the earliest possible
     moment.

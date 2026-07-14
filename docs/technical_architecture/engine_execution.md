@@ -28,7 +28,7 @@ Entities in PHIDS are lightweight, data-only records lacking encapsulated logic.
 
 ### $O(1)$ Locality Resolution
 
-To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial Hash–a dictionary mapping $(x,y)$ coordinates to the sets of residing `entity_id`s. When an herbivore feeds, or a plant checks for grazing pressure, it queries the spatial hash at its immediate coordinate to retrieve co-located entities. This completely negates the need for global proximity iterations across the map.
+To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial Hash-a dictionary mapping $(x,y)$ coordinates to the sets of residing `entity_id`s. When an herbivore feeds, or a plant checks for grazing pressure, it queries the spatial hash at its immediate coordinate to retrieve co-located entities. This completely negates the need for global proximity iterations across the map.
 
 ### Active Garbage Collection
 

@@ -77,8 +77,8 @@ See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
 
 The module-level constant in `interaction.py` (`TILE_CARRYING_CAPACITY = 500`) that defines the
 maximum aggregate biological population permitted on a single grid cell before crowding-induced
-dispersal is triggered. The check aggregates the `population` attribute of all co-located swarms –
-not the count of swarm entities – so that biologically dense tiles are correctly identified
+dispersal is triggered. The check aggregates the `population` attribute of all co-located swarms -
+not the count of swarm entities - so that biologically dense tiles are correctly identified
 regardless of swarm entity fragmentation.
 
 See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
@@ -138,7 +138,7 @@ See: [`ui/draft-state-and-load-workflow.md`](../technical_architecture/interface
 
 ## E
 
-### ECS (Entity–Component–System)
+### ECS (Entity-Component-System)
 
 The architectural pattern used for all discrete runtime entities in PHIDS. Entities are integer IDs;
 components are dataclasses attached to entity IDs in `ECSWorld`; systems are free functions
@@ -350,7 +350,7 @@ See: [`scenarios/schema-and-curated-examples.md`](../scenario_guide/curated_exam
 The deterministic tick orchestrator in `phids.engine.loop`. It advances the ecological state
 through a fixed phase sequence (flow field → camouflage → lifecycle → interaction → signaling →
 telemetry → termination) under an `asyncio.Lock`, accumulates telemetry, appends replay snapshots,
-and evaluates Z1–Z7 termination conditions each tick.
+and evaluates Z1-Z7 termination conditions each tick.
 
 See: [`engine/index.md`](../scientific_model/index.md)
 
@@ -468,9 +468,9 @@ See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 PHIDS exposes two intentionally distinct WebSocket endpoints:
 
-- `/ws/simulation/stream` – emits full per-tick environment snapshots encoded as msgpack + zlib,
+- `/ws/simulation/stream` - emits full per-tick environment snapshots encoded as msgpack + zlib,
   suitable for programmatic replay or external analysis,
-- `/ws/ui/stream` – emits lightweight JSON payloads optimized for canvas rendering in the browser
+- `/ws/ui/stream` - emits lightweight JSON payloads optimized for canvas rendering in the browser
   control center.
 
 See: [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)
