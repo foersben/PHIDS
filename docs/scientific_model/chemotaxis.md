@@ -14,7 +14,7 @@ Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field,
 
 **Chemotaxis** is the phenomenon whereby somatic cells, bacteria, and other single-cell or multicellular organisms direct their movements according to certain chemicals in their environment.
 
-In nature, organisms do not possess a top-down, global map of the world. They cannot calculate the most efficient Euclidean path to a food source three miles away while simultaneously avoiding a predator blocking a narrow mountain pass. Instead, they sense local chemical gradients–moving towards higher concentrations of attractants (food, mating pheromones) and away from repellents (toxins, predators).
+In nature, organisms do not possess a top-down, global map of the world. They cannot calculate the most efficient Euclidean path to a food source three miles away while simultaneously avoiding a predator blocking a narrow mountain pass. Instead, they sense local chemical gradients-moving towards higher concentrations of attractants (food, mating pheromones) and away from repellents (toxins, predators).
 
 By modeling chemotaxis, PHIDS ensures swarm navigation is inherently local, imperfect, and biologically plausible.
 

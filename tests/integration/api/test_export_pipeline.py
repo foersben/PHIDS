@@ -138,7 +138,7 @@ class TestTelemetryToDataframe:
             },
         ]
         df = telemetry_to_dataframe(rows)
-        # tick=0 had no species 1 — should be 0, not NaN
+        # tick=0 had no species 1 - should be 0, not NaN
         assert df["plant_1_pop"].iloc[0] == 0
 
 

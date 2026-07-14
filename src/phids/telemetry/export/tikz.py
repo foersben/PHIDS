@@ -52,7 +52,7 @@ def generate_tikz_str(
 
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
-        plot_type: Chart mode — ``"timeseries"``, ``"phasespace"``,
+        plot_type: Chart mode - ``"timeseries"``, ``"phasespace"``,
             ``"defense_economy"``, ``"biomass_stack"``, or
             ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.

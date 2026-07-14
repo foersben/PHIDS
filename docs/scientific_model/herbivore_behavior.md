@@ -8,7 +8,7 @@ description: "Documentation for Herbivore Behavior & Kinematics in the PHIDS fra
 
 # Herbivore Behavior & Kinematics
 
-Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors–movement, feeding, population scaling, and division–are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
+Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
 
 ## 1. Locomotion & Probabilistic Sampling
 
@@ -30,7 +30,7 @@ When $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from 
 * If no previous heading exists, isotropic random dispersal (Random Walk) is applied.
 
 **Biological Rationale:**
-This emulates *orthokinesis*–directional persistence. An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature.
+This emulates *orthokinesis*-directional persistence. An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature.
 
 ## 3. Capacity Limits & Physical Repulsion
 
@@ -127,7 +127,7 @@ The system executes a binary fission:
 
 **Biological Rationale:**
 
-Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony–such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
+Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony-such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
 
 ### Feeding & Attrition Dynamics
 
