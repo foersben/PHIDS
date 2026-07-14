@@ -9,7 +9,7 @@ data-oriented engine core, strict state invariants, and reproducible telemetry s
 scenario outcomes can be interpreted as traceable computational experiments rather than opaque
 animation artifacts.
 
-Current release line: `v0.7.0`.
+Current release line: `v0.8.0`.
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions)
