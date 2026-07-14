@@ -137,3 +137,4 @@ directory = ".cache/htmlcov"
 
 [tool.ruff.lint.per-file-ignores]
 "src/phids/api/routers/**/*.py" = ["D417"]
+"src/phids/mcp_server.py" = ["RUF001", "RUF002", "RUF003"]
