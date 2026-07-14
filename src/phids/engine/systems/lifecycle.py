@@ -162,6 +162,115 @@ def _attempt_reproduction(
     return [new_plant]
 
 
+def _is_mycorrhizal_neighbour_eligible(
+    neighbour: PlantComponent,
+    plant: PlantComponent,
+    formed_this_tick: set[int],
+    dead_entity_ids: set[int],
+    connection_cost: float,
+    inter_species: bool,
+) -> bool:
+    """Return whether a single neighbour is eligible for connection.
+
+    Args:
+        neighbour: The neighbour plant component to check.
+        plant: The plant component.
+        formed_this_tick: Set of entity ids that have already formed connections this tick.
+        dead_entity_ids: Set of entity ids that are dead.
+        connection_cost: The cost of forming a connection.
+        inter_species: Whether to allow inter-species connections.
+
+    Returns:
+        True if the neighbour is eligible for connection, False otherwise.
+    """
+    if neighbour.entity_id in dead_entity_ids:
+        return False
+    if neighbour.entity_id == plant.entity_id:
+        return False
+    if neighbour.entity_id in formed_this_tick:
+        return False
+    if neighbour.entity_id in plant.mycorrhizal_connections:
+        return False
+    if not inter_species and neighbour.species_id != plant.species_id:
+        return False
+    if (neighbour.energy - connection_cost) < neighbour.survival_threshold:
+        return False
+    return True
+
+
+def _find_valid_mycorrhizal_neighbours(
+    plant: PlantComponent,
+    env: GridEnvironment,
+    pos_index: dict[tuple[int, int], list[PlantComponent]],
+    formed_this_tick: set[int],
+    dead_entity_ids: set[int],
+    connection_cost: float,
+    inter_species: bool,
+) -> list[PlantComponent]:
+    """Scan cardinal neighbours and return those eligible for connection.
+
+    Args:
+        plant: The plant component to check.
+        env: The grid environment.
+        pos_index: Dictionary mapping grid positions to plant components.
+        formed_this_tick: Set of entity ids that have already formed connections this tick.
+        dead_entity_ids: Set of entity ids that are dead.
+        connection_cost: The cost of forming a connection.
+        inter_species: Whether to allow inter-species connections.
+
+    Returns:
+        List of eligible neighbours.
+    """
+    neighbours: list[PlantComponent] = []
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        nx, ny = plant.x + dx, plant.y + dy
+        if not (0 <= nx < env.width and 0 <= ny < env.height):
+            continue
+        for neighbour in pos_index.get((nx, ny), []):
+            if _is_mycorrhizal_neighbour_eligible(
+                neighbour=neighbour,
+                plant=plant,
+                formed_this_tick=formed_this_tick,
+                dead_entity_ids=dead_entity_ids,
+                connection_cost=connection_cost,
+                inter_species=inter_species,
+            ):
+                neighbours.append(neighbour)
+    return neighbours
+
+
+def _cull_plant_if_dead(
+    plant: PlantComponent,
+    world: ECSWorld,
+    env: GridEnvironment,
+    dead_entity_ids: set[int],
+    dead_entities: list[int],
+    plant_death_causes: dict[str, int] | None = None,
+) -> None:
+    """Check plant survival, update cause registry, and clear from spatial grids.
+
+    Args:
+        plant: The plant component to check.
+        world: The ECS world.
+        env: The grid environment.
+        dead_entity_ids: Set of dead entity ids.
+        dead_entities: List of dead entities.
+        plant_death_causes: Dictionary to store death causes.
+    """
+    if plant.entity_id in dead_entity_ids:
+        return
+    if plant.energy >= plant.survival_threshold:
+        return
+
+    cause_key = plant.last_energy_loss_cause or "death_background_deficit"
+    if plant_death_causes is not None:
+        plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
+    env.clear_plant_energy(plant.x, plant.y, plant.species_id)
+    world.unregister_position(plant.entity_id, plant.x, plant.y)
+    dead_entity_ids.add(plant.entity_id)
+    dead_entities.append(plant.entity_id)
+
+
 def _establish_mycorrhizal_connections(
     world: ECSWorld,
     env: GridEnvironment,
@@ -220,25 +329,15 @@ def _establish_mycorrhizal_connections(
         if (plant.energy - connection_cost) < plant.survival_threshold:
             continue
 
-        neighbours: list[PlantComponent] = []
-        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            nx, ny = plant.x + dx, plant.y + dy
-            if not (0 <= nx < env.width and 0 <= ny < env.height):
-                continue
-            for neighbour in pos_index.get((nx, ny), []):
-                if neighbour.entity_id in dead_entity_ids:
-                    continue
-                if neighbour.entity_id == plant.entity_id:
-                    continue
-                if neighbour.entity_id in formed_this_tick:
-                    continue
-                if neighbour.entity_id in plant.mycorrhizal_connections:
-                    continue
-                if not inter_species and neighbour.species_id != plant.species_id:
-                    continue
-                if (neighbour.energy - connection_cost) < neighbour.survival_threshold:
-                    continue
-                neighbours.append(neighbour)
+        neighbours = _find_valid_mycorrhizal_neighbours(
+            plant=plant,
+            env=env,
+            pos_index=pos_index,
+            formed_this_tick=formed_this_tick,
+            dead_entity_ids=dead_entity_ids,
+            connection_cost=connection_cost,
+            inter_species=inter_species,
+        )
 
         if not neighbours:
             continue
@@ -257,18 +356,14 @@ def _establish_mycorrhizal_connections(
         made_connection = True
 
         for participant in (plant, neighbour):
-            if participant.entity_id in dead_entity_ids:
-                continue
-            if participant.energy >= participant.survival_threshold:
-                continue
-
-            cause_key = participant.last_energy_loss_cause or "death_background_deficit"
-            if plant_death_causes is not None:
-                plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
-            env.clear_plant_energy(participant.x, participant.y, participant.species_id)
-            world.unregister_position(participant.entity_id, participant.x, participant.y)
-            dead_entity_ids.add(participant.entity_id)
-            dead_entities.append(participant.entity_id)
+            _cull_plant_if_dead(
+                plant=participant,
+                world=world,
+                env=env,
+                dead_entity_ids=dead_entity_ids,
+                dead_entities=dead_entities,
+                plant_death_causes=plant_death_causes,
+            )
 
     return made_connection, dead_entities
 
