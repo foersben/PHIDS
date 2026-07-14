@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Performance benchmarks for the Numba-accelerated flow-field gradient kernel.
 
 This module measures the wall-clock throughput of :func:`~phids.engine.core.flow_field.compute_flow_field`

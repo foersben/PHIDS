@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Draft-state mutation service for PHIDS scenario-builder workflows.
 
 This module concentrates all imperative mutation procedures applied to the UI draft state into a
@@ -54,6 +57,7 @@ class DraftService:
 
         Returns:
             True when the submitted value represents the affirmative state.
+
         """
         if isinstance(value, bool):
             return value
@@ -68,6 +72,7 @@ class DraftService:
 
         Returns:
             The list index of the matching substance definition, or ``None`` if absent.
+
         """
         return next(
             (i for i, substance in enumerate(draft.substance_definitions) if substance.substance_id == substance_id),
@@ -79,6 +84,7 @@ class DraftService:
 
         Args:
             draft: Draft state whose matrix dimensions are compacted or extended.
+
         """
         n_herbivore = len(draft.herbivore_species)
         n_flora = len(draft.flora_species)
@@ -96,6 +102,7 @@ class DraftService:
 
         Args:
             draft: Draft state whose species collections require index compaction.
+
         """
         from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 
@@ -159,6 +166,7 @@ class DraftService:
 
         Returns:
             ``True`` when at least one submitted scalar required clamping.
+
         """
         clamped_grid_width = max(10, min(80, grid_width))
         clamped_grid_height = max(10, min(80, grid_height))
@@ -221,6 +229,7 @@ class DraftService:
         Args:
             draft: Draft state mutated in place.
             params: Flora species parameter object.
+
         """
         draft.flora_species.append(params)
         self.rebuild_species_ids(draft)
@@ -240,6 +249,7 @@ class DraftService:
 
         Raises:
             ValueError: No flora species with the requested identifier exists.
+
         """
         from phids.api.schemas import FloraSpeciesParams
 
@@ -285,6 +295,7 @@ class DraftService:
         Args:
             draft: Draft state mutated in place.
             params: Herbivore species parameter object.
+
         """
         draft.herbivore_species.append(params)
         self.rebuild_species_ids(draft)
@@ -304,6 +315,7 @@ class DraftService:
 
         Raises:
             ValueError: No herbivore species with the requested identifier exists.
+
         """
         from phids.api.schemas import HerbivoreSpeciesParams
 
@@ -381,6 +393,7 @@ class DraftService:
 
         Raises:
             ValueError: The Rule of 16 ceiling for substances has been reached.
+
         """
         if len(draft.substance_definitions) >= 16:
             raise ValueError("Rule of 16: maximum substances reached.")
@@ -441,6 +454,7 @@ class DraftService:
 
         Raises:
             ValueError: No substance with the requested identifier exists.
+
         """
         idx = self._find_substance_index(draft, substance_id)
         if idx is None:
@@ -488,6 +502,7 @@ class DraftService:
 
         Raises:
             ValueError: No substance with the requested identifier exists.
+
         """
         idx = self._find_substance_index(draft, substance_id)
         if idx is None:
@@ -536,11 +551,12 @@ class DraftService:
         Args:
             draft: Draft state mutated in place.
             herbivore_idx: Herbivore row index.
-            flora_idx: Flora column index.
+            flora_idx: The integer column index representing the specific flora species.
             compatible: Requested boolean state or the literal ``"toggle"``.
 
         Returns:
             The updated boolean cell value, or ``None`` when the indices are out of range.
+
         """
         if herbivore_idx >= len(draft.diet_matrix) or herbivore_idx < 0:
             return None
@@ -577,6 +593,7 @@ class DraftService:
             aftereffect_ticks: Duration of aftereffect.
             min_herbivore_population: Minimum herbivore population threshold.
             activation_condition: Optional nested activation-condition tree.
+
         """
         draft.trigger_rules.append(
             TriggerRule(
@@ -607,6 +624,7 @@ class DraftService:
 
         Raises:
             IndexError: The requested trigger-rule index is out of range.
+
         """
         removed = draft.trigger_rules[index]
         del draft.trigger_rules[index]
@@ -652,6 +670,7 @@ class DraftService:
 
         Raises:
             IndexError: The requested trigger-rule index is out of range.
+
         """
         rule = draft.trigger_rules[index]
         if flora_species_id is not None:
@@ -690,6 +709,7 @@ class DraftService:
             draft: Draft state mutated in place.
             index: Trigger-rule index in the draft list.
             condition: Full replacement condition tree.
+
         """
         draft.trigger_rules[index].activation_condition = deepcopy(condition)
 
@@ -710,6 +730,7 @@ class DraftService:
 
         Raises:
             IndexError: The path or parent node does not resolve to a mutable child slot.
+
         """
         rule = draft.trigger_rules[index]
         if not path:
@@ -748,6 +769,7 @@ class DraftService:
 
         Raises:
             IndexError: The parent node is missing or is not a valid group node.
+
         """
         rule = draft.trigger_rules[index]
         if rule.activation_condition is None:
@@ -772,6 +794,7 @@ class DraftService:
 
         Raises:
             IndexError: The path or parent node does not resolve to a removable child slot.
+
         """
         rule = draft.trigger_rules[index]
         if rule.activation_condition is None:
@@ -810,6 +833,7 @@ class DraftService:
 
         Raises:
             IndexError: The trigger rule has no condition tree or path resolution fails.
+
         """
         rule = draft.trigger_rules[index]
         if rule.activation_condition is None:
@@ -832,9 +856,10 @@ class DraftService:
         Args:
             draft: Draft state mutated in place.
             species_id: Flora species identifier.
-            x: Grid x-coordinate.
-            y: Grid y-coordinate.
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
             energy: Initial plant energy reserve.
+
         """
         draft.initial_plants.append(PlacedPlant(species_id=species_id, x=x, y=y, energy=energy))
         logger.debug(
@@ -859,10 +884,11 @@ class DraftService:
         Args:
             draft: Draft state mutated in place.
             species_id: Herbivore species identifier.
-            x: Grid x-coordinate.
-            y: Grid y-coordinate.
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
             population: Initial swarm population.
             energy: Initial swarm energy reserve.
+
         """
         draft.initial_swarms.append(
             PlacedSwarm(
@@ -891,6 +917,7 @@ class DraftService:
 
         Raises:
             IndexError: The plant placement index is out of range.
+
         """
         removed = draft.initial_plants[index]
         del draft.initial_plants[index]
@@ -912,6 +939,7 @@ class DraftService:
 
         Raises:
             IndexError: The swarm placement index is out of range.
+
         """
         removed = draft.initial_swarms[index]
         del draft.initial_swarms[index]
@@ -929,6 +957,7 @@ class DraftService:
 
         Args:
             draft: Draft state mutated in place.
+
         """
         cleared_plants = len(draft.initial_plants)
         cleared_swarms = len(draft.initial_swarms)

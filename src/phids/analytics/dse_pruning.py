@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Analytical pre-pruning system for Design Space Exploration (DSE).
 
 Contains validators to filter out structurally and thermodynamically unviable
@@ -32,6 +35,7 @@ class AnalyticalPruner:
 
         Returns:
             True if the genotype is mathematically viable, False otherwise.
+
         """
         herbivore_ids = list(range(len(genotype.parametric.herbivore_traits)))
         flora_ids = list(range(len(genotype.parametric.flora_traits)))

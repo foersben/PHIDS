@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Spatial placement generation helpers.
 
 Provides functions to compute coordinate vectors for uniform, clustered,
@@ -5,21 +8,19 @@ and banded initial entity distributions on the biotope grid.
 """
 
 import random
-from typing import Any
-
-from phids.api.schemas import BandedPlacement, ClusteredPlacement, PlacementStrategy, UniformPlacement
 
 
 def generate_uniform(width: int, height: int, density: float) -> list[tuple[int, int]]:
     """Randomly scatter entities across the grid based on density.
 
     Args:
-        width: Grid width.
-        height: Grid height.
+        width: The horizontal bounds of the simulation grid environment.
+        height: The vertical bounds of the simulation grid environment.
         density: Target density ratio.
 
     Returns:
         A list of generated (x, y) coordinates.
+
     """
     coords = []
     for x in range(width):
@@ -33,13 +34,14 @@ def generate_clustered(width: int, height: int, cluster_count: int, variance: fl
     """Create clusters of entities using a simple Gaussian spread.
 
     Args:
-        width: Grid width.
-        height: Grid height.
+        width: The horizontal bounds of the simulation grid environment.
+        height: The vertical bounds of the simulation grid environment.
         cluster_count: Number of clusters to generate.
         variance: The spread variance scale around each cluster center.
 
     Returns:
         A list of unique generated (x, y) coordinates.
+
     """
     coords = set()
     for _ in range(cluster_count):
@@ -60,13 +62,14 @@ def generate_banded(width: int, height: int, band_count: int, orientation: str) 
     """Place entities in dense lines/stripes across the grid.
 
     Args:
-        width: Grid width.
-        height: Grid height.
+        width: The horizontal bounds of the simulation grid environment.
+        height: The vertical bounds of the simulation grid environment.
         band_count: Number of bands to split the grid into.
         orientation: The orientation direction ('horizontal' or 'vertical').
 
     Returns:
         A list of generated (x, y) coordinates.
+
     """
     coords = []
     if orientation == "horizontal":
@@ -84,27 +87,3 @@ def generate_banded(width: int, height: int, band_count: int, orientation: str) 
                 if random.random() < 0.6:
                     coords.append((max(0, min(width - 1, cx + random.randint(-2, 2))), y))
     return coords
-
-
-def apply_placement_strategy(width: int, height: int, strategy: PlacementStrategy | Any) -> list[tuple[int, int]]:
-    """Resolve a specific PlacementStrategy into explicit (x, y) coordinates.
-
-    Args:
-        width: Grid width.
-        height: Grid height.
-        strategy: The strategy configuration (Banded, Clustered, or Uniform).
-
-    Returns:
-        A list of generated (x, y) coordinates.
-    """
-    if isinstance(strategy, UniformPlacement) or getattr(strategy, "type", "") == "uniform":
-        return generate_uniform(width, height, getattr(strategy, "density", 0.1))
-    elif isinstance(strategy, ClusteredPlacement) or getattr(strategy, "type", "") == "clustered":
-        return generate_clustered(
-            width, height, getattr(strategy, "cluster_count", 1), getattr(strategy, "variance", 1.0)
-        )
-    elif isinstance(strategy, BandedPlacement) or getattr(strategy, "type", "") == "banded":
-        return generate_banded(
-            width, height, getattr(strategy, "band_count", 1), getattr(strategy, "orientation", "horizontal")
-        )
-    return []

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Integration tests for PHIDS property invariants.
 
 Uses Hypothesis to verify that diet matrices reject configurations exceeding maximum species caps,

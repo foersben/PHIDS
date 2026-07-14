@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Comprehensive test suite for Zarr replay backend and legacy msgpack migration.
 
 This test module validates the ReplayBuffer API compatibility with the legacy

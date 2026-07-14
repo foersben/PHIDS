@@ -33,19 +33,13 @@ repos:
           - tomli
         args: [--ignore-words=.codespell-ignore-words.txt]
 
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.1.2  # The stable 2026 release version
+    hooks:
+      - id: reuse
+
   - repo: local
     hooks:
-      - id: ruff-check
-        name: Ruff Check
-        entry: uv run ruff check --fix
-        language: system
-        types: [python]
-
-      - id: ruff-format
-        name: Ruff Format
-        entry: uv run ruff format
-        language: system
-        types: [python]
 
       - id: mypy
         name: Mypy
@@ -62,3 +56,13 @@ repos:
         language: system
         files: ^(docs/|\.agents/).*\.md$
         pass_filenames: true
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.21
+    hooks:
+      - id: ruff
+        name: Ruff Code Quality Linting
+        args: [ --fix, --show-fixes ]
+        stages: [ pre-commit ]
+      - id: ruff-format
+        name: Ruff Layout Formatting
+        stages: [ pre-commit ]

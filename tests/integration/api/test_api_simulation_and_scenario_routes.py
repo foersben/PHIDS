@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Integration checks for simulation-control and scenario HTTP routes.
 
 This module isolates API-surface regressions for simulation control, telemetry export, middleware

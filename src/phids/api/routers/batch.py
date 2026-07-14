@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Batch simulation router for PHIDS Monte Carlo workflows.
 
 This module hosts the asynchronous batch-analysis endpoints that execute repeated headless

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """PHIDS (Plant-Herbivore Interaction & Defense Simulator) top-level package.
 
 This package serves as the canonical entry point for the PHIDS ecosystem simulation engine,

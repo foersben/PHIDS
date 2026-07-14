@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
 
 This module implements the principal simulation driver for PHIDS, responsible for advancing the
@@ -53,18 +56,6 @@ class _ReplayBackend(Protocol):
     def __len__(self) -> int: ...
 
 
-class _RawArrayReplayBackend(_ReplayBackend, Protocol):
-    """Replay backend contract for direct environment-array ingestion."""
-
-    def append_raw_arrays(
-        self,
-        *,
-        tick: int,
-        env: GridEnvironment,
-        termination_state: tuple[bool, str | None],
-    ) -> None: ...
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -78,6 +69,7 @@ class SimulationLoop:
 
     Args:
         config: Validated :class:`~phids.api.schemas.SimulationConfig`.
+
     """
 
     def __init__(self, config: SimulationConfig, *, disable_replay: bool = False) -> None:
@@ -86,6 +78,7 @@ class SimulationLoop:
         Args:
             config: Validated SimulationConfig instance from the API payload.
             disable_replay: If True, disables Zarr replay recording to disk.
+
         """
         self.config = config
         self.tick: int = 0
@@ -243,6 +236,7 @@ class SimulationLoop:
         Returns:
             float: Configured minimum energy if found, otherwise a sensible
             default of 1.0.
+
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -257,6 +251,7 @@ class SimulationLoop:
 
         Returns:
             int: Movement period in ticks; defaults to 1 when not found.
+
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -271,6 +266,7 @@ class SimulationLoop:
 
         Returns:
             float: Consumption rate if present, otherwise 1.0 by default.
+
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -285,6 +281,7 @@ class SimulationLoop:
 
         Returns:
             float: Reproduction divisor if present, otherwise 1.0.
+
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -299,6 +296,7 @@ class SimulationLoop:
 
         Returns:
             Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
+
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -312,13 +310,13 @@ class SimulationLoop:
             species_id: Herbivore species identifier to look up.
 
         Returns:
-            Configured split threshold if found; otherwise 0, which causes the interaction
-            system to apply the legacy initial-population-based mitosis rule.
+            Configured split threshold if found; otherwise 10.
+
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
             return int(params.split_population_threshold)
-        return 0
+        return 10
 
     # ------------------------------------------------------------------
     # Simulation control
@@ -356,15 +354,14 @@ class SimulationLoop:
 
     def _append_replay_frame(self) -> None:
         """Append one replay frame using the backend-specific ingestion path."""
-        if self._replay_supports_raw_arrays:
-            replay_backend = cast("_RawArrayReplayBackend", self.replay)
-            replay_backend.append_raw_arrays(
+        if hasattr(self.replay, "append_raw_arrays"):
+            self.replay.append_raw_arrays(
                 tick=self.tick,
                 env=self.env,
                 termination_state=(self.terminated, self.termination_reason),
             )
-            return
-        self.replay.append(self.get_state_snapshot())
+        else:
+            self.replay.append(self.get_state_snapshot())
 
     def _log_debug_tick_summary(
         self,
@@ -463,6 +460,7 @@ class SimulationLoop:
 
         Returns:
             TerminationResult: Termination state after the tick.
+
         """
         async with self._lock:
             if self.terminated:
@@ -649,6 +647,7 @@ class SimulationLoop:
 
         Returns:
             Applied tick-rate value after clamping.
+
         """
         applied = max(0.1, float(tick_rate_hz))
         self.config.tick_rate_hz = applied
@@ -663,8 +662,9 @@ class SimulationLoop:
         """Update the environment uniform wind vector.
 
         Args:
-            vx: Wind X component.
-            vy: Wind Y component.
+            vx: The horizontal vector component of the globally applied wind force.
+            vy: The vertical vector component of the globally applied wind force.
+
         """
         self.env.set_uniform_wind(vx, vy)
         # Wind can change snapshot content without advancing ticks.
@@ -688,6 +688,7 @@ class SimulationLoop:
         Returns:
             ReplayState: Snapshot containing tick, termination state and
             environment dictionary (from :meth:`GridEnvironment.to_dict`).
+
         """
         if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
             return self._cached_snapshot

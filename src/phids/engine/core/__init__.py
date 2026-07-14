@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Core engine sub-package: ECS world, biotope environment, and flow-field kernel.
 
 This sub-package contains the three lowest-level, performance-critical modules of the PHIDS

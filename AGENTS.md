@@ -22,4 +22,4 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | `@telemetry-and-data-engineer`| Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |
 
 ## Documentation Formatting Rules
-- **Dashes:** Always use the en-dash (`–`) instead of the em-dash (`–`) in all Markdown documentation and UI text.
+- **Dashes:** Always use the standard hyphen (`-`) instead of the en-dash or em-dash in all Markdown documentation and UI text.

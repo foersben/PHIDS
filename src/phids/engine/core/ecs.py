@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
 
 components and pre-allocated buffers (Rule of 16). The spatial hash is central to the
@@ -31,6 +34,7 @@ class Entity:
 
         Args:
             component: Component instance to attach.
+
         """
         self._components[type(component)] = component
 
@@ -42,6 +46,7 @@ class Entity:
 
         Returns:
             The component instance for the entity.
+
         """
         return cast("C", self._components[component_type])
 
@@ -53,6 +58,7 @@ class Entity:
 
         Returns:
             bool: True if present, False otherwise.
+
         """
         return component_type in self._components
 
@@ -61,6 +67,7 @@ class Entity:
 
         Args:
             component_type: Component class/type to remove.
+
         """
         self._components.pop(component_type, None)
 
@@ -105,6 +112,7 @@ class ECSWorld:
 
         Returns:
             Entity: Newly created entity object.
+
         """
         eid = self._next_id
         self._next_id += 1
@@ -117,6 +125,7 @@ class ECSWorld:
 
         Args:
             entity_id: Identifier of the entity to destroy.
+
         """
         entity = self._entities.pop(entity_id, None)
         if entity is None:
@@ -133,10 +142,11 @@ class ECSWorld:
         """Return True if the entity exists.
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
 
         Returns:
             bool: True if present.
+
         """
         return entity_id in self._entities
 
@@ -144,10 +154,11 @@ class ECSWorld:
         """Return the entity instance for the given id.
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
 
         Returns:
             Entity: Matching entity.
+
         """
         return self._entities[entity_id]
 
@@ -159,8 +170,9 @@ class ECSWorld:
         """Attach a component to an entity and update the component index.
 
         Args:
-            entity_id: Target entity id.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
             component: Component instance to attach.
+
         """
         entity = self._entities[entity_id]
         entity.add_component(component)
@@ -170,8 +182,9 @@ class ECSWorld:
         """Detach a component of the specified type from an entity.
 
         Args:
-            entity_id: Target entity id.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
             component_type: Component class/type to remove.
+
         """
         entity = self._entities[entity_id]
         entity.remove_component(component_type)
@@ -185,6 +198,7 @@ class ECSWorld:
 
         Returns:
             list[Entity]: Materialized list of entities matching the component set.
+
         """
         if not component_types:
             return list(self._entities.values())
@@ -226,9 +240,10 @@ class ECSWorld:
         """Register an entity at grid cell (x, y).
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
             x: X coordinate of the cell.
             y: Y coordinate of the cell.
+
         """
         new_position = (x, y)
         old_position = self._entity_positions.get(entity_id)
@@ -243,9 +258,10 @@ class ECSWorld:
         """Remove an entity from a grid cell.
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
             x: X coordinate of the cell.
             y: Y coordinate of the cell.
+
         """
         position = (x, y)
         self._remove_from_cell(entity_id, position)
@@ -256,11 +272,12 @@ class ECSWorld:
         """Atomically update spatial hash when an entity moves.
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: The unique integer identifier of the target entity within the ECS world registry.
             old_x: Previous X coordinate.
             old_y: Previous Y coordinate.
-            new_x: New X coordinate.
-            new_y: New Y coordinate.
+            new_x: The updated X-axis grid coordinate for the entity.
+            new_y: The updated Y-axis grid coordinate for the entity.
+
         """
         self.unregister_position(entity_id, old_x, old_y)
         self.register_position(entity_id, new_x, new_y)
@@ -269,11 +286,12 @@ class ECSWorld:
         """Return the set of entity ids occupying a cell.
 
         Args:
-            x: X coordinate.
-            y: Y coordinate.
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
 
         Returns:
             set[int]: Entity ids occupying the cell.
+
         """
         return self._spatial_hash.get((x, y), set())
 
@@ -295,6 +313,7 @@ class ECSWorld:
 
         Args:
             dead_entity_ids: List of entity ids to remove.
+
         """
         for eid in dead_entity_ids:
             self.destroy_entity(eid)

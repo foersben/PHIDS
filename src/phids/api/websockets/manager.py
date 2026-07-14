@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Connection managers for deterministic PHIDS WebSocket transport.
 
 This module isolates asynchronous WebSocket stream orchestration from the FastAPI composition root.
@@ -40,6 +43,7 @@ class SimulationStreamManager:
         _cache_loop_id: Identity of the loop instance used for the current cache entry.
         _cache_tick: Tick number represented by the cached payload.
         _cache_payload: Compressed binary frame for the cached loop/tick pair.
+
     """
 
     def __init__(self) -> None:
@@ -56,6 +60,7 @@ class SimulationStreamManager:
 
         Returns:
             Compressed binary payload for transport.
+
         """
         loop_id = id(loop)
         if loop_id != self._cache_loop_id or loop.tick != self._cache_tick:
@@ -74,6 +79,7 @@ class SimulationStreamManager:
             websocket: Connected socket endpoint.
             code: WebSocket close code.
             reason: Optional close reason.
+
         """
         try:
             await websocket.close(code=code, reason=reason)
@@ -91,6 +97,7 @@ class SimulationStreamManager:
             The stream is intentionally rejected when no live simulation exists. This prevents
             clients from observing ambiguous placeholder transport states and keeps runtime
             semantics explicit.
+
         """
         await websocket.accept()
         logger.debug("WebSocket connected: /ws/simulation/stream")
@@ -129,6 +136,7 @@ class UIStreamManager:
 
     Attributes:
         _payload_builder: Callable that assembles dashboard payload dictionaries.
+
     """
 
     def __init__(self, payload_builder: Callable[[SimulationLoop], dict[str, object]]) -> None:
@@ -136,6 +144,7 @@ class UIStreamManager:
 
         Args:
             payload_builder: Callable that builds one dashboard payload from a live loop.
+
         """
         self._payload_builder = payload_builder
         self._cache_signature: tuple[int, int, int, bool, bool, bool] | None = None
@@ -149,6 +158,7 @@ class UIStreamManager:
 
         Returns:
             Compact JSON payload text for websocket transmission.
+
         """
         state_signature = (
             id(loop),
@@ -172,6 +182,7 @@ class UIStreamManager:
             websocket: Connected socket endpoint.
             code: WebSocket close code.
             reason: Optional close reason.
+
         """
         try:
             await websocket.close(code=code, reason=reason)
@@ -192,6 +203,7 @@ class UIStreamManager:
         Notes:
             The connection remains open while no loop is loaded. This allows browser clients to
             subscribe once and begin receiving payloads immediately after a scenario is loaded.
+
         """
         await websocket.accept()
         logger.debug("WebSocket connected: /ws/ui/stream")
@@ -240,13 +252,23 @@ class DSEStreamManager:
         self.active_dse_connections: list[WebSocket] = []
 
     async def connect_dse(self, websocket: WebSocket) -> None:
-        """Accept and register a new DSE websocket connection."""
+        """Accept and register a new DSE websocket connection.
+
+        Args:
+        websocket: The WebSocket connection to establish.
+        task_id: The unique task identifier for the DSE run.
+        """
         await websocket.accept()
         self.active_dse_connections.append(websocket)
         logger.info("DSE client connected (active=%d)", len(self.active_dse_connections))
 
     def disconnect_dse(self, websocket: WebSocket) -> None:
-        """Remove a DSE websocket connection."""
+        """Remove a DSE websocket connection.
+
+        Args:
+        websocket: The WebSocket connection to terminate.
+        task_id: The unique task identifier for the DSE run.
+        """
         if websocket in self.active_dse_connections:
             self.active_dse_connections.remove(websocket)
             logger.info("DSE client disconnected (active=%d)", len(self.active_dse_connections))
@@ -256,6 +278,7 @@ class DSEStreamManager:
 
         Args:
             payload: JSON-serializable dictionary containing generation metrics.
+
         """
         disconnected: list[WebSocket] = []
         for connection in self.active_dse_connections:

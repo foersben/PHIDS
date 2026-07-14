@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Headless Monte Carlo batch processing engine for PHIDS ecosystem simulations.
 
 This module implements the :class:`BatchRunner`, which executes a configurable number of
@@ -105,6 +108,7 @@ class BatchResult:
         per_run_telemetry: Nested list of raw telemetry row dicts per run.
         aggregate: Statistical summary produced by
             :func:`aggregate_batch_telemetry`.
+
     """
 
     job_id: str
@@ -150,6 +154,7 @@ def _run_single_headless(
     Returns:
         list[TelemetryRow]: List of per-tick telemetry row dicts accumulated by
         :class:`~phids.telemetry.analytics.TelemetryRecorder`.
+
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -190,11 +195,12 @@ def _run_and_save(
     with top-level callables and simple tuple arguments.
 
     Args:
-        args: Tuple of
+        args: Tuple containing the simulation run parameters.
             ``(scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str)``.
 
     Returns:
         list[TelemetryRow]: Per-tick telemetry rows for this run.
+
     """
     scenario_dict, max_ticks, seed, job_id, run_index, _output_dir_str = args
     rows = _run_single_headless(scenario_dict, max_ticks, seed)
@@ -237,6 +243,7 @@ def aggregate_batch_telemetry(
         ``survival_probability_curve``,
         ``per_flora_pop_mean``, ``per_flora_pop_std``,
         ``per_herbivore_pop_mean``, ``per_herbivore_pop_std``.
+
     """
     if not per_run:
         return {}
@@ -356,6 +363,7 @@ def _sanitize_for_json(value: object) -> object:
 
     Returns:
         object: JSON-safe structure preserving the original shape.
+
     """
     if isinstance(value, dict):
         return {str(k): _sanitize_for_json(v) for k, v in value.items()}
@@ -420,6 +428,7 @@ class BatchRunner:
 
         Returns:
             BatchResult: Completed result with all per-run telemetry and aggregate.
+
         """
         save_dir = output_dir or _DEFAULT_BATCH_DIR
         save_dir.mkdir(parents=True, exist_ok=True)

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Coverage reinforcement tests for presenter helpers and telemetry export branches.
 
 This module adds targeted regression checks for branches that are operationally important

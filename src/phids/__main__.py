@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Command-line entry point for the PHIDS runtime server.
 
 This module defines the process boundary between operating-system invocation and the PHIDS API runtime. It formalizes
@@ -45,6 +48,7 @@ def _run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
         port: TCP port for HTTP binding.
         reload: Auto-reload flag for local development.
         log_level: Uvicorn logging verbosity.
+
     """
     import uvicorn
 
@@ -85,6 +89,7 @@ def serve(
         reload: Auto-reload flag for local development.
         log_level: Uvicorn logging verbosity.
         mcp: Whether to start the MCP stdio server instead of Uvicorn.
+
     """
     if ctx.invoked_subcommand is not None:
         return
@@ -111,7 +116,17 @@ def tune(
         str, typer.Option(help="Output path for the winning configuration JSON.")
     ] = "examples/eternal_canopy.json",
 ) -> None:
-    """Run the native PHIDS hyperparameter tuning pipeline to find a stable configuration."""
+    """Run the native PHIDS hyperparameter tuning pipeline to find a stable configuration.
+
+    Args:
+        blueprint_path: The file path to the scenario configuration blueprint to use as a baseline.
+        budget: The maximum execution time allowed for the tuning optimization search.
+        grid_size: The spatial dimensions (width and height) for the simulation environment during tuning.
+        mode: The tuning optimization strategy or mode to apply (e.g. 'bayesian', 'random').
+        out: The directory path where the tuning results and optimal configuration should be saved.
+        samples: The number of distinct configuration candidates to sample during optimization.
+        ticks: The number of simulation steps (ticks) to run each candidate evaluation.
+    """
     import json
     from pathlib import Path
 
@@ -152,6 +167,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     Returns:
         None. The function starts the server process and does not produce a data value.
+
     """
     app(
         args=list(argv) if argv is not None else None,

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """FastAPI composition root governing live runtime state and API boundary coordination.
 
 This module defines the canonical PHIDS application object and the mutable singleton references that
@@ -105,6 +108,7 @@ async def log_http_requests(
 
     Returns:
         Response returned by downstream middleware and route handling.
+
     """
     started = time.perf_counter()
     response = await call_next(request)
@@ -180,6 +184,7 @@ def _coerce_int(value: object, *, default: int = -1) -> int:
 
     Returns:
         Normalized integer suitable for deterministic control-flow decisions.
+
     """
     if isinstance(value, bool):
         return default
@@ -207,6 +212,7 @@ def _coerce_float(value: object, *, default: float = 0.0) -> float:
 
     Returns:
         Normalized floating-point value for deterministic arithmetic paths.
+
     """
     if isinstance(value, bool):
         return default
@@ -233,6 +239,7 @@ def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
 
     Returns:
         Stable human-readable fallback label.
+
     """
     return f"{'Toxin' if is_toxin else 'Signal'} {substance_id}"
 
@@ -251,6 +258,7 @@ def _set_simulation_substance_names(
     Args:
         config: Validated simulation configuration currently associated with the live loop.
         draft: Optional draft source of canonical user-specified substance labels.
+
     """
     if draft is not None:
         _sim_substance_names.clear()
@@ -285,6 +293,7 @@ def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
 
     Returns:
         Display name suitable for diagnostics and tooltip rendering.
+
     """
     return _sim_substance_names.get(
         substance_id,
@@ -303,6 +312,7 @@ def _parse_activation_condition_json(raw: str | None) -> ActivationConditionNode
 
     Raises:
         HTTPException: Condition JSON is syntactically invalid or violates schema constraints.
+
     """
     if raw is None:
         return None
@@ -340,6 +350,7 @@ def _describe_activation_condition(
 
     Returns:
         Human-readable logical expression describing the activation gate.
+
     """
     if condition is None:
         return "unconditional"
@@ -397,6 +408,7 @@ def _trigger_rules_template_context(draft: DraftState) -> dict[str, object]:
     Returns:
         Template context dictionary containing species registries, trigger rows, condition summaries,
         and condition-node editing metadata.
+
     """
     herbivore_names = {
         getattr(species, "species_id", index): getattr(species, "name", f"Herbivore {index}")
@@ -446,6 +458,7 @@ def _default_activation_condition_for_rule(
 
     Raises:
         HTTPException: ``node_kind`` is unsupported by the condition editor.
+
     """
     default_herbivore_species_id = rule.herbivore_species_id
     default_substance_id = rule.substance_id
@@ -494,6 +507,7 @@ def _trigger_rule_by_index(draft: DraftState, index: int) -> TriggerRule:
 
     Raises:
         HTTPException: Index is outside the current trigger-rule list bounds.
+
     """
     if index < 0 or index >= len(draft.trigger_rules):
         raise HTTPException(status_code=404, detail=f"Trigger rule {index} not found.")
@@ -505,6 +519,7 @@ def _build_live_summary() -> LiveSummary | None:
 
     Returns:
         Summary counters when a live loop exists, otherwise ``None``.
+
     """
     if _sim_loop is None:
         return None
@@ -539,6 +554,7 @@ def _build_energy_deficit_swarms() -> list[EnergyDeficitSwarmRow]:
 
     Returns:
         Sorted stress records for swarm entities with positive energy deficits.
+
     """
     if _sim_loop is None:
         return []
@@ -577,6 +593,7 @@ def _render_status_badge_html() -> str:
 
     Returns:
         HTML fragment encoding current lifecycle state with semantic coloring.
+
     """
     if _sim_loop is None:
         label, colour = "Idle", "bg-slate-100 text-slate-500"
@@ -590,7 +607,7 @@ def _render_status_badge_html() -> str:
         label, colour = "Loaded", "bg-indigo-100 text-indigo-600"
 
     return (
-        f'<span id="sim-status" '
+        f'<span id="sim-status" style="display:none!important" '
         f'hx-get="/api/ui/status-badge" hx-trigger="every 2s" hx-swap="outerHTML" '
         f'class="text-xs px-2 py-1 rounded {colour}">{label}</span>'
     )
@@ -604,6 +621,7 @@ def _is_htmx_request(request: Request) -> bool:
 
     Returns:
         ``True`` when the request was issued by HTMX.
+
     """
     return request.headers.get("HX-Request", "false").lower() == "true"
 
@@ -616,6 +634,7 @@ def _get_loop() -> SimulationLoop:
 
     Raises:
         HTTPException: No scenario has been loaded into live runtime state.
+
     """
     if _sim_loop is None:
         logger.warning("Simulation access requested before a scenario was loaded")
@@ -651,6 +670,7 @@ async def simulation_stream(websocket: WebSocket) -> None:
     Notes:
         The manager enforces msgpack+zlib encoding, tick-synchronous emission, and policy-close
         semantics when no live scenario is loaded.
+
     """
     await _simulation_stream_manager.handle_connection(websocket, _sim_loop)
 
@@ -670,6 +690,7 @@ async def ui_stream(websocket: WebSocket) -> None:
     Notes:
         The manager polls live-loop availability, emits payloads only on state-signature change,
         and applies tick-rate cadence constraints.
+
     """
     await _ui_stream_manager.handle_connection(websocket, lambda: _sim_loop)
 
@@ -685,6 +706,7 @@ async def ui_tick() -> Response:
 
     Returns:
         Plain-text tick content for lightweight polling updates.
+
     """
     tick = _sim_loop.tick if _sim_loop is not None else 0
     return Response(content=str(tick), media_type="text/plain")
@@ -696,6 +718,7 @@ async def ui_status_badge() -> HTMLResponse:
 
     Returns:
         Styled ``<span id="sim-status">`` fragment.
+
     """
     return HTMLResponse(content=_render_status_badge_html())
 
@@ -709,8 +732,8 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
     deterministic pre-runtime inspection.
 
     Args:
-        x: Grid x-coordinate.
-        y: Grid y-coordinate.
+        x: The X-axis spatial grid coordinate.
+        y: The Y-axis spatial grid coordinate.
         expected_tick: Optional optimistic-concurrency marker from UI polling state.
 
     Returns:
@@ -718,6 +741,7 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
 
     Raises:
         HTTPException: Upstream presenter validation rejects out-of-bounds coordinates.
+
     """
     if _sim_loop is not None and expected_tick is not None and expected_tick != _sim_loop.tick:
         return JSONResponse(
@@ -756,6 +780,7 @@ def _build_telemetry_svg(df: object) -> str:
         The chart intentionally overlays flora population, herbivore population, and aggregate flora
         energy on a shared temporal axis to support rapid diagnosis of trophic oscillation and
         metabolic collapse onset.
+
     """
     import polars as pl
 

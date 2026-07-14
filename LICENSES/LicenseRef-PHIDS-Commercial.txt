@@ -1,0 +1,8 @@
+PHIDS Proprietary Commercial License
+
+This document represents the proprietary commercial licensing tier for the PHIDS simulation engine. The exact contractual terms, conditions, and SLA structures of this tier are confidential and are not distributed publicly within this open-source repository structure.
+
+To obtain a commercial license template, negotiate corporate deployment rights, or arrange monetization agreements outside the scope of the public copyleft EUPL-1.2 tier, please contact the copyright holder directly:
+
+Benjamin Förster
+Official Portal: https://foersben.github.io/PHIDS/

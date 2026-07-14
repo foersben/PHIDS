@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "phids"
-version = "0.7.0"
-description = "PHIDS – Plant-Herbivore Interaction & Defense Simulator"
+version = "0.8.0"
+description = "PHIDS - Plant-Herbivore Interaction & Defense Simulator"
 authors = [{ name = "Benjamin Förster", email = "mail@benjamin-foerster.de" }]
 readme = "README.md"
 requires-python = ">=3.13"
@@ -127,6 +127,10 @@ cache_dir = ".cache/pytest"
 [tool.coverage.run]
 source = ["src/phids"]
 data_file = ".cache/coverage"
+omit = [
+    "src/phids/api/templates/*",
+    "src/phids/api/static/*",
+]
 
 [tool.coverage.report]
 show_missing = true
@@ -134,3 +138,6 @@ skip_covered = false
 
 [tool.coverage.html]
 directory = ".cache/htmlcov"
+
+[tool.ruff.lint.per-file-ignores]
+"src/phids/api/routers/**/*.py" = ["D417"]

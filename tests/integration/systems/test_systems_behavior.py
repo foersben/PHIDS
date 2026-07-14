@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Test suite for PHIDS simulation systems: lifecycle, interaction, signaling, and termination.
 
 This module implements rigorous scientific tests for the PHIDS simulation systems, including lifecycle,
@@ -259,12 +262,13 @@ def test_interaction_diet_matrix_blocks_incompatible_feeding() -> None:
     initial_energy = plant.energy
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
     assert plant.energy == pytest.approx(initial_energy)
-    assert swarm.energy == pytest.approx(0.375)
+    assert swarm.energy == pytest.approx(0.75)
     assert swarm.population < 5
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
     sid = _add_swarm(world, 1, 1, species_id=0, pop=10)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
+    swarm.split_population_threshold = 9
     swarm.energy = 0.0
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
     swarms = [e.get_component(SwarmComponent) for e in world.query(SwarmComponent)]
@@ -279,6 +283,7 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis() -> None:
     sid = _add_swarm(world, 1, 1, species_id=0, pop=9)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
+    swarm.split_population_threshold = 10
     swarm.energy_upkeep_per_individual = 0.0
     swarm.energy = 10.0
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
@@ -380,6 +385,7 @@ def test_interaction_mitosis_offspring_can_diverge_next_tick() -> None:
     swarm_id = _add_swarm(world, 2, 0, species_id=0, pop=12)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     swarm.initial_population = 6
+    swarm.split_population_threshold = 11
     swarm.energy_upkeep_per_individual = 0.0
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
 
@@ -424,6 +430,7 @@ def test_interaction_mitosis_conserves_odd_population() -> None:
     sid = _add_swarm(world, 1, 1, species_id=0, pop=11)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
+    swarm.split_population_threshold = 10
     swarm.energy_upkeep_per_individual = 0.0
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
     swarms = [e.get_component(SwarmComponent) for e in world.query(SwarmComponent)]
@@ -439,6 +446,7 @@ def test_interaction_mitosis_applies_natal_dispersal(monkeypatch: pytest.MonkeyP
     sid = _add_swarm(world, 1, 1, species_id=0, pop=10)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
+    swarm.split_population_threshold = 10
     swarm.energy_upkeep_per_individual = 0.0
     swarm.move_cooldown = 1
     monkeypatch.setattr(random, "choice", lambda seq: seq[-1])

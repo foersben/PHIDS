@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry export to structured formats.
 
 Exports telemetry dataframes into structured formats such as CSV and NDJSON.
@@ -19,6 +22,7 @@ def export_csv(df: pl.DataFrame, path: str | Path) -> None:
     Args:
         df: Polars DataFrame produced by the telemetry recorder.
         path: Destination file path.
+
     """
     df.write_csv(str(path))
 
@@ -29,6 +33,7 @@ def export_json(df: pl.DataFrame, path: str | Path) -> None:
     Args:
         df: Polars DataFrame produced by the telemetry recorder.
         path: Destination file path.
+
     """
     df.write_ndjson(str(path))
 
@@ -41,6 +46,7 @@ def export_bytes_csv(df: pl.DataFrame) -> bytes:
 
     Returns:
         bytes: CSV-encoded bytes.
+
     """
     return df.write_csv().encode()
 
@@ -53,5 +59,6 @@ def export_bytes_json(df: pl.DataFrame) -> bytes:
 
     Returns:
         bytes: NDJSON-encoded bytes.
+
     """
     return df.write_ndjson().encode()

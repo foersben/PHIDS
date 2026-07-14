@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Central logging configuration for PHIDS.
 
 The package uses a single idempotent logging bootstrap so API, UI, engine,
@@ -30,7 +33,11 @@ class InMemoryLogHandler(logging.Handler):
     """Capture recent structured log entries for the diagnostics UI."""
 
     def emit(self, record: logging.LogRecord) -> None:
-        """Append one formatted record to the in-memory diagnostics buffer."""
+        """Append one formatted record to the in-memory diagnostics buffer.
+
+        Args:
+        record: The log record object to emit.
+        """
         try:
             message = record.getMessage()
             if record.exc_info:
@@ -59,6 +66,7 @@ def get_recent_logs(*, limit: int = 80) -> list[dict[str, str]]:
 
     Returns:
         list[dict[str, str]]: Structured log entries for diagnostics panels.
+
     """
     clamped_limit = max(1, limit)
     with _RECENT_LOGS_LOCK:
@@ -74,6 +82,7 @@ def _coerce_log_level(value: str | None, *, default: str = _DEFAULT_LOG_LEVEL) -
 
     Returns:
         str: Upper-case logging level accepted by ``logging``.
+
     """
     candidate = (value or default).upper()
     if candidate in logging.getLevelNamesMapping():
@@ -90,6 +99,7 @@ def _coerce_positive_int(value: str | None, *, default: int) -> int:
 
     Returns:
         int: Parsed positive integer or the fallback.
+
     """
     if value is None:
         return default
@@ -105,6 +115,7 @@ def get_simulation_debug_interval() -> int:
 
     Returns:
         int: Tick interval for DEBUG summaries.
+
     """
     return _coerce_positive_int(
         os.getenv("PHIDS_LOG_SIM_DEBUG_INTERVAL"),
@@ -123,6 +134,7 @@ def configure_logging(*, force: bool = False) -> None:
 
     Args:
         force: Reconfigure logging even if already configured.
+
     """
     global _CONFIGURED
     if _CONFIGURED and not force:

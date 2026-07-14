@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Automated hyperparameter tuning pipeline using Differential Evolution.
 
 This module provides the :class:`TrophicOptimizer` to autonomously search for
@@ -32,6 +35,7 @@ class TrophicOptimizer:
         max_ticks: Target simulation duration per run.
         bounds: List of min/max boundary value tuples for each parameter.
         param_mapping: Mapping of float indices to blueprint keys.
+
     """
 
     def __init__(
@@ -46,6 +50,7 @@ class TrophicOptimizer:
             blueprint: The baseline scenario configuration.
             runs_per_eval: Number of concurrent stochastic runs per evaluation.
             max_ticks: Target simulation duration per run.
+
         """
         self.blueprint = blueprint
         self.runs_per_eval = runs_per_eval
@@ -88,6 +93,7 @@ class TrophicOptimizer:
 
         Returns:
             The modified scenario configuration blueprint dictionary.
+
         """
         config = cast("dict[str, Any]", json.loads(json.dumps(self.blueprint)))
         for val, (category, idx, key) in zip(x, self.param_mapping, strict=False):
@@ -102,6 +108,7 @@ class TrophicOptimizer:
 
         Returns:
             The calculated float fitness/stability score (lower is better).
+
         """
         config = self._apply_params(x)
 
@@ -165,6 +172,7 @@ class TrophicOptimizer:
 
         Returns:
             The optimized configuration blueprint as a dictionary.
+
         """
         logger.info(
             "Starting stochastic optimization sweep with %d parameters and %d concurrent runs per eval",

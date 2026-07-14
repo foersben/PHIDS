@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """High-performance chunked replay storage using Zarr for PHIDS simulation snapshots.
 
 This module implements a Zarr-based replay backend that provides identical ``ReplayBuffer``
@@ -77,7 +80,16 @@ class NoOpReplayBuffer:
         pass
 
     def append(self, state: object) -> None:
-        """Append a state snapshot to the buffer (no-op)."""
+        """Append a state snapshot to the buffer (no-op).
+
+        Args:
+            state: The simulation state object to append.
+
+        Args:
+        world: The ECSWorld registry containing current entity state.
+        env: The GridEnvironment containing current spatial field states.
+        metrics: The TickMetrics snapshot to append for this tick.
+        """
         pass
 
     def append_raw_arrays(self, *args: Any, **kwargs: Any) -> None:

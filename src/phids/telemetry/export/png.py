@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
 """Telemetry export to PNG images.
 
 Renders publication-quality charts (time series, phase space, defense economy, biomass stacks,
@@ -43,17 +46,17 @@ def generate_png_bytes(
 
     Supports five ``plot_type`` modes:
 
-    * ``"timeseries"`` — Overlaid line chart with one series per flora and herbivore
+    * ``"timeseries"`` - Overlaid line chart with one series per flora and herbivore
       species, sharing a common tick x-axis and a left y-axis for population counts.
-    * ``"phasespace"`` — Lotka-Volterra phase-space scatter with ``showLine=True``
+    * ``"phasespace"`` - Lotka-Volterra phase-space scatter with ``showLine=True``
       semantics.
-    * ``"defense_economy"`` — Line chart plotting defense cost divided by total energy
+    * ``"defense_economy"`` - Line chart plotting defense cost divided by total energy
       capacity per flora species.
-    * ``"biomass_stack"`` — Stacked area chart approximating carrying capacity share.
-    * ``"survival_probability"`` — Aggregate batch survival probability (requires ensemble rows).
+    * ``"biomass_stack"`` - Stacked area chart approximating carrying capacity share.
+    * ``"survival_probability"`` - Aggregate batch survival probability (requires ensemble rows).
 
     Args:
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         plot_type: Output chart type (``"timeseries"``, ``"phasespace"``,
             ``"defense_economy"``, ``"biomass_stack"``, or ``"survival_probability"``).
         flora_names: Optional dictionary mapping flora species ids to display names.
@@ -71,6 +74,7 @@ def generate_png_bytes(
 
     Returns:
         bytes: Raw PNG-encoded bytes of the rendered figure.
+
     """
     import matplotlib
     import matplotlib.pyplot as plt
@@ -196,13 +200,14 @@ def _plot_timeseries(
 
     Args:
         ax: Matplotlib Axes instance.
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         ticks: Tick index list aligned with ``rows``.
         flora_names: Optional display names for flora species.
         herbivore_names: Optional display names for herbivore species.
         title: Optional custom chart title.
         x_label: Optional custom x-axis label.
         y_label: Optional custom y-axis label.
+
     """
     all_flora: set[int] = set()
     all_herbivores: set[int] = set()
@@ -247,7 +252,7 @@ def _plot_phasespace(
 
     Args:
         ax: Matplotlib Axes instance.
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         plant_species_id: Flora species id to use as x-axis.
         herbivore_species_id: Herbivore species id to use as y-axis.
         flora_names: Optional display names for flora species.
@@ -257,6 +262,7 @@ def _plot_phasespace(
         y_label: Optional custom y-axis label.
         x_max: Optional custom x-axis maximum value.
         y_max: Optional custom y-axis maximum value.
+
     """
     if plant_species_id == 0:
         x = [r.get("flora_population", 0) for r in rows]
@@ -308,12 +314,13 @@ def _plot_defense_economy(
 
     Args:
         ax: Matplotlib Axes instance.
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         ticks: Tick index list aligned with ``rows``.
         flora_names: Optional display names for flora species.
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
+
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -351,12 +358,13 @@ def _plot_biomass_stack(
 
     Args:
         ax: Matplotlib Axes instance.
-        rows: Raw telemetry rows.
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
         ticks: Tick index list aligned with ``rows``.
         flora_names: Optional display names for flora species.
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
+
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -392,11 +400,12 @@ def _plot_survival_probability(
 
     Args:
         ax: Matplotlib Axes instance.
-        rows: Raw telemetry rows containing ``survival_probability``.
+        rows: Telemetry records enriched with batch 'survival_probability' metrics.
         ticks: Tick index list aligned with ``rows``.
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
+
     """
     y = [100.0 * float(r.get("survival_probability", 0.0)) for r in rows]
     ax.plot(ticks, y, color="#0ea5e9", linewidth=2.0, label="Survival probability")
