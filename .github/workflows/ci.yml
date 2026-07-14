@@ -102,6 +102,7 @@ jobs:
         run: uvx complexipy . --output-format sarif --output metrics-results.sarif --ignore-complexity
 
       - name: Upload Bottlenecks to GitHub Code Scanning
+        if: ${{ !env.ACT }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: metrics-results.sarif
