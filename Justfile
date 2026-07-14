@@ -52,8 +52,11 @@ run-numba:
 benchmark:
     NUMBA_DISABLE_JIT=0 uv run pytest tests/benchmarks/ --benchmark-only
 
-bench-compare ref1 ref2 scenario ticks="100" repeats="2" warmup="10":
-    uv run python scripts/run_sim_benchmark.py --compare {{ref1}} {{ref2}} {{scenario}} {{ticks}} --repeats {{repeats}} --warmup {{warmup}}
+bench-compare ref1 ref2 scenario_or_dir ticks="100" repeats="2" warmup="10" extra_args="":
+    uv run python scripts/run_sim_benchmark.py --compare {{ref1}} {{ref2}} {{scenario_or_dir}} {{ticks}} --repeats {{repeats}} --warmup {{warmup}} {{extra_args}}
+
+bench-compare-jit ref1 ref2 scenario_or_dir ticks="100" repeats="2" warmup="10":
+    @just bench-compare {{ref1}} {{ref2}} {{scenario_or_dir}} {{ticks}} {{repeats}} {{warmup}} --jit-only
 
 
 clean:
