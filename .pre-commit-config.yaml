@@ -40,17 +40,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: ruff-check
-        name: Ruff Check
-        entry: uv run ruff check --fix
-        language: system
-        types: [python]
-
-      - id: ruff-format
-        name: Ruff Format
-        entry: uv run ruff format
-        language: system
-        types: [python]
 
       - id: mypy
         name: Mypy
@@ -67,3 +56,13 @@ repos:
         language: system
         files: ^(docs/|\.agents/).*\.md$
         pass_filenames: true
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.21
+    hooks:
+      - id: ruff
+        name: Ruff Code Quality Linting
+        args: [ --fix, --show-fixes ]
+        stages: [ commit ]
+      - id: ruff-format
+        name: Ruff Layout Formatting
+        stages: [ commit ]

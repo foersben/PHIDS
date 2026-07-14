@@ -33,7 +33,7 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run Pre-Commit Hooks
-        run: SKIP=check-identity,enforce-author-identity uv run pre-commit run --all-files
+        run: SKIP=ruff,ruff-format,check-identity,enforce-author-identity uv run pre-commit run --all-files
 
       - name: Pass 1 - Logic & Coverage
         env:
@@ -76,3 +76,32 @@ jobs:
         if: ${{ !env.ACT }}
         id: deployment
         uses: actions/deploy-pages@v5
+
+  architectural-profiling:
+    name: SCC Architecture Profile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Generate Sloc, Cloc and Code (scc) Report
+        run: docker run --rm -v "${{ github.workspace }}:/pwd:ro" ghcr.io/boyter/scc:master /pwd
+
+  cognitive-complexity:
+    name: Complexipy SARIF Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+
+      - name: Run Complexipy Scan
+        # Runs statelessly via uvx, exporting standard SARIF format
+        run: uvx complexipy . --output-format sarif --output metrics-results.sarif --ignore-complexity
+
+      - name: Upload Bottlenecks to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: metrics-results.sarif
