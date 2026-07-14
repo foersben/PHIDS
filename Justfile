@@ -52,6 +52,10 @@ run-numba:
 benchmark:
     NUMBA_DISABLE_JIT=0 uv run pytest tests/benchmarks/ --benchmark-only
 
+bench-compare ref1 ref2 scenario ticks="100" repeats="2" warmup="10":
+    uv run python scripts/run_sim_benchmark.py --compare {{ref1}} {{ref2}} {{scenario}} {{ticks}} --repeats {{repeats}} --warmup {{warmup}}
+
+
 clean:
     find . -type d -name "__pycache__" -exec rm -rf {} +
     find . -type d -name "*.egg-info" -exec rm -rf {} +

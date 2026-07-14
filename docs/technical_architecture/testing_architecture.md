@@ -128,6 +128,30 @@ Latency throughput tests (`tests/benchmarks/`) are robustly constrained with cle
 
 **Masked Detail:** There is zero instrumentation measuring memory allocation churn, `gc` impact, or deep object instantiation within inner simulation loops. The focus is entirely on runtime latency (`wall-clock`), which masks potential multi-tick memory blowups that slow down execution due to garbage collection over time.
 
+### Simulation Comparison Benchmarking (Cross-Commit & JIT)
+
+To protect the simulation engine from performance regressions across refactorings, a custom comparison script is provided in [run_sim_benchmark.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/scripts/run_sim_benchmark.py). This utility compares the ticks-per-second throughput of the simulation across different JIT compilation states and Git commits/branches.
+
+#### Features
+
+* **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. Your active branch and uncommitted modifications remain completely untouched.
+* **Warmup Phase:** Simulates 10 warmup ticks prior to starting the timer to allow JIT compilation to complete, ensuring the JIT measurements track execution throughput, not compiling latency.
+* **Statistical Averaging:** Supports repeating the benchmark runs multiple times to compute average durations, reducing measurement noise.
+
+#### Usage via Justfile
+
+Run the comparison benchmark directly using:
+
+```bash
+just bench-compare <ref1> <ref2> <scenario_path> [ticks] [repeats] [warmup]
+```
+
+Example comparing two commit hashes with 500 ticks repeated 3 times:
+
+```bash
+just bench-compare 17d6980299102e5259fd752ade5ab2f1430b0e17 f3d066a886e994934066fafd6be4ba12899e772e examples/rectangular_crossfire_extended.json 500 3
+```
+
 ### Concurrency, WebSockets, & State Pollution
 
 **Current Status:** Verified.
