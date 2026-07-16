@@ -27,12 +27,38 @@ We have successfully decoupled and modernized the visual editor and underlying s
 
 ## Future Goals & Next Steps
 
-### 1. Database Persistence Migration
-Currently, the Bio-Database is persisted via a flat file (`src/phids/analytics/bio_database.json`). As the simulation complexity scales, especially when the DSE starts caching thousands of generated archetypes, we will migrate this.
-- **Short Term:** Migrate flat-file JSON serialization to **SQLite** using SQLAlchemy.
-- **Long Term:** Support for scalable graph/document databases (e.g., PostgreSQL JSONB) to allow for complex queries like "Find all herbivores immune to taxine".
+### 1. Database Persistence (Implemented: DuckDB)
+
+The Bio-Database is persisted in a single-file columnar DuckDB database
+(`src/phids/analytics/bio_database.duckdb`). This supersedes the previous
+flat-file JSON approach and the SQLite short-term plan from v0.6.
+
+**Why DuckDB over SQLite:**
+- Columnar storage enables partial loading: read only `growth_rate` for
+  all flora without deserializing trigger rules.
+- Native STRUCT/LIST types store trigger rule condition trees as proper typed
+  columns, not opaque JSON strings.
+- Native Polars round-trip (`duckdb.table('flora').pl()`) - zero conversion overhead.
+- Direct Parquet federation: the pipeline's ingest caches are queryable
+  via `SELECT * FROM 'cache/pantheria_raw.parquet'` without loading.
+- Full SQL interface for future HTMX API endpoints with filtering and paging.
+- Scales to the DSE genotype cache (5-50 MB at 10,000 evaluations).
+
+**File layout:**
+- `bio_database.duckdb` - primary source of truth (queryable)
+- `bio_database.json` - generated export for engine compatibility (derived artifact)
+- `manifest.json` - provenance export from the DuckDB provenance table
+
+**Long-Term:** As DSE genotype caching grows into hundreds of thousands of
+entries, the same DuckDB file absorbs the load without schema changes.
+A read replica or PostgreSQL migration is supported via DuckDB ATTACH.
 
 ### 2. DSE Configuration Sync
-The current DSE configuration forms must be tightly linked to the new Bio-Database UI.
-- The UI must dynamically populate the **Mode B: Constrained** archetypal dropdowns directly from the SQLite backend.
-- The pre-flight invariant parser must read the Substance Trigger definitions and Diet matrices built in the visual editor to instantly block impossible survival parameters.
+
+The current DSE configuration forms must be tightly linked to the Bio-Database.
+- The UI must dynamically populate the **Mode B: Constrained** archetypal
+  dropdowns by querying `SELECT canonical_name, growth_rate FROM flora_species`.
+- The pre-flight invariant parser reads Substance Trigger definitions and
+  Diet matrices from DuckDB to block impossible survival parameters instantly.
+- `BioQuery.toxic_flora(conn, min_lethality=5.0)` provides the substance
+  compatibility filter for the DSE optimizer.

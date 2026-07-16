@@ -49,6 +49,12 @@ run:
 run-numba:
     NUMBA_DISABLE_JIT=0 uv run phids --reload
 
+etl:
+    uv run --group pipeline python src/data_pipeline/run_all.py
+
+etl-refresh:
+    uv run --group pipeline python src/data_pipeline/run_all.py --force-refresh
+
 benchmark:
     NUMBA_DISABLE_JIT=0 uv run pytest tests/benchmarks/ --benchmark-only
 

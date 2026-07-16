@@ -34,6 +34,15 @@ dependencies = [
 phids = "phids.__main__:main"
 
 [dependency-groups]
+pipeline = [
+    "duckdb>=1.1.0",
+    "scikit-learn>=1.5.0",
+    "huggingface-hub>=0.24.0",
+    "httpx>=0.27.0",
+    "aiofiles>=24.1.0",
+    "pyarrow>=25.0.0",
+]
+
 dev = [
     "ruff>=0.15.21",
     "mypy>=2.2.0",
