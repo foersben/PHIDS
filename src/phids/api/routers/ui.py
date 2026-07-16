@@ -363,3 +363,32 @@ async def api_database_save(request: Request) -> Response:
         return Response(status_code=200)
     except Exception as e:
         return Response(content=str(e), status_code=400)
+
+
+@router.post("/api/database/rebuild", summary="Rebuild Bio-Database via ETL pipeline")
+async def api_database_rebuild() -> Response:
+    """Run the ETL pipeline.
+
+    Returns:
+        Response: Success or failure message.
+    """
+    import asyncio
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            "uv",
+            "run",
+            "python",
+            "src/data_pipeline/run_all.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _stdout, stderr = await process.communicate()
+        if process.returncode != 0:
+            return Response(content=f"ETL Failed:\\n{stderr.decode('utf-8')}", status_code=500)
+
+        # We trigger an HTMX refresh of the panel by returning a client-side redirect header
+        # or we can just return a success message
+        return Response(content="ETL Pipeline completed successfully.", status_code=200, headers={"HX-Refresh": "true"})
+    except Exception as e:
+        return Response(content=str(e), status_code=500)

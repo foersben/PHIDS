@@ -27,7 +27,16 @@ graph TD
 
 To guide your workflow from initial design to self-sustaining execution, the Scenarios documentation is partitioned into three key guides:
 
-### 1. [Scenario Authoring & Schema](scenario_authoring.md)
+* **[Scenario Authoring](scenario_authoring.md)**
+  Documentation on the scenario `DraftState` pipeline and constraints.
+* **[Curated Examples](curated_examples.md)**
+  An overview of the built-in, chemically balanced default scenarios.
+* **[Design Space Exploration](design_space_exploration.md)**
+  Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
+* **[Empirical Database](empirical_database.md)**
+  Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
+
+### 1. Scenario Authoring & Schema
 
 Understand how to define your custom ecosystem configurations. This guide details:
 
@@ -35,7 +44,7 @@ Understand how to define your custom ecosystem configurations. This guide detail
 * The **Rule of 16** constraint, which limits flora, herbivores, and chemical substances to pre-allocated static cache lines, avoiding dynamic memory allocation latency during hot execution loops.
 * How to define the **Diet Compatibility** and **Substance Trigger** matrices to construct complex trophic relationships.
 
-### 2. [Curated Examples](curated_examples.md)
+### 2. Curated Examples
 
 Inspect pre-configured blueprints designed to demonstrate specific ecological features:
 
@@ -43,7 +52,7 @@ Inspect pre-configured blueprints designed to demonstrate specific ecological fe
 * **Trophic Collapse Scenario:** A demonstration of ecological breakdown when herbivore consumption rates breach flora regeneration thresholds.
 * **Volatile Warning Cascade:** A scenario highlighting chemical atmospheric warning diffusion across spatial grids.
 
-### 3. [Design Space Exploration (DSE)](design_space_exploration.md)
+### 3. Design Space Exploration (DSE)
 
 Discover how the framework uses SciPy's Differential Evolution to find stable parameters autonomously:
 

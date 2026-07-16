@@ -1,9 +1,9 @@
 ---
-type: roadmap
-title: "The PHIDS Empirical Database Pipeline (ETL)"
-status: planned
-version: 1.1
-description: "Implementation details and theoretical foundation for the biological ETL data pipeline to ingest, clean, normalize, and cluster traits into the empirical bio_database.json."
+type: concept
+title: "Empirical Database Pipeline"
+status: active
+version: 1.0
+description: "Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline, generating the empirical DuckDB database."
 ---
 
 # Roadmap: The PHIDS Empirical Database Pipeline
