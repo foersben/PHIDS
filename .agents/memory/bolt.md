@@ -1,3 +1,11 @@
-## 2024-07-16 - [Structural Spatial Cache for Fast-Path Queries]
+---
+title: Structural Spatial Cache for Fast-Path Queries
+type: memory
+date: 2026-07-16
+author: bolt
+tags: [performance, caching, ecs, interaction, optimization]
+---
+
+## 2026-07-16 - [Structural Spatial Cache for Fast-Path Queries]
 Learning: Attempting standard Python micro-optimizations inside the engine hot loop (e.g. replacing list comprehensions, unrolling sums, directly accessing dictionary `_entities`) struggles to beat the noise floor in this heavily Numba/C-optimized engine. However, structural caching—specifically pre-calculating an O(1) `dict[tuple[int, int], list[tuple[int, Component]]]` cache at the beginning of the Interaction phase—yields consistent multi-percent speedups (~3-4%) by eliminating redundant generator iteration, `world.entities_at(x,y)` logic, and repeated component look-ups across the multiple Swarm phases (anchoring and feeding).
 Action: When optimizing engine systems, look for structural data-sharing opportunities across sub-phases (like caching a tile's flora presence) instead of only targeting isolated per-line pythonic optimizations.

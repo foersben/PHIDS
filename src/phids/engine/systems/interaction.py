@@ -1012,7 +1012,7 @@ def run_interaction(
         entity = world._entities.get(eid)
         if entity is None or PlantComponent not in entity._components:
             continue
-        p_comp = entity._components.get(PlantComponent)
+        p_comp = entity.get_component(PlantComponent)
         coord = (p_comp.x, p_comp.y)
         if coord not in plant_cache:
             plant_cache[coord] = []
