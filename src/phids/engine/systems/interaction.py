@@ -600,6 +600,7 @@ def _is_swarm_anchored(
     swarm: SwarmComponent,
     world: ECSWorld,
     diet_matrix: list[list[bool]],
+    plant_cache: dict[tuple[int, int], list[tuple[int, PlantComponent]]],
 ) -> bool:
     """Return True if swarm is currently co-located with compatible uneaten food.
 
@@ -612,17 +613,16 @@ def _is_swarm_anchored(
         swarm: The swarm component.
         world: The ECS world.
         diet_matrix: The diet matrix.
+        plant_cache: The spatial plant cache.
 
     Returns:
         True if the swarm is anchored, False otherwise.
     """
-    for co_eid in world.entities_at(swarm.x, swarm.y):
+    local_plants = plant_cache.get((swarm.x, swarm.y), [])
+    for co_eid, anchor_plant in local_plants:
         if not world.has_entity(co_eid):
             continue
-        co_entity = world.get_entity(co_eid)
-        if not co_entity.has_component(PlantComponent):
-            continue
-        anchor_plant = co_entity.get_component(PlantComponent)
+
         herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
         if (
             anchor_plant.species_id < len(herbivore_row)
@@ -640,6 +640,7 @@ def _resolve_swarm_movement(
     world: ECSWorld,
     diet_matrix: list[list[bool]],
     tile_populations: list[int],
+    plant_cache: dict[tuple[int, int], list[tuple[int, PlantComponent]]],
 ) -> bool:
     """Evaluate and execute movement phase for a single swarm, return has_moved.
 
@@ -654,6 +655,7 @@ def _resolve_swarm_movement(
         world: The ECS world.
         diet_matrix: The diet matrix.
         tile_populations: The tile populations.
+        plant_cache: The spatial plant cache.
 
     Returns:
         True if the swarm has moved, False otherwise.
@@ -681,7 +683,7 @@ def _resolve_swarm_movement(
             swarm.repelled = False
     else:
         # 2. Fast O(1) check: are we already standing on valid, uneaten food?
-        if _is_swarm_anchored(swarm, world, diet_matrix):
+        if _is_swarm_anchored(swarm, world, diet_matrix, plant_cache):
             nx, ny = swarm.x, swarm.y
         else:
             # 3. Resume normal gradient tracking if no food is present.
@@ -794,6 +796,7 @@ def _resolve_swarm_feeding(
     flora_species_params: list[FloraSpeciesParams],
     herbivore_species_params: list[HerbivoreSpeciesParams],
     tile_populations: list[int],
+    plant_cache: dict[tuple[int, int], list[tuple[int, PlantComponent]]],
     plant_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute feeding phase on target plants at current position.
@@ -810,18 +813,16 @@ def _resolve_swarm_feeding(
         flora_species_params: The flora species parameters.
         herbivore_species_params: The herbivore species parameters.
         tile_populations: The tile populations.
+        plant_cache: The spatial plant cache.
         plant_death_causes: The plant death causes.
     """
     ate_anything = False
     on_incompatible_plant = False
 
-    for co_eid in list(world.entities_at(swarm.x, swarm.y)):
+    local_plants = plant_cache.get((swarm.x, swarm.y), [])
+    for co_eid, target_plant in local_plants:
         if not world.has_entity(co_eid):
             continue
-        co_entity = world.get_entity(co_eid)
-        if not co_entity.has_component(PlantComponent):
-            continue
-        target_plant: PlantComponent = co_entity.get_component(PlantComponent)
 
         # Diet compatibility check
         herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
@@ -1003,6 +1004,20 @@ def run_interaction(
             indexed_swarm.population,
         )
 
+    # Pre-compute plant spatial cache. The spatial hashing enables O(1) lookup
+    # by position for swarm interaction phases (anchoring and feeding), bypassing
+    # slow dynamic `world.entities_at()` tuple allocations and type checks inside tight loops.
+    plant_cache: dict[tuple[int, int], list[tuple[int, PlantComponent]]] = {}
+    for eid in tuple(world._component_index.get(PlantComponent, set())):
+        entity = world._entities.get(eid)
+        if entity is None or PlantComponent not in entity._components:
+            continue
+        p_comp = entity._components.get(PlantComponent)
+        coord = (p_comp.x, p_comp.y)
+        if coord not in plant_cache:
+            plant_cache[coord] = []
+        plant_cache[coord].append((eid, p_comp))
+
     # Main interaction loop
     for eid in tuple(world._component_index.get(SwarmComponent, set())):
         entity = world._entities.get(eid)
@@ -1011,7 +1026,7 @@ def run_interaction(
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
 
         # 1-2. Movement Phase
-        has_moved = _resolve_swarm_movement(swarm, entity, env, world, diet_matrix, tile_populations)
+        has_moved = _resolve_swarm_movement(swarm, entity, env, world, diet_matrix, tile_populations, plant_cache)
 
         # 3. Feeding Phase
         if not has_moved:
@@ -1023,6 +1038,7 @@ def run_interaction(
                 flora_species_params,
                 herbivore_species_params,
                 tile_populations,
+                plant_cache,
                 plant_death_causes,
             )
 
