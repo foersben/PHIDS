@@ -215,7 +215,7 @@ def _run_mitosis_only(
     ]
 
     with patch(
-        "phids.engine.systems.interaction._random_walk_step",
+        "phids.engine.systems.interaction.metabolism._random_walk_step",
         return_value=offspring_pos,
     ):
         run_interaction(
