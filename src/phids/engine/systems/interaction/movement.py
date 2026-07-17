@@ -456,6 +456,7 @@ def _is_swarm_anchored(
             anchor_plant.species_id < len(herbivore_row)
             and herbivore_row[anchor_plant.species_id]
             and anchor_plant.energy > 0
+            and anchor_plant.apparent_nutrition_factor >= 0.999
         ):
             return True
     return False
