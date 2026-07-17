@@ -18,3 +18,7 @@ type: memory
 ## 2024-07-02 - Zensical Documentation and Mermaid
 Learning: The Python test suite for `test_batch_runner.py` contains a test (`test_run_single_headless_breaks_when_termination_detected`) that is structurally broken in the repository's base state regarding the `_FakeLoop` constructor signature (missing `disable_replay` kwarg acceptance), which initially caused pytest failures.
 Action: When modifying purely documentation files inside `docs/`, utilize targeted test running (`pytest tests/ <target_file>`) or explicitly note that existing integration test failures are disjoint from documentation updates. Do not attempt to fix unrelated tests in documentation PRs.
+
+## 2024-05-18 - [Optimization of ECSWorld.query multi-component checks]
+**Learning:** The previous ECS design used `min()` to find the smallest component set, then checked for intersection using `all(...)` across all components inside a list comprehension. This iteration and function call in python is slow. A better approach is to sort the component index sets by length and use Python's C-level `set.intersection_update()` down an initial copied set, which significantly outperforms purely iterating via list comprehensions with `all()` component checks.
+**Action:** Changed the multi-component logic in `ECSWorld.query` to use `set.intersection_update()`. This significantly improves the execution speed of multi-component checks.
