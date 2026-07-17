@@ -62,6 +62,7 @@ Home = "index.md"
     { "Population Dynamics" = "scientific_model/population_dynamics.md" },
     { "Herbivore Behavior & Kinematics" = "scientific_model/herbivore_behavior.md" },
     { "Flora & Symbiosis" = "scientific_model/flora_and_symbiosis.md" },
+    { "Morphological Defenses" = "scientific_model/morphological_defenses.md" },
     { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
 ]
 
@@ -80,12 +81,7 @@ Scenarios = [
     { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
     { "Curated Examples" = "scenario_guide/curated_examples.md" },
     { "Design Space Exploration (DSE)" = "scenario_guide/design_space_exploration.md" },
-    { "Roadmaps & Pipelines" = [
-        { "DSE Roadmap" = "scenario_guide/dse_roadmap.md" },
-        { "Database & UI Roadmap" = "scenario_guide/database_and_ui_roadmap.md" },
-        { "Empirical Database Pipeline" = "scenario_guide/empirical_database_pipeline.md" },
-        { "Biological Accuracy Upgrade" = "scenario_guide/biological_accuracy_upgrade.md" }
-    ] }
+    { "Empirical Database" = "scenario_guide/empirical_database.md" },
 ]
 
 

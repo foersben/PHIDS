@@ -1,18 +1,14 @@
 ---
-type: roadmap
-title: "Biological Accuracy Upgrade: Morphological Defenses and Senescence"
-status: completed
+type: concept
+title: "Morphological Defenses and Senescence"
+status: active
 version: 1.0
-description: "Implementation details for separating passive/morphological defenses from active ones, and introducing dynamic resource reallocation."
+description: "Architectural record for morphological defenses and dynamic resource reallocation."
 ---
 
-# Biological Accuracy Upgrade Roadmap
+# Morphological Defenses and Senescence
 
-> [!NOTE]
-> **Status: Completed**. All implementation steps below are fully integrated into the engine backend, UI, and default databases.
-> This document remains as a historical architectural record of the upgrade process.
-
-This document outlines the detailed execution plan for upgrading the biological accuracy of the PHIDS engine, separating morphological (passive) defenses from active chemical defenses, and introducing dynamic resource reallocation (apparent nutrition withdrawal).
+This document outlines the architectural implementation for the biological accuracy of the PHIDS engine, specifically the separation of morphological (passive) defenses from active chemical defenses, and dynamic resource reallocation (apparent nutrition withdrawal).
 
 ---
 
