@@ -307,7 +307,7 @@ class FloraSpeciesParams(StrictBaseModel):
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
     # Trigger matrix: list of trigger conditions associated with this species
     passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
-    triggers: list[TriggerConditionSchema] = Field(default_factory=list)
+    triggers: list[TriggerConditionSchema] = Field(default_factory=list, max_length=MAX_SUBSTANCE_TYPES)
 
 
 class HerbivoreResistancesSchema(StrictBaseModel):
