@@ -32,7 +32,6 @@ from phids.api.main import app
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
-    HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
     InitialPlantPlacement,
     InitialSwarmPlacement,
@@ -156,7 +155,7 @@ def config_builder() -> Callable[..., SimulationConfig]:
                     energy_min=1.0,
                     velocity=1,
                     consumption_rate=1.0,
-                    resistances=HerbivoreResistancesSchema(),
+                    resistances=dict(),
                 )
             ],
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),
@@ -216,7 +215,7 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
                     energy_min=1.0,
                     velocity=1,
                     consumption_rate=1.0,
-                    resistances=HerbivoreResistancesSchema(),
+                    resistances=dict(),
                 )
             ],
             diet_matrix=DietCompatibilityMatrix(rows=[[True]]),

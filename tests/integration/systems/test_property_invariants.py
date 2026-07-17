@@ -15,7 +15,6 @@ from pydantic import ValidationError
 from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
-    HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
     PassiveDefensesSchema,
 )
@@ -116,7 +115,7 @@ def test_thermodynamic_invariant_digestion() -> None:
             velocity=1,
             consumption_rate=2.0,
             energy_upkeep_per_individual=0.0,
-            resistances=HerbivoreResistancesSchema(digestive_efficiency=1.0, morphological_adaptation=0.0),
+            resistances=dict(digestive_efficiency=1.0, morphological_adaptation=0.0),
         )
     ]
 

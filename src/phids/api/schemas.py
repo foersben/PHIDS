@@ -307,26 +307,7 @@ class FloraSpeciesParams(StrictBaseModel):
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
     # Trigger matrix: list of trigger conditions associated with this species
     passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
-    triggers: list[TriggerConditionSchema] = Field(default_factory=list)
-
-
-class HerbivoreResistancesSchema(StrictBaseModel):
-    """Herbivore resistances to passive plant defenses."""
-
-    morphological_adaptation: float = Field(
-        default=0.0,
-        ge=0.0,
-        le=1.0,
-        description="[%] Resistance to physical plant defenses like thorns or spines (0.0 to 1.0).",
-    )
-    chemical_neutralization: float = Field(
-        default=0.0, ge=0.0, le=1.0, description="[%] Metabolic ability to neutralize ingested toxins (0.0 to 1.0)."
-    )
-    digestive_efficiency: float = Field(
-        default=1.0,
-        ge=0.0,
-        description="[%] Ability to extract calories from tough plant matter (0.0+ multiplier).",
-    )
+    triggers: list[TriggerConditionSchema] = Field(default_factory=list, max_length=MAX_SUBSTANCE_TYPES)
 
 
 class HerbivoreSpeciesParams(StrictBaseModel):
@@ -348,7 +329,9 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         ge=0.0,
         description="Per-individual metabolic upkeep scalar applied every interaction tick.",
     )
-    resistances: HerbivoreResistancesSchema = Field(default_factory=HerbivoreResistancesSchema)
+    resistances: dict[str, float] = Field(
+        default_factory=dict, description="Resistances to defense mechanisms (e.g. {'mechanical': 0.5})."
+    )
     split_population_threshold: int = Field(
         default=10,
         gt=0,

@@ -111,7 +111,7 @@ async def config_herbivore_update(
         updates["split_population_threshold"] = split_population_threshold
 
     # Handle nested resistances
-    resistances_updates: dict[str, object] = {}
+    resistances_updates: dict[str, float] = pp.resistances.copy()
     if resistances_morphological_adaptation is not None:
         resistances_updates["morphological_adaptation"] = max(0.0, min(1.0, resistances_morphological_adaptation))
     if resistances_chemical_neutralization is not None:

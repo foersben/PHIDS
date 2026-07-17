@@ -95,30 +95,10 @@ def _flat_field_choice_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    if last_dx == 0 and last_dy == 0:
-        idx = int(rand_val * count)
-        if idx >= count:
-            idx = count - 1
-        return c_x[idx], c_y[idx]
-
-    target_x = x + last_dx
-    target_y = y + last_dy
-    weights = np.empty(5, dtype=np.float64)
-    total_w = 0.0
-    for i in range(count):
-        if c_x[i] == target_x and c_y[i] == target_y:
-            weights[i] = 10.0
-        else:
-            weights[i] = 1.0
-        total_w += weights[i]
-
-    r = rand_val * total_w
-    cum = 0.0
-    for i in range(count):
-        cum += weights[i]
-        if r <= cum:
-            return c_x[i], c_y[i]
-    return c_x[count - 1], c_y[count - 1]
+    idx = int(rand_val * count)
+    if idx >= count:
+        idx = count - 1
+    return c_x[idx], c_y[idx]
 
 
 @njit(cache=True)

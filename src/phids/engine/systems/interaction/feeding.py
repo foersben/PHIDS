@@ -59,9 +59,9 @@ def _feed_on_single_plant(
     swarm_params = herbivore_species_params[swarm.species_id]
 
     digestibility_modifier = getattr(plant_params.passive_defenses, "digestibility_modifier", 1.0)
-    digestive_efficiency = getattr(swarm_params.resistances, "digestive_efficiency", 1.0)
+    digestive_efficiency = swarm_params.resistances.get("digestive_efficiency", 1.0)
     mechanical_damage_per_bite = getattr(plant_params.passive_defenses, "mechanical_damage_per_bite", 0.0)
-    morphological_adaptation = getattr(swarm_params.resistances, "morphological_adaptation", 0.0)
+    morphological_adaptation = swarm_params.resistances.get("morphological_adaptation", 0.0)
 
     # Calculate metabolized energy
     net_digestibility = min(1.0, max(0.0, digestibility_modifier * digestive_efficiency))

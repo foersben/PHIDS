@@ -11,7 +11,6 @@ import numpy as np
 
 from phids.api.schemas import (
     FloraSpeciesParams,
-    HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
     PassiveDefensesSchema,
     ResourceWithdrawalAction,
@@ -88,7 +87,7 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
             velocity=1,
             consumption_rate=2.0,
             energy_upkeep_per_individual=0.0,
-            resistances=HerbivoreResistancesSchema(digestive_efficiency=1.0, morphological_adaptation=0.0),
+            resistances=dict(digestive_efficiency=1.0, morphological_adaptation=0.0),
         )
     ]
 
@@ -236,7 +235,7 @@ def test_mechanical_attrition_enforces_integer_casualties() -> None:
             split_population_threshold=20,
             move_cooldown=1,
             consumption_rate=5.0,
-            resistances=HerbivoreResistancesSchema(
+            resistances=dict(
                 morphological_adaptation=0.0,
                 digestive_efficiency=1.0,
             ),

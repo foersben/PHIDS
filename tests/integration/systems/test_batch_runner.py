@@ -32,7 +32,6 @@ def _minimal_scenario() -> dict:
     from phids.api.schemas import (
         DietCompatibilityMatrix,
         FloraSpeciesParams,
-        HerbivoreResistancesSchema,
         HerbivoreSpeciesParams,
         InitialPlantPlacement,
         InitialSwarmPlacement,
@@ -65,7 +64,7 @@ def _minimal_scenario() -> dict:
                 energy_min=1.0,
                 velocity=1,
                 consumption_rate=0.5,
-                resistances=HerbivoreResistancesSchema(),
+                resistances=dict(),
             )
         ],
         diet_matrix=DietCompatibilityMatrix(rows=[[True]]),

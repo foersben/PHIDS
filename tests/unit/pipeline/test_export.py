@@ -1,3 +1,23 @@
+import sys
+from unittest.mock import MagicMock
+sys.modules['sklearn'] = MagicMock()
+sys.modules['sklearn.cluster'] = MagicMock()
+sys.modules['sklearn.preprocessing'] = MagicMock()
+sys.modules['sklearn.impute'] = MagicMock()
+
+import sys
+from unittest.mock import MagicMock
+sys.modules['sklearn'] = MagicMock()
+sys.modules['sklearn.cluster'] = MagicMock()
+sys.modules['sklearn.preprocessing'] = MagicMock()
+sys.modules['sklearn.impute'] = MagicMock()
+
+import sys
+from unittest.mock import MagicMock
+sys.modules['sklearn'] = MagicMock()
+sys.modules['sklearn.cluster'] = MagicMock()
+sys.modules['sklearn.preprocessing'] = MagicMock()
+
 # ruff: noqa: D100, D103
 import json
 import pathlib
