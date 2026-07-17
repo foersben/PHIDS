@@ -22,3 +22,7 @@ Action: When modifying purely documentation files inside `docs/`, utilize target
 ## 2024-05-18 - [Optimization of ECSWorld.query multi-component checks]
 **Learning:** The previous ECS design used `min()` to find the smallest component set, then checked for intersection using `all(...)` across all components inside a list comprehension. This iteration and function call in python is slow. A better approach is to sort the component index sets by length and use Python's C-level `set.intersection_update()` down an initial copied set, which significantly outperforms purely iterating via list comprehensions with `all()` component checks.
 **Action:** Changed the multi-component logic in `ECSWorld.query` to use `set.intersection_update()`. This significantly improves the execution speed of multi-component checks.
+
+## 2026-07-17 - Optimize ECS Query Fast-Path
+Learning: Iterating through an ECS component index and doing secondary lookup checks like `if eid in entities and ct in entities[eid]._components` is slow inside hot loops. Because the ECS is carefully managed, `_component_index` is strictly synchronized with `_entities`.
+Action: Rely on invariant synchronization to safely drop defensive dictionary lookups in hot path queries. Fail-fast on desynchronization rather than silently masking it with `if in` checks.
