@@ -13,10 +13,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.api.ui_state import DraftState
-
 if TYPE_CHECKING:
-    pass
+    from phids.api.ui_state import DraftState
 
 
 def is_truthy_flag(value: str | bool) -> bool:

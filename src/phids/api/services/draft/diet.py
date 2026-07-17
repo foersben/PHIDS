@@ -9,8 +9,12 @@ draft matrix representation.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from phids.api.services.draft.helpers import is_truthy_flag
-from phids.api.ui_state import DraftState
+
+if TYPE_CHECKING:
+    from phids.api.ui_state import DraftState
 
 
 def set_diet_compatibility(
