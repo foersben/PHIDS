@@ -5,6 +5,8 @@
 
 Provides pure functions to add, remove, and update trigger rules, as well as complex
 tree-manipulation functions for editing the hierarchical activation condition nodes.
+Also exposes read-only query helpers (e.g. ``get_condition_node``) so callers never
+need to import private ``ui_state`` path-resolution utilities directly.
 """
 
 from __future__ import annotations
@@ -24,6 +26,32 @@ from phids.api.ui_state import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def get_condition_node(
+    rule_condition: ActivationConditionNode,
+    path: str,
+) -> ActivationConditionNode:
+    """Resolve one condition node by a dotted path string.
+
+    This is the public surface for condition-tree reads so that callers never
+    need to import the private ``_condition_node_at_path`` / ``_parse_condition_path``
+    helpers from ``ui_state`` directly.
+
+    Args:
+        rule_condition: Root condition node of a trigger rule.
+        path: Dotted integer-index path (e.g. ``"0.1"``). Empty string returns the root.
+
+    Returns:
+        The ``ActivationConditionNode`` dict at the requested path.
+
+    Raises:
+        IndexError: The path does not resolve to a valid node.
+
+    """
+    if not path:
+        return rule_condition
+    return _condition_node_at_path(rule_condition, _parse_condition_path(path))
 
 
 def add_trigger_rule(

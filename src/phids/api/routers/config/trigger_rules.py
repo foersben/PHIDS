@@ -15,6 +15,7 @@ from phids.api.services.draft.trigger_rules import (
     add_trigger_rule,
     append_trigger_rule_condition_child,
     delete_trigger_rule_condition_node,
+    get_condition_node,
     remove_trigger_rule,
     replace_trigger_rule_condition_node,
     set_trigger_rule_activation_condition,
@@ -24,8 +25,6 @@ from phids.api.services.draft.trigger_rules import (
 from phids.api.ui_state import (
     ActivationConditionNode,
     DraftState,
-    _condition_node_at_path,
-    _parse_condition_path,
     get_draft,
 )
 
@@ -221,9 +220,7 @@ async def config_trigger_rule_condition_node_update(
 
     try:
         current_node: ActivationConditionNode = (
-            _condition_node_at_path(rule.activation_condition, _parse_condition_path(path))
-            if path
-            else rule.activation_condition
+            get_condition_node(rule.activation_condition, path) if path else rule.activation_condition
         )
 
         if kind is not None and current_node.get("kind") != kind:
