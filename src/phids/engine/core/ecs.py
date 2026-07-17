@@ -213,10 +213,7 @@ class ECSWorld:
             # and `_components` via the ECS lifecycle methods. Thus, we can safely
             # skip redundant dictionary lookups (`eid in entities` and `ct in entities[eid]._components`)
             # for a measurable O(N) reduction in lookup overhead during hot-path iterations.
-            return [
-                entities[eid]
-                for eid in self._component_index.get(ct, set())
-            ]
+            return [entities[eid] for eid in self._component_index.get(ct, set())]
 
         # Fast path C-level set intersection for multi-component queries
         sets: list[set[int]] = []
@@ -233,7 +230,7 @@ class ECSWorld:
         for s in sets[1:]:
             intersection.intersection_update(s)
 
-        return [entities[eid] for eid in intersection if eid in entities]
+        return [entities[eid] for eid in intersection]
 
     # ------------------------------------------------------------------
     # Spatial Hash
