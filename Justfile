@@ -46,14 +46,29 @@ format:
 run:
     uv run phids --reload
 
-run-numba:
-    NUMBA_DISABLE_JIT=0 uv run phids --reload
-
 etl:
     uv run --group pipeline python src/data_pipeline/run_all.py
 
 etl-refresh:
     uv run --group pipeline python src/data_pipeline/run_all.py --force-refresh
+
+# Extended academic pipeline (opt-in: you accept NC license obligations for BIEN/LEDA/GIFT)
+# WARNING: Running this target means you accept Non-Commercial use terms for BIEN, LEDA, and GIFT.
+# The resulting cache/extended/ files MUST NOT be published to the core HF dataset repo.
+etl-extended:
+    PHIDS_EXTENDED_MODE=1 uv run --group pipeline python src/data_pipeline/run_extended.py
+
+etl-extended-refresh:
+    PHIDS_EXTENDED_MODE=1 uv run --group pipeline python src/data_pipeline/run_extended.py --force-refresh
+
+# Publish core dataset (CC0 + CC-BY only) to foersben/PHIDS-empirical-database
+etl-publish-core:
+    uv run --group pipeline python src/data_pipeline/run_all.py --publish
+
+# Publish extended academic dataset (CC-BY-NC-SA 4.0) to foersben/PHIDS-extended-dataset
+# WARNING: Extended dataset is under a Non-Commercial, ShareAlike license.
+etl-publish-extended:
+    PHIDS_EXTENDED_MODE=1 uv run --group pipeline python src/data_pipeline/run_extended.py --publish
 
 benchmark:
     NUMBA_DISABLE_JIT=0 uv run pytest tests/benchmarks/ --benchmark-only

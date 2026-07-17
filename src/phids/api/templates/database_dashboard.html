@@ -16,7 +16,8 @@
           <span class="text-slate-400">🔍</span>
         </div>
         <input type="text" id="db-search" class="block w-64 rounded-md border-0 py-1.5 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Search archetypes..." oninput="filterDatabase()">
-      <button type="button" hx-post="/api/database/rebuild" hx-indicator="#rebuild-spinner" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+      </div>
+      <button type="button" hx-post="/api/database/rebuild" hx-swap="none" hx-indicator="#rebuild-spinner" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
         Rebuild Database (ETL)
       </button>
       <span id="rebuild-spinner" class="htmx-indicator ml-2 text-sm text-slate-500">
@@ -89,6 +90,29 @@
             </div>
           </div>
           {% endif %}
+
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance (K-Means)</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-slate-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-slate-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Centroid Dist:</span>
+                <span class="font-mono">{{ "%.3f"|format(data.provenance.centroid_distance) if data.provenance.centroid_distance else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases or 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Cluster ID:</span>
+                <span>{{ data.provenance.cluster_id or 'N/A' }}</span>
+              </div>
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -128,6 +152,29 @@
               <dd class="text-right font-mono text-slate-900">{{ data.resistances.digestive_efficiency }}</dd>
             </dl>
           </div>
+
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance (K-Means)</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-amber-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-amber-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Centroid Dist:</span>
+                <span class="font-mono">{{ "%.3f"|format(data.provenance.centroid_distance) if data.provenance.centroid_distance else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases or 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Cluster ID:</span>
+                <span>{{ data.provenance.cluster_id or 'N/A' }}</span>
+              </div>
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}

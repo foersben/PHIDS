@@ -176,6 +176,46 @@ def fetch_try(force_refresh: bool = False) -> pl.DataFrame:
     return df
 
 
+def fetch_try_or_fallback(force_refresh: bool = False) -> tuple[pl.DataFrame, str]:
+    """Try TRY API first; fall back to AusTraits (CC-BY) if TRY is unavailable.
+
+    This function is the recommended entrypoint for the core ETL pipeline.
+    It attempts to use TRY, and if the API returns 0 records (e.g., due to
+    the known 404 issue with the public endpoint), it automatically falls
+    back to AusTraits from Zenodo.
+
+    Both TRY and AusTraits are CC-BY 4.0 licensed and are fully compatible
+    with the PHIDS Proprietary Commercial License.
+
+    Args:
+        force_refresh: Pass-through to both TRY and AusTraits fetch functions.
+
+    Returns:
+        Tuple of (DataFrame, source_name) where source_name is either
+        "TRY" or "AusTraits" for provenance tracking.
+
+    """
+    from data_pipeline.ingest.austraits_client import fetch_austraits
+
+    try_df = fetch_try(force_refresh=force_refresh)
+
+    if len(try_df) > 0:
+        logger.info("TRY: %d records fetched successfully - using TRY as primary source", len(try_df))
+        return try_df, "TRY"
+
+    logger.warning(
+        "TRY: 0 records returned (API likely unavailable). Falling back to AusTraits (CC-BY 4.0, Zenodo release)."
+    )
+    austraits_df = fetch_austraits(force_refresh=force_refresh)
+
+    if len(austraits_df) > 0:
+        logger.info("AusTraits fallback: %d records loaded", len(austraits_df))
+        return austraits_df, "AusTraits"
+
+    logger.error("Both TRY and AusTraits returned 0 records. Pipeline will continue with KNN imputation only.")
+    return _empty_try_frame(), "none"
+
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@ Alternatively, the Creative Commons Attribution license (CC-BY) is highly preval
 | **PanTHERIA** | Creative Commons CC0 | Public Domain dedication; seamless integration without attribution requirements. |
 | **Dr. Duke's Phytochemical** | Creative Commons CC0 | Public Domain dedication; permits unrestricted extraction and denormalization. |
 | **ToxValDB / TOXRIC** | Open Government Data / CC0 | Unrestricted integration for toxicological limit extraction. |
+| **The Pherobase** | Academic Use Permitted | Legally permissible due to the *insubstantial extraction* (7 records) of uncopyrightable natural facts (chemical constants), mathematically transformed into a derived `diffusion_coefficient`. Raw facts are additionally verified against the Public Domain NIST WebBook to insulate the commercial dual-license structure. |
 
 ---
 
@@ -60,9 +61,9 @@ Leaf tensile strength is mathematically translated into a mechanical damage mult
 While morphological traits define individual species, an ecosystem is ultimately governed by its trophic web. Determining the compatibility between consumers and producers is critical to preventing mathematically invalid interactions, such as an obligate carnivore attempting to graze on foliage. The Global Biotic Interactions (GLoBI) infrastructure provides an open, community-driven framework to capture, normalize, and share species-interaction datasets. Licensed under permissive terms, including Creative Commons Attribution 4.0, Global Biotic Interactions acts as a massive graph search index that resolves and integrates disparate ecological interaction records using Neo4j and Darwin Core archives.
 
 **Constructing the Diet Compatibility Matrix**
-Within the simulation engine, trophic relationships are rigidly enforced through a multi-dimensional boolean structure known as the diet compatibility matrix. This matrix maps herbivore species to flora species as a boolean grid, where an active `True` entry validates that a specific herbivore is phylogenetically and ecologically capable of metabolizing a specific plant. The extraction pipeline queries the Global Biotic Interactions API for explicit "eats" or "is eaten by" relationships involving the flora and fauna species pre-selected during the architectural clustering phase.
+Within the simulation engine, trophic relationships are rigidly enforced through a multi-dimensional boolean structure known as the diet compatibility matrix. This matrix maps herbivore species to flora species as a boolean grid, where an active `True` entry validates that a specific herbivore is phylogenetically and ecologically capable of metabolizing a specific plant. The extraction pipeline queries the Global Biotic Interactions API for explicit "eats" or "is eaten by" relationships involving the flora and fauna species preselected during the architectural clustering phase.
 
-When building this matrix, the pipeline must meticulously account for the inherent biases present in global datasets. Empirical databases often exhibit strong geographic and taxonomic skew, disproportionately representing economically significant species or those native to North America and Western Europe, while underrepresenting highly specialized interactions. The data engineering pipeline must actively sanitize the extracted trophic links, ensuring that inferred connections do not create logical dead ends within the simulation. If a selected herbivore species possesses no valid "eats" relationships mapped to any of the flora species present in the biotope, the resulting configuration is thermodynamically doomed to immediate starvation. The pipeline utilizes the Global Biotic Interactions data to either enforce strict biological realism or to intelligently impute missing trophic links based on phylogenetic proximity, ensuring that the generated interaction topologies remain mathematically viable for prolonged, stable execution.
+When building this matrix, the pipeline must meticulously account for the inherent biases present in global datasets. Empirical databases often exhibit strong geographic and taxonomic skew, disproportionately representing economically significant species or those native to North America and Western Europe, while underrepresenting highly specialized interactions. The data engineering pipeline must actively sanitize the extracted trophic links, ensuring that inferred connections do not create logical dead ends within the simulation. If a preselected herbivore species possesses no valid "eats" relationships mapped to any of the flora species present in the biotope, the resulting configuration is thermodynamically doomed to immediate starvation. The pipeline utilizes the Global Biotic Interactions data to either enforce strict biological realism or to intelligently impute missing trophic links based on phylogenetic proximity, ensuring that the generated interaction topologies remain mathematically viable for prolonged, stable execution.
 
 ### Consumer Life History and Metabolic Bounds: PanTHERIA
 To accurately simulate consumer dynamics, the continuous metabolic attrition, foraging capacity, and reproductive cycles of herbivore swarms must be bounded by realistic biological constraints. PanTHERIA is a comprehensive, species-level database detailing the life history, ecology, and geography of extant and recently extinct mammals. The dataset is distributed under a Creative Commons Zero public domain waiver, ensuring seamless, unencumbered integration into the automated data processing pipeline.
@@ -182,7 +183,7 @@ In the fully generative mode, the design space exploration algorithm is granted 
 While this approach is mathematically efficient, the resulting parameters often represent theoretical, abstract entities devoid of biological context. To bridge this gap, the empirical database acts as a post-processing translator. Once the algorithm identifies a stable parameter vector that yields a sustainable equilibrium, a K-Nearest Neighbors or Cosine Similarity search is executed against the compiled empirical database. The dynamically generated abstract entity is compared across multiple dimensions—such as its synthesized growth rate, maximum energetic capacity, and metabolic upkeep—against the empirical records. The system then automatically renames the abstract entity to the closest matching real-world archetype, providing researchers with a tangible biological equivalent for the mathematically discovered optimum.
 
 **Mode B: Constrained Archetype Anchoring**
-Conversely, the constrained mode prioritizes strict biological realism by anchoring the design space exploration directly to the empirical database before execution begins. In this paradigm, researchers utilize a Human-In-The-Loop web interface to pre-select exact biological profiles—such as specific conifer species and large ungulate herbivores—directly from the curated database. These selections lock the structural configuration, carrying over their authentic diet compatibility matrices, trigger rules, and constitutive defense traits.
+Conversely, the constrained mode prioritizes strict biological realism by anchoring the design space exploration directly to the empirical database before execution begins. In this paradigm, researchers utilize a Human-In-The-Loop web interface to preselect exact biological profiles—such as specific conifer species and large ungulate herbivores—directly from the curated database. These selections lock the structural configuration, carrying over their authentic diet compatibility matrices, trigger rules, and constitutive defense traits.
 
 To allow the evolutionary algorithm to find an equilibrium, the system introduces the concept of constrained parametric variance. Instead of allowing parameters to mutate infinitely, the optimizer is strictly bound to a tight tolerance surrounding the empirical baseline. If a selected archetype possesses a basal metabolic rate of 0.25, the algorithm is permitted to adjust this value slightly to satisfy the thermodynamic requirements of the simulation, but it is heavily penalized or outright forbidden from mutating the parameter beyond a predefined percentage bound. This forces the structural optimizer to resolve ecological bottlenecks through spatial placement strategies and interaction topologies rather than by simply inventing biologically impossible super-organisms.
 
@@ -309,3 +310,45 @@ A dedicated data agent should implement these steps inside `src/data_pipeline/` 
 * `transform.py`: Implements taxonomic mapping via GBIF, K-Nearest Neighbors imputation via `scikit-learn`, and strict mathematical normalizations to prevent IEEE 754 subnormal hardware penalties.
 * `archetype_extractor.py`: Configures K-Means clustering ($K=50$) and centroid extraction to respect the engine's memory-bounded "Rule of 16".
 * `json_builder.py`: Validates the hierarchical schema using Pydantic, formulates multi-level cascade triggers, and invokes the `HfApi` for Hugging Face artifact publishing.
+
+---
+
+## Phase 8: Strict License Compliance & The "BYOD" Extended Architecture
+
+The PHIDS engine is dual-licensed (EUPL-1.2 OR Proprietary Commercial). This necessitates absolute legal hygiene regarding the empirical data powering the simulations. If restricted datasets (Non-Commercial, ShareAlike, or Academic-Only) are inadvertently bundled or published with the core application, the commercial license becomes legally compromised.
+
+To leverage massive restricted datasets without risking the core license, the ETL pipeline implements a **Bring Your Own Data (BYOD) Extended Architecture** heavily protected by five isolated, automated safeguard layers.
+
+### 1. Database Licensing and Extraction Rationale
+
+Every empirical database is categorized into either the **Core Dataset** (Commercial compatible) or the **Extended Dataset** (Academic/NC only).
+
+#### Core Dataset (Fully Compatible: CC0, CC-BY)
+These databases are executed by default via `run_all.py` and published to the core repository (`foersben/PHIDS-empirical-database`).
+*   **TRY Plant Trait Database & AusTraits (Fallback):** Both are licensed under **CC-BY 4.0**. We extract specific leaf area, seed mass, canopy height, tensile strength, and lignin content. Fully compatible; requires bibliographic metadata attribution in `manifest.json`.
+*   **PanTHERIA, Dr. Duke's, ToxValDB:** Licensed under **CC0** (Public Domain). Unrestricted extraction.
+*   **Global Biotic Interactions (GLoBI):** Licensed under **CC-BY 4.0**. Unrestricted extraction with proper citation.
+*   **The Pherobase:** Licensed for Academic Use. The core pipeline utilizes an **insubstantial extraction** rationale. It extracts only 7 fundamental chemical constants (molecular weight, vapor pressure) mapped to diffusion coefficients, avoiding any copyrightable narrative or mass-tabular scraping. These constants are cross-verified with NIST (Public Domain).
+
+#### Extended Dataset (Strictly Academic: NC, ND, SA)
+These databases are highly restricted. They are executed **only** via `run_extended.py` and published to a completely separate, academically licensed repository (`foersben/PHIDS-extended-dataset` under **CC-BY-NC-SA 4.0**).
+*   **BIEN (Botanical Information and Ecology Network):** Licensed under **CC-BY-NC-ND** (Non-Commercial, No Derivatives). The pipeline extracts stem height, seed mass, and SLA. The "No Derivatives" clause forbids its inclusion in the core unified `bio_database.json`, requiring it to live in the isolated extended dataset.
+*   **GIFT (Global Inventory of Floras and Traits):** Licensed under **CC-BY-SA 4.0** (ShareAlike). We extract maximum height, seed mass, SLA, and woodiness. The "ShareAlike" clause dictates that any derivative database (like `bio_database.json`) must also be distributed under CC-BY-SA, making it incompatible with a proprietary commercial license.
+*   **LEDA Traitbase:** Academic Use Only. We perform targeted extraction of CSV files for SLA, height, and seed mass. Mass extraction without written permission carries commercial legal risk, strictly relegating this to the extended academic pipeline.
+
+### 2. The 5-Layer Defense-in-Depth Architecture
+
+To guarantee that Extended Dataset sources (BIEN, LEDA, GIFT) never pollute the Core Dataset or compromise the repository, the pipeline enforces a multi-tiered security perimeter:
+
+*   **Layer 1: Physical File Isolation:** All clients interacting with restricted databases are strictly sequestered in the `src/data_pipeline/ingest/extended/` subpackage.
+*   **Layer 2: Hard Runtime Environment Guard:** The `__init__.py` of the extended subpackage executes an immediate environment check. If the pipeline attempts to import *any* restricted client without the explicit opt-in variable `PHIDS_EXTENDED_MODE=1` set in the shell environment, the execution violently aborts with a `RuntimeError`.
+*   **Layer 3: DuckDB Provenance Publish Guard:** As the pipeline executes, every extracted record logs its source to a persistent DuckDB provenance ledger. When `publish_to_huggingface()` is invoked for the core repository, the guard script executes a SQL scan against this ledger. If *any* rows map to "BIEN", "LEDA", or "GIFT", the upload is hard-blocked via an exception before a single byte reaches the network.
+*   **Layer 4: Pre-Commit CI Guard:** A dedicated Python script (`scripts/check_no_extended_imports.py`) is wired into `.pre-commit-config.yaml`. It performs static AST analysis on the entire core codebase. If any developer accidentally imports `ingest.extended` inside a core file (like `run_all.py`), `git commit` is blocked.
+*   **Layer 5: Cache Taint Isolation:** When the extended pipeline runs, the raw API responses are saved to `src/data_pipeline/cache/extended/`. This directory is explicitly ignored by `.gitignore` to prevent developers from accidentally committing tainted raw data to the primary repository.
+
+### 3. Execution Workflows
+
+Because of these safeguards, users must explicitly choose their legal paradigm when generating data:
+
+*   **Commercial Use:** Run `just etl`. The pipeline executes using TRY/AusTraits and publishes only compliant, commercially viable data.
+*   **Academic / Non-Commercial Use:** Run `just etl-extended`. The developer assumes the legal obligations of the NC/SA licenses by explicitly setting `PHIDS_EXTENDED_MODE=1`. The output is merged, processed, and routed entirely to `bio_database_extended.json`, ensuring the core repository remains legally pristine.

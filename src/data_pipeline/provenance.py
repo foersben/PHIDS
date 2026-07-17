@@ -132,6 +132,58 @@ CITATIONS: dict[str, dict[str, str]] = {
             " https://animaldiversity.org"
         ),
     },
+    # -------------------------------------------------------------------------
+    # CC-BY 4.0 sources - compatible with Commercial License
+    # -------------------------------------------------------------------------
+    "AusTraits": {
+        "license": "CC-BY 4.0",
+        "doi": "https://doi.org/10.1038/s41597-021-01006-6",
+        "citation": (
+            "Falster, D., Gallagher, R., Wenk, E.H., et al. (2021). AusTraits, a curated plant"
+            " trait database for the Australian flora. Scientific Data, 8, 254."
+            " https://doi.org/10.1038/s41597-021-01006-6"
+        ),
+        "note": "Fallback for TRY when API is unavailable. Compatible with Commercial License.",
+    },
+    # -------------------------------------------------------------------------
+    # EXTENDED DATASET ONLY - NC-licensed sources
+    # These MUST NOT appear in the core pipeline provenance table.
+    # The publish guard in export.py will raise RuntimeError if they do.
+    # -------------------------------------------------------------------------
+    "BIEN": {
+        "license": "CC-BY-NC-ND 4.0 - NON-COMMERCIAL, NO DERIVATIVES",
+        "doi": "https://doi.org/10.1111/2041-210X.12861",
+        "citation": (
+            "Maitner, B.S., et al. (2018). The bien r package: A tool to access the Botanical"
+            " Information and Ecology Network (BIEN) database."
+            " Methods in Ecology and Evolution, 9(2), 373-379."
+            " https://doi.org/10.1111/2041-210X.12861"
+        ),
+        "note": "EXTENDED DATASET ONLY. Incompatible with Proprietary Commercial License.",
+    },
+    "LEDA": {
+        "license": "Academic Use Only - no explicit open-data license",
+        "doi": "https://doi.org/10.1111/j.1365-2745.2008.01430.x",
+        "citation": (
+            "Kleyer, M., et al. (2008). The LEDA Traitbase: A database of life-history traits"
+            " of Northwest European flora. Journal of Ecology, 96(6), 1266-1274."
+            " https://doi.org/10.1111/j.1365-2745.2008.01430.x"
+        ),
+        "note": "EXTENDED DATASET ONLY. Mass extraction without written permission is prohibited.",
+    },
+    "GIFT": {
+        "license": "CC-BY-SA 4.0 - SHAREALIKE (derivative works must use same license)",
+        "doi": "https://doi.org/10.1111/jbi.13623",
+        "citation": (
+            "Weigelt, P., et al. (2020). GIFT - A Global Inventory of Floras and Traits for"
+            " macroecology and biogeography. Journal of Biogeography, 47(1), 16-43."
+            " https://doi.org/10.1111/jbi.13623"
+        ),
+        "note": (
+            "EXTENDED DATASET ONLY. ShareAlike clause requires derivative datasets to also be"
+            " CC-BY-SA. Incompatible with Proprietary Commercial License."
+        ),
+    },
 }
 
 

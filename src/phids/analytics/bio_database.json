@@ -1,6 +1,6 @@
 {
   "flora": {
-    "Unknown species": {
+    "Trifolium repens": {
       "base_metrics": {
         "growth_rate": 0.10000000149011612,
         "max_energy": 57.3650016784668,
@@ -11,6 +11,11 @@
       "passive_defenses": {
         "mechanical_damage_per_bite": 0.0,
         "digestibility_modifier": 1.0
+      },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
       },
       "trigger_rules": [
         {
@@ -49,8 +54,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Dremomys everetti": {
@@ -65,8 +75,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Oxymycterus roberti": {
@@ -81,8 +96,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Taurotragus oryx": {
@@ -97,8 +117,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Madoqua saltiana": {
@@ -113,8 +138,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Thallomys paedulcus": {
@@ -129,8 +159,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Solomys ponceleti": {
@@ -145,8 +180,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Dicerorhinus sumatrensis": {
@@ -161,8 +201,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Heterocephalus glaber": {
@@ -177,8 +222,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Megadontomys thomasi": {
@@ -193,8 +243,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Equus grevyi": {
@@ -209,8 +264,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Apomys littoralis": {
@@ -225,8 +285,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Sus celebensis": {
@@ -241,8 +306,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Nanger granti": {
@@ -257,8 +327,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Syncerus caffer": {
@@ -273,8 +348,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     },
     "Trichechus inunguis": {
@@ -289,8 +369,13 @@
         "chemical_neutralization": 0.10000000149011612,
         "digestive_efficiency": 1.0
       },
+      "provenance": {
+        "cluster_id": null,
+        "centroid_distance": null,
+        "source_databases": null
+      },
       "diet": [
-        "Unknown species"
+        "Trifolium repens"
       ]
     }
   },

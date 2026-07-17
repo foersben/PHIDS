@@ -19,9 +19,9 @@ Insertion order respects FK constraints:
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 
-import duckdb
+import duckdb  # noqa: TC002
 import polars as pl
 
 from data_pipeline.db.schema import create_schema, open_connection
@@ -62,13 +62,13 @@ def write_all(
 
     """
     conn = open_connection(db_path)
+
+    if overwrite:
+        _truncate_all(conn)
     create_schema(conn)
 
     conn.execute("BEGIN TRANSACTION")
     try:
-        if overwrite:
-            _truncate_all(conn)
-
         _write_substances(conn, substances_df)
         _write_flora(conn, flora_archetypes)
         _write_herbivores(conn, herbivore_archetypes)
@@ -165,6 +165,12 @@ def _write_flora(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> None:
         "mechanical_damage_per_bite",
         "digestibility_modifier",
     }
+    # Rename species_name → canonical_name if needed
+    if "species_name" in df.columns and "canonical_name" not in df.columns:
+        df = df.rename({"species_name": "canonical_name"})
+    elif "species_name" in df.columns:
+        df = df.drop("species_name")
+
     df = _ensure_columns(
         df,
         required,
@@ -179,12 +185,6 @@ def _write_flora(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> None:
             "canonical_name": "Unknown species",
         },
     )
-
-    # Rename species_name → canonical_name if needed
-    if "species_name" in df.columns and "canonical_name" not in df.columns:
-        df = df.rename({"species_name": "canonical_name"})
-    elif "species_name" in df.columns:
-        df = df.drop("species_name")
 
     _insert_dataframe(conn, "flora_species", df, pk_col="species_id")
     logger.info("Flora: inserted %d species", len(df))
@@ -279,7 +279,7 @@ def _write_trigger_rules(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> N
 
 
 def _write_diet_matrix(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> None:
-    """Insert diet matrix (herbivore × flora) edges.
+    """Insert diet matrix (herbivore x flora) edges.
 
     Args:
         conn: Active DuckDB connection.
@@ -339,7 +339,7 @@ def _insert_dataframe(
     conn: duckdb.DuckDBPyConnection,
     table: str,
     df: pl.DataFrame,
-    pk_col: str,
+    _pk_col: str,
 ) -> None:
     """Insert a Polars DataFrame into a DuckDB table, skipping duplicate PKs.
 
@@ -407,5 +407,5 @@ def _truncate_all(conn: duckdb.DuckDBPyConnection) -> None:
         "substances",
     ]
     for table in tables:
-        conn.execute(f"DELETE FROM {table}")
-    logger.info("DuckDB: all tables truncated")
+        conn.execute(f"DROP TABLE IF EXISTS {table} CASCADE")
+    logger.info("DuckDB: all tables dropped")

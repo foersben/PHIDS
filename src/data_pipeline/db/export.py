@@ -35,7 +35,7 @@ import json
 import logging
 from pathlib import Path
 
-import duckdb
+import duckdb  # noqa: TC002
 
 from data_pipeline.db.schema import DB_PATH, open_connection
 
@@ -168,7 +168,10 @@ def _export_flora(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
             f.seed_cost,
             f.seed_dispersion_radius,
             f.mechanical_damage_per_bite,
-            f.digestibility_modifier
+            f.digestibility_modifier,
+            f.cluster_id,
+            f.centroid_distance,
+            f.source_databases
         FROM flora_species f
         ORDER BY f.species_id
     """).pl()
@@ -219,6 +222,11 @@ def _export_flora(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
                 "mechanical_damage_per_bite": row["mechanical_damage_per_bite"],
                 "digestibility_modifier": row["digestibility_modifier"],
             },
+            "provenance": {
+                "cluster_id": row.get("cluster_id"),
+                "centroid_distance": row.get("centroid_distance"),
+                "source_databases": row.get("source_databases"),
+            },
             "trigger_rules": rules_by_species.get(sid, []),
         }
     return result
@@ -244,7 +252,9 @@ def _export_herbivores(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
             h.split_ratio,
             h.morphological_adaptation,
             h.chemical_neutralization,
-            h.digestive_efficiency
+            h.digestive_efficiency,
+            h.cluster_id,
+            h.source_databases
         FROM herbivore_species h
         ORDER BY h.species_id
     """).pl()
@@ -281,6 +291,11 @@ def _export_herbivores(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
                 "morphological_adaptation": row["morphological_adaptation"],
                 "chemical_neutralization": row["chemical_neutralization"],
                 "digestive_efficiency": row["digestive_efficiency"],
+            },
+            "provenance": {
+                "cluster_id": row.get("cluster_id"),
+                "centroid_distance": row.get("centroid_distance"),
+                "source_databases": row.get("source_databases"),
             },
             "diet": diet_by_herbivore.get(hid, []),
         }
@@ -345,6 +360,42 @@ def publish_to_huggingface(
 
     """
     import os
+
+    # -------------------------------------------------------------------------
+    # Layer 3 Protection: NC-Source Publish Guard
+    # Scan the provenance table for any records sourced from NC-licensed
+    # databases before a single byte is uploaded. This is a hard abort.
+    # -------------------------------------------------------------------------
+    core_repo = "foersben/PHIDS-empirical-database"
+
+    if repo_id == core_repo:
+        own_conn_check = conn is None
+        _check_conn = open_connection(read_only=True) if own_conn_check else conn
+        try:
+            nc_rows = _check_conn.execute(
+                "SELECT DISTINCT source_db FROM provenance WHERE source_db IN ('BIEN', 'LEDA', 'GIFT')"
+            ).fetchall()
+        finally:
+            if own_conn_check:
+                _check_conn.close()
+
+        if nc_rows:
+            found = {r[0] for r in nc_rows}
+            raise RuntimeError(
+                "\n"
+                "=" * 70 + "\n"
+                "LICENSE VIOLATION BLOCKED: NC data detected in core dataset publish.\n"
+                "=" * 70 + "\n"
+                f"\nThe DuckDB provenance table contains records from NC-licensed\n"
+                f"sources: {found}\n\n"
+                f"These sources are INCOMPATIBLE with the Proprietary Commercial\n"
+                f"License and MUST NOT be published to:\n"
+                f"  {core_repo}\n\n"
+                f"To publish the extended academic dataset, use:\n"
+                f"  publish_to_huggingface(repo_id='foersben/PHIDS-extended-dataset')\n"
+                f"Or run: just etl-publish-extended\n" + "=" * 70
+            )
+        logger.info("License guard OK: no NC sources in provenance. Proceeding with publish.")
 
     try:
         from huggingface_hub import HfApi

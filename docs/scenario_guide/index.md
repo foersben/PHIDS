@@ -59,6 +59,6 @@ Discover how the framework uses SciPy's Differential Evolution to find stable pa
 * **Optimization Search:** Why genetic/evolutionary search beats Random Walk and Simulated Annealing in rugged biological landscapes.
 * **Cost Function Design:** How we penalize extinction events, reward survival time, and avoid "boring" stable states (e.g., $100\%$ flora, $0$ herbivores).
 
-### 4. [Bio-Database & UI Architecture Roadmap](database_and_ui_roadmap.md)
+### 4. [Empirical Database Pipeline](empirical_database.md)
 
 Explore the structural decoupling of archetypes, visual rule building, and our migration path toward true database persistence.

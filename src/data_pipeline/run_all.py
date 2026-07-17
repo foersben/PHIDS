@@ -57,7 +57,7 @@ from data_pipeline.ingest.drduke_client import fetch_drduke
 from data_pipeline.ingest.globi_client import HERBIVORE_CANDIDATES, fetch_globi
 from data_pipeline.ingest.pantheria_client import fetch_pantheria
 from data_pipeline.ingest.pherobase_client import fetch_pherobase
-from data_pipeline.ingest.try_client import TARGET_SPECIES, fetch_try
+from data_pipeline.ingest.try_client import TARGET_SPECIES, fetch_try_or_fallback
 from data_pipeline.provenance import CITATIONS, ProvenanceLedger, ProvenanceRecord, today_iso
 from data_pipeline.transform import normalise_flora_dataframe, normalise_herbivore_dataframe
 
@@ -128,9 +128,14 @@ def run_all(
     pantheria_df = fetch_pantheria(force_refresh=force_refresh)
     logger.info("P1.1 PanTHERIA (CC0): %d species rows", len(pantheria_df))
 
-    try_df = fetch_try(force_refresh=force_refresh)
+    try_df, try_source = fetch_try_or_fallback(force_refresh=force_refresh)
     n_try_species = try_df["species_name"].n_unique() if "species_name" in try_df.columns else 0
-    logger.info("P1.2 TRY (CC-BY 4.0): %d trait records, %d species", len(try_df), n_try_species)
+    logger.info(
+        "P1.2 Plant traits (%s CC-BY 4.0): %d trait records, %d species",
+        try_source,
+        len(try_df),
+        n_try_species,
+    )
 
     globi_df = fetch_globi(force_refresh=force_refresh)
     logger.info("P1.3 GLoBI (CC-BY 4.0): %d interaction records", len(globi_df))
