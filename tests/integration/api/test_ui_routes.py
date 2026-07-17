@@ -32,26 +32,23 @@ import phids.api.main as api_main
 import phids.api.ui_state as draft_state_module
 from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api.schemas import BatchJobState, FloraSpeciesParams, HerbivoreSpeciesParams
-from phids.api.services.draft.biotope import update_biotope
-from phids.api.services.draft.species import add_flora, remove_flora, add_herbivore, remove_herbivore
-from phids.api.services.draft.substances import add_substance, remove_substance, update_substance
-from phids.api.services.draft.diet import set_diet_compatibility
-from phids.api.services.draft.trigger_rules import (
-    add_trigger_rule,
-    remove_trigger_rule,
-    update_trigger_rule,
-    set_trigger_rule_activation_condition,
-    replace_trigger_rule_condition_node,
-    append_trigger_rule_condition_child,
-    delete_trigger_rule_condition_node,
-    update_trigger_rule_condition_node,
-)
 from phids.api.services.draft.placements import (
     add_plant_placement,
-    remove_plant_placement,
     add_swarm_placement,
-    remove_swarm_placement,
     clear_placements,
+    remove_plant_placement,
+    remove_swarm_placement,
+)
+from phids.api.services.draft.species import add_flora, add_herbivore, remove_flora, remove_herbivore
+from phids.api.services.draft.trigger_rules import (
+    add_trigger_rule,
+    append_trigger_rule_condition_child,
+    delete_trigger_rule_condition_node,
+    remove_trigger_rule,
+    replace_trigger_rule_condition_node,
+    set_trigger_rule_activation_condition,
+    update_trigger_rule,
+    update_trigger_rule_condition_node,
 )
 from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft
 from phids.engine import batch as batch_engine
