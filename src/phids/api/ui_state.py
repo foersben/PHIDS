@@ -8,7 +8,7 @@ scenario-builder UI. ``DraftState`` stores all operator choices made through the
 including species definitions, substance properties, trigger rules, diet-matrix entries, and
 initial placements, before committing them to the simulation engine via
 ``POST /api/scenario/load-draft``. Imperative mutation procedures are executed by
-``DraftService`` (``phids.api.services.draft_service``) against ``DraftState`` instances, while
+the ``phids.api.services.draft`` functions against ``DraftState`` instances, while
 this module retains data structures, condition-tree utilities, schema export logic, and singleton
 draft lifecycle management. No concurrency-safe locking is applied, as the server is designed for
 single-operator workbench usage.

@@ -11,11 +11,10 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.services.draft_service import DraftService
+from phids.api.services.draft.diet import set_diet_compatibility
 from phids.api.ui_state import get_draft
 
 router = APIRouter()
-draft_service = DraftService()
 
 
 @router.post("/api/matrices/diet", response_class=HTMLResponse, summary="Toggle diet matrix cell")
@@ -27,7 +26,7 @@ async def matrix_diet(
 ) -> Response:
     """Toggle or set one diet compatibility cell in the draft matrix."""
     draft = get_draft()
-    updated_value = draft_service.set_diet_compatibility(
+    updated_value = set_diet_compatibility(
         draft,
         herbivore_idx,
         flora_idx,
