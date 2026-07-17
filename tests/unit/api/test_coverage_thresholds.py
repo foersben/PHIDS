@@ -24,7 +24,12 @@ from phids.api.presenters.dashboard import (
     build_live_dashboard_payload,
     build_preview_cell_details,
 )
-from phids.api.services.draft_service import DraftService
+from phids.api.services.draft.biotope import update_biotope
+from phids.api.services.draft.species import add_flora, remove_flora, add_herbivore, remove_herbivore
+from phids.api.services.draft.substances import add_substance, remove_substance, update_substance
+from phids.api.services.draft.diet import set_diet_compatibility
+from phids.api.services.draft.trigger_rules import add_trigger_rule, remove_trigger_rule, update_trigger_rule, set_trigger_rule_activation_condition, replace_trigger_rule_condition_node, append_trigger_rule_condition_child, delete_trigger_rule_condition_node, update_trigger_rule_condition_node
+from phids.api.services.draft.placements import add_plant_placement, remove_plant_placement, add_swarm_placement, remove_swarm_placement, clear_placements
 from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
@@ -36,7 +41,6 @@ from phids.engine.loop import SimulationLoop
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
-draft_service = DraftService()
 
 
 def _build_loaded_loop() -> SimulationLoop:
@@ -46,8 +50,8 @@ def _build_loaded_loop() -> SimulationLoop:
         The initialized simulation loop bound to ``api_main._sim_loop``.
     """
     draft = get_draft()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
-    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
+    add_plant_placement(draft, 0, 2, 2, 12.0)
+    add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
     loop = SimulationLoop(draft.build_sim_config())
     api_main._sim_loop = loop
     return loop
@@ -120,7 +124,7 @@ def test_main_default_activation_condition_supported_kinds(
     node labels. The index accessor must raise a 404 sentinel for out-of-range references.
     """
     draft = DraftState.default()
-    draft_service.add_trigger_rule(
+    add_trigger_rule(
         draft,
         flora_species_id=0,
         herbivore_species_id=0,
@@ -149,7 +153,7 @@ def test_main_default_activation_condition_supported_kinds(
 def test_main_default_activation_condition_invalid_kind_and_missing_trigger_index() -> None:
     """Validate unsupported condition kinds and out-of-range trigger indices raise HTTP errors."""
     draft = DraftState.default()
-    draft_service.add_trigger_rule(
+    add_trigger_rule(
         draft,
         flora_species_id=0,
         herbivore_species_id=0,
@@ -174,9 +178,9 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
     and that swarm energy-deficit ranking excludes satiated swarms while retaining stressed ones.
     """
     draft = get_draft()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
-    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 30.0)
-    draft_service.add_swarm_placement(draft, 0, 3, 3, 4, 1.0)
+    add_plant_placement(draft, 0, 2, 2, 12.0)
+    add_swarm_placement(draft, 0, 2, 2, 4, 30.0)
+    add_swarm_placement(draft, 0, 3, 3, 4, 1.0)
     loop = SimulationLoop(draft.build_sim_config())
     api_main._sim_loop = loop
 

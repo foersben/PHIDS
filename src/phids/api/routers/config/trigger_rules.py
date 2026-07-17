@@ -11,17 +11,24 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.services.draft_service import DraftService
+from phids.api.services.draft.trigger_rules import (
+    add_trigger_rule,
+    append_trigger_rule_condition_child,
+    delete_trigger_rule_condition_node,
+    get_condition_node,
+    remove_trigger_rule,
+    replace_trigger_rule_condition_node,
+    set_trigger_rule_activation_condition,
+    update_trigger_rule,
+    update_trigger_rule_condition_node,
+)
 from phids.api.ui_state import (
     ActivationConditionNode,
     DraftState,
-    _condition_node_at_path,
-    _parse_condition_path,
     get_draft,
 )
 
 router = APIRouter()
-draft_service = DraftService()
 
 
 def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Response:
@@ -71,7 +78,7 @@ async def config_trigger_rule_add(
 ) -> Response:
     """Add one trigger rule to the draft and render the updated trigger-rule table."""
     draft = get_draft()
-    draft_service.add_trigger_rule(
+    add_trigger_rule(
         draft,
         flora_species_id=flora_species_id,
         herbivore_species_id=herbivore_species_id,
@@ -114,7 +121,7 @@ async def config_trigger_rule_update(
         api_main.logger.warning("Trigger rule update requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=f"Trigger rule {index} not found.")
 
-    draft_service.update_trigger_rule(
+    update_trigger_rule(
         draft,
         index,
         flora_species_id=flora_species_id,
@@ -147,7 +154,7 @@ async def config_trigger_rule_condition_root(
     """Create or replace the root activation-condition node for one trigger rule."""
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
-    draft_service.set_trigger_rule_activation_condition(
+    set_trigger_rule_activation_condition(
         draft,
         index,
         api_main._default_activation_condition_for_rule(draft, rule, node_kind),
@@ -170,7 +177,7 @@ async def config_trigger_rule_condition_child_add(
     draft = get_draft()
     rule = api_main._trigger_rule_by_index(draft, index)
     try:
-        draft_service.append_trigger_rule_condition_child(
+        append_trigger_rule_condition_child(
             draft,
             index,
             parent_path,
@@ -204,7 +211,7 @@ async def config_trigger_rule_condition_node_update(
     if rule.activation_condition is None:
         if kind is None or path:
             raise HTTPException(status_code=400, detail="Trigger rule has no activation condition to update.")
-        draft_service.set_trigger_rule_activation_condition(
+        set_trigger_rule_activation_condition(
             draft,
             index,
             api_main._default_activation_condition_for_rule(draft, rule, kind),
@@ -213,14 +220,12 @@ async def config_trigger_rule_condition_node_update(
 
     try:
         current_node: ActivationConditionNode = (
-            _condition_node_at_path(rule.activation_condition, _parse_condition_path(path))
-            if path
-            else rule.activation_condition
+            get_condition_node(rule.activation_condition, path) if path else rule.activation_condition
         )
 
         if kind is not None and current_node.get("kind") != kind:
             replacement = api_main._default_activation_condition_for_rule(draft, rule, kind)
-            draft_service.replace_trigger_rule_condition_node(draft, index, path, replacement)
+            replace_trigger_rule_condition_node(draft, index, path, replacement)
         else:
             updates: dict[str, object] = {}
             if current_node.get("kind") == "herbivore_presence":
@@ -240,7 +245,7 @@ async def config_trigger_rule_condition_node_update(
                 updates["kind"] = kind
 
             if updates:
-                draft_service.update_trigger_rule_condition_node(draft, index, path, **updates)
+                update_trigger_rule_condition_node(draft, index, path, **updates)
     except (IndexError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -261,7 +266,7 @@ async def config_trigger_rule_condition_delete(
     draft = get_draft()
     api_main._trigger_rule_by_index(draft, index)
     try:
-        draft_service.delete_trigger_rule_condition_node(draft, index, path)
+        delete_trigger_rule_condition_node(draft, index, path)
     except IndexError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return _render_trigger_rules_partial(request, draft)
@@ -276,7 +281,7 @@ async def config_trigger_rule_delete(request: Request, index: int) -> Response:
     """Remove one trigger rule from the draft and render the updated trigger table."""
     draft = get_draft()
     try:
-        draft_service.remove_trigger_rule(draft, index)
+        remove_trigger_rule(draft, index)
     except IndexError as exc:
         api_main.logger.warning("Trigger rule delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc

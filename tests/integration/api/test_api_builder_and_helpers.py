@@ -42,7 +42,12 @@ from phids.api.schemas import (
     SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )
-from phids.api.services.draft_service import DraftService
+from phids.api.services.draft.placements import (
+    add_plant_placement,
+)
+from phids.api.services.draft.trigger_rules import (
+    add_trigger_rule,
+)
 from phids.api.ui_state import (
     ActivationConditionNode,
     DraftState,
@@ -55,8 +60,6 @@ from phids.api.ui_state import (
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
-
-draft_service = DraftService()
 
 
 def _flora(species_id: int) -> FloraSpeciesParams:
@@ -279,8 +282,8 @@ def test_main_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None
     """Verify draft link presenter marks inter-species links only when the feature flag is enabled."""
     draft = DraftState.default()
     draft.initial_plants = []
-    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
-    draft_service.add_plant_placement(draft, 1, 2, 1, 10.0)
+    add_plant_placement(draft, 0, 1, 1, 10.0)
+    add_plant_placement(draft, 1, 2, 1, 10.0)
     assert build_draft_mycorrhizal_links(draft) == []
     draft.mycorrhizal_inter_species = True
     assert build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
@@ -381,7 +384,7 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
     """
     draft = get_draft()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Signal A")]
-    draft_service.add_trigger_rule(draft, 0, 0, 0)
+    add_trigger_rule(draft, 0, 0, 0)
 
     request = Request({"type": "http", "headers": []})
     response = await config_trigger_rule_condition_node_update(

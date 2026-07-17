@@ -24,7 +24,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
 from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
-from phids.api.services.draft_service import DraftService
+from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
 from phids.api.ui_state import (
     DraftState,
     PlacedPlant,
@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     from starlette.datastructures import FormData
 
 router = APIRouter()
-draft_service = DraftService()
 
 
 def _status_badge_fragment() -> HTMLResponse:
@@ -135,7 +134,7 @@ def _apply_optional_biotope_overrides(
         return
 
     draft = get_draft()
-    draft_service.update_biotope(
+    draft_update_biotope(
         draft,
         grid_width=grid_width if grid_width is not None else draft.grid_width,
         grid_height=grid_height if grid_height is not None else draft.grid_height,
