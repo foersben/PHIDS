@@ -12,6 +12,9 @@ from phids.engine.systems.interaction.movement import _random_walk_step
 from phids.engine.systems.interaction.population import _accumulate_tile_population
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
 
@@ -20,6 +23,8 @@ def _perform_mitosis(
     swarm: SwarmComponent,
     world: ECSWorld,
     env: GridEnvironment,
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
 ) -> SwarmComponent:
     """Split an oversized swarm into two equal daughter colonies via binary fission.
 
@@ -42,10 +47,12 @@ def _perform_mitosis(
     Args:
         swarm: Parent swarm component to be bisected; its ``population``, ``initial_population``,
             and ``energy`` fields are mutated in-place to reflect the retained half.
-        world: ECS world registry used to allocate the new entity identifier and attach the
+        world: ECSWorld registry used to allocate the new entity identifier and attach the
             offspring ``SwarmComponent``.
         env: Grid environment supplying the spatial dimensions required by ``_random_walk_step``
             to sample a valid dispersal cell adjacent to the parent's current position.
+        scratch_cx: Pre-allocated buffer for random walk X offsets.
+        scratch_cy: Pre-allocated buffer for random walk Y offsets.
 
     Returns:
         The ``SwarmComponent`` instance attached to the newly spawned offspring entity,
@@ -58,7 +65,7 @@ def _perform_mitosis(
     retained_population = swarm.population - offspring_population
     swarm.population = retained_population
     swarm.initial_population = retained_population
-    offspring_x, offspring_y = _random_walk_step(swarm.x, swarm.y, env.width, env.height)
+    offspring_x, offspring_y = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
 
     new_entity = world.create_entity()
     offspring = SwarmComponent(
@@ -89,6 +96,8 @@ def _resolve_swarm_metabolism_and_reproduction(
     env: GridEnvironment,
     tile_populations: list[int],
     dead_swarms: list[int],
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
 ) -> bool:
     """Apply metabolic upkeep, casualty liquidation, reproduction, and mitosis. Returns False if dead.
 
@@ -110,6 +119,8 @@ def _resolve_swarm_metabolism_and_reproduction(
         env: The grid environment.
         tile_populations: The tile populations.
         dead_swarms: The list to append dead swarm IDs to.
+        scratch_cx: Pre-allocated buffer for random walk X offsets.
+        scratch_cy: Pre-allocated buffer for random walk Y offsets.
 
     Returns:
         False if the swarm died, True otherwise.
@@ -166,7 +177,7 @@ def _resolve_swarm_metabolism_and_reproduction(
     threshold = swarm.split_population_threshold
     if swarm.population >= threshold:
         pre_split_population = swarm.population
-        offspring = _perform_mitosis(swarm, world, env)
+        offspring = _perform_mitosis(swarm, world, env, scratch_cx, scratch_cy)
         _accumulate_tile_population(
             tile_populations,
             swarm.x,

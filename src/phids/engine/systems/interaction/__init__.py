@@ -61,6 +61,8 @@ if TYPE_CHECKING:
     from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
+import numpy as np
+import numpy.typing as npt
 
 
 def run_interaction(
@@ -97,6 +99,13 @@ def run_interaction(
     dead_swarms: list[int] = []
     tile_populations: list[int] = [0] * (env.width * env.height)
 
+    # Pre-allocate scratch buffers for zero-allocation Numba JIT movement
+    scratch_cx: npt.NDArray[np.int32] = np.empty(5, dtype=np.int32)
+    scratch_cy: npt.NDArray[np.int32] = np.empty(5, dtype=np.int32)
+    scratch_scores: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+    scratch_adjusted: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+    scratch_weights: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+
     # Initial population accumulation pass
     for eid in tuple(world._component_index.get(SwarmComponent, set())):
         entity = world._entities.get(eid)
@@ -119,7 +128,19 @@ def run_interaction(
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
 
         # 1-2. Movement Phase
-        has_moved = _resolve_swarm_movement(swarm, entity, env, world, diet_matrix, tile_populations)
+        has_moved = _resolve_swarm_movement(
+            swarm,
+            entity,
+            env,
+            world,
+            diet_matrix,
+            tile_populations,
+            scratch_cx,
+            scratch_cy,
+            scratch_scores,
+            scratch_adjusted,
+            scratch_weights,
+        )
 
         # 3. Feeding Phase
         if not has_moved:
@@ -134,7 +155,10 @@ def run_interaction(
                 plant_death_causes,
             )
 
-        # 4-7. Metabolism, Reproduction, Mitosis, and Death check
-        _resolve_swarm_metabolism_and_reproduction(swarm, entity, world, env, tile_populations, dead_swarms)
+        # 4. Metabolism & Reproduction
+        if not swarm.repelled:
+            _resolve_swarm_metabolism_and_reproduction(
+                swarm, entity, world, env, tile_populations, dead_swarms, scratch_cx, scratch_cy
+            )
 
     world.collect_garbage(dead_swarms)

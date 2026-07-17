@@ -8,14 +8,15 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
-import numpy as np
-import numpy.typing as npt
 from numba import njit
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.systems.interaction.population import TILE_CARRYING_CAPACITY, _accumulate_tile_population
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+
     from phids.engine.components.swarm import SwarmComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
@@ -78,6 +79,7 @@ def _flat_field_choice_jit(
     last_dy: int,
     c_x: npt.NDArray[np.int32],
     c_y: npt.NDArray[np.int32],
+    weights: npt.NDArray[np.float64],
     rand_val: float,
 ) -> tuple[int, int]:
     """Numba-compiled helper function to select a neighbour based on flow-field gradient.
@@ -90,6 +92,7 @@ def _flat_field_choice_jit(
         last_dy: The last y delta.
         c_x: Array to store the x coordinates of the neighbours.
         c_y: Array to store the y coordinates of the neighbours.
+        weights: Pre-allocated array for flow-field weights.
         rand_val: Random value for weighted choice.
 
     Returns:
@@ -103,7 +106,6 @@ def _flat_field_choice_jit(
 
     target_x = x + last_dx
     target_y = y + last_dy
-    weights = np.empty(5, dtype=np.float64)
     total_w = 0.0
     for i in range(count):
         if c_x[i] == target_x and c_y[i] == target_y:
@@ -128,6 +130,8 @@ def _weighted_field_choice_jit(
     scores: npt.NDArray[np.float64],
     c_x: npt.NDArray[np.int32],
     c_y: npt.NDArray[np.int32],
+    adjusted_scores: npt.NDArray[np.float64],
+    weights: npt.NDArray[np.float64],
     rand_val: float,
 ) -> tuple[int, int]:
     """Numba-compiled helper function to select a neighbour based on flow-field gradient.
@@ -138,12 +142,13 @@ def _weighted_field_choice_jit(
         scores: Array of flow-field gradient scores.
         c_x: Array to store the x coordinates of the neighbours.
         c_y: Array to store the y coordinates of the neighbours.
+        adjusted_scores: Pre-allocated array for adjusted scores.
+        weights: Pre-allocated array for flow-field weights.
         rand_val: Random value for weighted choice.
 
     Returns:
         The selected neighbour coordinates.
     """
-    adjusted_scores = np.empty(5, dtype=np.float64)
     for i in range(count):
         adjusted_scores[i] = -scores[i] if invert else scores[i]
 
@@ -152,7 +157,6 @@ def _weighted_field_choice_jit(
         if adjusted_scores[i] < min_score:
             min_score = adjusted_scores[i]
 
-    weights = np.empty(5, dtype=np.float64)
     total_w = 0.0
     for i in range(count):
         weights[i] = (adjusted_scores[i] - min_score) + 1e-6
@@ -177,6 +181,11 @@ def _choose_neighbour_by_flow_probability_jit(
     width: int,
     height: int,
     invert: bool,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+    scores: npt.NDArray[np.float64],
+    adjusted_scores: npt.NDArray[np.float64],
+    weights: npt.NDArray[np.float64],
     rand_val: float,
 ) -> tuple[int, int]:
     """JIT-accelerated Von-Neumann coordinate selector using flow weights.
@@ -195,17 +204,18 @@ def _choose_neighbour_by_flow_probability_jit(
         width: The width of the grid environment.
         height: The height of the grid environment.
         invert: Whether to invert the flow-field gradient scores.
+        c_x: Pre-allocated array for neighbour x coordinates.
+        c_y: Pre-allocated array for neighbour y coordinates.
+        scores: Pre-allocated array for flow-field scores.
+        adjusted_scores: Pre-allocated array for adjusted scores.
+        weights: Pre-allocated array for flow-field weights.
         rand_val: Random value for weighted choice.
 
     Returns:
         The selected neighbour coordinates.
     """
-    c_x = np.empty(5, dtype=np.int32)
-    c_y = np.empty(5, dtype=np.int32)
-
     count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
 
-    scores = np.empty(5, dtype=np.float64)
     for i in range(count):
         scores[i] = flow_field[c_x[i], c_y[i]]
 
@@ -219,9 +229,9 @@ def _choose_neighbour_by_flow_probability_jit(
 
     # Flat fields provide no directional signal; preserve prior heading as inertia.
     if max_score - min_score < 1e-6:
-        return _flat_field_choice_jit(count, x, y, last_dx, last_dy, c_x, c_y, rand_val)
+        return _flat_field_choice_jit(count, x, y, last_dx, last_dy, c_x, c_y, weights, rand_val)
 
-    return _weighted_field_choice_jit(count, invert, scores, c_x, c_y, rand_val)
+    return _weighted_field_choice_jit(count, invert, scores, c_x, c_y, adjusted_scores, weights, rand_val)
 
 
 def _choose_neighbour_by_flow_probability(
@@ -229,6 +239,11 @@ def _choose_neighbour_by_flow_probability(
     flow_field: npt.NDArray[np.float64],
     width: int,
     height: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+    scores: npt.NDArray[np.float64],
+    adjusted_scores: npt.NDArray[np.float64],
+    weights: npt.NDArray[np.float64],
     invert: bool = False,
 ) -> tuple[int, int]:
     """Select a 4-connected Von-Neumann neighbour via flow-field-weighted JIT selection.
@@ -238,6 +253,11 @@ def _choose_neighbour_by_flow_probability(
         flow_field: Array of flow-field gradient values.
         width: The width of the grid environment.
         height: The height of the grid environment.
+        c_x: Pre-allocated scratch array for x-coordinates.
+        c_y: Pre-allocated scratch array for y-coordinates.
+        scores: Pre-allocated scratch array for flow scores.
+        adjusted_scores: Pre-allocated scratch array for adjusted scores.
+        weights: Pre-allocated scratch array for sampling weights.
         invert: Whether to invert the flow-field gradient scores.
 
     Returns:
@@ -255,6 +275,11 @@ def _choose_neighbour_by_flow_probability(
         width,
         height,
         invert,
+        c_x,
+        c_y,
+        scores,
+        adjusted_scores,
+        weights,
         random.random(),
     )
 
@@ -265,6 +290,8 @@ def _random_walk_step_jit(
     y: int,
     width: int,
     height: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
     rand_val: float,
 ) -> tuple[int, int]:
     """JIT-accelerated uniform random coordinate selector for undirected dispersal.
@@ -274,14 +301,13 @@ def _random_walk_step_jit(
         y: The y coordinate of the cell.
         width: The width of the grid environment.
         height: The height of the grid environment.
+        c_x: Pre-allocated array for neighbour x coordinates.
+        c_y: Pre-allocated array for neighbour y coordinates.
         rand_val: Random value for weighted choice.
 
     Returns:
         The selected neighbour coordinates.
     """
-    c_x = np.empty(5, dtype=np.int32)
-    c_y = np.empty(5, dtype=np.int32)
-
     c_x[0] = x
     c_y[0] = y
     count = 1
@@ -314,17 +340,21 @@ def _random_walk_step(
     y: int,
     width: int,
     height: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
 ) -> tuple[int, int]:
-    """Select a uniformly random valid adjacent cell for undirected JIT dispersal.
+    """Perform a random walk step to an adjacent cell.
 
     Args:
-        x: The x coordinate of the cell.
-        y: The y coordinate of the cell.
-        width: The width of the grid environment.
-        height: The height of the grid environment.
+        x: The current X coordinate.
+        y: The current Y coordinate.
+        width: The width of the grid.
+        height: The height of the grid.
+        c_x: Pre-allocated scratch array for x-coordinates.
+        c_y: Pre-allocated scratch array for y-coordinates.
 
     Returns:
-        The selected neighbour coordinates.
+        The new coordinates.
     """
     if random.choice is not _orig_choice:
         candidates: list[tuple[int, int]] = [(x, y)]
@@ -338,7 +368,7 @@ def _random_walk_step(
             candidates.append((x, y + 1))
         return random.choice(candidates)
 
-    return _random_walk_step_jit(x, y, width, height, random.random())
+    return _random_walk_step_jit(x, y, width, height, c_x, c_y, random.random())
 
 
 def _python_flat_field_choice(
@@ -469,6 +499,11 @@ def _resolve_swarm_movement(
     world: ECSWorld,
     diet_matrix: list[list[bool]],
     tile_populations: list[int],
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
+    scratch_scores: npt.NDArray[np.float64],
+    scratch_adjusted: npt.NDArray[np.float64],
+    scratch_weights: npt.NDArray[np.float64],
 ) -> bool:
     """Evaluate and execute movement phase for a single swarm, return has_moved.
 
@@ -483,6 +518,11 @@ def _resolve_swarm_movement(
         world: The ECS world.
         diet_matrix: The diet matrix.
         tile_populations: The tile populations.
+        scratch_cx: Pre-allocated array for neighbour x coordinates.
+        scratch_cy: Pre-allocated array for neighbour y coordinates.
+        scratch_scores: Pre-allocated array for flow-field scores.
+        scratch_adjusted: Pre-allocated array for adjusted scores.
+        scratch_weights: Pre-allocated array for flow-field weights.
 
     Returns:
         True if the swarm has moved, False otherwise.
@@ -504,7 +544,7 @@ def _resolve_swarm_movement(
         swarm.repelled_ticks_remaining = 1
 
     if swarm.repelled and swarm.repelled_ticks_remaining > 0:
-        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height)
+        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
         swarm.repelled_ticks_remaining -= 1
         if swarm.repelled_ticks_remaining <= 0:
             swarm.repelled = False
@@ -519,6 +559,11 @@ def _resolve_swarm_movement(
                 env.flow_field,
                 env.width,
                 env.height,
+                scratch_cx,
+                scratch_cy,
+                scratch_scores,
+                scratch_adjusted,
+                scratch_weights,
             )
 
     has_moved = False

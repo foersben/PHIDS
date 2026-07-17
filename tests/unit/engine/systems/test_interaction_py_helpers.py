@@ -464,8 +464,27 @@ def test_interaction_random_fallback_and_missing_entity(
     )
 
     # CASE D: non-flat field, invert=True
+    import numpy as np
+
+    scratch_cx = np.empty(5, dtype=np.int32)
+    scratch_cy = np.empty(5, dtype=np.int32)
+    scratch_scores = np.empty(5, dtype=np.float64)
+    scratch_adjusted = np.empty(5, dtype=np.float64)
+    scratch_weights = np.empty(5, dtype=np.float64)
+
     with patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]):
-        _choose_neighbour_by_flow_probability(swarm, env.flow_field, env.width, env.height, invert=True)
+        _choose_neighbour_by_flow_probability(
+            swarm,
+            env.flow_field,
+            env.width,
+            env.height,
+            scratch_cx,
+            scratch_cy,
+            scratch_scores,
+            scratch_adjusted,
+            scratch_weights,
+            invert=True,
+        )
 
     # 3. Clean up the non-existent entity from the registry to avoid side effects
     world.unregister_position(99999, 1, 1)

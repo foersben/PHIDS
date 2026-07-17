@@ -10,7 +10,7 @@ Exploration (DSE) NSGA-II optimization task.
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
-from phids.api.main import templates
+from phids.api import main as api_main
 from phids.api.schemas import SimulationConfig
 from phids.api.services.dse.task_manager import get_dse_manager
 from phids.api.ui_state import get_draft
@@ -28,7 +28,7 @@ async def start_dse(request: Request, config: SimulationConfig) -> HTMLResponse:
     dse_manager = get_dse_manager(dse_stream_manager)
     dse_manager.start_dse_task(config)
     # Returning the live pareto component to inject into the DOM replacing the Run button area
-    return templates.TemplateResponse(request, "dse/components/live_pareto.html", {"request": request})
+    return api_main.templates.TemplateResponse(request, "dse/components/live_pareto.html", {"request": request})
 
 
 @router.post("/validate", summary="Validate Pre-Flight Invariants", response_class=HTMLResponse)
@@ -36,7 +36,7 @@ async def validate_dse_invariants(request: Request, _config: SimulationConfig) -
     """Checks if the UI configurations violate thermodynamic or chemical bounds."""
     # In a full implementation, we'd call `invariant_parser.py`
     # For now, returning empty to indicate success
-    return templates.TemplateResponse(
+    return api_main.templates.TemplateResponse(
         request, "dse/components/preflight_alert.html", {"request": request, "alert_message": ""}
     )
 
@@ -67,7 +67,7 @@ async def apply_dse_candidate(request: Request, candidate_idx: int) -> HTMLRespo
         draft.herbivore_species = winning_config.herbivore_species
         draft.diet_matrix = winning_config.diet_matrix.rows
 
-    return templates.TemplateResponse(
+    return api_main.templates.TemplateResponse(
         request,
         "partials/biotope_config.html",
         {"draft": draft, "request": request},

@@ -43,7 +43,6 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
 
-
 def _build_loaded_loop() -> SimulationLoop:
     """Construct and register a minimal simulation loop with one plant and one swarm.
 

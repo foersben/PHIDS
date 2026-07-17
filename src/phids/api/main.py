@@ -42,11 +42,15 @@ from phids.api.presenters.dashboard import (
     build_live_dashboard_payload,
     build_preview_cell_details,
 )
-from phids.api.routers.batch import router as batch_router
-from phids.api.routers.config import router as config_router
-from phids.api.routers.simulation import router as simulation_router
-from phids.api.routers.telemetry import router as telemetry_router
-from phids.api.routers.ui import router as ui_router
+from phids.api.routers import (
+    batch_router,
+    config_router,
+    dse_router,
+    dse_ws_router,
+    simulation_router,
+    telemetry_router,
+    ui_router,
+)
 from phids.api.schemas import (
     ConditionNode,
     SimulationConfig,
@@ -840,3 +844,5 @@ app.include_router(simulation_router)
 app.include_router(config_router)
 app.include_router(telemetry_router)
 app.include_router(ui_router)
+app.include_router(dse_router)
+app.include_router(dse_ws_router)

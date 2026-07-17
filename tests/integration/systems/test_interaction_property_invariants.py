@@ -149,7 +149,7 @@ def _run_mitosis_step(
     offspring_pos = (2, 1)
     monkeypatch.setattr(
         "phids.engine.systems.interaction.metabolism._random_walk_step",
-        lambda _x, _y, _width, _height: offspring_pos,
+        lambda _x, _y, _width, _height, *_, **__: offspring_pos,
     )
 
     swarm_id = add_swarm(
