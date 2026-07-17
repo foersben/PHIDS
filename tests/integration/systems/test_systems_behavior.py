@@ -64,6 +64,7 @@ def _flora_params(species_id: int = 0) -> FloraSpeciesParams:
 def run_interaction(world: ECSWorld, env: GridEnvironment, diet_matrix: list[list[bool]], tick: int = 0) -> None:
     """Wrapper function to execute interaction with species parameter arrays."""
     from phids.api.schemas import HerbivoreSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams
 
     def _herbivore_params(species_id: int = 0) -> HerbivoreSpeciesParams:
         return HerbivoreSpeciesParams(

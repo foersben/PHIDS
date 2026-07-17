@@ -118,8 +118,8 @@ async def config_herbivore_update(
         resistances_updates["chemical_neutralization"] = max(0.0, min(1.0, resistances_chemical_neutralization))
     if resistances_digestive_efficiency is not None:
         resistances_updates["digestive_efficiency"] = max(0.0, resistances_digestive_efficiency)
-    if resistances_updates:
-        updates["resistances"] = pp.resistances.model_copy(update=resistances_updates)
+    if resistances_updates != pp.resistances:
+        updates["resistances"] = resistances_updates
 
     draft.herbivore_species[idx] = pp.model_copy(update=updates)
     api_main.logger.debug("Herbivore species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))

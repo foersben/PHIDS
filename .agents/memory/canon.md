@@ -1,3 +1,11 @@
+---
+type: concept
+title: Canon Memory
+status: active
+version: 1.0
+description: Memory for Canon.
+---
+
 ## 2025-07-17 - Orthokinesis Mathematical Contradiction
 Learning: The `chemotaxis.md` and `herbivore_behavior.md` docs contradict each other slightly on what "orthokinesis" means in a zero-gradient Flow Field. `herbivore_behavior.md` describes orthokinesis as maintaining directional persistence ("directional persistence bias, approximating the klinokinetic orientation behaviour"). However, `chemotaxis.md` explicitly calls for breaking the sensory anchor and transitioning via orthokinesis into an "isotropic Random Walk". Since `chemotaxis.md` provides the specific sensory rule for when the `apparent_nutrition_factor` drops, I resolved this mathematical contradiction by replacing the directional inertia with a pure uniform Random Walk in the JIT `_flat_field_choice_jit` function to honor the isotropic mandate.
 Action: When encountering contradictory behavior definitions in the documentation, defer to the more specific domain document (e.g., `chemotaxis.md` for Flow Field interaction rather than general `herbivore_behavior.md` heuristics), but ensure the JIT code physically implements the requested action (uniform choice) rather than retaining legacy behavior.
