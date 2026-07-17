@@ -151,9 +151,9 @@ def _compute_flow_field_impl(
     toxin_sum: npt.NDArray[np.float64],
     width: int,
     height: int,
-    base: npt.NDArray[np.float64] | None = None,
-    current: npt.NDArray[np.float64] | None = None,
-    nxt: npt.NDArray[np.float64] | None = None,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
     """Execute iterative relaxation propagation to generate a navigation grid.
 
@@ -167,27 +167,16 @@ def _compute_flow_field_impl(
         toxin_sum: Array of toxin concentrations per cell.
         width: The width of the grid environment.
         height: The height of the grid environment.
-        base: Optional pre-allocated array for base flow field.
-        current: Optional pre-allocated array for current flow field.
-        nxt: Optional pre-allocated array for next flow field.
+        base: Pre-allocated array for base flow field.
+        current: Pre-allocated array for current flow field.
+        nxt: Pre-allocated array for next flow field.
 
     Returns:
         Scalar attraction field of shape ``(W, H)``.
     """
-    if base is None:
-        base = np.zeros((width, height), dtype=np.float64)
-    else:
-        base.fill(0.0)
-
-    if current is None:
-        current = np.zeros((width, height), dtype=np.float64)
-    else:
-        current.fill(0.0)
-
-    if nxt is None:
-        nxt = np.zeros((width, height), dtype=np.float64)
-    else:
-        nxt.fill(0.0)
+    base.fill(0.0)
+    current.fill(0.0)
+    nxt.fill(0.0)
 
     _init_base_and_current_jit(width, height, plant_energy, apparent_nutrition_layer, toxin_sum, base, current)
 

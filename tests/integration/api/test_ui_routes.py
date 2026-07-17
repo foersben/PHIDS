@@ -986,6 +986,9 @@ def test_flow_field_helpers_compute_gradient_and_apply_camouflage() -> None:
             np.array([[0.0]], dtype=np.float64),
             1,
             1,
+            np.zeros((1, 1), dtype=np.float64),
+            np.zeros((1, 1), dtype=np.float64),
+            np.zeros((1, 1), dtype=np.float64),
         )[0, 0]
         == 0.0
     )
