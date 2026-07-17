@@ -171,6 +171,7 @@ def _export_flora(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
             f.digestibility_modifier,
             f.cluster_id,
             f.centroid_distance,
+            f.knn_influences,
             f.source_databases
         FROM flora_species f
         ORDER BY f.species_id
@@ -225,6 +226,7 @@ def _export_flora(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
             "provenance": {
                 "cluster_id": row.get("cluster_id"),
                 "centroid_distance": row.get("centroid_distance"),
+                "knn_influences": _parse_json_field(row.get("knn_influences")) if row.get("knn_influences") else [],
                 "source_databases": row.get("source_databases"),
             },
             "trigger_rules": rules_by_species.get(sid, []),
@@ -254,6 +256,7 @@ def _export_herbivores(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
             h.chemical_neutralization,
             h.digestive_efficiency,
             h.cluster_id,
+            h.centroid_distance,
             h.source_databases
         FROM herbivore_species h
         ORDER BY h.species_id
@@ -326,6 +329,11 @@ def _export_substances(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
             "energy_cost_per_tick": row["energy_cost_per_tick"],
             "synthesis_duration": row["synthesis_duration"],
             "irreversible": row["irreversible"],
+            "provenance": {
+                "source_databases": row.get("source_db") or "DrDuke+ToxValDB+Pherobase (CC0)",
+                "compound_class": row.get("compound_class"),
+                "ld50_mg_kg": row.get("ld50_mg_kg"),
+            },
         }
         if row.get("diffusion_coefficient") is not None:
             entry["diffusion_coefficient"] = row["diffusion_coefficient"]

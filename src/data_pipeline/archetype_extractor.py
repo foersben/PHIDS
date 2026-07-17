@@ -103,7 +103,7 @@ def extract_flora_archetypes(
 
     # Pass 1: K=50 clusters (or len(df) if < 50)
     k1 = min(K_FLORA_PASS1, len(flora_df))
-    pass1_centroids, pass1_archetypes = _run_kmeans_and_extract(
+    _pass1_centroids, pass1_archetypes = _run_kmeans_and_extract(
         flora_df, available_features, species_name_col, k=k1, label="flora_pass1"
     )
 
@@ -214,6 +214,9 @@ def _run_kmeans_and_extract(
     cluster_labels = kmeans.fit_predict(feature_scaled)
     centroids = kmeans.cluster_centers_
 
+    # Priority list of heavily toxic species to preserve if possible
+    priority_species = {"Atropa belladonna", "Taxus baccata", "Aconitum napellus", "Datura stramonium"}
+
     # Find the species closest to each cluster centroid
     archetype_indices: list[int] = []
     for cluster_id in range(k):
@@ -221,21 +224,45 @@ def _run_kmeans_and_extract(
         cluster_indices = np.where(cluster_mask)[0]
         if len(cluster_indices) == 0:
             continue
+
+        # Find priority species in cluster
+        best_idx = -1
+        if species_col in df.columns:
+            for idx in cluster_indices:
+                if str(df.item(idx, species_col)) in priority_species:
+                    best_idx = int(idx)
+                    break
+
         cluster_features = feature_scaled[cluster_indices]
         centroid = centroids[cluster_id]
         distances = np.linalg.norm(cluster_features - centroid, axis=1)
-        nearest_local_idx = int(np.argmin(distances))
-        nearest_global_idx = int(cluster_indices[nearest_local_idx])
-        archetype_indices.append(nearest_global_idx)
+
+        # If no priority species, pick the one closest to centroid
+        if best_idx == -1:
+            best_idx = int(cluster_indices[int(np.argmin(distances))])
+
+        archetype_indices.append(best_idx)
 
         species_name = "unknown"
         if species_col in df.columns:
-            species_name = str(df[species_col][nearest_global_idx])
+            species_name = str(df[species_col][best_idx])
         logger.debug(
             "Archetypes (%s): cluster %d → %s (dist=%.4f)", label, cluster_id, species_name, float(np.min(distances))
         )
 
     archetype_df = df[archetype_indices]
+
+    # Append K-Means provenance for the database
+    distances = [
+        float(np.linalg.norm(feature_scaled[idx] - centroids[cid])) for cid, idx in enumerate(archetype_indices)
+    ]
+    archetype_df = archetype_df.with_columns(
+        [
+            pl.Series("cluster_id", list(range(k)), dtype=pl.Int32),
+            pl.Series("centroid_distance", distances, dtype=pl.Float64),
+        ]
+    )
+
     logger.info("Archetypes (%s): K=%d → %d archetypes selected", label, k, len(archetype_df))
     return centroids, archetype_df
 

@@ -60,6 +60,7 @@ _DDL_STATEMENTS: list[str] = [
         -- Archetype clustering metadata
         cluster_id                 INTEGER,
         centroid_distance          FLOAT,
+        knn_influences             VARCHAR,  -- JSON string of species that influenced imputation
         source_databases           VARCHAR   -- comma-separated: 'TRY,DrDuke'
     )
     """,
@@ -86,6 +87,7 @@ _DDL_STATEMENTS: list[str] = [
         class_name                  VARCHAR,
         -- Archetype metadata
         cluster_id                  INTEGER,
+        centroid_distance           FLOAT,
         source_databases            VARCHAR
     )
     """,

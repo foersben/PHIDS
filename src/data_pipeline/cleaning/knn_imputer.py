@@ -161,21 +161,59 @@ def _run_knn_imputer(
         k: Number of neighbours for KNN.
 
     Returns:
-        Polars DataFrame with imputed numeric columns.
+        Polars DataFrame with imputed numeric columns and knn_influences.
 
     """
     available = [c for c in numeric_cols if c in df.columns]
     if not available:
+        if "knn_influences" not in df.columns:
+            df = df.with_columns(pl.lit("[]").alias("knn_influences"))
         return df
 
     pdf = df.select(available).to_pandas()
-    imputer = KNNImputer(n_neighbors=min(k, max(1, len(df) - 1)), keep_empty_features=True)
-    imputed_array = imputer.fit_transform(pdf.values.astype(np.float64))
+    # Find neighbors to record influences before imputing
+    species_list = df["species_name"].to_list() if "species_name" in df.columns else []
+    influences = ["[]"] * len(df)
+
+    # Protect against deriving everything from a single plant (or zero)
+    valid_rows_count = pdf.dropna(how="all").shape[0]
+    if valid_rows_count < 2:
+        logger.warning("KNN imputer: insufficient valid rows (%d), skipping imputation.", valid_rows_count)
+        if "knn_influences" not in df.columns:
+            df = df.with_columns(pl.lit("[]").alias("knn_influences"))
+        return df
+
+    # We only have neighbors if there are >= 2 rows
+    if len(df) > 1 and species_list:
+        import json
+
+        from sklearn.neighbors import NearestNeighbors
+
+        # We find neighbors using only rows that don't have NaNs for a rough approximation,
+        # or just find neighbors using the imputed values.
+        imputer = KNNImputer(n_neighbors=min(k, max(1, len(df) - 1)), keep_empty_features=True)
+        imputed_array = imputer.fit_transform(pdf.values.astype(np.float64))
+
+        nn = NearestNeighbors(n_neighbors=min(k, len(df) - 1))
+        nn.fit(imputed_array)
+        distances, indices = nn.kneighbors(imputed_array)
+
+        for i, (_dist_row, idx_row) in enumerate(zip(distances, indices, strict=False)):
+            # Record neighbors (excluding self)
+            neighbor_species = [species_list[idx] for idx in idx_row if idx != i and idx < len(species_list)]
+            influences[i] = json.dumps(neighbor_species)
+
+    else:
+        imputer = KNNImputer(n_neighbors=min(k, max(1, len(df) - 1)), keep_empty_features=True)
+        imputed_array = imputer.fit_transform(pdf.values.astype(np.float64))
 
     imputed_df = pl.from_numpy(imputed_array, schema=available)
+    imputed_df = imputed_df.with_columns(pl.Series("knn_influences", influences))
 
     # Replace original numeric columns with imputed values
     result = df.drop(available)
+    if "knn_influences" in result.columns:
+        result = result.drop("knn_influences")
     return pl.concat([result, imputed_df], how="horizontal")
 
 

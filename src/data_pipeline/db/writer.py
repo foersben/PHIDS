@@ -186,7 +186,7 @@ def _write_flora(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> None:
         },
     )
 
-    _insert_dataframe(conn, "flora_species", df, pk_col="species_id")
+    _insert_dataframe(conn, "flora_species", df)
     logger.info("Flora: inserted %d species", len(df))
 
 
@@ -232,7 +232,7 @@ def _write_herbivores(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> None
         },
     )
 
-    _insert_dataframe(conn, "herbivore_species", df, pk_col="species_id")
+    _insert_dataframe(conn, "herbivore_species", df)
     logger.info("Herbivores: inserted %d species", len(df))
 
 
@@ -274,7 +274,7 @@ def _write_trigger_rules(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> N
         },
     )
 
-    _insert_dataframe(conn, "trigger_rules", df, pk_col="rule_id")
+    _insert_dataframe(conn, "trigger_rules", df)
     logger.info("Trigger rules: inserted %d rows", len(df))
 
 
@@ -326,7 +326,7 @@ def _write_provenance(conn: duckdb.DuckDBPyConnection, df: pl.DataFrame) -> None
     if "access_date" in df.columns and df["access_date"].dtype == pl.Utf8:
         df = df.with_columns(pl.col("access_date").str.to_date("%Y-%m-%d"))
 
-    _insert_dataframe(conn, "provenance", df, pk_col="record_id")
+    _insert_dataframe(conn, "provenance", df)
     logger.info("Provenance: inserted %d records", len(df))
 
 
@@ -339,7 +339,6 @@ def _insert_dataframe(
     conn: duckdb.DuckDBPyConnection,
     table: str,
     df: pl.DataFrame,
-    _pk_col: str,
 ) -> None:
     """Insert a Polars DataFrame into a DuckDB table, skipping duplicate PKs.
 

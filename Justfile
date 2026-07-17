@@ -6,6 +6,7 @@ setup:
     uv run pre-commit install
     uv run task setup
     @just install-extensions
+    @just etl
 
 install:
     @just setup

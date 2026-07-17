@@ -171,8 +171,9 @@ def _check_compound_presence_api(client: httpx.Client, species: str, compound: s
             params={"plant": species, "chemical": compound},
             timeout=10.0,
         )
-        has_compound = resp.status_code == 200 and compound.lower() in resp.text.lower()
-    except httpx.RequestError:
+        resp.raise_for_status()
+        has_compound = compound.lower() in resp.text.lower()
+    except (httpx.RequestError, httpx.HTTPStatusError):
         has_compound = _lookup_curated_presence(species, compound)
 
     return {

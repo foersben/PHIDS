@@ -62,7 +62,7 @@ HERBIVORE_CANDIDATES: list[str] = [
     "Odocoileus virginianus",  # White-tailed deer
     "Capreolus capreolus",  # Roe deer
     "Cervus elaphus",  # Red deer
-    "Dama dama",  # Fallow deer
+    "Dama dama",  # Dama deer
     "Alces alces",  # Moose / elk
     # Bovids (Artiodactyla)
     "Ovis aries",  # Domestic sheep
@@ -166,7 +166,7 @@ def _query_globi(client: httpx.Client, taxon_name: str) -> list[dict[str, object
     for item in interactions:
         # GLoBI v2 JSON format returns lists of values corresponding to columns
         if isinstance(item, list):
-            item = dict(zip(columns, item))
+            item = dict(zip(columns, item, strict=False))
 
         source = item.get("source_taxon_name", taxon_name)
         target = item.get("target_taxon_name", "")

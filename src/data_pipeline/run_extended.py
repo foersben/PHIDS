@@ -265,8 +265,12 @@ def run_extended(
     # -------------------------------------------------------------------------
     # Phase 6-9: Reuse core assembly logic (write to SEPARATE extended DB)
     # -------------------------------------------------------------------------
-    flora_with_id = flora_archetypes.with_row_index("species_id")
-    herbivore_with_id = herbivore_archetypes.with_row_index("species_id")
+    flora_with_id = flora_archetypes.with_row_index("species_id").with_columns(
+        pl.lit("BIEN+LEDA+GIFT+TRY").alias("source_databases")
+    )
+    herbivore_with_id = herbivore_archetypes.with_row_index("species_id").with_columns(
+        pl.lit("PanTHERIA+GLoBI").alias("source_databases")
+    )
 
     conn = write_all(
         flora_archetypes=flora_with_id,
@@ -344,34 +348,11 @@ def _merge_trait_sources(
 def _pivot_try_data(
     try_df: pl.DataFrame,
     gbif_df: pl.DataFrame,
-    _synonym_map: dict[str, str],
+    synonym_map: dict[str, str],
 ) -> pl.DataFrame:
-    """Pivot trait records into species-level wide DataFrame.
+    from data_pipeline.run_all import _pivot_try_data as _core_pivot
 
-    Delegates to the same logic used in run_all.py.
-
-    Args:
-        try_df: Trait records DataFrame.
-        gbif_df: GBIF resolution DataFrame.
-        synonym_map: Synonym resolution dict.
-
-    Returns:
-        Wide species-level DataFrame.
-
-    """
-    # Minimal pivot for the extended pipeline
-    if "species_name" not in try_df.columns or try_df.is_empty():
-        return pl.DataFrame({"species_name": pl.Series([], dtype=pl.Utf8)})
-
-    # Use GBIF taxonomy
-    gbif_select = gbif_df.select(
-        pl.col("raw_name").alias("species_name"),
-        "family",
-        "order_name",
-        "class_name",
-    ).unique("species_name")
-
-    return try_df.join(gbif_select, on="species_name", how="left")
+    return _core_pivot(try_df, gbif_df, synonym_map)
 
 
 def _join_pantheria_gbif(

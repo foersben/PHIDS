@@ -125,11 +125,6 @@ def _parse_pantheria_tsv(raw_text: str) -> pl.DataFrame:
     """
     import io
 
-    lines = raw_text.splitlines()
-    # PanTHERIA header uses tab-separation
-    header_line = lines[0].strip()
-    headers = [h.strip() for h in header_line.split("\t")]
-
     # Read with polars from in-memory buffer
     df_full = pl.read_csv(
         io.StringIO(raw_text),

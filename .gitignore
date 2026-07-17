@@ -223,3 +223,7 @@ src/data_pipeline/cache/extended/
 # DuckDB database (committed as a CI artifact, not a source file)
 # Checked in via HF Hub; local copies should not pollute the repo
 src/phids/analytics/bio_database.duckdb
+src/phids/analytics/bio_database.json
+src/phids/analytics/bio_database_extended.duckdb
+src/phids/analytics/bio_database_extended.json
+src/data_pipeline/manifest.json

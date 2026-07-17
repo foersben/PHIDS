@@ -208,7 +208,7 @@ def normalise_lethality_rate(ld50_mg_kg: float | None) -> float:
     """Map LD50 (mg/kg oral rat) to lethality_rate in [0.1, 10.0].
 
     LD50 is *inverted*: lower LD50 = more toxic = higher lethality_rate.
-    A log-scale inversion is used to handle the extreme range (0.3–5000).
+    A log-scale inversion is used to handle the extreme range (0.3-5000).
 
     Args:
         ld50_mg_kg: Median lethal dose in mg/kg. None → 0.0 (non-toxic).
