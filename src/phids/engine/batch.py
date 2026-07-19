@@ -285,6 +285,10 @@ def aggregate_batch_telemetry(
         [[_coerce_float(r.get("death_defense_maintenance", 0.0)) for r in run] for run in aligned],
         dtype=np.float64,
     )
+    death_starvation = np.array(
+        [[_coerce_float(r.get("death_starvation", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
 
     # Extinction probability: fraction of runs where flora hit zero at any tick
     extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
@@ -333,6 +337,7 @@ def aggregate_batch_telemetry(
         "total_flora_energy_std": flora_energy.std(axis=0).tolist(),
         "death_herbivore_feeding_mean": death_herbivore.mean(axis=0).tolist(),
         "death_defense_maintenance_mean": death_defense.mean(axis=0).tolist(),
+        "death_starvation_mean": death_starvation.mean(axis=0).tolist(),
         "extinction_probability": extinction_probability,
         "survival_probability_curve": survival_probability_curve,
         "runs_completed": len(per_run),

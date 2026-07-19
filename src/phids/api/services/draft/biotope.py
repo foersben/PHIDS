@@ -67,8 +67,8 @@ def update_biotope(
         ``True`` when at least one submitted scalar required clamping.
 
     """
-    clamped_grid_width = max(10, min(80, grid_width))
-    clamped_grid_height = max(10, min(80, grid_height))
+    clamped_grid_width = max(10, min(200, grid_width))
+    clamped_grid_height = max(10, min(200, grid_height))
     clamped_max_ticks = max(1, max_ticks)
     clamped_tick_rate_hz = max(0.1, tick_rate_hz)
     clamped_num_signals = max(1, min(16, num_signals))
