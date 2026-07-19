@@ -23,6 +23,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
+from phids.api.presenters.diagnostics import render_status_badge_html
 from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
 from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
 from phids.api.ui_state import (
@@ -44,7 +45,7 @@ router = APIRouter()
 
 def _status_badge_fragment() -> HTMLResponse:
     """Return the canonical HTMX status-badge fragment response."""
-    return HTMLResponse(content=api_main._render_status_badge_html())
+    return HTMLResponse(content=render_status_badge_html(api_main._sim_loop))
 
 
 def _form_scalar(form_data: FormData, key: str) -> str | None:

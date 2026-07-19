@@ -20,6 +20,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
+from phids.api.presenters.diagnostics import build_energy_deficit_swarms, build_live_summary
+from phids.api.presenters.trigger_rules import trigger_rules_template_context
 from phids.api.ui_state import DraftState, get_draft
 from phids.shared.logging_config import get_recent_logs
 
@@ -56,11 +58,11 @@ async def ui_diagnostics_model(request: Request) -> Response:
         "partials/diagnostics_model.html",
         {
             "draft": get_draft(),
-            "live_summary": api_main._build_live_summary(),
+            "live_summary": build_live_summary(api_main._sim_loop),
             "latest_metrics": api_main._sim_loop.telemetry.get_latest_metrics()
             if api_main._sim_loop is not None
             else None,
-            "energy_deficit_swarms": api_main._build_energy_deficit_swarms(),
+            "energy_deficit_swarms": build_energy_deficit_swarms(api_main._sim_loop),
             "wind": {
                 "vx": api_main._sim_loop.config.wind_x if api_main._sim_loop else get_draft().wind_x,
                 "vy": api_main._sim_loop.config.wind_y if api_main._sim_loop else get_draft().wind_y,
@@ -256,7 +258,7 @@ async def ui_trigger_rules(request: Request) -> Response:
     return api_main.templates.TemplateResponse(
         request,
         "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
+        trigger_rules_template_context(draft),
     )
 
 
@@ -272,7 +274,7 @@ async def ui_morphology_defense(request: Request) -> Response:
             "herbivore_species": draft.herbivore_species,
             "substances": draft.substance_definitions,
             "trigger_rules": draft.trigger_rules,
-            "trigger_rule_condition_summary": api_main._trigger_rules_template_context(draft).get(
+            "trigger_rule_condition_summary": trigger_rules_template_context(draft).get(
                 "trigger_rule_condition_summary"
             ),
             "condition_group_kinds": ["all_of", "any_of"],

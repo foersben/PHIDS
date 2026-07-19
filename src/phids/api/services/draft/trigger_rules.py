@@ -11,10 +11,15 @@ need to import private ``ui_state`` path-resolution utilities directly.
 
 from __future__ import annotations
 
+import json
 import logging
 from copy import deepcopy
 from typing import Literal
 
+from fastapi import HTTPException
+from pydantic import TypeAdapter, ValidationError
+
+from phids.api.schemas import ConditionNode
 from phids.api.ui_state import (
     ActivationConditionNode,
     ConditionValue,
@@ -328,3 +333,106 @@ def update_trigger_rule_condition_node(
     node = _condition_node_at_path(root, _parse_condition_path(path))
     node.update(fields)
     rule.activation_condition = root
+
+
+_condition_adapter = TypeAdapter(ConditionNode)
+
+
+def parse_activation_condition_json(raw: str | None) -> ActivationConditionNode | None:
+    """Parse and validate a serialized activation-condition tree from builder input.
+
+    Args:
+        raw: Raw JSON text submitted from trigger-rule editing controls.
+
+    Returns:
+        Normalized condition dictionary, or ``None`` when the input is absent/blank.
+
+    Raises:
+        HTTPException: Condition JSON is syntactically invalid or violates schema constraints.
+    """
+    if raw is None:
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid condition JSON: {exc.msg}") from exc
+
+    try:
+        condition = _condition_adapter.validate_python(payload)
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid activation condition: {exc}") from exc
+    return condition.model_dump(mode="json")
+
+
+def default_activation_condition_for_rule(
+    draft: DraftState,
+    rule: TriggerRule,
+    node_kind: str,
+) -> ActivationConditionNode:
+    """Construct a default activation-condition node compatible with a trigger rule.
+
+    Args:
+        draft: Active draft state containing species and substance registries.
+        rule: Trigger rule being edited.
+        node_kind: Requested node discriminator.
+
+    Returns:
+        Default node payload suitable for insertion into a condition tree.
+
+    Raises:
+        HTTPException: ``node_kind`` is unsupported by the condition editor.
+    """
+    default_herbivore_species_id = rule.herbivore_species_id
+    default_substance_id = rule.substance_id
+    for definition in draft.substance_definitions:
+        if definition.substance_id != rule.substance_id:
+            default_substance_id = definition.substance_id
+            break
+
+    if node_kind == "herbivore_presence":
+        return {
+            "kind": "herbivore_presence",
+            "herbivore_species_id": default_herbivore_species_id,
+            "min_herbivore_population": max(1, rule.min_herbivore_population),
+        }
+    if node_kind == "substance_active":
+        return {"kind": "substance_active", "substance_id": default_substance_id}
+    if node_kind == "environmental_signal":
+        return {
+            "kind": "environmental_signal",
+            "signal_id": rule.substance_id,
+            "min_concentration": 0.01,
+        }
+    if node_kind in {"all_of", "any_of"}:
+        return {
+            "kind": node_kind,
+            "conditions": [
+                {
+                    "kind": "herbivore_presence",
+                    "herbivore_species_id": default_herbivore_species_id,
+                    "min_herbivore_population": max(1, rule.min_herbivore_population),
+                }
+            ],
+        }
+    raise HTTPException(status_code=400, detail=f"Unsupported condition node kind: {node_kind}")
+
+
+def trigger_rule_by_index(draft: DraftState, index: int) -> TriggerRule:
+    """Return one trigger rule from draft state with HTTP-oriented bounds checking.
+
+    Args:
+        draft: Active draft state containing trigger rules.
+        index: Positional index requested by route handlers.
+
+    Returns:
+        Trigger rule at the requested index.
+
+    Raises:
+        HTTPException: Index is outside the current trigger-rule list bounds.
+    """
+    if index < 0 or index >= len(draft.trigger_rules):
+        raise HTTPException(status_code=404, detail=f"Trigger rule {index} not found.")
+    return draft.trigger_rules[index]

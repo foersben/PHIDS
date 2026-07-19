@@ -19,3 +19,10 @@ Action: Always copy-paste the exact function body when breaking up scientific mo
 ## $(date +%Y-%m-%d) - Extracting DraftService Monolith into Pure Functional Modules
 Learning: When dismantling a state-mutation God Class (like `DraftService` manipulating `DraftState`), separating imperative mutations into pure functions across domain-specific modules (e.g., `draft/biotope.py`, `draft/species.py`) safely preserves API routing boundaries without mutating instance state, provided all static references to the class are replaced with function imports repository-wide.
 Action: Future extractions of stateless manager classes must directly convert to free functions inside `__init__.py` or domain files to ensure the monolithic wrapper is deleted without leaving adapter classes behind.
+## 2026-07-19 - Pydantic TypeAdapter for Polymorphic Trees
+Learning: When parsing nested, discriminated UI configuration payloads (like `activation_condition` trees) in the PHIDS API, validating against the wrapper schema (`TriggerConditionSchema`) causes Pydantic to expect action metadata rather than just the condition leaf node itself, throwing "Extra inputs are not permitted [type=extra_forbidden]".
+Action: Use `TypeAdapter(ConditionNode)` to correctly validate the root of the recursive discriminated condition tree when isolating builder validation logic.
+
+## 2026-07-19 - Fast-API Monolith Extraction and `__future__` Imports
+Learning: Extracting utility methods and Pydantic schemas out of a monolithic `phids.api.main` file cleans the module graph significantly but introduces severe import-ordering strictness under `ruff`. `from __future__ import annotations` must be the absolute first statement following the module docstring, overriding `typing.TYPE_CHECKING` blocks and standard library imports, otherwise `F404` and `E402` linting errors block PR validation.
+Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.

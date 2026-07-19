@@ -19,6 +19,9 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
+from phids.api.presenters.diagnostics import build_energy_deficit_swarms, build_live_summary, render_status_badge_html
+from phids.api.services.draft.trigger_rules import parse_activation_condition_json, trigger_rule_by_index
+
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
@@ -168,14 +171,14 @@ def test_main_activation_condition_json_parser_valid_cases(
     expected: ActivationConditionNode | None,
 ) -> None:
     """Verify activation-condition parser returns normalized dicts for valid inputs."""
-    assert api_main._parse_activation_condition_json(raw) == expected
+    assert parse_activation_condition_json(raw) == expected
 
 
 @pytest.mark.parametrize("raw", ["{bad json", '{"kind":"substance_active"}'])
 def test_main_activation_condition_json_parser_invalid_cases(raw: str) -> None:
     """Verify activation-condition parser raises on malformed JSON and invalid schemas."""
     with pytest.raises(HTTPException):
-        api_main._parse_activation_condition_json(raw)
+        parse_activation_condition_json(raw)
 
 
 @pytest.mark.parametrize(
@@ -244,9 +247,9 @@ def test_main_trigger_rule_lookup_valid_and_missing_index() -> None:
     """Verify trigger-rule lookup returns existing entries and raises for missing indices."""
     draft = DraftState.default()
     draft.trigger_rules = [TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=0)]
-    assert api_main._trigger_rule_by_index(draft, 0).substance_id == 0
+    assert trigger_rule_by_index(draft, 0).substance_id == 0
     with pytest.raises(HTTPException):
-        api_main._trigger_rule_by_index(draft, 3)
+        trigger_rule_by_index(draft, 3)
 
 
 @pytest.mark.parametrize(
@@ -310,14 +313,14 @@ def test_main_render_status_badge_states(
     loop.running = running
     loop.paused = paused
     loop.terminated = terminated
-    assert expected_label in api_main._render_status_badge_html()
+    assert expected_label in render_status_badge_html(api_main._sim_loop)
 
 
 def test_main_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
     """Verify unloaded-loop helpers raise and render the Idle status badge."""
     with pytest.raises(HTTPException):
         api_main._get_loop()
-    assert "Idle" in api_main._render_status_badge_html()
+    assert "Idle" in render_status_badge_html(api_main._sim_loop)
 
 
 def test_main_live_summary_and_starving_swarm_helpers() -> None:
@@ -364,8 +367,8 @@ def test_main_live_summary_and_starving_swarm_helpers() -> None:
         ),
     )
 
-    summary = api_main._build_live_summary()
-    starving = api_main._build_energy_deficit_swarms()
+    summary = build_live_summary(api_main._sim_loop)
+    starving = build_energy_deficit_swarms(api_main._sim_loop)
 
     assert summary is not None
     assert summary["plants"] == 1

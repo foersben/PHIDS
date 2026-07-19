@@ -23,13 +23,17 @@ from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    shared,
 )
+from phids.api.presenters.diagnostics import build_energy_deficit_swarms, render_status_badge_html
 from phids.api.services.draft.placements import (
     add_plant_placement,
     add_swarm_placement,
 )
 from phids.api.services.draft.trigger_rules import (
     add_trigger_rule,
+    default_activation_condition_for_rule,
+    trigger_rule_by_index,
 )
 from phids.api.ui_state import (
     DraftState,
@@ -69,7 +73,7 @@ def _build_loaded_loop() -> SimulationLoop:
 )
 def test_main_coerce_int_cases(input_val: object, kwargs: dict[str, int], expected: int) -> None:
     """Validate integer coercion behavior across valid, invalid, and boolean inputs."""
-    assert api_main._coerce_int(input_val, **kwargs) == expected
+    assert shared._coerce_int(input_val, **kwargs) == expected
 
 
 @pytest.mark.parametrize(
@@ -88,7 +92,7 @@ def test_main_coerce_float_cases(
     expected: float,
 ) -> None:
     """Validate floating-point coercion behavior across valid, invalid, and boolean inputs."""
-    assert api_main._coerce_float(input_val, **kwargs) == pytest.approx(expected)
+    assert shared._coerce_float(input_val, **kwargs) == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -142,7 +146,7 @@ def test_main_default_activation_condition_supported_kinds(
     )
     rule = draft.trigger_rules[0]
 
-    condition = api_main._default_activation_condition_for_rule(draft, rule, kind)
+    condition = default_activation_condition_for_rule(draft, rule, kind)
     assert condition[field] == expected
     if secondary_field == "signal_id":
         assert condition[secondary_field] == secondary_expected
@@ -163,11 +167,11 @@ def test_main_default_activation_condition_invalid_kind_and_missing_trigger_inde
     rule = draft.trigger_rules[0]
 
     with pytest.raises(HTTPException) as unsupported:
-        api_main._default_activation_condition_for_rule(draft, rule, "invalid")
+        default_activation_condition_for_rule(draft, rule, "invalid")
     assert unsupported.value.status_code == 400
 
     with pytest.raises(HTTPException) as not_found:
-        api_main._trigger_rule_by_index(draft, 99)
+        trigger_rule_by_index(draft, 99)
     assert not_found.value.status_code == 404
 
 
@@ -202,7 +206,7 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
     assert preview_cell["mode"] == "draft"
     assert "species_energy" in dashboard
 
-    stressed = api_main._build_energy_deficit_swarms()
+    stressed = build_energy_deficit_swarms(api_main._sim_loop)
     assert len(stressed) == 1
     assert stressed[0]["energy_deficit"] > 0.0
 
@@ -210,7 +214,7 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
 def test_render_status_badge_idle_without_loaded_loop() -> None:
     """Validate that the status badge reports Idle when no loop is registered."""
     api_main._sim_loop = None
-    assert "Idle" in api_main._render_status_badge_html()
+    assert "Idle" in render_status_badge_html(api_main._sim_loop)
 
 
 @pytest.mark.parametrize(
@@ -233,7 +237,7 @@ def test_render_status_badge_loaded_loop_states(
     loop.running = running
     loop.paused = paused
     loop.terminated = terminated
-    assert expected_label in api_main._render_status_badge_html()
+    assert expected_label in render_status_badge_html(api_main._sim_loop)
 
 
 @pytest.mark.parametrize(

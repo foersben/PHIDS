@@ -21,6 +21,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 import phids.api.main as api_main
+from phids.api.presenters.diagnostics import build_live_summary
+from phids.api.presenters.telemetry import build_telemetry_svg
 from phids.telemetry.export.core import (
     decimate_dataframe,
     filter_dataframe_columns,
@@ -380,15 +382,15 @@ async def telemetry_chart(request: Request) -> Response:
         legend and summary context.
     """
     if api_main._sim_loop is None:
-        svg = api_main._build_telemetry_svg(None)
+        svg = build_telemetry_svg(None)
         legend = False
         latest_metrics = None
         live_summary = None
     else:
-        svg = api_main._build_telemetry_svg(api_main._sim_loop.telemetry.dataframe)
+        svg = build_telemetry_svg(api_main._sim_loop.telemetry.dataframe)
         legend = True
         latest_metrics = api_main._sim_loop.telemetry.get_latest_metrics()
-        live_summary = api_main._build_live_summary()
+        live_summary = build_live_summary(api_main._sim_loop)
 
     from phids.api.ui_state import DraftState, get_draft
 

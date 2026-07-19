@@ -11,14 +11,18 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
+from phids.api.presenters.trigger_rules import trigger_rules_template_context
 from phids.api.services.draft.trigger_rules import (
     add_trigger_rule,
     append_trigger_rule_condition_child,
+    default_activation_condition_for_rule,
     delete_trigger_rule_condition_node,
     get_condition_node,
+    parse_activation_condition_json,
     remove_trigger_rule,
     replace_trigger_rule_condition_node,
     set_trigger_rule_activation_condition,
+    trigger_rule_by_index,
     update_trigger_rule,
     update_trigger_rule_condition_node,
 )
@@ -41,7 +45,7 @@ def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Respon
             "herbivore_species": draft.herbivore_species,
             "substances": draft.substance_definitions,
             "trigger_rules": draft.trigger_rules,
-            "trigger_rule_condition_summary": api_main._trigger_rules_template_context(draft).get(
+            "trigger_rule_condition_summary": trigger_rules_template_context(draft).get(
                 "trigger_rule_condition_summary"
             ),
             "condition_group_kinds": ["all_of", "any_of"],
@@ -87,7 +91,7 @@ async def config_trigger_rule_add(
         apparent_nutrition_factor=apparent_nutrition_factor,
         aftereffect_ticks=aftereffect_ticks,
         min_herbivore_population=max(1, min_herbivore_population),
-        activation_condition=api_main._parse_activation_condition_json(activation_condition_json),
+        activation_condition=parse_activation_condition_json(activation_condition_json),
     )
     api_main.logger.info(
         "Trigger rule added via API (flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)",
@@ -132,7 +136,7 @@ async def config_trigger_rule_update(
         aftereffect_ticks=aftereffect_ticks,
         min_herbivore_population=min_herbivore_population,
         activation_condition=(
-            api_main._parse_activation_condition_json(activation_condition_json)
+            parse_activation_condition_json(activation_condition_json)
             if activation_condition_json is not None
             else None
         ),
@@ -153,11 +157,11 @@ async def config_trigger_rule_condition_root(
 ) -> Response:
     """Create or replace the root activation-condition node for one trigger rule."""
     draft = get_draft()
-    rule = api_main._trigger_rule_by_index(draft, index)
+    rule = trigger_rule_by_index(draft, index)
     set_trigger_rule_activation_condition(
         draft,
         index,
-        api_main._default_activation_condition_for_rule(draft, rule, node_kind),
+        default_activation_condition_for_rule(draft, rule, node_kind),
     )
     return _render_trigger_rules_partial(request, draft)
 
@@ -175,13 +179,13 @@ async def config_trigger_rule_condition_child_add(
 ) -> Response:
     """Append one child activation-condition node to a group node."""
     draft = get_draft()
-    rule = api_main._trigger_rule_by_index(draft, index)
+    rule = trigger_rule_by_index(draft, index)
     try:
         append_trigger_rule_condition_child(
             draft,
             index,
             parent_path,
-            api_main._default_activation_condition_for_rule(draft, rule, node_kind),
+            default_activation_condition_for_rule(draft, rule, node_kind),
         )
     except IndexError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -206,7 +210,7 @@ async def config_trigger_rule_condition_node_update(
 ) -> Response:
     """Update or replace one node in a trigger-rule activation-condition tree."""
     draft = get_draft()
-    rule = api_main._trigger_rule_by_index(draft, index)
+    rule = trigger_rule_by_index(draft, index)
 
     if rule.activation_condition is None:
         if kind is None or path:
@@ -214,7 +218,7 @@ async def config_trigger_rule_condition_node_update(
         set_trigger_rule_activation_condition(
             draft,
             index,
-            api_main._default_activation_condition_for_rule(draft, rule, kind),
+            default_activation_condition_for_rule(draft, rule, kind),
         )
         return _render_trigger_rules_partial(request, draft)
 
@@ -224,7 +228,7 @@ async def config_trigger_rule_condition_node_update(
         )
 
         if kind is not None and current_node.get("kind") != kind:
-            replacement = api_main._default_activation_condition_for_rule(draft, rule, kind)
+            replacement = default_activation_condition_for_rule(draft, rule, kind)
             replace_trigger_rule_condition_node(draft, index, path, replacement)
         else:
             updates: dict[str, object] = {}
@@ -264,7 +268,7 @@ async def config_trigger_rule_condition_delete(
 ) -> Response:
     """Delete one trigger-rule condition node or clear the whole condition tree."""
     draft = get_draft()
-    api_main._trigger_rule_by_index(draft, index)
+    trigger_rule_by_index(draft, index)
     try:
         delete_trigger_rule_condition_node(draft, index, path)
     except IndexError as exc:
