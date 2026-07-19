@@ -184,7 +184,66 @@ def _compute_flow_field_impl(
     decay = 0.6
     max_iterations = width + height
     for _ in range(max_iterations):
-        max_diff = _propagate_iteration_jit(width, height, decay, base, current, nxt)
+        max_diff = 0.0
+
+        # Handle boundaries (x=0, x=width-1, y=0, y=height-1)
+        for x in range(width):
+            for y in (0, height - 1):
+                n_sum = 0.0
+                n_count = 0
+                if x > 0:
+                    n_sum += current[x - 1, y]
+                    n_count += 1
+                if x < width - 1:
+                    n_sum += current[x + 1, y]
+                    n_count += 1
+                if y > 0:
+                    n_sum += current[x, y - 1]
+                    n_count += 1
+                if y < height - 1:
+                    n_sum += current[x, y + 1]
+                    n_count += 1
+                propagated = n_sum / n_count if n_count > 0 else 0.0
+                val = base[x, y] + (decay * propagated)
+                nxt[x, y] = val
+                diff = abs(val - current[x, y])
+                if diff > max_diff:
+                    max_diff = diff
+
+        for x in (0, width - 1):
+            for y in range(1, height - 1):
+                n_sum = 0.0
+                n_count = 0
+                if x > 0:
+                    n_sum += current[x - 1, y]
+                    n_count += 1
+                if x < width - 1:
+                    n_sum += current[x + 1, y]
+                    n_count += 1
+                if y > 0:
+                    n_sum += current[x, y - 1]
+                    n_count += 1
+                if y < height - 1:
+                    n_sum += current[x, y + 1]
+                    n_count += 1
+                propagated = n_sum / n_count if n_count > 0 else 0.0
+                val = base[x, y] + (decay * propagated)
+                nxt[x, y] = val
+                diff = abs(val - current[x, y])
+                if diff > max_diff:
+                    max_diff = diff
+
+        # Handle inner cells without boundary checks
+        for x in range(1, width - 1):
+            for y in range(1, height - 1):
+                n_sum = current[x - 1, y] + current[x + 1, y] + current[x, y - 1] + current[x, y + 1]
+                propagated = n_sum * 0.25  # neighbour_count is always 4
+                val = base[x, y] + (decay * propagated)
+                nxt[x, y] = val
+                diff = abs(val - current[x, y])
+                if diff > max_diff:
+                    max_diff = diff
+
         current, nxt = nxt, current
 
         # Early stopping if convergence is reached

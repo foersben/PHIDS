@@ -198,3 +198,39 @@ def test_flow_field_generation_and_camouflage() -> None:
     before = flow[1, 0]
     apply_camouflage(flow, 1, 0, 0.25)
     assert np.isclose(flow[1, 0], before * 0.25)
+
+
+def test_flow_field_inner_propagation() -> None:
+    """Verify flow field unrolled logic."""
+    import numpy as np
+
+    plant_energy = np.zeros((4, 4), dtype=np.float64)
+    plant_energy[1, 1] = 10.0
+    apparent = np.ones((4, 4), dtype=np.float64)
+    toxin_sum = np.zeros((4, 4), dtype=np.float64)
+
+    flow = _compute_flow_field_impl_test(plant_energy, apparent, toxin_sum, width=4, height=4)
+    assert flow[1, 1] > 0.0
+
+
+def test_flow_field_initialization() -> None:
+    """Verify flow field initialization respects base attributes."""
+    plant_energy = np.ones((2, 2), dtype=np.float64) * 2.0
+    toxin_layers = np.zeros((1, 2, 2), dtype=np.float64)
+    toxin_layers[0, 0, 0] = 1.0
+
+    apparent = np.ones((2, 2), dtype=np.float64)
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=2, height=2)
+
+    assert flow[0, 0] > 0.0  # 2.0 * 1.0 - 1.0 = 1.0 + propagated
+    assert flow[1, 1] > 1.0  # 2.0 * 1.0 - 0.0 = 2.0 + propagated
+
+
+def test_flow_field_truncates_subnormals() -> None:
+    """Verify very small subnormal values are truncated."""
+    plant_energy = np.ones((3, 3), dtype=np.float64) * 1e-5
+    toxin_layers = np.zeros((1, 3, 3), dtype=np.float64)
+    apparent = np.ones((3, 3), dtype=np.float64)
+
+    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=3, height=3)
+    assert np.allclose(flow, np.zeros((3, 3), dtype=np.float64))
