@@ -36,6 +36,10 @@ def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_
         np.zeros((width, height), dtype=np.float64),
         np.zeros((width, height), dtype=np.float64),
         np.zeros((width, height), dtype=np.float64),
+        1.0,
+        1.0,
+        0.6,
+        1e-4,
     )
 
 

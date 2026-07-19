@@ -73,6 +73,7 @@ def run_interaction(
     herbivore_species_params: list[HerbivoreSpeciesParams],
     tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
+    herbivore_death_causes: dict[str, int] | None = None,
 ) -> None:
     """Execute one complete interaction tick, advancing all swarm entities through seven ordered phases.
 
@@ -95,6 +96,7 @@ def run_interaction(
         herbivore_species_params: The herbivore species parameters.
         tick: The current simulation tick.
         plant_death_causes: The plant death causes.
+        herbivore_death_causes: The herbivore death causes.
     """
     dead_swarms: list[int] = []
     tile_populations: list[int] = [0] * (env.width * env.height)
@@ -158,7 +160,7 @@ def run_interaction(
         # 4. Metabolism & Reproduction
         if not swarm.repelled:
             _resolve_swarm_metabolism_and_reproduction(
-                swarm, entity, world, env, tile_populations, dead_swarms, scratch_cx, scratch_cy
+                swarm, entity, world, env, tile_populations, dead_swarms, scratch_cx, scratch_cy, herbivore_death_causes
             )
 
     world.collect_garbage(dead_swarms)
