@@ -335,7 +335,7 @@ def update_trigger_rule_condition_node(
     rule.activation_condition = root
 
 
-_condition_adapter = TypeAdapter(ConditionNode)
+_condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
 
 
 def parse_activation_condition_json(raw: str | None) -> ActivationConditionNode | None:
