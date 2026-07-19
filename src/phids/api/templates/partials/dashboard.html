@@ -470,7 +470,7 @@
       160,
       Math.floor(viewportHeight * heightPct * 0.94 - paddingY)
     );
-    const cellSize = Math.max(1, Math.floor(Math.min(availableWidth / gW, availableHeight / gH)));
+    const cellSize = Math.max(1, Math.min(availableWidth / gW, availableHeight / gH));
     const drawWidth = cellSize * gW;
     const drawHeight = cellSize * gH;
     return {
@@ -487,8 +487,8 @@
   function syncCanvasLayout(gridData) {
     const nextLayout = computeCanvasLayout(gridData);
     const dpr = window.devicePixelRatio || 1;
-    const targetWidth = nextLayout.drawWidth * dpr;
-    const targetHeight = nextLayout.drawHeight * dpr;
+    const targetWidth = Math.round(nextLayout.drawWidth * dpr);
+    const targetHeight = Math.round(nextLayout.drawHeight * dpr);
     if (
       canvas.width !== targetWidth
       || canvas.height !== targetHeight
