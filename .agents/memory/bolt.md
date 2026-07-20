@@ -26,3 +26,7 @@ Action: When modifying purely documentation files inside `docs/`, utilize target
 ## 2026-07-17 - Optimize ECS Query Fast-Path
 Learning: Iterating through an ECS component index and doing secondary lookup checks like `if eid in entities and ct in entities[eid]._components` is slow inside hot loops. Because the ECS is carefully managed, `_component_index` is strictly synchronized with `_entities`.
 Action: Rely on invariant synchronization to safely drop defensive dictionary lookups in hot path queries. Fail-fast on desynchronization rather than silently masking it with `if in` checks.
+
+## 2026-07-20 - Unnecessary Tuple Allocation in Read-Only Component Passes
+**Learning:** During the `interaction` system, the engine was iterating over `tuple(world._component_index.get(SwarmComponent, set()))` for an initial read-only population accumulation pass. While wrapping the component index set in a tuple is strictly necessary when the loop modifies the ECS (to avoid "Set changed size during iteration" errors), doing this on a purely read-only pass introduces an unnecessary O(N) allocation per tick (where N is the number of swarms).
+**Action:** Always identify whether an ECS loop mutates the world state. If it is purely read-only (e.g., just accumulating metrics or building read caches), iterate directly over the component index set without wrapping it in a `list` or `tuple` to save per-tick allocation overhead.
