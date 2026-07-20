@@ -216,6 +216,7 @@ Useful `just` Commands:
 * `just lint`: Automatically fix formatting and run static analysis (Ruff & Mypy).
 * `just check`: Run all pre-commit hooks across the codebase.
 * `just docs`: Build and serve the Zensical documentation strictly.
+* `just bench-compare-jit`: Compare JIT performance of the current workspace against a baseline branch.
 * `just clean`: Remove all build artifacts, cache directories, and test coverage files.
 
 Hook-only verification:
@@ -307,6 +308,7 @@ uv run zensical serve
 
 * simulation/math: `numpy`, `scipy`, `numba`, `deap`
 * API/runtime: `fastapi`, `uvicorn`, `websockets`
+* UI/frontend: `HTMX`, `Tailwind CSS`, `Jinja2`, `Chart.js`
 * CLI: `typer`
 * validation/modeling boundary: `pydantic` (V2)
 * telemetry/data processing: `polars`, `zarr`
@@ -325,7 +327,8 @@ src/phids/              canonical runtime package
 ├── io/                 High-performance Zarr replays and scenario parsing
 ├── telemetry/          Tick analytics, export routines, and Polars handlers
 ├── shared/             Common utilities and logging configurations
-└── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
+├── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
+└── __main__.py         Command-line interface (Typer) entry point
 tests/                  property-based invariant tests, two-pass Numba tests, and API integration
 examples/               curated scenario JSON files
 docs/                   Zensical documentation corpus

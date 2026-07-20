@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from numba import njit
 
-from phids.engine.components.plant import PlantComponent
 from phids.engine.systems.interaction.population import TILE_CARRYING_CAPACITY, _accumulate_tile_population
 
 if TYPE_CHECKING:
@@ -456,39 +455,31 @@ def _choose_neighbour_by_flow_probability_python(
 
 def _is_swarm_anchored(
     swarm: SwarmComponent,
-    world: ECSWorld,
+    env: GridEnvironment,
     diet_matrix: list[list[bool]],
 ) -> bool:
     """Return True if swarm is currently co-located with compatible uneaten food.
 
-    This function implements a collision-detection routine to determine whether a herbivore
-    swarm is currently co-located with compatible uneaten food. If such a plant is found, the
-    swarm is considered "anchored" and will ignore global flow fields for movement, instead
-    remaining at its current location until the food source is depleted.
+    This function implements a fast collision-detection routine to determine whether a herbivore
+    swarm is currently co-located with compatible uneaten food by directly checking the
+    environment's energy and nutrition layers, avoiding expensive ECS queries.
 
     Args:
         swarm: The swarm component.
-        world: The ECS world.
+        env: The grid environment.
         diet_matrix: The diet matrix.
 
     Returns:
         True if the swarm is anchored, False otherwise.
     """
-    for co_eid in world.entities_at(swarm.x, swarm.y):
-        if not world.has_entity(co_eid):
-            continue
-        co_entity = world.get_entity(co_eid)
-        if not co_entity.has_component(PlantComponent):
-            continue
-        anchor_plant = co_entity.get_component(PlantComponent)
-        herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-        if (
-            anchor_plant.species_id < len(herbivore_row)
-            and herbivore_row[anchor_plant.species_id]
-            and anchor_plant.energy > 0
-            and anchor_plant.apparent_nutrition_factor >= 0.999
-        ):
+    if env.apparent_nutrition_layer[swarm.x, swarm.y] < 0.999:
+        return False
+
+    herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
+    for flora_species_id, is_compatible in enumerate(herbivore_row):
+        if is_compatible and env.plant_energy_by_species[flora_species_id, swarm.x, swarm.y] > 0:
             return True
+
     return False
 
 
@@ -550,7 +541,7 @@ def _resolve_swarm_movement(
             swarm.repelled = False
     else:
         # 2. Fast O(1) check: are we already standing on valid, uneaten food?
-        if _is_swarm_anchored(swarm, world, diet_matrix):
+        if _is_swarm_anchored(swarm, env, diet_matrix):
             nx, ny = swarm.x, swarm.y
         else:
             # 3. Resume normal gradient tracking if no food is present.
