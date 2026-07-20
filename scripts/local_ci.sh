@@ -32,7 +32,7 @@ run_sync() {
   fi
 
   echo ">>> Syncing dependencies"
-  uv sync --all-extras --dev
+  uv sync --all-groups
 }
 
 run_quality() {
