@@ -34,7 +34,6 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import TypeAdapter
 
 from phids.api.presenters.dashboard import (
     build_live_cell_details,
@@ -54,10 +53,6 @@ from phids.api.routers import (
     telemetry_router,
     ui_router,
 )
-from phids.api.schemas import (
-    ConditionNode,
-    SimulationConfig,
-)
 from phids.api.ui_state import (
     DraftState,
     get_draft,
@@ -68,6 +63,9 @@ from phids.shared.logging_config import configure_logging
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from phids.api.schemas import (
+        SimulationConfig,
+    )
     from phids.engine.loop import SimulationLoop
 
 configure_logging()
@@ -147,7 +145,6 @@ async def log_http_requests(
 _sim_loop: SimulationLoop | None = None
 _sim_task: asyncio.Task[None] | None = None
 _sim_substance_names: dict[int, str] = {}
-_condition_adapter: TypeAdapter[ConditionNode] = TypeAdapter(ConditionNode)
 _BATCH_DIR = pathlib.Path("data") / "batches"
 
 
@@ -354,11 +351,6 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
         else build_preview_cell_details(x, y, draft=get_draft(), substance_names=_sim_substance_names)
     )
     return JSONResponse(content=payload)
-
-
-# ---------------------------------------------------------------------------
-# Telemetry chart (HTMX-polled SVG)
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
