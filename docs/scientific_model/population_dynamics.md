@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Population Dynamics vs. Continuous Solvers in the PHIDS framework."
 ---
 
-# Population Dynamics vs. Continuous Solvers
-
 Herbivore swarms within PHIDS consume resources, metabolize energy, reproduce, and undergo density-dependent population scaling. This deep dive explains how those behaviors are modeled as discrete events evaluated locally on the spatial hash.
 
 ## Biological Context

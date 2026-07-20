@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Agent Ecosystem & MCP in the PHIDS framework."
 ---
 
-# Agent Ecosystem & MCP
-
 To manage documentation, testing, and lifecycle operations reproducibly, PHIDS integrates an explicit human-and-agent governance model based on the Model Context Protocol (MCP).
 
 ## Agent Roles & Governance

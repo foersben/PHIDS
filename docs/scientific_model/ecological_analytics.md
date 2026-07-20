@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Ecological Analytics & Evaluation in the PHIDS framework."
 ---
 
-# Ecological Analytics & Evaluation
-
 PHIDS converts simulation ticks into comparable, analytical artifacts. The primary method for evaluating a scenario's success or failure is through longitudinal population and energy tracking.
 
 ## 1. The Lotka-Volterra Paradigm
@@ -25,9 +23,9 @@ $$
 
 Where:
 
-- $x$: Plant population (Flora).
-- $y$: Herbivore population.
-- $\alpha, \beta, \gamma, \delta$: Growth, consumption, mortality, and assimilation rates.
+* $x$: Plant population (Flora).
+* $y$: Herbivore population.
+* $\alpha, \beta, \gamma, \delta$: Growth, consumption, mortality, and assimilation rates.
 
 ### The Purpose of Tracking
 
@@ -47,9 +45,9 @@ If a scenario does not cycle, it inevitably hits a **Termination Condition**.
 
 The engine integrates continuous checks against operational bounds:
 
-- **Max Duration ($Z_1$)**: Cap on ticks. The scenario successfully ran its course without collapsing.
-- **Extinctions ($Z_2, Z_3, Z_4, Z_5$)**: Target or global population collapse. A species was entirely wiped out by either starvation or herbivory.
-- **Runaway Growth ($Z_6, Z_7$)**: Exceeding specified energy/population carrying capacities. The biological parameters were completely unbalanced, causing infinite reproduction.
+* **Max Duration ($Z_1$)**: Cap on ticks. The scenario successfully ran its course without collapsing.
+* **Extinctions ($Z_2, Z_3, Z_4, Z_5$)**: Target or global population collapse. A species was entirely wiped out by either starvation or herbivory.
+* **Runaway Growth ($Z_6, Z_7$)**: Exceeding specified energy/population carrying capacities. The biological parameters were completely unbalanced, causing infinite reproduction.
 
 Termination flags provide vital context as to *why* a particular experimental model collapsed, allowing for deeper scientific comparison across scenario families.
 
@@ -59,21 +57,21 @@ The UI Control Center visualizes these metrics via several primary tools tailore
 
 ### Live Simulation Diagrams
 
-- **Live Dashboard Canvas:** Displays an immediate top-down 2D array representation of the `GridEnvironment` (the cellular automata).
-  - Green pixels denote Flora energy density.
-  - Red pixels denote Herbivore swarms.
-  - Overlays visualize airborne signal diffusion (blue) or localized toxins (fuchsia).
-- **Telemetry Chart:** A longitudinal line graph tracking the aggregate populations and energies over time. It visually maps the cyclic oscillations. If the red line (herbivores) spikes massively and then flatlines to zero while the green line (flora) continues to grow exponentially, the user immediately recognizes a $Z_5$ termination event (Herbivore Extinction).
+* **Live Dashboard Canvas:** Displays an immediate top-down 2D array representation of the `GridEnvironment` (the cellular automata).
+  * Green pixels denote Flora energy density.
+  * Red pixels denote Herbivore swarms.
+  * Overlays visualize airborne signal diffusion (blue) or localized toxins (fuchsia).
+* **Telemetry Chart:** A longitudinal line graph tracking the aggregate populations and energies over time. It visually maps the cyclic oscillations. If the red line (herbivores) spikes massively and then flatlines to zero while the green line (flora) continues to grow exponentially, the user immediately recognizes a $Z_5$ termination event (Herbivore Extinction).
 
 ### Batch Processing Diagnostics
 
 When running large Monte Carlo batches to evaluate scenario stability, tracking an average population line is insufficient. PHIDS offers robust statistical plotting presets:
 
-- **Stacked Biomass Proxy:** A normalized area chart displaying the ratio of total ecosystem energy held by Flora versus Herbivores. It is crucial for visualizing the total carrying capacity of the ecosystem and whether energy is smoothly passing up the trophic chain or becoming trapped.
-- **Phase Space:** A scatter plot mapping Flora Population ($X$) against Herbivore Population ($Y$) across time. In a perfectly stable Lotka-Volterra ecosystem, this forms a closed, repeating orbital loop. If the ecosystem crashes, the path spirals into the origin $(0,0)$.
-- **Collapse Risk Focus:** A survival probability curve (Kaplan-Meier estimator). It measures the probability that a scenario reaches a specific tick $T$ without triggering an extinction or runaway termination ($Z_2 - Z_7$). This is the primary metric for proving scenario stability.
-- **Defense Economy Ratio:** A line chart isolating the specific plant deaths tagged as `death_defense_maintenance`. It visualizes the metabolic burden of synthesizing toxins; if this ratio spikes, the flora are over-producing defenses and starving themselves to death.
-- **Herbivore Pressure Focus:** Maps total herbivore population against specific flora fatalities tagged as `death_herbivore_feeding`. This proves definitively whether declining plant populations are due to active herbivory or simply poor baseline growth constraints.
+* **Stacked Biomass Proxy:** A normalized area chart displaying the ratio of total ecosystem energy held by Flora versus Herbivores. It is crucial for visualizing the total carrying capacity of the ecosystem and whether energy is smoothly passing up the trophic chain or becoming trapped.
+* **Phase Space:** A scatter plot mapping Flora Population ($X$) against Herbivore Population ($Y$) across time. In a perfectly stable Lotka-Volterra ecosystem, this forms a closed, repeating orbital loop. If the ecosystem crashes, the path spirals into the origin $(0,0)$.
+* **Collapse Risk Focus:** A survival probability curve (Kaplan-Meier estimator). It measures the probability that a scenario reaches a specific tick $T$ without triggering an extinction or runaway termination ($Z_2 - Z_7$). This is the primary metric for proving scenario stability.
+* **Defense Economy Ratio:** A line chart isolating the specific plant deaths tagged as `death_defense_maintenance`. It visualizes the metabolic burden of synthesizing toxins; if this ratio spikes, the flora are over-producing defenses and starving themselves to death.
+* **Herbivore Pressure Focus:** Maps total herbivore population against specific flora fatalities tagged as `death_herbivore_feeding` and herbivore swarm deaths tagged as `death_starvation`. This proves definitively whether declining plant populations are due to active herbivory or simply poor baseline growth constraints, and when herbivore collapse is driven by a lack of food reserves.
 
 ### Tabular Ledger
 
@@ -99,13 +97,13 @@ Traditional sequential loop architectures update agent states and environment ma
 
 ### IV. Computational Improvement
 
-- **Parallelization Mechanics:** Double-buffering allows the engine to eliminate all data hazards (Read-After-Write, Write-After-Read). Because $State_t$ is strictly read-only throughout the entirety of the tick execution, the interaction and lifecycle systems can be parallelized across multicore architectures or vectorized via Numba's `prange` loops with zero synchronization overhead.
-- **Complexity:** The deferred reconstruction pass scales linearly at $O(N + E)$ (where $N$ is active populations and $E$ is environment grid tiles), avoiding the constant memory thrashing of writing back and forth to main memory lines.
+* **Parallelization Mechanics:** Double-buffering allows the engine to eliminate all data hazards (Read-After-Write, Write-After-Read). Because $State_t$ is strictly read-only throughout the entirety of the tick execution, the interaction and lifecycle systems can be parallelized across multicore architectures or vectorized via Numba's `prange` loops with zero synchronization overhead.
+* **Complexity:** The deferred reconstruction pass scales linearly at $O(N + E)$ (where $N$ is active populations and $E$ is environment grid tiles), avoiding the constant memory thrashing of writing back and forth to main memory lines.
 
 ### V. Biological Modeling Realism
 
-- **Ecological Concurrency:** In a real ecosystem, thousands of organisms act simultaneously within a given split-second window; they do not politely take sequential turns.
-- **Fair Resource Competition:** By executing all evaluations against a fixed snapshot of the world ($State_t$) and deferring commitments, the engine guarantees that all overlapping herbivores face fair, simultaneous exploitation competition for a plant's biomass. It ensures that resource depletion dynamics reflect genuine collective pressure rather than software-induced indexing artifacts.
+* **Ecological Concurrency:** In a real ecosystem, thousands of organisms act simultaneously within a given split-second window; they do not politely take sequential turns.
+* **Fair Resource Competition:** By executing all evaluations against a fixed snapshot of the world ($State_t$) and deferring commitments, the engine guarantees that all overlapping herbivores face fair, simultaneous exploitation competition for a plant's biomass. It ensures that resource depletion dynamics reflect genuine collective pressure rather than software-induced indexing artifacts.
 
 ## 5. Absolute Physics vs. Relative Analytics
 
@@ -115,27 +113,27 @@ During scenario configuration and telemetry review, it is common to question why
 
 In Lotka-Volterra dynamics and spatially explicit cellular automata, physical limits and interaction thresholds define the carrying capacity of the environment. The engine must compute deterministic mass and energy transfers per tick based on *what is actually there*, rather than abstract percentages:
 
-- **Toxicity:** A plant emitting `0.1` units of lethal toxin applies an exact, absolute metabolic penalty to a grazing herbivore. If this were a "percentage", the damage formula would require a dynamic denominator (e.g., percentage of *what*? The plant's capacity? The herbivore's resistance?) which introduces unstable feedback loops into the integration algorithms.
-- **Biomass Thresholds:** A swarm must consume absolute biomass (e.g., `4.5` energy units per individual) to stave off starvation. Translating this to a relative percentage would require recalculating the threshold every time the herd population fluctuates, destroying Numba's vectorization capabilities.
+* **Toxicity:** A plant emitting `0.1` units of lethal toxin applies an exact, absolute metabolic penalty to a grazing herbivore. If this were a "percentage", the damage formula would require a dynamic denominator (e.g., percentage of *what*? The plant's capacity? The herbivore's resistance?) which introduces unstable feedback loops into the integration algorithms.
+* **Biomass Thresholds:** A swarm must consume absolute biomass (e.g., `4.5` energy units per individual) to stave off starvation. Translating this to a relative percentage would require recalculating the threshold every time the herd population fluctuates, destroying Numba's vectorization capabilities.
 
 ### Analytics & Design Space Exploration (DSE)
 
 While the engine computes physical absolutes, human operators exploring the scenario design space (DSE) rely on relative context. Therefore, PHIDS utilizes a decoupling pattern:
 
-- **Raw Telemetry:** The Zarr buffers and ECS engine record and evaluate strict absolutes.
-- **Relativization (Normalization):** The UI and analytics dashboards scale these raw limits on-the-fly (e.g., translating a plant's absolute energy of `45.0` against its genetic capacity of `50.0` to yield a `90%` health metric).
+* **Raw Telemetry:** The Zarr buffers and ECS engine record and evaluate strict absolutes.
+* **Relativization (Normalization):** The UI and analytics dashboards scale these raw limits on-the-fly (e.g., translating a plant's absolute energy of `45.0` against its genetic capacity of `50.0` to yield a `90%` health metric).
 
 This dichotomy ensures the underlying scientific model remains mathematically rigorous and computationally deterministic, while the analytical output remains cognitively accessible for researchers tuning the ecosystem.
 
 ## 5. Ecological Parameter Relativization (Normalization)
 
-Within the mathematical engine, species and environmental interactions are strictly calculated using raw, absolute numerical primitives (e.g., specific Joules of energy, precise entity headcounts, and raw concentration floats). 
+Within the mathematical engine, species and environmental interactions are strictly calculated using raw, absolute numerical primitives (e.g., specific Joules of energy, precise entity headcounts, and raw concentration floats).
 
-However, from an analytical and design-space exploration (DSE) perspective, comparing a species with an absolute baseline energy of `5.0` to one with a baseline of `500.0` is ecologically opaque. A loss of `2.0` energy is devastating for the first, but trivial for the second. 
+However, from an analytical and design-space exploration (DSE) perspective, comparing a species with an absolute baseline energy of `5.0` to one with a baseline of `500.0` is ecologically opaque. A loss of `2.0` energy is devastating for the first, but trivial for the second.
 
 To resolve this, the scientific framework employs **Relativization** (often referred to technically as normalization). Data points are transformed into dimensionless scales (ratios, percentages, and fractional multipliers) before presentation:
 
-- **Fractional Carrying Capacity (`energy_ratio`)**: Translates absolute biomass into a 0.0 to 1.0 fraction of the species' genetic maximum. This allows direct cross-species comparison of "ecological stress" regardless of their absolute size or metabolic requirements.
-- **Dimensionless Defense & Digestibility Scalars**: Instead of defining absolute lignin hardness, properties like `digestibility_modifier` are normalized to a `[0, 1]` coefficient. This simplifies the Lotka-Volterra interaction strength ($\beta$) into a proportional loss, ensuring that defensive evolutionary traits remain stable and bounded even if the global simulation scale is magnified by orders of magnitude.
+* **Fractional Carrying Capacity (`energy_ratio`)**: Translates absolute biomass into a 0.0 to 1.0 fraction of the species' genetic maximum. This allows direct cross-species comparison of "ecological stress" regardless of their absolute size or metabolic requirements.
+* **Dimensionless Defense & Digestibility Scalars**: Instead of defining absolute lignin hardness, properties like `digestibility_modifier` are normalized to a `[0, 1]` coefficient. This simplifies the Lotka-Volterra interaction strength ($\beta$) into a proportional loss, ensuring that defensive evolutionary traits remain stable and bounded even if the global simulation scale is magnified by orders of magnitude.
 
 Relativization ensures that scientists and scenario authors can intuit the systemic pressures acting upon an ecosystem without needing to memorize the arbitrary absolute mathematical limits of the underlying physics engine.

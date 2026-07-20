@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Engine Execution in the PHIDS framework."
 ---
 
-# Engine Execution
-
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.
 
 ## The Simulation Tick Order

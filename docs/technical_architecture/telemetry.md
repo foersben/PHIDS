@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Telemetry & Export in the PHIDS framework."
 ---
 
-# Telemetry & Export
-
 The true value of the PHIDS simulator rests on its capacity to log, analyze, and export ecological dynamics reproducibly. The system treats telemetry capture not as an afterthought, but as a primary mathematical constraint synchronized strictly to the conclusion of the simulation tick.
 
 ## The Tick Metrics Layer

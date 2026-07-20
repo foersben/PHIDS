@@ -353,16 +353,6 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
     return JSONResponse(content=payload)
 
 
-# ---------------------------------------------------------------------------
-# Draft-configuration routes are registered via ``phids.api.routers.config``.
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# Scenario import/export and simulation lifecycle routes live in routers/simulation.py.
-# ---------------------------------------------------------------------------
-
-
 app.include_router(batch_router)
 app.include_router(simulation_router)
 app.include_router(config_router)

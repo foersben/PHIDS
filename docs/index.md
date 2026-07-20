@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for PHIDS: Plant-Herbivore Interaction & Defense Simulator in the PHIDS framework."
 ---
 
-# PHIDS: Plant-Herbivore Interaction & Defense Simulator
-
 <img src="assets/logo.png" align="right" width="200" alt="PHIDS Logo">
 
 ## Abstract

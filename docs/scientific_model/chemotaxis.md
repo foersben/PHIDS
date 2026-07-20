@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Chemotaxis & Flow Fields in the PHIDS framework."
 ---
 
-# Chemotaxis & Flow Fields
-
 Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field, simulating a sensory-driven process called **chemotaxis**.
 
 ## Biological and Physical Context
@@ -57,7 +55,7 @@ Stochastic tie-handling breaks equivalencies when multiple neighbors share the m
 
 Imagine a swarm at center coordinate `(1, 1)` evaluating its Moore neighborhood in a simplified subset of the Flow Field $F_t$:
 
-**Flow Field Segment:**
+### Flow Field Segment
 
 $$
 \begin{bmatrix}
@@ -77,7 +75,7 @@ If the center cell `(1,1)` had the highest value (e.g., it was currently situate
 
 ## Alternatives Considered
 
-* **A* (A-Star) or Dijkstra Pathfinding:** Calculating optimal, obstacle-avoidant paths from every swarm to the nearest food source.
+* **A\* (A-Star) or Dijkstra Pathfinding:** Calculating optimal, obstacle-avoidant paths from every swarm to the nearest food source.
   * *Why rejected:* Classic pathfinding scales poorly. Calculating paths for hundreds of swarms across a dynamic grid per tick would bottleneck the CPU, creating a computational complexity of $O(N \cdot M^2)$. Furthermore, swarms lack "global knowledge" of the map; their navigation is inherently sensory-driven.
   * *Our advantage:* The unified Flow Field is calculated exactly *once* per tick via Numba JIT compilation. Every swarm simply samples its immediate adjacent cells via O(1) array reads. This perfectly mimics biological sensory constraints while maintaining extreme computational efficiency.
 
@@ -91,7 +89,8 @@ If a swarm relied strictly on gradient ascent, a zero-gradient would result in i
 
 In biological systems, when an organism loses a scent trail, it transitions from directed movement (taxis) to an undirected, exploratory movement (kinesis) to maximize the probability of intersecting a new gradient.
 
-**Algorithmic Resolution:**
+### Algorithmic Resolution
+
 When PHIDS evaluates a zero-gradient neighborhood, the swarm enters a **Random Walk** state. It selects a neighboring cell from a uniform random distribution, effectively performing an isotropic search until it re-enters the active Flow Field. This behavior is also deployed when swarms are actively repelled by incompatible flora or localized toxins, forcing them to disperse blindly until they secure a safe sensory anchor.
 
 ## Impact of Resource Reallocation on Chemotaxis

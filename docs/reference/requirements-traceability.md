@@ -6,7 +6,6 @@ version: 0.1
 description: "Documentation for Requirements Traceability in the PHIDS framework."
 ---
 
-
 This page is the canonical current-state successor to the legacy requirements coverage notes. It maps major PHIDS requirements to:
 
 * the active implementation owners,

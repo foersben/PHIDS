@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Contribution Workflow in the PHIDS framework."
 ---
 
-# Contribution Workflow
-
 Modifying the Plant-Herbivore Interaction & Defense Simulator requires strict adherence to scientific computing constraints. The engine is deliberately deterministic; introducing stochastic or unoptimized logic can violate the reproducibility of the entire ecosystem.
 
 ## Local Environment Management

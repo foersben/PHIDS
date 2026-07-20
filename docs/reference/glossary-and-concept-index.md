@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Glossary and Concept Index in the PHIDS framework."
 ---
 
-# Glossary and Concept Index
-
 This page provides concise, current-state definitions for the scientific and engineering vocabulary
 used throughout the PHIDS documentation corpus. Each entry is defined in the language of the active
 `phids.*` runtime under `src/phids/`. Cross-links to the owning narrative chapters are provided for

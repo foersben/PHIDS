@@ -5,8 +5,6 @@ status: active
 version: 2.0
 ---
 
-# Design Space Exploration (DSE)
-
 The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (DSE)** architecture. DSE systematically searches a vast landscape of ecological parameters, spatial configurations, and interaction topologies to discover stable Lotka-Volterra dynamics (stable equilibria) within simulated ecosystems.
 
 ---
@@ -46,16 +44,21 @@ $$G = (X_D, X_C)$$
 where:
 
 * $X_D \in \mathcal{D}$ represents the discrete subspace (categorical and binary choices):
+
   $$\mathcal{D} = \{S_P, \mathbf{A}, \mathbf{T}\}$$
+
   * $S_P \in \{\text{Uniform}, \text{Clustered}, \text{Banded}\}$: Spatial placement strategy.
   * $\mathbf{A} \in \{0, 1\}^{N_H \times N_F}$: Diet compatibility matrix ($N_H$ herbivores, $N_F$ flora).
   * $\mathbf{T} \in \{0, 1\}^{N_F \times N_F}$: Toxin signaling trigger compatibility map.
 * $X_C \in \mathcal{C}$ represents the continuous parameters bounded by biological limits:
+
   $$\mathcal{C} = \prod_{i=1}^{V} [l_i, u_i] \subset \mathbb{R}^V$$
+
   * Growth rate $g_j \in [0, 1]$
   * Metabolic upkeep cost $m_i \in [0, \infty)$
   * Mitosis threshold $e_{\text{rep}, i} \in [m_i, \infty)$
   * Seed dispersal radius $r_{\text{seed}, j} \in [0, W]$ where $W$ is the grid width.
+  * Chemotaxis parameters: target attraction ($\alpha$), toxin repulsion ($\beta$), signal decay factor, and truncation thresholds.
 
 ---
 
@@ -87,14 +90,19 @@ graph LR
 Let $\Phi: G \to P$ be the mapping function from genotype to phenotype representation. The translation layer performs the following mapping pipeline:
 
 1. **Validation**:
+
     $$\Phi_{\text{val}}(G) \implies \text{SimulationConfig}$$
+
     We validate $G$ against the Pydantic schema rules. If $\Phi_{\text{val}}(G)$ violates physical constraints (such as $N_F + N_H > 16$), the genotype is flagged as invalid.
 2. **Discrete-to-Matrix Translation**:
     The diet compatibility matrix $\mathbf{A}$ maps directly to the active interaction registers in the ECS engine. The interaction coefficient for herbivore $i$ consuming plant $j$ is calculated as:
+
     $$C_{ij} = A_{ij} \times \omega_{ij}$$
+
     where $A_{ij} \in \{0,1\}$ is the structural genotype gene, and $\omega_{ij} \in \mathbb{R}^+$ is the continuous rate gene.
 3. **Spatial Coordinates Deployment**:
     Based on the placement strategy gene $S_P$, the translation layer generates coordinates $(x_k, y_k) \in [0, W]^2$ for each initial entity $k$. The placement generator function $f_{\text{place}}(S_P, \text{seed})$ populates the 2D grid matrix:
+
     $$\mathbf{M}_{\text{grid}} = f_{\text{place}}(S_P, \text{seed})$$
 
 ---
@@ -132,8 +140,11 @@ Stage 1 Pre-Pruning evaluates thermodynamic feasibility. Let $E_{\text{in}}$ be 
 
 1. **Thermodynamic Feasibility Constraint**:
     For the ecosystem to support herbivores, the primary production energy rate must exceed the metabolic maintenance rate:
+
     $$\sum_{j \in \text{Flora}} \left( \max(0, E_{\text{max},j} - E_{\text{survival\_threshold},j}) \cdot \frac{g_j}{100} \cdot N_{\text{max\_tiles}, j} \right) > \sum_{i \in \text{Herbivores}} \left( m_i \cdot N_i^{(0)} \right)$$
+
     where:
+
     * $E_{\text{max},j} - E_{\text{survival\_threshold},j}$: The maximum usable caloric yield of plant $j$.
     * $g_j / 100$: Fractional growth rate per tick for plant $j$.
     * $N_{\text{max\_tiles}, j}$: The theoretical maximum tiles plant $j$ can occupy, derived from the placement strategy.
@@ -144,11 +155,15 @@ Stage 1 Pre-Pruning evaluates thermodynamic feasibility. Let $E_{\text{in}}$ be 
 
 2. **Trophic Link Check**:
     For every herbivore $i$ present in the genotype, there must be at least one active trophic connection to a plant $j$:
+
     $$\forall i, \exists j \text{ s.t. } A_{ij} = 1$$
+
     If $\sum_{j} A_{ij} = 0$, the herbivore has no food source.
 
 If either check fails, the simulation phase is skipped, and the genotype is assigned a fitness vector:
+
 $$\mathbf{F} = (+\infty, 0, 0)$$
+
 representing maximum volatility, zero biomass, and zero similarity.
 
 ---
@@ -190,19 +205,26 @@ Let the fitness vector be $\mathbf{F}(G) = (f_1(G), f_2(G), f_3(G))$.
 
 1. **Objective 1 (Minimize Population Volatility)**:
     We measure the coefficient of variation (CV) of the populations over $T$ steps:
+
     $$f_1(G) = \sum_{k \in \text{Species}} \frac{\sigma(N_k)}{\mu(N_k)}$$
+
     where $\mu$ and $\sigma$ are the mean and standard deviation of species population $N_k$ over time.
 2. **Objective 2 (Maximize Biomass & Lifespan)**:
+
     $$f_2(G) = - \left( \sum_{t=1}^{T} \sum_{k} M_k \cdot N_k(t) \right)$$
+
     where $M_k$ is the individual mass coefficient of species $k$. (Negative sign since genetic algorithms minimize by default).
 3. **Objective 3 (Maximize Database Similarity via KNN)**:
     Let $\mathbf{v}_G$ be the trait vector of the genotype, and $\mathbf{v}_{\text{DB}}$ be the normalized trait vectors of biological species in the database.
+
     $$f_3(G) = \min_{\mathbf{v}_{\text{DB}}} \sqrt{\sum_{d=1}^{V} w_d \left( v_{G, d} - v_{\text{DB}, d} \right)^2}$$
+
     where $w_d$ is the weight coefficient for trait $d$.
 
 #### NSGA-II Domination Rules
 
 A genotype $G_1$ dominates $G_2$ ($G_1 \prec G_2$) if and only if:
+
 $$\forall j \in \{1, 2, 3\}, f_j(G_1) \le f_j(G_2) \quad \text{and} \quad \exists j \text{ s.t. } f_j(G_1) < f_j(G_2)$$
 
 #### Crowding Distance Calculation
@@ -212,6 +234,7 @@ To maintain diversity along the Pareto Front, solutions are sorted by crowding d
 1. Sort the population based on objective value $m$.
 2. Assign infinite distance to boundary solutions: $I[1]_{\text{dist}} = I[l]_{\text{dist}} = \infty$.
 3. For all intermediate solutions $i \in [2, l-1]$:
+
     $$I[i]_{\text{dist}} = I[i]_{\text{dist}} + \frac{f_m(I[i+1]) - f_m(I[i-1])}{f_m^{\text{max}} - f_m^{\text{min}}}$$
 
 ---
@@ -242,6 +265,7 @@ The spatial coordinates $(x, y)$ of spawned entities are generated by resolving 
 #### 1. Uniform Placement (Poisson Disk Sampling)
 
 To prevent overlaps while maintaining random placement, we sample coordinates such that no two entities start closer than a minimum distance $r_{\text{min}}$:
+
 $$\forall p_1, p_2 \in \mathbf{X}_{\text{spawn}}, \quad \|p_1 - p_2\|_2 \ge r_{\text{min}}$$
 
 #### 2. Clustered Placement (Multi-variate Gaussian Mixture)
@@ -255,7 +279,9 @@ where $\boldsymbol{\Sigma} = \sigma^2 \mathbf{I}$ controls cluster density (spre
 #### 3. Banded Placement (Sinusoidal Probability Fields)
 
 We define a spatial probability density function $P(x, y)$ along a direction vector $\mathbf{v} = (\cos\theta, \sin\theta)$:
+
 $$P(x, y) = \frac{1}{2} \left[ \sin\left(\frac{2\pi (x\cos\theta + y\sin\theta)}{\lambda}\right) + 1 \right]$$
+
 where $\lambda$ represents the band wavelength. Entities are accepted or rejected on the grid using a random roll against $P(x, y)$.
 
 ---
@@ -288,6 +314,7 @@ Before running computationally expensive discrete simulations, the Design Space 
 The DSE pre-pruner evaluates this bound using the exact variables mapped to the engine components, crucially factoring in the plant's `survival_threshold` (energy that cannot be legally harvested by a swarm).
 
 To pass pre-pruning, the genome must satisfy:
+
 $$\sum_{j \in \text{Flora}} \left( \max(0, E_{\text{max},j} - E_{\text{survival\_threshold},j}) \cdot \frac{g_j}{100} \cdot N_{\text{max\_tiles}, j} \right) > \sum_{i \in \text{Herbivores}} \left( m_i \cdot N_i^{(0)} \right)$$
 
 If the combined initial populations $N_i^{(0)}$ demand a metabolic upkeep $m_i$ that exceeds the grid's maximum possible generation per tick (derived from the growth rate $g_j$), the genome is instantly mathematically pruned.
@@ -343,6 +370,7 @@ The underlying empirical database (`bio_database.json`) reflects this deeply nes
 * `passive_defenses`
 * `substances`
 * `trigger_rules`
+* `chemotaxis`
 
 ### Multi-Level Cascade Trigger Example
 

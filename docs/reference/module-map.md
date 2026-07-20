@@ -6,7 +6,6 @@ version: 0.1
 description: "Documentation for Module Map and Symbol Guide in the PHIDS framework."
 ---
 
-
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended
 as the quickest canonical answer to the question: *where in the codebase does a given concern
 actually live?*
@@ -274,8 +273,8 @@ Key constants:
 * `MAX_FLORA_SPECIES`
 * `MAX_HERBIVORE_SPECIES`
 * `MAX_SUBSTANCE_TYPES`
-* `GRID_W_MAX`
-* `GRID_H_MAX`
+* `GRID_W_MAX` (bounded to 200)
+* `GRID_H_MAX` (bounded to 200)
 * `SIGNAL_EPSILON`
 * `SUBSTANCE_EMIT_RATE`
 * `TOXIN_CASUALTY_FACTOR`

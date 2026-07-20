@@ -6,8 +6,6 @@ version: 1.0
 description: "Architectural record for morphological defenses and dynamic resource reallocation."
 ---
 
-# Morphological Defenses and Senescence
-
 This document outlines the architectural implementation for the biological accuracy of the PHIDS engine, specifically the separation of morphological (passive) defenses from active chemical defenses, and dynamic resource reallocation (apparent nutrition withdrawal).
 
 ---

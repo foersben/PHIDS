@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Reaction-Diffusion & Partial Differential Equations in the PHIDS framework."
 ---
 
-# Reaction-Diffusion & Partial Differential Equations
-
 The dispersion of Volatile Organic Compounds (VOCs)-airborne signals used by flora to warn neighbors of herbivore attacks-is mathematically modeled in PHIDS using a discrete Reaction-Diffusion system.
 
 ## Biological and Physical Context

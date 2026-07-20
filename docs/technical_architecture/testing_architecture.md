@@ -6,8 +6,6 @@ version: 1.0
 description: "Comprehensive testing architecture, taxonomy, system mapping, quality analysis, and gaps/recommendations for PHIDS."
 ---
 
-# Testing Architecture
-
 This document aggregates PHIDS test suite topography, taxonomy, system mapping, quality analysis, and strategic recommendations for improving the testing rig.
 
 ## Test Suite Taxonomy & Execution Topography
@@ -155,7 +153,7 @@ Or run the faster JIT-only alternative:
 just bench-compare-jit <ref1> <ref2> <scenario_or_dir> [ticks] [repeats] [warmup]
 ```
 
-**Examples:**
+##### Examples
 
 Comparing two commit hashes using a single scenario (500 ticks repeated 3 times):
 

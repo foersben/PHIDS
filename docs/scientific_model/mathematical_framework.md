@@ -6,8 +6,6 @@ version: 0.1
 description: "Documentation for Mathematical Framework in the PHIDS framework."
 ---
 
-# Mathematical Framework
-
 This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a coupled hybrid dynamical system. In this model, discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers.
 
 ## 1. Global State Representation
@@ -155,7 +153,7 @@ Where:
 * $N_T$: The total number of unique defensive toxin types/species tracked in the simulation.
 * $\alpha, \beta$: The positive coupling weight scalars.
 
-**Implementation Rules:**
+##### Implementation Rules
 
 1. **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
 
@@ -255,7 +253,7 @@ Where:
 * $*$: The 2D spatial convolution operator.
 * $Q_s^t$: The discrete point source mass injection (emission) at time step $t$.
 
-**Implementation Rules:**
+##### Implementation Rules
 
 1. **Discrete Decay ($\gamma_s$):** The continuous decay integral is converted into a single fractional retention scalar: $\gamma_s = 1.0 - \text{decay\_rate}_s$.
 2. **Convolutional Diffusion ($\mathcal{K}_{\text{iso}} * C_s^t$):** The Laplacian is mapped to a discrete 2D spatial convolution ($*$) using a fixed isotropic Gaussian kernel matrix via `scipy.signal.convolve2d`.
