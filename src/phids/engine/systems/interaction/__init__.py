@@ -109,7 +109,7 @@ def run_interaction(
     scratch_weights: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
 
     # Initial population accumulation pass
-    for eid in tuple(world._component_index.get(SwarmComponent, set())):
+    for eid in world._component_index.get(SwarmComponent, set()):
         entity = world._entities.get(eid)
         if entity is None or SwarmComponent not in entity._components:
             continue
