@@ -231,8 +231,8 @@ class TestZarrReplayMigration:
         assert frame["tick"] == 1
         assert frame["data"] == 2
 
-    def test_zarr_load_legacy_bin_fails(self, temp_zarr_dir: Path) -> None:
-        """Verify that attempting to load a legacy .bin file fails because it's not a zarr directory."""
+    def test_zarr_load_file_fails(self, temp_zarr_dir: Path) -> None:
+        """Verify that attempting to load a non-directory file fails because it's not a zarr directory."""
         legacy_path = temp_zarr_dir / "legacy.bin"
         with legacy_path.open("wb") as fp:
             fp.write(b"dummy legacy data")

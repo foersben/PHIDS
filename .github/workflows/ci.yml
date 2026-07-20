@@ -99,7 +99,15 @@ jobs:
 
       - name: Run Complexipy Scan
         # Runs statelessly via uvx, exporting standard SARIF format
-        run: uvx complexipy . --output-format sarif --output metrics-results.sarif --ignore-complexity
+        run: |
+          [ -d .cache/.complexipy_cache ] && mv .cache/.complexipy_cache .complexipy_cache || true
+          uvx complexipy . --output-format sarif --output metrics-results.sarif --ignore-complexity
+
+      - name: Cleanup Complexipy Cache
+        if: always()
+        run: |
+          mkdir -p .cache
+          [ -d .complexipy_cache ] && mv .complexipy_cache .cache/ || true
 
       - name: Upload Bottlenecks to GitHub Code Scanning
         if: "!env.ACT"

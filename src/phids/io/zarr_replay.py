@@ -20,7 +20,7 @@ layers are omitted during serialization via a custom codec or post-hoc masking, 
 reducing storage overhead without loss of ecological fidelity.
 
 The design aligns with the project's strict data-oriented paradigm: snapshots are decomposed
-into structured field arrays during checkpoint and reassembled into the legacy dict format
+into structured field arrays during checkpoint and reassembled into the dictionary format
 for re-simulation compatibility. All serialization and field codec logic is stateless,
 ensuring deterministic round-trip fidelity.
 """

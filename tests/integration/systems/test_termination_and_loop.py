@@ -285,14 +285,6 @@ def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization(
     assert len(loop.replay) == 1
 
 
-def test_step_with_msgpack_backend_uses_snapshot_serialization_path() -> None:
-    """Placeholder for legacy msgpack backend serialization verification.
-
-    The msgpack replay backend has been removed, so this is left as a legacy placeholder.
-    """
-    pass
-
-
 def test_debug_tick_summary_uses_precomputed_metrics_without_swarm_rescan(
     loop_config_builder: Callable[..., SimulationConfig],
 ) -> None:

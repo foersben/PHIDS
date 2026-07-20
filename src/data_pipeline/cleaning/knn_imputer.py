@@ -57,6 +57,47 @@ _K_WITHIN_ORDER: int = 5
 _K_GLOBAL_FALLBACK: int = 10
 
 
+def _process_taxonomic_groups(
+    df: pl.DataFrame,
+    result_df: pl.DataFrame,
+    families: list[str],
+    family_col: str,
+    order_col: str,
+    existing_numeric: list[str],
+) -> tuple[pl.DataFrame, int]:
+    """Process imputation iteratively for each family, falling back to order or global."""
+    groups_processed = 0
+    for family in families:
+        mask = pl.col(family_col) == family
+        group_df = df.filter(mask)
+
+        if len(group_df) >= _K_WITHIN_FAMILY:
+            imputed = _run_knn_imputer(group_df, existing_numeric, k=_K_WITHIN_FAMILY)
+            result_df = _update_rows(result_df, mask, imputed, existing_numeric)
+            groups_processed += 1
+        elif order_col in df.columns:
+            # Fall back to order-level imputation
+            order_val = group_df[order_col].drop_nulls().first() if len(group_df) > 0 else None
+            if order_val is not None:
+                order_mask = pl.col(order_col) == order_val
+                order_group = df.filter(order_mask)
+                if len(order_group) >= _K_WITHIN_ORDER:
+                    imputed = _run_knn_imputer(order_group, existing_numeric, k=_K_WITHIN_ORDER)
+                    # Only update the rows from this family within the order group
+                    family_in_order = (
+                        imputed.filter(pl.col(family_col) == family) if family_col in imputed.columns else imputed
+                    )
+                    result_df = _update_rows(result_df, mask, family_in_order, existing_numeric)
+                    groups_processed += 1
+                    continue
+
+        # Global fallback for very small clades
+        imputed = _run_knn_imputer(df, existing_numeric, k=_K_GLOBAL_FALLBACK)
+        result_df = _update_rows(result_df, mask, imputed.filter(mask), existing_numeric)
+        groups_processed += 1
+    return result_df, groups_processed
+
+
 def impute_missing_traits(
     df: pl.DataFrame,
     numeric_cols: list[str],
@@ -96,35 +137,9 @@ def impute_missing_traits(
     groups_processed = 0
     if family_col in df.columns:
         families = df[family_col].drop_nulls().unique().to_list()
-        for family in families:
-            mask = pl.col(family_col) == family
-            group_df = df.filter(mask)
-
-            if len(group_df) >= _K_WITHIN_FAMILY:
-                imputed = _run_knn_imputer(group_df, existing_numeric, k=_K_WITHIN_FAMILY)
-                result_df = _update_rows(result_df, mask, imputed, existing_numeric)
-                groups_processed += 1
-            elif order_col in df.columns:
-                # Fall back to order-level imputation
-                order_val = group_df[order_col].drop_nulls().first() if len(group_df) > 0 else None
-                if order_val is not None:
-                    order_mask = pl.col(order_col) == order_val
-                    order_group = df.filter(order_mask)
-                    if len(order_group) >= _K_WITHIN_ORDER:
-                        imputed = _run_knn_imputer(order_group, existing_numeric, k=_K_WITHIN_ORDER)
-                        # Only update the rows from this family within the order group
-                        family_in_order = (
-                            imputed.filter(pl.col(family_col) == family) if family_col in imputed.columns else imputed
-                        )
-                        result_df = _update_rows(result_df, mask, family_in_order, existing_numeric)
-                        groups_processed += 1
-                        continue
-
-            # Global fallback for very small clades
-            imputed = _run_knn_imputer(df, existing_numeric, k=_K_GLOBAL_FALLBACK)
-            result_df = _update_rows(result_df, mask, imputed.filter(mask), existing_numeric)
-            groups_processed += 1
-
+        result_df, groups_processed = _process_taxonomic_groups(
+            df, result_df, families, family_col, order_col, existing_numeric
+        )
     else:
         # No taxonomy info: global imputation only
         logger.warning("KNN imputer: no family column '%s' found, running global imputation", family_col)

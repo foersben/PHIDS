@@ -127,7 +127,7 @@ def _reset_state() -> None:
     api_main._sim_substance_names = {}
 
 
-def test_main_substance_name_helpers_default_and_draft_overrides() -> None:
+def test_substance_name_helpers_default_and_draft_overrides() -> None:
     """Verify substance naming helpers use defaults and honor draft-provided override labels."""
     assert _default_substance_name(2, is_toxin=False) == "Signal 2"
     assert _default_substance_name(3, is_toxin=True) == "Toxin 3"
@@ -166,7 +166,7 @@ def test_main_substance_name_helpers_default_and_draft_overrides() -> None:
         ),
     ],
 )
-def test_main_activation_condition_json_parser_valid_cases(
+def test_activation_condition_json_parser_valid_cases(
     raw: str | None,
     expected: ActivationConditionNode | None,
 ) -> None:
@@ -175,7 +175,7 @@ def test_main_activation_condition_json_parser_valid_cases(
 
 
 @pytest.mark.parametrize("raw", ["{bad json", '{"kind":"substance_active"}'])
-def test_main_activation_condition_json_parser_invalid_cases(raw: str) -> None:
+def test_activation_condition_json_parser_invalid_cases(raw: str) -> None:
     """Verify activation-condition parser raises on malformed JSON and invalid schemas."""
     with pytest.raises(HTTPException):
         parse_activation_condition_json(raw)
@@ -226,7 +226,7 @@ def test_main_activation_condition_json_parser_invalid_cases(raw: str) -> None:
         ),
     ],
 )
-def test_main_activation_condition_descriptions(
+def test_activation_condition_descriptions(
     condition: ActivationConditionNode | None,
     herbivore_names: dict[int, str] | None,
     substance_names: dict[int, str] | None,
@@ -243,7 +243,7 @@ def test_main_activation_condition_descriptions(
     )
 
 
-def test_main_trigger_rule_lookup_valid_and_missing_index() -> None:
+def test_trigger_rule_lookup_valid_and_missing_index() -> None:
     """Verify trigger-rule lookup returns existing entries and raises for missing indices."""
     draft = DraftState.default()
     draft.trigger_rules = [TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=0)]
@@ -256,7 +256,7 @@ def test_main_trigger_rule_lookup_valid_and_missing_index() -> None:
     ("x", "y", "width", "height", "should_raise"),
     [(1, 1, 3, 3, False), (5, 1, 3, 3, True)],
 )
-def test_main_validate_cell_coordinates_cases(
+def test_validate_cell_coordinates_cases(
     x: int,
     y: int,
     width: int,
@@ -275,13 +275,13 @@ def test_main_validate_cell_coordinates_cases(
     ("headers", "expected"),
     [([(b"hx-request", b"true")], True), ([], False)],
 )
-def test_main_is_htmx_request_cases(headers: list[tuple[bytes, bytes]], expected: bool) -> None:
+def test_is_htmx_request_cases(headers: list[tuple[bytes, bytes]], expected: bool) -> None:
     """Verify HTMX request detection for header-present and header-absent request scopes."""
     request = Request({"type": "http", "headers": headers})
     assert api_main._is_htmx_request(request) is expected
 
 
-def test_main_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
+def test_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
     """Verify draft link presenter marks inter-species links only when the feature flag is enabled."""
     draft = DraftState.default()
     draft.initial_plants = []
@@ -301,7 +301,7 @@ def test_main_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None
         (False, False, True, "Terminated"),
     ],
 )
-def test_main_render_status_badge_states(
+def test_render_status_badge_states(
     running: bool,
     paused: bool,
     terminated: bool,
@@ -316,14 +316,14 @@ def test_main_render_status_badge_states(
     assert expected_label in render_status_badge_html(api_main._sim_loop)
 
 
-def test_main_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
+def test_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
     """Verify unloaded-loop helpers raise and render the Idle status badge."""
     with pytest.raises(HTTPException):
         api_main._get_loop()
     assert "Idle" in render_status_badge_html(api_main._sim_loop)
 
 
-def test_main_live_summary_and_starving_swarm_helpers() -> None:
+def test_live_summary_and_starving_swarm_helpers() -> None:
     """Test main live summary and starving swarm helpers.
 
     Asserts correct behavior of live summary and energy deficit swarm builders,

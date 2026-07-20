@@ -137,27 +137,16 @@ def git_cmd(args: list[str], cwd: str | None = None) -> str:
     return res.stdout.strip()
 
 
-def run_compare(
-    ref1: str, ref2: str, scenarios: list[str], num_ticks: int, repeats: int, warmup: int, jit_only: bool
-) -> None:
-    """Run a performance comparison between two git references across multiple scenarios.
+def _setup_virtual_clone(clone_path: str) -> None:
+    """Create a fast hardlinked clone of the repository.
+
+    This enables side-by-side performance comparison against different git refs
+    without altering the working tree or dirtying the local workspace. By using
+    --shared, it creates near-instant hardlinks to the local object store.
 
     Args:
-        ref1: First git reference
-        ref2: Second git reference
-        scenarios: List of paths to scenario JSON files
-        num_ticks: Number of ticks to simulate
-        repeats: Number of repeats
-        warmup: Number of warmup ticks
-        jit_only: If True, skip the No-JIT comparisons
+        clone_path: Path where the virtual clone should be created.
     """
-    print(f"Comparing performance between '{ref1}' and '{ref2}' on {len(scenarios)} scenario(s) ({num_ticks} ticks)...")
-    print(f"Repeats per test: {repeats} | Warmup ticks: {warmup} | JIT Only: {jit_only}")
-
-    # Create .cache if it doesn't exist
-    os.makedirs(".cache", exist_ok=True)
-
-    clone_path = os.path.join(".cache", "bench_clone")
     if os.path.exists(clone_path):
         shutil.rmtree(clone_path, ignore_errors=True)
 
@@ -170,6 +159,37 @@ def run_compare(
     # Copy ourselves into the clone so we are guaranteed to run this version of the script
     shutil.copy2(__file__, os.path.join(clone_path, "scripts", "run_sim_benchmark.py"))
 
+
+def _execute_suite(
+    ref1: str,
+    ref2: str,
+    scenarios: list[str],
+    num_ticks: int,
+    repeats: int,
+    warmup: int,
+    jit_only: bool,
+    clone_path: str,
+) -> dict[str, dict[str, dict[str, float | int | None]]]:
+    """Execute the benchmark suite for both references across all scenarios.
+
+    For each git reference and each scenario, this routine orchestrates the
+    subprocess benchmark execution (with and without JIT if configured). If
+    the 'worktree' keyword is specified, the current active workspace is used
+    instead of the virtual clone to capture uncommitted changes.
+
+    Args:
+        ref1: The first git reference (or 'worktree').
+        ref2: The second git reference (or 'worktree').
+        scenarios: List of scenario file paths.
+        num_ticks: Total ticks to simulate per run.
+        repeats: Iterations per benchmark run for averaging.
+        warmup: Number of warmup ticks.
+        jit_only: If true, skips No-JIT performance measurements.
+        clone_path: Path to the virtual clone directory.
+
+    Returns:
+        A nested dictionary mapping scenario paths to ref results.
+    """
     results: dict[str, dict[str, dict[str, float | int | None]]] = {}
     try:
         for ref in [ref1, ref2]:
@@ -216,18 +236,206 @@ def run_compare(
     finally:
         print("\nCleaning up virtual repository clone...")
         shutil.rmtree(clone_path, ignore_errors=True)
+    return results
 
+
+def _print_scenario_table(
+    scenario_name: str,
+    scenario_res: dict[str, dict[str, float | int | None]],
+    modes: list[str],
+    repeats: int,
+) -> None:
+    """Print the detailed benchmark raw table for a single scenario."""
+    print("\n" + "=" * 100)
+    print(f"Results for Scenario: {scenario_name}")
+    print("=" * 100)
+    headers = (
+        f"{'Commit / Ref':<40} | {'JIT Mode':<10} | "
+        f"{'Avg Duration (s)':<16} | {'Total Ticks':<11} | {'Avg Ticks/s':<11}"
+    )
+    print(headers)
+    print("-" * 100)
+
+    for ref, res in scenario_res.items():
+        for mode in modes:
+            dur_val = res["jit_dur"] if mode == "JIT" else res["nojit_dur"]
+            ticks_val = res["jit_ticks"] if mode == "JIT" else res["nojit_ticks"]
+            if dur_val is not None and ticks_val is not None and dur_val > 0:
+                dur: float = float(dur_val)
+                ticks: int = int(ticks_val)
+                tps = f"{(ticks / repeats) / dur:.2f}"
+                dur_str = f"{dur:.4f}"
+            else:
+                tps = "N/A"
+                dur_str = "N/A"
+            print(f"{ref:<40} | {mode:<10} | {dur_str:<16} | {ticks_val:<11} | {tps:<11}")
+
+
+def _print_scenario_summary(
+    scenario_name: str,
+    scenario_res: dict[str, dict[str, float | int | None]],
+    base_ref: str,
+    opt_ref: str,
+    modes: list[str],
+    repeats: int,
+) -> None:
+    """Print the comparative benchmark statistics for a single scenario."""
+    print("\n" + "-" * 100)
+    print(f"Evaluation Summary: {scenario_name}")
+    print("-" * 100)
+    print(f"- Baseline Version:  {base_ref}")
+    print(f"- Optimized Version: {opt_ref}")
+
+    mismatch_modes = []
+    for mode in modes:
+        k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+        b_ticks = scenario_res[base_ref].get(k_ticks)
+        o_ticks = scenario_res[opt_ref].get(k_ticks)
+        if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
+            mismatch_modes.append(mode)
+
+    if mismatch_modes:
+        print(f"- [WARNING]: TICK COUNT MISMATCH DETECTED ({', '.join(mismatch_modes)})")
+        print("             The simulations terminated at different points.")
+        print("             Comparing 'Avg Ticks/s' is highly biased as the")
+        print("             computational load per tick often changes over time.")
+
+    print("-" * 100)
+
+    for mode in modes:
+        key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
+        key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+
+        base_dur_val = scenario_res[base_ref][key_dur]
+        base_ticks_val = scenario_res[base_ref][key_ticks]
+        opt_dur_val = scenario_res[opt_ref][key_dur]
+        opt_ticks_val = scenario_res[opt_ref][key_ticks]
+
+        if (
+            base_dur_val is not None
+            and opt_dur_val is not None
+            and base_ticks_val is not None
+            and opt_ticks_val is not None
+            and base_dur_val > 0
+            and opt_dur_val > 0
+        ):
+            bd: float = float(base_dur_val)
+            od: float = float(opt_dur_val)
+            base_t: int = int(base_ticks_val)
+            opt_t: int = int(opt_ticks_val)
+
+            base_tps = (base_t / repeats) / bd
+            opt_tps = (opt_t / repeats) / od
+
+            diff_pct = ((opt_tps - base_tps) / base_tps) * 100
+            faster_slower = "faster" if diff_pct >= 0 else "slower"
+
+            print(f"{mode} Mode:")
+            print(f"  * Baseline:  {base_tps:.2f} ticks/s ({bd:.4f}s)")
+            print(f"  * Optimized: {opt_tps:.2f} ticks/s ({od:.4f}s)")
+            print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower}.")
+        else:
+            print(f"{mode} Mode: N/A (runs failed)")
+        print("-" * 100)
+
+
+def _print_global_summary(
+    results: dict[str, dict[str, dict[str, float | int | None]]],
+    scenarios: list[str],
+    base_ref: str,
+    opt_ref: str,
+    modes: list[str],
+    repeats: int,
+) -> None:
+    """Print the aggregate overall benchmark statistics spanning all scenarios."""
+    if len(scenarios) <= 1:
+        return
+
+    print("\n" + "=" * 100)
+    print("Overall Folder Evaluation Summary")
+    print("=" * 100)
+    print(f"- Baseline Version:  {base_ref}")
+    print(f"- Optimized Version: {opt_ref}")
+
+    global_mismatches = False
+    for scenario_path in scenarios:
+        scen_res = results[scenario_path]
+        for mode in modes:
+            k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+            b_ticks = scen_res[base_ref].get(k_ticks)
+            o_ticks = scen_res[opt_ref].get(k_ticks)
+            if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
+                global_mismatches = True
+                break
+
+    if global_mismatches:
+        print("- [WARNING]: TICK MISMATCHES DETECTED IN ONE OR MORE SCENARIOS")
+        print("             The overall average speed comparison is biased.")
+        print("             Behavioral outcomes diverged between the branches.")
+
+    print("-" * 100)
+
+    for mode in modes:
+        key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
+        key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+
+        total_base_dur = 0.0
+        total_base_ticks = 0
+        total_opt_dur = 0.0
+        total_opt_ticks = 0
+
+        all_valid = True
+        for scenario_path in scenarios:
+            scen_res = results[scenario_path]
+            b_dur_val = scen_res[base_ref][key_dur]
+            b_ticks_val = scen_res[base_ref][key_ticks]
+            o_dur_val = scen_res[opt_ref][key_dur]
+            o_ticks_val = scen_res[opt_ref][key_ticks]
+
+            if (
+                b_dur_val is not None
+                and o_dur_val is not None
+                and b_ticks_val is not None
+                and o_ticks_val is not None
+                and b_dur_val > 0
+                and o_dur_val > 0
+            ):
+                total_base_dur += float(b_dur_val)
+                total_base_ticks += int(b_ticks_val)
+                total_opt_dur += float(o_dur_val)
+                total_opt_ticks += int(o_ticks_val)
+            else:
+                all_valid = False
+
+        if all_valid and total_base_dur > 0 and total_opt_dur > 0:
+            base_tps = (total_base_ticks / repeats) / total_base_dur
+            opt_tps = (total_opt_ticks / repeats) / total_opt_dur
+
+            diff_pct = ((opt_tps - base_tps) / base_tps) * 100
+            faster_slower = "faster" if diff_pct >= 0 else "slower"
+
+            print(f"{mode} Mode (All Scenarios Combined):")
+            print(f"  * Baseline:  {base_tps:.2f} ticks/s ({total_base_dur:.4f}s total)")
+            print(f"  * Optimized: {opt_tps:.2f} ticks/s ({total_opt_dur:.4f}s total)")
+            print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower} overall.")
+        else:
+            print(f"{mode} Mode (All Scenarios Combined): N/A (some runs failed)")
+        print("-" * 100)
+
+
+def _print_tabular_results(
+    results: dict[str, dict[str, dict[str, float | int | None]]],
+    scenarios: list[str],
+    ref1: str,
+    ref2: str,
+    repeats: int,
+    jit_only: bool,
+) -> None:
+    """Print the formatted evaluation tables and summaries."""
     # Determine more recent vs less recent commit/ref using git logs
     try:
-        if ref1.lower() == "worktree":
-            time_ref1 = float("inf")
-        else:
-            time_ref1 = float(git_cmd(["log", "-1", "--format=%ct", ref1]))
-
-        if ref2.lower() == "worktree":
-            time_ref2 = float("inf")
-        else:
-            time_ref2 = float(git_cmd(["log", "-1", "--format=%ct", ref2]))
+        time_ref1 = float("inf") if ref1.lower() == "worktree" else float(git_cmd(["log", "-1", "--format=%ct", ref1]))
+        time_ref2 = float("inf") if ref2.lower() == "worktree" else float(git_cmd(["log", "-1", "--format=%ct", ref2]))
 
         if time_ref1 >= time_ref2:
             opt_ref, base_ref = ref1, ref2
@@ -241,160 +449,37 @@ def run_compare(
 
     for scenario_path in scenarios:
         scenario_name = os.path.basename(scenario_path)
-        print("\n" + "=" * 100)
-        print(f"Results for Scenario: {scenario_name}")
-        print("=" * 100)
-        headers = (
-            f"{'Commit / Ref':<40} | {'JIT Mode':<10} | "
-            f"{'Avg Duration (s)':<16} | {'Total Ticks':<11} | {'Avg Ticks/s':<11}"
-        )
-        print(headers)
-        print("-" * 100)
-
         scenario_res = results[scenario_path]
-        for ref, res in scenario_res.items():
-            for mode in modes:
-                dur_val = res["jit_dur"] if mode == "JIT" else res["nojit_dur"]
-                ticks_val = res["jit_ticks"] if mode == "JIT" else res["nojit_ticks"]
-                if dur_val is not None and ticks_val is not None and dur_val > 0:
-                    dur: float = float(dur_val)
-                    ticks: int = int(ticks_val)
-                    tps = f"{(ticks / repeats) / dur:.2f}"
-                    dur_str = f"{dur:.4f}"
-                else:
-                    tps = "N/A"
-                    dur_str = "N/A"
-                print(f"{ref:<40} | {mode:<10} | {dur_str:<16} | {ticks_val:<11} | {tps:<11}")
+        _print_scenario_table(scenario_name, scenario_res, modes, repeats)
+        _print_scenario_summary(scenario_name, scenario_res, base_ref, opt_ref, modes, repeats)
 
-        print("\n" + "-" * 100)
-        print(f"Evaluation Summary: {scenario_name}")
-        print("-" * 100)
-        print(f"- Baseline Version:  {base_ref}")
-        print(f"- Optimized Version: {opt_ref}")
+    _print_global_summary(results, scenarios, base_ref, opt_ref, modes, repeats)
 
-        mismatch_modes = []
-        for mode in modes:
-            k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
-            b_ticks = scenario_res[base_ref].get(k_ticks)
-            o_ticks = scenario_res[opt_ref].get(k_ticks)
-            if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
-                mismatch_modes.append(mode)
 
-        if mismatch_modes:
-            print(f"- [WARNING]: TICK COUNT MISMATCH DETECTED ({', '.join(mismatch_modes)})")
-            print("             The simulations terminated at different points.")
-            print("             Comparing 'Avg Ticks/s' is highly biased as the")
-            print("             computational load per tick often changes over time.")
+def run_compare(
+    ref1: str, ref2: str, scenarios: list[str], num_ticks: int, repeats: int, warmup: int, jit_only: bool
+) -> None:
+    """Run a performance comparison between two git references across multiple scenarios.
 
-        print("-" * 100)
+    Args:
+        ref1: First git reference
+        ref2: Second git reference
+        scenarios: List of paths to scenario JSON files
+        num_ticks: Number of ticks to simulate
+        repeats: Number of repeats
+        warmup: Number of warmup ticks
+        jit_only: If True, skip the No-JIT comparisons
+    """
+    print(f"Comparing performance between '{ref1}' and '{ref2}' on {len(scenarios)} scenario(s) ({num_ticks} ticks)...")
+    print(f"Repeats per test: {repeats} | Warmup ticks: {warmup} | JIT Only: {jit_only}")
 
-        for mode in modes:
-            key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
-            key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+    # Create .cache if it doesn't exist
+    os.makedirs(".cache", exist_ok=True)
+    clone_path = os.path.join(".cache", "bench_clone")
 
-            base_dur_val = scenario_res[base_ref][key_dur]
-            base_ticks_val = scenario_res[base_ref][key_ticks]
-            opt_dur_val = scenario_res[opt_ref][key_dur]
-            opt_ticks_val = scenario_res[opt_ref][key_ticks]
-
-            if (
-                base_dur_val is not None
-                and opt_dur_val is not None
-                and base_ticks_val is not None
-                and opt_ticks_val is not None
-                and base_dur_val > 0
-                and opt_dur_val > 0
-            ):
-                bd: float = float(base_dur_val)
-                od: float = float(opt_dur_val)
-                base_t: int = int(base_ticks_val)
-                opt_t: int = int(opt_ticks_val)
-
-                base_tps = (base_t / repeats) / bd
-                opt_tps = (opt_t / repeats) / od
-
-                diff_pct = ((opt_tps - base_tps) / base_tps) * 100
-                faster_slower = "faster" if diff_pct >= 0 else "slower"
-
-                print(f"{mode} Mode:")
-                print(f"  * Baseline:  {base_tps:.2f} ticks/s ({bd:.4f}s)")
-                print(f"  * Optimized: {opt_tps:.2f} ticks/s ({od:.4f}s)")
-                print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower}.")
-            else:
-                print(f"{mode} Mode: N/A (runs failed)")
-            print("-" * 100)
-
-    if len(scenarios) > 1:
-        print("\n" + "=" * 100)
-        print("Overall Folder Evaluation Summary")
-        print("=" * 100)
-        print(f"- Baseline Version:  {base_ref}")
-        print(f"- Optimized Version: {opt_ref}")
-
-        global_mismatches = False
-        for scenario_path in scenarios:
-            scen_res = results[scenario_path]
-            for mode in modes:
-                k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
-                b_ticks = scen_res[base_ref].get(k_ticks)
-                o_ticks = scen_res[opt_ref].get(k_ticks)
-                if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
-                    global_mismatches = True
-                    break
-
-        if global_mismatches:
-            print("- [WARNING]: TICK MISMATCHES DETECTED IN ONE OR MORE SCENARIOS")
-            print("             The overall average speed comparison is biased.")
-            print("             Behavioral outcomes diverged between the branches.")
-
-        print("-" * 100)
-
-        for mode in modes:
-            key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
-            key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
-
-            total_base_dur = 0.0
-            total_base_ticks = 0
-            total_opt_dur = 0.0
-            total_opt_ticks = 0
-
-            all_valid = True
-            for scenario_path in scenarios:
-                scen_res = results[scenario_path]
-                b_dur_val = scen_res[base_ref][key_dur]
-                b_ticks_val = scen_res[base_ref][key_ticks]
-                o_dur_val = scen_res[opt_ref][key_dur]
-                o_ticks_val = scen_res[opt_ref][key_ticks]
-
-                if (
-                    b_dur_val is not None
-                    and o_dur_val is not None
-                    and b_ticks_val is not None
-                    and o_ticks_val is not None
-                    and b_dur_val > 0
-                    and o_dur_val > 0
-                ):
-                    total_base_dur += float(b_dur_val)
-                    total_base_ticks += int(b_ticks_val)
-                    total_opt_dur += float(o_dur_val)
-                    total_opt_ticks += int(o_ticks_val)
-                else:
-                    all_valid = False
-
-            if all_valid and total_base_dur > 0 and total_opt_dur > 0:
-                base_tps = (total_base_ticks / repeats) / total_base_dur
-                opt_tps = (total_opt_ticks / repeats) / total_opt_dur
-
-                diff_pct = ((opt_tps - base_tps) / base_tps) * 100
-                faster_slower = "faster" if diff_pct >= 0 else "slower"
-
-                print(f"{mode} Mode (All Scenarios Combined):")
-                print(f"  * Baseline:  {base_tps:.2f} ticks/s ({total_base_dur:.4f}s total)")
-                print(f"  * Optimized: {opt_tps:.2f} ticks/s ({total_opt_dur:.4f}s total)")
-                print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower} overall.")
-            else:
-                print(f"{mode} Mode (All Scenarios Combined): N/A (some runs failed)")
-            print("-" * 100)
+    _setup_virtual_clone(clone_path)
+    results = _execute_suite(ref1, ref2, scenarios, num_ticks, repeats, warmup, jit_only, clone_path)
+    _print_tabular_results(results, scenarios, ref1, ref2, repeats, jit_only)
 
 
 if __name__ == "__main__":

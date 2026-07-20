@@ -71,7 +71,7 @@ def _build_loaded_loop() -> SimulationLoop:
         ("bad", {"default": 5}, 5),
     ],
 )
-def test_main_coerce_int_cases(input_val: object, kwargs: dict[str, int], expected: int) -> None:
+def test_coerce_int_cases(input_val: object, kwargs: dict[str, int], expected: int) -> None:
     """Validate integer coercion behavior across valid, invalid, and boolean inputs."""
     assert shared._coerce_int(input_val, **kwargs) == expected
 
@@ -86,7 +86,7 @@ def test_main_coerce_int_cases(input_val: object, kwargs: dict[str, int], expect
         ("x", {"default": 9.0}, 9.0),
     ],
 )
-def test_main_coerce_float_cases(
+def test_coerce_float_cases(
     input_val: object,
     kwargs: dict[str, float],
     expected: float,
@@ -115,7 +115,7 @@ def test_main_coerce_float_cases(
         ("substance_active", "substance_id", 1, None, None),
     ],
 )
-def test_main_default_activation_condition_supported_kinds(
+def test_default_activation_condition_supported_kinds(
     kind: str,
     field: str,
     expected: str | int,
@@ -154,7 +154,7 @@ def test_main_default_activation_condition_supported_kinds(
         assert condition["conditions"][0]["kind"] == secondary_expected
 
 
-def test_main_default_activation_condition_invalid_kind_and_missing_trigger_index() -> None:
+def test_default_activation_condition_invalid_kind_and_missing_trigger_index() -> None:
     """Validate unsupported condition kinds and out-of-range trigger indices raise HTTP errors."""
     draft = DraftState.default()
     add_trigger_rule(
