@@ -392,10 +392,13 @@ class GridEnvironment:
     # ------------------------------------------------------------------
 
     def to_dict(self) -> dict[str, object]:
-        """Return a lightweight snapshot dict suitable for msgpack serialisation.
+        """Returns a dict representation of the biotope state suitable for serialization.
+
+        This is used by the streaming interface to serialize the current state of the
+        biotope to a dictionary.
 
         Returns:
-            dict: Mapping containing numpy arrays converted to nested lists.
+            Mapping containing numpy arrays converted to nested lists.
         """
         return {
             "plant_energy_layer": self.plant_energy_layer.tolist(),

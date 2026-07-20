@@ -217,6 +217,7 @@ Useful `just` Commands:
 * `just check`: Run all pre-commit hooks across the codebase.
 * `just docs`: Build and serve the Zensical documentation strictly.
 * `just bench-compare-jit`: Compare JIT performance of the current workspace against a baseline branch.
+* `just act-complexity`: Run code complexity checks using complexipy.
 * `just clean`: Remove all build artifacts, cache directories, and test coverage files.
 
 Hook-only verification:

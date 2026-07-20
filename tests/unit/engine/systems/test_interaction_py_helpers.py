@@ -40,6 +40,8 @@ def test_interaction_anchoring_heuristic(
         species_id=0,
         energy=10.0,
     )
+    env.apparent_nutrition_layer[1, 1] = 1.0
+    env.plant_energy_by_species[0, 1, 1] = 10.0
 
     # Place a compatible swarm at (1,1)
     swarm_entity = add_swarm(
@@ -132,6 +134,8 @@ def test_interaction_taste_rejection(
         species_id=1,
         energy=10.0,
     )
+    env.apparent_nutrition_layer[1, 1] = 1.0
+    env.plant_energy_by_species[1, 1, 1] = 10.0
 
     # Place a swarm at (1,1) looking for species 0
     swarm_entity = add_swarm(
