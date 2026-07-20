@@ -304,7 +304,7 @@ class GridEnvironment:
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
-            if not np.any(layer >= SIGNAL_EPSILON):
+            if layer.max() < SIGNAL_EPSILON:
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
@@ -338,7 +338,7 @@ class GridEnvironment:
         then swaps read/write buffers so that subsequent reads observe the
         newly-written values.
         """
-        self._plant_energy_layer_write[:] = self._plant_energy_by_species_write.sum(axis=0)
+        np.sum(self._plant_energy_by_species_write, axis=0, out=self._plant_energy_layer_write)
         self.plant_energy_by_species, self._plant_energy_by_species_write = (
             self._plant_energy_by_species_write,
             self.plant_energy_by_species,

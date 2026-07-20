@@ -26,3 +26,7 @@ Action: When modifying purely documentation files inside `docs/`, utilize target
 ## 2026-07-17 - Optimize ECS Query Fast-Path
 Learning: Iterating through an ECS component index and doing secondary lookup checks like `if eid in entities and ct in entities[eid]._components` is slow inside hot loops. Because the ECS is carefully managed, `_component_index` is strictly synchronized with `_entities`.
 Action: Rely on invariant synchronization to safely drop defensive dictionary lookups in hot path queries. Fail-fast on desynchronization rather than silently masking it with `if in` checks.
+
+## 2026-07-20 - Avoid Boolean Array and Sum Allocations in Numpy
+**Learning:** During profiling of the double-buffering execution in the ECS simulation engine, I discovered that basic Numpy checks like `np.any(layer >= SIGNAL_EPSILON)` silently allocate large temporary boolean arrays of shape `(width, height)`. Similarly, operations like `ndarray.sum(axis=0)` allocate a brand new array every single tick before it gets copied into the write buffer using `[:] =`. These repeated allocations accumulate significant latency over thousands of ticks.
+**Action:** Instead of `np.any(layer >= val)`, use `layer.max() >= val` which operates directly on the array and returns a scalar without allocating a boolean mask. Instead of `array.sum(axis=0)`, use `np.sum(array, axis=0, out=target_buffer)` to sum directly into the pre-allocated double-buffer output array. This fundamentally avoids dynamic allocation during the deterministic hot path.
