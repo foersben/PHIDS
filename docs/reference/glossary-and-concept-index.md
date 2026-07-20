@@ -194,7 +194,7 @@ See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_executi
 ### Ghost Entity
 
 An entity ID that has been logically killed (population zero, energy zero, or marked for removal)
-but has not yet been removed from the spatial hash or ECS registry. Ghost entities corrupt O(1)
+but has not yet been removed from the spatial hash or ECS registry. Ghost entities corrupt $O(1)$
 spatial-hash lookups because `world.entities_at(x, y)` returns their IDs as if they were still
 alive. PHIDS prevents ghost entities through immediate `unregister_position` calls and same-tick GC
 in both the interaction and signaling phases.
@@ -272,10 +272,10 @@ See: [`engine/lifecycle.md`](../scientific_model/mathematical_framework.md), [`e
 
 ## O
 
-### O(1) Spatial Hash
+### $O(1)$ Spatial Hash
 
 The spatial hash embedded in `ECSWorld` that maps `(x, y)` grid cells to sets of entity IDs in
-amortized O(1) time. It is the primary locality primitive in PHIDS: all cell-local interactions
+amortized $O(1)$ time. It is the primary locality primitive in PHIDS: all cell-local interactions
 (feeding, trigger evaluation, crowding checks) are dispatched via `world.entities_at(x, y)` rather
 than through O(N²) global pairwise scans.
 
@@ -354,7 +354,7 @@ See: [`engine/index.md`](../scientific_model/index.md)
 
 ### Spatial Hash
 
-See [O(1) Spatial Hash](#o1-spatial-hash).
+See [$O(1)$ Spatial Hash](#o1-spatial-hash).
 
 ### `SubstanceComponent`
 

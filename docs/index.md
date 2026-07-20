@@ -45,7 +45,7 @@ PHIDS is engineered as a research-grade simulation backend. To ensure that ecolo
 * **Global flow-field navigation** instead of independent agent pathfinding. A unified scalar gradient is calculated via Numba JIT compilation, which swarms sample locally.
 * **Double-buffered environmental updates** for diffusion layers to prevent intra-tick read-after-write contamination.
 * **Rule-of-16 bounded configuration spaces** for species and substances to prevent dynamic memory allocation latency during the hot execution loop.
-* **O(1) spatial locality queries** through a Spatial Hash, bypassing catastrophic $O(N^2)$ distance polling.
+* **$O(1)$ spatial locality queries** through a Spatial Hash, bypassing catastrophic $O(N^2)$ distance polling.
 
 These are not incidental implementation details; they define the simulator's methodological scope and ensure its high-performance computational efficiency.
 
