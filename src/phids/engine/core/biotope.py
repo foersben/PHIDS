@@ -145,9 +145,14 @@ def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> np
         size: Kernel size (must be odd).
         sigma: Standard deviation of the Gaussian.
 
+    Raises:
+        ValueError: If size is even.
+
     Returns:
         npt.NDArray[np.float64]: 2-D array of shape (size, size) representing the kernel.
     """
+    if size % 2 == 0:
+        raise ValueError("Kernel size must be odd to maintain central symmetry.")
     ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)
     xx, yy = np.meshgrid(ax, ax)
     kernel: npt.NDArray[np.float64] = np.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))

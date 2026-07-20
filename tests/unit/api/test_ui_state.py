@@ -312,8 +312,8 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
 
     was_clamped = update_biotope(
         draft,
-        grid_width=160,
-        grid_height=5,
+        grid_width=250,
+        grid_height=250,
         max_ticks=0,
         tick_rate_hz=0.0,
         wind_x=1.25,
@@ -330,8 +330,8 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
         mycorrhizal_signal_velocity=0,
     )
     assert was_clamped is True
-    assert draft.grid_width == 80
-    assert draft.grid_height == 10
+    assert draft.grid_width == 200
+    assert draft.grid_height == 200
     assert draft.max_ticks == 1
     assert draft.tick_rate_hz == pytest.approx(0.1)
     assert draft.wind_x == pytest.approx(1.25)

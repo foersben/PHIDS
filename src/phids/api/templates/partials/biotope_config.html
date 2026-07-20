@@ -7,13 +7,13 @@
 
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Grid Width</label>
-        <input type="number" name="grid_width" min="10" max="80"
+        <input type="number" name="grid_width" min="10" max="200"
           value="{{ draft.grid_width }}"
           class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Grid Height</label>
-        <input type="number" name="grid_height" min="10" max="80"
+        <input type="number" name="grid_height" min="10" max="200"
           value="{{ draft.grid_height }}"
           class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
@@ -159,7 +159,7 @@
       <div>
         <p class="font-semibold text-slate-700">Core Fields Explained:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>📐 Grid Dimensions:</strong> Width &amp; Height of the cellular automaton board (10×10 to 80×80). Larger grids allow more spatial heterogeneity but increase computation.</li>
+          <li><strong>📐 Grid Dimensions:</strong> Width &amp; Height of the cellular automaton board (10×10 to 200×200). Larger grids allow more spatial heterogeneity but increase computation.</li>
           <li><strong>⏱️ Max Ticks &amp; Speed:</strong> Controls simulation termination limits and default tick rate in Hz.</li>
           <li><strong>💨 Wind Vector (X, Y):</strong> Drives semi-Lagrangian advection of airborne signal grids. Positive X shifts signals east; positive Y shifts them south. Wind does <em>not</em> affect mycorrhizal relay.</li>
           <li><strong>🔬 Signal/Toxin Layers:</strong> Number of available slot layers for chemical signals or toxins (1-16). Governed by the Rule-of-16 for L1/L2 cache efficiency.</li>

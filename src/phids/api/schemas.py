@@ -451,8 +451,8 @@ PlacementStrategy = Annotated[
 class SimulationConfig(StrictBaseModel):
     """Complete simulation configuration payload (REST /api/scenario/load body)."""
 
-    grid_width: int = Field(default=40, ge=1, le=80)
-    grid_height: int = Field(default=40, ge=1, le=80)
+    grid_width: int = Field(default=40, ge=1, le=200)
+    grid_height: int = Field(default=40, ge=1, le=200)
     max_ticks: int = Field(default=1000, gt=0)
     tick_rate_hz: float = Field(default=10.0, gt=0.0, description="WebSocket stream tick rate.")
 
@@ -498,6 +498,58 @@ class SimulationConfig(StrictBaseModel):
     z7_max_total_herbivore_population: int = Field(
         default=-1,
         description="Halt when total herbivore population exceeds this value (-1 = disabled).",
+    )
+
+    # Configurable Chemotaxis and Navigation Parameters
+    chemotaxis_alpha: float = Field(
+        default=1.0,
+        ge=0.0,
+        description="Weighting coefficient for botanical attractants.",
+        json_schema_extra={
+            "ui_category": "Chemotaxis & Navigation",
+            "sensitivity": "High Impact",
+            "effects": ("Increasing this makes swarms more desperate to reach food, potentially ignoring toxins."),
+        },
+    )
+    chemotaxis_beta: float = Field(
+        default=1.0,
+        ge=0.0,
+        description="Weighting coefficient for toxic repellents.",
+        json_schema_extra={
+            "ui_category": "Chemotaxis & Navigation",
+            "sensitivity": "High Impact",
+            "effects": (
+                "Increasing this makes swarms extremely averse to toxins, "
+                "potentially starving before crossing a defensive perimeter."
+            ),
+        },
+    )
+    chemotaxis_decay: float = Field(
+        default=0.6,
+        ge=0.0,
+        le=1.0,
+        description="Propagation decay factor for the flow field.",
+        json_schema_extra={
+            "ui_category": "Chemotaxis & Navigation",
+            "sensitivity": "Advanced Tuning",
+            "effects": (
+                "Higher values allow the chemotaxis gradient to propagate further distances, "
+                "effectively increasing the sensory horizon of swarms."
+            ),
+        },
+    )
+    chemotaxis_truncate_threshold: float = Field(
+        default=1e-4,
+        ge=0.0,
+        description="Subnormal truncation threshold.",
+        json_schema_extra={
+            "ui_category": "Chemotaxis & Navigation",
+            "sensitivity": "Advanced Math Tuning",
+            "effects": (
+                "Prevents float denormalization slowdowns in the Numba JIT solver "
+                "by zeroing out infinitesimal gradients."
+            ),
+        },
     )
 
     # Configurable diffusion / emission constants (runtime-overridable defaults from constants.py)

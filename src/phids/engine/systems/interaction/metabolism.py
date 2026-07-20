@@ -98,6 +98,7 @@ def _resolve_swarm_metabolism_and_reproduction(
     dead_swarms: list[int],
     scratch_cx: npt.NDArray[np.int32],
     scratch_cy: npt.NDArray[np.int32],
+    herbivore_death_causes: dict[str, int] | None = None,
 ) -> bool:
     """Apply metabolic upkeep, casualty liquidation, reproduction, and mitosis. Returns False if dead.
 
@@ -121,6 +122,7 @@ def _resolve_swarm_metabolism_and_reproduction(
         dead_swarms: The list to append dead swarm IDs to.
         scratch_cx: Pre-allocated buffer for random walk X offsets.
         scratch_cy: Pre-allocated buffer for random walk Y offsets.
+        herbivore_death_causes: Dictionary to track herbivore death causes.
 
     Returns:
         False if the swarm died, True otherwise.
@@ -149,6 +151,8 @@ def _resolve_swarm_metabolism_and_reproduction(
     if swarm.population <= 0:
         world.unregister_position(entity.entity_id, swarm.x, swarm.y)
         dead_swarms.append(entity.entity_id)
+        if herbivore_death_causes is not None:
+            herbivore_death_causes["death_starvation"] += 1
         return False
 
     # Reproduction
