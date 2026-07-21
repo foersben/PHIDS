@@ -78,8 +78,9 @@ def run_signaling(
     dead_substances: list[int] = []
     dead_plants: list[int] = []
     dead_plant_ids: set[int] = set()
-
-    owner_substance_by_key, active_substance_ids_by_owner = _phase_index_and_clean_substances(world, dead_substances)
+    owner_substance_by_key, active_substance_ids_by_owner, substance_entities = _phase_index_and_clean_substances(
+        world, dead_substances
+    )
 
     swarm_population_by_cell_species = _build_swarm_population_index(world)
 
@@ -93,12 +94,14 @@ def run_signaling(
         owner_substance_by_key,
         swarm_population_by_cell_species,
         active_substance_ids_by_owner,
+        substance_entities,
     )
 
     _phase_manage_nutrition_recovery(world)
 
     _phase_advance_synthesis(
         world,
+        substance_entities,
         env,
         swarm_population_by_cell_species,
         active_substance_ids_by_owner,
@@ -107,6 +110,7 @@ def run_signaling(
 
     _phase_emit_signals_and_toxins(
         world,
+        substance_entities,
         env,
         substance_emit_rate,
         mycorrhizal_inter_species,
@@ -120,6 +124,7 @@ def run_signaling(
 
     _phase_process_aftereffects(
         world,
+        substance_entities,
         active_substance_ids_by_owner,
         dead_plant_ids,
         dead_substances,

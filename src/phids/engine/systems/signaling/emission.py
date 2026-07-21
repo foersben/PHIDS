@@ -14,7 +14,7 @@ from phids.engine.systems.signaling.spatial import _collect_mycorrhizal_targets
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
-    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.core.ecs import ECSWorld, Entity
     from phids.engine.systems.signaling.types import _ActiveToxinProps
 
 
@@ -225,6 +225,7 @@ def _process_single_emission(
 
 def _phase_emit_signals_and_toxins(
     world: ECSWorld,
+    substance_entities: list[Entity],
     env: GridEnvironment,
     substance_emit_rate: float,
     mycorrhizal_inter_species: bool,
@@ -237,7 +238,7 @@ def _phase_emit_signals_and_toxins(
 ) -> None:
     active_toxin_props: dict[int, _ActiveToxinProps] = {}
 
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         _process_single_emission(
             entity.get_component(SubstanceComponent),
             entity.entity_id,

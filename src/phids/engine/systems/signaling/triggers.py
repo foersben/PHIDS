@@ -14,7 +14,7 @@ from phids.engine.systems.signaling.conditions import _check_activation_conditio
 if TYPE_CHECKING:
     from phids.api.schemas import TriggerConditionSchema
     from phids.engine.core.biotope import GridEnvironment
-    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.core.ecs import ECSWorld, Entity
 
 
 def _process_single_trigger(
@@ -25,6 +25,7 @@ def _process_single_trigger(
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
     swarm_population_by_cell_species: dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
 ) -> None:
     from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
 
@@ -83,6 +84,7 @@ def _process_single_trigger(
         existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
         world.add_component(new_entity.entity_id, existing_sub)
         owner_substance_by_key[(plant.entity_id, substance_id)] = existing_sub
+        substance_entities.append(new_entity)
     else:
         if (
             not existing_sub.active
@@ -101,6 +103,7 @@ def _phase_evaluate_triggers(
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
     swarm_population_by_cell_species: dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
 ) -> None:
     for entity in world.query(PlantComponent):
         plant = entity.get_component(PlantComponent)
@@ -115,4 +118,5 @@ def _phase_evaluate_triggers(
                 owner_substance_by_key,
                 swarm_population_by_cell_species,
                 active_substance_ids_by_owner,
+                substance_entities,
             )

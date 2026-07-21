@@ -11,13 +11,13 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 
 if TYPE_CHECKING:
-    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.core.ecs import ECSWorld, Entity
 
 
 def _phase_index_and_clean_substances(
     world: ECSWorld,
     dead_substances: list[int],
-) -> tuple[dict[tuple[int, int], SubstanceComponent], dict[int, set[int]]]:
+) -> tuple[dict[tuple[int, int], SubstanceComponent], dict[int, set[int]], list[Entity]]:
     substance_entities = world.query(SubstanceComponent)
     for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
@@ -26,7 +26,9 @@ def _phase_index_and_clean_substances(
 
     world.collect_garbage(dead_substances)
     dead_substances.clear()
-    substance_entities = world.query(SubstanceComponent)
+
+    # Option 2: Materialize query once after GC
+    substance_entities = list(world.query(SubstanceComponent))
 
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent] = {}
     active_substance_ids_by_owner: dict[int, set[int]] = {}
@@ -37,7 +39,7 @@ def _phase_index_and_clean_substances(
             active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(sub.substance_id)
         sub.triggered_this_tick = False
 
-    return owner_substance_by_key, active_substance_ids_by_owner
+    return owner_substance_by_key, active_substance_ids_by_owner, substance_entities
 
 
 def _phase_manage_nutrition_recovery(world: ECSWorld) -> None:
@@ -91,11 +93,12 @@ def _process_single_aftereffect(
 
 def _phase_process_aftereffects(
     world: ECSWorld,
+    substance_entities: list[Entity],
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_plant_ids: set[int],
     dead_substances: list[int],
 ) -> None:
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         _process_single_aftereffect(
             entity.get_component(SubstanceComponent),
             entity.entity_id,

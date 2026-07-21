@@ -13,7 +13,7 @@ from phids.engine.systems.signaling.conditions import _check_activation_conditio
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
-    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.core.ecs import ECSWorld, Entity
 
 
 def _process_advance_single_synthesis(
@@ -56,12 +56,13 @@ def _process_advance_single_synthesis(
 
 def _phase_advance_synthesis(
     world: ECSWorld,
+    substance_entities: list[Entity],
     env: GridEnvironment,
     swarm_population_by_cell_species: dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_substances: list[int],
 ) -> None:
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         _process_advance_single_synthesis(
             entity.get_component(SubstanceComponent),
             entity.entity_id,
