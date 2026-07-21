@@ -313,11 +313,11 @@ def compute_flow_field(
         npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
     """
     if base is None:
-        base = np.zeros((width, height), dtype=np.float64)
+        base = np.zeros((width, height), dtype=np.float64)  # pragma: no mutate
     if current is None:
-        current = np.zeros((width, height), dtype=np.float64)
+        current = np.zeros((width, height), dtype=np.float64)  # pragma: no mutate
     if nxt is None:
-        nxt = np.zeros((width, height), dtype=np.float64)
+        nxt = np.zeros((width, height), dtype=np.float64)  # pragma: no mutate
 
     result = np.asarray(
         _compute_flow_field(

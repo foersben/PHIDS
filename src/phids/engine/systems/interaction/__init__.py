@@ -61,6 +61,8 @@ if TYPE_CHECKING:
     from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
+from typing import cast
+
 import numpy as np
 import numpy.typing as npt
 
@@ -112,7 +114,7 @@ def run_interaction(
     for eid in world._component_index.get(SwarmComponent, set()):
         # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
         # _component_index is strictly synchronized with _entities during this read-only pass.
-        indexed_swarm = world._entities[eid]._components[SwarmComponent]
+        indexed_swarm = cast("SwarmComponent", world._entities[eid]._components[SwarmComponent])
         _accumulate_tile_population(
             tile_populations,
             indexed_swarm.x,
@@ -128,7 +130,7 @@ def run_interaction(
         if entity is None:
             continue
         # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
-        swarm: SwarmComponent = entity._components[SwarmComponent]
+        swarm = cast("SwarmComponent", entity._components[SwarmComponent])
 
         # 1-2. Movement Phase
         has_moved = _resolve_swarm_movement(

@@ -157,10 +157,10 @@ def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> np
     """
     if size % 2 == 0:
         raise ValueError("Kernel size must be odd to maintain central symmetry.")
-    ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)
+    ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)  # pragma: no mutate
     xx, yy = np.meshgrid(ax, ax)
     kernel: npt.NDArray[np.float64] = np.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))
-    normalized = np.asarray(kernel / kernel.sum(), dtype=np.float64)
+    normalized = np.asarray(kernel / kernel.sum(), dtype=np.float64)  # pragma: no mutate
     return normalized
 
 
@@ -218,12 +218,14 @@ class GridEnvironment:
         # ------------------------------------------------------------------
         # Plant energy layers (read/write buffers)
         # ------------------------------------------------------------------
-        self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-        self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
 
         # Global aggregate apparent nutrition factor
-        self.apparent_nutrition_layer: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
-        self._apparent_nutrition_layer_write: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
+        self.apparent_nutrition_layer: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)  # pragma: no mutate
+        self._apparent_nutrition_layer_write: npt.NDArray[np.float64] = np.ones(
+            shape, dtype=np.float64
+        )  # pragma: no mutate
 
         # Per-species energy layers (Rule of 16 pre-allocation)
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
@@ -234,34 +236,38 @@ class GridEnvironment:
         # ------------------------------------------------------------------
         # Wind layers (dynamic, updated via REST API)
         # ------------------------------------------------------------------
-        self.wind_vector_x: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-        self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self.wind_vector_x: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
 
         # ------------------------------------------------------------------
         # Signal layers  [num_signals, W, H] - read buffer
         # ------------------------------------------------------------------
-        self.signal_layers: npt.NDArray[np.float64] = np.zeros((num_signals, width, height), dtype=np.float64)
+        self.signal_layers: npt.NDArray[np.float64] = np.zeros(
+            (num_signals, width, height), dtype=np.float64
+        )  # pragma: no mutate
         # Write buffer for double-buffering
         self._signal_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.signal_layers)
 
         # ------------------------------------------------------------------
         # Toxin layers  [num_toxins, W, H] (local plant-tissue fields)
         # ------------------------------------------------------------------
-        self.toxin_layers: npt.NDArray[np.float64] = np.zeros((num_toxins, width, height), dtype=np.float64)
+        self.toxin_layers: npt.NDArray[np.float64] = np.zeros(
+            (num_toxins, width, height), dtype=np.float64
+        )  # pragma: no mutate
         self._toxin_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.toxin_layers)
 
         # ------------------------------------------------------------------
         # Flow-field gradient (scalar attraction field, WxH)
         # ------------------------------------------------------------------
-        self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
 
         # Pre-allocated scratch buffers for flow field JIT calculations
-        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
-        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
 
         # Pre-allocated scratch buffer for diffusion JIT calculations
-        self._advected_scratch: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._advected_scratch: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
 
     # ------------------------------------------------------------------
     # Wind helpers

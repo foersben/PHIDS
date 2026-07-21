@@ -12,6 +12,18 @@ from phids.engine.core.flow_field import _compute_flow_field_impl, compute_flow_
 
 
 def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_layers, width, height):
+    """Helper for Flow Field tests.
+
+    Args:
+        plant_energy: Array of plant energy per cell.
+        apparent_nutrition_layer: Array of apparent nutrition multipliers per cell.
+        toxin_layers: Array of toxin concentration layers per cell.
+        width: The width of the grid environment.
+        height: The height of the grid environment.
+
+    Returns:
+        Flow-field gradient of shape ``(W, H)``.
+    """
     import numpy as np
 
     return _compute_flow_field_impl(
@@ -97,3 +109,23 @@ def test_diffusion_reaches_cells_beyond_immediate_neighbors() -> None:
     flow = compute_flow_field(plant_energy, np.ones((7, 7)), toxin_layers, width=7, height=7)
 
     assert flow[2, 2] > 0.0
+
+
+def test_compute_flow_field_defaults() -> None:
+    """Verify that default keyword arguments such as alpha and decay are strictly respected.
+
+    This kills mutmut survivors that change alpha=1.0 to 2.0 or default arrays to None.
+    """
+    plant_energy = np.ones((1, 1), dtype=np.float64)
+    apparent_nutrition_layer = np.ones((1, 1), dtype=np.float64)
+    toxin_layers = np.zeros((1, 1, 1), dtype=np.float64)
+
+    # Run with absolutely no kwargs
+    result_default = compute_flow_field(plant_energy, apparent_nutrition_layer, toxin_layers, 1, 1)
+
+    # Since alpha=1.0, beta=1.0, the calculation for a 1x1 with 1.0 plant and 0.0 toxin
+    # should be exactly 1.0 * (1.0 - 0.0) = 1.0
+    assert result_default[0, 0] == 1.0
+
+    # And verify the strict float64 dtype requirement
+    assert result_default.dtype == np.float64
