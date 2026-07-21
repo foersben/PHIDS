@@ -23,6 +23,7 @@ class FloraProfile(BaseModel):
         survival_threshold: Energy reserve threshold below which the plant dies.
         seed_cost: Caloric cost to reproduce/drop a seed.
         seed_dispersion_radius: Maximum radius for seed dispersal.
+        passive_defenses: Morphological defense configuration.
 
     """
 
@@ -31,6 +32,7 @@ class FloraProfile(BaseModel):
     survival_threshold: float
     seed_cost: float
     seed_dispersion_radius: float
+    passive_defenses: dict[str, float]
 
 
 class HerbivoreProfile(BaseModel):
@@ -41,6 +43,7 @@ class HerbivoreProfile(BaseModel):
         consumption_rate: Feeding consumption rate per tick.
         mitosis_threshold: Energy threshold required to undergo mitosis.
         split_ratio: Energy and population allocation ratio on split.
+        resistances: Herbivore resistances to passive plant defenses.
 
     """
 
@@ -48,6 +51,7 @@ class HerbivoreProfile(BaseModel):
     consumption_rate: float
     mitosis_threshold: float
     split_ratio: float
+    resistances: dict[str, float]
 
 
 class BioDatabaseModel(BaseModel):
@@ -108,28 +112,39 @@ class BioDatabase:
         flora_dict: dict[str, FloraProfile] = {}
         for row in conn.execute(
             "SELECT canonical_name, growth_rate, max_energy, survival_threshold, "
-            "seed_cost, seed_dispersion_radius FROM flora_species"
+            "seed_cost, seed_dispersion_radius, mechanical_damage_per_bite, "
+            "digestibility_modifier FROM flora_species"
         ).fetchall():
-            name, growth, max_e, surv, seed_c, seed_r = row
+            name, growth, max_e, surv, seed_c, seed_r, mech, digest = row
             flora_dict[name] = FloraProfile(
                 growth_rate=growth,
                 max_energy=max_e,
                 survival_threshold=surv,
                 seed_cost=seed_c,
                 seed_dispersion_radius=seed_r,
+                passive_defenses={
+                    "mechanical_damage_per_bite": mech,
+                    "digestibility_modifier": digest,
+                },
             )
 
         herb_dict: dict[str, HerbivoreProfile] = {}
         for row in conn.execute(
             "SELECT canonical_name, metabolism_upkeep, consumption_rate, "
-            "mitosis_threshold, split_ratio FROM herbivore_species"
+            "mitosis_threshold, split_ratio, morphological_adaptation, "
+            "chemical_neutralization, digestive_efficiency FROM herbivore_species"
         ).fetchall():
-            name, metab, cons, mito, split = row
+            name, metab, cons, mito, split, morph, chem, digest = row
             herb_dict[name] = HerbivoreProfile(
                 metabolism_upkeep=metab,
                 consumption_rate=cons,
                 mitosis_threshold=mito,
                 split_ratio=split,
+                resistances={
+                    "morphological_adaptation": morph,
+                    "chemical_neutralization": chem,
+                    "digestive_efficiency": digest,
+                },
             )
 
         conn.close()

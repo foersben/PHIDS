@@ -46,6 +46,9 @@ def test_write_all() -> None:
             "consumption_rate": [1.0],
             "mitosis_threshold": [20.0],
             "split_ratio": [0.5],
+            "morphological_adaptation": [0.0],
+            "chemical_neutralization": [0.0],
+            "digestive_efficiency": [1.0],
         }
     )
 

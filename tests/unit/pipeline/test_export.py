@@ -12,7 +12,10 @@ from data_pipeline.db.writer import write_all
 def test_export_json() -> None:
     with tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False) as f:
         tmp_path = f.name
-    pathlib.Path(tmp_path).unlink()
+    try:
+        pathlib.Path(tmp_path).unlink()
+    except Exception:
+        pass
 
     # Create dummy DataFrames
     flora = pl.DataFrame(
@@ -37,6 +40,9 @@ def test_export_json() -> None:
             "consumption_rate": [1.0],
             "mitosis_threshold": [20.0],
             "split_ratio": [0.5],
+            "morphological_adaptation": [0.0],
+            "chemical_neutralization": [0.0],
+            "digestive_efficiency": [1.0],
         }
     )
 
