@@ -1805,3 +1805,69 @@ async def test_scenario_export_and_import_round_trip_ui(api_client: AsyncClient)
     assert import_resp.status_code == 200, import_resp.text
     assert import_resp.json()["message"] == "Scenario imported."
     assert get_draft().mycorrhizal_growth_interval_ticks == 13
+
+
+@pytest.mark.asyncio
+async def test_api_database_save_validates_payload(
+    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Validates that the database save endpoint requires a valid BioDatabaseModel payload."""
+    test_db_path = tmp_path / "bio_database.json"
+
+    # Patch the Path instantiated in the route
+    import phids.api.routers.ui
+
+    monkeypatch.setattr(phids.api.routers.ui, "BIO_DB_PATH", test_db_path)
+
+    valid_payload = {
+        "flora": {
+            "TestPlant": {
+                "growth_rate": 0.5,
+                "max_energy": 100.0,
+                "survival_threshold": 10.0,
+                "seed_cost": 20.0,
+                "seed_dispersion_radius": 5.0,
+            }
+        },
+        "herbivores": {
+            "TestBug": {
+                "metabolism_upkeep": 1.0,
+                "consumption_rate": 2.0,
+                "mitosis_threshold": 50.0,
+                "split_ratio": 0.5,
+            }
+        },
+    }
+
+    invalid_payload = {
+        "flora": {
+            "TestPlant": {
+                "growth_rate": "invalid_string",  # Should be float
+            }
+        },
+        "herbivores": {},
+    }
+
+    malformed_json_payload = "not json"
+
+    async with api_client as client:
+        # 1. Valid payload should succeed and write to disk
+        resp_valid = await client.post("/api/database/save", json=valid_payload)
+        assert resp_valid.status_code == 200, resp_valid.text
+
+        import json
+
+        with open(test_db_path, encoding="utf-8") as f:
+            saved_data = json.load(f)
+        assert "TestPlant" in saved_data["flora"]
+        assert saved_data["flora"]["TestPlant"]["growth_rate"] == 0.5
+
+        # 2. Invalid schema payload should return 422 Unprocessable Entity
+        resp_invalid = await client.post("/api/database/save", json=invalid_payload)
+        assert resp_invalid.status_code == 422, resp_invalid.text
+
+        # 3. Completely malformed payload should return 422
+        resp_malformed = await client.post(
+            "/api/database/save", content=malformed_json_payload, headers={"Content-Type": "application/json"}
+        )
+        assert resp_malformed.status_code == 422, resp_malformed.text

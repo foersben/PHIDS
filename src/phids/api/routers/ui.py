@@ -16,14 +16,19 @@ browser-side replicas.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
+from phids.analytics.bio_database import BioDatabaseModel  # noqa: TC001
 from phids.api.presenters.diagnostics import build_energy_deficit_swarms, build_live_summary
 from phids.api.presenters.trigger_rules import trigger_rules_template_context
 from phids.api.ui_state import DraftState, get_draft
 from phids.shared.logging_config import get_recent_logs
+
+BIO_DB_PATH = Path("src/phids/analytics/bio_database.json")
 
 router = APIRouter()
 
@@ -329,9 +334,8 @@ async def ui_database(request: Request) -> Response:
         TemplateResponse: Rendered `database_dashboard.html` fragment containing database items.
     """
     import json
-    from pathlib import Path
 
-    db_path = Path("src/phids/analytics/bio_database.json")
+    db_path = BIO_DB_PATH
     try:
         with open(db_path, encoding="utf-8") as f:
             db_data = json.load(f)
@@ -350,17 +354,15 @@ async def ui_database(request: Request) -> Response:
 
 
 @router.post("/api/database/save", summary="Save Bio-Database")
-async def api_database_save(request: Request) -> Response:
+async def api_database_save(payload: BioDatabaseModel) -> Response:
     """Save the current bio-database payload."""
     import json
-    from pathlib import Path
 
-    db_path = Path("src/phids/analytics/bio_database.json")
+    db_path = BIO_DB_PATH
 
     try:
-        data = await request.json()
         with open(db_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+            json.dump(payload.model_dump(), f, indent=2)
 
         return Response(status_code=200)
     except Exception as e:
