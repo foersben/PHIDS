@@ -39,7 +39,7 @@ def _build_test_genotype(
                 passive_defenses={
                     "mechanical_damage_per_bite": 0.0,
                     "digestibility_modifier": 1.0,
-                }
+                },
             )
         },
         herbivore_traits={
@@ -52,7 +52,7 @@ def _build_test_genotype(
                     "morphological_adaptation": 0.0,
                     "chemical_neutralization": 0.0,
                     "digestive_efficiency": 1.0,
-                }
+                },
             )
         },
     )

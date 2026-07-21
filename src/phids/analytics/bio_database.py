@@ -125,7 +125,7 @@ class BioDatabase:
                 passive_defenses={
                     "mechanical_damage_per_bite": mech,
                     "digestibility_modifier": digest,
-                }
+                },
             )
 
         herb_dict: dict[str, HerbivoreProfile] = {}
@@ -144,7 +144,7 @@ class BioDatabase:
                     "morphological_adaptation": morph,
                     "chemical_neutralization": chem,
                     "digestive_efficiency": digest,
-                }
+                },
             )
 
         conn.close()
