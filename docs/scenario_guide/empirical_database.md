@@ -1,9 +1,30 @@
 ---
 type: concept
-title: "Empirical Database Pipeline"
+title: Empirical Database Pipeline
 status: active
 version: 1.0
-description: "Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline, generating the empirical DuckDB database."
+description: Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline, generating
+  the empirical DuckDB database.
+tags:
+- phids
+- ecs
+- performance
+- chemotaxis
+- python
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- src/data_pipeline/transform.py
+- src/data_pipeline/archetype_extractor.py
+- src/data_pipeline/json_builder.py
+- json_builder.py
+- src/data_pipeline/run_all.py
+- ingest.py
+- transform.py
+- archetype_extractor.py
+- run_all.py
+- run_extended.py
+- __init__.py
+- scripts/check_no_extended_imports.py
 ---
 
 The computational modeling of ecological dynamics has historically relied on abstract, continuous-time ordinary differential equations, most notably the classic Lotka-Volterra predator-prey models. While these continuous solvers excel at describing macro-level cyclical oscillations in perfectly mixed, theoretical populations, they fundamentally fail to capture the discrete, spatial, and highly localized nature of terrestrial ecosystems. A more rigorous computational approach requires transitioning from continuous theoretical models to discrete, spatially constrained environments powered by data-oriented Entity-Component-System architectures. Within such frameworks, biological actors are not merely statistical distributions; they are discrete entities that forage via chemotaxis, synthesize localized secondary metabolites, establish symbiotic root networks, and undergo density-dependent population scaling.

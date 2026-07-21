@@ -1,7 +1,18 @@
 ---
 type: role
+title: Directives
+status: active
+version: '0.1'
+description: '- **Delegation:** Deconstruct user requests; delegate tasks to specialized
+  agents per `AGENTS.md`. Do not write math/kernels.'
+tags:
+- ecs
+- python
+timestamp: '2026-07-21T16:01:38Z'
+resources: []
 role: Orchestrator
 ---
+
 # Directives
 
 - **Delegation:** Deconstruct user requests; delegate tasks to specialized agents per `AGENTS.md`. Do not write math/kernels.

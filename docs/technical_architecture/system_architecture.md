@@ -1,9 +1,27 @@
 ---
 type: technical_architecture
-title: "System Architecture"
+title: System Architecture
 status: active
 version: 0.1
-description: "Documentation for System Architecture in the PHIDS framework."
+description: Documentation for System Architecture in the PHIDS framework.
+tags:
+- phids
+- ecs
+- performance
+- chemotaxis
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- src/phids/engine/loop.py
+- loop.py
+- biotope.py
+- ecs.py
+- lifecycle.py
+- flow_field.py
+- interaction.py
+- signaling.py
+- analytics.py
+- conditions.py
+- zarr_replay.py
 ---
 
 The PHIDS simulator is engineered as a headless, high-performance data-oriented system. It segregates logic from state to bypass the bottlenecks inherent in traditional Object-Oriented simulation frameworks. This document outlines the fundamental technical boundaries that ensure deterministic, reproducible simulation loops.

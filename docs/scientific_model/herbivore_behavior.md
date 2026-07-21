@@ -1,9 +1,17 @@
 ---
 type: scientific_model
-title: "Herbivore Behavior & Kinematics"
+title: Herbivore Behavior & Kinematics
 status: active
 version: 0.1
-description: "Documentation for Herbivore Behavior & Kinematics in the PHIDS framework."
+description: Documentation for Herbivore Behavior & Kinematics in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- chemotaxis
+- python
+timestamp: '2026-07-21T16:01:38Z'
+resources: []
 ---
 
 Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.

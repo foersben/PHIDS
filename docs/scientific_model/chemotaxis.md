@@ -1,9 +1,16 @@
 ---
 type: scientific_model
-title: "Chemotaxis & Flow Fields"
+title: Chemotaxis & Flow Fields
 status: active
 version: 0.2
-description: "Documentation for Chemotaxis & Flow Fields in the PHIDS framework."
+description: Documentation for Chemotaxis & Flow Fields in the PHIDS framework.
+tags:
+- phids
+- numba
+- chemotaxis
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- flow_field.py
 ---
 
 Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field, simulating a sensory-driven process called **chemotaxis**.

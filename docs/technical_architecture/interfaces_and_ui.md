@@ -1,9 +1,17 @@
 ---
 type: technical_architecture
-title: "Interfaces & UI"
+title: Interfaces & UI
 status: active
 version: 0.1
-description: "Documentation for Interfaces & UI in the PHIDS framework."
+description: Documentation for Interfaces & UI in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- performance
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- cell_details.py
 ---
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.

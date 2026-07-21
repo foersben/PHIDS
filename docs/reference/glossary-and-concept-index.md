@@ -1,9 +1,25 @@
 ---
 type: reference
-title: "Glossary and Concept Index"
+title: Glossary and Concept Index
 status: active
 version: 0.1
-description: "Documentation for Glossary and Concept Index in the PHIDS framework."
+description: Documentation for Glossary and Concept Index in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- python
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- ../scientific_model/mathematical_framework.md
+- ../technical_architecture/system_architecture.md
+- ../technical_architecture/engine_execution.md
+- ../scenario_guide/curated_examples.md
+- ../technical_architecture/interfaces_and_ui.md
+- ../technical_architecture/telemetry.md
+- ../scientific_model/index.md
+- ../scenario_guide/scenario_authoring.md
+- interaction.py
 ---
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary

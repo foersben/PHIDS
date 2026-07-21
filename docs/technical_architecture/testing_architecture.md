@@ -1,9 +1,32 @@
 ---
 type: concept
-title: "Testing Architecture"
+title: Testing Architecture
 status: active
 version: 1.0
-description: "Comprehensive testing architecture, taxonomy, system mapping, quality analysis, and gaps/recommendations for PHIDS."
+description: Comprehensive testing architecture, taxonomy, system mapping, quality
+  analysis, and gaps/recommendations for PHIDS.
+tags:
+- phids
+- numba
+- performance
+- python
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- test_dse_optimizer.py
+- test_dse_pruning.py
+- test_interaction_py_helpers.py
+- tests/integration/systems/test_interaction_property_invariants.py
+- tests/integration/systems/test_interaction_mutation_pilot.py
+- test_interaction_hypothesis_pilot.py
+- tests/integration/api/test_websocket_manager.py
+- test_interaction_property_invariants.py
+- test_interaction_mutation_pilot.py
+- test_api_builder_and_helpers.py
+- test_websocket_manager.py
+- test_cli_main.py
+- test_telemetry_per_species.py
+- run_sim_benchmark.py
+- ///home/benni/Documents/antigravity_workspace/PHIDS/scripts/run_sim_benchmark.py
 ---
 
 This document aggregates PHIDS test suite topography, taxonomy, system mapping, quality analysis, and strategic recommendations for improving the testing rig.

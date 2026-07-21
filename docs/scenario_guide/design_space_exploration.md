@@ -1,8 +1,17 @@
 ---
 type: concept
-title: "Design Space Exploration (DSE)"
+title: Design Space Exploration (DSE)
 status: active
 version: 2.0
+description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes
+  an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (DSE)** ar...
+tags:
+- phids
+- ecs
+- numba
+- chemotaxis
+timestamp: '2026-07-21T16:01:38Z'
+resources: []
 ---
 
 The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (DSE)** architecture. DSE systematically searches a vast landscape of ecological parameters, spatial configurations, and interaction topologies to discover stable Lotka-Volterra dynamics (stable equilibria) within simulated ecosystems.

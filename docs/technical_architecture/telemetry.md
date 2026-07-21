@@ -1,9 +1,15 @@
 ---
 type: technical_architecture
-title: "Telemetry & Export"
+title: Telemetry & Export
 status: active
 version: 0.1
-description: "Documentation for Telemetry & Export in the PHIDS framework."
+description: Documentation for Telemetry & Export in the PHIDS framework.
+tags:
+- phids
+- performance
+- python
+timestamp: '2026-07-21T16:01:38Z'
+resources: []
 ---
 
 The true value of the PHIDS simulator rests on its capacity to log, analyze, and export ecological dynamics reproducibly. The system treats telemetry capture not as an afterthought, but as a primary mathematical constraint synchronized strictly to the conclusion of the simulation tick.

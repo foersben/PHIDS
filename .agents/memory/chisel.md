@@ -1,9 +1,28 @@
 ---
 type: memory
-name: chisel
+title: Chisel
+status: active
+version: '0.1'
 description: Refactoring dashboard presenter monolithic logs and learnings
+tags:
+- phids
+- ecs
+- numba
+timestamp: '2026-07-21T16:01:38Z'
+resources:
+- dashboard.py
+- helpers.py
+- cell_details.py
+- payloads.py
+- mycorrhizal.py
+- substances.py
+- shared.py
+- interaction.py
+- draft/biotope.py
+- draft/species.py
+- __init__.py
+name: chisel
 ---
-
 
 ## 2026-07-10 - Refactoring Dashboard Presenter Monolith
 Learning: When extracting logic from a large presenter monolith (`dashboard.py`) into smaller cohesive modules (`helpers.py`, `cell_details.py`, `payloads.py`, `mycorrhizal.py`, `substances.py`), it is critical to ensure a 1:1 structural translation. If any payload dictionary keys are modified, missing, or renamed (e.g. `species_energy` vs `plant_energy`), or if state evaluation logic is inadvertently inverted (`active` vs `not active`), frontend and API tests will break. Refactoring must strictly maintain backwards compatibility with existing consumers.
