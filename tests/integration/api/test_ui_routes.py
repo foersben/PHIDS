@@ -1827,6 +1827,7 @@ async def test_api_database_save_validates_payload(
                 "survival_threshold": 10.0,
                 "seed_cost": 20.0,
                 "seed_dispersion_radius": 5.0,
+                "passive_defenses": {},
             }
         },
         "herbivores": {
@@ -1835,6 +1836,7 @@ async def test_api_database_save_validates_payload(
                 "consumption_rate": 2.0,
                 "mitosis_threshold": 50.0,
                 "split_ratio": 0.5,
+                "resistances": {},
             }
         },
     }
