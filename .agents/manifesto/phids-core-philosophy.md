@@ -2,7 +2,7 @@
 type: manifesto
 title: PHIDS Core Philosophy
 status: active
-version: '0.1'
+version: 0.1
 description: PHIDS (Plant-Herbivore Interaction & Defense Simulator) is developed
   in collaboration with the University of Jena. It is engineered to model comple...
 tags:
@@ -10,7 +10,7 @@ tags:
 - ecs
 - numba
 - performance
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 ---
 

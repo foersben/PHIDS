@@ -2,13 +2,13 @@
 type: memory
 title: Chisel
 status: active
-version: '0.1'
+version: 0.1
 description: Refactoring dashboard presenter monolithic logs and learnings
 tags:
 - phids
 - ecs
 - numba
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - dashboard.py
 - helpers.py

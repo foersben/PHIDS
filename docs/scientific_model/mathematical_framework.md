@@ -9,7 +9,7 @@ tags:
 - ecs
 - numba
 - chemotaxis
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - chemotaxis.md
 - population_dynamics.md

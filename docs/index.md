@@ -1,29 +1,3 @@
----
-type: concept
-title: 'PHIDS: Plant-Herbivore Interaction & Defense Simulator'
-status: active
-version: 0.1
-description: 'Documentation for PHIDS: Plant-Herbivore Interaction & Defense Simulator
-  in the PHIDS framework.'
-tags:
-- phids
-- ecs
-- numba
-- performance
-- chemotaxis
-timestamp: '2026-07-21T16:01:38Z'
-resources:
-- scientific_model/mathematical_framework.md
-- technical_architecture/testing_architecture.md
-- technical_architecture/system_architecture.md
-- scenario_guide/design_space_exploration.md
-- scenario_guide/scenario_authoring.md
-- development_guide/contribution_workflow.md
-- scientific_model/chemotaxis.md
-- scientific_model/reaction_diffusion.md
-- technical_architecture/interfaces_and_ui.md
----
-
 <img src="assets/logo.png" align="right" width="200" alt="PHIDS Logo">
 
 ## Abstract

@@ -2,11 +2,11 @@
 type: workflow
 title: Sequence
 status: active
-version: '0.1'
+version: 0.1
 description: Coordinated pipeline for building full-stack simulation features.
 tags:
 - ecs
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 name: Vertical Slice Development
 ---

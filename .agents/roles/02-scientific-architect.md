@@ -2,13 +2,13 @@
 type: role
 title: Directives
 status: active
-version: '0.1'
-description: '- **Model Translation:** Translate models in `docs/scientific_model/`
-  into optimized array layouts.'
+version: 0.1
+description: "- **Model Translation:** Translate models in `docs/scientific_model/`\
+  \ into optimized array layouts."
 tags:
 - numba
 - chemotaxis
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 role: Scientific Architect
 ---

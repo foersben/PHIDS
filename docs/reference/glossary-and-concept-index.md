@@ -9,7 +9,7 @@ tags:
 - ecs
 - numba
 - python
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - ../scientific_model/mathematical_framework.md
 - ../technical_architecture/system_architecture.md

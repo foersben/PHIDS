@@ -2,15 +2,15 @@
 type: role
 title: Directives
 status: active
-version: '0.1'
-description: '- **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays;
-  Systems contain all logic and operate on component arrays. Ban classes with...'
+version: 0.1
+description: "- **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays;\
+  \ Systems contain all logic and operate on component arrays. Ban classes with..."
 tags:
 - phids
 - ecs
 - numba
 - python
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - flow_field.py
 - src/phids/shared/constants.py

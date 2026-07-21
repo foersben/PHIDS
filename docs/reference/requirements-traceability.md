@@ -9,7 +9,7 @@ tags:
 - ecs
 - numba
 - chemotaxis
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - module-map.md
 - ../development_guide/contribution_workflow.md

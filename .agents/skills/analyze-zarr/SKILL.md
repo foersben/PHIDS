@@ -2,11 +2,11 @@
 type: skill
 title: Trigger
 status: active
-version: '0.1'
+version: 0.1
 description: Inspect and validate Zarr replay buffers to verify state recording.
 tags:
 - python
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - scripts/inspect_zarr.py
 name: Analyze Zarr Telemetry

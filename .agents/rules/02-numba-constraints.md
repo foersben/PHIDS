@@ -2,12 +2,12 @@
 type: rule
 title: Mandates
 status: active
-version: '0.1'
-description: '- **No Python Objects:** Ban `dict`, `list`, or custom classes within
-  `@njit` functions.'
+version: 0.1
+description: "- **No Python Objects:** Ban `dict`, `list`, or custom classes within\
+  \ `@njit` functions."
 tags:
 - python
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 trigger: always_on
 rule_id: numba-constraints

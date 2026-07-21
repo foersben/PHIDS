@@ -2,12 +2,12 @@
 type: role
 title: Directives
 status: active
-version: '0.1'
-description: '- **Zarr Serialization:** Define schema, chunking, and compression for
-  N-dimensional arrays in Zarr replay buffers.'
+version: 0.1
+description: "- **Zarr Serialization:** Define schema, chunking, and compression for\
+  \ N-dimensional arrays in Zarr replay buffers."
 tags:
 - documentation
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 role: Telemetry & Data Engineer
 ---

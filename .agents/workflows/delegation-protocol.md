@@ -2,11 +2,11 @@
 type: workflow
 title: Trigger
 status: active
-version: '0.1'
+version: 0.1
 description: Checklist for human-escalated tasks when agents are structurally blocked.
 tags:
 - documentation
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 name: Delegation Protocol
 ---

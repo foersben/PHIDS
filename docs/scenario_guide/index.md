@@ -1,20 +1,3 @@
----
-type: concept
-title: Introduction to Scenarios
-status: active
-version: 1.0
-description: Overview of scenario design, complexity, and calibration in the PHIDS
-  simulation framework.
-tags:
-- phids
-timestamp: '2026-07-21T16:01:38Z'
-resources:
-- scenario_authoring.md
-- curated_examples.md
-- design_space_exploration.md
-- empirical_database.md
----
-
 In the study of computational ecology, the greatest challenge is managing the sheer volatility of natural systems. The parameter space of a spatial ecosystem is a chaotic, highly non-linear landscape. A minor $1\%$ tweak to a single herbivore's metabolic rate or a plant's regeneration speed can be the absolute boundary between eternal multi-species balance and immediate, cascading trophic collapse.
 
 The **Scenarios** module in PHIDS upgrades the framework from a simple "run-and-observe" simulator into a **generative biology tool**. It provides the interfaces, constraints, and optimization pipelines needed to design, validate, and calibrate complex ecological experiments.

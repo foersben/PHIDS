@@ -2,12 +2,12 @@
 type: role
 title: Directives
 status: active
-version: '0.1'
-description: '- **Git Lifecycle:** Manage repository status, branch strategies, version
-  bumps, and tagging.'
+version: 0.1
+description: "- **Git Lifecycle:** Manage repository status, branch strategies, version\
+  \ bumps, and tagging."
 tags:
 - documentation
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 role: Git Operator
 ---

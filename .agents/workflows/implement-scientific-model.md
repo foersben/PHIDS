@@ -2,11 +2,11 @@
 type: workflow
 title: Sequence
 status: active
-version: '0.1'
+version: 0.1
 description: Process for adding ecological/mathematical behaviors.
 tags:
 - documentation
-timestamp: '2026-07-21T16:01:38Z'
+timestamp: "2026-07-21T16:01:38Z"
 resources: []
 name: Implement Scientific Model
 ---
