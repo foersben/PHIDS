@@ -372,3 +372,17 @@ def add_swarm() -> Callable[..., int]:
         return entity.entity_id
 
     return _add_swarm
+
+
+def assert_htmx_trigger(response, expected_trigger: str) -> None:
+    """Assert HTTP response contains expected HX-Trigger header for HTMX event dispatching."""
+    header = response.headers.get("HX-Trigger")
+    assert header is not None, f"Expected HX-Trigger header '{expected_trigger}' but none was returned."
+    assert expected_trigger in header, f"Expected '{expected_trigger}' in HX-Trigger header, got '{header}'."
+
+
+def assert_valid_htmx_target(response_text: str, expected_element_id: str) -> None:
+    """Assert HTML partial content contains target DOM element ID for HTMX target swaps."""
+    assert f'id="{expected_element_id}"' in response_text or f"id='{expected_element_id}'" in response_text, (
+        f"HTMX partial HTML is missing expected target element id='{expected_element_id}'."
+    )
