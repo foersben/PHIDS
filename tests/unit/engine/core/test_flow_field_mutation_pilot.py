@@ -11,13 +11,13 @@ import pytest
 from phids.engine.core.flow_field import _compute_flow_field_impl, compute_flow_field
 
 
-def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_sum, width, height):
+def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_layers, width, height):
     import numpy as np
 
     return _compute_flow_field_impl(
         plant_energy,
         apparent_nutrition_layer,
-        toxin_sum,
+        toxin_layers,
         width,
         height,
         np.zeros((width, height), dtype=np.float64),
@@ -32,7 +32,7 @@ def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_
 
 def test_subnormal_clipping_is_strictly_less_than_boundary() -> None:
     """Values below 1e-4 clip to zero, while exactly 1e-4 remains non-zero."""
-    toxin_sum = np.zeros((1, 1), dtype=np.float64)
+    toxin_sum = np.zeros((1, 1, 1), dtype=np.float64)
 
     at_boundary = _compute_flow_field_impl_test(
         np.array([[1e-4]], dtype=np.float64),
@@ -58,14 +58,14 @@ def test_base_term_sign_is_plant_minus_toxin() -> None:
     attractive = _compute_flow_field_impl_test(
         np.array([[3.0]], dtype=np.float64),
         np.array([[1.0]], dtype=np.float64),
-        np.array([[1.0]], dtype=np.float64),
+        np.array([[[1.0]]], dtype=np.float64),
         width=1,
         height=1,
     )
     repulsive = _compute_flow_field_impl_test(
         np.array([[1.0]], dtype=np.float64),
         np.array([[1.0]], dtype=np.float64),
-        np.array([[3.0]], dtype=np.float64),
+        np.array([[[3.0]]], dtype=np.float64),
         width=1,
         height=1,
     )
@@ -83,7 +83,7 @@ def test_wrapper_aggregates_all_toxin_layers_by_sum() -> None:
     toxin_layers[2, 1, 1] = 2.5
 
     wrapped = compute_flow_field(plant_energy, np.ones((2, 2)), toxin_layers, width=2, height=2)
-    explicit = _compute_flow_field_impl_test(plant_energy, np.ones((2, 2)), toxin_layers.sum(axis=0), width=2, height=2)
+    explicit = _compute_flow_field_impl_test(plant_energy, np.ones((2, 2)), toxin_layers, width=2, height=2)
 
     assert np.allclose(wrapped, explicit)
 
