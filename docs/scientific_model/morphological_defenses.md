@@ -1,9 +1,24 @@
 ---
 type: concept
-title: "Morphological Defenses and Senescence"
+title: Morphological Defenses and Senescence
 status: active
 version: 1.0
-description: "Architectural record for morphological defenses and dynamic resource reallocation."
+description: Architectural record for morphological defenses and dynamic resource
+  reallocation.
+tags:
+- phids
+- ecs
+- numba
+- performance
+- python
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- src/phids/api/schemas.py
+- src/phids/engine/components/plant.py
+- swarm.py
+- signaling.py
+- src/phids/engine/core/flow_field.py
+- src/phids/engine/systems/interaction.py
 ---
 
 This document outlines the architectural implementation for the biological accuracy of the PHIDS engine, specifically the separation of morphological (passive) defenses from active chemical defenses, and dynamic resource reallocation (apparent nutrition withdrawal).

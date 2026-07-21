@@ -1,9 +1,19 @@
 ---
 type: guide
-title: "Contribution Workflow"
+title: Contribution Workflow
 status: active
 version: 0.1
-description: "Documentation for Contribution Workflow in the PHIDS framework."
+description: Documentation for Contribution Workflow in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- performance
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- src/phids/engine/core/flow_field.py
+- src/phids/engine/core/biotope.py
+- src/phids/engine/core/ecs.py
 ---
 
 Modifying the Plant-Herbivore Interaction & Defense Simulator requires strict adherence to scientific computing constraints. The engine is deliberately deterministic; introducing stochastic or unoptimized logic can violate the reproducibility of the entire ecosystem.

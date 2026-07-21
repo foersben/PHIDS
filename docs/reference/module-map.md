@@ -1,9 +1,17 @@
 ---
 type: reference
-title: "Module Map and Symbol Guide"
+title: Module Map and Symbol Guide
 status: active
 version: 0.1
-description: "Documentation for Module Map and Symbol Guide in the PHIDS framework."
+description: Documentation for Module Map and Symbol Guide in the PHIDS framework.
+tags:
+- phids
+- ecs
+- chemotaxis
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- api.md
+- ../development_guide/contribution_workflow.md
 ---
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended

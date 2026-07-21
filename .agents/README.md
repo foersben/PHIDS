@@ -1,5 +1,20 @@
 ---
 type: documentation
+title: Welcome to the PHIDS Agent Ecosystem
+status: active
+version: 0.1
+description: Welcome to the autonomous nervous system of the Plant-Herbivore Interaction
+  & Defense Simulator (PHIDS). This repository is not maintained by a sin...
+tags:
+- phids
+- ecs
+- numba
+- performance
+- python
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- ../docs/technical_architecture/engine_execution.md
+- validate_okf.py
 ---
 
 # Welcome to the PHIDS Agent Ecosystem

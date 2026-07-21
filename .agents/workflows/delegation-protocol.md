@@ -1,8 +1,16 @@
 ---
 type: workflow
-name: Delegation Protocol
+title: Trigger
+status: active
+version: 0.1
 description: Checklist for human-escalated tasks when agents are structurally blocked.
+tags:
+- documentation
+timestamp: "2026-07-21T16:01:38Z"
+resources: []
+name: Delegation Protocol
 ---
+
 # Trigger
 Run when blocked by lack of signing keys, repository secrets, interactive credential prompts, or manual confirmation gates.
 

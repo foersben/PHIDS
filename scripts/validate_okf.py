@@ -77,6 +77,9 @@ def _scan_files(md_files: list[Path], base_paths: list[Path]) -> int:
         if not md_file.exists() or not md_file.is_file():
             continue
 
+        if md_file.name in ('index.md', 'log.md'):
+            continue
+
         file_errors = check_okf_concept(md_file, base_paths)
         if file_errors:
             global_errors += len(file_errors)

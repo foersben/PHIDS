@@ -1,9 +1,16 @@
 ---
 type: technical_architecture
-title: "Engine Execution"
+title: Engine Execution
 status: active
 version: 0.1
-description: "Documentation for Engine Execution in the PHIDS framework."
+description: Documentation for Engine Execution in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- flow_field.py
 ---
 
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.

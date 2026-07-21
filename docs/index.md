@@ -1,11 +1,3 @@
----
-type: concept
-title: "PHIDS: Plant-Herbivore Interaction & Defense Simulator"
-status: active
-version: 0.1
-description: "Documentation for PHIDS: Plant-Herbivore Interaction & Defense Simulator in the PHIDS framework."
----
-
 <img src="assets/logo.png" align="right" width="200" alt="PHIDS Logo">
 
 ## Abstract

@@ -1,8 +1,16 @@
 ---
 type: workflow
-name: Implement Scientific Model
+title: Sequence
+status: active
+version: 0.1
 description: Process for adding ecological/mathematical behaviors.
+tags:
+- documentation
+timestamp: "2026-07-21T16:01:38Z"
+resources: []
+name: Implement Scientific Model
 ---
+
 # Sequence
 1. **Theory (Scientific Architect):** Read `docs/scientific_model/`; draft matrix shapes/stochastic boundaries.
 2. **Engine (Engine Developer):** Add NumPy arrays to read/write buffers. Implement `@njit` logic (no allocations). Hook into `SimulationLoop` phase.
