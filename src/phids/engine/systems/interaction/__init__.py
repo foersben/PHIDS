@@ -110,10 +110,9 @@ def run_interaction(
 
     # Initial population accumulation pass
     for eid in world._component_index.get(SwarmComponent, set()):
-        entity = world._entities.get(eid)
-        if entity is None or SwarmComponent not in entity._components:
-            continue
-        indexed_swarm = entity.get_component(SwarmComponent)
+        # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
+        # _component_index is strictly synchronized with _entities during this read-only pass.
+        indexed_swarm = world._entities[eid]._components[SwarmComponent]
         _accumulate_tile_population(
             tile_populations,
             indexed_swarm.x,
@@ -124,10 +123,12 @@ def run_interaction(
 
     # Main interaction loop
     for eid in tuple(world._component_index.get(SwarmComponent, set())):
+        # We must keep the defensive .get() here because entities can be destroyed mid-loop.
         entity = world._entities.get(eid)
-        if entity is None or SwarmComponent not in entity._components:
+        if entity is None:
             continue
-        swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
+        swarm: SwarmComponent = entity._components[SwarmComponent]
 
         # 1-2. Movement Phase
         has_moved = _resolve_swarm_movement(
