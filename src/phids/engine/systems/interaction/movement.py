@@ -189,7 +189,7 @@ def _choose_neighbour_by_flow_probability_jit(
 ) -> tuple[int, int]:
     """JIT-accelerated Von-Neumann coordinate selector using flow weights.
 
-    This function takes into account 4-connected Von-Neumann neighbours and selects a neighbour based on flow field
+    This function takes into account Moore neighbours and selects a neighbour based on flow field
     gradient scores. If the flow-field is flat, the function will select a neighbour based on the last delta. Else, the
     function will select a neighbour based on the flow-field gradient scores, favouring higher gradient scores when
     ``invert`` is False and lower gradient scores when ``invert`` is True.
@@ -245,7 +245,7 @@ def _choose_neighbour_by_flow_probability(
     weights: npt.NDArray[np.float64],
     invert: bool = False,
 ) -> tuple[int, int]:
-    """Select a 4-connected Von-Neumann neighbour via flow-field-weighted JIT selection.
+    """Select a Moore neighbour via flow-field-weighted JIT selection.
 
     Args:
         swarm: The swarm component.

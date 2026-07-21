@@ -13,7 +13,7 @@ gradients and systemic acquired resistance signals. Toxin effects on swarm navig
 therefore mediated indirectly through the flow-field gradient rather than through direct
 component access, maintaining strict separation between signal propagation and entity mechanics.
 
-Swarm movement is governed by probabilistic sampling over the 4-connected Von-Neumann
+Swarm movement is governed by probabilistic sampling over the Moore Neighborhood
 neighbourhood, weighted by the scalar flow-field gradient encoded in ``GridEnvironment.flow_field``.
 When the local gradient range falls below the numerical threshold of 1x10^-6 - indicating a
 chemically flat or saturated zone - movement inertia encoded in ``SwarmComponent.last_dx`` /
@@ -102,11 +102,11 @@ def run_interaction(
     tile_populations: list[int] = [0] * (env.width * env.height)
 
     # Pre-allocate scratch buffers for zero-allocation Numba JIT movement
-    scratch_cx: npt.NDArray[np.int32] = np.empty(5, dtype=np.int32)
-    scratch_cy: npt.NDArray[np.int32] = np.empty(5, dtype=np.int32)
-    scratch_scores: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
-    scratch_adjusted: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
-    scratch_weights: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+    scratch_cx: npt.NDArray[np.int32] = np.empty(9, dtype=np.int32)
+    scratch_cy: npt.NDArray[np.int32] = np.empty(9, dtype=np.int32)
+    scratch_scores: npt.NDArray[np.float64] = np.empty(9, dtype=np.float64)
+    scratch_adjusted: npt.NDArray[np.float64] = np.empty(9, dtype=np.float64)
+    scratch_weights: npt.NDArray[np.float64] = np.empty(9, dtype=np.float64)
 
     # Initial population accumulation pass
     for eid in world._component_index.get(SwarmComponent, set()):

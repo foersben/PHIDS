@@ -48,6 +48,8 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
     )
     world.add_component(plant_eid.entity_id, plant)
     world.register_position(plant_eid.entity_id, 2, 2)
+    env.set_plant_energy(2, 2, 0, 100.0)
+    env.rebuild_energy_layer()
 
     swarm_eid = world.create_entity()
     swarm = SwarmComponent(
@@ -123,6 +125,8 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
     )
     world.add_component(plant_eid.entity_id, plant)
     world.register_position(plant_eid.entity_id, 2, 2)
+    env.set_plant_energy(2, 2, 0, 100.0)
+    env.rebuild_energy_layer()
 
     swarm_eid = world.create_entity()
     swarm = SwarmComponent(
@@ -183,6 +187,8 @@ def test_mechanical_attrition_enforces_integer_casualties() -> None:
     )
     world.add_component(plant_eid.entity_id, plant)
     world.register_position(plant_eid.entity_id, 2, 2)
+    env.set_plant_energy(2, 2, 0, 100.0)
+    env.rebuild_energy_layer()
     env.plant_energy_by_species[0, 2, 2] = 150.0
     env.plant_energy_layer[2, 2] = 150.0
 

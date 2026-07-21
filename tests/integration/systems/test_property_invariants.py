@@ -76,6 +76,8 @@ def test_thermodynamic_invariant_digestion() -> None:
     )
     world.add_component(plant_eid.entity_id, plant)
     world.register_position(plant_eid.entity_id, 5, 5)
+    env.set_plant_energy(5, 5, 0, 100.0)
+    env.rebuild_energy_layer()
 
     swarm_eid = world.create_entity()
     swarm = SwarmComponent(

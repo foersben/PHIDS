@@ -1,0 +1,3 @@
+## 2026-07-21 - [Chemotaxis Adherence to Moore Neighborhood]
+Learning: The engine had drifted to 4-connected (Von-Neumann) probabilistic routing for chemotaxis, whereas the documentation (`chemotaxis.md`) strictly prescribed 8-connected (Moore) deterministic gradient ascent (`arg max` with stochastic tie breaking).
+Action: I've corrected `movement.py` to sample 9 cells via a 3x3 loop and evaluate strict `arg max`. Tests needed explicit environment energy writes to keep swarms from drifting away when anchored. Always initialize the environment correctly before tests that depend on flow field properties.

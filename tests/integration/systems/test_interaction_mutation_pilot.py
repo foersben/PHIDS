@@ -72,12 +72,7 @@ def test_crowding_threshold_strict_gt_capacity(
     equal_swarm = equal_world.get_entity(equal_swarm_id).get_component(SwarmComponent)
     equal_swarm.energy_upkeep_per_individual = 0.0
     equal_swarm.split_population_threshold = TILE_CARRYING_CAPACITY * 10
-    monkeypatch.setattr(random, "choice", lambda _seq: (_ for _ in ()).throw(AssertionError("unexpected")))
-    monkeypatch.setattr(
-        random,
-        "choices",
-        lambda seq, weights, k: [seq[weights.index(max(weights))]],  # noqa: ARG005
-    )
+    monkeypatch.setattr(random, "random", lambda: 0.99)  # deterministically pick the last element
 
     run_interaction(equal_world, env, diet_matrix=[[False]], tick=0)
 
@@ -98,11 +93,11 @@ def test_crowding_threshold_strict_gt_capacity(
 
     calls = {"random_choice": 0}
 
-    def _choice(seq: list[tuple[int, int]]) -> tuple[int, int]:
+    def _random() -> float:
         calls["random_choice"] += 1
-        return seq[0]
+        return 0.0
 
-    monkeypatch.setattr(random, "choice", _choice)
+    monkeypatch.setattr(random, "random", _random)
     monkeypatch.setattr(
         random,
         "choices",
