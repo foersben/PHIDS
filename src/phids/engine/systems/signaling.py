@@ -389,7 +389,8 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 1. Evaluate trigger conditions for all plants
     # ------------------------------------------------------------------
-    for entity in world.query(PlantComponent):
+    plant_entities = world.query(PlantComponent)
+    for entity in plant_entities:
         plant = entity.get_component(PlantComponent)
         triggers = trigger_conditions.get(plant.species_id, [])
 
@@ -463,6 +464,7 @@ def run_signaling(
                 existing_sub.trigger_herbivore_species_id = trig.herbivore_species_id
                 existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
                 world.add_component(new_entity.entity_id, existing_sub)
+                substance_entities.append(new_entity)
                 owner_substance_by_key[(plant.entity_id, substance_id)] = existing_sub
             else:
                 if (
@@ -477,7 +479,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 1.5. Manage apparent nutrition recovery
     # ------------------------------------------------------------------
-    for entity in world.query(PlantComponent):
+    for entity in plant_entities:
         plant = entity.get_component(PlantComponent)
         if plant.withdrawal_ticks_remaining > 0:
             plant.withdrawal_ticks_remaining -= 1
@@ -487,7 +489,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 2. Advance synthesis timers & activate substances
     # ------------------------------------------------------------------
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if sub.active:
             continue
@@ -517,7 +519,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 2b. Irreversible induced defense lock
     # ------------------------------------------------------------------
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if sub.active and sub.irreversible:
             sub.triggered_this_tick = True
@@ -527,7 +529,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     active_toxin_props: dict[int, _ActiveToxinProps] = {}
 
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if not sub.active:
             continue
@@ -640,7 +642,7 @@ def run_signaling(
     # ------------------------------------------------------------------
     # 4. Check aftereffects and deactivate expired substances
     # ------------------------------------------------------------------
-    for entity in world.query(SubstanceComponent):
+    for entity in substance_entities:
         sub = entity.get_component(SubstanceComponent)
         if not sub.active:
             continue
