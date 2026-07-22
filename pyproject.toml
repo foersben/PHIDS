@@ -125,6 +125,7 @@ addopts = [
     "--cov=src/phids",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--cov-fail-under=80",
     "--benchmark-disable-gc",
     "--benchmark-sort=mean",
     "--benchmark-storage=.cache/benchmarks", # Store benchmark outputs here

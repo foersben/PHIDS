@@ -123,26 +123,6 @@ graph TD
     Export -.-> Bench
 ```
 
-## Coverage Architecture
-
-PHIDS utilizes a **Differential (Patch) Coverage** strategy rather than a rigid global threshold.
-
-### Why Patch Coverage?
-
-Legacy simulations often accrue "coverage debt". Enforcing a strict global limit (e.g., `--cov-fail-under=80` in `pytest.ini`) punishes developers who modify or refactor legacy modules by forcing them to write tests for unrelated old code just to push the global average back over the line.
-
-To solve this, we remove global failure thresholds from local development.
-
-### CI Enforcement
-
-In the CI pipeline (`.github/workflows/ci.yml`), we run `pytest --cov` to generate a coverage report, and then pipe it into `diff-cover`:
-
-```bash
-uvx diff-cover coverage.xml --compare-branch=origin/develop --fail-under=80
-```
-
-This guarantees that **all new or modified lines of code** in a Pull Request meet the strict 80% coverage threshold. This completely halts the introduction of new technical debt while allowing organic, unblocked refactoring of older legacy systems.
-
 ## Deep-Dive Quality Analysis
 
 ### Mathematical & Trophic Invariant Correctness
