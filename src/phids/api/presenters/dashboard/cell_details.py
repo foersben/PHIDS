@@ -351,11 +351,7 @@ def build_live_cell_details(
         substance = entity.get_component(SubstanceComponent)
         owned_substances.setdefault(substance.owner_plant_id, []).append(substance)
 
-    plant_lookup = {
-        plant.entity_id: plant
-        for entity in world.query(PlantComponent)
-        for plant in [entity.get_component(PlantComponent)]
-    }
+    plant_lookup = {entity.entity_id: entity.get_component(PlantComponent) for entity in world.query(PlantComponent)}
     live_links = _build_live_mycorrhizal_links(loop)
     touching_links = _links_touching_cell(live_links, x, y)
 

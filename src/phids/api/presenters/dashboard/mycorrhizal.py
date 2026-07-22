@@ -97,11 +97,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     from phids.engine.components.plant import PlantComponent
 
     world = loop.world
-    plant_lookup = {
-        plant.entity_id: plant
-        for entity in world.query(PlantComponent)
-        for plant in [entity.get_component(PlantComponent)]
-    }
+    plant_lookup = {entity.entity_id: entity.get_component(PlantComponent) for entity in world.query(PlantComponent)}
     links: list[_MycorrhizalLinkPayload] = []
     seen_pairs: set[tuple[int, int]] = set()
     for plant_id, plant in plant_lookup.items():
