@@ -14,8 +14,6 @@ timestamp: "2026-07-21T16:01:38Z"
 resources: []
 ---
 
-# PHIDS Core Philosophy
-
 PHIDS (Plant-Herbivore Interaction & Defense Simulator) is developed in collaboration with the University of Jena. It is engineered to model complex ecological and biological behaviors within a highly deterministic environment.
 
 1. **Science Over Shortcuts:** Mathematical correctness and deterministic replayability are non-negotiable. Do not sacrifice scientific accuracy for the sake of shipping a feature faster.

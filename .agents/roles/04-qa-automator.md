@@ -13,6 +13,7 @@ role: QA Automator
 ---
 
 # Directives
+
 - **Verification:** Assert deterministic execution, isolate failures, triage coverage gaps.
 - **Replay QA:** Validate Zarr replay files against active loop telemetry to ensure tick-by-tick serialization matches playback exactly.
 - **Hypothesis & Mutation:** Implement bounded Hypothesis pilots for interactions and mutation-resistance tests for branch logic.

@@ -12,9 +12,11 @@ name: Run Benchmarks
 ---
 
 # Trigger
+
 Before merging engine logic changes or after completing a vertical slice.
 
 # Execution
+
 ```bash
 uv run pytest tests/benchmarks/ --benchmark-only --benchmark-json artifacts/benchmark_results.json
 ```

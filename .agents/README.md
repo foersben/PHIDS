@@ -17,8 +17,6 @@ resources:
 - validate_okf.py
 ---
 
-# Welcome to the PHIDS Agent Ecosystem
-
 Welcome to the autonomous nervous system of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). This repository is not maintained by a single monolithic Artificial Intelligence; instead, it is driven by an ecosystem of decoupled, narrow-jurisdiction AI specialists.
 
 Our philosophy relies on **strict discipline and separation of concerns**. By dividing problem-solving into granular roles guided by absolute invariants (our Rule Engine), we prevent the architectural drift, hallucinated dependencies, and catastrophic looping often seen in general-purpose coding LLMs. Here, agents collaborate, delegate, verify their work against hard automated gates, and systematically log their learnings.
