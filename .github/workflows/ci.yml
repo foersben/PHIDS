@@ -38,7 +38,9 @@ jobs:
       - name: Pass 1 - Logic & Coverage
         env:
           NUMBA_DISABLE_JIT: "1"
-        run: uv run pytest --cov=src/phids --cov-fail-under=80 -o "addopts="
+        run: |
+          uv run pytest --cov=src/phids --cov-report=xml -o "addopts="
+          uvx diff-cover coverage.xml --compare-branch=origin/develop --fail-under=80
 
       - name: Pass 2 - Numba Compilation
         run: uv run pytest tests/integration/systems/test_full_numba_jit_compilation.py tests/integration/systems/test_interaction_property_invariants.py -x -q -o "addopts="

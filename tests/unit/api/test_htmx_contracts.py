@@ -46,8 +46,17 @@ async def test_simulation_pause_htmx_contract(api_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_database_rebuild_htmx_refresh_header(api_client: AsyncClient) -> None:
+async def test_database_rebuild_htmx_refresh_header(api_client: AsyncClient, mocker) -> None:
     """Verify database rebuild endpoint returns HX-Refresh header on completion."""
+
+    class MockProcess:
+        returncode = 0
+
+        async def communicate(self):
+            return b"stdout", b"stderr"
+
+    mocker.patch("asyncio.create_subprocess_exec", return_value=MockProcess())
+
     response = await api_client.post("/api/database/rebuild", headers={"HX-Request": "true"})
     assert response.status_code == 200
     assert response.headers.get("HX-Refresh") == "true"

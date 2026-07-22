@@ -202,6 +202,11 @@ The ECS engine relies heavily on Numba JIT compilation. To ensure both logical c
 
 To guarantee invariant ecosystem rules (e.g., mass conservation, correct condition tree algebraic evaluation), PHIDS utilizes property-based testing (via the `hypothesis` library). These pilot tests aggressively explore edge cases in the biological mechanics and trophic interaction rules.
 
+### Patch Coverage Strategy
+
+Instead of enforcing a rigid global coverage threshold that blocks local development, PHIDS employs **Differential (Patch) Coverage**.
+Locally, you can run tests without failing on overall coverage drops. In the CI pipeline, we use `diff-cover` to strictly enforce that **new or modified lines of code** must meet the 80% coverage requirement. This allows organic refactoring of legacy code without forcing developers to write arbitrary tests, while strictly preventing new bugs from entering the codebase.
+
 ### Scripted local CI & `just` commands
 
 Scripted local CI covering linting, the two-pass tests, and docs build:
