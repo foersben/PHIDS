@@ -1,5 +1,6 @@
 ---
 layout: default
+type: refactor
 ---
 ## 2026-07-22 - Complexity Refactoring Report
 * **Target Function:** `src/phids/api/routers/telemetry.py` -> `telemetry_chartjs_data`
