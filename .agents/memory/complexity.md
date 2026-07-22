@@ -1,3 +1,6 @@
+---
+layout: default
+---
 ## 2026-07-22 - Complexity Refactoring Report
 * **Target Function:** `src/phids/api/routers/telemetry.py` -> `telemetry_chartjs_data`
 * **Selection Rationale:** Selected due to a high cognitive complexity score (27), caused by nested loops over species to map extracted payload series. As this is part of the API layer building JSON responses, separating extraction logic into private helpers has zero execution risk for the simulation engine loops while dramatically flattening the view handler.

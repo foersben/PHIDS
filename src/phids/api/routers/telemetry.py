@@ -112,9 +112,9 @@ def _filter_telemetry_rows_for_chart(
 ) -> list[dict[str, object]]:
     """Filter telemetry rows based on client synchronization state."""
     if run_id == current_run_id and since_tick is not None and rows:
-        latest_tick = int(rows[-1].get("tick", -1))
+        latest_tick = int(rows[-1].get("tick", -1))  # type: ignore
         if latest_tick >= since_tick:
-            return [row for row in rows if int(row.get("tick", -1)) > since_tick]
+            return [row for row in rows if int(row.get("tick", -1)) > since_tick]  # type: ignore
     return rows
 
 
