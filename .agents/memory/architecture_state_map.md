@@ -11,8 +11,6 @@ timestamp: "2026-07-21T16:01:38Z"
 resources: []
 ---
 
-# Current Architecture State (June 2026)
-
 ## Infrastructure Upgrade in Progress
 
 - **Python:** Migrating to 3.13.

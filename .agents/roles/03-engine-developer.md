@@ -18,6 +18,7 @@ role: Engine Developer
 ---
 
 # Directives
+
 - **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays; Systems contain all logic and operate on component arrays. Ban classes with behavior/state inside engine core.
 - **Numba JIT:** Compiling all hot-path numerical loops (`flow_field.py`) with `@njit`. Ban Python objects (`dict`, `list`, custom classes) inside JIT functions.
 - **Rule of 16:** Enforce array capacity limits defined in `src/phids/shared/constants.py`.
