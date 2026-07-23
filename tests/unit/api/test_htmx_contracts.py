@@ -52,6 +52,7 @@ async def test_database_rebuild_htmx_refresh_header(api_client: AsyncClient, mon
 
     class MockProcess:
         returncode = 0
+
         async def communicate(self):
             return b"stdout", b"stderr"
 
@@ -62,4 +63,4 @@ async def test_database_rebuild_htmx_refresh_header(api_client: AsyncClient, mon
 
     response = await api_client.post("/api/database/rebuild", headers={"HX-Request": "true"})
     assert response.status_code == 200
-    assert response.headers.get("HX-Refresh") == "true"""
+    assert response.headers.get("HX-Refresh") == "true"
