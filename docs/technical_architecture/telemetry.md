@@ -41,7 +41,7 @@ When the `zarr` package is installed and `replay_backend = "zarr"` is requested,
 * **Chunked Group Layout**: Frames are persisted directly to disk inside a `.zarr` directory structured as `frames/{frame_idx:08d}/{field_name}`.
 * **Consolidated Metadata**: High-frequency metadata (tick, termination state, reason) is written in a single consolidated JSON array (`_metadata`) at the root, enabling rapid seeking and boundary checks without decompressing spatial field chunks.
 * **Zstd Compression**: Field chunks are compressed using Zstandard, providing superior compression ratios and read/write speeds for dense floating-point grids.
-* **Subnormal Float Truncation**: To minimize disk space, any continuous field concentration falling below $\varepsilon = 10^{-4}$ is clipped to `0.0` during serialization.
+* **Subnormal Float Truncation**: To maximize Zarr compression ratios without impacting simulation performance, the `signal_layers` array is selectively masked for subnormal values ($\varepsilon < 10^{-4}$) during serialization. Other continuous fields (like `flow_field` and `plant_energy`) rely exclusively on the engine's internal JIT optimizations (such as `chemotaxis_truncate_threshold`) to prevent hardware denormalization, as applying a global Python masking step would induce unacceptable memory allocation churn.
 
 ### 2. Legacy Replay Buffer (`ReplayBuffer`)
 
