@@ -59,15 +59,19 @@ from phids.api.presenters.dashboard import (
     build_preview_cell_details,
     validate_cell_coordinates,
 )
-from phids.api.schemas import (
+from phids.api.schemas.placement import (
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+)
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
+)
+from phids.api.schemas.triggers import (
     PassiveDefensesSchema,
-    SimulationConfig,
     TriggerConditionSchema,
 )
 from phids.api.services.draft.placements import (
@@ -417,7 +421,7 @@ def test_build_live_cell_details_substance_name_injection() -> None:
     injected mapping flows through to ``signal_concentrations`` and substance payloads,
     eliminating reliance on module-level mutable state.
     """
-    from phids.api.schemas import SynthesizeSubstanceAction
+    from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,

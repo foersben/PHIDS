@@ -25,13 +25,17 @@ from typing import Any, cast
 import numpy as np
 import polars as pl
 import pytest
-from httpx import AsyncClient  # noqa: TC002
+from httpx import AsyncClient
 
 import phids.__main__ as phids_cli
 import phids.api.main as api_main
 import phids.api.ui_state as draft_state_module
 from phids.api.presenters.dashboard import build_live_dashboard_payload
-from phids.api.schemas import BatchJobState, FloraSpeciesParams, HerbivoreSpeciesParams
+from phids.api.schemas.responses import BatchJobState
+from phids.api.schemas.species import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
 from phids.api.services.draft.placements import (
     add_plant_placement,
     add_swarm_placement,
@@ -57,7 +61,7 @@ from phids.engine.core import flow_field
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
 from phids.shared import logging_config
-from phids.telemetry.analytics import TelemetryRow  # noqa: TC001
+from phids.telemetry.analytics import TelemetryRow
 from phids.telemetry.export import core as telemetry_export_core
 from phids.telemetry.export import latex as telemetry_export_latex
 from phids.telemetry.export import png as telemetry_export_png

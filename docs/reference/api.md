@@ -16,7 +16,21 @@ This page exposes the current PHIDS Python API using `mkdocstrings`.
 
 ## Schemas and ingress
 
-::: phids.api.schemas
+::: phids.api.schemas.base
+
+::: phids.api.schemas.ecs
+
+::: phids.api.schemas.conditions
+
+::: phids.api.schemas.triggers
+
+::: phids.api.schemas.species
+
+::: phids.api.schemas.placement
+
+::: phids.api.schemas.simulation
+
+::: phids.api.schemas.responses
 
 ::: phids.io.scenario
 

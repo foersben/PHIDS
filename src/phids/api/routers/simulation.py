@@ -24,7 +24,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
 from phids.api.presenters.diagnostics import render_status_badge_html
-from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
+from phids.api.schemas.responses import (
+    SimulationStatusResponse,
+    WindUpdatePayload,
+)
+from phids.api.schemas.simulation import SimulationConfig
 from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
 from phids.api.ui_state import (
     DraftState,
@@ -509,7 +513,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
                 )
             )
 
-            from phids.api.schemas import SynthesizeSubstanceAction
+            from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
             if isinstance(trig.action, SynthesizeSubstanceAction):
                 if trig.action.substance_id not in seen_substance_ids:

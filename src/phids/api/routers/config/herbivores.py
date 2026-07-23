@@ -11,7 +11,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.schemas import HerbivoreSpeciesParams
+from phids.api.schemas.species import HerbivoreSpeciesParams
 from phids.api.services.draft.species import add_herbivore, remove_herbivore
 from phids.api.ui_state import get_draft
 

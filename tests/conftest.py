@@ -29,16 +29,18 @@ import pytest_asyncio
 
 from phids.api import main as api_main
 from phids.api.main import app
-from phids.api.schemas import (
+from phids.api.schemas.placement import (
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+)
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
-    PassiveDefensesSchema,
-    SimulationConfig,
 )
+from phids.api.schemas.triggers import PassiveDefensesSchema
 from phids.api.ui_state import reset_draft
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent

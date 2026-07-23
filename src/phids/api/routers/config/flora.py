@@ -11,7 +11,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.schemas import FloraSpeciesParams
+from phids.api.schemas.species import FloraSpeciesParams
 from phids.api.services.draft.species import add_flora, remove_flora
 from phids.api.ui_state import get_draft
 

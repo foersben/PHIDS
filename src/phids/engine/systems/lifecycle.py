@@ -71,7 +71,7 @@ def _attempt_reproduction(
         list[PlantComponent]: Newly created plant components (empty if none).
 
     """
-    from phids.api.schemas import FloraSpeciesParams  # local import avoids circulars
+    from phids.api.schemas.species import FloraSpeciesParams
 
     if (tick - plant.last_reproduction_tick) < plant.reproduction_interval:
         return []

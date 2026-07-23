@@ -58,7 +58,10 @@ from phids.engine.systems.interaction.population import _accumulate_tile_populat
 from phids.engine.systems.interaction.population import _co_located_swarm_population as _co_located_swarm_population
 
 if TYPE_CHECKING:
-    from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+    from phids.api.schemas.species import (
+        FloraSpeciesParams,
+        HerbivoreSpeciesParams,
+    )
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
 from typing import cast

@@ -33,7 +33,7 @@ from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from phids.api.schemas import SimulationConfig
+    from phids.api.schemas.simulation import SimulationConfig
 
 
 def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:

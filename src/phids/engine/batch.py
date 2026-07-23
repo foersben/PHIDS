@@ -159,7 +159,7 @@ def _run_single_headless(
     random.seed(seed)
     np.random.seed(seed)
 
-    from phids.api.schemas import SimulationConfig
+    from phids.api.schemas.simulation import SimulationConfig
     from phids.engine.loop import SimulationLoop
 
     config = SimulationConfig.model_validate(scenario_dict)

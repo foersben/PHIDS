@@ -9,7 +9,7 @@ Verifies mathematical bounds checking (caloric deficits, seed costs, diet matric
 from phids.analytics.bio_database import FloraProfile, HerbivoreProfile
 from phids.analytics.dse_genotype import DSEGenotype, ParametricGenes, StructuralGenes
 from phids.analytics.dse_pruning import AnalyticalPruner
-from phids.api.schemas import UniformPlacement
+from phids.api.schemas.placement import UniformPlacement
 
 
 def _build_test_genotype(

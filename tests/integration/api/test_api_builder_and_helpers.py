@@ -35,13 +35,17 @@ from phids.api.presenters.dashboard import (
     validate_cell_coordinates,
 )
 from phids.api.routers.config.trigger_rules import config_trigger_rule_condition_node_update
-from phids.api.schemas import (
+from phids.api.schemas.placement import (
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+)
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreSpeciesParams,
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
-    SimulationConfig,
+)
+from phids.api.schemas.triggers import (
     SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )

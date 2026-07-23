@@ -14,13 +14,13 @@ import pytest
 from hypothesis import given
 from pydantic import ValidationError
 
-from phids.api.schemas import (
+from phids.api.schemas.species import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-    PassiveDefensesSchema,
 )
+from phids.api.schemas.triggers import PassiveDefensesSchema
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment

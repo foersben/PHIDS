@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
 from phids.api.services.dse.task_manager import DSETaskManager
 
 

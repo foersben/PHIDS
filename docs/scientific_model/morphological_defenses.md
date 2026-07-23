@@ -13,7 +13,8 @@ tags:
 - python
 timestamp: "2026-07-21T16:01:38Z"
 resources:
-- src/phids/api/schemas.py
+- src/phids/api/schemas/species.py
+- src/phids/api/schemas/triggers.py
 - src/phids/engine/components/plant.py
 - swarm.py
 - signaling.py
@@ -29,7 +30,7 @@ This document outlines the architectural implementation for the biological accur
 
 ### Step 1: Pydantic Schemas & Data Contracts
 
-**Target File:** `src/phids/api/schemas.py`
+**Target Files:** `src/phids/api/schemas/species.py` and `src/phids/api/schemas/triggers.py`
 
 1. **Introduce `PassiveDefensesSchema`**:
 

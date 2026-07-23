@@ -26,7 +26,7 @@ import logging
 from collections.abc import Mapping
 from pathlib import Path
 
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
 
 logger = logging.getLogger(__name__)
 

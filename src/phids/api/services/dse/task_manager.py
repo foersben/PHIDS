@@ -14,7 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from phids.analytics.dse_optimizer import DSEOptimizer
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
 
 if TYPE_CHECKING:
     from phids.api.websockets.manager import DSEStreamManager

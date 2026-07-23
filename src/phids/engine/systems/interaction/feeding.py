@@ -12,7 +12,10 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.systems.interaction.population import _accumulate_tile_population
 
 if TYPE_CHECKING:
-    from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+    from phids.api.schemas.species import (
+        FloraSpeciesParams,
+        HerbivoreSpeciesParams,
+    )
     from phids.engine.components.swarm import SwarmComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld

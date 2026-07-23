@@ -19,7 +19,7 @@ from typing import Literal
 from fastapi import HTTPException
 from pydantic import TypeAdapter, ValidationError
 
-from phids.api.schemas import ConditionNode
+from phids.api.schemas.conditions import ConditionNode
 from phids.api.ui_state import (
     ActivationConditionNode,
     ConditionValue,
