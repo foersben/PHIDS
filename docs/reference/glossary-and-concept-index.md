@@ -352,7 +352,7 @@ See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system
 
 ### `SimulationConfig`
 
-The Pydantic v2 validated schema (`phids.api.schemas`) that encodes all parameters for a simulation
+The Pydantic v2 validated schema (`phids.api.schemas.simulation`) that encodes all parameters for a simulation
 run: grid dimensions, species definitions, diet matrix, trigger rules, initial placements, wind
 conditions, mycorrhizal settings, and termination constraints. It is the single validated ingress
 point for scenario data, after which internal state is treated as trusted.

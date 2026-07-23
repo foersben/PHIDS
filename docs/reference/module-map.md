@@ -46,7 +46,7 @@ Its top-level subpackages are:
 
 This package owns schema validation, route surfaces, and the server-side UI draft state.
 
-### `phids.api.schemas`
+### `phids.api.schemas` (Package)
 
 Primary responsibility:
 
@@ -54,10 +54,10 @@ Primary responsibility:
 
 Key symbols:
 
-* `SimulationConfig`
-* `TriggerConditionSchema`
-* `FloraSpeciesParams`
-* `HerbivoreSpeciesParams`
+* `phids.api.schemas.simulation.SimulationConfig`
+* `phids.api.schemas.triggers.TriggerConditionSchema`
+* `phids.api.schemas.species.FloraSpeciesParams`
+* `phids.api.schemas.species.HerbivoreSpeciesParams`
 * `DietCompatibilityMatrix`
 * `SimulationStatusResponse`
 * `WindUpdatePayload`
