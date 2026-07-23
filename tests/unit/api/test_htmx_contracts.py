@@ -56,7 +56,7 @@ async def test_database_rebuild_htmx_refresh_header(api_client: AsyncClient, mon
         async def communicate(self):
             return b"stdout", b"stderr"
 
-    async def mock_exec(*args, **kwargs):
+    async def mock_exec(*_args, **_kwargs):
         return MockProcess()
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", mock_exec)
