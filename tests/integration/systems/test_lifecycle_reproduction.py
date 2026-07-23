@@ -17,7 +17,7 @@ from phids.engine.systems.lifecycle import _attempt_reproduction, run_lifecycle
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from phids.api.schemas import SimulationConfig
+    from phids.api.schemas.simulation import SimulationConfig
 
 
 def test_attempt_reproduction_handles_success_and_blocking_cases(

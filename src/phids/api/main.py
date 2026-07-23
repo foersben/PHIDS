@@ -63,9 +63,7 @@ from phids.shared.logging_config import configure_logging
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from phids.api.schemas import (
-        SimulationConfig,
-    )
+    from phids.api.schemas.simulation import SimulationConfig
     from phids.engine.loop import SimulationLoop
 
 configure_logging()
@@ -171,7 +169,7 @@ def _set_simulation_substance_names(
         )
         return
 
-    from phids.api.schemas import SynthesizeSubstanceAction
+    from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
     derived_names: dict[int, str] = {}
     for flora in config.flora_species:

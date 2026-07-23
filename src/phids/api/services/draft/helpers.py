@@ -75,7 +75,10 @@ def rebuild_species_ids(draft: DraftState) -> None:
         draft: Draft state whose species collections require index compaction.
 
     """
-    from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+    from phids.api.schemas.species import (
+        FloraSpeciesParams,
+        HerbivoreSpeciesParams,
+    )
 
     draft.flora_species = [
         fp.model_copy(update={"species_id": i})

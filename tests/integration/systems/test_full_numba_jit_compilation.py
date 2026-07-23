@@ -16,12 +16,12 @@ import os
 import numpy as np
 import pytest
 
-from phids.api.schemas import (
+from phids.api.schemas.species import (
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-    PassiveDefensesSchema,
 )
+from phids.api.schemas.triggers import PassiveDefensesSchema
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment

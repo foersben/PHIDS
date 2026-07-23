@@ -10,7 +10,6 @@ required for live UI swaps (`#sim-status`, `#main-workspace`, `#status-badge`).
 
 from __future__ import annotations
 
-# ruff: noqa: TC002
 import pytest
 from conftest import assert_valid_htmx_target
 from httpx import AsyncClient

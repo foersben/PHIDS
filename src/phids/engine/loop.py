@@ -40,12 +40,12 @@ from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 if TYPE_CHECKING:
-    from phids.api.schemas import (
+    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas.species import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
-        SimulationConfig,
-        TriggerConditionSchema,
     )
+    from phids.api.schemas.triggers import TriggerConditionSchema
 
 
 class _ReplayBackend(Protocol):

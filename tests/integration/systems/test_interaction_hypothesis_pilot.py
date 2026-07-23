@@ -11,7 +11,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+from phids.api.schemas.species import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld

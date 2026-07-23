@@ -21,13 +21,13 @@ from typing import cast
 
 import pytest
 
-from phids.api.schemas import (
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import (
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-    PassiveDefensesSchema,
-    SimulationConfig,
 )
+from phids.api.schemas.triggers import PassiveDefensesSchema
 from phids.api.services.draft.biotope import update_biotope
 from phids.api.services.draft.diet import set_diet_compatibility
 from phids.api.services.draft.placements import (

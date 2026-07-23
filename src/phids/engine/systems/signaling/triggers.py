@@ -12,7 +12,7 @@ from phids.engine.components.substances import SubstanceComponent
 from phids.engine.systems.signaling.conditions import _check_activation_condition
 
 if TYPE_CHECKING:
-    from phids.api.schemas import TriggerConditionSchema
+    from phids.api.schemas.triggers import TriggerConditionSchema
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
 
@@ -27,7 +27,10 @@ def _process_single_trigger(
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:
-    from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+    from phids.api.schemas.triggers import (
+        ResourceWithdrawalAction,
+        SynthesizeSubstanceAction,
+    )
 
     herbivore_present = (
         swarm_population_by_cell_species.get((plant.x, plant.y, trig.herbivore_species_id), 0)

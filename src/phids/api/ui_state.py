@@ -22,12 +22,12 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 if TYPE_CHECKING:
-    from phids.api.schemas import (
-        BatchJobState,
+    from phids.api.schemas.placement import PlacementStrategy
+    from phids.api.schemas.responses import BatchJobState
+    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas.species import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
-        PlacementStrategy,
-        SimulationConfig,
     )
 
 logger = logging.getLogger(__name__)
@@ -442,13 +442,13 @@ class DraftState:
             ValueError: If no flora or herbivore species defined.
 
         """
-        from phids.api.schemas import (
-            DietCompatibilityMatrix,
+        from phids.api.schemas.placement import (
             InitialPlantPlacement,
             InitialSwarmPlacement,
-            SimulationConfig,
-            TriggerConditionSchema,
         )
+        from phids.api.schemas.simulation import SimulationConfig
+        from phids.api.schemas.species import DietCompatibilityMatrix
+        from phids.api.schemas.triggers import TriggerConditionSchema
 
         if not self.flora_species or not self.herbivore_species:
             logger.warning(
@@ -460,7 +460,10 @@ class DraftState:
 
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
-        from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+        from phids.api.schemas.triggers import (
+            ResourceWithdrawalAction,
+            SynthesizeSubstanceAction,
+        )
 
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
@@ -586,7 +589,10 @@ class DraftState:
     @classmethod
     def default(cls) -> DraftState:
         """Create the built-in default draft state."""
-        from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+        from phids.api.schemas.species import (
+            FloraSpeciesParams,
+            HerbivoreSpeciesParams,
+        )
 
         state = cls(
             flora_species=[

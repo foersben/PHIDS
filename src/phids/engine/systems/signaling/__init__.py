@@ -42,7 +42,7 @@ from phids.engine.systems.signaling.synthesis import _phase_advance_synthesis
 from phids.engine.systems.signaling.triggers import _phase_evaluate_triggers
 
 if TYPE_CHECKING:
-    from phids.api.schemas import TriggerConditionSchema
+    from phids.api.schemas.triggers import TriggerConditionSchema
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
 

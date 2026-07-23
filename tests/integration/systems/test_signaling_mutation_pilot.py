@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from phids.api.schemas import SynthesizeSubstanceAction, TriggerConditionSchema
+from phids.api.schemas.triggers import (
+    SynthesizeSubstanceAction,
+    TriggerConditionSchema,
+)
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld

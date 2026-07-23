@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
 from phids.api import main as api_main
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
 from phids.api.services.dse.task_manager import get_dse_manager
 from phids.api.ui_state import get_draft
 from phids.api.websockets.manager import dse_stream_manager

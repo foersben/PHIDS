@@ -63,8 +63,8 @@ def test_interaction_anchoring_heuristic(
     initial_plant_energy = plant.energy
 
     # Tick the interaction system
-    from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+    from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -78,8 +78,8 @@ def test_interaction_anchoring_heuristic(
         )
     ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
-    from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+    from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -155,8 +155,8 @@ def test_interaction_taste_rejection(
     swarm.move_cooldown = 1
 
     # Tick the interaction system
-    from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+    from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -220,8 +220,8 @@ def test_interaction_starvation_ceil_casualty(
     swarm.energy_upkeep_per_individual = 0.5
     swarm.energy_min = 2.0
 
-    from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+    from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -281,8 +281,8 @@ def test_interaction_crowding_dispersal(
         swarm.initial_population = swarm.population
         swarm_entities.append(ent)
 
-    from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+    from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -358,8 +358,8 @@ def test_interaction_random_fallback_and_missing_entity(
         patch("random.choice", side_effect=lambda x: x[0]),
         patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]),
     ):
-        from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+        from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -395,8 +395,8 @@ def test_interaction_random_fallback_and_missing_entity(
     swarm.last_dx = 1
     swarm.last_dy = 0
     with patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]):
-        from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+        from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
@@ -434,8 +434,8 @@ def test_interaction_random_fallback_and_missing_entity(
     swarm.last_dx = 0
     swarm.last_dy = 0
     with patch("random.choices", side_effect=lambda x, *_, **__: [x[0]]):
-        from phids.api.schemas import HerbivoreSpeciesParams
-    from phids.api.schemas import FloraSpeciesParams
+        from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.api.schemas.species import FloraSpeciesParams
 
     dummy_flora = [
         FloraSpeciesParams(
