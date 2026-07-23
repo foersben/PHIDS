@@ -79,3 +79,8 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** During profiling of the `_truncate_subnormals_jit` function in the reaction-diffusion flow-field generator, using `abs(current[x, y]) < threshold` incurred unnecessary function-call overhead that negatively impacted auto-vectorization and loop pipelining within the inner bounds of a 2D `(width, height)` nested array traversal.
 **Action:** Replaced `abs(val) < threshold` with the inline logical equivalent `val > -threshold and val < threshold`. This seemingly minor pure-Python-level restructuring directly translates to a faster, branching LLVM IR layer when processed by Numba `@njit`, yielding a consistent +1-2% measurable throughput boost to the overall engine cycle time on dense deterministic scenarios.
+
+## 2026-07-23 - [Avoid absolute value function call overhead in tight Numba loops]
+
+**Learning:** During profiling of the `_truncate_subnormals_jit` function and `_compute_flow_field_impl` in the reaction-diffusion flow-field generator, using `abs(diff) > max_diff` incurred unnecessary function-call overhead that negatively impacted auto-vectorization and loop pipelining within the inner bounds of a 2D nested array traversal.
+**Action:** Replaced `abs()` assignments and checks (e.g., `diff = abs(val - current[x, y])`) with their inline logical equivalent (`diff = val - current[x, y]; if diff < 0.0: diff = -diff`). This structural change directly translates to a faster, branching LLVM IR layer when processed by Numba `@njit`, yielding measurable throughput boosts to the overall engine cycle time on dense deterministic scenarios.

@@ -127,7 +127,9 @@ def _propagate_iteration_jit(
             val = base[x, y] + (decay * propagated)
             nxt[x, y] = val
 
-            diff = abs(val - current[x, y])
+            diff = val - current[x, y]
+            if diff < 0.0:
+                diff = -diff
             if diff > max_diff:
                 max_diff = diff
     return max_diff
@@ -226,7 +228,9 @@ def _compute_flow_field_impl(
                 propagated = n_sum / n_count if n_count > 0 else 0.0
                 val = base[x, y] + (decay * propagated)
                 nxt[x, y] = val
-                diff = abs(val - current[x, y])
+                diff = val - current[x, y]
+                if diff < 0.0:
+                    diff = -diff
                 if diff > max_diff:
                     max_diff = diff
 
@@ -249,7 +253,9 @@ def _compute_flow_field_impl(
                 propagated = n_sum / n_count if n_count > 0 else 0.0
                 val = base[x, y] + (decay * propagated)
                 nxt[x, y] = val
-                diff = abs(val - current[x, y])
+                diff = val - current[x, y]
+                if diff < 0.0:
+                    diff = -diff
                 if diff > max_diff:
                     max_diff = diff
 
@@ -260,7 +266,9 @@ def _compute_flow_field_impl(
                 propagated = n_sum * 0.25  # neighbour_count is always 4
                 val = base[x, y] + (decay * propagated)
                 nxt[x, y] = val
-                diff = abs(val - current[x, y])
+                diff = val - current[x, y]
+                if diff < 0.0:
+                    diff = -diff
                 if diff > max_diff:
                     max_diff = diff
 
