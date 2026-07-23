@@ -35,6 +35,35 @@ from phids.api.ui_state import (
 router = APIRouter()
 
 
+def _build_node_updates(
+    current_kind: str,
+    kind: str | None = None,
+    herbivore_species_id: int | None = None,
+    min_herbivore_population: int | None = None,
+    substance_id: int | None = None,
+    signal_id: int | None = None,
+    min_concentration: float | None = None,
+) -> dict[str, object]:
+    """Build the dictionary of node updates based on the current node kind."""
+    updates: dict[str, object] = {}
+    if current_kind == "herbivore_presence":
+        if herbivore_species_id is not None:
+            updates["herbivore_species_id"] = herbivore_species_id
+        if min_herbivore_population is not None:
+            updates["min_herbivore_population"] = max(1, min_herbivore_population)
+    elif current_kind == "substance_active":
+        if substance_id is not None:
+            updates["substance_id"] = substance_id
+    elif current_kind == "environmental_signal":
+        if signal_id is not None:
+            updates["signal_id"] = signal_id
+        if min_concentration is not None:
+            updates["min_concentration"] = max(0.0, min_concentration)
+    elif current_kind in {"all_of", "any_of"} and kind is not None:
+        updates["kind"] = kind
+    return updates
+
+
 def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Response:
     """Render the morphology-defense partial response since trigger rules live there now."""
     return api_main.templates.TemplateResponse(
@@ -231,22 +260,15 @@ async def config_trigger_rule_condition_node_update(
             replacement = default_activation_condition_for_rule(draft, rule, kind)
             replace_trigger_rule_condition_node(draft, index, path, replacement)
         else:
-            updates: dict[str, object] = {}
-            if current_node.get("kind") == "herbivore_presence":
-                if herbivore_species_id is not None:
-                    updates["herbivore_species_id"] = herbivore_species_id
-                if min_herbivore_population is not None:
-                    updates["min_herbivore_population"] = max(1, min_herbivore_population)
-            elif current_node.get("kind") == "substance_active":
-                if substance_id is not None:
-                    updates["substance_id"] = substance_id
-            elif current_node.get("kind") == "environmental_signal":
-                if signal_id is not None:
-                    updates["signal_id"] = signal_id
-                if min_concentration is not None:
-                    updates["min_concentration"] = max(0.0, min_concentration)
-            elif current_node.get("kind") in {"all_of", "any_of"} and kind is not None:
-                updates["kind"] = kind
+            updates = _build_node_updates(
+                str(current_node.get("kind", "")),
+                kind=kind,
+                herbivore_species_id=herbivore_species_id,
+                min_herbivore_population=min_herbivore_population,
+                substance_id=substance_id,
+                signal_id=signal_id,
+                min_concentration=min_concentration,
+            )
 
             if updates:
                 update_trigger_rule_condition_node(draft, index, path, **updates)
