@@ -188,9 +188,9 @@ Open:
 ### 3) Load an example scenario and run
 
 1. Open the UI at `http://127.0.0.1:8000/`.
-2. In the control panel, locate the **Examples** or **Load Scenario** section.
-3. Select one of the curated examples (e.g., `dry_shrubland_cycles.json`) to populate the draft state.
-4. Click **Commit to Engine** or **Start Simulation** to begin the ecological simulation.
+2. In the control panel, locate the **Import JSON** button in the bottom left corner.
+3. Import one of the curated examples (e.g., `examples/dry_shrubland_cycles.json`) to populate the draft state.
+4. Click **Start** to begin the ecological simulation.
 
 ---
 
