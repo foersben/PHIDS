@@ -275,8 +275,8 @@
           title="Apparent nutrition factor during withdrawal (if Resource Withdrawal)">
           📉 App. Nutrition
         </label>
-        <input type="number" name="apparent_nutrition_factor" value="0.2" min="0" max="1" step="0.1"
-          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        <input type="number" id="new-rule-nutrition-factor" name="apparent_nutrition_factor" value="0.2" min="0" max="1" step="0.1"
+          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none opacity-50 cursor-not-allowed" disabled>
       </div>
 
       <div>
@@ -284,8 +284,8 @@
           title="Ticks the withdrawal lasts (if Resource Withdrawal)">
           ⏱️ W. Duration
         </label>
-        <input type="number" name="withdrawal_duration" value="10" min="1" step="1"
-          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        <input type="number" id="new-rule-withdrawal-duration" name="withdrawal_duration" value="10" min="1" step="1"
+          class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none opacity-50 cursor-not-allowed" disabled>
       </div>
 
       <div>
@@ -293,7 +293,7 @@
           title="Ticks the effect lingers after trigger stops (if Synthesize Substance)">
           ⏳ Aftereffect
         </label>
-        <input type="number" name="aftereffect_ticks" value="10" min="0" step="1"
+        <input type="number" id="new-rule-aftereffect-ticks" name="aftereffect_ticks" value="10" min="0" step="1"
           class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
       </div>
 
@@ -647,12 +647,30 @@
 <script>
   function toggleNewRuleSubstance(selectEl) {
     const substanceSelect = document.getElementById('new-rule-substance-id');
+    const nutritionInput = document.getElementById('new-rule-nutrition-factor');
+    const withdrawalInput = document.getElementById('new-rule-withdrawal-duration');
+    const aftereffectInput = document.getElementById('new-rule-aftereffect-ticks');
+
     if (selectEl.value === 'resource_withdrawal') {
       substanceSelect.disabled = true;
       substanceSelect.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+      aftereffectInput.disabled = true;
+      aftereffectInput.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+
+      nutritionInput.disabled = false;
+      nutritionInput.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+      withdrawalInput.disabled = false;
+      withdrawalInput.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
     } else {
       substanceSelect.disabled = false;
       substanceSelect.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+      aftereffectInput.disabled = false;
+      aftereffectInput.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+
+      nutritionInput.disabled = true;
+      nutritionInput.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+      withdrawalInput.disabled = true;
+      withdrawalInput.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
     }
   }
 
@@ -689,4 +707,12 @@
       popSlider.classList.remove('opacity-50', 'cursor-not-allowed');
     }
   }
+
+  // Initialize toggles on load
+  document.addEventListener("DOMContentLoaded", () => {
+    const actionSelect = document.querySelector('select[name="action_type"]');
+    if (actionSelect) toggleNewRuleSubstance(actionSelect);
+    const initSelect = document.querySelector('select[name="initiator_type"]');
+    if (initSelect) toggleInitiator(initSelect);
+  });
 </script>
