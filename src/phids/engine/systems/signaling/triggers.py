@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
-from phids.engine.systems.signaling.conditions import _check_activation_condition
 
 if TYPE_CHECKING:
     from phids.api.schemas.triggers import TriggerConditionSchema
@@ -28,17 +27,27 @@ def _process_single_trigger(
     substance_entities: list[Entity],
 ) -> None:
     from phids.api.schemas.triggers import (
+        EnvironmentalSignalInitiator,
+        HerbivoreAttackInitiator,
         ResourceWithdrawalAction,
         SynthesizeSubstanceAction,
     )
 
-    herbivore_present = (
-        swarm_population_by_cell_species.get((plant.x, plant.y, trig.herbivore_species_id), 0)
-        >= trig.min_herbivore_population
-    )
+    initiator_met = False
+    if isinstance(trig.initiator, HerbivoreAttackInitiator):
+        initiator_met = (
+            swarm_population_by_cell_species.get((plant.x, plant.y, trig.initiator.herbivore_species_id), 0)
+            >= trig.initiator.min_herbivore_population
+        )
+    elif isinstance(trig.initiator, EnvironmentalSignalInitiator):
+        if 0 <= trig.initiator.signal_id < env.num_signals:
+            conc = float(env.signal_layers[trig.initiator.signal_id, plant.x, plant.y])
+            initiator_met = conc >= trig.initiator.min_concentration
 
     condition_met = False
     if trig.activation_condition is not None:
+        from phids.engine.systems.signaling.conditions import _check_activation_condition
+
         condition_met = _check_activation_condition(
             plant,
             plant.entity_id,
@@ -48,9 +57,8 @@ def _process_single_trigger(
             active_substance_ids_by_owner,
         )
 
-    if not (herbivore_present or condition_met):
+    if not (initiator_met or condition_met):
         return
-
     if isinstance(trig.action, ResourceWithdrawalAction):
         plant.apparent_nutrition_factor = trig.action.apparent_nutrition_factor
         plant.withdrawal_ticks_remaining = trig.action.withdrawal_duration
@@ -83,8 +91,6 @@ def _process_single_trigger(
             energy_cost_per_tick=trig.action.energy_cost_per_tick,
             irreversible=trig.action.irreversible,
         )
-        existing_sub.trigger_herbivore_species_id = trig.herbivore_species_id
-        existing_sub.trigger_min_herbivore_population = trig.min_herbivore_population
         world.add_component(new_entity.entity_id, existing_sub)
         owner_substance_by_key[(plant.entity_id, substance_id)] = existing_sub
         substance_entities.append(new_entity)

@@ -15,6 +15,7 @@ from phids.api.schemas.species import (
     HerbivoreSpeciesParams,
 )
 from phids.api.schemas.triggers import (
+    HerbivoreAttackInitiator,
     PassiveDefensesSchema,
     ResourceWithdrawalAction,
     TriggerConditionSchema,
@@ -50,6 +51,8 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
     )
     world.add_component(plant_eid.entity_id, plant)
     world.register_position(plant_eid.entity_id, 2, 2)
+    env.plant_energy_by_species[0, 2, 2] = 100.0
+    env.plant_energy_layer[2, 2] = 100.0
 
     swarm_eid = world.create_entity()
     swarm = SwarmComponent(
@@ -146,10 +149,12 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
     trigger_conditions = {
         0: [
             TriggerConditionSchema(
-                herbivore_species_id=0,
-                min_herbivore_population=5,
+                initiator=HerbivoreAttackInitiator(
+                    herbivore_species_id=0,
+                    min_herbivore_population=5,
+                ),
                 aftereffect_ticks=10,
-                action=ResourceWithdrawalAction(apparent_nutrition_factor=0.1),
+                action=ResourceWithdrawalAction(apparent_nutrition_factor=0.1, withdrawal_duration=2),
             )
         ]
     }
@@ -159,7 +164,20 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
     run_signaling(world, env, trigger_conditions, mycorrhizal_inter_species=False, signal_velocity=1, tick=0)
 
     assert np.isclose(plant.apparent_nutrition_factor, 0.1)
-    assert plant.withdrawal_ticks_remaining == 9
+    # The duration is set to 2 during trigger evaluation, and then immediately decremented to 1 in recovery phase
+    assert plant.withdrawal_ticks_remaining == 1
+
+    # run signaling a second time to decrement (note: _phase_manage_nutrition_recovery is called during run_signaling)
+    run_signaling(world, env, trigger_conditions, mycorrhizal_inter_species=False, signal_velocity=1, tick=1)
+    # The condition is STILL met (herbivore is there), so it resets to 2, then decrements to 1!
+    assert plant.withdrawal_ticks_remaining == 1
+
+    # Now remove the herbivore
+    world.destroy_entity(swarm_eid.entity_id)
+    run_signaling(world, env, trigger_conditions, mycorrhizal_inter_species=False, signal_velocity=1, tick=2)
+    # The trigger doesn't fire, so _phase_manage_nutrition_recovery drops it to 0 and resets to 1.0!
+    assert plant.withdrawal_ticks_remaining == 0
+    assert np.isclose(plant.apparent_nutrition_factor, 1.0)
 
 
 def test_mechanical_attrition_enforces_integer_casualties() -> None:

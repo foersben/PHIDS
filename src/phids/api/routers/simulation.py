@@ -499,12 +499,33 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
     seen_substance_ids: set[int] = set()
     for flora_spec in config.flora_species:
         for trig in flora_spec.triggers:
+            from typing import Literal
+
+            from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
+
+            i_type: Literal["herbivore_attack", "environmental_signal"]
+            if isinstance(trig.initiator, HerbivoreAttackInitiator):
+                i_type = "herbivore_attack"
+                h_id = trig.initiator.herbivore_species_id
+                min_pop = trig.initiator.min_herbivore_population
+                sig_id = -1
+                min_conc = 0.0
+            else:
+                i_type = "environmental_signal"
+                h_id = -1
+                min_pop = 0
+                sig_id = trig.initiator.signal_id
+                min_conc = trig.initiator.min_concentration
+
             imported_trigger_rules.append(
                 TriggerRule(
                     flora_species_id=flora_spec.species_id,
-                    herbivore_species_id=trig.herbivore_species_id,
+                    initiator_type=i_type,
+                    herbivore_species_id=h_id,
+                    min_herbivore_population=min_pop,
+                    initiator_signal_id=sig_id,
+                    initiator_min_concentration=min_conc,
                     substance_id=getattr(trig.action, "substance_id", -1),
-                    min_herbivore_population=trig.min_herbivore_population,
                     activation_condition=(
                         trig.activation_condition.model_dump(mode="json")
                         if trig.activation_condition is not None
@@ -512,8 +533,6 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
                     ),
                 )
             )
-
-            from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
             if isinstance(trig.action, SynthesizeSubstanceAction):
                 if trig.action.substance_id not in seen_substance_ids:
@@ -532,7 +551,6 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
                             repellent_walk_ticks=trig.action.repellent_walk_ticks,
                             energy_cost_per_tick=trig.action.energy_cost_per_tick,
                             irreversible=trig.action.irreversible,
-                            min_herbivore_population=trig.min_herbivore_population,
                         )
                     )
 

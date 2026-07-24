@@ -29,8 +29,6 @@
       },
       "triggers": [
         {
-          "herbivore_species_id": 0,
-          "min_herbivore_population": 4,
           "aftereffect_ticks": 4,
           "activation_condition": {
             "kind": "herbivore_presence",
@@ -48,6 +46,11 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.35,
             "irreversible": false
+          },
+          "initiator": {
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 4,
+            "type": "herbivore_attack"
           }
         }
       ]
@@ -73,8 +76,6 @@
       },
       "triggers": [
         {
-          "herbivore_species_id": 0,
-          "min_herbivore_population": 5,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "any_of",
@@ -101,6 +102,11 @@
             "repellent_walk_ticks": 5,
             "energy_cost_per_tick": 0.85,
             "irreversible": false
+          },
+          "initiator": {
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 5,
+            "type": "herbivore_attack"
           }
         }
       ]
@@ -126,8 +132,6 @@
       },
       "triggers": [
         {
-          "herbivore_species_id": 1,
-          "min_herbivore_population": 4,
           "aftereffect_ticks": 4,
           "activation_condition": {
             "kind": "herbivore_presence",
@@ -145,11 +149,14 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.3,
             "irreversible": false
+          },
+          "initiator": {
+            "herbivore_species_id": 1,
+            "min_herbivore_population": 4,
+            "type": "herbivore_attack"
           }
         },
         {
-          "herbivore_species_id": 1,
-          "min_herbivore_population": 4,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "all_of",
@@ -176,6 +183,11 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.9,
             "irreversible": false
+          },
+          "initiator": {
+            "herbivore_species_id": 1,
+            "min_herbivore_population": 4,
+            "type": "herbivore_attack"
           }
         }
       ]

@@ -62,7 +62,7 @@ def get_condition_node(
 def add_trigger_rule(
     draft: DraftState,
     flora_species_id: int,
-    herbivore_species_id: int,
+    herbivore_species_id: int = 0,
     substance_id: int = 0,
     action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance",
     apparent_nutrition_factor: float = 0.2,
@@ -70,6 +70,9 @@ def add_trigger_rule(
     aftereffect_ticks: int = 10,
     min_herbivore_population: int = 5,
     activation_condition: ActivationConditionNode | None = None,
+    initiator_type: Literal["herbivore_attack", "environmental_signal"] = "herbivore_attack",
+    initiator_signal_id: int = 0,
+    initiator_min_concentration: float = 0.01,
 ) -> None:
     """Append one trigger rule to the draft trigger ledger.
 
@@ -84,18 +87,24 @@ def add_trigger_rule(
         aftereffect_ticks: Duration of aftereffect.
         min_herbivore_population: Minimum herbivore population threshold.
         activation_condition: Optional nested activation-condition tree.
+        initiator_type: The type of trigger initiator.
+        initiator_signal_id: The ID of the environmental signal.
+        initiator_min_concentration: Minimum signal concentration.
 
     """
     draft.trigger_rules.append(
         TriggerRule(
             flora_species_id=flora_species_id,
+            initiator_type=initiator_type,
             herbivore_species_id=herbivore_species_id,
+            min_herbivore_population=min_herbivore_population,
+            initiator_signal_id=initiator_signal_id,
+            initiator_min_concentration=initiator_min_concentration,
             substance_id=substance_id,
             action_type=action_type,
             apparent_nutrition_factor=apparent_nutrition_factor,
             withdrawal_duration=withdrawal_duration,
             aftereffect_ticks=aftereffect_ticks,
-            min_herbivore_population=min_herbivore_population,
             activation_condition=deepcopy(activation_condition),
         )
     )
@@ -140,6 +149,9 @@ def update_trigger_rule(
     *,
     flora_species_id: int | None = None,
     herbivore_species_id: int | None = None,
+    initiator_type: Literal["herbivore_attack", "environmental_signal"] | None = None,
+    initiator_signal_id: int | None = None,
+    initiator_min_concentration: float | None = None,
     substance_id: int | None = None,
     action_type: Literal["synthesize_substance", "resource_withdrawal"] | None = None,
     apparent_nutrition_factor: float | None = None,
@@ -155,6 +167,9 @@ def update_trigger_rule(
         index: Trigger-rule index in the draft list.
         flora_species_id: Optional replacement flora species identifier.
         herbivore_species_id: Optional replacement herbivore species identifier.
+        initiator_type: Optional replacement initiator type.
+        initiator_signal_id: Optional replacement signal identifier.
+        initiator_min_concentration: Optional replacement minimum concentration.
         substance_id: Optional replacement substance identifier.
         action_type: Optional replacement action type.
         apparent_nutrition_factor: Optional replacement nutrition factor.
@@ -172,6 +187,12 @@ def update_trigger_rule(
         rule.flora_species_id = flora_species_id
     if herbivore_species_id is not None:
         rule.herbivore_species_id = herbivore_species_id
+    if initiator_type is not None:
+        rule.initiator_type = initiator_type
+    if initiator_signal_id is not None:
+        rule.initiator_signal_id = initiator_signal_id
+    if initiator_min_concentration is not None:
+        rule.initiator_min_concentration = initiator_min_concentration
     if substance_id is not None:
         rule.substance_id = substance_id
     if action_type is not None:

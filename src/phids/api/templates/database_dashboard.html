@@ -513,6 +513,9 @@ function addRuleCard(ruleData = null) {
 
   const h_id = ruleData?.herbivore_species_id ?? 1;
   const min_pop = ruleData?.min_herbivore_population ?? 10;
+  const i_type = ruleData?.initiator_type ?? 'herbivore_attack';
+  const sig_id = ruleData?.initiator_signal_id ?? 0;
+  const sig_min = ruleData?.initiator_min_concentration ?? 0.01;
   const ticks = ruleData?.aftereffect_ticks ?? 20;
   const a_type = ruleData?.action?.type ?? 'synthesize_substance';
 
@@ -524,9 +527,15 @@ function addRuleCard(ruleData = null) {
       </div>
       <div class="p-4 space-y-4">
         <!-- Core Triggers -->
-        <div class="grid grid-cols-3 gap-4">
-          <div><label class="block text-xs text-slate-500">Target Species ID</label><input type="number" class="rule-h-id mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${h_id}"></div>
-          <div><label class="block text-xs text-slate-500">Min Population</label><input type="number" class="rule-min-pop mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${min_pop}"></div>
+        <div class="grid grid-cols-4 gap-4">
+          <div><label class="block text-xs text-slate-500">Initiator</label>
+            <select class="rule-i-type mt-1 block w-full rounded border-slate-300 text-sm py-1">
+              <option value="herbivore_attack" ${i_type === 'herbivore_attack' ? 'selected' : ''}>Herbivore Attack</option>
+              <option value="environmental_signal" ${i_type === 'environmental_signal' ? 'selected' : ''}>Env. Signal</option>
+            </select>
+          </div>
+          <div><label class="block text-xs text-slate-500">Target ID (Sp/Sig)</label><input type="number" class="rule-h-id mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${i_type === 'herbivore_attack' ? h_id : sig_id}"></div>
+          <div><label class="block text-xs text-slate-500">Min Pop / Conc</label><input type="number" step="any" class="rule-min-pop mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${i_type === 'herbivore_attack' ? min_pop : sig_min}"></div>
           <div><label class="block text-xs text-slate-500">Aftereffect Ticks</label><input type="number" class="rule-ticks mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ticks}"></div>
         </div>
 
@@ -700,9 +709,16 @@ function extractRules() {
   const subsDb = JSON.parse(document.getElementById('db-json-substances').textContent);
 
   document.querySelectorAll('.rule-card').forEach(card => {
+    const iType = card.querySelector('.rule-i-type').value;
+    const targetId = parseInt(card.querySelector('.rule-h-id').value) || 0;
+    const minVal = parseFloat(card.querySelector('.rule-min-pop').value) || 0;
+
     const r = {
-      herbivore_species_id: parseInt(card.querySelector('.rule-h-id').value) || 0,
-      min_herbivore_population: parseInt(card.querySelector('.rule-min-pop').value) || 0,
+      initiator_type: iType,
+      herbivore_species_id: iType === 'herbivore_attack' ? targetId : 0,
+      min_herbivore_population: iType === 'herbivore_attack' ? Math.floor(minVal) : 0,
+      initiator_signal_id: iType === 'environmental_signal' ? targetId : 0,
+      initiator_min_concentration: iType === 'environmental_signal' ? minVal : 0,
       aftereffect_ticks: parseInt(card.querySelector('.rule-ticks').value) || 0,
       action: {}
     };

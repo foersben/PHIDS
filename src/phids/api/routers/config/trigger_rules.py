@@ -101,7 +101,10 @@ def _render_placement_list_partial(request: Request, draft: DraftState) -> Respo
 async def config_trigger_rule_add(
     request: Request,
     flora_species_id: Annotated[int, Form()],
-    herbivore_species_id: Annotated[int, Form()],
+    herbivore_species_id: Annotated[int, Form()] = 0,
+    initiator_type: Annotated[Literal["herbivore_attack", "environmental_signal"], Form()] = "herbivore_attack",
+    initiator_signal_id: Annotated[int, Form()] = 0,
+    initiator_min_concentration: Annotated[float, Form()] = 0.01,
     substance_id: Annotated[int, Form()] = 0,
     action_type: Annotated[Literal["synthesize_substance", "resource_withdrawal"], Form()] = "synthesize_substance",
     apparent_nutrition_factor: Annotated[float, Form()] = 0.2,
@@ -115,13 +118,16 @@ async def config_trigger_rule_add(
     add_trigger_rule(
         draft,
         flora_species_id=flora_species_id,
+        initiator_type=initiator_type,
         herbivore_species_id=herbivore_species_id,
+        min_herbivore_population=max(1, min_herbivore_population),
+        initiator_signal_id=initiator_signal_id,
+        initiator_min_concentration=initiator_min_concentration,
         substance_id=substance_id,
         action_type=action_type,
         apparent_nutrition_factor=apparent_nutrition_factor,
         withdrawal_duration=withdrawal_duration,
         aftereffect_ticks=aftereffect_ticks,
-        min_herbivore_population=max(1, min_herbivore_population),
         activation_condition=parse_activation_condition_json(activation_condition_json),
     )
     api_main.logger.info(
@@ -143,6 +149,9 @@ async def config_trigger_rule_update(
     index: int,
     flora_species_id: Annotated[int | None, Form()] = None,
     herbivore_species_id: Annotated[int | None, Form()] = None,
+    initiator_type: Annotated[Literal["herbivore_attack", "environmental_signal"] | None, Form()] = None,
+    initiator_signal_id: Annotated[int | None, Form()] = None,
+    initiator_min_concentration: Annotated[float | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
     action_type: Annotated[Literal["synthesize_substance", "resource_withdrawal"] | None, Form()] = None,
     apparent_nutrition_factor: Annotated[float | None, Form()] = None,
@@ -161,13 +170,16 @@ async def config_trigger_rule_update(
         draft,
         index,
         flora_species_id=flora_species_id,
+        initiator_type=initiator_type,
         herbivore_species_id=herbivore_species_id,
+        min_herbivore_population=min_herbivore_population,
+        initiator_signal_id=initiator_signal_id,
+        initiator_min_concentration=initiator_min_concentration,
         substance_id=substance_id,
         action_type=action_type,
         apparent_nutrition_factor=apparent_nutrition_factor,
         withdrawal_duration=withdrawal_duration,
         aftereffect_ticks=aftereffect_ticks,
-        min_herbivore_population=min_herbivore_population,
         activation_condition=(
             parse_activation_condition_json(activation_condition_json)
             if activation_condition_json is not None
