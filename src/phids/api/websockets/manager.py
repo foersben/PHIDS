@@ -225,7 +225,15 @@ class UIStreamManager:
                     loop.terminated,
                 )
                 if state_signature != last_state_signature:
-                    await websocket.send_text(self._encoded_payload(loop))
+                    try:
+                        await websocket.send_text(self._encoded_payload(loop))
+                    except RuntimeError as exc:
+                        if "Unexpected ASGI message 'websocket.send'" in str(
+                            exc
+                        ) or "after sending 'websocket.close'" in str(exc):
+                            logger.info("WebSocket client disconnected from /ws/ui/stream (RuntimeError)")
+                            break
+                        raise
                     last_state_signature = state_signature
 
                 await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
