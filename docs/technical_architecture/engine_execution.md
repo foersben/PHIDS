@@ -8,7 +8,7 @@ tags:
 - phids
 - ecs
 - numba
-timestamp: "2026-07-21T16:01:38Z"
+timestamp: "2026-07-24T08:25:35Z"
 resources:
 - flow_field.py
 ---
@@ -30,6 +30,10 @@ The `SimulationLoop.step()` method executes the following components consecutive
 ## Entity Component System (ECS) & Spatial Hashing
 
 Entities in PHIDS are lightweight, data-only records lacking encapsulated logic. System functions iterate over specific intersections of component types, separating memory allocation from logic execution. This ensures maximum cache coherence and rapid loop traversal.
+
+### Query Optimization & Structural Versioning
+
+To avoid $O(N)$ list allocations on every tick when systems iterate over component types, `ECSWorld` implements a `_structural_version` cache. The registry caches materialized query lists, only incrementing the version and invalidating the cache when entities or components are structurally added or removed. This provides near-instant lookup speeds for all hot-path systems on steady-state ticks.
 
 ### $O(1)$ Locality Resolution
 

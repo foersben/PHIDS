@@ -477,7 +477,7 @@ def _is_swarm_anchored(
 
     herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
     for flora_species_id, is_compatible in enumerate(herbivore_row):
-        if is_compatible and env.plant_energy_by_species[flora_species_id, swarm.x, swarm.y] > 0:
+        if is_compatible and env.plant_energy_by_species.item(flora_species_id, swarm.x, swarm.y) > 0:
             return True
 
     return False
