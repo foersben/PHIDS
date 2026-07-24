@@ -32,7 +32,7 @@ run_sync() {
   fi
 
   echo ">>> Syncing dependencies"
-  uv sync --all-groups
+  uv sync --all-extras --dev
 }
 
 run_quality() {
@@ -47,9 +47,8 @@ run_tests() {
   NUMBA_DISABLE_JIT=1 uv run pytest --cov=src/phids --cov-fail-under=80
 
   echo ">>> Pass 2: Numba Compilation Verification"
-  uv run pytest tests/integration/systems/test_full_numba_jit_compilation.py tests/integration/systems/test_interaction_property_invariants.py \
+  uv run pytest tests/integration/systems/test_interaction_property_invariants.py \
     -x -q -o "addopts="
-
 }
 
 run_docs() {

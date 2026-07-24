@@ -1,26 +1,12 @@
 ---
 type: reference
-title: Glossary and Concept Index
+title: "Glossary and Concept Index"
 status: active
 version: 0.1
-description: Documentation for Glossary and Concept Index in the PHIDS framework.
-tags:
-- phids
-- ecs
-- numba
-- python
-timestamp: "2026-07-21T16:01:38Z"
-resources:
-- ../scientific_model/mathematical_framework.md
-- ../technical_architecture/system_architecture.md
-- ../technical_architecture/engine_execution.md
-- ../scenario_guide/curated_examples.md
-- ../technical_architecture/interfaces_and_ui.md
-- ../technical_architecture/telemetry.md
-- ../scientific_model/index.md
-- ../scenario_guide/scenario_authoring.md
-- interaction.py
+description: "Documentation for Glossary and Concept Index in the PHIDS framework."
 ---
+
+# Glossary and Concept Index
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary
 used throughout the PHIDS documentation corpus. Each entry is defined in the language of the active
@@ -210,7 +196,7 @@ See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_executi
 ### Ghost Entity
 
 An entity ID that has been logically killed (population zero, energy zero, or marked for removal)
-but has not yet been removed from the spatial hash or ECS registry. Ghost entities corrupt $O(1)$
+but has not yet been removed from the spatial hash or ECS registry. Ghost entities corrupt O(1)
 spatial-hash lookups because `world.entities_at(x, y)` returns their IDs as if they were still
 alive. PHIDS prevents ghost entities through immediate `unregister_position` calls and same-tick GC
 in both the interaction and signaling phases.
@@ -288,10 +274,10 @@ See: [`engine/lifecycle.md`](../scientific_model/mathematical_framework.md), [`e
 
 ## O
 
-### $O(1)$ Spatial Hash
+### O(1) Spatial Hash
 
 The spatial hash embedded in `ECSWorld` that maps `(x, y)` grid cells to sets of entity IDs in
-amortized $O(1)$ time. It is the primary locality primitive in PHIDS: all cell-local interactions
+amortized O(1) time. It is the primary locality primitive in PHIDS: all cell-local interactions
 (feeding, trigger evaluation, crowding checks) are dispatched via `world.entities_at(x, y)` rather
 than through O(N²) global pairwise scans.
 
@@ -352,7 +338,7 @@ See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system
 
 ### `SimulationConfig`
 
-The Pydantic v2 validated schema (`phids.api.schemas.simulation`) that encodes all parameters for a simulation
+The Pydantic v2 validated schema (`phids.api.schemas`) that encodes all parameters for a simulation
 run: grid dimensions, species definitions, diet matrix, trigger rules, initial placements, wind
 conditions, mycorrhizal settings, and termination constraints. It is the single validated ingress
 point for scenario data, after which internal state is treated as trusted.
@@ -370,7 +356,7 @@ See: [`engine/index.md`](../scientific_model/index.md)
 
 ### Spatial Hash
 
-See [$O(1)$ Spatial Hash](#o1-spatial-hash).
+See [O(1) Spatial Hash](#o1-spatial-hash).
 
 ### `SubstanceComponent`
 

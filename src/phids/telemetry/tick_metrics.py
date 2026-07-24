@@ -66,8 +66,6 @@ class TickMetrics:
     plant_energy_by_species: dict[int, float] = field(default_factory=dict)
     swarm_pop_by_species: dict[int, int] = field(default_factory=dict)
     defense_cost_by_species: dict[int, float] = field(default_factory=dict)
-    plant_death_causes: dict[str, int] = field(default_factory=dict)
-    herbivore_death_causes: dict[str, int] = field(default_factory=dict)
 
 
 def collect_tick_metrics(world: ECSWorld) -> TickMetrics:

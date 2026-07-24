@@ -126,15 +126,11 @@ def _numba_diffuse_signal_layer(
         for y in range(height):
             v = 0.0
             for i in range(-k_w_half, k_w_half + 1):
-                ax = x - i
-                # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
-                # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
-                # measurably improving Numba JIT inner-loop vectorization and tick speed.
-                if 0 <= ax < width:
-                    for j in range(-k_h_half, k_h_half + 1):
-                        ay = y - j
-                        if 0 <= ay < height:
-                            v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+                for j in range(-k_h_half, k_h_half + 1):
+                    ax = x - i
+                    ay = y - j
+                    if 0 <= ax < width and 0 <= ay < height:
+                        v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
 
             v *= decay
             if v < epsilon:
@@ -149,18 +145,13 @@ def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> np
         size: Kernel size (must be odd).
         sigma: Standard deviation of the Gaussian.
 
-    Raises:
-        ValueError: If size is even.
-
     Returns:
         npt.NDArray[np.float64]: 2-D array of shape (size, size) representing the kernel.
     """
-    if size % 2 == 0:
-        raise ValueError("Kernel size must be odd to maintain central symmetry.")
-    ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)  # pragma: no mutate
+    ax = np.arange(-(size // 2), size // 2 + 1, dtype=np.float64)
     xx, yy = np.meshgrid(ax, ax)
     kernel: npt.NDArray[np.float64] = np.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))
-    normalized = np.asarray(kernel / kernel.sum(), dtype=np.float64)  # pragma: no mutate
+    normalized = np.asarray(kernel / kernel.sum(), dtype=np.float64)
     return normalized
 
 
@@ -218,14 +209,12 @@ class GridEnvironment:
         # ------------------------------------------------------------------
         # Plant energy layers (read/write buffers)
         # ------------------------------------------------------------------
-        self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
-        self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # Global aggregate apparent nutrition factor
-        self.apparent_nutrition_layer: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)  # pragma: no mutate
-        self._apparent_nutrition_layer_write: npt.NDArray[np.float64] = np.ones(
-            shape, dtype=np.float64
-        )  # pragma: no mutate
+        self.apparent_nutrition_layer: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
+        self._apparent_nutrition_layer_write: npt.NDArray[np.float64] = np.ones(shape, dtype=np.float64)
 
         # Per-species energy layers (Rule of 16 pre-allocation)
         self.plant_energy_by_species: npt.NDArray[np.float64] = np.zeros(
@@ -236,38 +225,34 @@ class GridEnvironment:
         # ------------------------------------------------------------------
         # Wind layers (dynamic, updated via REST API)
         # ------------------------------------------------------------------
-        self.wind_vector_x: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
-        self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self.wind_vector_x: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self.wind_vector_y: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # ------------------------------------------------------------------
         # Signal layers  [num_signals, W, H] - read buffer
         # ------------------------------------------------------------------
-        self.signal_layers: npt.NDArray[np.float64] = np.zeros(
-            (num_signals, width, height), dtype=np.float64
-        )  # pragma: no mutate
+        self.signal_layers: npt.NDArray[np.float64] = np.zeros((num_signals, width, height), dtype=np.float64)
         # Write buffer for double-buffering
         self._signal_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.signal_layers)
 
         # ------------------------------------------------------------------
         # Toxin layers  [num_toxins, W, H] (local plant-tissue fields)
         # ------------------------------------------------------------------
-        self.toxin_layers: npt.NDArray[np.float64] = np.zeros(
-            (num_toxins, width, height), dtype=np.float64
-        )  # pragma: no mutate
+        self.toxin_layers: npt.NDArray[np.float64] = np.zeros((num_toxins, width, height), dtype=np.float64)
         self._toxin_layers_write: npt.NDArray[np.float64] = np.zeros_like(self.toxin_layers)
 
         # ------------------------------------------------------------------
         # Flow-field gradient (scalar attraction field, WxH)
         # ------------------------------------------------------------------
-        self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self.flow_field: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # Pre-allocated scratch buffers for flow field JIT calculations
-        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
-        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
-        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self._flow_field_base: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_current: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
+        self._flow_field_nxt: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
         # Pre-allocated scratch buffer for diffusion JIT calculations
-        self._advected_scratch: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
+        self._advected_scratch: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Wind helpers
@@ -314,7 +299,7 @@ class GridEnvironment:
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
-            if layer.max() < SIGNAL_EPSILON:
+            if not np.any(layer >= SIGNAL_EPSILON):
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
@@ -348,7 +333,7 @@ class GridEnvironment:
         then swaps read/write buffers so that subsequent reads observe the
         newly-written values.
         """
-        np.sum(self._plant_energy_by_species_write, axis=0, out=self._plant_energy_layer_write)
+        self._plant_energy_layer_write[:] = self._plant_energy_by_species_write.sum(axis=0)
         self.plant_energy_by_species, self._plant_energy_by_species_write = (
             self._plant_energy_by_species_write,
             self.plant_energy_by_species,
@@ -402,13 +387,10 @@ class GridEnvironment:
     # ------------------------------------------------------------------
 
     def to_dict(self) -> dict[str, object]:
-        """Returns a dict representation of the biotope state suitable for serialization.
-
-        This is used by the streaming interface to serialize the current state of the
-        biotope to a dictionary.
+        """Return a lightweight snapshot dict suitable for msgpack serialisation.
 
         Returns:
-            Mapping containing numpy arrays converted to nested lists.
+            dict: Mapping containing numpy arrays converted to nested lists.
         """
         return {
             "plant_energy_layer": self.plant_energy_layer.tolist(),

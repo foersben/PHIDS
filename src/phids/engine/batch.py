@@ -159,7 +159,7 @@ def _run_single_headless(
     random.seed(seed)
     np.random.seed(seed)
 
-    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas import SimulationConfig
     from phids.engine.loop import SimulationLoop
 
     config = SimulationConfig.model_validate(scenario_dict)
@@ -213,117 +213,6 @@ def _run_and_save(
 # ---------------------------------------------------------------------------
 
 
-def _pad_telemetry_runs(per_run: TelemetryRuns, max_len: int) -> list[list[TelemetryRow]]:
-    """Pad run telemetry with terminal data to match max_len."""
-    aligned: list[list[TelemetryRow]] = []
-    for rows in per_run:
-        if len(rows) < max_len:
-            pad_count = max_len - len(rows)
-            last: TelemetryRow = dict(rows[-1]) if rows else {}
-            last["death_herbivore_feeding"] = 0.0
-            last["death_defense_maintenance"] = 0.0
-            aligned.append(rows + [last] * pad_count)
-        else:
-            aligned.append(rows)
-    return aligned
-
-
-def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, object]:
-    """Stack scalar population and energy metrics into NumPy arrays."""
-    flora_pop = np.array(
-        [[_coerce_float(r.get("flora_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    herb_pop = np.array(
-        [[_coerce_float(r.get("herbivore_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    flora_energy = np.array(
-        [[_coerce_float(r.get("total_flora_energy", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_herbivore = np.array(
-        [[_coerce_float(r.get("death_herbivore_feeding", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_defense = np.array(
-        [[_coerce_float(r.get("death_defense_maintenance", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_starvation = np.array(
-        [[_coerce_float(r.get("death_starvation", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-
-    # Extinction probability: fraction of runs where flora hit zero at any tick
-    extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
-    extinction_probability = extinction_count / len(aligned) if aligned else 0.0
-    survival_probability_curve = np.mean(flora_pop > 0, axis=0).tolist() if aligned else []
-
-    return {
-        "flora_population_mean": flora_pop.mean(axis=0).tolist() if aligned else [],
-        "flora_population_std": flora_pop.std(axis=0).tolist() if aligned else [],
-        "herbivore_population_mean": herb_pop.mean(axis=0).tolist() if aligned else [],
-        "herbivore_population_std": herb_pop.std(axis=0).tolist() if aligned else [],
-        "total_flora_energy_mean": flora_energy.mean(axis=0).tolist() if aligned else [],
-        "total_flora_energy_std": flora_energy.std(axis=0).tolist() if aligned else [],
-        "death_herbivore_feeding_mean": death_herbivore.mean(axis=0).tolist() if aligned else [],
-        "death_defense_maintenance_mean": death_defense.mean(axis=0).tolist() if aligned else [],
-        "death_starvation_mean": death_starvation.mean(axis=0).tolist() if aligned else [],
-        "extinction_probability": extinction_probability,
-        "survival_probability_curve": survival_probability_curve,
-    }
-
-
-def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> tuple[set[int], set[int]]:
-    """Collect all unique flora and herbivore species identifiers seen across runs."""
-    all_flora_ids: set[int] = set()
-    all_herb_ids: set[int] = set()
-    for run in aligned:
-        for row in run:
-            flora_map = row.get("plant_pop_by_species", {})
-            herb_map = row.get("swarm_pop_by_species", {})
-            if isinstance(flora_map, dict):
-                all_flora_ids.update(k for k in flora_map.keys() if isinstance(k, int))
-            if isinstance(herb_map, dict):
-                all_herb_ids.update(k for k in herb_map.keys() if isinstance(k, int))
-    return all_flora_ids, all_herb_ids
-
-
-def _compute_species_aggregates(
-    aligned: list[list[TelemetryRow]],
-    all_flora_ids: set[int],
-    all_herb_ids: set[int],
-) -> dict[str, dict[str, list[float]]]:
-    """Compute mean and std dev for individual tracked species over the batch."""
-    per_flora_pop_mean: dict[int, list[float]] = {}
-    per_flora_pop_std: dict[int, list[float]] = {}
-    for fid in sorted(all_flora_ids):
-        arr = np.array(
-            [[_species_count(r, "plant_pop_by_species", fid) for r in run] for run in aligned],
-            dtype=np.float64,
-        )
-        per_flora_pop_mean[fid] = arr.mean(axis=0).tolist()
-        per_flora_pop_std[fid] = arr.std(axis=0).tolist()
-
-    per_herb_pop_mean: dict[int, list[float]] = {}
-    per_herb_pop_std: dict[int, list[float]] = {}
-    for pid in sorted(all_herb_ids):
-        arr = np.array(
-            [[_species_count(r, "swarm_pop_by_species", pid) for r in run] for run in aligned],
-            dtype=np.float64,
-        )
-        per_herb_pop_mean[pid] = arr.mean(axis=0).tolist()
-        per_herb_pop_std[pid] = arr.std(axis=0).tolist()
-
-    return {
-        "per_flora_pop_mean": {str(k): v for k, v in per_flora_pop_mean.items()},
-        "per_flora_pop_std": {str(k): v for k, v in per_flora_pop_std.items()},
-        "per_herbivore_pop_mean": {str(k): v for k, v in per_herb_pop_mean.items()},
-        "per_herbivore_pop_std": {str(k): v for k, v in per_herb_pop_std.items()},
-    }
-
-
 def aggregate_batch_telemetry(
     per_run: TelemetryRuns,
 ) -> BatchAggregate:
@@ -346,34 +235,117 @@ def aggregate_batch_telemetry(
             :func:`_run_single_headless`.
 
     Returns:
-        BatchAggregate: Aggregate summary containing mean, std dev, and extinction metrics.
+        BatchAggregate: Aggregate summary with keys ``ticks``,
+        ``flora_population_mean``, ``flora_population_std``,
+        ``herbivore_population_mean``, ``herbivore_population_std``,
+        ``total_flora_energy_mean``, ``total_flora_energy_std``,
+        ``extinction_probability``, ``runs_completed``,
+        ``survival_probability_curve``,
+        ``per_flora_pop_mean``, ``per_flora_pop_std``,
+        ``per_herbivore_pop_mean``, ``per_herbivore_pop_std``.
+
     """
     if not per_run:
         return {}
 
+    # Pad to max length to handle early termination without data loss
     max_len = max(len(rows) for rows in per_run)
     longest_run = max(per_run, key=len)
     ticks = [_coerce_int(r.get("tick", 0)) for r in longest_run]
 
-    aligned = _pad_telemetry_runs(per_run, max_len)
-    scalars = _stack_scalar_aggregates(aligned)
-    all_flora_ids, all_herb_ids = _extract_species_ids(aligned)
-    species_aggs = _compute_species_aggregates(aligned, all_flora_ids, all_herb_ids)
+    aligned: list[list[TelemetryRow]] = []
+    for rows in per_run:
+        if len(rows) < max_len:
+            pad_count = max_len - len(rows)
+            last: TelemetryRow = dict(rows[-1]) if rows else {}
+            last["death_herbivore_feeding"] = 0.0
+            last["death_defense_maintenance"] = 0.0
+            aligned.append(rows + [last] * pad_count)
+        else:
+            aligned.append(rows)
+
+    # Stack aggregate scalar columns
+    flora_pop = np.array(
+        [[_coerce_float(r.get("flora_population", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+    herb_pop = np.array(
+        [[_coerce_float(r.get("herbivore_population", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+    flora_energy = np.array(
+        [[_coerce_float(r.get("total_flora_energy", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+    death_herbivore = np.array(
+        [[_coerce_float(r.get("death_herbivore_feeding", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+    death_defense = np.array(
+        [[_coerce_float(r.get("death_defense_maintenance", 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+
+    # Extinction probability: fraction of runs where flora hit zero at any tick
+    extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
+    extinction_probability = extinction_count / len(per_run)
+    survival_probability_curve = np.mean(flora_pop > 0, axis=0).tolist()
+
+    # Collect all per-species ids seen
+    all_flora_ids: set[int] = set()
+    all_herb_ids: set[int] = set()
+    for run in aligned:
+        for row in run:
+            flora_map = row.get("plant_pop_by_species", {})
+            herb_map = row.get("swarm_pop_by_species", {})
+            if isinstance(flora_map, dict):
+                all_flora_ids.update(k for k in flora_map.keys() if isinstance(k, int))
+            if isinstance(herb_map, dict):
+                all_herb_ids.update(k for k in herb_map.keys() if isinstance(k, int))
+
+    per_flora_pop_mean: dict[int, list[float]] = {}
+    per_flora_pop_std: dict[int, list[float]] = {}
+    for fid in sorted(all_flora_ids):
+        arr = np.array(
+            [[_species_count(r, "plant_pop_by_species", fid) for r in run] for run in aligned],
+            dtype=np.float64,
+        )
+        per_flora_pop_mean[fid] = arr.mean(axis=0).tolist()
+        per_flora_pop_std[fid] = arr.std(axis=0).tolist()
+
+    per_herb_pop_mean: dict[int, list[float]] = {}
+    per_herb_pop_std: dict[int, list[float]] = {}
+    for pid in sorted(all_herb_ids):
+        arr = np.array(
+            [[_species_count(r, "swarm_pop_by_species", pid) for r in run] for run in aligned],
+            dtype=np.float64,
+        )
+        per_herb_pop_mean[pid] = arr.mean(axis=0).tolist()
+        per_herb_pop_std[pid] = arr.std(axis=0).tolist()
 
     result: BatchAggregate = {
         "ticks": ticks,
+        "flora_population_mean": flora_pop.mean(axis=0).tolist(),
+        "flora_population_std": flora_pop.std(axis=0).tolist(),
+        "herbivore_population_mean": herb_pop.mean(axis=0).tolist(),
+        "herbivore_population_std": herb_pop.std(axis=0).tolist(),
+        "total_flora_energy_mean": flora_energy.mean(axis=0).tolist(),
+        "total_flora_energy_std": flora_energy.std(axis=0).tolist(),
+        "death_herbivore_feeding_mean": death_herbivore.mean(axis=0).tolist(),
+        "death_defense_maintenance_mean": death_defense.mean(axis=0).tolist(),
+        "extinction_probability": extinction_probability,
+        "survival_probability_curve": survival_probability_curve,
         "runs_completed": len(per_run),
-        # Unpack scalars
-        **scalars,
-        # Unpack species aggs
-        **species_aggs,
+        "per_flora_pop_mean": {str(k): v for k, v in per_flora_pop_mean.items()},
+        "per_flora_pop_std": {str(k): v for k, v in per_flora_pop_std.items()},
+        "per_herbivore_pop_mean": {str(k): v for k, v in per_herb_pop_mean.items()},
+        "per_herbivore_pop_std": {str(k): v for k, v in per_herb_pop_std.items()},
     }
-
     logger.info(
         "Batch aggregation complete (runs=%d, max_len=%d, extinction_prob=%.3f)",
         len(per_run),
         max_len,
-        scalars["extinction_probability"],
+        extinction_probability,
     )
     return result
 

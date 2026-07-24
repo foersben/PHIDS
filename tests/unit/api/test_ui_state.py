@@ -21,34 +21,14 @@ from typing import cast
 
 import pytest
 
-from phids.api.schemas.simulation import SimulationConfig
-from phids.api.schemas.species import (
+from phids.api.schemas import (
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
+    PassiveDefensesSchema,
+    SimulationConfig,
 )
-from phids.api.schemas.triggers import PassiveDefensesSchema
-from phids.api.services.draft.biotope import update_biotope
-from phids.api.services.draft.diet import set_diet_compatibility
-from phids.api.services.draft.placements import (
-    add_plant_placement,
-    add_swarm_placement,
-    clear_placements,
-    remove_plant_placement,
-    remove_swarm_placement,
-)
-from phids.api.services.draft.species import remove_flora, remove_herbivore
-from phids.api.services.draft.substances import add_substance, remove_substance, update_substance
-from phids.api.services.draft.trigger_rules import (
-    add_trigger_rule,
-    append_trigger_rule_condition_child,
-    delete_trigger_rule_condition_node,
-    remove_trigger_rule,
-    replace_trigger_rule_condition_node,
-    set_trigger_rule_activation_condition,
-    update_trigger_rule,
-    update_trigger_rule_condition_node,
-)
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
@@ -62,6 +42,8 @@ from phids.api.ui_state import (
     reset_draft,
     set_draft,
 )
+
+draft_service = DraftService()
 
 
 def _flora(species_id: int, name: str | None = None) -> FloraSpeciesParams:
@@ -246,15 +228,15 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
         ],
         substance_definitions=[SubstanceDefinition(substance_id=0, name="Alarm")],
     )
-    add_plant_placement(draft, 1, 3, 3, 9.0)
-    add_swarm_placement(draft, 1, 3, 3, 5, 8.0)
+    draft_service.add_plant_placement(draft, 1, 3, 3, 9.0)
+    draft_service.add_swarm_placement(draft, 1, 3, 3, 5, 8.0)
 
-    remove_flora(draft, 0)
+    draft_service.remove_flora(draft, 0)
     assert [cast("FloraSpeciesParams", flora).species_id for flora in draft.flora_species] == [0]
     assert draft.diet_matrix == [[False], [True]]
     assert draft.trigger_rules[0].flora_species_id == 0
 
-    remove_herbivore(draft, 0)
+    draft_service.remove_herbivore(draft, 0)
     assert [cast("HerbivoreSpeciesParams", herbivore).species_id for herbivore in draft.herbivore_species] == [0]
     assert draft.diet_matrix == [[True]]
     assert draft.trigger_rules[0].herbivore_species_id == 0
@@ -265,9 +247,9 @@ def test_draft_species_mutations_compact_rules_and_resize_diet_matrix() -> None:
     }
 
     with pytest.raises(ValueError):
-        remove_flora(draft, 99)
+        draft_service.remove_flora(draft, 99)
     with pytest.raises(ValueError):
-        remove_herbivore(draft, 99)
+        draft_service.remove_herbivore(draft, 99)
 
 
 def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> None:
@@ -286,17 +268,17 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
             Rule-of-16 ceiling.
     """
     draft = DraftState.default()
-    add_substance(draft, name="Alarm")
-    add_substance(draft, name="Shield", is_toxin="true", lethal="true")
-    add_substance(draft, name="Relay")
-    add_trigger_rule(
+    draft_service.add_substance(draft, name="Alarm")
+    draft_service.add_substance(draft, name="Shield", is_toxin="true", lethal="true")
+    draft_service.add_substance(draft, name="Relay")
+    draft_service.add_trigger_rule(
         draft,
         0,
         0,
         1,
         activation_condition={"kind": "substance_active", "substance_id": 1},
     )
-    add_trigger_rule(
+    draft_service.add_trigger_rule(
         draft,
         0,
         0,
@@ -310,10 +292,10 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
         },
     )
 
-    was_clamped = update_biotope(
+    was_clamped = draft_service.update_biotope(
         draft,
-        grid_width=250,
-        grid_height=250,
+        grid_width=160,
+        grid_height=5,
         max_ticks=0,
         tick_rate_hz=0.0,
         wind_x=1.25,
@@ -330,8 +312,8 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
         mycorrhizal_signal_velocity=0,
     )
     assert was_clamped is True
-    assert draft.grid_width == 200
-    assert draft.grid_height == 200
+    assert draft.grid_width == 80
+    assert draft.grid_height == 10
     assert draft.max_ticks == 1
     assert draft.tick_rate_hz == pytest.approx(0.1)
     assert draft.wind_x == pytest.approx(1.25)
@@ -347,7 +329,7 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     assert draft.mycorrhizal_growth_interval_ticks == 1
     assert draft.mycorrhizal_signal_velocity == 1
 
-    updated = update_substance(
+    updated = draft_service.update_substance(
         draft,
         1,
         name="Shield+",
@@ -370,11 +352,11 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     assert updated.energy_cost_per_tick == pytest.approx(0.0)
     assert updated.irreversible is True
 
-    assert set_diet_compatibility(draft, 0, 0, "toggle") is False
-    assert set_diet_compatibility(draft, 0, 0, "on") is True
-    assert set_diet_compatibility(draft, 9, 9, "on") is None
+    assert draft_service.set_diet_compatibility(draft, 0, 0, "toggle") is False
+    assert draft_service.set_diet_compatibility(draft, 0, 0, "on") is True
+    assert draft_service.set_diet_compatibility(draft, 9, 9, "on") is None
 
-    remove_substance(draft, 1)
+    draft_service.remove_substance(draft, 1)
     assert [definition.substance_id for definition in draft.substance_definitions] == [0, 1]
     assert draft.substance_definitions[1].name == "Relay"
     assert len(draft.trigger_rules) == 1
@@ -388,15 +370,15 @@ def test_draft_biotope_substance_and_diet_mutators_compact_substance_ids() -> No
     }
 
     with pytest.raises(ValueError):
-        update_substance(draft, 99, name="missing")
+        draft_service.update_substance(draft, 99, name="missing")
     with pytest.raises(ValueError):
-        remove_substance(draft, 99)
+        draft_service.remove_substance(draft, 99)
 
     saturated = DraftState.default()
     for idx in range(16):
-        add_substance(saturated, name=f"S{idx}")
+        draft_service.add_substance(saturated, name=f"S{idx}")
     with pytest.raises(ValueError):
-        add_substance(saturated, name="overflow")
+        draft_service.add_substance(saturated, name="overflow")
 
 
 def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths() -> None:
@@ -406,7 +388,7 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
         SubstanceDefinition(substance_id=0, name="Signal 0"),
         SubstanceDefinition(substance_id=1, name="Signal 1"),
     ]
-    add_trigger_rule(
+    draft_service.add_trigger_rule(
         draft,
         0,
         0,
@@ -427,7 +409,7 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
         ],
     }
 
-    update_trigger_rule(
+    draft_service.update_trigger_rule(
         draft,
         0,
         substance_id=1,
@@ -441,7 +423,7 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
         "substance_id": 1,
     }
 
-    set_trigger_rule_activation_condition(
+    draft_service.set_trigger_rule_activation_condition(
         draft,
         0,
         {
@@ -455,14 +437,14 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
             ],
         },
     )
-    append_trigger_rule_condition_child(
+    draft_service.append_trigger_rule_condition_child(
         draft,
         0,
         "",
         {"kind": "substance_active", "substance_id": 1},
     )
-    update_trigger_rule_condition_node(draft, 0, "0", min_herbivore_population=3)
-    replace_trigger_rule_condition_node(
+    draft_service.update_trigger_rule_condition_node(draft, 0, "0", min_herbivore_population=3)
+    draft_service.replace_trigger_rule_condition_node(
         draft,
         0,
         "1",
@@ -484,27 +466,27 @@ def test_draft_trigger_rule_tree_mutators_apply_edits_and_raise_on_invalid_paths
         ],
     }
 
-    delete_trigger_rule_condition_node(draft, 0, "1")
+    draft_service.delete_trigger_rule_condition_node(draft, 0, "1")
     assert draft.trigger_rules[0].activation_condition == {
         "kind": "all_of",
         "conditions": [{"kind": "herbivore_presence", "herbivore_species_id": 0, "min_herbivore_population": 3}],
     }
-    delete_trigger_rule_condition_node(draft, 0, "")
+    draft_service.delete_trigger_rule_condition_node(draft, 0, "")
     assert draft.trigger_rules[0].activation_condition is None
 
     with pytest.raises(IndexError):
-        append_trigger_rule_condition_child(draft, 0, "", {"kind": "substance_active", "substance_id": 0})
+        draft_service.append_trigger_rule_condition_child(draft, 0, "", {"kind": "substance_active", "substance_id": 0})
     with pytest.raises(IndexError):
-        update_trigger_rule_condition_node(draft, 0, "0", substance_id=0)
+        draft_service.update_trigger_rule_condition_node(draft, 0, "0", substance_id=0)
     with pytest.raises(IndexError):
-        replace_trigger_rule_condition_node(
+        draft_service.replace_trigger_rule_condition_node(
             draft,
             0,
             "0",
             {"kind": "substance_active", "substance_id": 0},
         )
 
-    remove_trigger_rule(draft, 0)
+    draft_service.remove_trigger_rule(draft, 0)
     assert draft.trigger_rules == []
 
 
@@ -516,7 +498,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
 
     draft = DraftState.default()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Alarm")]
-    add_trigger_rule(
+    draft_service.add_trigger_rule(
         draft,
         0,
         0,
@@ -535,12 +517,12 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     draft.z6_max_total_flora_energy = 123.0
     draft.z7_max_total_herbivore_population = 77
 
-    add_plant_placement(draft, 0, 1, 2, 7.5)
-    add_swarm_placement(draft, 0, 3, 4, 6, 12.0)
-    remove_plant_placement(draft, 0)
-    remove_swarm_placement(draft, 0)
-    add_plant_placement(draft, 0, 2, 2, 8.5)
-    add_swarm_placement(draft, 0, 2, 2, 4, 9.0)
+    draft_service.add_plant_placement(draft, 0, 1, 2, 7.5)
+    draft_service.add_swarm_placement(draft, 0, 3, 4, 6, 12.0)
+    draft_service.remove_plant_placement(draft, 0)
+    draft_service.remove_swarm_placement(draft, 0)
+    draft_service.add_plant_placement(draft, 0, 2, 2, 8.5)
+    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 9.0)
 
     config = cast("SimulationConfig", draft.build_sim_config())
     assert config.mycorrhizal_growth_interval_ticks == 11
@@ -552,7 +534,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     assert config.initial_plants[0].x == 2
     assert config.initial_swarms[0].population == 4
 
-    clear_placements(draft)
+    draft_service.clear_placements(draft)
     assert draft.initial_plants == []
     assert draft.initial_swarms == []
 

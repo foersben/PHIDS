@@ -11,10 +11,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 import pytest
 
-from phids.api.schemas.species import (
-    FloraSpeciesParams,
-    HerbivoreSpeciesParams,
-)
+from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
@@ -151,8 +148,8 @@ def _run_mitosis_step(
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
     offspring_pos = (2, 1)
     monkeypatch.setattr(
-        "phids.engine.systems.interaction.metabolism._random_walk_step",
-        lambda _x, _y, _width, _height, *_, **__: offspring_pos,
+        "phids.engine.systems.interaction._random_walk_step",
+        lambda _x, _y, _width, _height: offspring_pos,
     )
 
     swarm_id = add_swarm(

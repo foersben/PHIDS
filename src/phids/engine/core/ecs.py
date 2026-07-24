@@ -102,9 +102,6 @@ class ECSWorld:
         self._spatial_hash: dict[tuple[int, int], set[int]] = defaultdict(set)
         # entity_id -> (x, y) reverse lookup for O(1) spatial cleanup on move/destroy
         self._entity_positions: dict[int, tuple[int, int]] = {}
-        # Caching layer for query optimization
-        self._structural_version: int = 0
-        self._query_cache: dict[tuple[type[object], ...], tuple[int, list[Entity]]] = {}
 
     # ------------------------------------------------------------------
     # Entity lifecycle
@@ -121,7 +118,6 @@ class ECSWorld:
         self._next_id += 1
         entity = Entity(entity_id=eid)
         self._entities[eid] = entity
-        self._structural_version += 1
         return entity
 
     def destroy_entity(self, entity_id: int) -> None:
@@ -134,7 +130,6 @@ class ECSWorld:
         entity = self._entities.pop(entity_id, None)
         if entity is None:
             return
-        self._structural_version += 1
         # Clean component index
         for ctype in list(entity._components.keys()):
             self._component_index[ctype].discard(entity_id)
@@ -182,7 +177,6 @@ class ECSWorld:
         entity = self._entities[entity_id]
         entity.add_component(component)
         self._component_index[type(component)].add(entity_id)
-        self._structural_version += 1
 
     def remove_component(self, entity_id: int, component_type: type[object]) -> None:
         """Detach a component of the specified type from an entity.
@@ -195,7 +189,6 @@ class ECSWorld:
         entity = self._entities[entity_id]
         entity.remove_component(component_type)
         self._component_index[component_type].discard(entity_id)
-        self._structural_version += 1
 
     def query(self, *component_types: type[object]) -> list[Entity]:
         """Return a list of all entities that possess all listed component types.
@@ -212,24 +205,19 @@ class ECSWorld:
 
         entities = self._entities
 
-        cache_key = component_types
-        cached = self._query_cache.get(cache_key)
-        if cached is not None and cached[0] == self._structural_version:
-            return cached[1]
-
         # Fast path for single component query (highly common in hot loop)
         if len(component_types) == 1:
             ct = component_types[0]
-            # ⚡ Bolt Optimization:
-            # We assume strict synchronization between `_entities`, `_component_index`,
-            # and `_components` via the ECS lifecycle methods. Thus, we can safely
-            # skip redundant dictionary lookups (`eid in entities` and `ct in entities[eid]._components`)
-            # for a measurable O(N) reduction in lookup overhead during hot-path iterations.
-            result = [entities[eid] for eid in self._component_index.get(ct, set())]
-            self._query_cache[cache_key] = (self._structural_version, result)
-            return result
+            # List comprehension with fast local variable lookups
+            # The set copy is not strictly needed for thread-safety but we iterate
+            # over the set elements safely.
+            return [
+                entities[eid]
+                for eid in self._component_index.get(ct, set())
+                if eid in entities and ct in entities[eid]._components
+            ]
 
-        # Fast path C-level set intersection for multi-component queries
+        # Start from the smallest set for efficiency
         sets: list[set[int]] = []
         for component_type in component_types:
             indexed_ids = self._component_index.get(component_type)
@@ -237,16 +225,12 @@ class ECSWorld:
                 return []
             sets.append(indexed_ids)
 
-        sets.sort(key=len)
-
-        # We must copy the smallest set so we don't mutate the component index!
-        intersection = set(sets[0])
-        for s in sets[1:]:
-            intersection.intersection_update(s)
-
-        result = [entities[eid] for eid in intersection]
-        self._query_cache[cache_key] = (self._structural_version, result)
-        return result
+        smallest = min(sets, key=len)
+        return [
+            entities[eid]
+            for eid in smallest
+            if eid in entities and all(ct in entities[eid]._components for ct in component_types)
+        ]
 
     # ------------------------------------------------------------------
     # Spatial Hash

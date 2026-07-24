@@ -1,15 +1,8 @@
 ---
-type: rule
 title: Markdown Formatting Rules
-status: active
-version: 0.1
 description: Rules for formatting markdown files.
-tags:
-- documentation
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+type: rule
 ---
-
 # Markdown Formatting Rules
 
 These rules apply globally across the workspace for editing any markdown file:

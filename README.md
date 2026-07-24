@@ -185,13 +185,6 @@ Open:
 * UI: `http://127.0.0.1:8000/`
 * OpenAPI docs: `http://127.0.0.1:8000/docs`
 
-### 3) Load an example scenario and run
-
-1. Open the UI at `http://127.0.0.1:8000/`.
-2. In the control panel, locate the **Import JSON** button in the bottom left corner.
-3. Import one of the curated examples (e.g., `examples/dry_shrubland_cycles.json`) to populate the draft state.
-4. Click **Start** to begin the ecological simulation.
-
 ---
 
 ## ✅ Development, Testing & CI behavior
@@ -223,8 +216,6 @@ Useful `just` Commands:
 * `just lint`: Automatically fix formatting and run static analysis (Ruff & Mypy).
 * `just check`: Run all pre-commit hooks across the codebase.
 * `just docs`: Build and serve the Zensical documentation strictly.
-* `just bench-compare-jit`: Compare JIT performance of the current workspace against a baseline branch.
-* `just act-complexity`: Run code complexity checks using complexipy.
 * `just clean`: Remove all build artifacts, cache directories, and test coverage files.
 
 Hook-only verification:
@@ -316,7 +307,6 @@ uv run zensical serve
 
 * simulation/math: `numpy`, `scipy`, `numba`, `deap`
 * API/runtime: `fastapi`, `uvicorn`, `websockets`
-* UI/frontend: `HTMX`, `Tailwind CSS`, `Jinja2`, `Chart.js`
 * CLI: `typer`
 * validation/modeling boundary: `pydantic` (V2)
 * telemetry/data processing: `polars`, `zarr`
@@ -335,8 +325,7 @@ src/phids/              canonical runtime package
 ├── io/                 High-performance Zarr replays and scenario parsing
 ├── telemetry/          Tick analytics, export routines, and Polars handlers
 ├── shared/             Common utilities and logging configurations
-├── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
-└── __main__.py         Command-line interface (Typer) entry point
+└── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
 tests/                  property-based invariant tests, two-pass Numba tests, and API integration
 examples/               curated scenario JSON files
 docs/                   Zensical documentation corpus

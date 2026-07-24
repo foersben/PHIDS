@@ -23,7 +23,6 @@ class FloraProfile(BaseModel):
         survival_threshold: Energy reserve threshold below which the plant dies.
         seed_cost: Caloric cost to reproduce/drop a seed.
         seed_dispersion_radius: Maximum radius for seed dispersal.
-        passive_defenses: Morphological defense configuration.
 
     """
 
@@ -32,7 +31,6 @@ class FloraProfile(BaseModel):
     survival_threshold: float
     seed_cost: float
     seed_dispersion_radius: float
-    passive_defenses: dict[str, float]
 
 
 class HerbivoreProfile(BaseModel):
@@ -43,7 +41,6 @@ class HerbivoreProfile(BaseModel):
         consumption_rate: Feeding consumption rate per tick.
         mitosis_threshold: Energy threshold required to undergo mitosis.
         split_ratio: Energy and population allocation ratio on split.
-        resistances: Herbivore resistances to passive plant defenses.
 
     """
 
@@ -51,7 +48,6 @@ class HerbivoreProfile(BaseModel):
     consumption_rate: float
     mitosis_threshold: float
     split_ratio: float
-    resistances: dict[str, float]
 
 
 class BioDatabaseModel(BaseModel):
@@ -75,80 +71,15 @@ class BioDatabase:
 
     """
 
-    def __init__(self, db_path: str = "src/phids/analytics/bio_database.json", data: BioDatabaseModel | None = None):
-        """Initialise the bio database from the given JSON file path or model.
+    def __init__(self, db_path: str = "src/phids/analytics/bio_database.json"):
+        """Initialise the bio database from the given JSON file path.
 
         Args:
             db_path: Path to the bio_database.json file.
-            data: Explicit BioDatabaseModel instance (overrides db_path).
 
         """
-        if data is not None:
-            self.data = data
-        else:
-            with open(Path(db_path)) as f:
-                self.data = BioDatabaseModel(**json.load(f))
-
-    @classmethod
-    def from_duckdb(cls, db_path: str = "src/phids/analytics/bio_database.duckdb") -> "BioDatabase":
-        """Initialise the bio database directly from the DuckDB file.
-
-        Args:
-            db_path: Path to the bio_database.duckdb file.
-
-        Returns:
-            A new BioDatabase instance populated from DuckDB.
-
-        Raises:
-            ImportError: If duckdb is not installed.
-        """
-        try:
-            import duckdb
-        except ImportError:
-            raise ImportError("duckdb is required to use from_duckdb()") from None
-
-        conn = duckdb.connect(db_path, read_only=True)
-
-        flora_dict: dict[str, FloraProfile] = {}
-        for row in conn.execute(
-            "SELECT canonical_name, growth_rate, max_energy, survival_threshold, "
-            "seed_cost, seed_dispersion_radius, mechanical_damage_per_bite, "
-            "digestibility_modifier FROM flora_species"
-        ).fetchall():
-            name, growth, max_e, surv, seed_c, seed_r, mech, digest = row
-            flora_dict[name] = FloraProfile(
-                growth_rate=growth,
-                max_energy=max_e,
-                survival_threshold=surv,
-                seed_cost=seed_c,
-                seed_dispersion_radius=seed_r,
-                passive_defenses={
-                    "mechanical_damage_per_bite": mech,
-                    "digestibility_modifier": digest,
-                },
-            )
-
-        herb_dict: dict[str, HerbivoreProfile] = {}
-        for row in conn.execute(
-            "SELECT canonical_name, metabolism_upkeep, consumption_rate, "
-            "mitosis_threshold, split_ratio, morphological_adaptation, "
-            "chemical_neutralization, digestive_efficiency FROM herbivore_species"
-        ).fetchall():
-            name, metab, cons, mito, split, morph, chem, digest = row
-            herb_dict[name] = HerbivoreProfile(
-                metabolism_upkeep=metab,
-                consumption_rate=cons,
-                mitosis_threshold=mito,
-                split_ratio=split,
-                resistances={
-                    "morphological_adaptation": morph,
-                    "chemical_neutralization": chem,
-                    "digestive_efficiency": digest,
-                },
-            )
-
-        conn.close()
-        return cls(data=BioDatabaseModel(flora=flora_dict, herbivores=herb_dict))
+        with open(Path(db_path)) as f:
+            self.data = BioDatabaseModel(**json.load(f))
 
     def _euclidean_distance(self, v1: list[float], v2: list[float]) -> float:
         """Calculate the Euclidean distance between two vectors.

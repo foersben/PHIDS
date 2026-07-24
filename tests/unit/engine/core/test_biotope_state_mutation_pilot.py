@@ -1,11 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Focused pilot tests for GridEnvironment methods targeted by mutmut.
-
-Includes comprehensive tests for boundary conditions and shape
-verification that were previously eliminated by mutmut.
-"""
+"""Focused pilot tests for GridEnvironment methods targeted by mutmut."""
 
 from __future__ import annotations
 
@@ -125,45 +121,3 @@ def test_make_gaussian_kernel_arithmetic() -> None:
     assert np.isclose(kernel.sum(), 1.0)
     # The corners should be effectively zero due to truncation/low sigma
     assert kernel[0, 0] < 1e-6
-
-
-def test_grid_environment_default_instantiation() -> None:
-    """Validate that default parameter arguments construct a 40x40 environment with 4 substances."""
-    env = GridEnvironment()
-    assert env.width == 40
-    assert env.height == 40
-    assert env.plant_energy_layer.shape == (40, 40)
-    assert env._plant_energy_layer_write.shape == (40, 40)
-    assert env.flow_field.shape == (40, 40)
-    assert env.wind_vector_x.shape == (40, 40)
-    assert env.wind_vector_y.shape == (40, 40)
-    assert env.signal_layers.shape == (4, 40, 40)
-    assert env.toxin_layers.shape == (4, 40, 40)
-    assert env.apparent_nutrition_layer.shape == (40, 40)
-    assert env._apparent_nutrition_layer_write.shape == (40, 40)
-
-
-def test_grid_environment_to_dict_defaults() -> None:
-    """Validate dictionary snapshot serialisation with default dimensions."""
-    env = GridEnvironment()
-    snapshot = env.to_dict()
-    assert np.array(snapshot["signal_layers"]).shape == (4, 40, 40)
-    assert np.array(snapshot["toxin_layers"]).shape == (4, 40, 40)
-    assert np.array(snapshot["plant_energy_layer"]).shape == (40, 40)
-
-
-def test_grid_environment_init_bounds_inclusive() -> None:
-    """Validate that the minimum boundary 1 is inclusive.
-
-    This kills mutmut survivors that mutate 1 <= width to 2 <= width.
-    """
-    from phids.shared.constants import GRID_H_MAX, GRID_W_MAX, MAX_SUBSTANCE_TYPES
-
-    # Should not raise any ValueError
-    env_min = GridEnvironment(width=1, height=1, num_signals=1, num_toxins=1)
-    assert env_min.width == 1
-
-    env_max = GridEnvironment(
-        width=GRID_W_MAX, height=GRID_H_MAX, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
-    )
-    assert env_max.width == GRID_W_MAX

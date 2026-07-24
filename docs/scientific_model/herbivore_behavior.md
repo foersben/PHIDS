@@ -1,18 +1,12 @@
 ---
 type: scientific_model
-title: Herbivore Behavior & Kinematics
+title: "Herbivore Behavior & Kinematics"
 status: active
 version: 0.1
-description: Documentation for Herbivore Behavior & Kinematics in the PHIDS framework.
-tags:
-- phids
-- ecs
-- numba
-- chemotaxis
-- python
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+description: "Documentation for Herbivore Behavior & Kinematics in the PHIDS framework."
 ---
+
+# Herbivore Behavior & Kinematics
 
 Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
 
@@ -20,8 +14,7 @@ Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Th
 
 Swarms do not move in absolute straight lines toward a distant target. When sampling their Moore Neighborhood $\mathcal{N}(x,y)$ against the unified Flow Field $F_t$, they utilize **probabilistic softmax-like weighting**.
 
-### Biological Rationale
-
+**Biological Rationale:**
 In real ecological systems, individuals in a herd do not possess perfect information. If 1,000 herbivores all determined that coordinate (5,5) had the absolute highest gradient mathematically, and all moved there simultaneously, they would form a physically impossible singularity. By using probabilistic sampling weighted heavily toward the gradient peak, PHIDS naturally models the "diffuse foraging fronts" observed in grazing animals or hymenoptera (insects). The swarm as a whole moves *generally* toward the target, but individual entities exhibit slight variations.
 
 ## 2. Inertial Persistence (The Orthokinetic Rule)
@@ -30,27 +23,23 @@ A critical edge case occurs when the entire gradient is flat (values $< 1 \times
 
 If gradient ascent alone drove the system, the swarm would halt completely.
 
-### Algorithmic Resolution
-
+**Algorithmic Resolution:**
 When $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
 
 * A 10:1 preference weight is given to continue moving in the current heading.
 * If no previous heading exists, isotropic random dispersal (Random Walk) is applied.
 
-### Biological Rationale
-
+**Biological Rationale:**
 This emulates *orthokinesis*-directional persistence. An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature.
 
 ## 3. Capacity Limits & Physical Repulsion
 
 The biotope is a discrete grid. While multiple swarms can occupy the same $(x, y)$ coordinate, doing so infinitely violates spatial realism.
 
-### Algorithmic Resolution
-
+**Algorithmic Resolution:**
 At the start of the interaction phase, PHIDS aggregates the total population of all swarms currently on a tile. If this sum exceeds the `TILE_CARRYING_CAPACITY` (e.g., 500 individuals), the swarms enter a **Repelled Random Walk** state for $k$ ticks.
 
-### Biological Rationale
-
+**Biological Rationale:**
 This is a computational surrogate for crowding-induced displacement. When too many grazers cram into a single patch, physical jostling forces the groups to scatter radially, expanding the foraging front and alleviating the localized density pressure.
 
 ## 4. Trophic Anchoring (The Arrestment Reflex & Anchoring Heuristic)
@@ -127,7 +116,7 @@ Under this old model, animals are forced to continually shift and vibrate accord
 
 When an anchored swarm consumes immense amounts of energy, it converts the surplus into population. If $N_i \ge N_{split}$, the swarm physically divides.
 
-### Algorithmic Resolution
+**Algorithmic Resolution:**
 
 The system executes a binary fission:
 
@@ -136,7 +125,7 @@ The system executes a binary fission:
 3. The new offspring swarm inherits identical phenotypic traits (consumption rate, metabolism).
 4. The offspring is explicitly placed via a `_random_walk_step` in an adjacent tile.
 
-### Biological Rationale
+**Biological Rationale:**
 
 Symmetric partitioning conserves absolute biomass during the split. Forcing the offspring into an adjacent tile prevents immediate spatial re-coalescence. This physically models the division of a super-colony-such as insect hives branching off a new queen, or a massive grazing herd fracturing into two distinct pods under social pressure.
 
@@ -150,7 +139,7 @@ In a continuous biological model, herbivore populations grow or shrink based on 
 
 Because PHIDS operates a rigid Entity-Component-System (ECS) spatial hash, populations must remain strict integers, and metabolic accounting must strictly govern the "Attrition Trap" (starving while eating due to low digestibility).
 
-##### Phase 1: Caloric Accounting (The Attrition Trap)
+**Phase 1: Caloric Accounting (The Attrition Trap):**
 
 To simulate quantitative defenses (like high lignin), the digestibility modifier must scale the *gross* intake before baseline metabolism is paid.
 
@@ -159,10 +148,9 @@ To simulate quantitative defenses (like high lignin), the digestibility modifier
 3. **Net Energy:** $E_{t+1} = E_t + \Delta e_{\text{real}} - \text{metabolism\_upkeep}$
 *(If $\Delta e_{\text{real}}$ cannot cover the upkeep, the swarm mathematically loses energy despite feeding).*
 
-##### Phase 2: Mechanical Attrition (Integer Enforcement)
+**Phase 2: Mechanical Attrition (Integer Enforcement):**
 
 To prevent "ghost fractions" from breaking the simulation constraints, physical damage taken from plant defenses is cast using a strict mathematical floor function:
-
 $$\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - \text{resistance}_{\text{mechanical}}) \rfloor$$
 
 Where:

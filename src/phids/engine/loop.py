@@ -40,12 +40,12 @@ from phids.telemetry.conditions import TerminationResult, check_termination
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 if TYPE_CHECKING:
-    from phids.api.schemas.simulation import SimulationConfig
-    from phids.api.schemas.species import (
+    from phids.api.schemas import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
+        SimulationConfig,
+        TriggerConditionSchema,
     )
-    from phids.api.schemas.triggers import TriggerConditionSchema
 
 
 class _ReplayBackend(Protocol):
@@ -479,10 +479,6 @@ class SimulationLoop:
                 "death_herbivore_feeding": 0,
                 "death_background_deficit": 0,
             }
-            herbivore_death_causes = {
-                "death_starvation": 0,
-                "death_lethal_toxin": 0,
-            }
             phase_started = time.perf_counter()
 
             # --------------------------------------------------------
@@ -497,10 +493,6 @@ class SimulationLoop:
                 self.env._flow_field_base,
                 self.env._flow_field_current,
                 self.env._flow_field_nxt,
-                self.config.chemotaxis_alpha,
-                self.config.chemotaxis_beta,
-                self.config.chemotaxis_decay,
-                self.config.chemotaxis_truncate_threshold,
             )
             if debug_summary:
                 phase_timings_ms["flow_field"] = (time.perf_counter() - phase_started) * 1000.0
@@ -540,7 +532,6 @@ class SimulationLoop:
                 list(self.config.herbivore_species),
                 self.tick,
                 plant_death_causes=plant_death_causes,
-                herbivore_death_causes=herbivore_death_causes,
             )
             if debug_summary:
                 phase_timings_ms["interaction"] = (time.perf_counter() - phase_started) * 1000.0
@@ -570,8 +561,6 @@ class SimulationLoop:
 
             # Build one shared metrics snapshot for telemetry and termination.
             tick_metrics: TickMetrics = collect_tick_metrics(self.world)
-            tick_metrics.plant_death_causes = plant_death_causes
-            tick_metrics.herbivore_death_causes = herbivore_death_causes
 
             # --------------------------------------------------------
             # Phase 5: Telemetry
@@ -579,6 +568,7 @@ class SimulationLoop:
             self.telemetry.record(
                 self.world,
                 self.tick,
+                plant_death_causes=plant_death_causes,
                 tick_metrics=tick_metrics,
             )
             self._append_replay_frame()

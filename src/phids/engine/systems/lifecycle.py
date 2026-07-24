@@ -71,7 +71,7 @@ def _attempt_reproduction(
         list[PlantComponent]: Newly created plant components (empty if none).
 
     """
-    from phids.api.schemas.species import FloraSpeciesParams
+    from phids.api.schemas import FloraSpeciesParams  # local import avoids circulars
 
     if (tick - plant.last_reproduction_tick) < plant.reproduction_interval:
         return []
@@ -159,7 +159,6 @@ def _attempt_reproduction(
     world.add_component(new_entity.entity_id, new_plant)
     world.register_position(new_entity.entity_id, tx, ty)
     env.set_plant_energy(tx, ty, plant.species_id, params.base_energy)
-    env.set_apparent_nutrition(tx, ty, plant.apparent_nutrition_factor)
     return [new_plant]
 
 
@@ -354,8 +353,6 @@ def _establish_mycorrhizal_connections(
         formed_this_tick.add(neighbour.entity_id)
         env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
         env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
-        env.set_apparent_nutrition(plant.x, plant.y, plant.apparent_nutrition_factor)
-        env.set_apparent_nutrition(neighbour.x, neighbour.y, neighbour.apparent_nutrition_factor)
         made_connection = True
 
         for participant in (plant, neighbour):
@@ -419,7 +416,6 @@ def run_lifecycle(
 
         # Update biotope energy
         env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
-        env.set_apparent_nutrition(plant.x, plant.y, plant.apparent_nutrition_factor)
 
         # Prune dead mycorrhizal links
         plant.mycorrhizal_connections = {eid for eid in plant.mycorrhizal_connections if world.has_entity(eid)}

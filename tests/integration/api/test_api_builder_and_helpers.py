@@ -19,9 +19,6 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from phids.api.presenters.diagnostics import build_energy_deficit_swarms, build_live_summary, render_status_badge_html
-from phids.api.services.draft.trigger_rules import parse_activation_condition_json, trigger_rule_by_index
-
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
@@ -35,26 +32,17 @@ from phids.api.presenters.dashboard import (
     validate_cell_coordinates,
 )
 from phids.api.routers.config.trigger_rules import config_trigger_rule_condition_node_update
-from phids.api.schemas.placement import (
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
-)
-from phids.api.schemas.simulation import SimulationConfig
-from phids.api.schemas.species import (
+from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreSpeciesParams,
-)
-from phids.api.schemas.triggers import (
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+    SimulationConfig,
     SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )
-from phids.api.services.draft.placements import (
-    add_plant_placement,
-)
-from phids.api.services.draft.trigger_rules import (
-    add_trigger_rule,
-)
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     ActivationConditionNode,
     DraftState,
@@ -67,6 +55,8 @@ from phids.api.ui_state import (
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
+
+draft_service = DraftService()
 
 
 def _flora(species_id: int) -> FloraSpeciesParams:
@@ -131,7 +121,7 @@ def _reset_state() -> None:
     api_main._sim_substance_names = {}
 
 
-def test_substance_name_helpers_default_and_draft_overrides() -> None:
+def test_main_substance_name_helpers_default_and_draft_overrides() -> None:
     """Verify substance naming helpers use defaults and honor draft-provided override labels."""
     assert _default_substance_name(2, is_toxin=False) == "Signal 2"
     assert _default_substance_name(3, is_toxin=True) == "Toxin 3"
@@ -170,19 +160,19 @@ def test_substance_name_helpers_default_and_draft_overrides() -> None:
         ),
     ],
 )
-def test_activation_condition_json_parser_valid_cases(
+def test_main_activation_condition_json_parser_valid_cases(
     raw: str | None,
     expected: ActivationConditionNode | None,
 ) -> None:
     """Verify activation-condition parser returns normalized dicts for valid inputs."""
-    assert parse_activation_condition_json(raw) == expected
+    assert api_main._parse_activation_condition_json(raw) == expected
 
 
 @pytest.mark.parametrize("raw", ["{bad json", '{"kind":"substance_active"}'])
-def test_activation_condition_json_parser_invalid_cases(raw: str) -> None:
+def test_main_activation_condition_json_parser_invalid_cases(raw: str) -> None:
     """Verify activation-condition parser raises on malformed JSON and invalid schemas."""
     with pytest.raises(HTTPException):
-        parse_activation_condition_json(raw)
+        api_main._parse_activation_condition_json(raw)
 
 
 @pytest.mark.parametrize(
@@ -230,7 +220,7 @@ def test_activation_condition_json_parser_invalid_cases(raw: str) -> None:
         ),
     ],
 )
-def test_activation_condition_descriptions(
+def test_main_activation_condition_descriptions(
     condition: ActivationConditionNode | None,
     herbivore_names: dict[int, str] | None,
     substance_names: dict[int, str] | None,
@@ -247,20 +237,20 @@ def test_activation_condition_descriptions(
     )
 
 
-def test_trigger_rule_lookup_valid_and_missing_index() -> None:
+def test_main_trigger_rule_lookup_valid_and_missing_index() -> None:
     """Verify trigger-rule lookup returns existing entries and raises for missing indices."""
     draft = DraftState.default()
     draft.trigger_rules = [TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=0)]
-    assert trigger_rule_by_index(draft, 0).substance_id == 0
+    assert api_main._trigger_rule_by_index(draft, 0).substance_id == 0
     with pytest.raises(HTTPException):
-        trigger_rule_by_index(draft, 3)
+        api_main._trigger_rule_by_index(draft, 3)
 
 
 @pytest.mark.parametrize(
     ("x", "y", "width", "height", "should_raise"),
     [(1, 1, 3, 3, False), (5, 1, 3, 3, True)],
 )
-def test_validate_cell_coordinates_cases(
+def test_main_validate_cell_coordinates_cases(
     x: int,
     y: int,
     width: int,
@@ -279,18 +269,18 @@ def test_validate_cell_coordinates_cases(
     ("headers", "expected"),
     [([(b"hx-request", b"true")], True), ([], False)],
 )
-def test_is_htmx_request_cases(headers: list[tuple[bytes, bytes]], expected: bool) -> None:
+def test_main_is_htmx_request_cases(headers: list[tuple[bytes, bytes]], expected: bool) -> None:
     """Verify HTMX request detection for header-present and header-absent request scopes."""
     request = Request({"type": "http", "headers": headers})
     assert api_main._is_htmx_request(request) is expected
 
 
-def test_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
+def test_main_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
     """Verify draft link presenter marks inter-species links only when the feature flag is enabled."""
     draft = DraftState.default()
     draft.initial_plants = []
-    add_plant_placement(draft, 0, 1, 1, 10.0)
-    add_plant_placement(draft, 1, 2, 1, 10.0)
+    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
+    draft_service.add_plant_placement(draft, 1, 2, 1, 10.0)
     assert build_draft_mycorrhizal_links(draft) == []
     draft.mycorrhizal_inter_species = True
     assert build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
@@ -305,7 +295,7 @@ def test_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
         (False, False, True, "Terminated"),
     ],
 )
-def test_render_status_badge_states(
+def test_main_render_status_badge_states(
     running: bool,
     paused: bool,
     terminated: bool,
@@ -317,17 +307,17 @@ def test_render_status_badge_states(
     loop.running = running
     loop.paused = paused
     loop.terminated = terminated
-    assert expected_label in render_status_badge_html(api_main._sim_loop)
+    assert expected_label in api_main._render_status_badge_html()
 
 
-def test_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
+def test_main_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
     """Verify unloaded-loop helpers raise and render the Idle status badge."""
     with pytest.raises(HTTPException):
         api_main._get_loop()
-    assert "Idle" in render_status_badge_html(api_main._sim_loop)
+    assert "Idle" in api_main._render_status_badge_html()
 
 
-def test_live_summary_and_starving_swarm_helpers() -> None:
+def test_main_live_summary_and_starving_swarm_helpers() -> None:
     """Test main live summary and starving swarm helpers.
 
     Asserts correct behavior of live summary and energy deficit swarm builders,
@@ -371,8 +361,8 @@ def test_live_summary_and_starving_swarm_helpers() -> None:
         ),
     )
 
-    summary = build_live_summary(api_main._sim_loop)
-    starving = build_energy_deficit_swarms(api_main._sim_loop)
+    summary = api_main._build_live_summary()
+    starving = api_main._build_energy_deficit_swarms()
 
     assert summary is not None
     assert summary["plants"] == 1
@@ -391,7 +381,7 @@ async def test_condition_node_update_creates_root_when_rule_has_no_condition() -
     """
     draft = get_draft()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Signal A")]
-    add_trigger_rule(draft, 0, 0, 0)
+    draft_service.add_trigger_rule(draft, 0, 0, 0)
 
     request = Request({"type": "http", "headers": []})
     response = await config_trigger_rule_condition_node_update(

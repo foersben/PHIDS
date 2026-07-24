@@ -29,18 +29,16 @@ import pytest_asyncio
 
 from phids.api import main as api_main
 from phids.api.main import app
-from phids.api.schemas.placement import (
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
-)
-from phids.api.schemas.simulation import SimulationConfig
-from phids.api.schemas.species import (
+from phids.api.schemas import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+    PassiveDefensesSchema,
+    SimulationConfig,
 )
-from phids.api.schemas.triggers import PassiveDefensesSchema
 from phids.api.ui_state import reset_draft
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
@@ -374,17 +372,3 @@ def add_swarm() -> Callable[..., int]:
         return entity.entity_id
 
     return _add_swarm
-
-
-def assert_htmx_trigger(response, expected_trigger: str) -> None:
-    """Assert HTTP response contains expected HX-Trigger header for HTMX event dispatching."""
-    header = response.headers.get("HX-Trigger")
-    assert header is not None, f"Expected HX-Trigger header '{expected_trigger}' but none was returned."
-    assert expected_trigger in header, f"Expected '{expected_trigger}' in HX-Trigger header, got '{header}'."
-
-
-def assert_valid_htmx_target(response_text: str, expected_element_id: str) -> None:
-    """Assert HTML partial content contains target DOM element ID for HTMX target swaps."""
-    assert f'id="{expected_element_id}"' in response_text or f"id='{expected_element_id}'" in response_text, (
-        f"HTMX partial HTML is missing expected target element id='{expected_element_id}'."
-    )

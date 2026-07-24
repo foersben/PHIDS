@@ -81,7 +81,6 @@
           <option value="herbivore_population_std" selected>herbivore_population_std</option>
           <option value="death_herbivore_feeding_mean">death_herbivore_feeding_mean</option>
           <option value="death_defense_maintenance_mean">death_defense_maintenance_mean</option>
-          <option value="death_starvation_mean">death_starvation_mean</option>
         </select>
       </label>
       <div class="text-[11px] text-slate-500 self-end">Hold <code>Ctrl</code>/<code>Cmd</code> to select multiple columns.</div>
@@ -166,7 +165,6 @@
     const herbivoreStd = _seriesWithLength(herbivoreStdRaw, labels.length);
     const deathHerbivore = _seriesWithLength(agg.death_herbivore_feeding_mean, labels.length);
     const deathDefense = _seriesWithLength(agg.death_defense_maintenance_mean, labels.length);
-    const deathStarvation = _seriesWithLength(agg.death_starvation_mean, labels.length);
     const survivalSeries = (agg.survival_probability_curve || []).map((v) => 100.0 * v);
 
     const ctx = document.getElementById('batch-agg-chart');
@@ -212,7 +210,6 @@
           { label: 'Herbivore -sigma', data: herbivoreLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
           { label: 'Herbivore feeding deaths', data: deathHerbivore, borderColor: '#f97316', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [2,2] },
           { label: 'Defense maint. deaths', data: deathDefense, borderColor: '#eab308', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [2,2] },
-          { label: 'Herbivore starvation', data: deathStarvation, borderColor: '#9333ea', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [2,2] },
         ],
       },
       options: {
@@ -347,10 +344,9 @@
         flora_population_mean: 'Flora mean',
         flora_population_std: 'Flora std',
         herbivore_population_mean: 'Herbivore mean',
-        herbivore_population_std: 'Herbivore Std',
+        herbivore_population_std: 'Herbivore std',
         death_herbivore_feeding_mean: 'Herbivore Feed Deaths',
-        death_defense_maintenance_mean: 'Defense Maint. Deaths',
-        death_starvation_mean: 'Herbivore Starvation',
+        death_defense_maintenance_mean: 'Defense Maint Deaths',
       };
       let html = '<table class="min-w-full text-[11px]">';
       html += '<thead class="sticky top-0 bg-slate-100 text-slate-600"><tr>';
@@ -369,7 +365,6 @@
           if (col === 'herbivore_population_std') v = (herbivoreStd[i] || 0).toFixed(2);
           if (col === 'death_herbivore_feeding_mean') v = (deathHerbivore[i] || 0).toFixed(2);
           if (col === 'death_defense_maintenance_mean') v = (deathDefense[i] || 0).toFixed(2);
-          if (col === 'death_starvation_mean') v = (deathStarvation[i] || 0).toFixed(2);
           html += `<td class="px-2 py-1 border-b border-slate-100">${v}</td>`;
         });
         html += `<td class="px-2 py-1 border-b border-slate-100">${surv.toFixed(1)}</td></tr>`;
@@ -523,7 +518,7 @@
       <li><strong>Balanced Overview / Stacked Biomass:</strong> Evaluates ecosystem energy transfer. Tracks Flora vs Herbivore population and biomass metrics to ensure energy is moving up the trophic chain and not becoming trapped.</li>
       <li><strong>Phase Space:</strong> Maps Flora Population (X) against Herbivore Population (Y). A stable Lotka-Volterra ecosystem forms a closed, repeating orbital loop. Crashing ecosystems spiral into the origin (0,0).</li>
       <li><strong>Collapse Risk Focus:</strong> Plots a survival probability curve (Kaplan-Meier estimator). Measures the exact probability that a scenario survives to tick <em>T</em> without hitting a terminal condition (Z2-Z7).</li>
-      <li><strong>Herbivore Pressure Focus:</strong> Maps total herbivore population specifically against <code>death_herbivore_feeding</code> events (plant deaths caused by grazing) and <code>death_starvation</code> (herbivore deaths caused by lack of food). Proves whether declining flora populations are due to active grazing pressure or simply poor baseline growth constraints, and tracks when herbivores starve.</li>
+      <li><strong>Herbivore Pressure Focus:</strong> Maps total herbivore population specifically against <code>death_herbivore_feeding</code> events. Proves whether declining flora populations are due to active grazing pressure or simply poor baseline growth constraints.</li>
       <li><strong>Defense Economy Ratio (Ledger):</strong> Isolates <code>death_defense_maintenance</code> events. Visualizes the metabolic burden of toxin synthesis to prove if flora are over-producing defenses and starving themselves to death.</li>
     </ul>
   </div>

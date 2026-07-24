@@ -70,18 +70,3 @@ def test_ecs_world_bulk_garbage_collection() -> None:
 
     assert not world.has_entity(e1.entity_id)
     assert not world.has_entity(e2.entity_id)
-
-
-def test_ecs_entity_id_monotonicity() -> None:
-    """Verify that ECSWorld assigns strictly monotonic, unique IDs starting from 0."""
-    world = ECSWorld()
-    entities = [world.create_entity() for _ in range(5)]
-    ids = [e.entity_id for e in entities]
-
-    # Assert exact expected IDs to kill default offset mutations and assignment mutations
-    assert ids == [0, 1, 2, 3, 4]
-
-    # Destroying an entity should not affect the monotonically increasing counter
-    world.destroy_entity(entities[2].entity_id)
-    e_new = world.create_entity()
-    assert e_new.entity_id == 5

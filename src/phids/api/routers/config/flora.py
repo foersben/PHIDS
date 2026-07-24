@@ -11,11 +11,12 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.schemas.species import FloraSpeciesParams
-from phids.api.services.draft.species import add_flora, remove_flora
+from phids.api.schemas import FloraSpeciesParams
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import get_draft
 
 router = APIRouter()
+draft_service = DraftService()
 
 
 @router.post("/api/config/flora", response_class=HTMLResponse, summary="Add flora species to draft")
@@ -54,7 +55,7 @@ async def config_flora_add(
         camouflage_factor=max(0.0, min(1.0, camouflage_factor)),
         triggers=[],
     )
-    add_flora(draft, params)
+    draft_service.add_flora(draft, params)
     api_main.logger.info("Flora species added via API (species_id=%d, name=%s)", new_id, name)
     return api_main.templates.TemplateResponse(
         request,
@@ -159,7 +160,7 @@ async def config_flora_delete(species_id: int) -> HTMLResponse:
     """Remove one flora species from the draft."""
     draft = get_draft()
     try:
-        remove_flora(draft, species_id)
+        draft_service.remove_flora(draft, species_id)
     except ValueError as exc:
         api_main.logger.warning("Flora delete requested for unknown species_id=%d", species_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc

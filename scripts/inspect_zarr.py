@@ -13,37 +13,56 @@ import numpy as np
 import zarr
 
 
-def _inspect_metadata(root: zarr.Group) -> None:
-    """Inspect and print Zarr consolidated metadata."""
-    if "_metadata" not in root:
-        print("Warning: Consolidated '_metadata' array not found at root.", file=sys.stderr)
-        return
+def inspect_zarr(store_path: Path) -> int:
+    """Read and validate a Zarr replay store.
 
-    try:
-        meta_array: Any = root["_metadata"]
-        meta_bytes: bytes = bytes(np.asarray(meta_array[:], dtype=np.uint8).tolist())
-        meta_obj: Any = json.loads(meta_bytes.decode("utf-8"))
-
-        if isinstance(meta_obj, list):
-            metadata_list = cast("list[dict[str, Any]]", meta_obj)
-            frame_offset = 0
-        else:
-            metadata_list = cast("list[dict[str, Any]]", meta_obj.get("_metadata", []))
-            frame_offset = int(meta_obj.get("_frame_offset", 0))
-
-        print("Metadata Status:")
-        print(f"  Consolidated Frames: {len(metadata_list)}")
-        print(f"  Frame Offset Index:  {frame_offset}")
-    except Exception as e:
-        print(f"Error decoding consolidated metadata: {e}", file=sys.stderr)
-
-
-def _inspect_frames(root: zarr.Group) -> int:
-    """Inspect and print Zarr frame structure.
+    Args:
+        store_path: Path to the Zarr store directory.
 
     Returns:
         int: Exit code (0 for success, 1 for errors).
     """
+    if not store_path.exists():
+        print(f"Error: Store path '{store_path}' does not exist.", file=sys.stderr)
+        return 1
+
+    try:
+        root: zarr.Group = zarr.open_group(str(store_path), mode="r")
+    except Exception as e:
+        print(f"Error opening Zarr group: {e}", file=sys.stderr)
+        return 1
+
+    print("==================================================")
+    print(f"Zarr Replay Store: {store_path.resolve()}")
+    print("==================================================")
+
+    # 1. Inspect Metadata
+    if "_metadata" not in root:
+        print("Warning: Consolidated '_metadata' array not found at root.", file=sys.stderr)
+        metadata_list: list[dict[str, Any]] = []
+        frame_offset: int = 0
+    else:
+        try:
+            meta_array: Any = root["_metadata"]
+            meta_bytes: bytes = bytes(np.asarray(meta_array[:], dtype=np.uint8).tolist())
+            meta_obj: Any = json.loads(meta_bytes.decode("utf-8"))
+
+            if isinstance(meta_obj, list):
+                metadata_list = cast("list[dict[str, Any]]", meta_obj)
+                frame_offset = 0
+            else:
+                metadata_list = cast("list[dict[str, Any]]", meta_obj.get("_metadata", []))
+                frame_offset = int(meta_obj.get("_frame_offset", 0))
+
+            print("Metadata Status:")
+            print(f"  Consolidated Frames: {len(metadata_list)}")
+            print(f"  Frame Offset Index:  {frame_offset}")
+        except Exception as e:
+            print(f"Error decoding consolidated metadata: {e}", file=sys.stderr)
+            metadata_list = []
+            frame_offset = 0
+
+    # 2. Inspect Frame Structure
     frames_group: Any = root.get("frames")
     if frames_group is None:
         print("Error: 'frames' group not found in Zarr root.", file=sys.stderr)
@@ -84,37 +103,9 @@ def _inspect_frames(root: zarr.Group) -> int:
         print(f"\nWarning: Missing expected arrays in frame: {missing_fields}", file=sys.stderr)
     else:
         print("\nAll expected simulation array fields are present and valid.")
+
+    print("==================================================")
     return 0
-
-
-def inspect_zarr(store_path: Path) -> int:
-    """Read and validate a Zarr replay store.
-
-    Args:
-        store_path: Path to the Zarr store directory.
-
-    Returns:
-        int: Exit code (0 for success, 1 for errors).
-    """
-    if not store_path.exists():
-        print(f"Error: Store path '{store_path}' does not exist.", file=sys.stderr)
-        return 1
-
-    try:
-        root: zarr.Group = zarr.open_group(str(store_path), mode="r")
-    except Exception as e:
-        print(f"Error opening Zarr group: {e}", file=sys.stderr)
-        return 1
-
-    print("==================================================")
-    print(f"Zarr Replay Store: {store_path.resolve()}")
-    print("==================================================")
-
-    _inspect_metadata(root)
-    code = _inspect_frames(root)
-
-    print("==================================================")
-    return code
 
 
 def main() -> None:

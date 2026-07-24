@@ -10,7 +10,7 @@ continuous variables of the Mixed-Integer Non-Linear Programming (MINLP) genotyp
 from pydantic import BaseModel, field_validator
 
 from phids.analytics.bio_database import FloraProfile, HerbivoreProfile
-from phids.api.schemas.placement import PlacementStrategy
+from phids.api.schemas import PlacementStrategy
 
 
 class StructuralGenes(BaseModel):

@@ -9,12 +9,10 @@ and complex plant-herbivore interaction pathways in PHIDS.
 
 import numpy as np
 
-from phids.api.schemas.species import (
+from phids.api.schemas import (
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-)
-from phids.api.schemas.triggers import (
     PassiveDefensesSchema,
     ResourceWithdrawalAction,
     TriggerConditionSchema,

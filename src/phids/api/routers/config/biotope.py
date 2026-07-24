@@ -11,10 +11,11 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import get_draft
 
 router = APIRouter()
+draft_service = DraftService()
 
 
 @router.post("/api/config/biotope", response_class=HTMLResponse, summary="Update biotope draft config")
@@ -67,7 +68,7 @@ async def config_biotope(
         TemplateResponse: Updated biotope configuration partial.
     """
     draft = get_draft()
-    values_were_clamped = draft_update_biotope(
+    values_were_clamped = draft_service.update_biotope(
         draft,
         grid_width=grid_width,
         grid_height=grid_height,

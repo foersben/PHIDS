@@ -1,14 +1,12 @@
 ---
 type: scenario
-title: Curated Examples
+title: "Curated Examples"
 status: active
 version: 0.1
-description: Documentation for Curated Examples in the PHIDS framework.
-tags:
-- phids
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+description: "Documentation for Curated Examples in the PHIDS framework."
 ---
+
+# Curated Examples
 
 PHIDS includes a suite of validated, curated examples demonstrating critical engine phenomena. These examples act simultaneously as behavioral proofs, testing targets, and foundational templates for custom scenario authoring.
 

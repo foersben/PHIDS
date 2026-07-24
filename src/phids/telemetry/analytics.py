@@ -129,21 +129,10 @@ class TelemetryRecorder:
             "death_defense_maintenance": 0,
             "death_herbivore_feeding": 0,
             "death_background_deficit": 0,
-            "death_starvation": 0,
         }
         if plant_death_causes is not None:
-            for key in plant_death_causes:
-                if key in death_counts:
-                    death_counts[key] = int(plant_death_causes[key])
-        elif metrics and metrics.plant_death_causes:
-            for key in metrics.plant_death_causes:
-                if key in death_counts:
-                    death_counts[key] = int(metrics.plant_death_causes[key])
-
-        if metrics and metrics.herbivore_death_causes:
-            for key in metrics.herbivore_death_causes:
-                if key in death_counts:
-                    death_counts[key] = int(metrics.herbivore_death_causes[key])
+            for key in death_counts:
+                death_counts[key] = int(plant_death_causes.get(key, 0))
 
         row: TelemetryRow = {
             "tick": tick,

@@ -24,14 +24,12 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import _co_located_swarm_population as interaction_co_located
-from phids.engine.systems.signaling.conditions import (
+from phids.engine.systems.signaling import (
     _check_activation_condition,
-)
-from phids.engine.systems.signaling.spatial import (
-    _co_located_swarm_population as signaling_co_located,
-)
-from phids.engine.systems.signaling.spatial import (
     _collect_mycorrhizal_targets,
+)
+from phids.engine.systems.signaling import (
+    _co_located_swarm_population as signaling_co_located,
 )
 from phids.io.zarr_replay import ReplayBuffer
 from phids.shared.constants import SIGNAL_EPSILON

@@ -1,33 +1,12 @@
 ---
 type: concept
-title: Testing Architecture
+title: "Testing Architecture"
 status: active
 version: 1.0
-description: Comprehensive testing architecture, taxonomy, system mapping, quality
-  analysis, and gaps/recommendations for PHIDS.
-tags:
-- phids
-- numba
-- performance
-- python
-timestamp: "2026-07-21T16:01:38Z"
-resources:
-- test_dse_optimizer.py
-- test_dse_pruning.py
-- test_interaction_py_helpers.py
-- tests/integration/systems/test_interaction_property_invariants.py
-- tests/integration/systems/test_interaction_mutation_pilot.py
-- test_interaction_hypothesis_pilot.py
-- tests/integration/api/test_websocket_manager.py
-- test_interaction_property_invariants.py
-- test_interaction_mutation_pilot.py
-- test_api_builder_and_helpers.py
-- test_websocket_manager.py
-- test_cli_main.py
-- test_telemetry_per_species.py
-- run_sim_benchmark.py
-- ///home/benni/Documents/antigravity_workspace/PHIDS/scripts/run_sim_benchmark.py
+description: "Comprehensive testing architecture, taxonomy, system mapping, quality analysis, and gaps/recommendations for PHIDS."
 ---
+
+# Testing Architecture
 
 This document aggregates PHIDS test suite topography, taxonomy, system mapping, quality analysis, and strategic recommendations for improving the testing rig.
 
@@ -148,47 +127,6 @@ The test rig effectively validates API constraints (malformed JSON, 422 triggers
 Latency throughput tests (`tests/benchmarks/`) are robustly constrained with clear median and $p_{95}$ failing/warning thresholds explicitly configurable via environment variables (e.g., `PHIDS_DIFFUSION_SPARSE_WARN_MEAN_MS`). Tests effectively isolate specific Numba algorithms or export logic.
 
 **Masked Detail:** There is zero instrumentation measuring memory allocation churn, `gc` impact, or deep object instantiation within inner simulation loops. The focus is entirely on runtime latency (`wall-clock`), which masks potential multi-tick memory blowups that slow down execution due to garbage collection over time.
-
-### Simulation Comparison Benchmarking (Cross-Commit & JIT)
-
-To protect the simulation engine from performance regressions across refactorings, a custom comparison script is provided in [run_sim_benchmark.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/scripts/run_sim_benchmark.py). This utility compares the ticks-per-second throughput of the simulation across different JIT compilation states and Git commits/branches.
-
-#### Features
-
-* **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. Your active branch and uncommitted modifications remain completely untouched.
-* **Worktree Benchmarking:** Use the exact string `worktree` as a reference to automatically benchmark against your current, uncommitted working tree state without relying on the virtual clone.
-* **Directory Support:** Pass a directory instead of a single scenario file to automatically locate and benchmark every JSON scenario inside the folder, generating an overall folder evaluation summary.
-* **JIT-Only Mode:** Use `just bench-compare-jit` or pass `--jit-only` to skip the slow pure Python evaluations, drastically cutting down testing time.
-* **Warmup Phase:** Simulates 10 warmup ticks prior to starting the timer to allow JIT compilation to complete, ensuring the JIT measurements track execution throughput, not compiling latency.
-* **Statistical Averaging:** Supports repeating the benchmark runs multiple times to compute average durations, reducing measurement noise.
-
-#### Usage via Justfile
-
-Run the comparison benchmark directly using:
-
-```bash
-just bench-compare <ref1> <ref2> <scenario_or_dir> [ticks] [repeats] [warmup]
-```
-
-Or run the faster JIT-only alternative:
-
-```bash
-just bench-compare-jit <ref1> <ref2> <scenario_or_dir> [ticks] [repeats] [warmup]
-```
-
-##### Examples
-
-Comparing two commit hashes using a single scenario (500 ticks repeated 3 times):
-
-```bash
-just bench-compare 17d6980 f3d066a examples/rectangular_crossfire_extended.json 500 3
-```
-
-Comparing an old commit against your current uncommitted changes using all scenarios in a folder (JIT-only):
-
-```bash
-just bench-compare-jit 17d6980 worktree examples/ 100 5
-```
 
 ### Concurrency, WebSockets, & State Pollution
 

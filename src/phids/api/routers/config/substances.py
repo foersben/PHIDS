@@ -11,10 +11,11 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.services.draft.substances import add_substance, remove_substance, update_substance
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import SubstanceDefinition, get_draft
 
 router = APIRouter()
+draft_service = DraftService()
 
 
 @router.post(
@@ -38,7 +39,7 @@ async def config_substance_add(
     """Add one substance definition to the draft and render the updated substance table."""
     draft = get_draft()
     try:
-        definition: SubstanceDefinition = add_substance(
+        definition: SubstanceDefinition = draft_service.add_substance(
             draft,
             name=name,
             is_toxin=is_toxin,
@@ -87,7 +88,7 @@ async def config_substance_update(
     """Patch one substance definition in the draft and render the updated table."""
     draft = get_draft()
     try:
-        sd: SubstanceDefinition = update_substance(
+        sd: SubstanceDefinition = draft_service.update_substance(
             draft,
             substance_id,
             name=name,
@@ -120,7 +121,7 @@ async def config_substance_delete(substance_id: int) -> HTMLResponse:
     """Remove one substance definition from the draft."""
     draft = get_draft()
     try:
-        remove_substance(draft, substance_id)
+        draft_service.remove_substance(draft, substance_id)
     except ValueError as exc:
         api_main.logger.warning("Substance delete requested for unknown substance_id=%d", substance_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc

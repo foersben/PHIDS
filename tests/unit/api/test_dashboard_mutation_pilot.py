@@ -17,7 +17,7 @@ from phids.engine.loop import SimulationLoop
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas import SimulationConfig
 
 pytestmark = pytest.mark.mutation_pilot
 

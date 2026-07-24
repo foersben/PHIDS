@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas import SimulationConfig
 
 
 def test_configure_logging_respects_env(monkeypatch) -> None:

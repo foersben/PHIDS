@@ -23,13 +23,8 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
-from phids.api.presenters.diagnostics import render_status_badge_html
-from phids.api.schemas.responses import (
-    SimulationStatusResponse,
-    WindUpdatePayload,
-)
-from phids.api.schemas.simulation import SimulationConfig
-from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
+from phids.api.schemas import SimulationConfig, SimulationStatusResponse, WindUpdatePayload
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import (
     DraftState,
     PlacedPlant,
@@ -45,11 +40,12 @@ if TYPE_CHECKING:
     from starlette.datastructures import FormData
 
 router = APIRouter()
+draft_service = DraftService()
 
 
 def _status_badge_fragment() -> HTMLResponse:
     """Return the canonical HTMX status-badge fragment response."""
-    return HTMLResponse(content=render_status_badge_html(api_main._sim_loop))
+    return HTMLResponse(content=api_main._render_status_badge_html())
 
 
 def _form_scalar(form_data: FormData, key: str) -> str | None:
@@ -139,7 +135,7 @@ def _apply_optional_biotope_overrides(
         return
 
     draft = get_draft()
-    draft_update_biotope(
+    draft_service.update_biotope(
         draft,
         grid_width=grid_width if grid_width is not None else draft.grid_width,
         grid_height=grid_height if grid_height is not None else draft.grid_height,
@@ -513,7 +509,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
                 )
             )
 
-            from phids.api.schemas.triggers import SynthesizeSubstanceAction
+            from phids.api.schemas import SynthesizeSubstanceAction
 
             if isinstance(trig.action, SynthesizeSubstanceAction):
                 if trig.action.substance_id not in seen_substance_ids:

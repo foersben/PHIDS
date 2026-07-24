@@ -1,18 +1,11 @@
 ---
 type: reference
-title: Module Map and Symbol Guide
+title: "Module Map and Symbol Guide"
 status: active
 version: 0.1
-description: Documentation for Module Map and Symbol Guide in the PHIDS framework.
-tags:
-- phids
-- ecs
-- chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
-resources:
-- api.md
-- ../development_guide/contribution_workflow.md
+description: "Documentation for Module Map and Symbol Guide in the PHIDS framework."
 ---
+
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended
 as the quickest canonical answer to the question: *where in the codebase does a given concern
@@ -46,7 +39,7 @@ Its top-level subpackages are:
 
 This package owns schema validation, route surfaces, and the server-side UI draft state.
 
-### `phids.api.schemas` (Package)
+### `phids.api.schemas`
 
 Primary responsibility:
 
@@ -54,10 +47,10 @@ Primary responsibility:
 
 Key symbols:
 
-* `phids.api.schemas.simulation.SimulationConfig`
-* `phids.api.schemas.triggers.TriggerConditionSchema`
-* `phids.api.schemas.species.FloraSpeciesParams`
-* `phids.api.schemas.species.HerbivoreSpeciesParams`
+* `SimulationConfig`
+* `TriggerConditionSchema`
+* `FloraSpeciesParams`
+* `HerbivoreSpeciesParams`
 * `DietCompatibilityMatrix`
 * `SimulationStatusResponse`
 * `WindUpdatePayload`
@@ -281,8 +274,8 @@ Key constants:
 * `MAX_FLORA_SPECIES`
 * `MAX_HERBIVORE_SPECIES`
 * `MAX_SUBSTANCE_TYPES`
-* `GRID_W_MAX` (bounded to 200)
-* `GRID_H_MAX` (bounded to 200)
+* `GRID_W_MAX`
+* `GRID_H_MAX`
 * `SIGNAL_EPSILON`
 * `SUBSTANCE_EMIT_RATE`
 * `TOXIN_CASUALTY_FACTOR`

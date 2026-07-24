@@ -1,38 +1,11 @@
 ---
 type: reference
-title: Requirements Traceability
+title: "Requirements Traceability"
 status: active
 version: 0.1
-description: Documentation for Requirements Traceability in the PHIDS framework.
-tags:
-- phids
-- ecs
-- numba
-- chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
-resources:
-- module-map.md
-- ../development_guide/contribution_workflow.md
-- ../technical_architecture/system_architecture.md
-- tests/unit/engine/core/test_ecs_world.py
-- tests/unit/api/test_schemas_and_invariants.py
-- tests/unit/engine/core/test_biotope_diffusion.py
-- tests/e2e/scenarios/test_example_scenarios.py
-- tests/unit/engine/core/test_flow_field.py
-- tests/benchmarks/test_flow_field_benchmark.py
-- tests/benchmarks/test_spatial_hash_benchmark.py
-- tests/unit/io/test_scenario_io.py
-- tests/integration/api/test_api_simulation_and_scenario_routes.py
-- tests/integration/api/test_api_routes.py
-- tests/unit/api/test_ui_state.py
-- tests/integration/api/test_ui_routes.py
-- tests/integration/api/test_api_builder_and_helpers.py
-- tests/integration/systems/test_systems_behavior.py
-- tests/integration/systems/test_termination_and_loop.py
-- tests/unit/telemetry/test_telemetry_per_species.py
-- tests/unit/telemetry/test_export_helpers.py
-- tests/e2e/replay_and_io/test_zarr_replay.py
+description: "Documentation for Requirements Traceability in the PHIDS framework."
 ---
+
 
 This page is the canonical current-state successor to the legacy requirements coverage notes. It maps major PHIDS requirements to:
 
@@ -61,7 +34,7 @@ still track the actual codebase.
 | Data-oriented ECS model | `phids.engine.core.ecs`, `phids.engine.components.*` | `docs/technical_architecture/system_architecture.md`, `docs/technical_architecture/engine_execution.md` | `tests/unit/engine/core/test_ecs_world.py`, `tests/unit/api/test_schemas_and_invariants.py` |
 | NumPy-backed environmental state | `phids.engine.core.biotope` | `docs/technical_architecture/engine_execution.md`, `docs/scientific_model/index.md` | `tests/unit/api/test_schemas_and_invariants.py`, `tests/unit/engine/core/test_biotope_diffusion.py` |
 | Double-buffered field updates | `GridEnvironment` in `phids.engine.core.biotope` | `docs/technical_architecture/engine_execution.md` | `tests/unit/api/test_schemas_and_invariants.py` |
-| Rule of 16 bounded matrices/species | `phids.shared.constants`, `phids.api.schemas` (Package), `phids.engine.core.biotope` | `docs/scientific_model/index.md`, `docs/scenario_guide/curated_examples.md`, `docs/reference/module-map.md` | `tests/unit/api/test_schemas_and_invariants.py`, `tests/e2e/scenarios/test_example_scenarios.py` |
+| Rule of 16 bounded matrices/species | `phids.shared.constants`, `phids.api.schemas`, `phids.engine.core.biotope` | `docs/scientific_model/index.md`, `docs/scenario_guide/curated_examples.md`, `docs/reference/module-map.md` | `tests/unit/api/test_schemas_and_invariants.py`, `tests/e2e/scenarios/test_example_scenarios.py` |
 | Numba-accelerated hot path | `phids.engine.core.flow_field` | `docs/technical_architecture/engine_execution.md` | `tests/unit/engine/core/test_flow_field.py`, `tests/benchmarks/test_flow_field_benchmark.py` |
 | Subnormal float truncation | `SIGNAL_EPSILON` use in `phids.engine.core.biotope` | `docs/technical_architecture/engine_execution.md` | `tests/unit/engine/core/test_biotope_diffusion.py` |
 | O(1)-style spatial locality queries | `phids.engine.core.ecs` and its consumers in `interaction` / `signaling` | `docs/technical_architecture/engine_execution.md`, `docs/scientific_model/herbivore_behavior.md`, `docs/scientific_model/chemotaxis.md` | `tests/unit/engine/core/test_ecs_world.py`, `tests/benchmarks/test_spatial_hash_benchmark.py`, `tests/unit/api/test_schemas_and_invariants.py` |
@@ -71,7 +44,7 @@ still track the actual codebase.
 
 | Requirement | Primary implementation owners | Canonical docs | Strong corroborating tests |
 | --- | --- | --- | --- |
-| Validated scenario ingress | `phids.api.schemas` (Package), `phids.io.scenario`, `phids.api.main` | `docs/scenario_guide/curated_examples.md`, `docs/technical_architecture/interfaces_and_ui.md` | `tests/e2e/scenarios/test_example_scenarios.py`, `tests/unit/api/test_schemas_and_invariants.py`, `tests/unit/io/test_scenario_io.py`, `tests/integration/api/test_api_simulation_and_scenario_routes.py` |
+| Validated scenario ingress | `phids.api.schemas`, `phids.io.scenario`, `phids.api.main` | `docs/scenario_guide/curated_examples.md`, `docs/technical_architecture/interfaces_and_ui.md` | `tests/e2e/scenarios/test_example_scenarios.py`, `tests/unit/api/test_schemas_and_invariants.py`, `tests/unit/io/test_scenario_io.py`, `tests/integration/api/test_api_simulation_and_scenario_routes.py` |
 | REST control surface for live simulation | `phids.api.main`, `SimulationLoop` | `docs/technical_architecture/interfaces_and_ui.md`, `docs/technical_architecture/system_architecture.md` | `tests/integration/api/test_api_routes.py`, `tests/integration/api/test_api_simulation_and_scenario_routes.py` |
 | Distinct draft vs live state ownership | `phids.api.ui_state`, `phids.api.main`, `SimulationLoop` | `docs/technical_architecture/interfaces_and_ui.md` | `tests/unit/api/test_ui_state.py`, `tests/integration/api/test_ui_routes.py`, `tests/integration/api/test_api_builder_and_helpers.py` |
 | Server-rendered HTMX/Jinja UI | `phids.api.main`, `phids.api.ui_state`, `src/phids/api/templates/` | `docs/technical_architecture/interfaces_and_ui.md` | `tests/integration/api/test_ui_routes.py`, `tests/integration/api/test_api_builder_and_helpers.py` |
@@ -82,7 +55,7 @@ still track the actual codebase.
 
 | Requirement | Primary implementation owners | Canonical docs | Strong corroborating tests |
 | --- | --- | --- | --- |
-| `SimulationConfig` as executable experiment boundary | `phids.api.schemas.simulation`, `phids.io.scenario` | `docs/scenario_guide/curated_examples.md`, `docs/scenario_guide/scenario_authoring.md` | `tests/e2e/scenarios/test_example_scenarios.py`, `tests/unit/api/test_schemas_and_invariants.py`, `tests/unit/io/test_scenario_io.py` |
+| `SimulationConfig` as executable experiment boundary | `phids.api.schemas`, `phids.io.scenario` | `docs/scenario_guide/curated_examples.md`, `docs/scenario_guide/scenario_authoring.md` | `tests/e2e/scenarios/test_example_scenarios.py`, `tests/unit/api/test_schemas_and_invariants.py`, `tests/unit/io/test_scenario_io.py` |
 | Nested trigger activation conditions | `TriggerConditionSchema`, `DraftState` helpers, `phids.engine.systems.signaling` | `docs/scenario_guide/scenario_authoring.md`, `docs/scientific_model/chemotaxis.md` | `tests/unit/api/test_ui_state.py`, `tests/integration/systems/test_systems_behavior.py`, `tests/unit/api/test_schemas_and_invariants.py` |
 | Curated examples as a tested compatibility surface | `examples/`, `phids.io.scenario`, `SimulationLoop` | `docs/scenario_guide/curated_examples.md` | `tests/e2e/scenarios/test_example_scenarios.py` |
 | Example-pack plants-plus-swarms competition rule | `examples/`, test contract in `tests/e2e/scenarios/test_example_scenarios.py` | `docs/scenario_guide/curated_examples.md` | `tests/e2e/scenarios/test_example_scenarios.py` |

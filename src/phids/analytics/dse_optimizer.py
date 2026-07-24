@@ -18,7 +18,7 @@ import numpy as np
 from deap import base, creator, tools  # type: ignore[import-untyped]
 
 from phids.analytics.dse_pruning import AnalyticalPruner
-from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas import SimulationConfig
 from phids.engine.loop import SimulationLoop
 
 if TYPE_CHECKING:

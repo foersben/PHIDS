@@ -31,11 +31,9 @@ def _init_base_and_current_jit(
     height: int,
     plant_energy: npt.NDArray[np.float64],
     apparent_nutrition_layer: npt.NDArray[np.float64],
-    toxin_layers: npt.NDArray[np.float64],
+    toxin_sum: npt.NDArray[np.float64],
     base: npt.NDArray[np.float64],
     current: npt.NDArray[np.float64],
-    alpha: float,
-    beta: float,
 ) -> None:
     """Helper function to initialize the base and current flow fields.
 
@@ -44,19 +42,13 @@ def _init_base_and_current_jit(
         height: _description_
         plant_energy: _description_
         apparent_nutrition_layer: _description_
-        toxin_layers: _description_
+        toxin_sum: _description_
         base: _description_
         current (npt.NDArray[np.float64]): _description_
-        alpha: Weight for botanical attractants.
-        beta: Weight for toxic repellents.
     """
-    num_toxins = toxin_layers.shape[0]
     for x in range(width):
         for y in range(height):
-            t_sum = 0.0
-            for t in range(num_toxins):
-                t_sum += toxin_layers[t, x, y]
-            base[x, y] = (alpha * plant_energy[x, y] * apparent_nutrition_layer[x, y]) - (beta * t_sum)
+            base[x, y] = (plant_energy[x, y] * apparent_nutrition_layer[x, y]) - toxin_sum[x, y]
             current[x, y] = base[x, y]
 
 
@@ -138,7 +130,6 @@ def _truncate_subnormals_jit(
     width: int,
     height: int,
     current: npt.NDArray[np.float64],
-    threshold: float,
 ) -> None:
     """Helper function to truncate subnormal floats to exactly zero.
 
@@ -146,12 +137,10 @@ def _truncate_subnormals_jit(
         width: The width of the grid environment.
         height: The height of the grid environment.
         current: The current flow field.
-        threshold: Subnormal truncation threshold.
     """
-    # ⚡ Bolt Optimization: Replace abs() call with inline logic to avoid function overhead.
     for x in range(width):
         for y in range(height):
-            if current[x, y] > -threshold and current[x, y] < threshold:
+            if abs(current[x, y]) < 1e-4:
                 current[x, y] = 0.0
 
 
@@ -159,16 +148,12 @@ def _truncate_subnormals_jit(
 def _compute_flow_field_impl(
     plant_energy: npt.NDArray[np.float64],
     apparent_nutrition_layer: npt.NDArray[np.float64],
-    toxin_layers: npt.NDArray[np.float64],
+    toxin_sum: npt.NDArray[np.float64],
     width: int,
     height: int,
-    base: npt.NDArray[np.float64],
-    current: npt.NDArray[np.float64],
-    nxt: npt.NDArray[np.float64],
-    alpha: float,
-    beta: float,
-    decay: float,
-    truncate_threshold: float,
+    base: npt.NDArray[np.float64] | None = None,
+    current: npt.NDArray[np.float64] | None = None,
+    nxt: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """Execute iterative relaxation propagation to generate a navigation grid.
 
@@ -179,99 +164,46 @@ def _compute_flow_field_impl(
     Args:
         plant_energy: Array of plant energy per cell.
         apparent_nutrition_layer: Array of apparent nutrition multipliers per cell.
-        toxin_layers: Array of toxin concentration layers per cell.
+        toxin_sum: Array of toxin concentrations per cell.
         width: The width of the grid environment.
         height: The height of the grid environment.
-        base: Pre-allocated array for base flow field.
-        current: Pre-allocated array for current flow field.
-        nxt: Pre-allocated array for next flow field.
-        alpha: Attractant weight.
-        beta: Repellent weight.
-        decay: Decay factor.
-        truncate_threshold: Truncation threshold.
+        base: Optional pre-allocated array for base flow field.
+        current: Optional pre-allocated array for current flow field.
+        nxt: Optional pre-allocated array for next flow field.
 
     Returns:
         Scalar attraction field of shape ``(W, H)``.
     """
-    base.fill(0.0)
-    current.fill(0.0)
-    nxt.fill(0.0)
+    if base is None:
+        base = np.zeros((width, height), dtype=np.float64)
+    else:
+        base.fill(0.0)
 
-    _init_base_and_current_jit(
-        width, height, plant_energy, apparent_nutrition_layer, toxin_layers, base, current, alpha, beta
-    )
+    if current is None:
+        current = np.zeros((width, height), dtype=np.float64)
+    else:
+        current.fill(0.0)
+
+    if nxt is None:
+        nxt = np.zeros((width, height), dtype=np.float64)
+    else:
+        nxt.fill(0.0)
+
+    _init_base_and_current_jit(width, height, plant_energy, apparent_nutrition_layer, toxin_sum, base, current)
 
     # Iterative propagation lets attraction/repulsion travel multiple hops.
+    decay = 0.6
     max_iterations = width + height
     for _ in range(max_iterations):
-        max_diff = 0.0
-
-        # Handle boundaries (x=0, x=width-1, y=0, y=height-1)
-        for x in range(width):
-            for y in (0, height - 1):
-                n_sum = 0.0
-                n_count = 0
-                if x > 0:
-                    n_sum += current[x - 1, y]
-                    n_count += 1
-                if x < width - 1:
-                    n_sum += current[x + 1, y]
-                    n_count += 1
-                if y > 0:
-                    n_sum += current[x, y - 1]
-                    n_count += 1
-                if y < height - 1:
-                    n_sum += current[x, y + 1]
-                    n_count += 1
-                propagated = n_sum / n_count if n_count > 0 else 0.0
-                val = base[x, y] + (decay * propagated)
-                nxt[x, y] = val
-                diff = abs(val - current[x, y])
-                if diff > max_diff:
-                    max_diff = diff
-
-        for x in (0, width - 1):
-            for y in range(1, height - 1):
-                n_sum = 0.0
-                n_count = 0
-                if x > 0:
-                    n_sum += current[x - 1, y]
-                    n_count += 1
-                if x < width - 1:
-                    n_sum += current[x + 1, y]
-                    n_count += 1
-                if y > 0:
-                    n_sum += current[x, y - 1]
-                    n_count += 1
-                if y < height - 1:
-                    n_sum += current[x, y + 1]
-                    n_count += 1
-                propagated = n_sum / n_count if n_count > 0 else 0.0
-                val = base[x, y] + (decay * propagated)
-                nxt[x, y] = val
-                diff = abs(val - current[x, y])
-                if diff > max_diff:
-                    max_diff = diff
-
-        # Handle inner cells without boundary checks
-        for x in range(1, width - 1):
-            for y in range(1, height - 1):
-                n_sum = current[x - 1, y] + current[x + 1, y] + current[x, y - 1] + current[x, y + 1]
-                propagated = n_sum * 0.25  # neighbour_count is always 4
-                val = base[x, y] + (decay * propagated)
-                nxt[x, y] = val
-                diff = abs(val - current[x, y])
-                if diff > max_diff:
-                    max_diff = diff
-
+        max_diff = _propagate_iteration_jit(width, height, decay, base, current, nxt)
         current, nxt = nxt, current
 
         # Early stopping if convergence is reached
-        if max_diff < truncate_threshold:
+        if max_diff < 1e-4:
             break
 
     # Truncate subnormal floats to exactly zero
-    _truncate_subnormals_jit(width, height, current, truncate_threshold)
+    _truncate_subnormals_jit(width, height, current)
 
     return current
 
@@ -289,10 +221,6 @@ def compute_flow_field(
     base: npt.NDArray[np.float64] | None = None,
     current: npt.NDArray[np.float64] | None = None,
     nxt: npt.NDArray[np.float64] | None = None,
-    alpha: float = 1.0,
-    beta: float = 1.0,
-    decay: float = 0.6,
-    truncate_threshold: float = 1e-4,
 ) -> npt.NDArray[np.float64]:
     """Public wrapper: sum toxin layers and delegate to the Numba kernel.
 
@@ -305,36 +233,20 @@ def compute_flow_field(
         base: Pre-allocated 2-D scratch array.
         current: Pre-allocated 2-D scratch array.
         nxt: Pre-allocated 2-D scratch array.
-        alpha: Attractant weight.
-        beta: Repellent weight.
-        decay: Decay factor.
-        truncate_threshold: Truncation threshold.
 
     Returns:
         npt.NDArray[np.float64]: Flow-field gradient of shape ``(W, H)``.
     """
     if base is None:
-        base = np.zeros((width, height), dtype=np.float64)  # pragma: no mutate
+        base = np.zeros((width, height), dtype=np.float64)
     if current is None:
-        current = np.zeros((width, height), dtype=np.float64)  # pragma: no mutate
+        current = np.zeros((width, height), dtype=np.float64)
     if nxt is None:
-        nxt = np.zeros((width, height), dtype=np.float64)  # pragma: no mutate
+        nxt = np.zeros((width, height), dtype=np.float64)
 
+    toxin_sum: npt.NDArray[np.float64] = toxin_layers.sum(axis=0)
     result = np.asarray(
-        _compute_flow_field(
-            plant_energy,
-            apparent_nutrition_layer,
-            toxin_layers,
-            width,
-            height,
-            base,
-            current,
-            nxt,
-            alpha,
-            beta,
-            decay,
-            truncate_threshold,
-        ),
+        _compute_flow_field(plant_energy, apparent_nutrition_layer, toxin_sum, width, height, base, current, nxt),
         dtype=np.float64,
     )
     return result

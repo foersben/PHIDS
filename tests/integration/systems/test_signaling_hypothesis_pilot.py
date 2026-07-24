@@ -9,7 +9,7 @@ import pytest
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
-from phids.engine.systems.signaling.conditions import _check_activation_condition
+from phids.engine.systems.signaling import _check_activation_condition
 
 try:
     from hypothesis import given, settings

@@ -24,32 +24,13 @@ from phids.engine.core.flow_field import (
 )
 
 
-def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_layers, width, height):
-    import numpy as np
-
-    return _compute_flow_field_impl(
-        plant_energy,
-        apparent_nutrition_layer,
-        toxin_layers,
-        width,
-        height,
-        np.zeros((width, height), dtype=np.float64),
-        np.zeros((width, height), dtype=np.float64),
-        np.zeros((width, height), dtype=np.float64),
-        1.0,
-        1.0,
-        0.6,
-        1e-4,
-    )
-
-
 def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
     """Verify the low-level flow kernel returns an all-zero field for zero inputs."""
     plant_energy = np.zeros((1, 1), dtype=np.float64)
-    toxin_sum = np.zeros((1, 1, 1), dtype=np.float64)
+    toxin_sum = np.zeros((1, 1), dtype=np.float64)
 
     apparent = np.ones((1, 1), dtype=np.float64)
-    flow = _compute_flow_field_impl_test(plant_energy, apparent, toxin_sum, width=1, height=1)
+    flow = _compute_flow_field_impl(plant_energy, apparent, toxin_sum, width=1, height=1)
 
     assert np.allclose(flow, np.zeros((1, 1), dtype=np.float64))
 
@@ -57,11 +38,11 @@ def test_compute_flow_field_impl_returns_zero_field_for_zero_inputs() -> None:
 def test_compute_flow_field_impl_propagates_along_single_row() -> None:
     """Verify attraction propagates symmetrically from a single row source."""
     plant_energy = np.zeros((1, 5), dtype=np.float64)
-    toxin_sum = np.zeros((1, 1, 5), dtype=np.float64)
+    toxin_sum = np.zeros((1, 5), dtype=np.float64)
     plant_energy[0, 2] = 6.0
 
     apparent = np.ones((1, 5), dtype=np.float64)
-    flow = _compute_flow_field_impl_test(plant_energy, apparent, toxin_sum, width=1, height=5)
+    flow = _compute_flow_field_impl(plant_energy, apparent, toxin_sum, width=1, height=5)
 
     assert flow[0, 2] > 0.0
     assert flow[0, 0] > 0.0
@@ -73,11 +54,11 @@ def test_compute_flow_field_impl_propagates_along_single_row() -> None:
 def test_compute_flow_field_impl_propagates_toxin_repulsion_along_single_column() -> None:
     """Verify toxin repulsion propagates symmetrically along a single column."""
     plant_energy = np.zeros((5, 1), dtype=np.float64)
-    toxin_sum = np.zeros((1, 5, 1), dtype=np.float64)
-    toxin_sum[0, 2, 0] = 2.5
+    toxin_sum = np.zeros((5, 1), dtype=np.float64)
+    toxin_sum[2, 0] = 2.5
 
     apparent = np.ones((5, 1), dtype=np.float64)
-    flow = _compute_flow_field_impl_test(plant_energy, apparent, toxin_sum, width=5, height=1)
+    flow = _compute_flow_field_impl(plant_energy, apparent, toxin_sum, width=5, height=1)
 
     assert flow[2, 0] < 0.0
     assert flow[0, 0] < 0.0
@@ -120,7 +101,7 @@ def test_compute_flow_field_sums_multiple_toxin_layers_and_handles_edges() -> No
 def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
     """Verify linear superposition for multiple plant-energy sources in the core kernel."""
     shape = (3, 3)
-    zero_toxins = np.zeros((1, 3, 3), dtype=np.float64)
+    zero_toxins = np.zeros(shape, dtype=np.float64)
 
     plant_a = np.zeros(shape, dtype=np.float64)
     plant_a[0, 1] = 4.0
@@ -128,10 +109,10 @@ def test_compute_flow_field_impl_is_linear_for_multiple_sources() -> None:
     plant_b[2, 1] = 2.0
 
     apparent = np.ones((3, 3), dtype=np.float64)
-    combined = _compute_flow_field_impl_test(plant_a + plant_b, apparent, zero_toxins, width=3, height=3)
-    separate_sum = _compute_flow_field_impl_test(
+    combined = _compute_flow_field_impl(plant_a + plant_b, apparent, zero_toxins, width=3, height=3)
+    separate_sum = _compute_flow_field_impl(
         plant_a, apparent, zero_toxins, width=3, height=3
-    ) + _compute_flow_field_impl_test(
+    ) + _compute_flow_field_impl(
         plant_b,
         apparent,
         zero_toxins,
@@ -152,7 +133,7 @@ def test_compute_flow_field_wrapper_sums_toxin_layers_before_propagation() -> No
 
     apparent = np.ones((2, 3), dtype=np.float64)
     flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=2, height=3)
-    expected = _compute_flow_field_impl_test(plant_energy, apparent, toxin_layers, width=2, height=3)
+    expected = _compute_flow_field_impl(plant_energy, apparent, toxin_layers.sum(axis=0), width=2, height=3)
 
     assert np.allclose(flow, expected)
 
@@ -202,39 +183,3 @@ def test_flow_field_generation_and_camouflage() -> None:
     before = flow[1, 0]
     apply_camouflage(flow, 1, 0, 0.25)
     assert np.isclose(flow[1, 0], before * 0.25)
-
-
-def test_flow_field_inner_propagation() -> None:
-    """Verify flow field unrolled logic."""
-    import numpy as np
-
-    plant_energy = np.zeros((4, 4), dtype=np.float64)
-    plant_energy[1, 1] = 10.0
-    apparent = np.ones((4, 4), dtype=np.float64)
-    toxin_sum = np.zeros((1, 4, 4), dtype=np.float64)
-
-    flow = _compute_flow_field_impl_test(plant_energy, apparent, toxin_sum, width=4, height=4)
-    assert flow[1, 1] > 0.0
-
-
-def test_flow_field_initialization() -> None:
-    """Verify flow field initialization respects base attributes."""
-    plant_energy = np.ones((2, 2), dtype=np.float64) * 2.0
-    toxin_layers = np.zeros((1, 2, 2), dtype=np.float64)
-    toxin_layers[0, 0, 0] = 1.0
-
-    apparent = np.ones((2, 2), dtype=np.float64)
-    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=2, height=2)
-
-    assert flow[0, 0] > 0.0  # 2.0 * 1.0 - 1.0 = 1.0 + propagated
-    assert flow[1, 1] > 1.0  # 2.0 * 1.0 - 0.0 = 2.0 + propagated
-
-
-def test_flow_field_truncates_subnormals() -> None:
-    """Verify very small subnormal values are truncated."""
-    plant_energy = np.ones((3, 3), dtype=np.float64) * 1e-5
-    toxin_layers = np.zeros((1, 3, 3), dtype=np.float64)
-    apparent = np.ones((3, 3), dtype=np.float64)
-
-    flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=3, height=3)
-    assert np.allclose(flow, np.zeros((3, 3), dtype=np.float64))

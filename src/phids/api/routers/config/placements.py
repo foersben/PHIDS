@@ -12,16 +12,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
-from phids.api.services.draft.placements import (
-    add_plant_placement,
-    add_swarm_placement,
-    clear_placements,
-    remove_plant_placement,
-    remove_swarm_placement,
-)
+from phids.api.services.draft_service import DraftService
 from phids.api.ui_state import DraftState, get_draft
 
 router = APIRouter()
+draft_service = DraftService()
 
 
 def _render_placement_list_partial(request: Request, draft: DraftState) -> Response:
@@ -94,7 +89,7 @@ async def config_placement_plant_add(
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
-    add_plant_placement(draft, species_id, x, y, max(0.1, energy))
+    draft_service.add_plant_placement(draft, species_id, x, y, max(0.1, energy))
     api_main.logger.info("Plant placement added via API (species_id=%d, x=%d, y=%d)", species_id, x, y)
     return _render_placement_list_partial(request, draft)
 
@@ -112,7 +107,7 @@ async def config_placement_swarm_add(
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
-    add_swarm_placement(
+    draft_service.add_swarm_placement(
         draft,
         species_id,
         x,
@@ -139,7 +134,7 @@ async def config_placement_plant_delete(request: Request, index: int) -> Respons
     """Remove one plant placement and render the updated placement ledger."""
     draft = get_draft()
     try:
-        remove_plant_placement(draft, index)
+        draft_service.remove_plant_placement(draft, index)
     except IndexError as exc:
         api_main.logger.warning("Plant placement delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -155,7 +150,7 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
     """Remove one swarm placement and render the updated placement ledger."""
     draft = get_draft()
     try:
-        remove_swarm_placement(draft, index)
+        draft_service.remove_swarm_placement(draft, index)
     except IndexError as exc:
         api_main.logger.warning("Swarm placement delete requested for unknown index=%d", index)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -166,6 +161,6 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
 async def config_placements_clear(request: Request) -> Response:
     """Clear all plant and swarm placements and render the updated placement ledger."""
     draft = get_draft()
-    clear_placements(draft)
+    draft_service.clear_placements(draft)
     api_main.logger.info("All draft placements cleared via API")
     return _render_placement_list_partial(request, draft)
