@@ -32,3 +32,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 32 vs. 11
 * **Performance Assessment:** The extracted code lives purely in the REST API config-setting path (called interactively via the UI, not within any engine ticks). The change incurs trivial dictionary-building overhead and poses absolutely zero risk to simulation hot loops.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-18 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/presenters/dashboard/payloads.py` - `build_live_dashboard_payload`
+* **Selection Rationale:** The function had a high cognitive complexity score (32) but was structurally easy to untangle. It had distinct, cohesive blocks for iterating over plants, swarms, and flora species. Extracting these into three private helper functions flattened the logic cleanly. Since this function is part of the API presentation layer and executes outside the Numba JIT hot loops (at most per UI frame), the minor function call overhead is completely negligible, meaning zero risk to simulation performance.
+* **Before/After Score:** 32 vs. 13 (maximum score among the helpers)
+* **Performance Assessment:** The refactoring purely extracts logic into helper functions without changing data structures or introducing new allocations. Given it runs on the API/UI boundary and not in the simulation tick hot path, the performance regression risk is effectively zero.
+* **Test Verification:** Confirmed that all linting (`ruff`), unit tests (`pytest`), and complexity checks (`complexipy`) pass successfully.
