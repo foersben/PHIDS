@@ -1,12 +1,20 @@
 ---
 type: scientific_model
-title: "Reaction-Diffusion & Partial Differential Equations"
+title: Reaction-Diffusion & Partial Differential Equations
 status: active
 version: 0.1
-description: "Documentation for Reaction-Diffusion & Partial Differential Equations in the PHIDS framework."
+description: Documentation for Reaction-Diffusion & Partial Differential Equations
+  in the PHIDS framework.
+tags:
+- phids
+- ecs
+- performance
+- chemotaxis
+- python
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- src/phids/engine/core/biotope.py
 ---
-
-# Reaction-Diffusion & Partial Differential Equations
 
 The dispersion of Volatile Organic Compounds (VOCs)-airborne signals used by flora to warn neighbors of herbivore attacks-is mathematically modeled in PHIDS using a discrete Reaction-Diffusion system.
 

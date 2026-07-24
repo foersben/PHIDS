@@ -8,7 +8,12 @@ API contract, preventing visual regressions on the UI dashboard.
 """
 
 from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload
-from phids.api.schemas import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams, SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import (
+    DietCompatibilityMatrix,
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
 from phids.engine.loop import SimulationLoop
 
 

@@ -98,9 +98,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
 
     world = loop.world
     plant_lookup = {
-        plant.entity_id: plant
-        for entity in world.query(PlantComponent)
-        for plant in [entity.get_component(PlantComponent)]
+        (plant := entity.get_component(PlantComponent)).entity_id: plant for entity in world.query(PlantComponent)
     }
     links: list[_MycorrhizalLinkPayload] = []
     seen_pairs: set[tuple[int, int]] = set()

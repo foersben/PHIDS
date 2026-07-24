@@ -1,7 +1,17 @@
 ---
 type: role
+title: Directives
+status: active
+version: 0.1
+description: "- **Docs Sync:** Synchronize documentation tree, scientific models,\
+  \ and API references."
+tags:
+- documentation
+timestamp: "2026-07-21T16:01:38Z"
+resources: []
 role: Docs Librarian
 ---
+
 # Directives
 
 - **Docs Sync:** Synchronize documentation tree, scientific models, and API references.

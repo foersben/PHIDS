@@ -1,12 +1,17 @@
 ---
 type: technical_architecture
-title: "Engine Execution"
+title: Engine Execution
 status: active
 version: 0.1
-description: "Documentation for Engine Execution in the PHIDS framework."
+description: Documentation for Engine Execution in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+timestamp: "2026-07-24T08:25:35Z"
+resources:
+- flow_field.py
 ---
-
-# Engine Execution
 
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.
 
@@ -25,6 +30,10 @@ The `SimulationLoop.step()` method executes the following components consecutive
 ## Entity Component System (ECS) & Spatial Hashing
 
 Entities in PHIDS are lightweight, data-only records lacking encapsulated logic. System functions iterate over specific intersections of component types, separating memory allocation from logic execution. This ensures maximum cache coherence and rapid loop traversal.
+
+### Query Optimization & Structural Versioning
+
+To avoid $O(N)$ list allocations on every tick when systems iterate over component types, `ECSWorld` implements a `_structural_version` cache. The registry caches materialized query lists, only incrementing the version and invalidating the cache when entities or components are structurally added or removed. This provides near-instant lookup speeds for all hot-path systems on steady-state ticks.
 
 ### $O(1)$ Locality Resolution
 

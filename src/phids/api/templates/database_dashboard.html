@@ -17,6 +17,15 @@
         </div>
         <input type="text" id="db-search" class="block w-64 rounded-md border-0 py-1.5 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Search archetypes..." oninput="filterDatabase()">
       </div>
+      <button type="button" hx-post="/api/database/rebuild" hx-swap="none" hx-indicator="#rebuild-spinner" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+        Rebuild Database (ETL)
+      </button>
+      <span id="rebuild-spinner" class="htmx-indicator ml-2 text-sm text-slate-500">
+        <svg class="animate-spin h-5 w-5 mr-3 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </span>
       <button type="button" onclick="openEditor('new')" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
         + Create Custom Archetype
       </button>
@@ -81,6 +90,44 @@
             </div>
           </div>
           {% endif %}
+
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance (K-Means & KNN)</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-slate-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-slate-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Centroid Dist:</span>
+                <span class="font-mono">{{ "%.3f"|format(data.provenance.centroid_distance) if data.provenance.centroid_distance is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases if data.provenance.source_databases is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Cluster ID:</span>
+                <span>{{ data.provenance.cluster_id if data.provenance.cluster_id is not none else 'N/A' }}</span>
+              </div>
+              {% if data.provenance.knn_influences %}
+              <div class="mt-2 pt-2 border-t border-slate-200">
+                <span class="font-medium text-slate-500 mb-1 block">KNN Influences:</span>
+                <ul class="list-disc pl-4 space-y-0.5">
+                  {% for influence in data.provenance.knn_influences %}
+                  <li>{{ influence }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% else %}
+              <div class="mt-2 pt-2 border-t border-slate-200">
+                <span class="font-medium text-slate-500 mb-1 block">KNN Influences:</span>
+                <span class="italic text-slate-400">No missing properties reconstructed.</span>
+              </div>
+              {% endif %}
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -120,6 +167,29 @@
               <dd class="text-right font-mono text-slate-900">{{ data.resistances.digestive_efficiency }}</dd>
             </dl>
           </div>
+
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance (K-Means)</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-amber-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-amber-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Centroid Dist:</span>
+                <span class="font-mono">{{ "%.3f"|format(data.provenance.centroid_distance) if data.provenance.centroid_distance is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases if data.provenance.source_databases is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Cluster ID:</span>
+                <span>{{ data.provenance.cluster_id if data.provenance.cluster_id is not none else 'N/A' }}</span>
+              </div>
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -154,6 +224,28 @@
               <dd class="text-right font-mono text-slate-900">{{ data.synthesis_duration }}</dd>
             </dl>
           </div>
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-indigo-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-indigo-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases if data.provenance.source_databases is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Compound Class:</span>
+                <span class="font-mono">{{ data.provenance.compound_class if data.provenance.compound_class is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">LD50 (mg/kg):</span>
+                <span class="font-mono">{{ "%.2f"|format(data.provenance.ld50_mg_kg) if data.provenance.ld50_mg_kg is not none else 'N/A' }}</span>
+              </div>
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}

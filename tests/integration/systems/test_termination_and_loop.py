@@ -33,7 +33,7 @@ from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from phids.api.schemas import SimulationConfig
+    from phids.api.schemas.simulation import SimulationConfig
 
 
 def _world_with_counts(plant_species: list[int], herbivore_species: list[int]) -> ECSWorld:
@@ -283,14 +283,6 @@ def test_step_with_zarr_backend_does_not_require_ui_snapshot_serialization(
 
     assert calls["count"] == 0
     assert len(loop.replay) == 1
-
-
-def test_step_with_msgpack_backend_uses_snapshot_serialization_path() -> None:
-    """Placeholder for legacy msgpack backend serialization verification.
-
-    The msgpack replay backend has been removed, so this is left as a legacy placeholder.
-    """
-    pass
 
 
 def test_debug_tick_summary_uses_precomputed_metrics_without_swarm_rescan(

@@ -23,8 +23,18 @@ from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    shared,
 )
-from phids.api.services.draft_service import DraftService
+from phids.api.presenters.diagnostics import build_energy_deficit_swarms, render_status_badge_html
+from phids.api.services.draft.placements import (
+    add_plant_placement,
+    add_swarm_placement,
+)
+from phids.api.services.draft.trigger_rules import (
+    add_trigger_rule,
+    default_activation_condition_for_rule,
+    trigger_rule_by_index,
+)
 from phids.api.ui_state import (
     DraftState,
     SubstanceDefinition,
@@ -36,8 +46,6 @@ from phids.engine.loop import SimulationLoop
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
-draft_service = DraftService()
-
 
 def _build_loaded_loop() -> SimulationLoop:
     """Construct and register a minimal simulation loop with one plant and one swarm.
@@ -46,8 +54,8 @@ def _build_loaded_loop() -> SimulationLoop:
         The initialized simulation loop bound to ``api_main._sim_loop``.
     """
     draft = get_draft()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
-    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
+    add_plant_placement(draft, 0, 2, 2, 12.0)
+    add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
     loop = SimulationLoop(draft.build_sim_config())
     api_main._sim_loop = loop
     return loop
@@ -63,9 +71,9 @@ def _build_loaded_loop() -> SimulationLoop:
         ("bad", {"default": 5}, 5),
     ],
 )
-def test_main_coerce_int_cases(input_val: object, kwargs: dict[str, int], expected: int) -> None:
+def test_coerce_int_cases(input_val: object, kwargs: dict[str, int], expected: int) -> None:
     """Validate integer coercion behavior across valid, invalid, and boolean inputs."""
-    assert api_main._coerce_int(input_val, **kwargs) == expected
+    assert shared._coerce_int(input_val, **kwargs) == expected
 
 
 @pytest.mark.parametrize(
@@ -78,13 +86,13 @@ def test_main_coerce_int_cases(input_val: object, kwargs: dict[str, int], expect
         ("x", {"default": 9.0}, 9.0),
     ],
 )
-def test_main_coerce_float_cases(
+def test_coerce_float_cases(
     input_val: object,
     kwargs: dict[str, float],
     expected: float,
 ) -> None:
     """Validate floating-point coercion behavior across valid, invalid, and boolean inputs."""
-    assert api_main._coerce_float(input_val, **kwargs) == pytest.approx(expected)
+    assert shared._coerce_float(input_val, **kwargs) == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -107,7 +115,7 @@ def test_main_coerce_float_cases(
         ("substance_active", "substance_id", 1, None, None),
     ],
 )
-def test_main_default_activation_condition_supported_kinds(
+def test_default_activation_condition_supported_kinds(
     kind: str,
     field: str,
     expected: str | int,
@@ -120,7 +128,7 @@ def test_main_default_activation_condition_supported_kinds(
     node labels. The index accessor must raise a 404 sentinel for out-of-range references.
     """
     draft = DraftState.default()
-    draft_service.add_trigger_rule(
+    add_trigger_rule(
         draft,
         flora_species_id=0,
         herbivore_species_id=0,
@@ -138,7 +146,7 @@ def test_main_default_activation_condition_supported_kinds(
     )
     rule = draft.trigger_rules[0]
 
-    condition = api_main._default_activation_condition_for_rule(draft, rule, kind)
+    condition = default_activation_condition_for_rule(draft, rule, kind)
     assert condition[field] == expected
     if secondary_field == "signal_id":
         assert condition[secondary_field] == secondary_expected
@@ -146,10 +154,10 @@ def test_main_default_activation_condition_supported_kinds(
         assert condition["conditions"][0]["kind"] == secondary_expected
 
 
-def test_main_default_activation_condition_invalid_kind_and_missing_trigger_index() -> None:
+def test_default_activation_condition_invalid_kind_and_missing_trigger_index() -> None:
     """Validate unsupported condition kinds and out-of-range trigger indices raise HTTP errors."""
     draft = DraftState.default()
-    draft_service.add_trigger_rule(
+    add_trigger_rule(
         draft,
         flora_species_id=0,
         herbivore_species_id=0,
@@ -159,11 +167,11 @@ def test_main_default_activation_condition_invalid_kind_and_missing_trigger_inde
     rule = draft.trigger_rules[0]
 
     with pytest.raises(HTTPException) as unsupported:
-        api_main._default_activation_condition_for_rule(draft, rule, "invalid")
+        default_activation_condition_for_rule(draft, rule, "invalid")
     assert unsupported.value.status_code == 400
 
     with pytest.raises(HTTPException) as not_found:
-        api_main._trigger_rule_by_index(draft, 99)
+        trigger_rule_by_index(draft, 99)
     assert not_found.value.status_code == 404
 
 
@@ -174,9 +182,9 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
     and that swarm energy-deficit ranking excludes satiated swarms while retaining stressed ones.
     """
     draft = get_draft()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
-    draft_service.add_swarm_placement(draft, 0, 2, 2, 4, 30.0)
-    draft_service.add_swarm_placement(draft, 0, 3, 3, 4, 1.0)
+    add_plant_placement(draft, 0, 2, 2, 12.0)
+    add_swarm_placement(draft, 0, 2, 2, 4, 30.0)
+    add_swarm_placement(draft, 0, 3, 3, 4, 1.0)
     loop = SimulationLoop(draft.build_sim_config())
     api_main._sim_loop = loop
 
@@ -198,7 +206,7 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
     assert preview_cell["mode"] == "draft"
     assert "species_energy" in dashboard
 
-    stressed = api_main._build_energy_deficit_swarms()
+    stressed = build_energy_deficit_swarms(api_main._sim_loop)
     assert len(stressed) == 1
     assert stressed[0]["energy_deficit"] > 0.0
 
@@ -206,7 +214,7 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
 def test_render_status_badge_idle_without_loaded_loop() -> None:
     """Validate that the status badge reports Idle when no loop is registered."""
     api_main._sim_loop = None
-    assert "Idle" in api_main._render_status_badge_html()
+    assert "Idle" in render_status_badge_html(api_main._sim_loop)
 
 
 @pytest.mark.parametrize(
@@ -229,7 +237,7 @@ def test_render_status_badge_loaded_loop_states(
     loop.running = running
     loop.paused = paused
     loop.terminated = terminated
-    assert expected_label in api_main._render_status_badge_html()
+    assert expected_label in render_status_badge_html(api_main._sim_loop)
 
 
 @pytest.mark.parametrize(

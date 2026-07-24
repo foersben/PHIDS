@@ -9,7 +9,7 @@ Verifies mathematical bounds checking (caloric deficits, seed costs, diet matric
 from phids.analytics.bio_database import FloraProfile, HerbivoreProfile
 from phids.analytics.dse_genotype import DSEGenotype, ParametricGenes, StructuralGenes
 from phids.analytics.dse_pruning import AnalyticalPruner
-from phids.api.schemas import UniformPlacement
+from phids.api.schemas.placement import UniformPlacement
 
 
 def _build_test_genotype(
@@ -36,6 +36,10 @@ def _build_test_genotype(
                 survival_threshold=flora_survival_threshold,
                 seed_cost=flora_seed_cost,
                 seed_dispersion_radius=1.0,
+                passive_defenses={
+                    "mechanical_damage_per_bite": 0.0,
+                    "digestibility_modifier": 1.0,
+                },
             )
         },
         herbivore_traits={
@@ -44,6 +48,11 @@ def _build_test_genotype(
                 consumption_rate=herbivore_consumption,
                 mitosis_threshold=10.0,
                 split_ratio=0.5,
+                resistances={
+                    "morphological_adaptation": 0.0,
+                    "chemical_neutralization": 0.0,
+                    "digestive_efficiency": 1.0,
+                },
             )
         },
     )

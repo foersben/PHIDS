@@ -8,7 +8,7 @@ scenario-builder UI. ``DraftState`` stores all operator choices made through the
 including species definitions, substance properties, trigger rules, diet-matrix entries, and
 initial placements, before committing them to the simulation engine via
 ``POST /api/scenario/load-draft``. Imperative mutation procedures are executed by
-``DraftService`` (``phids.api.services.draft_service``) against ``DraftState`` instances, while
+the ``phids.api.services.draft`` functions against ``DraftState`` instances, while
 this module retains data structures, condition-tree utilities, schema export logic, and singleton
 draft lifecycle management. No concurrency-safe locking is applied, as the server is designed for
 single-operator workbench usage.
@@ -22,12 +22,12 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 if TYPE_CHECKING:
-    from phids.api.schemas import (
-        BatchJobState,
+    from phids.api.schemas.placement import PlacementStrategy
+    from phids.api.schemas.responses import BatchJobState
+    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas.species import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
-        PlacementStrategy,
-        SimulationConfig,
     )
 
 logger = logging.getLogger(__name__)
@@ -260,6 +260,82 @@ def _prune_empty_condition_groups(
     return condition
 
 
+def _int_from_condition(condition: ActivationConditionNode, key: str, default: int = -1) -> int:
+    raw = condition.get(key, default)
+    if isinstance(raw, bool):
+        return default
+    if isinstance(raw, (int, float, str)):
+        try:
+            return int(raw)
+        except ValueError:
+            return default
+    return default
+
+
+def _remap_herbivore_presence(
+    condition: ActivationConditionNode, removed_herbivore_id: int | None
+) -> ActivationConditionNode | None:
+    if removed_herbivore_id is None:
+        return condition
+    herbivore_species_id = _int_from_condition(condition, "herbivore_species_id")
+    if herbivore_species_id == removed_herbivore_id:
+        return None
+    if herbivore_species_id > removed_herbivore_id:
+        condition["herbivore_species_id"] = herbivore_species_id - 1
+    return condition
+
+
+def _remap_substance_active(
+    condition: ActivationConditionNode, removed_substance_id: int | None
+) -> ActivationConditionNode | None:
+    if removed_substance_id is None:
+        return condition
+    substance_id = _int_from_condition(condition, "substance_id")
+    if substance_id == removed_substance_id:
+        return None
+    if substance_id > removed_substance_id:
+        condition["substance_id"] = substance_id - 1
+    return condition
+
+
+def _remap_leaf_condition(
+    condition: ActivationConditionNode,
+    removed_herbivore_id: int | None,
+    removed_substance_id: int | None,
+) -> ActivationConditionNode | None:
+    kind = condition.get("kind")
+    if kind == "herbivore_presence":
+        return _remap_herbivore_presence(condition, removed_herbivore_id)
+    if kind == "substance_active":
+        return _remap_substance_active(condition, removed_substance_id)
+    return condition
+
+
+def _remap_group_condition(
+    condition: ActivationConditionNode,
+    removed_herbivore_id: int | None,
+    removed_substance_id: int | None,
+) -> ActivationConditionNode | None:
+    children = condition.get("conditions")
+    if not isinstance(children, list):
+        return None
+
+    new_children = []
+    for child in children:
+        if not isinstance(child, dict):
+            continue
+        pruned = _remap_condition_references(
+            child,
+            removed_herbivore_id=removed_herbivore_id,
+            removed_substance_id=removed_substance_id,
+        )
+        if pruned is not None:
+            new_children.append(pruned)
+
+    condition["conditions"] = new_children
+    return _prune_empty_condition_groups(condition)
+
+
 def _remap_condition_references(
     condition: ActivationConditionNode | None,
     *,
@@ -270,54 +346,11 @@ def _remap_condition_references(
     if condition is None:
         return None
 
-    def _int_from_condition(key: str, default: int = -1) -> int:
-        raw = condition.get(key, default)
-        if isinstance(raw, bool):
-            return default
-        if isinstance(raw, (int, float, str)):
-            try:
-                return int(raw)
-            except ValueError:
-                return default
-        return default
-
     kind = condition.get("kind")
-    if kind == "herbivore_presence":
-        herbivore_species_id = _int_from_condition("herbivore_species_id")
-        if removed_herbivore_id is not None:
-            if herbivore_species_id == removed_herbivore_id:
-                return None
-            if herbivore_species_id > removed_herbivore_id:
-                condition["herbivore_species_id"] = herbivore_species_id - 1
-        return condition
-    if kind == "substance_active":
-        substance_id = _int_from_condition("substance_id")
-        if removed_substance_id is not None:
-            if substance_id == removed_substance_id:
-                return None
-            if substance_id > removed_substance_id:
-                condition["substance_id"] = substance_id - 1
-        return condition
-
     if kind in {"all_of", "any_of"}:
-        children = condition.get("conditions")
-        if not isinstance(children, list):
-            return None
-        condition["conditions"] = [
-            pruned
-            for child in children
-            if isinstance(child, dict)
-            for pruned in [
-                _remap_condition_references(
-                    child,
-                    removed_herbivore_id=removed_herbivore_id,
-                    removed_substance_id=removed_substance_id,
-                )
-            ]
-            if pruned is not None
-        ]
-        return _prune_empty_condition_groups(condition)
-    return condition
+        return _remap_group_condition(condition, removed_herbivore_id, removed_substance_id)
+
+    return _remap_leaf_condition(condition, removed_herbivore_id, removed_substance_id)
 
 
 # ---------------------------------------------------------------------------
@@ -333,8 +366,8 @@ class DraftState:
 
     Attributes:
         scenario_name: Human-readable label used in the UI header.
-        grid_width: Biotope width in cells (1-80).
-        grid_height: Biotope height in cells (1-80).
+        grid_width: Biotope width in cells (1-200).
+        grid_height: Biotope height in cells (1-200).
         max_ticks: Simulation tick budget.
         tick_rate_hz: WebSocket streaming rate in ticks per second.
         wind_x: Initial uniform wind x-component.
@@ -409,13 +442,13 @@ class DraftState:
             ValueError: If no flora or herbivore species defined.
 
         """
-        from phids.api.schemas import (
-            DietCompatibilityMatrix,
+        from phids.api.schemas.placement import (
             InitialPlantPlacement,
             InitialSwarmPlacement,
-            SimulationConfig,
-            TriggerConditionSchema,
         )
+        from phids.api.schemas.simulation import SimulationConfig
+        from phids.api.schemas.species import DietCompatibilityMatrix
+        from phids.api.schemas.triggers import TriggerConditionSchema
 
         if not self.flora_species or not self.herbivore_species:
             logger.warning(
@@ -427,7 +460,10 @@ class DraftState:
 
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
-        from phids.api.schemas import ResourceWithdrawalAction, SynthesizeSubstanceAction
+        from phids.api.schemas.triggers import (
+            ResourceWithdrawalAction,
+            SynthesizeSubstanceAction,
+        )
 
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
@@ -553,7 +589,10 @@ class DraftState:
     @classmethod
     def default(cls) -> DraftState:
         """Create the built-in default draft state."""
-        from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+        from phids.api.schemas.species import (
+            FloraSpeciesParams,
+            HerbivoreSpeciesParams,
+        )
 
         state = cls(
             flora_species=[

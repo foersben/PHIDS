@@ -14,7 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from phids.analytics.dse_optimizer import DSEOptimizer
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
 
 if TYPE_CHECKING:
     from phids.api.websockets.manager import DSEStreamManager
@@ -41,6 +41,7 @@ class DSETaskManager:
         self.websocket_manager = websocket_manager
         self._active_task: asyncio.Task[Any] | None = None
         self._cancel_event: threading.Event | None = None
+        self._main_loop: asyncio.AbstractEventLoop | None = None
         self.pareto_cache: list[SimulationConfig] = []
 
     def _broadcast_payload(self) -> Callable[[dict[str, Any], list[SimulationConfig]], None]:
@@ -53,11 +54,8 @@ class DSETaskManager:
 
         def callback(payload: dict[str, Any], configs: list[SimulationConfig]) -> None:
             self.pareto_cache = configs
-            try:
-                loop = asyncio.get_running_loop()
-                asyncio.run_coroutine_threadsafe(self.websocket_manager.broadcast_dse(payload), loop)
-            except RuntimeError:
-                asyncio.run(self.websocket_manager.broadcast_dse(payload))
+            if self._main_loop is not None:
+                asyncio.run_coroutine_threadsafe(self.websocket_manager.broadcast_dse(payload), self._main_loop)
 
         return callback
 
@@ -72,6 +70,7 @@ class DSETaskManager:
             logger.warning("Attempted to start DSE task, but one is already running.")
             return
 
+        self._main_loop = asyncio.get_running_loop()
         self._cancel_event = threading.Event()
 
         optimizer = DSEOptimizer(base_config=config)

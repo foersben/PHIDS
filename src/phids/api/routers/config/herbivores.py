@@ -11,12 +11,11 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
-from phids.api.schemas import HerbivoreSpeciesParams
-from phids.api.services.draft_service import DraftService
+from phids.api.schemas.species import HerbivoreSpeciesParams
+from phids.api.services.draft.species import add_herbivore, remove_herbivore
 from phids.api.ui_state import get_draft
 
 router = APIRouter()
-draft_service = DraftService()
 
 
 @router.post("/api/config/herbivores", response_class=HTMLResponse, summary="Add herbivore species to draft")
@@ -46,7 +45,7 @@ async def config_herbivore_add(
         energy_upkeep_per_individual=energy_upkeep_per_individual,
         split_population_threshold=split_population_threshold,
     )
-    draft_service.add_herbivore(draft, params)
+    add_herbivore(draft, params)
     api_main.logger.info("Herbivore species added via API (species_id=%d, name=%s)", new_id, name)
     return api_main.templates.TemplateResponse(
         request,
@@ -140,7 +139,7 @@ async def config_herbivore_delete(species_id: int) -> HTMLResponse:
     """Remove one herbivore species from the draft."""
     draft = get_draft()
     try:
-        draft_service.remove_herbivore(draft, species_id)
+        remove_herbivore(draft, species_id)
     except ValueError as exc:
         api_main.logger.warning("Herbivore delete requested for unknown species_id=%d", species_id)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
