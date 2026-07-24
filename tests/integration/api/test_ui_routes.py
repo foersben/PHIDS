@@ -54,7 +54,8 @@ from phids.api.services.draft.trigger_rules import (
     update_trigger_rule,
     update_trigger_rule_condition_node,
 )
-from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft
+from phids.api.ui_state.state import DraftState, get_draft, reset_draft, set_draft
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine import batch as batch_engine
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core import flow_field
@@ -755,8 +756,8 @@ def test_draft_singleton_helpers_and_substance_type_labels() -> None:
 
 def test_draft_condition_helper_functions_validate_and_remap_paths() -> None:
     """Verify condition helper utilities parse paths, normalize defaults, and remap removed IDs."""
-    assert draft_state_module._parse_condition_path("0.1.2") == [0, 1, 2]
-    assert draft_state_module._default_activation_condition_node(
+    assert draft_state_module.triggers._parse_condition_path("0.1.2") == [0, 1, 2]
+    assert draft_state_module.triggers._default_activation_condition_node(
         "herbivore_presence", herbivore_species_id=2, min_herbivore_population=0
     ) == {
         "kind": "herbivore_presence",
@@ -764,9 +765,9 @@ def test_draft_condition_helper_functions_validate_and_remap_paths() -> None:
         "min_herbivore_population": 1,
     }
     with pytest.raises(ValueError):
-        draft_state_module._default_activation_condition_node("unsupported")
+        draft_state_module.triggers._default_activation_condition_node("unsupported")
 
-    remapped = draft_state_module._remap_condition_references(
+    remapped = draft_state_module.triggers._remap_condition_references(
         {
             "kind": "all_of",
             "conditions": [
@@ -882,14 +883,18 @@ def test_draft_trigger_rule_tree_mutations_preserve_expected_structure() -> None
     )
     delete_trigger_rule_condition_node(draft, 0, "1")
 
-    current_condition = cast("draft_state_module.ActivationConditionNode", draft.trigger_rules[0].activation_condition)
-    current_children = cast("list[draft_state_module.ActivationConditionNode]", current_condition["conditions"])
+    current_condition = cast(
+        "draft_state_module.triggers.ActivationConditionNode", draft.trigger_rules[0].activation_condition
+    )
+    current_children = cast(
+        "list[draft_state_module.triggers.ActivationConditionNode]", current_condition["conditions"]
+    )
     assert current_condition == {
         "kind": "all_of",
         "conditions": [{"kind": "herbivore_presence", "herbivore_species_id": 1, "min_herbivore_population": 5}],
     }
-    assert draft_state_module._condition_node_at_path(current_condition, [0]) == current_children[0]
-    assert draft_state_module._prune_empty_condition_groups({"kind": "all_of", "conditions": []}) is None
+    assert draft_state_module.triggers._condition_node_at_path(current_condition, [0]) == current_children[0]
+    assert draft_state_module.triggers._prune_empty_condition_groups({"kind": "all_of", "conditions": []}) is None
     with pytest.raises(IndexError):
         replace_trigger_rule_condition_node(draft, 0, "9", {"kind": "substance_active", "substance_id": 0})
 

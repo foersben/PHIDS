@@ -33,11 +33,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.fastmcp import FastMCP
 
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 from phids.shared.logging_config import get_recent_logs
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState
+    from phids.api.ui_state.state import DraftState
 
 # Resolved at import time so subprocess calls can locate scripts/ reliably
 # regardless of the working directory set by the calling process.
@@ -70,7 +70,7 @@ def _draft_to_json(draft: DraftState) -> str:
     models verbatim; the ``_default`` hook converts those during JSON encoding.
 
     Args:
-        draft: The active :class:`~phids.api.ui_state.DraftState` instance.
+        draft: The active :class:`~phids.api.ui_state.state.DraftState` instance.
 
     Returns:
         Indented JSON string suitable for agent consumption.
@@ -102,7 +102,7 @@ def active_draft_resource() -> str:
     without spending a tool-call budget on ``runtime_snapshot``.
 
     Returns:
-        Indented JSON string of the current :class:`~phids.api.ui_state.DraftState`.
+        Indented JSON string of the current :class:`~phids.api.ui_state.state.DraftState`.
 
     """
     return _draft_to_json(get_draft())

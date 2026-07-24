@@ -5,14 +5,17 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
 from phids.api.services.draft.substances import add_substance, remove_substance, update_substance
-from phids.api.ui_state import SubstanceDefinition, get_draft
+from phids.api.ui_state.state import get_draft
+
+if TYPE_CHECKING:
+    from phids.api.ui_state.substances import SubstanceDefinition
 
 router = APIRouter()
 

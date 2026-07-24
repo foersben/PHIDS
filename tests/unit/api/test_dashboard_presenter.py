@@ -81,7 +81,12 @@ from phids.api.services.draft.placements import (
 from phids.api.services.draft.trigger_rules import (
     add_trigger_rule,
 )
-from phids.api.ui_state import DraftState, SubstanceDefinition, TriggerRule, reset_draft
+from phids.api.ui_state.state import (
+    DraftState,
+    reset_draft,
+)
+from phids.api.ui_state.substances import SubstanceDefinition
+from phids.api.ui_state.triggers import TriggerRule
 from phids.engine.components.plant import PlantComponent
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
@@ -152,7 +157,7 @@ def _reset_draft_state() -> None:
     """Reset draft singleton to a pristine state before each test.
 
     This fixture upholds the deterministic reproducibility invariant by eliminating
-    cross-test contamination of mutable :class:`~phids.api.ui_state.DraftState` state.
+    cross-test contamination of mutable :class:`~phids.api.ui_state.state.DraftState` state.
     """
     reset_draft()
 
@@ -479,8 +484,8 @@ def test_build_preview_cell_details_structural_contract() -> None:
 def test_build_preview_cell_details_reports_placed_entities() -> None:
     """Verifies that draft-placed plants and swarms are correctly serialised for a target cell.
 
-    The preview payload iterates over :attr:`~phids.api.ui_state.DraftState.initial_plants`
-    and :attr:`~phids.api.ui_state.DraftState.initial_swarms` to find entities at the
+    The preview payload iterates over :attr:`~phids.api.ui_state.state.DraftState.initial_plants`
+    and :attr:`~phids.api.ui_state.state.DraftState.initial_swarms` to find entities at the
     queried coordinate.  Only entities at the exact cell must appear; entities at other
     coordinates must be absent.
     """
@@ -1175,7 +1180,7 @@ def test_serialize_live_substance_activation_condition_summary_rendered() -> Non
 def test_build_preview_cell_details_trigger_rule_with_activation_condition() -> None:
     """Verifies that a TriggerRule carrying an activation_condition tree is serialised correctly.
 
-    The :class:`~phids.api.ui_state.TriggerRule` dataclass supports an optional
+    The :class:`~phids.api.ui_state.triggers.TriggerRule` dataclass supports an optional
     ``activation_condition`` predicate tree that overrides the legacy flat-field trigger
     semantics.  The draft presenter must faithfully forward this tree into the
     ``configured_trigger_rules`` list for each plant, enabling the operator to verify

@@ -20,10 +20,10 @@ from fastapi import HTTPException
 from pydantic import TypeAdapter, ValidationError
 
 from phids.api.schemas.conditions import ConditionNode
-from phids.api.ui_state import (
+from phids.api.ui_state.state import DraftState
+from phids.api.ui_state.triggers import (
     ActivationConditionNode,
     ConditionValue,
-    DraftState,
     TriggerRule,
     _condition_node_at_path,
     _parse_condition_path,

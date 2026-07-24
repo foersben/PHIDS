@@ -435,7 +435,7 @@ async def telemetry_chart(request: Request) -> Response:
         latest_metrics = api_main._sim_loop.telemetry.get_latest_metrics()
         live_summary = build_live_summary(api_main._sim_loop)
 
-    from phids.api.ui_state import DraftState, get_draft
+    from phids.api.ui_state.state import DraftState, get_draft
 
     draft: DraftState = get_draft()
     max_x: int = api_main._sim_loop.env.width if api_main._sim_loop is not None else draft.grid_width

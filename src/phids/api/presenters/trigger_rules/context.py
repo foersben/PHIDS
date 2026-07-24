@@ -3,7 +3,7 @@
 import json
 
 from phids.api.presenters.dashboard.shared import _describe_activation_condition
-from phids.api.ui_state import DraftState
+from phids.api.ui_state.state import DraftState
 
 
 def trigger_rules_template_context(draft: DraftState) -> dict[str, object]:

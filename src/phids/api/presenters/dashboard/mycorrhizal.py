@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState
+    from phids.api.ui_state.state import DraftState
     from phids.engine.loop import SimulationLoop
 
 
@@ -40,10 +40,10 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
 
     The mycorrhizal network in PHIDS is modelled as a graph of Manhattan-adjacent
     plant entities.  In draft mode, the live ECS world has not yet been instantiated,
-    so adjacency is determined directly from the :attr:`~phids.api.ui_state.DraftState.initial_plants`
+    so adjacency is determined directly from the :attr:`~phids.api.ui_state.state.DraftState.initial_plants`
     placement list.  Two plants at Manhattan distance 1 are considered candidates for
     a root link; inter-species links are included only when
-    :attr:`~phids.api.ui_state.DraftState.mycorrhizal_inter_species` is ``True``.
+    :attr:`~phids.api.ui_state.state.DraftState.mycorrhizal_inter_species` is ``True``.
 
     Args:
         draft: The current server-side draft configuration.

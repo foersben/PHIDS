@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
@@ -26,11 +26,13 @@ from phids.api.services.draft.trigger_rules import (
     update_trigger_rule,
     update_trigger_rule_condition_node,
 )
-from phids.api.ui_state import (
-    ActivationConditionNode,
+from phids.api.ui_state.state import (
     DraftState,
     get_draft,
 )
+
+if TYPE_CHECKING:
+    from phids.api.ui_state.triggers import ActivationConditionNode
 
 router = APIRouter()
 

@@ -56,3 +56,7 @@ Action: Use `TypeAdapter(ConditionNode)` to correctly validate the root of the r
 
 Learning: Extracting utility methods and Pydantic schemas out of a monolithic `phids.api.main` file cleans the module graph significantly but introduces severe import-ordering strictness under `ruff`. `from __future__ import annotations` must be the absolute first statement following the module docstring, overriding `typing.TYPE_CHECKING` blocks and standard library imports, otherwise `F404` and `E402` linting errors block PR validation.
 Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.
+
+## 2026-07-24 - Safe Refactoring of Multi-line Imports
+Learning: When refactoring modules and moving classes into sub-packages, using naive string-replace scripts or regex to update multi-line `from ... import (...)` blocks frequently results in syntax errors, unmatched parentheses, or incorrect indentation.
+Action: Use exact string-block replacements or carefully process line-by-line using Python scripts. Do not rely on automated regex replacements without manual validation for complex import statements.

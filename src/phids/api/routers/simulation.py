@@ -30,15 +30,17 @@ from phids.api.schemas.responses import (
 )
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
-from phids.api.ui_state import (
-    DraftState,
+from phids.api.ui_state.placements import (
     PlacedPlant,
     PlacedSwarm,
-    SubstanceDefinition,
-    TriggerRule,
+)
+from phids.api.ui_state.state import (
+    DraftState,
     get_draft,
     set_draft,
 )
+from phids.api.ui_state.substances import SubstanceDefinition
+from phids.api.ui_state.triggers import TriggerRule
 from phids.engine.loop import SimulationLoop
 
 if TYPE_CHECKING:
