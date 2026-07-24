@@ -47,6 +47,7 @@ class ResourceWithdrawalAction(StrictBaseModel):
     apparent_nutrition_factor: float = Field(
         default=1.0, ge=0.0, le=1.0, description="[%] Multiplier for energy apparent to herbivores and flow field."
     )
+    withdrawal_duration: int = Field(default=10, gt=0, description="[Ticks] Duration of the nutrition withdrawal.")
 
 
 TriggerAction = Annotated[SynthesizeSubstanceAction | ResourceWithdrawalAction, Field(discriminator="type")]

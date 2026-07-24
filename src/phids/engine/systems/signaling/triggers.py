@@ -53,7 +53,7 @@ def _process_single_trigger(
 
     if isinstance(trig.action, ResourceWithdrawalAction):
         plant.apparent_nutrition_factor = trig.action.apparent_nutrition_factor
-        plant.withdrawal_ticks_remaining = trig.aftereffect_ticks
+        plant.withdrawal_ticks_remaining = trig.action.withdrawal_duration
         return
 
     if not isinstance(trig.action, SynthesizeSubstanceAction):

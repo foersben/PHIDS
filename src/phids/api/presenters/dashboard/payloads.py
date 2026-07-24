@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld
     from phids.engine.loop import SimulationLoop
 
+
 def _collect_live_plants(
     world: ECSWorld,
     env: GridEnvironment,
@@ -79,6 +80,7 @@ def _collect_live_plants(
         plants["active_toxin_ids"].append(visible_toxin_ids)
     return plants
 
+
 def _collect_live_swarms(
     world: ECSWorld,
     env: GridEnvironment,
@@ -119,6 +121,7 @@ def _collect_live_swarms(
         swarms["toxin_level"].append(toxin_level)
         swarms["intoxicated"].append(toxin_level > 0.0)
     return swarms
+
 
 def _collect_flora_species(
     config_flora_species: list[FloraSpeciesParams],

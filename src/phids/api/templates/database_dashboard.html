@@ -558,8 +558,9 @@ function addRuleCard(ruleData = null) {
             </div>
           </div>
 
-          <div id="action-res-${id}" class="hidden bg-slate-50 p-3 rounded border border-slate-200">
+          <div id="action-res-${id}" class="hidden bg-slate-50 p-3 rounded border border-slate-200 grid grid-cols-2 gap-4">
             <div><label class="block text-xs text-slate-600">Apparent Nutrition Factor</label><input type="number" step="0.1" class="act-nut-factor mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ruleData?.action?.apparent_nutrition_factor ?? 0.2}"></div>
+            <div><label class="block text-xs text-slate-600">Withdrawal Duration</label><input type="number" step="1" class="act-with-dur mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ruleData?.action?.withdrawal_duration ?? 10}"></div>
           </div>
         </div>
       </div>
@@ -753,6 +754,7 @@ function extractRules() {
       r.action.irreversible = template.irreversible ?? false;
     } else {
       r.action.apparent_nutrition_factor = parseFloat(card.querySelector('.act-nut-factor').value) || 0;
+      r.action.withdrawal_duration = parseInt(card.querySelector('.act-with-dur').value) || 10;
     }
 
     rules.push(r);

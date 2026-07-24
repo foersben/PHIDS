@@ -173,6 +173,7 @@ class TriggerRule:
     substance_id: int = 0
     action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
     apparent_nutrition_factor: float = 0.2
+    withdrawal_duration: int = 10
     aftereffect_ticks: int = 10
     min_herbivore_population: int = 5
     activation_condition: ActivationConditionNode | None = None
@@ -472,6 +473,7 @@ class DraftState:
                 # Resource Withdrawal
                 action = ResourceWithdrawalAction(
                     apparent_nutrition_factor=rule.apparent_nutrition_factor,
+                    withdrawal_duration=rule.withdrawal_duration,
                 )
                 aftereffect = rule.aftereffect_ticks
                 triggers_by_flora.setdefault(rule.flora_species_id, []).append(
