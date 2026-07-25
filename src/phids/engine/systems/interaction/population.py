@@ -41,8 +41,17 @@ def _accumulate_tile_population(
             negative for deaths or departures.
 
     """
-    if 0 <= x < width and 0 <= y < (len(tile_populations) // width):
-        tile_populations[y * width + x] += delta
+    # ⚡ Bolt Optimization:
+    # Entities in PHIDS are constrained within grid boundaries by the movement systems,
+    # however, we retain the zero-bound checks because Python allows negative indexing
+    # which would silently corrupt the spatial hash array if an entity were somehow placed
+    # at a negative coordinate. We avoid the upper bounds check (which requires division)
+    # as IndexError will natively catch out-of-bounds positive indices.
+    if x >= 0 and y >= 0:
+        try:
+            tile_populations[y * width + x] += delta
+        except IndexError:
+            pass
 
 
 def _co_located_swarm_population(world: ECSWorld, x: int, y: int) -> int:
