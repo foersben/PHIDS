@@ -522,6 +522,12 @@ def _resolve_swarm_movement(
         swarm.move_cooldown -= 1
         return False
 
+    # Decay aversion memory per movement tick
+    if getattr(swarm, "aversion_memory", 0.0) > 0.0:
+        swarm.aversion_memory *= 0.95
+        if swarm.aversion_memory < 0.01:
+            swarm.aversion_memory = 0.0
+
     old_x, old_y = swarm.x, swarm.y
 
     # 1. Crowding takes strict precedence (Physical Jostling)
