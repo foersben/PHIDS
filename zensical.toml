@@ -88,6 +88,7 @@ Scenarios = [
 [[project.nav]]
 "Development & Reference" = [
     { "Overview" = "reference/index.md" },
+    { "Strategic Roadmap" = "roadmap.md" },
     { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
     { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
     { "Module Map" = "reference/module-map.md" },
