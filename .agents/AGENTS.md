@@ -11,8 +11,6 @@ timestamp: "2026-07-25T17:06:00Z"
 resources: []
 ---
 
-# PHIDS Routing & Capabilities
-
 Primary routing table for AI IDEs defining roles in `.agents/roles/` and core constraints.
 
 ## Core Architecture Constraints

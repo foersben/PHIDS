@@ -46,6 +46,7 @@ $$n(t + \Delta t) = \max\left(0, n(t) - \Delta n\right)$$
 Where $\lfloor \cdot \rfloor$ denotes the floor function, enforcing discrete integer mortality within the herbivore population cohort.
 
 !!! info "Dual Perspectives: Mechanical Attrition"
+
     * **Biological Perspective**: Thorns and trichomes do not alter plant nutrient chemistry; instead, they inflict physical trauma on herbivore mouthparts. This enforces an immediate population penalty per bite, favoring herbivores with specialized morphological mouthpart adaptations ($\rho_{\text{morph}}$).
     * **Computer Science & Mathematical Rationale**: Modeled as an in-place $O(1)$ integer subtraction during the feeding pass inside `feeding.py`. Enforcing $\lfloor \cdot \rfloor$ prevents floating-point "fractional individuals" from cluttering the ECS entity array, maintaining clean headcount integers and strict zero-allocation JIT execution.
 
@@ -62,6 +63,7 @@ $$\eta_{\text{net}} = \min\left(1.0, \max\left(0.0, \mu_{\text{digest}} \cdot \d
 $$E_{\text{metabolized}} = E_{\text{consumed}} \cdot \eta_{\text{net}}$$
 
 !!! info "Dual Perspectives: Caloric Attenuation"
+
     * **Biological Perspective**: High-lignin or silica-heavy foliage reduces the net energetic yield per gram consumed. Herbivores ingest biomass but fail to assimilate calories, slowing their reproductive rate and mitigating population explosions without killing swarms outright.
     * **Computer Science & Mathematical Rationale**: Implemented as a scalar multiplication $\eta_{\text{net}} = \min(1.0, \max(0.0, \mu_{\text{digest}} \cdot \delta_{\text{eff}}))$ during consumption accumulation. Decouples raw biomass consumption from energy transfer in a single arithmetic operation, preserving $O(1)$ per-entity state updates.
 
@@ -86,6 +88,7 @@ $$N^{t+1} = N^t - k_{\text{trans}} \cdot \left(N^t - N_{\text{target}}\right)$$
 $$N^{t+1} = N^t + k_{\text{trans}} \cdot \left(1.0 - N^t\right)$$
 
 !!! info "Dual Perspectives: Rate-Limited Phloem Translocation"
+
     * **Biological Perspective**: Real plants cannot instantaneously empty their leaves of sugars. Vascular transport takes time ($k_{\text{trans}}$), creating an empirical "window of vulnerability" during which grazing herbivores continue feeding while translocation is underway.
     * **Computer Science & Mathematical Rationale**: Approximated via an exponential relaxation recurrence step $N^{t+1} = N^t + k (N_{\text{target}} - N^t)$ evaluated in `lifecycle.py`. Prevents discontinuous step-function jumps in the flow-field potential matrix, ensuring smooth spatial gradient transitions for herbivore navigation.
 
@@ -100,6 +103,7 @@ $$F(x, y) = \alpha \cdot \left(E_{\text{plant}}(x, y) \cdot N(x, y)\right) - \be
 Where $E_{\text{plant}}(x, y)$ is the total plant energy, $T_k(x, y)$ represents localized repellent toxin concentrations, and $\alpha, \beta$ are flow-field weighting coefficients. Down-regulating $N(x, y)$ flattens the local attractant gradient, causing spatial flow-field navigation to steer approaching herbivore swarms away from the defended plant patch.
 
 !!! info "Dual Perspectives: Attractant Field Scaling"
+
     * **Biological Perspective**: By translocating nutrients to root sinks, plants mask their nutritional value from sensory-seeking herbivores (trophic camouflage), forcing grazers to disperse toward other patches.
     * **Computer Science & Mathematical Rationale**: Multiplied directly into the 2D energy tensor $E(x,y) \cdot N(x,y)$ prior to JIT flow-field generation. Modifies the global potential surface without requiring separate pathfinding re-computations or dynamic graph re-routing.
 
@@ -111,44 +115,44 @@ For software engineers and data interface developers, this section maps the math
 
 ### Schema Definitions (`src/phids/api/schemas/species.py` & `triggers.py`)
 
-```python
-class PassiveDefensesSchema(StrictBaseModel):
-    """Constitutive morphological defenses of a flora species."""
+    ```python
+    class PassiveDefensesSchema(StrictBaseModel):
+        """Constitutive morphological defenses of a flora species."""
 
-    mechanical_damage_per_bite: float = Field(default=0.0, ge=0.0)
-    digestibility_modifier: float = Field(default=1.0, ge=0.0, le=1.0)
+        mechanical_damage_per_bite: float = Field(default=0.0, ge=0.0)
+        digestibility_modifier: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
-class ResourceWithdrawalAction(StrictBaseModel):
-    """Action configuring rate-limited phloem nutrient translocation."""
+    class ResourceWithdrawalAction(StrictBaseModel):
+        """Action configuring rate-limited phloem nutrient translocation."""
 
-    type: Literal["resource_withdrawal"] = "resource_withdrawal"
-    apparent_nutrition_factor: float = Field(default=0.1, ge=0.0, le=1.0)
-    withdrawal_duration: int = Field(default=5, ge=1)
-```
+        type: Literal["resource_withdrawal"] = "resource_withdrawal"
+        apparent_nutrition_factor: float = Field(default=0.1, ge=0.0, le=1.0)
+        withdrawal_duration: int = Field(default=5, ge=1)
+    ```
 
 ### Component State (`src/phids/engine/components/plant.py`)
 
-```python
-@dataclass(slots=True)
-class PlantComponent:
-    apparent_nutrition_factor: float = 1.0
-    target_nutrition_factor: float = 1.0
-    translocation_rate: float = 0.2
-    withdrawal_ticks_remaining: int = 0
-```
+    ```python
+    @dataclass(slots=True)
+    class PlantComponent:
+        apparent_nutrition_factor: float = 1.0
+        target_nutrition_factor: float = 1.0
+        translocation_rate: float = 0.2
+        withdrawal_ticks_remaining: int = 0
+    ```
 
 ### System Execution Pipeline (`src/phids/engine/systems/lifecycle.py`)
 
-```python
-# Phloem translocation update during lifecycle tick
-if plant.withdrawal_ticks_remaining > 0:
-    plant.withdrawal_ticks_remaining -= 1
-    plant.apparent_nutrition_factor += (
-        plant.target_nutrition_factor - plant.apparent_nutrition_factor
-    ) * plant.translocation_rate
-else:
-    plant.apparent_nutrition_factor += (
-        1.0 - plant.apparent_nutrition_factor
-    ) * plant.translocation_rate
-```
+    ```python
+    # Phloem translocation update during lifecycle tick
+    if plant.withdrawal_ticks_remaining > 0:
+        plant.withdrawal_ticks_remaining -= 1
+        plant.apparent_nutrition_factor += (
+            plant.target_nutrition_factor - plant.apparent_nutrition_factor
+        ) * plant.translocation_rate
+    else:
+        plant.apparent_nutrition_factor += (
+            1.0 - plant.apparent_nutrition_factor
+        ) * plant.translocation_rate
+    ```
