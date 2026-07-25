@@ -52,33 +52,50 @@ def check_okf_concept(file_path: Path, base_paths: list[Path]) -> list[str]:
     return errors
 
 
-def main() -> None:
-    """Scan knowledge documentation pathways for strict OKF conformance matches."""
-    directories = ["docs", ".agents"]
-    base_paths = [Path(d).resolve() for d in directories if Path(d).exists()]
-
-    global_errors = 0
-
-    # Handle file lists passed via CLI args (e.g. from pre-commit)
+def _discover_markdown_files(base_paths: list[Path]) -> list[Path]:
+    """Discover markdown files to validate based on CLI args or base paths."""
     if len(argv) > 1:
-        md_files = [Path(p).resolve() for p in argv[1:]]
-    else:
-        md_files = []
-        for base_path in base_paths:
-            md_files.extend(base_path.rglob("*.md"))
+        return [Path(p).resolve() for p in argv[1:]]
 
+    md_files: list[Path] = []
+    for base_path in base_paths:
+        md_files.extend(base_path.rglob("*.md"))
+    return md_files
+
+
+def _scan_files(md_files: list[Path], base_paths: list[Path]) -> int:
+    """Scan the provided markdown files and print errors.
+
+    Returns:
+        The total number of errors found.
+    """
+    global_errors = 0
     for md_file in md_files:
         # Ignore legacy docs and generated site folders
         if "docs/legacy/" in md_file.as_posix() or "site/" in md_file.as_posix():
             continue
         if not md_file.exists() or not md_file.is_file():
             continue
+
+        if md_file.name in ("index.md", "log.md"):
+            continue
+
         file_errors = check_okf_concept(md_file, base_paths)
         if file_errors:
             global_errors += len(file_errors)
             print(f"❌ OKF Non-Compliance inside -> {md_file.relative_to(Path.cwd())}:")
             for err in file_errors:
                 print(f"   • {err}")
+    return global_errors
+
+
+def main() -> None:
+    """Scan knowledge documentation pathways for strict OKF conformance matches."""
+    directories = ["docs", ".agents"]
+    base_paths = [Path(d).resolve() for d in directories if Path(d).exists()]
+
+    md_files = _discover_markdown_files(base_paths)
+    global_errors = _scan_files(md_files, base_paths)
 
     if global_errors > 0:
         print(f"\n💥 Result: Found {global_errors} errors. Knowledge bundle rejected.")

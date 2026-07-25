@@ -16,12 +16,19 @@ browser-side replicas.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
+from phids.analytics.bio_database import BioDatabaseModel  # noqa: TC001
+from phids.api.presenters.diagnostics import build_energy_deficit_swarms, build_live_summary
+from phids.api.presenters.trigger_rules import trigger_rules_template_context
 from phids.api.ui_state import DraftState, get_draft
 from phids.shared.logging_config import get_recent_logs
+
+BIO_DB_PATH = Path("src/phids/analytics/bio_database.json")
 
 router = APIRouter()
 
@@ -56,11 +63,11 @@ async def ui_diagnostics_model(request: Request) -> Response:
         "partials/diagnostics_model.html",
         {
             "draft": get_draft(),
-            "live_summary": api_main._build_live_summary(),
+            "live_summary": build_live_summary(api_main._sim_loop),
             "latest_metrics": api_main._sim_loop.telemetry.get_latest_metrics()
             if api_main._sim_loop is not None
             else None,
-            "energy_deficit_swarms": api_main._build_energy_deficit_swarms(),
+            "energy_deficit_swarms": build_energy_deficit_swarms(api_main._sim_loop),
             "wind": {
                 "vx": api_main._sim_loop.config.wind_x if api_main._sim_loop else get_draft().wind_x,
                 "vy": api_main._sim_loop.config.wind_y if api_main._sim_loop else get_draft().wind_y,
@@ -256,7 +263,7 @@ async def ui_trigger_rules(request: Request) -> Response:
     return api_main.templates.TemplateResponse(
         request,
         "partials/trigger_rules.html",
-        api_main._trigger_rules_template_context(draft),
+        trigger_rules_template_context(draft),
     )
 
 
@@ -272,7 +279,7 @@ async def ui_morphology_defense(request: Request) -> Response:
             "herbivore_species": draft.herbivore_species,
             "substances": draft.substance_definitions,
             "trigger_rules": draft.trigger_rules,
-            "trigger_rule_condition_summary": api_main._trigger_rules_template_context(draft).get(
+            "trigger_rule_condition_summary": trigger_rules_template_context(draft).get(
                 "trigger_rule_condition_summary"
             ),
             "condition_group_kinds": ["all_of", "any_of"],
@@ -327,9 +334,8 @@ async def ui_database(request: Request) -> Response:
         TemplateResponse: Rendered `database_dashboard.html` fragment containing database items.
     """
     import json
-    from pathlib import Path
 
-    db_path = Path("src/phids/analytics/bio_database.json")
+    db_path = BIO_DB_PATH
     try:
         with open(db_path, encoding="utf-8") as f:
             db_data = json.load(f)
@@ -348,18 +354,45 @@ async def ui_database(request: Request) -> Response:
 
 
 @router.post("/api/database/save", summary="Save Bio-Database")
-async def api_database_save(request: Request) -> Response:
+async def api_database_save(payload: BioDatabaseModel) -> Response:
     """Save the current bio-database payload."""
     import json
-    from pathlib import Path
 
-    db_path = Path("src/phids/analytics/bio_database.json")
+    db_path = BIO_DB_PATH
 
     try:
-        data = await request.json()
         with open(db_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+            json.dump(payload.model_dump(), f, indent=2)
 
         return Response(status_code=200)
     except Exception as e:
         return Response(content=str(e), status_code=400)
+
+
+@router.post("/api/database/rebuild", summary="Rebuild Bio-Database via ETL pipeline")
+async def api_database_rebuild() -> Response:
+    """Run the ETL pipeline.
+
+    Returns:
+        Response: Success or failure message.
+    """
+    import asyncio
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            "uv",
+            "run",
+            "python",
+            "src/data_pipeline/run_all.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _stdout, stderr = await process.communicate()
+        if process.returncode != 0:
+            return Response(content=f"ETL Failed:\\n{stderr.decode('utf-8')}", status_code=500)
+
+        # We trigger an HTMX refresh of the panel by returning a client-side redirect header
+        # or we can just return a success message
+        return Response(content="ETL Pipeline completed successfully.", status_code=200, headers={"HX-Refresh": "true"})
+    except Exception as e:
+        return Response(content=str(e), status_code=500)

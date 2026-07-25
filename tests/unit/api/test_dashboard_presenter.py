@@ -57,27 +57,35 @@ from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    extract_ui_snapshot,
     validate_cell_coordinates,
 )
-from phids.api.schemas import (
+from phids.api.schemas.placement import (
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+)
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreResistancesSchema,
     HerbivoreSpeciesParams,
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
+)
+from phids.api.schemas.triggers import (
     PassiveDefensesSchema,
-    SimulationConfig,
     TriggerConditionSchema,
 )
-from phids.api.services.draft_service import DraftService
+from phids.api.services.draft.placements import (
+    add_plant_placement,
+    add_swarm_placement,
+)
+from phids.api.services.draft.trigger_rules import (
+    add_trigger_rule,
+)
 from phids.api.ui_state import DraftState, SubstanceDefinition, TriggerRule, reset_draft
 from phids.engine.components.plant import PlantComponent
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
-
-draft_service = DraftService()
-
 
 # ---------------------------------------------------------------------------
 # Shared fixture helpers
@@ -306,8 +314,8 @@ def test_build_draft_mycorrhizal_links_empty_when_not_adjacent() -> None:
     render belowground network overlays for plants that cannot exchange chemical signals.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 0, 0, 10.0)
-    draft_service.add_plant_placement(draft, 0, 3, 3, 10.0)
+    add_plant_placement(draft, 0, 0, 0, 10.0)
+    add_plant_placement(draft, 0, 3, 3, 10.0)
     assert build_draft_mycorrhizal_links(draft) == []
 
 
@@ -319,8 +327,8 @@ def test_build_draft_mycorrhizal_links_adjacent_same_species() -> None:
     the biological observation that conspecific root networks form preferentially.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 10.0)
-    draft_service.add_plant_placement(draft, 0, 2, 3, 10.0)
+    add_plant_placement(draft, 0, 2, 2, 10.0)
+    add_plant_placement(draft, 0, 2, 3, 10.0)
     links = build_draft_mycorrhizal_links(draft)
     assert len(links) == 1
     assert links[0]["inter_species"] is False
@@ -334,8 +342,8 @@ def test_build_draft_mycorrhizal_links_inter_species_gated_by_flag() -> None:
     link candidates, preserving the species-specificity of the simulated mycorrhizal network.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 10.0)
-    draft_service.add_plant_placement(draft, 1, 2, 3, 10.0)
+    add_plant_placement(draft, 0, 2, 2, 10.0)
+    add_plant_placement(draft, 1, 2, 3, 10.0)
 
     draft.mycorrhizal_inter_species = False
     assert build_draft_mycorrhizal_links(draft) == []
@@ -414,7 +422,7 @@ def test_build_live_cell_details_substance_name_injection() -> None:
     injected mapping flows through to ``signal_concentrations`` and substance payloads,
     eliminating reliance on module-level mutable state.
     """
-    from phids.api.schemas import SynthesizeSubstanceAction
+    from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
     trigger = TriggerConditionSchema(
         herbivore_species_id=0,
@@ -453,8 +461,8 @@ def test_build_preview_cell_details_structural_contract() -> None:
     distinguishing field is ``mode == "draft"`` and ``tick == None``.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
-    draft_service.add_swarm_placement(draft, 0, 1, 1, 3, 8.0)
+    add_plant_placement(draft, 0, 1, 1, 10.0)
+    add_swarm_placement(draft, 0, 1, 1, 3, 8.0)
     payload = build_preview_cell_details(1, 1, draft=draft, substance_names={})
 
     assert payload["mode"] == "draft"
@@ -478,9 +486,9 @@ def test_build_preview_cell_details_reports_placed_entities() -> None:
     coordinates must be absent.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 12.0)
-    draft_service.add_plant_placement(draft, 0, 5, 5, 10.0)  # Different cell - must not appear.
-    draft_service.add_swarm_placement(draft, 0, 2, 2, 5, 15.0)
+    add_plant_placement(draft, 0, 2, 2, 12.0)
+    add_plant_placement(draft, 0, 5, 5, 10.0)  # Different cell - must not appear.
+    add_swarm_placement(draft, 0, 2, 2, 5, 15.0)
     payload = build_preview_cell_details(2, 2, draft=draft)
 
     assert len(payload["plants"]) == 1
@@ -509,11 +517,11 @@ def test_build_preview_cell_details_includes_trigger_rules() -> None:
     semantics before the scenario is committed.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 3, 3, 10.0)
+    add_plant_placement(draft, 0, 3, 3, 10.0)
     draft.substance_definitions.append(
         SubstanceDefinition(substance_id=0, name="VOC", is_toxin=False, synthesis_duration=1, aftereffect_ticks=0)
     )
-    draft_service.add_trigger_rule(
+    add_trigger_rule(
         draft,
         flora_species_id=0,
         herbivore_species_id=0,
@@ -535,8 +543,8 @@ def test_build_preview_cell_details_mycorrhizal_links_in_draft() -> None:
     field must reflect the number of links whose endpoints include the queried cell.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 2, 2, 10.0)
-    draft_service.add_plant_placement(draft, 0, 2, 3, 10.0)  # Adjacent - forms a link.
+    add_plant_placement(draft, 0, 2, 2, 10.0)
+    add_plant_placement(draft, 0, 2, 3, 10.0)  # Adjacent - forms a link.
 
     payload = build_preview_cell_details(2, 2, draft=draft)
     assert payload["mycorrhiza"]["link_count"] == 1
@@ -558,7 +566,7 @@ def test_build_live_dashboard_payload_structural_contract() -> None:
     """
     config = _minimal_config()
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     required_keys = {
         "tick",
@@ -592,7 +600,7 @@ def test_build_live_dashboard_payload_tick_and_lifecycle_state() -> None:
     """
     config = _minimal_config()
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     assert payload["tick"] == 0
     assert payload["terminated"] is False
@@ -609,7 +617,7 @@ def test_build_live_dashboard_payload_plant_and_swarm_entries() -> None:
     """
     config = _minimal_config(x=4, y=4)
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     plant_columns = payload["plants"]
     assert {"entity_id", "species_id", "x", "y", "energy"}.issubset(plant_columns.keys())
@@ -646,7 +654,7 @@ def test_build_live_dashboard_payload_extinct_species_bifurcation() -> None:
         if len(live_species) <= 1:
             break
 
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
     payload_species = {int(spec["species_id"]) for spec in payload["species_energy"]}
     legend_species = {int(spec["species_id"]) for spec in payload["all_flora_species"]}
     configured_species = {species.species_id for species in loop.config.flora_species}
@@ -672,7 +680,7 @@ def test_build_live_dashboard_payload_max_energy_is_positive() -> None:
     """
     config = _minimal_config()
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
     assert payload["max_energy"] > 0.0
 
 
@@ -1012,8 +1020,6 @@ def test_serialize_live_substance_active_signal_structural_contract() -> None:
         repellent=True,
         lethality_rate=0.0,
         repellent_walk_ticks=4,
-        trigger_herbivore_species_id=1,
-        trigger_min_herbivore_population=3,
         activation_condition=None,
     )
     payload = _serialize_live_substance(
@@ -1093,45 +1099,6 @@ def test_serialize_live_substance_toxin_kind_field() -> None:
     assert payload["lethality_rate"] == pytest.approx(0.25)
 
 
-def test_serialize_live_substance_trigger_herbivore_name_fallback() -> None:
-    """Verifies that an unlisted herbivore id generates a deterministic fallback label.
-
-    When the injected ``herbivore_names`` mapping has no entry for the trigger herbivore,
-    the serialiser must produce a stable fallback string rather than raising a KeyError
-    or returning None, ensuring tooltip entries remain informative even for incomplete
-    name registries.
-    """
-    from phids.engine.components.substances import SubstanceComponent
-
-    substance = SubstanceComponent(
-        entity_id=13,
-        substance_id=0,
-        owner_plant_id=0,
-        trigger_herbivore_species_id=7,
-    )
-    payload = _serialize_live_substance(substance, herbivore_names={}, substance_names={})
-    assert payload["trigger_herbivore_name"] == "Herbivore 7"
-
-
-def test_serialize_live_substance_no_herbivore_when_id_negative() -> None:
-    """Verifies that trigger_herbivore_name is None when no herbivore is configured.
-
-    A trigger_herbivore_species_id of -1 signals that the substance has no explicit
-    herbivore-specific trigger.  The serialised payload must carry None for the herbivore
-    name field to allow the tooltip template to conditionally hide the trigger row.
-    """
-    from phids.engine.components.substances import SubstanceComponent
-
-    substance = SubstanceComponent(
-        entity_id=14,
-        substance_id=0,
-        owner_plant_id=0,
-        trigger_herbivore_species_id=-1,
-    )
-    payload = _serialize_live_substance(substance, herbivore_names={}, substance_names={})
-    assert payload["trigger_herbivore_name"] is None
-
-
 def test_serialize_live_substance_activation_condition_summary_rendered() -> None:
     """Verifies that a nested activation condition tree is rendered into a summary string.
 
@@ -1175,7 +1142,7 @@ def test_build_preview_cell_details_trigger_rule_with_activation_condition() -> 
     complex compound-trigger configurations before committing the scenario.
     """
     draft = DraftState.default()
-    draft_service.add_plant_placement(draft, 0, 1, 1, 10.0)
+    add_plant_placement(draft, 0, 1, 1, 10.0)
     draft.substance_definitions.append(
         SubstanceDefinition(
             substance_id=0,

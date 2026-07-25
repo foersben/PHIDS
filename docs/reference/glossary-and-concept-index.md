@@ -1,12 +1,26 @@
 ---
 type: reference
-title: "Glossary and Concept Index"
+title: Glossary and Concept Index
 status: active
 version: 0.1
-description: "Documentation for Glossary and Concept Index in the PHIDS framework."
+description: Documentation for Glossary and Concept Index in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- python
+timestamp: "2026-07-25T10:52:00Z"
+resources:
+- ../scientific_model/mathematical_framework.md
+- ../technical_architecture/system_architecture.md
+- ../technical_architecture/engine_execution.md
+- ../scenario_guide/curated_examples.md
+- ../technical_architecture/interfaces_and_ui.md
+- ../technical_architecture/telemetry.md
+- ../scientific_model/index.md
+- ../scenario_guide/scenario_authoring.md
+- interaction.py
 ---
-
-# Glossary and Concept Index
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary
 used throughout the PHIDS documentation corpus. Each entry is defined in the language of the active
@@ -156,15 +170,17 @@ sets. Key methods: `create_entity`, `add_component`, `get_entity`, `has_entity`,
 
 See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
-### `environmental_signal` (activation condition kind)
+### `EnvironmentalSignalInitiator` (and `environmental_signal` condition)
 
-An activation-condition predicate that evaluates whether the concentration of a named signal layer
-at the emitting plant's cell meets or exceeds a configured `min_concentration` threshold. This
-enables a plant to activate a defense in response to ambient signal concentrations deposited by
-mycorrhizal relay or airborne diffusion from neighbouring plants, providing a mechanistic basis for
-primed systemic acquired resistance.
+An initiator (or nested activation-condition) that evaluates whether the concentration of a named ambient signal layer at the emitting plant's cell meets or exceeds a configured `min_concentration` threshold. This enables a plant to activate a defense (like `ResourceWithdrawalAction`) in response to ambient signal concentrations deposited by mycorrhizal relay or airborne diffusion from neighbouring plants, modeling primed systemic acquired resistance (SAR).
 
 See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+
+### `extract_ui_snapshot`
+
+An architectural pattern used in `UIStreamManager` to decouple heavy JSON serialization from the core `SimulationLoop`. Instead of locking the engine to build JSON, it performs a fast, synchronous, $O(N)$ thread-safe shallow copy of the necessary primitive state arrays (the snapshot). The heavy serialization is then offloaded to a background thread, preventing UI lockups.
+
+See: [`ui/interfaces-and-ui.md`](../technical_architecture/interfaces_and_ui.md)
 
 ---
 
@@ -196,7 +212,7 @@ See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_executi
 ### Ghost Entity
 
 An entity ID that has been logically killed (population zero, energy zero, or marked for removal)
-but has not yet been removed from the spatial hash or ECS registry. Ghost entities corrupt O(1)
+but has not yet been removed from the spatial hash or ECS registry. Ghost entities corrupt $O(1)$
 spatial-hash lookups because `world.entities_at(x, y)` returns their IDs as if they were still
 alive. PHIDS prevents ghost entities through immediate `unregister_position` calls and same-tick GC
 in both the interaction and signaling phases.
@@ -274,10 +290,10 @@ See: [`engine/lifecycle.md`](../scientific_model/mathematical_framework.md), [`e
 
 ## O
 
-### O(1) Spatial Hash
+### $O(1)$ Spatial Hash
 
 The spatial hash embedded in `ECSWorld` that maps `(x, y)` grid cells to sets of entity IDs in
-amortized O(1) time. It is the primary locality primitive in PHIDS: all cell-local interactions
+amortized $O(1)$ time. It is the primary locality primitive in PHIDS: all cell-local interactions
 (feeding, trigger evaluation, crowding checks) are dispatched via `world.entities_at(x, y)` rather
 than through O(N²) global pairwise scans.
 
@@ -303,6 +319,12 @@ performs a random-walk step rather than following the flow field, and the timer 
 tick until it reaches zero.
 
 See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+
+### `ResourceWithdrawalAction`
+
+A trigger action payload (`resource_withdrawal`) representing stress-induced senescence. When executed, it overrides the plant's `apparent_nutrition_factor` (dropping it below 1.0) for a configured `withdrawal_duration` to dynamically reduce its caloric attractiveness in the global flow field, forcing herbivores to bypass the plant.
+
+See: [`engine/morphological_defenses.md`](../scientific_model/morphological_defenses.md)
 
 ### Rule of 16
 
@@ -338,7 +360,7 @@ See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system
 
 ### `SimulationConfig`
 
-The Pydantic v2 validated schema (`phids.api.schemas`) that encodes all parameters for a simulation
+The Pydantic v2 validated schema (`phids.api.schemas.simulation`) that encodes all parameters for a simulation
 run: grid dimensions, species definitions, diet matrix, trigger rules, initial placements, wind
 conditions, mycorrhizal settings, and termination constraints. It is the single validated ingress
 point for scenario data, after which internal state is treated as trusted.
@@ -356,7 +378,7 @@ See: [`engine/index.md`](../scientific_model/index.md)
 
 ### Spatial Hash
 
-See [O(1) Spatial Hash](#o1-spatial-hash).
+See [$O(1)$ Spatial Hash](#o1-spatial-hash).
 
 ### `SubstanceComponent`
 

@@ -1,14 +1,68 @@
 ---
 type: scientific_model
-title: "Mathematical Framework"
+title: Mathematical Framework
 status: active
 version: 0.1
-description: "Documentation for Mathematical Framework in the PHIDS framework."
+description: Documentation for Mathematical Framework in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- chemotaxis
+timestamp: "2026-07-21T16:01:38Z"
+resources:
+- chemotaxis.md
+- population_dynamics.md
+- reaction_diffusion.md
+- herbivore_behavior.md
+- flora_and_symbiosis.md
+- ecological_analytics.md
 ---
 
-# Mathematical Framework
-
 This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a coupled hybrid dynamical system. In this model, discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers.
+
+---
+
+## Executive Introduction: Dual-Perspective Modeling Architecture
+
+To serve both quantitative biologists and computer scientists, every component in PHIDS is designed and documented from **two distinct, complementary perspectives**:
+
+### 1. The Biological Perspective (Why Biologists & Ecologists Should Use PHIDS)
+
+Classical ecological modeling relies heavily on continuous Ordinary Differential Equations (ODEs) such as the Lotka-Volterra predator-prey system. While mathematically tractable, ODEs assume **instantaneous spatial mixing**, **uniform environmental conditions**, and **continuous population densities**. In real-world botany and entomology, these assumptions fail catastrophically:
+
+* **Spatial Heterogeneity & Patch Exhaustion**: Plants are immobile spatial anchors. Herbivores do not graze uniform global averages; they navigate localized chemical gradients, exhaust local patches, and encounter spatial refugia.
+* **Complex Multi-Trophic Defense Pathways**: Plants deploy combinations of constitutive structural barriers (thorns, lignin), inducible chemical defenses (toxins, volatile organic compounds), and dynamic nutrient translocation via phloem transport.
+* **Atmospheric & Subterranean Alarm Networks**: Airborne Volatile Organic Compound (VOC) dispersion is driven by micro-climatic wind advection and atmospheric decay, while subterranean mycorrhizal fungi relay warning signals between root systems at metabolic photosynthate costs.
+* **Potential Gains for Empirical Researchers**: PHIDS provides an *in silico* laboratory to test multi-species plant defense strategies, conduct Design Space Exploration (DSE) via Pareto multi-objective optimization, and predict ecosystem tipping points under changing wind, density, or climate conditions before running multi-year field experiments.
+
+### 2. The Computer Science & Mathematical Perspective (Algorithmic Rationale & HPC Design)
+
+Simulating tens of thousands of interacting organisms and diffusing chemical fields at interactive frame rates (60+ FPS) requires strict computational disciplines:
+
+* **Coupled Hybrid Dynamical System**: We decouple discrete entity state updates ($O(N)$ ECS spatial hash) from continuous Partial Differential Equations ($O(W \cdot H)$ double-buffered cellular automata).
+* **Cache Locality & Data-Oriented Design**: Python object overhead is eliminated in hot path execution loops. Components are stored as contiguous 1D/2D NumPy arrays, and hot mathematical stencils (Gaussian convolution, flow-field generation) are compiled to native machine code using Numba `@njit`.
+* **Numerical Stability & Operator Splitting**: We approximate continuous parabolic PDEs ($\frac{\partial C}{\partial t} = D \nabla^2 C - \lambda C + Q$) using semi-Lagrangian advection and discrete spatial convolution kernels, enforcing floating-point denormalization clamps ($<10^{-4} \to 0.0$) to avoid CPU microcode performance degradation.
+* **Deterministic Telemetry Replay**: All stochastic tick outcomes are serialized tick-by-tick into Zarr zstandard-compressed chunked matrices, enabling exact playback directly from disk without re-executing engine logic.
+
+---
+
+## Master Summary: Comprehensive Subsystem Behaviors & Dual Perspectives
+
+The following matrix provides a high-level master overview of all core scientific behaviors implemented in PHIDS, detailing the biological rationale, mathematical/CS formulation, and primary deep-dive documentation for each component:
+
+| Subsystem / Feature | Biological Perspective (Why it matters biologically) | Computer Science / Math Rationale (How it is computed) | Deep-Dive Reference |
+| :--- | :--- | :--- | :--- |
+| **Volatile Signal Dispersion & Wind Advection** | Airborne Volatile Organic Compound (VOC) warnings spread downwind from damaged plants to prime neighbors. | 2D Semi-Lagrangian advection + $3\times 3$ isotropic Gaussian convolution stencil + denormalization clamp ($<10^{-4} \to 0.0$). | [reaction_diffusion.md](reaction_diffusion.md) |
+| **Sigmoidal Hill Kinetics Priming** | Plant perception of airborne VOCs operates as a continuous, dose-dependent logarithmic response curve ($S(c) = \frac{c^n}{K^n + c^n}$). | Non-linear Hill activation function in `triggers.py` replacing artificial step-function threshold triggers. | [reaction_diffusion.md](reaction_diffusion.md#stress-induced-resource-reallocation-senescence) |
+| **Chemotaxis & Flow-Field Navigation** | Herbivore swarms navigate superposed attractant (food energy) and repellent (toxin) chemical landscapes. | Scalar potential surface tensor $F_t[x,y] = \alpha E \cdot N - \beta \sum T_k$ compiled via Numba `@njit(parallel=True)`. | [chemotaxis.md](chemotaxis.md) |
+| **Constitutive Morphological Defenses** | Mechanical thorns inflict physical mouthpart trauma; cell-wall lignin/silica reduces caloric digestibility. | $O(1)$ floor integer attrition $\lfloor m_{\text{bite}} (1-\rho) \rfloor$ and caloric discount factor $\eta_{\text{net}}$ in `feeding.py`. | [morphological_defenses.md](morphological_defenses.md) |
+| **Rate-Limited Phloem Translocation** | Mobile carbohydrates are translocated from leaves to roots via phloem sieve tubes, creating a vulnerability window. | First-order exponential relaxation recurrence equation $N^{t+1} = N^t - k(N^t - N_{\text{target}})$ in `lifecycle.py`. | [morphological_defenses.md](morphological_defenses.md#23-rate-limited-phloem-translocation-kinetics) |
+| **Mycorrhizal Networks & Carbon Tax** | Subterranean fungal hyphae relay signals between root systems, supported by obligate photosynthate fees. | Spatial graph adjacency relay bypassing atmospheric diffusion grids + per-tick carbon tax fee deducted in `lifecycle.py`. | [flora_and_symbiosis.md](flora_and_symbiosis.md) |
+| **Holling Type II Feeding Response** | Herbivore feeding saturates at high food density due to non-zero handling time ($T_h$). | Saturating intake equation $\Delta E = \frac{a E}{1 + a T_h E}$ evaluated per grazing interaction in `feeding.py`. | [herbivore_behavior.md](herbivore_behavior.md) |
+| **Swarm Behavioral Paradigms & Memory** | Swarms exhibit distinct flight modes (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`) and aversion memory decay. | Per-entity behavioral paradigm state + exponential memory decay array ($M_{t+1} = M_t \cdot 0.95$) in `movement.py`. | [herbivore_behavior.md](herbivore_behavior.md) |
+
+---
 
 ## 1. Global State Representation
 
@@ -125,7 +179,7 @@ To circumvent the computational constraints of $O(N^2)$ pathfinding, PHIDS calcu
 
 ### 3.1 Flow Field Generation
 
-#### The Theoretical Model (Continuous Thought)
+#### The Theoretical Model for Flow Fields (Continuous Thought)
 
 In analytical chemical ecology, an organism's sensory orientation field is modeled as a continuous potential surface $F(\mathbf{r})$ over a spatial domain $\Omega \subset \mathbb{R}^2$. The movement vector is governed by the gradient of superposed attractive and repellent compounds. Because chemical concentrations in a physical space stack additively, the repellent field must be a summation:
 
@@ -141,7 +195,7 @@ Where:
 
 Summing the toxins mathematically prevents "sensory masking," ensuring that overlapping toxic plants create a stronger aggregate deterrent.
 
-#### The Numerical Mapping (Discrete Realization)
+#### The Numerical Mapping for Flow Fields (Discrete Realization)
 
 To execute this within the constraints of an $O(1)$ spatial hash without continuous coordinate integration, the engine maps the potential to a discrete 2D scalar lattice grid matching the memory alignment of our double buffers:
 
@@ -155,7 +209,7 @@ Where:
 * $N_T$: The total number of unique defensive toxin types/species tracked in the simulation.
 * $\alpha, \beta$: The positive coupling weight scalars.
 
-**Implementation Rules:**
+##### Implementation Rules for Flow Fields
 
 1. **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
 
@@ -182,7 +236,7 @@ This baseline gradient-ascent is overridden by biological responses:
 
 ## 4. Herbivore Interaction and Metabolic Attrition
 
-Feeding and population dynamics are resolved locally via O(1) spatial-hash lookups.
+Feeding and population dynamics are resolved locally via $O(1)$ spatial-hash lookups.
 
 ### 4.1 Diet-Gated Consumption
 
@@ -225,7 +279,7 @@ For a given plant, local herbivore populations are evaluated against a specified
 
 ### 5.2 Airborne Signal Transport (Reaction-Diffusion)
 
-#### The Theoretical Model (Continuous Thought)
+#### The Theoretical Model for Airborne Signals (Continuous Thought)
 
 The physics of volatile organic compound (VOC) transport across a canopy through molecular diffusion, advection, and atmospheric decay is governed by a classic system of continuous parabolic Partial Differential Equations (PDEs):
 
@@ -240,7 +294,7 @@ Where:
 * $\lambda_s$: The continuous infinitesimal decay rate governing atmospheric clearance of substance $s$.
 * $Q_s$: The continuous mass emission function (source term) from active plants.
 
-#### The Numerical Mapping (Discrete Realization)
+#### The Numerical Mapping for Airborne Signals (Discrete Realization)
 
 Solving a continuous PDE over a vast spatial grid at 60 FPS is computationally prohibitive. PHIDS translates this into a discrete cellular automata operator-splitting sequence evaluated precisely once per tick ($\Delta t = 1$):
 
@@ -255,7 +309,7 @@ Where:
 * $*$: The 2D spatial convolution operator.
 * $Q_s^t$: The discrete point source mass injection (emission) at time step $t$.
 
-**Implementation Rules:**
+##### Implementation Rules for Airborne Signals
 
 1. **Discrete Decay ($\gamma_s$):** The continuous decay integral is converted into a single fractional retention scalar: $\gamma_s = 1.0 - \text{decay\_rate}_s$.
 2. **Convolutional Diffusion ($\mathcal{K}_{\text{iso}} * C_s^t$):** The Laplacian is mapped to a discrete 2D spatial convolution ($*$) using a fixed isotropic Gaussian kernel matrix via `scipy.signal.convolve2d`.

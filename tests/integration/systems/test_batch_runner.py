@@ -29,16 +29,18 @@ if TYPE_CHECKING:
 
 def _minimal_scenario() -> dict:
     """Return a JSON-serialisable SimulationConfig dict for a 4x4 grid with one flora and one herbivore."""
-    from phids.api.schemas import (
+    from phids.api.schemas.placement import (
+        InitialPlantPlacement,
+        InitialSwarmPlacement,
+    )
+    from phids.api.schemas.simulation import SimulationConfig
+    from phids.api.schemas.species import (
         DietCompatibilityMatrix,
         FloraSpeciesParams,
         HerbivoreResistancesSchema,
         HerbivoreSpeciesParams,
-        InitialPlantPlacement,
-        InitialSwarmPlacement,
-        PassiveDefensesSchema,
-        SimulationConfig,
     )
+    from phids.api.schemas.triggers import PassiveDefensesSchema
 
     config = SimulationConfig(
         grid_width=4,

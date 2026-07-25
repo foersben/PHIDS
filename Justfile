@@ -6,6 +6,7 @@ setup:
     uv run pre-commit install
     uv run task setup
     @just install-extensions
+    @just etl
 
 install:
     @just setup
@@ -46,11 +47,39 @@ format:
 run:
     uv run phids --reload
 
-run-numba:
-    NUMBA_DISABLE_JIT=0 uv run phids --reload
+etl:
+    uv run --group pipeline python src/data_pipeline/run_all.py
+
+etl-refresh:
+    uv run --group pipeline python src/data_pipeline/run_all.py --force-refresh
+
+# Extended academic pipeline (opt-in: you accept NC license obligations for BIEN/LEDA/GIFT)
+# WARNING: Running this target means you accept Non-Commercial use terms for BIEN, LEDA, and GIFT.
+# The resulting cache/extended/ files MUST NOT be published to the core HF dataset repo.
+etl-extended:
+    PHIDS_EXTENDED_MODE=1 uv run --group pipeline python src/data_pipeline/run_extended.py
+
+etl-extended-refresh:
+    PHIDS_EXTENDED_MODE=1 uv run --group pipeline python src/data_pipeline/run_extended.py --force-refresh
+
+# Publish core dataset (CC0 + CC-BY only) to foersben/PHIDS-empirical-database
+etl-publish-core:
+    uv run --group pipeline python src/data_pipeline/run_all.py --publish
+
+# Publish extended academic dataset (CC-BY-NC-SA 4.0) to foersben/PHIDS-extended-dataset
+# WARNING: Extended dataset is under a Non-Commercial, ShareAlike license.
+etl-publish-extended:
+    PHIDS_EXTENDED_MODE=1 uv run --group pipeline python src/data_pipeline/run_extended.py --publish
 
 benchmark:
     NUMBA_DISABLE_JIT=0 uv run pytest tests/benchmarks/ --benchmark-only
+
+bench-compare ref1 ref2 scenario_or_dir ticks="100" repeats="2" warmup="10" extra_args="":
+    uv run python scripts/run_sim_benchmark.py --compare {{ref1}} {{ref2}} {{scenario_or_dir}} {{ticks}} --repeats {{repeats}} --warmup {{warmup}} {{extra_args}}
+
+bench-compare-jit ref1 ref2 scenario_or_dir ticks="100" repeats="2" warmup="10":
+    @just bench-compare {{ref1}} {{ref2}} {{scenario_or_dir}} {{ticks}} {{repeats}} {{warmup}} --jit-only
+
 
 clean:
     find . -type d -name "__pycache__" -exec rm -rf {} +

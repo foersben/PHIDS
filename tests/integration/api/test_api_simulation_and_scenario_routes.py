@@ -18,7 +18,11 @@ from typing import TYPE_CHECKING
 import pytest
 
 import phids.api.main as api_main
-from phids.api.schemas import SimulationConfig, SynthesizeSubstanceAction, TriggerConditionSchema
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.triggers import (
+    SynthesizeSubstanceAction,
+    TriggerConditionSchema,
+)
 from phids.api.ui_state import DraftState, get_draft, set_draft
 
 if TYPE_CHECKING:

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from phids.api.schemas import SimulationConfig
+    from phids.api.schemas.simulation import SimulationConfig
 
 
 def test_scenario_helpers_roundtrip_json_file(

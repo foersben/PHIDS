@@ -1,12 +1,18 @@
 ---
 type: technical_architecture
-title: "Interfaces & UI"
+title: Interfaces & UI
 status: active
 version: 0.1
-description: "Documentation for Interfaces & UI in the PHIDS framework."
+description: Documentation for Interfaces & UI in the PHIDS framework.
+tags:
+- phids
+- ecs
+- numba
+- performance
+timestamp: "2026-07-25T10:52:00Z"
+resources:
+- cell_details.py
 ---
-
-# Interfaces & UI
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.
 
@@ -30,23 +36,30 @@ PHIDS establishes a strict barrier between the simulation currently under constr
 The administrative control center intentionally avoids the complexity of a Single Page Application (SPA) like React or Vue. By leveraging HTMX, server-side Jinja templates directly replace DOM fragments in response to user events.
 
 ### Live Simulation Dashboard
+
 The live dashboard is the primary view for observing an actively running simulation. It features a real-time rendered `<canvas>` grid depicting spatial entities (Flora, Swarms, signals, toxins).
 
-**Canvas Grid Resize Feature:**
+#### Canvas Grid Resize Feature
+
 To accommodate varying screen sizes and grid dimensions, the dashboard provides a "Resize" toggle. When enabled, a slider allows the operator to dynamically adjust the canvas height as a percentage of the viewport (30% to 100%). This preference is persisted locally in the browser via `localStorage` (key: `phids.canvas.heightPct` and `phids.canvas.resizeEnabled`), ensuring the grid layout remains consistent across sessions.
 
-### Placement Editor
-The placement editor is part of the Draft State configuration UI. It provides an interactive `<canvas>` where operators can paint Flora and Herbivore swarms directly onto the grid before loading the scenario into the live engine.
+### Placement Editor & Auto-Assignment
 
-**Canvas Grid Resize Feature:**
+The placement editor is part of the Draft State configuration UI. It provides an interactive `<canvas>` where operators can paint Flora and Herbivore swarms directly onto the grid before loading the scenario into the live engine. To prevent browser DOM lockups when handling massive configurations (e.g., 10,000+ entities), the UI deliberately caps editable entity list rendering.
+
+**Auto-Assignment Engine:** For massive scale setups, the backend exposes auto-assignment endpoints (e.g., `generate_uniform`, `generate_clustered`, `generate_banded`). This allows operators to mathematically distribute thousands of flora or herbivore swarms across the field at precise densities and proportions. During draft generation, structural dependencies like mycorrhizal links are resolved using an $O(N)$ spatial hashing algorithm rather than $O(N^2)$ iterations, preventing UI lockups during ingestion.
+
+#### Canvas Grid Resize Feature
+
 Similar to the live dashboard, the placement editor features an independent grid resizing control. The operator can toggle resizing and adjust the height slider to scale the interactive canvas. This state is isolated from the live dashboard and stored in its own `localStorage` keys (`phids.placement.heightPct` and `phids.placement.resizeEnabled`), allowing the user to maintain different layout preferences for authoring versus monitoring.
-
 
 When a user clicks a checkbox to update the Diet Compatibility Matrix, the backend modifies the `DraftState` and responds immediately with a re-rendered partial HTML table. This architectural choice establishes the server as the absolute, single source of truth for the experimental schema, ensuring UI state cannot desynchronize from backend limits.
 
-## WebSocket Streaming
+## WebSocket Streaming & State Decoupling
 
-For live visualizations and diagnostics, PHIDS emits binary simulation state matrices asynchronously.
+For live visualizations and diagnostics, PHIDS emits binary simulation state matrices asynchronously. A critical constraint of this system is that the `UIStreamManager` must not block the core `SimulationLoop` during heavy JSON/MsgPack serialization.
+
+To achieve this, the architecture employs the `extract_ui_snapshot` pattern. Instead of locking the engine for the entire payload generation phase, the backend performs a lightweight, synchronous, $O(N)$ thread-safe shallow copy of primitive state arrays (the snapshot). The heavy serialization and socket dispatch are then offloaded to a background thread (`asyncio.to_thread`), allowing the main engine loop to resume executing the physics simulation entirely unimpeded.
 
 - `/ws/simulation/stream`: This high-performance socket pushes `msgpack`-encoded, zlib-compressed buffers containing the biotope grid arrays at fixed intervals. It is designed to be consumed by Canvas or WebGL renderers for immediate, 60fps front-end rendering of the continuous cellular automata fields.
 - `/ws/ui/stream`: Operates alongside HTMX. It pushes low-payload JSON diagnostic updates, such as the live tick counter, aggregated dashboard metadata, and specific cell inspection tooltips.

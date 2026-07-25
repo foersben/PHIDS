@@ -12,16 +12,13 @@ intercepted by Pydantic validation at the API ingress boundary and is never perm
 the engine simulation loop. Grid dimension bounds (``GRID_W_MAX``, ``GRID_H_MAX``) define the
 maximum spatial extent of the biotope, constraining convolution and Jacobi propagation cost.
 
-The diffusion constants ``SIGNAL_EPSILON`` and ``SIGNAL_DECAY_FACTOR`` are performance
-invariants: after each Gaussian diffusion step, values below ``SIGNAL_EPSILON`` are zeroed to
-maintain matrix sparsity and avoid accumulation of subnormal floating-point values that would
-degrade Numba JIT-compiled kernel throughput. ``SUBSTANCE_EMIT_RATE`` controls the per-tick
-concentration increment applied to signal and toxin layers when an active ``SubstanceComponent``
-emits into the environment.
+The diffusion constant ``SIGNAL_EPSILON`` is a performance invariant: after each
+Gaussian diffusion step, values below ``SIGNAL_EPSILON`` are zeroed to maintain
+matrix sparsity and avoid accumulation of subnormal floating-point values that would
+degrade Numba JIT-compiled kernel throughput.
 
-Both ``SIGNAL_DECAY_FACTOR`` and ``SUBSTANCE_EMIT_RATE`` serve as the canonical default values
-for their corresponding ``SimulationConfig`` fields and are retained here for backward
-compatibility and test fixture use.
+Note: ``SIGNAL_DECAY_FACTOR`` and ``SUBSTANCE_EMIT_RATE`` were intentionally moved to
+``SimulationConfig`` to allow dynamic parameter tuning during Design Space Exploration.
 """
 
 from __future__ import annotations
@@ -36,8 +33,8 @@ MAX_SUBSTANCE_TYPES: int = 16
 # ---------------------------------------------------------------------------
 # Grid constraints
 # ---------------------------------------------------------------------------
-GRID_W_MAX: int = 80
-GRID_H_MAX: int = 80
+GRID_W_MAX: int = 200
+GRID_H_MAX: int = 200
 
 # ---------------------------------------------------------------------------
 # Diffusion / CA constants

@@ -10,7 +10,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from phids.api.schemas import FloraSpeciesParams, HerbivoreSpeciesParams
+from phids.api.schemas.species import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment

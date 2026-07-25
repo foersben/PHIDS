@@ -1,12 +1,14 @@
 ---
 type: scenario
-title: "Scenario Authoring & Schema"
+title: Scenario Authoring & Schema
 status: active
 version: 0.1
-description: "Documentation for Scenario Authoring & Schema in the PHIDS framework."
+description: Documentation for Scenario Authoring & Schema in the PHIDS framework.
+tags:
+- phids
+timestamp: "2026-07-25T10:52:00Z"
+resources: []
 ---
-
-# Scenario Authoring & Schema
 
 Scenarios in PHIDS form the strict boundaries of the ecological experiment. A scenario dictates the grid dimensions, initial biomass distributions, trophic links (who eats what), and the specific substance triggers deployed by flora when attacked. At the engine level, all scenarios are structurally validated against the `SimulationConfig` Pydantic schema before execution.
 
@@ -63,7 +65,7 @@ flowchart TD
 Scenarios orchestrate behavior through explicit matrices, which are fully editable via the HTMX UI Draft State:
 
 1. **Diet Compatibility Matrix**: A $16 \times 16$ boolean matrix determining whether herbivore $E_i$ can metabolize flora $P_j$. If incompatible, an attempted feeding event resolves into rejection, prompting a randomized displacement of the swarm away from the plant.
-2. **Trigger Matrix**: A $16 \times 16$ mapping detailing which specific substance $S_x$ a given flora species $P_j$ synthesizes upon localized attack by herbivore $E_i$. A single plant can synthesize lethal toxins against one grazer while emitting volatile signals when grazed by another.
+2. **Trigger Matrix**: A $16 \times 16$ mapping detailing which action a given flora species $P_j$ executes upon a specific trigger initiation. Actions include synthesizing specific substances (`SynthesizeSubstanceAction`) or pulling resources (`ResourceWithdrawalAction`). Crucially, triggers can be initiated by direct localized attacks (`HerbivoreAttackInitiator`) or by sensing ambient chemical compounds (`EnvironmentalSignalInitiator`). This allows complex scenarios where a plant synthesizes lethal toxins against one grazer, while preemptively withdrawing resources when smelling warning signals from a neighbor.
 
 ## Import/Export Pathways
 

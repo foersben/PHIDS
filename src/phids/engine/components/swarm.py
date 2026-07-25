@@ -70,3 +70,5 @@ class SwarmComponent:
     move_cooldown: int = 0
     last_dx: int = 0
     last_dy: int = 0
+    behavior_paradigm: str = "macro_swarm"
+    aversion_memory: float = 0.0

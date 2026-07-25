@@ -13,6 +13,8 @@ semantics required for ecological observation and post hoc inference.
 
 from .batch import router as batch_router
 from .config import router as config_router
+from .dse.orchestrator import router as dse_router
+from .dse.orchestrator import ws_router as dse_ws_router
 from .simulation import router as simulation_router
 from .telemetry import router as telemetry_router
 from .ui import router as ui_router
@@ -20,6 +22,8 @@ from .ui import router as ui_router
 __all__ = [
     "batch_router",
     "config_router",
+    "dse_router",
+    "dse_ws_router",
     "simulation_router",
     "telemetry_router",
     "ui_router",

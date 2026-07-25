@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 from deap import creator
 
 from phids.analytics.dse_optimizer import DSEOptimizer
-from phids.api.schemas import SimulationConfig
+from phids.api.schemas.simulation import SimulationConfig
 
 
 def test_dse_optimizer_fitness_max_sorting() -> None:

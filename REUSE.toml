@@ -4,19 +4,19 @@ version = 1
 [[annotations]]
 path = "**"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 benni"
+SPDX-FileCopyrightText = "2026 Benjamin Förster"
 SPDX-License-Identifier = "EUPL-1.2 OR LicenseRef-PHIDS-Commercial"
 
 # 2. Brand Identity & Logo Protection
 [[annotations]]
 path = ["docs/assets/logo.png", "src/phids/api/static/logo.png"]
 precedence = "override"
-SPDX-FileCopyrightText = "2026 benni"
+SPDX-FileCopyrightText = "2026 Benjamin Förster"
 SPDX-License-Identifier = "LicenseRef-Proprietary-Trademark"
 
 # 3. Zensical Documentation Hardening (All Rights Reserved)
 [[annotations]]
 path = ["docs/**", "zensical.toml"]
 precedence = "override"
-SPDX-FileCopyrightText = "2026 benni"
+SPDX-FileCopyrightText = "2026 Benjamin Förster"
 SPDX-License-Identifier = "LicenseRef-Proprietary-Documentation"

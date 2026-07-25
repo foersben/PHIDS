@@ -56,6 +56,15 @@ repos:
         language: system
         files: ^(docs/|\.agents/).*\.md$
         pass_filenames: true
+
+      - id: nc-license-guard
+        name: NC License Guard (no extended imports in core pipeline)
+        entry: uv run python scripts/check_no_extended_imports.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.21
     hooks:

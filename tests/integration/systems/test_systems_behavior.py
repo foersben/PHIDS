@@ -22,12 +22,14 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-from phids.api.schemas import (
+from phids.api.schemas.conditions import (
     AllOfConditionSchema,
     AnyOfConditionSchema,
-    FloraSpeciesParams,
     HerbivorePresenceConditionSchema,
     SubstanceActiveConditionSchema,
+)
+from phids.api.schemas.species import FloraSpeciesParams
+from phids.api.schemas.triggers import (
     SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )
@@ -43,7 +45,7 @@ from phids.shared.constants import SUBSTANCE_EMIT_RATE
 
 
 def _flora_params(species_id: int = 0) -> FloraSpeciesParams:
-    from phids.api.schemas import PassiveDefensesSchema
+    from phids.api.schemas.triggers import PassiveDefensesSchema
 
     return FloraSpeciesParams(
         species_id=species_id,
@@ -63,7 +65,10 @@ def _flora_params(species_id: int = 0) -> FloraSpeciesParams:
 
 def run_interaction(world: ECSWorld, env: GridEnvironment, diet_matrix: list[list[bool]], tick: int = 0) -> None:
     """Wrapper function to execute interaction with species parameter arrays."""
-    from phids.api.schemas import HerbivoreResistancesSchema, HerbivoreSpeciesParams
+    from phids.api.schemas.species import (
+        HerbivoreResistancesSchema,
+        HerbivoreSpeciesParams,
+    )
 
     def _herbivore_params(species_id: int = 0) -> HerbivoreSpeciesParams:
         return HerbivoreSpeciesParams(

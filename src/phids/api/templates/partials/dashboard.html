@@ -254,7 +254,7 @@
   const CELL_DETAILS_URL = '/api/ui/cell-details';
 
   let simData = null;
-  let simPlantRows = [];
+  let simPlantsColumnar = null;
   let simSwarmRows = [];
   let placementData = null;
   let hoveredCell = null;
@@ -470,7 +470,7 @@
       160,
       Math.floor(viewportHeight * heightPct * 0.94 - paddingY)
     );
-    const cellSize = Math.max(1, Math.floor(Math.min(availableWidth / gW, availableHeight / gH)));
+    const cellSize = Math.max(1, Math.min(availableWidth / gW, availableHeight / gH));
     const drawWidth = cellSize * gW;
     const drawHeight = cellSize * gH;
     return {
@@ -487,8 +487,8 @@
   function syncCanvasLayout(gridData) {
     const nextLayout = computeCanvasLayout(gridData);
     const dpr = window.devicePixelRatio || 1;
-    const targetWidth = nextLayout.drawWidth * dpr;
-    const targetHeight = nextLayout.drawHeight * dpr;
+    const targetWidth = Math.round(nextLayout.drawWidth * dpr);
+    const targetHeight = Math.round(nextLayout.drawHeight * dpr);
     if (
       canvas.width !== targetWidth
       || canvas.height !== targetHeight
@@ -658,37 +658,58 @@
     ctx.restore();
   }
 
-  function drawPlantActivity(plants) {
-    if (!Array.isArray(plants) || plants.length === 0) return;
+function drawPlantActivity(plantsData) {
+    if (!plantsData) return;
+
     const base = Math.min(canvasLayout.cellW, canvasLayout.cellH);
     const centerRadius = Math.max(1.8, Math.min(base * 0.18, 6));
     const ringRadius = Math.max(centerRadius + 1.8, Math.min(base * 0.34, base / 2 - 1));
-    for (const plant of plants) {
-      const cx = plant.x * canvasLayout.cellW + canvasLayout.cellW / 2;
-      const cy = plant.y * canvasLayout.cellH + canvasLayout.cellH / 2;
-      const hasSignal = Array.isArray(plant.active_signal_ids) && plant.active_signal_ids.length > 0;
-      const hasToxin = Array.isArray(plant.active_toxin_ids) && plant.active_toxin_ids.length > 0;
-      const hasRoots = Number(plant.root_link_count || 0) > 0;
 
-      if (hasRoots) {
-        ctx.fillStyle = 'rgba(248, 250, 252, 0.92)';
-        ctx.beginPath();
-        ctx.arc(cx, cy, centerRadius, 0, 2 * Math.PI);
-        ctx.fill();
+    if (isColumnarEntityTable(plantsData)) {
+      const count = plantsData.x.length;
+      for (let i = 0; i < count; i++) {
+        const cx = plantsData.x[i] * canvasLayout.cellW + canvasLayout.cellW / 2;
+        const cy = plantsData.y[i] * canvasLayout.cellH + canvasLayout.cellH / 2;
+        const sigs = Array.isArray(plantsData.active_signal_ids) ? plantsData.active_signal_ids[i] : null;
+        const toxs = Array.isArray(plantsData.active_toxin_ids) ? plantsData.active_toxin_ids[i] : null;
+        const hasSignal = Array.isArray(sigs) && sigs.length > 0;
+        const hasToxin = Array.isArray(toxs) && toxs.length > 0;
+        const roots = Array.isArray(plantsData.root_link_count) ? plantsData.root_link_count[i] : 0;
+        const hasRoots = Number(roots || 0) > 0;
+
+        drawPlantActivityItem(cx, cy, hasRoots, hasSignal, hasToxin, centerRadius, ringRadius, base);
       }
-      if (hasSignal) {
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
-        ctx.lineWidth = Math.max(1.2, Math.min(2.6, base * 0.12));
-        ctx.beginPath();
-        ctx.arc(cx, cy, ringRadius, 0, 2 * Math.PI);
-        ctx.stroke();
+    } else if (Array.isArray(plantsData)) {
+      for (const plant of plantsData) {
+        const cx = plant.x * canvasLayout.cellW + canvasLayout.cellW / 2;
+        const cy = plant.y * canvasLayout.cellH + canvasLayout.cellH / 2;
+        const hasSignal = Array.isArray(plant.active_signal_ids) && plant.active_signal_ids.length > 0;
+        const hasToxin = Array.isArray(plant.active_toxin_ids) && plant.active_toxin_ids.length > 0;
+        const hasRoots = Number(plant.root_link_count || 0) > 0;
+        drawPlantActivityItem(cx, cy, hasRoots, hasSignal, hasToxin, centerRadius, ringRadius, base);
       }
-      if (hasToxin) {
-        const side = Math.max(4, Math.min(base * 0.34, base - 4));
-        ctx.strokeStyle = 'rgba(192, 38, 211, 0.95)';
-        ctx.lineWidth = Math.max(1.1, Math.min(2.4, base * 0.1));
-        ctx.strokeRect(cx - side / 2, cy - side / 2, side, side);
-      }
+    }
+  }
+
+  function drawPlantActivityItem(cx, cy, hasRoots, hasSignal, hasToxin, centerRadius, ringRadius, base) {
+    if (hasRoots) {
+      ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, centerRadius, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    if (hasSignal) {
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.95)";
+      ctx.lineWidth = Math.max(1.2, Math.min(2.6, base * 0.12));
+      ctx.beginPath();
+      ctx.arc(cx, cy, ringRadius, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+    if (hasToxin) {
+      const side = Math.max(4, Math.min(base * 0.34, base - 4));
+      ctx.strokeStyle = "rgba(192, 38, 211, 0.95)";
+      ctx.lineWidth = Math.max(1.1, Math.min(2.4, base * 0.1));
+      ctx.strokeRect(cx - side / 2, cy - side / 2, side, side);
     }
   }
 
@@ -712,18 +733,47 @@
     if (!simData) return null;
     const x = cell.x;
     const y = cell.y;
-    const plantRows = simPlantRows;
+
     const swarmRows = simSwarmRows;
-    const plantsAtCell = plantRows.filter(plant => plant.x === x && plant.y === y);
+
+    let plantsAtCell = [];
+    if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
+      for (let i = 0; i < simPlantsColumnar.x.length; i++) {
+        if (simPlantsColumnar.x[i] === x && simPlantsColumnar.y[i] === y) {
+          plantsAtCell.push({
+            entity_id: simPlantsColumnar.entity_id[i],
+            species_id: simPlantsColumnar.species_id[i],
+            name: simPlantsColumnar.name[i],
+            x: simPlantsColumnar.x[i],
+            y: simPlantsColumnar.y[i],
+            energy: simPlantsColumnar.energy[i],
+            root_link_count: simPlantsColumnar.root_link_count ? simPlantsColumnar.root_link_count[i] : 0,
+            active_signal_ids: simPlantsColumnar.active_signal_ids ? simPlantsColumnar.active_signal_ids[i] : [],
+            active_toxin_ids: simPlantsColumnar.active_toxin_ids ? simPlantsColumnar.active_toxin_ids[i] : [],
+          });
+        }
+      }
+    }
+
     const touchingLinks = linksTouchingCell(simData.mycorrhizal_links || [], x, y);
     const plants = plantsAtCell.map(plant => {
       const neighbourLinks = linksTouchingCell(simData.mycorrhizal_links || [], plant.x, plant.y);
       const mycorrhizalNeighbours = neighbourLinks.map(link => {
         const otherX = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.x2) : Number(link.x1);
         const otherY = Number(link.x1) === plant.x && Number(link.y1) === plant.y ? Number(link.y2) : Number(link.y1);
-        const neighbourPlant = plantRows.find(other => other.x === otherX && other.y === otherY);
+
+        let neighbourPlantName = `Plant @ (${otherX}, ${otherY})`;
+        if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
+          for (let j = 0; j < simPlantsColumnar.x.length; j++) {
+            if (simPlantsColumnar.x[j] === otherX && simPlantsColumnar.y[j] === otherY) {
+              neighbourPlantName = simPlantsColumnar.name[j];
+              break;
+            }
+          }
+        }
+
         return {
-          name: neighbourPlant?.name || `Plant @ (${otherX}, ${otherY})`,
+          name: neighbourPlantName,
           x: otherX,
           y: otherY,
           inter_species: Boolean(link.inter_species),
@@ -889,7 +939,7 @@
   function drawSim(data) {
     const { gW, gH, cellW, cellH } = syncCanvasLayout(data);
     clearCanvas();
-    const plantRows = simPlantRows;
+
     const swarmRows = simSwarmRows;
 
     const maxE = data.max_energy || 1;
@@ -930,7 +980,7 @@
     drawMycorrhizalLinks(data.mycorrhizal_links || []);
     drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
     drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
-    drawPlantActivity(plantRows);
+    drawPlantActivity(simPlantsColumnar);
     drawGridLines();
 
     drawSwarmMarkers(swarmRows);
@@ -947,10 +997,22 @@
     if ((data.max_signal || 0) > 0) extras.push({ name: 'Signal cloud', color: SIGNAL_COLOR });
     if ((data.max_toxin || 0) > 0) extras.push({ name: 'Toxin cloud', color: TOXIN_COLOR });
     if ((data.mycorrhizal_links || []).length > 0) extras.push({ name: 'Root link', color: '#60a5fa' });
-    if (plantRows.some(plant => (plant.active_signal_ids || []).length > 0)) {
+
+    let hasAnySignal = false;
+    let hasAnyToxin = false;
+    if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
+      if (simPlantsColumnar.active_signal_ids) {
+        hasAnySignal = simPlantsColumnar.active_signal_ids.some(sigs => Array.isArray(sigs) && sigs.length > 0);
+      }
+      if (simPlantsColumnar.active_toxin_ids) {
+        hasAnyToxin = simPlantsColumnar.active_toxin_ids.some(toxs => Array.isArray(toxs) && toxs.length > 0);
+      }
+    }
+    if (hasAnySignal) {
+
       extras.push({ name: 'Signal emitter', color: SIGNAL_COLOR });
     }
-    if (plantRows.some(plant => (plant.active_toxin_ids || []).length > 0)) {
+    if (hasAnyToxin) {
       extras.push({ name: 'Toxin emitter', color: TOXIN_COLOR });
     }
     updateLegend(floraLegend, swarmLegend, extras);
@@ -1369,17 +1431,7 @@
       }
       if (!data) return;
       simData = data;
-      simPlantRows = asEntityRows(data.plants || [], [
-        'entity_id',
-        'species_id',
-        'name',
-        'x',
-        'y',
-        'energy',
-        'root_link_count',
-        'active_signal_ids',
-        'active_toxin_ids',
-      ]);
+      simPlantsColumnar = data.plants || null;
       simSwarmRows = asEntityRows(data.swarms || [], [
         'x',
         'y',
@@ -1415,7 +1467,7 @@
     ws.onclose = function () {
       if (!isActiveCanvas()) return;
       simData = null;
-      simPlantRows = [];
+      simPlantsColumnar = null;
       simSwarmRows = [];
       startPreviewPolling();
       wsRetryDelay = Math.min(wsRetryDelay * 1.5, 8000);

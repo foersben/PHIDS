@@ -17,6 +17,15 @@
         </div>
         <input type="text" id="db-search" class="block w-64 rounded-md border-0 py-1.5 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Search archetypes..." oninput="filterDatabase()">
       </div>
+      <button type="button" hx-post="/api/database/rebuild" hx-swap="none" hx-indicator="#rebuild-spinner" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+        Rebuild Database (ETL)
+      </button>
+      <span id="rebuild-spinner" class="htmx-indicator ml-2 text-sm text-slate-500">
+        <svg class="animate-spin h-5 w-5 mr-3 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </span>
       <button type="button" onclick="openEditor('new')" class="inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
         + Create Custom Archetype
       </button>
@@ -81,6 +90,44 @@
             </div>
           </div>
           {% endif %}
+
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance (K-Means & KNN)</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-slate-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-slate-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Centroid Dist:</span>
+                <span class="font-mono">{{ "%.3f"|format(data.provenance.centroid_distance) if data.provenance.centroid_distance is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases if data.provenance.source_databases is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Cluster ID:</span>
+                <span>{{ data.provenance.cluster_id if data.provenance.cluster_id is not none else 'N/A' }}</span>
+              </div>
+              {% if data.provenance.knn_influences %}
+              <div class="mt-2 pt-2 border-t border-slate-200">
+                <span class="font-medium text-slate-500 mb-1 block">KNN Influences:</span>
+                <ul class="list-disc pl-4 space-y-0.5">
+                  {% for influence in data.provenance.knn_influences %}
+                  <li>{{ influence }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% else %}
+              <div class="mt-2 pt-2 border-t border-slate-200">
+                <span class="font-medium text-slate-500 mb-1 block">KNN Influences:</span>
+                <span class="italic text-slate-400">No missing properties reconstructed.</span>
+              </div>
+              {% endif %}
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -120,6 +167,29 @@
               <dd class="text-right font-mono text-slate-900">{{ data.resistances.digestive_efficiency }}</dd>
             </dl>
           </div>
+
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance (K-Means)</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-amber-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-amber-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Centroid Dist:</span>
+                <span class="font-mono">{{ "%.3f"|format(data.provenance.centroid_distance) if data.provenance.centroid_distance is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases if data.provenance.source_databases is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Cluster ID:</span>
+                <span>{{ data.provenance.cluster_id if data.provenance.cluster_id is not none else 'N/A' }}</span>
+              </div>
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -154,6 +224,28 @@
               <dd class="text-right font-mono text-slate-900">{{ data.synthesis_duration }}</dd>
             </dl>
           </div>
+          {% if data.provenance %}
+          <details class="pt-3 border-t border-slate-100 group">
+            <summary class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 cursor-pointer hover:text-slate-700 flex items-center justify-between list-none">
+              <span>Data Provenance</span>
+              <span class="transform transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div class="text-xs bg-indigo-50 p-2 rounded text-slate-600 space-y-1 mt-1 border border-indigo-100">
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Source DBs:</span>
+                <span class="text-right">{{ data.provenance.source_databases if data.provenance.source_databases is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">Compound Class:</span>
+                <span class="font-mono">{{ data.provenance.compound_class if data.provenance.compound_class is not none else 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-medium text-slate-500">LD50 (mg/kg):</span>
+                <span class="font-mono">{{ "%.2f"|format(data.provenance.ld50_mg_kg) if data.provenance.ld50_mg_kg is not none else 'N/A' }}</span>
+              </div>
+            </div>
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -368,6 +460,11 @@ function updateActionType(ruleId) {
   const type = document.getElementById(`action-type-${ruleId}`).value;
   document.getElementById(`action-synth-${ruleId}`).classList.toggle('hidden', type !== 'synthesize_substance');
   document.getElementById(`action-res-${ruleId}`).classList.toggle('hidden', type !== 'resource_withdrawal');
+  const ticksContainer = document.getElementById(`rule-ticks-container-${ruleId}`);
+  if (ticksContainer) {
+    ticksContainer.classList.toggle('opacity-50', type !== 'synthesize_substance');
+    ticksContainer.querySelector('input').disabled = type !== 'synthesize_substance';
+  }
 }
 
 function addConditionToRule(ruleId, condData = null) {
@@ -413,6 +510,14 @@ function updateConditionKind(ruleId, condId, condData = null) {
   }
 }
 
+function updateInitiatorType(ruleId) {
+  const iType = document.querySelector(`#rule-${ruleId} .rule-i-type`).value;
+  const labelTarget = document.querySelector(`#rule-${ruleId} .label-target-id`);
+  const labelPop = document.querySelector(`#rule-${ruleId} .label-min-pop`);
+  if (labelTarget) labelTarget.innerText = iType === 'herbivore_attack' ? 'Target ID (Herbivore)' : 'Target ID (Signal)';
+  if (labelPop) labelPop.innerText = iType === 'herbivore_attack' ? 'Min Population' : 'Min Concentration';
+}
+
 function addRuleCard(ruleData = null) {
   const id = ruleCounter++;
   const container = document.getElementById('rules-container');
@@ -421,6 +526,9 @@ function addRuleCard(ruleData = null) {
 
   const h_id = ruleData?.herbivore_species_id ?? 1;
   const min_pop = ruleData?.min_herbivore_population ?? 10;
+  const i_type = ruleData?.initiator_type ?? 'herbivore_attack';
+  const sig_id = ruleData?.initiator_signal_id ?? 0;
+  const sig_min = ruleData?.initiator_min_concentration ?? 0.01;
   const ticks = ruleData?.aftereffect_ticks ?? 20;
   const a_type = ruleData?.action?.type ?? 'synthesize_substance';
 
@@ -432,10 +540,16 @@ function addRuleCard(ruleData = null) {
       </div>
       <div class="p-4 space-y-4">
         <!-- Core Triggers -->
-        <div class="grid grid-cols-3 gap-4">
-          <div><label class="block text-xs text-slate-500">Target Species ID</label><input type="number" class="rule-h-id mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${h_id}"></div>
-          <div><label class="block text-xs text-slate-500">Min Population</label><input type="number" class="rule-min-pop mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${min_pop}"></div>
-          <div><label class="block text-xs text-slate-500">Aftereffect Ticks</label><input type="number" class="rule-ticks mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ticks}"></div>
+        <div class="grid grid-cols-4 gap-4">
+          <div><label class="block text-xs text-slate-500">Initiator</label>
+            <select class="rule-i-type mt-1 block w-full rounded border-slate-300 text-sm py-1" onchange="updateInitiatorType(${id})">
+              <option value="herbivore_attack" ${i_type === 'herbivore_attack' ? 'selected' : ''}>Herbivore Attack</option>
+              <option value="environmental_signal" ${i_type === 'environmental_signal' ? 'selected' : ''}>Env. Signal</option>
+            </select>
+          </div>
+          <div><label class="block text-xs text-slate-500 label-target-id">${i_type === 'herbivore_attack' ? 'Target ID (Herbivore)' : 'Target ID (Signal)'}</label><input type="number" class="rule-h-id mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${i_type === 'herbivore_attack' ? h_id : sig_id}"></div>
+          <div><label class="block text-xs text-slate-500 label-min-pop">${i_type === 'herbivore_attack' ? 'Min Population' : 'Min Concentration'}</label><input type="number" step="any" class="rule-min-pop mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${i_type === 'herbivore_attack' ? min_pop : sig_min}"></div>
+          <div id="rule-ticks-container-${id}"><label class="block text-xs text-slate-500">Aftereffect Ticks</label><input type="number" class="rule-ticks mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ticks}"></div>
         </div>
 
         <!-- Conditions -->
@@ -466,8 +580,9 @@ function addRuleCard(ruleData = null) {
             </div>
           </div>
 
-          <div id="action-res-${id}" class="hidden bg-slate-50 p-3 rounded border border-slate-200">
+          <div id="action-res-${id}" class="hidden bg-slate-50 p-3 rounded border border-slate-200 grid grid-cols-2 gap-4">
             <div><label class="block text-xs text-slate-600">Apparent Nutrition Factor</label><input type="number" step="0.1" class="act-nut-factor mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ruleData?.action?.apparent_nutrition_factor ?? 0.2}"></div>
+            <div><label class="block text-xs text-slate-600">Withdrawal Duration</label><input type="number" step="1" class="act-with-dur mt-1 block w-full rounded border-slate-300 text-sm py-1" value="${ruleData?.action?.withdrawal_duration ?? 10}"></div>
           </div>
         </div>
       </div>
@@ -607,9 +722,16 @@ function extractRules() {
   const subsDb = JSON.parse(document.getElementById('db-json-substances').textContent);
 
   document.querySelectorAll('.rule-card').forEach(card => {
+    const iType = card.querySelector('.rule-i-type').value;
+    const targetId = parseInt(card.querySelector('.rule-h-id').value) || 0;
+    const minVal = parseFloat(card.querySelector('.rule-min-pop').value) || 0;
+
     const r = {
-      herbivore_species_id: parseInt(card.querySelector('.rule-h-id').value) || 0,
-      min_herbivore_population: parseInt(card.querySelector('.rule-min-pop').value) || 0,
+      initiator_type: iType,
+      herbivore_species_id: iType === 'herbivore_attack' ? targetId : 0,
+      min_herbivore_population: iType === 'herbivore_attack' ? Math.floor(minVal) : 0,
+      initiator_signal_id: iType === 'environmental_signal' ? targetId : 0,
+      initiator_min_concentration: iType === 'environmental_signal' ? minVal : 0,
       aftereffect_ticks: parseInt(card.querySelector('.rule-ticks').value) || 0,
       action: {}
     };
@@ -661,6 +783,7 @@ function extractRules() {
       r.action.irreversible = template.irreversible ?? false;
     } else {
       r.action.apparent_nutrition_factor = parseFloat(card.querySelector('.act-nut-factor').value) || 0;
+      r.action.withdrawal_duration = parseInt(card.querySelector('.act-with-dur').value) || 10;
     }
 
     rules.push(r);

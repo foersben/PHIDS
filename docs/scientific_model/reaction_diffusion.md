@@ -1,12 +1,20 @@
 ---
 type: scientific_model
-title: "Reaction-Diffusion & Partial Differential Equations"
+title: Reaction-Diffusion & Partial Differential Equations
 status: active
 version: 0.1
-description: "Documentation for Reaction-Diffusion & Partial Differential Equations in the PHIDS framework."
+description: Documentation for Reaction-Diffusion & Partial Differential Equations
+  in the PHIDS framework.
+tags:
+- phids
+- ecs
+- performance
+- chemotaxis
+- python
+timestamp: "2026-07-25T10:52:00Z"
+resources:
+- src/phids/engine/core/biotope.py
 ---
-
-# Reaction-Diffusion & Partial Differential Equations
 
 The dispersion of Volatile Organic Compounds (VOCs)-airborne signals used by flora to warn neighbors of herbivore attacks-is mathematically modeled in PHIDS using a discrete Reaction-Diffusion system.
 
@@ -183,7 +191,10 @@ This is one of the most sophisticated survival mechanisms in botany, modeling St
 !!! info "Biological Context"
     When a plant is subjected to severe, prolonged stress-such as continuous herbivory, impending frost, or drought-it will actively break down the chlorophyll in its leaves and rapidly pull valuable resources (nitrogen, carbon, and sugars) deep into its root system or woody stems. To an approaching herbivore, the plant visually and chemically appears "dead" or nutritionally barren, prompting the herd to move on. Once the environmental stress passes, the plant flushes resources back into its canopy.
 
-In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). Instead of synthesizing a costly toxin, the plant triggers a `resource_withdrawal` action.
+In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true—either from direct grazing (`HerbivoreAttackInitiator`) or preemptively receiving neighbor VOC signals (`EnvironmentalSignalInitiator`) using discrete step thresholds or sigmoidal Hill kinetics ($\alpha_{\text{priming}}(C) = \frac{C^n}{K_d^n + C^n}$)—and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). This suppression is maintained for a specific `withdrawal_duration` before naturally decaying over the `aftereffect` period. Instead of synthesizing a costly toxin, the plant uses `resource_withdrawal` to avoid consumption entirely.
+
+!!! note "Scientific Progression: Heaviside Step vs. Sigmoidal Hill Priming"
+    While baseline scenario triggers employ a binary Heaviside Step Function ($H(C - C_{\text{min}})$), real-world botanical signal perception operates via continuous, dose-dependent receptor binding kinetics. PHIDS supports sigmoidal Hill Equations ($\alpha = \frac{C^n}{K_d^n + C^n}$), where low ambient VOC concentrations partially prime MAP-kinase enzyme pathways without incurring massive toxin synthesis costs, committing to full defensive execution only as signal plumes saturate local receptors.
 
 This scalar directly alters the attraction landscape *before* the Gaussian convolution kernel diffuses sensory layers in the flow-field module.
 
