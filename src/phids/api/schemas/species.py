@@ -48,6 +48,9 @@ class FloraSpeciesParams(StrictBaseModel):
     )
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
+    translocation_rate: float = Field(
+        default=0.2, ge=0.0, le=1.0, description="Rate of nutrient translocation during resource withdrawal."
+    )
     passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
     triggers: list[TriggerConditionSchema] = Field(default_factory=list, max_length=MAX_SUBSTANCE_TYPES)
 

@@ -56,7 +56,10 @@ This document outlines the architectural implementation for the biological accur
 4. **Update `TriggerActionSchema`**:
     * Refactor the trigger action model to represent a discriminated union of action types using Pydantic's `Field(discriminator="type")`.
     * **Action A**: `synthesize_substance` (holds the existing substance parameters: `substance_id`, `synthesis_duration`, etc.).
-    * **Action B**: `resource_withdrawal` (holds `apparent_nutrition_factor: float = 1.0` and `withdrawal_duration: int` alongside the aftereffect cooldown). This models a plant committing to apparent nutrition withdrawal for a fixed temporal duration.
+    * **Action B**: `resource_withdrawal` (holds `apparent_nutrition_factor: float = 1.0` and `withdrawal_duration: int` alongside the aftereffect cooldown). This models a plant committing to apparent nutrition withdrawal for a fixed temporal duration via rate-limited phloem translocation ($\frac{d N}{dt} = -k (N - N_{\text{target}})$).
+
+!!! note "Scientific Progression: Instantaneous Scalar Toggle vs. Phloem Translocation"
+    While earlier engine iterations toggled `apparent_nutrition_factor` instantaneously on tick 0, real-world botany requires active vascular phloem transport to translocate mobile carbohydrates from leaves to roots. PHIDS models rate-limited phloem translocation ($\Delta N = -k (N - N_{\text{target}})$), recreating the empirical biological vulnerability window where grazing herbivores can continue feeding during the initial translocation phase before peak suppression is reached.
 
 5. **Update `TriggerInitiator`**:
     * Expand the trigger initiation models to include an `EnvironmentalSignalInitiator`.

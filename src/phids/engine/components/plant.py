@@ -77,4 +77,6 @@ class PlantComponent:
     last_energy_loss_cause: str | None = None
     mycorrhizal_connections: set[int] = field(default_factory=set)
     apparent_nutrition_factor: float = 1.0
+    target_nutrition_factor: float = 1.0
+    translocation_rate: float = 0.2
     withdrawal_ticks_remaining: int = 0

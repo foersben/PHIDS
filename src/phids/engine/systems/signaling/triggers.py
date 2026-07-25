@@ -71,7 +71,7 @@ def _process_single_trigger(
     if not (initiator_met or condition_met):
         return
     if isinstance(trig.action, ResourceWithdrawalAction):
-        plant.apparent_nutrition_factor = trig.action.apparent_nutrition_factor
+        plant.target_nutrition_factor = trig.action.apparent_nutrition_factor
         plant.withdrawal_ticks_remaining = trig.action.withdrawal_duration
         return
 
