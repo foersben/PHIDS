@@ -52,7 +52,18 @@ def _feed_on_single_plant(
         A tuple containing the metabolized energy and whether the plant was killed.
     """
     effective_velocity = max(1, swarm.velocity)
-    potential_consumption = (swarm.consumption_rate / effective_velocity) * swarm.population
+    swarm_params = herbivore_species_params[swarm.species_id]
+    handling_time = getattr(swarm_params, "handling_time", 0.0)
+
+    raw_per_ind = swarm.consumption_rate / effective_velocity
+    if handling_time > 0.0:
+        potential_per_ind = (raw_per_ind * target_plant.energy) / (
+            1.0 + raw_per_ind * handling_time * target_plant.energy
+        )
+    else:
+        potential_per_ind = raw_per_ind
+
+    potential_consumption = potential_per_ind * swarm.population
     consumed = min(potential_consumption, target_plant.energy)
 
     plant_params = flora_species_params[target_plant.species_id]

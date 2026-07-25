@@ -414,6 +414,10 @@ def run_lifecycle(
         # Growth
         _grow(plant, tick)
 
+        # Apply continuous mycorrhizal carbon tax
+        if plant.mycorrhizal_tax_per_link > 0.0 and plant.mycorrhizal_connections:
+            plant.energy -= plant.mycorrhizal_tax_per_link * len(plant.mycorrhizal_connections)
+
         # Reproduction
         _attempt_reproduction(plant, tick, world, env, flora_species_params)
 

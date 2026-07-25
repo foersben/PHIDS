@@ -51,6 +51,9 @@ class FloraSpeciesParams(StrictBaseModel):
     translocation_rate: float = Field(
         default=0.2, ge=0.0, le=1.0, description="Rate of nutrient translocation during resource withdrawal."
     )
+    mycorrhizal_tax_per_link: float = Field(
+        default=0.0, ge=0.0, description="Continuous energy maintenance fee deducted per active root link per tick."
+    )
     passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
     triggers: list[TriggerConditionSchema] = Field(default_factory=list, max_length=MAX_SUBSTANCE_TYPES)
 
@@ -82,6 +85,11 @@ class HerbivoreSpeciesParams(StrictBaseModel):
     energy_min: float = Field(..., gt=0.0)
     velocity: int = Field(..., gt=0)
     consumption_rate: float = Field(..., gt=0.0)
+    handling_time: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Handling time per calorie eaten (Holling Type II functional response). 0.0 retains linear intake.",
+    )
     reproduction_energy_divisor: float = Field(
         default=1.0,
         gt=0.0,
