@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_all, collect_submodules
+from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
 
 project_root = Path(SPECPATH).resolve().parent
 src_root = project_root / "src"
@@ -19,6 +19,13 @@ hiddenimports = sorted(set(
 datas = [
     (str(src_root / "phids" / "api" / "templates"), "phids/api/templates"),
 ]
+
+# Preserve package distribution metadata required by importlib.metadata (e.g. moocore)
+for pkg_name in ["moocore", "deap", "phids"]:
+    try:
+        datas.extend(copy_metadata(pkg_name))
+    except Exception:
+        pass
 
 if (project_root / "examples").exists():
     datas.append((str(project_root / "examples"), "examples"))
