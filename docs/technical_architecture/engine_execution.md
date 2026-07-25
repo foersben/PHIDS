@@ -8,9 +8,17 @@ tags:
 - phids
 - ecs
 - numba
-timestamp: "2026-07-25T10:52:00Z"
+timestamp: "2026-07-25T20:25:00Z"
 resources:
-- flow_field.py
+- src/phids/engine/loop.py
+- src/phids/engine/core/flow_field.py
+- src/phids/engine/core/ecs.py
+- src/phids/engine/core/biotope.py
+- src/phids/engine/systems/interaction/feeding.py
+- src/phids/engine/systems/interaction/movement.py
+- src/phids/engine/systems/lifecycle.py
+- src/phids/engine/systems/signaling/lifecycle.py
+- src/phids/engine/systems/signaling/triggers.py
 ---
 
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.
@@ -19,13 +27,13 @@ The core execution loop of PHIDS updates ecological state deterministically. The
 
 The `SimulationLoop.step()` method executes the following components consecutively, forming a single discrete timeframe ($\Delta t$):
 
-1. **Flow-Field Generation**: Utilizes Numba JIT compilation to compute the singular global guidance gradient based on plant energy and toxic zones.
-2. **Camouflage Attenuation**: Post-processes the flow-field by masking the gradient for flora utilizing camouflage traits.
-3. **Lifecycle (`run_lifecycle`)**: Updates flora-centric state. Handles resource growth, deterministic mycorrhizal propagation, threshold culling, and interval-gated reproduction logic.
-4. **Interaction (`run_interaction`)**: Determines swarm behavior. Checks the spatial hash for crowding (inducing repelled dispersal), executes flow-field gradient sampling, performs localized feeding, and manages the continuous deficit attrition and mitosis algorithms.
-5. **Signaling (`run_signaling`)**: Converts herbivore presence and ambient environmental VOC signals into trigger actions (substance synthesis or resource withdrawal). Manages the synthesis and duration countdowns, aftereffects, emits substances into the double-buffered grid, and processes local toxic casualties.
-6. **Telemetry Logging**: Records a metrics snapshot of the current state and appends the tick data to the telemetry recorder and replay buffer.
-7. **Termination Check**: Evaluates configured extinction, energy, and population threshold limits to check if simulation termination conditions have been met.
+1. **Flow-Field Generation**: Utilizes Numba JIT compilation to compute the singular global guidance gradient based on plant energy, apparent nutrition, and toxic zones.
+2. **Camouflage Attenuation**: Post-processes the flow-field matrix by masking local guidance gradients for flora utilizing camouflage traits.
+3. **Lifecycle (`run_lifecycle`)**: Updates flora-centric state. Handles resource growth, rate-limited phloem translocation, mycorrhizal carbon tax, connection maintenance fees, threshold culling, and anemochorous seed dispersal logic.
+4. **Interaction (`run_interaction`)**: Determines swarm dynamics. Handles spatial hash crowding (inducing repelled random-walk dispersal), gradient navigation according to flight paradigms (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`), Holling Type II saturating feeding intake, constitutive morphological defenses (mechanical mouthpart damage $\lfloor m_{\text{bite}}(1-\rho) \rfloor$ and caloric discounting $\eta_{\text{net}}$), continuous deficit attrition, and mitosis.
+5. **Signaling (`run_signaling`)**: Evaluates trigger rules via continuous dose-dependent Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$) or threshold predicates. Manages substance synthesis, rate-limited phloem resource withdrawal, airborne advection-diffusion and mycorrhizal signal propagation, aftereffects, and lethal toxin casualties.
+6. **Energy Layer Rebuild & Telemetry Logging**: Rebuilds the double-buffered energy layer (`rebuild_energy_layer()`), records a metrics snapshot of the current tick, and appends raw arrays to the Zarr replay buffer and Polars telemetry exporter.
+7. **Termination Check**: Evaluates configured extinction, max energy, max tick, and population threshold limits to determine whether simulation termination conditions have been met.
 
 ## Entity Component System (ECS) & Spatial Hashing
 
