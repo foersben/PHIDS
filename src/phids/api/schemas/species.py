@@ -10,7 +10,7 @@ dimensions of the herbivore-flora edibility matrix.
 
 from __future__ import annotations
 
-from enum import StrEnum
+from typing import Literal
 
 from pydantic import AliasChoices, Field, model_validator
 
@@ -79,12 +79,7 @@ class HerbivoreResistancesSchema(StrictBaseModel):
     )
 
 
-class SwarmBehaviorParadigm(StrEnum):
-    """Behavioral paradigms for herbivore swarm navigation and foraging."""
-
-    MACRO_SWARM = "macro_swarm"
-    SOLITARY_GRAZER = "solitary_grazer"
-    OVIPOSITION_SEEKER = "oviposition_seeker"
+SwarmBehaviorParadigm = Literal["macro_swarm", "solitary_grazer", "oviposition_seeker"]
 
 
 class HerbivoreSpeciesParams(StrictBaseModel):
@@ -101,7 +96,7 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         description="Handling time per calorie eaten (Holling Type II functional response). 0.0 retains linear intake.",
     )
     behavior_paradigm: SwarmBehaviorParadigm = Field(
-        default=SwarmBehaviorParadigm.MACRO_SWARM,
+        default="macro_swarm",
         description="Behavioral paradigm governing movement and foraging kinetics.",
     )
     reproduction_energy_divisor: float = Field(

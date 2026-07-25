@@ -173,10 +173,12 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
 
     # Now remove the herbivore
     world.destroy_entity(swarm_eid.entity_id)
-    prev_factor = plant.apparent_nutrition_factor
     run_signaling(world, env, trigger_conditions, mycorrhizal_inter_species=False, signal_velocity=1, tick=2)
-    # Trigger is cleared, nutrition factor smoothly translocates back towards 1.0
     assert plant.withdrawal_ticks_remaining == 0
+
+    # Next tick, nutrition factor translocates back towards baseline 1.0
+    prev_factor = plant.apparent_nutrition_factor
+    run_signaling(world, env, trigger_conditions, mycorrhizal_inter_species=False, signal_velocity=1, tick=3)
     assert plant.apparent_nutrition_factor > prev_factor
 
 
