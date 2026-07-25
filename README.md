@@ -89,7 +89,11 @@ Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS 
 
 PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration) and query `recent_logs()`. This enables autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
 
-### 🧬 Evolutionary Design Space Exploration (DSE)
+### 🧬 Evolutionary Design Space Exploration (DSE) & Empirical Database
+
+> [!WARNING]
+> **Status: Work In Progress (WIP) / Under Construction**
+> The Empirical Bio-Database pipeline and Evolutionary Design Space Exploration (DSE) modules are currently under active development and construction. The APIs, database integration pipelines, and optimization UI interfaces described below are in experimental preview status.
 
 To discover stable Lotka-Volterra configurations in complex ecosystems, PHIDS implements an evolutionary **Design Space Exploration (DSE)** subsystem (`src/phids/analytics/dse_optimizer.py`).
 

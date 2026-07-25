@@ -21,9 +21,9 @@ To guide your workflow from initial design to self-sustaining execution, the Sce
   Documentation on the scenario `DraftState` pipeline and constraints.
 * **[Curated Examples](curated_examples.md)**
   An overview of the built-in, chemically balanced default scenarios.
-* **[Design Space Exploration](design_space_exploration.md)**
+* **[Design Space Exploration](design_space_exploration.md)** *(WIP / Under Construction)*
   Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
-* **[Empirical Database](empirical_database.md)**
+* **[Empirical Database](empirical_database.md)** *(WIP / Under Construction)*
   Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
 
 ### 1. Scenario Authoring & Schema
