@@ -101,6 +101,8 @@ source_paths = [
     "src/phids/engine/core/flow_field.py",
     "src/phids/engine/core/ecs.py",
     "src/phids/engine/core/biotope.py",
+    "src/phids/engine/systems/interaction/feeding.py",
+    "src/phids/engine/systems/signaling/lifecycle.py",
 ]
 also_copy = ["src/"]
 pytest_add_cli_args = ["--override-ini=addopts="]
@@ -111,6 +113,7 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/engine/core/test_ecs_mutation_pilot.py",
     "tests/unit/engine/core/test_biotope_diffusion.py",
     "tests/unit/engine/core/test_biotope_state_mutation_pilot.py",
+    "tests/unit/engine/systems/test_systems_mutation_pilot.py",
 ]
 
 [tool.pytest.ini_options]
