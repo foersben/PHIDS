@@ -21,22 +21,22 @@ This document outlines the multi-phase strategic development roadmap for the Pla
 
 ---
 
-## Phase 1: High-Performance Engine & Core Biological Upgrades (v1.0 - Current)
+## Phase 1: High-Performance Engine & Core Biological Upgrades (v1.0 - Realized)
 
 ### Biological Milestones
 
-* **Continuous Sigmoidal Hill Priming**: Transitioned plant VOC perception from crude step-functions to dose-dependent logarithmic Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$).
-* **Rate-Limited Phloem Translocation**: Modeled vascular carbohydrate movement from leaves to roots ($\frac{dN}{dt} = -k(N - N_{\text{target}})$), establishing biological vulnerability windows.
-* **Constitutive Morphological Defenses**: Integrated mechanical mouthpart damage ($\lfloor m_{\text{bite}} (1-\rho) \rfloor$) and cell-wall caloric discounting ($\eta_{\text{net}}$).
-* **Mycorrhizal Carbon Tax**: Applied continuous photosynthate maintenance fees to root-fungal networks.
-* **Holling Type II Response & Swarm Paradigms**: Implemented saturating feeding curves incorporating handling time $T_h$ and multi-tier flight behavior (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`).
+* **Continuous Sigmoidal Hill Priming** `[Realized]`: Transitioned plant VOC perception from crude step-functions to dose-dependent logarithmic Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$).
+* **Rate-Limited Phloem Translocation** `[Realized]`: Modeled vascular carbohydrate movement from leaves to roots ($\frac{dN}{dt} = -k(N - N_{\text{target}})$), establishing biological vulnerability windows.
+* **Constitutive Morphological Defenses** `[Realized]`: Integrated mechanical mouthpart damage ($\lfloor m_{\text{bite}} (1-\rho) \rfloor$) and cell-wall caloric discounting ($\eta_{\text{net}}$).
+* **Mycorrhizal Carbon Tax** `[Realized]`: Applied continuous photosynthate maintenance fees to root-fungal networks.
+* **Holling Type II Response & Swarm Paradigms** `[Realized]`: Implemented saturating feeding curves incorporating handling time $T_h$ and multi-tier flight behavior (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`).
 
 ### Computer Science & Mathematical Milestones
 
-* **Data-Oriented ECS Architecture**: Unified discrete entity spatial hashing with zero-allocation JIT execution loops.
-* **JIT-Accelerated Flow Fields**: Parallelized potential surface calculations ($F = \alpha E \cdot N - \beta \sum T_k$) via Numba `@njit(parallel=True)`.
-* **Operator-Splitting PDE Solvers**: Combined semi-Lagrangian wind advection with $3\times 3$ isotropic Gaussian convolution stencils and float denormalization clamps ($<10^{-4} \to 0.0$).
-* **Zarr Telemetry Replay & HTMX UI**: Enabled deterministic tick-by-tick binary replay and live web dashboard monitoring.
+* **Data-Oriented ECS Architecture** `[Realized]`: Unified discrete entity spatial hashing with zero-allocation JIT execution loops.
+* **JIT-Accelerated Flow Fields** `[Realized]`: Parallelized potential surface calculations ($F = \alpha E \cdot N - \beta \sum T_k$) via Numba `@njit(parallel=True)`.
+* **Operator-Splitting PDE Solvers** `[Realized]`: Combined semi-Lagrangian wind advection with $3\times 3$ isotropic Gaussian convolution stencils and float denormalization clamps ($<10^{-4} \to 0.0$).
+* **Zarr Telemetry Replay & HTMX UI** `[Realized]`: Enabled deterministic tick-by-tick binary replay and live web dashboard monitoring.
 
 ---
 
