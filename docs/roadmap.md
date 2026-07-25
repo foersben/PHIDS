@@ -2,7 +2,7 @@
 type: roadmap
 title: Strategic Multi-Phase Development Roadmap
 status: active
-version: 1.4
+version: 1.5
 description: Comprehensive, multi-stage development roadmap for PHIDS, detailing biological fidelity milestones, computational complexity, full-stack implementation changes (backend, UI, ETL database), direct Zarr telemetry updates, QA & benchmark gates, PyInstaller packaging, and DSE parameter scope extensions.
 tags:
 - phids
@@ -15,7 +15,7 @@ tags:
 - dse
 - zarr
 - pyinstaller
-timestamp: "2026-07-26T01:30:00Z"
+timestamp: "2026-07-26T01:33:00Z"
 resources:
 - docs/scientific_model/index.md
 - docs/technical_architecture/system_architecture.md
@@ -23,11 +23,11 @@ resources:
 - docs/scenario_guide/empirical_database.md
 ---
 
-This document defines the multi-phase strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details realized and planned milestones across **biological fidelity**, **full-stack software architecture**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)** perspectives.
+This document defines the multiphase strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details realized and planned milestones across **biological fidelity**, **full-stack software architecture**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)** perspectives.
 
 ---
 
-### Core Architectural Principles
+## Core Architectural Principles
 
 1. **Standalone Scientific Utility**: Every milestone is partitioned into self-contained, independent sub-stages (v2.1, v2.2, etc.). Completing any single sub-stage yields an immediately usable, scientifically validated capability for ecological researchers, requiring zero reliance on subsequent stages.
 2. **Zero-Overhead Opt-In Guarantee**: Optional biological and environmental systems (e.g., soil chemistry, weather profiles, 3D grids) default to disabled ($0\text{ bytes}$ allocated, $0\text{ ms}$ CPU overhead). They can be selectively loaded via scenario YAML/JSON files.
@@ -55,7 +55,7 @@ This document defines the multi-phase strategic development roadmap for the Plan
 
 Phase 2 is structured into granular, independent sub-stages. Each sub-stage can be implemented, tested, and published independently.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                               PHIDS PHASE 2 SUB-STAGE ROADMAP                                   │
 ├─────────────────┬─────────────────┬──────────────────┬─────────────────┬────────────────────────┤
@@ -82,7 +82,7 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
   * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
   * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
   * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scenario_guide/design_space_exploration.md#1-sub-stage-21-soil-seed-bank--dormancy) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#1-sub-stage-21-soil-seed-bank-dormancy) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
 
 ---
 
@@ -100,7 +100,7 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
   * **Telemetry & Replay Schema**: Direct update to Zarr swarm entity metadata attributes.
   * **QA & Verification Gates**: Integration tests verifying deterministic zoochory transport under identical PRNG seeds.
   * **Documentation**: Update `docs/scientific_model/ecological_analytics.md` with zoochory dispersal kernel formulations.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scenario_guide/design_space_exploration.md#2-sub-stage-22-zoochory-dispersal) for new continuous/discrete genes (`gut_retention_ticks`, `zoochory_vector_species_mask`).
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#2-sub-stage-22-zoochory-dispersal) for new continuous/discrete genes (`gut_retention_ticks`, `zoochory_vector_species_mask`).
 
 ---
 
@@ -118,7 +118,7 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
   * **Telemetry & Replay Schema**: Direct update to Zarr tick metrics to track instar stage distributions.
   * **QA & Verification Gates**: State machine invariant tests ensuring conservation of population across metamorphosis steps.
   * **Documentation**: Create dedicated lifecycle kinetics guide in `docs/scientific_model/`.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scenario_guide/design_space_exploration.md#3-sub-stage-23-trait-based-herbivore-demographic-state-machines) for new instar transition genes.
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#3-sub-stage-23-trait-based-herbivore-demographic-state-machines) for new instar transition genes.
 
 ---
 
@@ -136,7 +136,7 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
   * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
   * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
   * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scenario_guide/design_space_exploration.md#4-sub-stage-24-soil-detritus--biomass-recycling) for soil mineralization continuous/discrete genes.
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#4-sub-stage-24-soil-detritus-biomass-recycling) for soil mineralization continuous/discrete genes.
 
 ---
 
@@ -154,7 +154,7 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
   * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
   * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
   * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scenario_guide/design_space_exploration.md#5-sub-stage-25-macro-patch-weather-profiles) for climate amplitude and drought intensity genes.
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#5-sub-stage-25-macro-patch-weather-profiles) for climate amplitude and drought intensity genes.
 
 ---
 
@@ -173,7 +173,7 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
   * **QA & Verification Gates**: 3D conservation of mass tests and Numba SIMD vectorization benchmarks.
   * **Packaging**: Re-verify PyInstaller standalone binary performance on Linux/macOS/Windows.
   * **Documentation**: Update `docs/technical_architecture/engine_execution.md` with 3D stencil array memory layouts.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scenario_guide/design_space_exploration.md#6-sub-stage-26-3d-canopy-structure) for vertical canopy height $Z$ and shear alpha parameters.
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#6-sub-stage-26-3d-canopy-structure) for vertical canopy height $Z$ and shear alpha parameters.
 
 ---
 
