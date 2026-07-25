@@ -74,7 +74,18 @@ class EnvironmentalSignalInitiator(StrictBaseModel):
 
     type: Literal["environmental_signal"] = "environmental_signal"
     signal_id: int = Field(..., ge=0, description="The substance ID of the environmental signal to monitor.")
-    min_concentration: float = Field(..., gt=0.0, description="Minimum concentration threshold in the flow field.")
+    min_concentration: float = Field(
+        default=0.01, ge=0.0, description="Minimum concentration threshold in the flow field."
+    )
+    response_curve: Literal["step", "hill", "logarithmic"] = Field(
+        default="step", description="Dose-response curve type: step, hill (sigmoidal kinetics), or logarithmic."
+    )
+    hill_cooperativity: float = Field(
+        default=2.0, gt=0.0, description="Hill cooperativity exponent n controlling dose-response steepness."
+    )
+    half_saturation: float = Field(
+        default=0.05, gt=0.0, description="Semi-saturation constant Kd (concentration where response is 50%)."
+    )
 
 
 TriggerInitiator = Annotated[HerbivoreAttackInitiator | EnvironmentalSignalInitiator, Field(discriminator="type")]

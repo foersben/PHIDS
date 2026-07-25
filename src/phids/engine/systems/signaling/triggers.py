@@ -42,7 +42,18 @@ def _process_single_trigger(
     elif isinstance(trig.initiator, EnvironmentalSignalInitiator):
         if 0 <= trig.initiator.signal_id < env.num_signals:
             conc = float(env.signal_layers[trig.initiator.signal_id, plant.x, plant.y])
-            initiator_met = conc >= trig.initiator.min_concentration
+            mode = trig.initiator.response_curve
+            if mode == "step":
+                initiator_met = conc >= trig.initiator.min_concentration
+            elif mode == "hill":
+                kd = trig.initiator.half_saturation
+                n = trig.initiator.hill_cooperativity
+                if conc > 0.0:
+                    cn = conc**n
+                    priming_factor = cn / (kd**n + cn)
+                    initiator_met = priming_factor >= 0.05
+            elif mode == "logarithmic":
+                initiator_met = conc >= trig.initiator.min_concentration
 
     condition_met = False
     if trig.activation_condition is not None:
