@@ -11,7 +11,7 @@ tags:
 - performance
 - chemotaxis
 - python
-timestamp: "2026-07-21T16:01:38Z"
+timestamp: "2026-07-25T10:52:00Z"
 resources:
 - src/phids/engine/core/biotope.py
 ---
@@ -191,7 +191,7 @@ This is one of the most sophisticated survival mechanisms in botany, modeling St
 !!! info "Biological Context"
     When a plant is subjected to severe, prolonged stress-such as continuous herbivory, impending frost, or drought-it will actively break down the chlorophyll in its leaves and rapidly pull valuable resources (nitrogen, carbon, and sugars) deep into its root system or woody stems. To an approaching herbivore, the plant visually and chemically appears "dead" or nutritionally barren, prompting the herd to move on. Once the environmental stress passes, the plant flushes resources back into its canopy.
 
-In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). Instead of synthesizing a costly toxin, the plant triggers a `resource_withdrawal` action.
+In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true—either from direct grazing (`HerbivoreAttackInitiator`) or preemptively receiving neighbor VOC signals (`EnvironmentalSignalInitiator`)—and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). This suppression is maintained for a specific `withdrawal_duration` before naturally decaying over the `aftereffect` period. Instead of synthesizing a costly toxin, the plant uses `resource_withdrawal` to avoid consumption entirely.
 
 This scalar directly alters the attraction landscape *before* the Gaussian convolution kernel diffuses sensory layers in the flow-field module.
 

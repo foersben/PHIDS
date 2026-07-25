@@ -8,7 +8,7 @@ tags:
 - phids
 - ecs
 - numba
-timestamp: "2026-07-24T08:25:35Z"
+timestamp: "2026-07-25T10:52:00Z"
 resources:
 - flow_field.py
 ---
@@ -23,7 +23,7 @@ The `SimulationLoop.step()` method executes the following components consecutive
 2. **Camouflage Attenuation**: Post-processes the flow-field by masking the gradient for flora utilizing camouflage traits.
 3. **Lifecycle (`run_lifecycle`)**: Updates flora-centric state. Handles resource growth, deterministic mycorrhizal propagation, threshold culling, and interval-gated reproduction logic.
 4. **Interaction (`run_interaction`)**: Determines swarm behavior. Checks the spatial hash for crowding (inducing repelled dispersal), executes flow-field gradient sampling, performs localized feeding, and manages the continuous deficit attrition and mitosis algorithms.
-5. **Signaling (`run_signaling`)**: Converts herbivore presence into substance triggers. Manages the synthesis countdowns, aftereffects, emits substances into the double-buffered grid, and processes local toxic casualties.
+5. **Signaling (`run_signaling`)**: Converts herbivore presence and ambient environmental VOC signals into trigger actions (substance synthesis or resource withdrawal). Manages the synthesis and duration countdowns, aftereffects, emits substances into the double-buffered grid, and processes local toxic casualties.
 6. **Telemetry Logging**: Records a metrics snapshot of the current state and appends the tick data to the telemetry recorder and replay buffer.
 7. **Termination Check**: Evaluates configured extinction, energy, and population threshold limits to check if simulation termination conditions have been met.
 

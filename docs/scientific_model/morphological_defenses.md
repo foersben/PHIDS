@@ -11,7 +11,7 @@ tags:
 - numba
 - performance
 - python
-timestamp: "2026-07-21T16:01:38Z"
+timestamp: "2026-07-25T10:52:00Z"
 resources:
 - src/phids/api/schemas/species.py
 - src/phids/api/schemas/triggers.py
@@ -56,7 +56,11 @@ This document outlines the architectural implementation for the biological accur
 4. **Update `TriggerActionSchema`**:
     * Refactor the trigger action model to represent a discriminated union of action types using Pydantic's `Field(discriminator="type")`.
     * **Action A**: `synthesize_substance` (holds the existing substance parameters: `substance_id`, `synthesis_duration`, etc.).
-    * **Action B**: `resource_withdrawal` (holds `apparent_nutrition_factor: float = 1.0` and duration parameters).
+    * **Action B**: `resource_withdrawal` (holds `apparent_nutrition_factor: float = 1.0` and `withdrawal_duration: int` alongside the aftereffect cooldown). This models a plant committing to apparent nutrition withdrawal for a fixed temporal duration.
+
+5. **Update `TriggerInitiator`**:
+    * Expand the trigger initiation models to include an `EnvironmentalSignalInitiator`.
+    * This allows `ResourceWithdrawalAction` (and other defenses) to be catalyzed by environmental signal concentrations (e.g., VOCs from neighboring plants) rather than strictly requiring local herbivore attacks, effectively modeling preemptive morphological responses.
 
 ---
 
