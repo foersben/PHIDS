@@ -43,6 +43,23 @@ Simulating tens of thousands of interacting organisms and diffusing chemical fie
 
 ---
 
+## Master Summary: Comprehensive Subsystem Behaviors & Dual Perspectives
+
+The following matrix provides a high-level master overview of all core scientific behaviors implemented in PHIDS, detailing the biological rationale, mathematical/CS formulation, and primary deep-dive documentation for each component:
+
+| Subsystem / Feature | Biological Perspective (Why it matters biologically) | Computer Science / Math Rationale (How it is computed) | Deep-Dive Reference |
+| :--- | :--- | :--- | :--- |
+| **Volatile Signal Dispersion & Wind Advection** | Airborne Volatile Organic Compound (VOC) warnings spread downwind from damaged plants to prime neighbors. | 2D Semi-Lagrangian advection + $3\times 3$ isotropic Gaussian convolution stencil + denormalization clamp ($<10^{-4} \to 0.0$). | [reaction_diffusion.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/reaction_diffusion.md) |
+| **Sigmoidal Hill Kinetics Priming** | Plant perception of airborne VOCs operates as a continuous, dose-dependent logarithmic response curve ($S(c) = \frac{c^n}{K^n + c^n}$). | Non-linear Hill activation function in `triggers.py` replacing artificial step-function threshold triggers. | [reaction_diffusion.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/reaction_diffusion.md#continuous-priming-and-hill-kinetics) |
+| **Chemotaxis & Flow-Field Navigation** | Herbivore swarms navigate superposed attractant (food energy) and repellent (toxin) chemical landscapes. | Scalar potential surface tensor $F_t[x,y] = \alpha E \cdot N - \beta \sum T_k$ compiled via Numba `@njit(parallel=True)`. | [chemotaxis.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/chemotaxis.md) |
+| **Constitutive Morphological Defenses** | Mechanical thorns inflict physical mouthpart trauma; cell-wall lignin/silica reduces caloric digestibility. | $O(1)$ floor integer attrition $\lfloor m_{\text{bite}} (1-\rho) \rfloor$ and caloric discount factor $\eta_{\text{net}}$ in `feeding.py`. | [morphological_defenses.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/morphological_defenses.md) |
+| **Rate-Limited Phloem Translocation** | Mobile carbohydrates are translocated from leaves to roots via phloem sieve tubes, creating a vulnerability window. | First-order exponential relaxation recurrence equation $N^{t+1} = N^t - k(N^t - N_{\text{target}})$ in `lifecycle.py`. | [morphological_defenses.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/morphological_defenses.md#23-rate-limited-phloem-translocation-kinetics) |
+| **Mycorrhizal Networks & Carbon Tax** | Subterranean fungal hyphae relay signals between root systems, supported by obligate photosynthate fees. | Spatial graph adjacency relay bypassing atmospheric diffusion grids + per-tick carbon tax fee deducted in `lifecycle.py`. | [flora_and_symbiosis.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/flora_and_symbiosis.md) |
+| **Holling Type II Feeding Response** | Herbivore feeding saturates at high food density due to non-zero handling time ($T_h$). | Saturating intake equation $\Delta E = \frac{a E}{1 + a T_h E}$ evaluated per grazing interaction in `feeding.py`. | [herbivore_behavior.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/herbivore_behavior.md) |
+| **Swarm Behavioral Paradigms & Memory** | Swarms exhibit distinct flight modes (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`) and aversion memory decay. | Per-entity behavioral paradigm state + exponential memory decay array ($M_{t+1} = M_t \cdot 0.95$) in `movement.py`. | [herbivore_behavior.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/scientific_model/herbivore_behavior.md) |
+
+---
+
 ## 1. Global State Representation
 
 Let the global state of the biotope at discrete time step (tick) $t$ be defined as:
