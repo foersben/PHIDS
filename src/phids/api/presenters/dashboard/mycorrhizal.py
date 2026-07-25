@@ -9,7 +9,7 @@ between Manhattan-adjacent plant entities in both draft and live simulation mode
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
     from phids.api.ui_state import DraftState
@@ -54,25 +54,35 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
 
     """
     links: list[_MycorrhizalLinkPayload] = []
-    for left_index, left in enumerate(draft.initial_plants):
-        for right_index in range(left_index + 1, len(draft.initial_plants)):
-            right = draft.initial_plants[right_index]
-            if abs(left.x - right.x) + abs(left.y - right.y) != 1:
-                continue
-            inter_species = left.species_id != right.species_id
-            if inter_species and not draft.mycorrhizal_inter_species:
-                continue
-            links.append(
-                {
-                    "plant_index_a": left_index,
-                    "plant_index_b": right_index,
-                    "x1": left.x,
-                    "y1": left.y,
-                    "x2": right.x,
-                    "y2": right.y,
-                    "inter_species": inter_species,
-                }
-            )
+
+    # Pre-index plants by position for O(1) spatial lookups
+    plants_by_pos = {}
+    for idx, plant in enumerate(draft.initial_plants):
+        plants_by_pos[(plant.x, plant.y)] = (idx, plant)
+
+    # Only check right and down neighbors to avoid duplicate edges
+    directions = [(1, 0), (0, 1)]
+
+    for (x, y), (left_index, left) in plants_by_pos.items():
+        for dx, dy in directions:
+            neighbor = plants_by_pos.get((x + dx, y + dy))
+            if neighbor is not None:
+                right_index, right = neighbor
+                inter_species = left.species_id != right.species_id
+                if inter_species and not draft.mycorrhizal_inter_species:
+                    continue
+                links.append(
+                    {
+                        "plant_index_a": left_index,
+                        "plant_index_b": right_index,
+                        "x1": left.x,
+                        "y1": left.y,
+                        "x2": right.x,
+                        "y2": right.y,
+                        "inter_species": inter_species,
+                    }
+                )
+
     return links
 
 
@@ -120,6 +130,40 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
                     "x2": neighbour.x,
                     "y2": neighbour.y,
                     "inter_species": plant.species_id != neighbour.species_id,
+                }
+            )
+    return links
+
+
+def _build_live_mycorrhizal_links_from_snapshot(snapshot: dict[str, Any]) -> list[_MycorrhizalLinkPayload]:
+    """Serialise the unique set of root links currently active using an extracted snapshot.
+
+    Operates on a pre-extracted, thread-safe dictionary representation of the live plants
+    to prevent blocking the simulation event loop during JSON serialisation.
+    """
+    plants_data = snapshot["plants"]
+    plant_lookup = {p["entity_id"]: p for p in plants_data}
+    links: list[_MycorrhizalLinkPayload] = []
+    seen_pairs: set[tuple[int, int]] = set()
+
+    for plant_id, plant in plant_lookup.items():
+        for neighbour_id in sorted(plant["mycorrhizal_connections"]):
+            if neighbour_id not in plant_lookup:
+                continue
+            pair = (min(plant_id, neighbour_id), max(plant_id, neighbour_id))
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            neighbour = plant_lookup[neighbour_id]
+            links.append(
+                {
+                    "entity_id_a": plant_id,
+                    "entity_id_b": neighbour_id,
+                    "x1": plant["x"],
+                    "y1": plant["y"],
+                    "x2": neighbour["x"],
+                    "y2": neighbour["y"],
+                    "inter_species": plant["species_id"] != neighbour["species_id"],
                 }
             )
     return links

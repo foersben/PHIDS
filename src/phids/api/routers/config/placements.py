@@ -16,7 +16,6 @@ from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.services.draft.placements import (
     add_plant_placement,
     add_swarm_placement,
-    clear_placements,
     remove_plant_placement,
     remove_swarm_placement,
 )
@@ -168,8 +167,32 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
 async def config_placements_clear(request: Request) -> Response:
     """Clear all plant and swarm placements and render the updated placement ledger."""
     draft = get_draft()
-    clear_placements(draft)
+    from phids.api.services.draft.placements import clear_placements as _clear_placements
+
+    _clear_placements(draft)
     api_main.logger.info("All draft placements cleared via API")
+    return _render_placement_list_partial(request, draft)
+
+
+@router.post("/api/config/placements/clear-plants", response_class=HTMLResponse, summary="Clear all plant placements")
+async def config_placements_clear_plants(request: Request) -> Response:
+    """Clear all plant placements and render the updated placement ledger."""
+    draft = get_draft()
+    from phids.api.services.draft.placements import clear_plant_placements
+
+    clear_plant_placements(draft)
+    api_main.logger.info("All draft plant placements cleared via API")
+    return _render_placement_list_partial(request, draft)
+
+
+@router.post("/api/config/placements/clear-swarms", response_class=HTMLResponse, summary="Clear all swarm placements")
+async def config_placements_clear_swarms(request: Request) -> Response:
+    """Clear all swarm placements and render the updated placement ledger."""
+    draft = get_draft()
+    from phids.api.services.draft.placements import clear_swarm_placements
+
+    clear_swarm_placements(draft)
+    api_main.logger.info("All draft swarm placements cleared via API")
     return _render_placement_list_partial(request, draft)
 
 

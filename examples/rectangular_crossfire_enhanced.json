@@ -29,11 +29,11 @@
       },
       "triggers": [
         {
-          "aftereffect_ticks": 4,
-          "activation_condition": {
-            "kind": "herbivore_presence",
+          "aftereffect_ticks": 5,
+          "initiator": {
+            "type": "herbivore_attack",
             "herbivore_species_id": 0,
-            "min_herbivore_population": 4
+            "min_herbivore_population": 3
           },
           "action": {
             "type": "synthesize_substance",
@@ -41,16 +41,21 @@
             "synthesis_duration": 1,
             "is_toxin": false,
             "lethal": false,
-            "lethality_rate": 0.0,
             "repellent": false,
-            "repellent_walk_ticks": 0,
-            "energy_cost_per_tick": 0.35,
-            "irreversible": false
-          },
+            "energy_cost_per_tick": 0.2
+          }
+        },
+        {
+          "aftereffect_ticks": 10,
           "initiator": {
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 4,
-            "type": "herbivore_attack"
+            "type": "environmental_signal",
+            "signal_id": 0,
+            "min_concentration": 0.05
+          },
+          "action": {
+            "type": "resource_withdrawal",
+            "apparent_nutrition_factor": 0.2,
+            "withdrawal_duration": 15
           }
         }
       ]
@@ -76,23 +81,39 @@
       },
       "triggers": [
         {
-          "aftereffect_ticks": 1,
+          "aftereffect_ticks": 5,
+          "initiator": {
+            "type": "herbivore_attack",
+            "herbivore_species_id": 1,
+            "min_herbivore_population": 4
+          },
           "action": {
             "type": "synthesize_substance",
             "substance_id": 2,
             "synthesis_duration": 2,
-            "is_toxin": true,
+            "is_toxin": false,
             "lethal": false,
-            "lethality_rate": 0.0,
-            "repellent": true,
-            "repellent_walk_ticks": 5,
-            "energy_cost_per_tick": 0.85,
-            "irreversible": false
-          },
+            "repellent": false,
+            "energy_cost_per_tick": 0.1
+          }
+        },
+        {
+          "aftereffect_ticks": 10,
           "initiator": {
             "type": "environmental_signal",
-            "signal_id": 0,
+            "signal_id": 2,
             "min_concentration": 0.05
+          },
+          "action": {
+            "type": "synthesize_substance",
+            "substance_id": 3,
+            "synthesis_duration": 3,
+            "is_toxin": true,
+            "lethal": true,
+            "lethality_rate": 1.5,
+            "repellent": true,
+            "repellent_walk_ticks": 5,
+            "energy_cost_per_tick": 1.2
           }
         }
       ]
@@ -118,48 +139,21 @@
       },
       "triggers": [
         {
-          "aftereffect_ticks": 4,
-          "activation_condition": {
-            "kind": "herbivore_presence",
-            "herbivore_species_id": 1,
-            "min_herbivore_population": 4
+          "aftereffect_ticks": 5,
+          "initiator": {
+            "type": "herbivore_attack",
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 5
           },
           "action": {
             "type": "synthesize_substance",
             "substance_id": 1,
             "synthesis_duration": 1,
-            "is_toxin": false,
-            "lethal": false,
-            "lethality_rate": 0.0,
-            "repellent": false,
-            "repellent_walk_ticks": 0,
-            "energy_cost_per_tick": 0.3,
-            "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 1,
-            "min_herbivore_population": 4,
-            "type": "herbivore_attack"
-          }
-        },
-        {
-          "aftereffect_ticks": 1,
-          "action": {
-            "type": "synthesize_substance",
-            "substance_id": 3,
-            "synthesis_duration": 2,
             "is_toxin": true,
-            "lethal": true,
-            "lethality_rate": 0.45,
-            "repellent": false,
-            "repellent_walk_ticks": 0,
-            "energy_cost_per_tick": 0.9,
-            "irreversible": false
-          },
-          "initiator": {
-            "type": "environmental_signal",
-            "signal_id": 1,
-            "min_concentration": 0.05
+            "lethal": false,
+            "repellent": true,
+            "repellent_walk_ticks": 3,
+            "energy_cost_per_tick": 0.5
           }
         }
       ]

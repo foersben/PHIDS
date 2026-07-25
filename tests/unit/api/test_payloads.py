@@ -7,7 +7,7 @@ Verifies that the dashboard JSON payload adheres exactly to the frontend
 API contract, preventing visual regressions on the UI dashboard.
 """
 
-from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload
+from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload, extract_ui_snapshot
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.schemas.species import (
     DietCompatibilityMatrix,
@@ -52,7 +52,7 @@ def test_payload_contract_strictness() -> None:
     )
     loop = SimulationLoop(config)
 
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     # 1. Top Level Keys Verification
     expected_top_level_keys = {

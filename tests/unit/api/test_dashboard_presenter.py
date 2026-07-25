@@ -57,6 +57,7 @@ from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    extract_ui_snapshot,
     validate_cell_coordinates,
 )
 from phids.api.schemas.placement import (
@@ -565,7 +566,7 @@ def test_build_live_dashboard_payload_structural_contract() -> None:
     """
     config = _minimal_config()
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     required_keys = {
         "tick",
@@ -599,7 +600,7 @@ def test_build_live_dashboard_payload_tick_and_lifecycle_state() -> None:
     """
     config = _minimal_config()
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     assert payload["tick"] == 0
     assert payload["terminated"] is False
@@ -616,7 +617,7 @@ def test_build_live_dashboard_payload_plant_and_swarm_entries() -> None:
     """
     config = _minimal_config(x=4, y=4)
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
 
     plant_columns = payload["plants"]
     assert {"entity_id", "species_id", "x", "y", "energy"}.issubset(plant_columns.keys())
@@ -653,7 +654,7 @@ def test_build_live_dashboard_payload_extinct_species_bifurcation() -> None:
         if len(live_species) <= 1:
             break
 
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
     payload_species = {int(spec["species_id"]) for spec in payload["species_energy"]}
     legend_species = {int(spec["species_id"]) for spec in payload["all_flora_species"]}
     configured_species = {species.species_id for species in loop.config.flora_species}
@@ -679,7 +680,7 @@ def test_build_live_dashboard_payload_max_energy_is_positive() -> None:
     """
     config = _minimal_config()
     loop = SimulationLoop(config)
-    payload = build_live_dashboard_payload(loop, substance_names={})
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
     assert payload["max_energy"] > 0.0
 
 

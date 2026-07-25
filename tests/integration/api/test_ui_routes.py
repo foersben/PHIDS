@@ -30,7 +30,7 @@ from httpx import AsyncClient
 import phids.__main__ as phids_cli
 import phids.api.main as api_main
 import phids.api.ui_state as draft_state_module
-from phids.api.presenters.dashboard import build_live_dashboard_payload
+from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
 from phids.api.schemas.responses import BatchJobState
 from phids.api.schemas.species import (
     FloraSpeciesParams,
@@ -285,7 +285,7 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
         if len(live_species) <= 1:
             break
 
-    payload = build_live_dashboard_payload(loop, substance_names=api_main._sim_substance_names)
+    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names=api_main._sim_substance_names)
     species_energy_rows = _as_object_dict_rows(payload.get("species_energy"))
     all_flora_rows = _as_object_dict_rows(payload.get("all_flora_species"))
     payload_species = {
@@ -1650,7 +1650,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         assert step_resp.status_code == 200, step_resp.text
 
         dashboard_payload = build_live_dashboard_payload(
-            api_main._sim_loop,
+            extract_ui_snapshot(api_main._sim_loop),
             substance_names=api_main._sim_substance_names,
         )
         details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
