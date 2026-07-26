@@ -15,18 +15,19 @@ graph TD
 
 ## Exploring the Scenarios Module
 
-To guide your workflow from initial design to self-sustaining execution, the Scenarios documentation is partitioned into three key guides:
+## Core Guides
 
-* **[Scenario Authoring](scenario_authoring.md)**
-  Documentation on the scenario `DraftState` pipeline and constraints.
-* **[Curated Examples](curated_examples.md)**
-  An overview of the built-in, chemically balanced default scenarios.
-* **[Design Space Exploration](design_space_exploration.md)** *(WIP / Under Construction)*
-  Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
-* **[Empirical Database](empirical_database.md)** *(WIP / Under Construction)*
-  Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
-* **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**
-  Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
+* **[Scenario Authoring](scenario_authoring.md)**: Documentation on the scenario `DraftState` pipeline and constraints.
+* **[Curated Examples](curated_examples.md)**: An overview of the built-in, chemically balanced default scenarios.
+* **[Design Space Exploration](design_space_exploration.md)**: Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
+* **[Empirical Database](empirical_database.md)**: Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
+
+---
+
+## Future Prospects
+
+* **[AI Coevolution & Distributed DSE Engine](future_prospects/ai_coevolution_dse.md)**: Architecture for Ray/Tune distributed multi-objective Pareto optimization and reinforcement learning swarm coevolution.
+* **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**: Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
 
 ### 1. Scenario Authoring & Schema
 
