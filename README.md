@@ -12,11 +12,13 @@ animation artifacts.
 Current release line: `v0.9.0`.
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
-[![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions)
-[![Coverage Status](https://coveralls.io/repos/github/foersben/PHIDS/badge.svg)](https://coveralls.io/github/foersben/PHIDS)
-[![License: EUPL-1.2](https://img.shields.io/badge/License-EUPL--1.2-blue.svg)](https://opensource.org/licenses/EUPL-1.2)
+[![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-zensical-blue.svg)](https://foersben.github.io/PHIDS/)
+[![Checked with mypy](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Dual License: EUPL-1.2 / Commercial](https://img.shields.io/badge/License-EUPL--1.2%20%7C%20Commercial-blue.svg)](#-licensing)
 
-*Dual-licensed under EUPL-1.2 and a Commercial License.*
+*Dual-licensed under EUPL-1.2 (Academic/Open Source) and a Commercial License.*
 
 Live documentation: <https://foersben.github.io/PHIDS/>
 
