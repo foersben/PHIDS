@@ -64,12 +64,19 @@ Key Dimensionless Groups:
 Parameters scale automatically across 6 orders of magnitude in organism mass ($M_{\text{body}}$) and account for ambient micro-climate temperature ($T$):
 
 * **Metabolic Upkeep (Kleiber-Arrhenius Law)**:
-  $$m_i(T) = m_{\text{ref}} \cdot \left(\frac{M_{\text{body}}}{M_{\text{ref}}}\right)^{0.75} \cdot \exp\left( -\frac{E_a}{k_B} \left( \frac{1}{T} - \frac{1}{T_{\text{ref}}} \right) \right) \cdot \frac{\Delta \tau}{T_{\text{ref}}}$$
+
+$$m_i(T) = m_{\text{ref}} \cdot \left(\frac{M_{\text{body}}}{M_{\text{ref}}}\right)^{0.75} \cdot \exp\left( -\frac{E_a}{k_B} \left( \frac{1}{T} - \frac{1}{T_{\text{ref}}} \right) \right) \cdot \frac{\Delta \tau}{T_{\text{ref}}}$$
+
   Where $E_a \approx 0.65\,\text{eV}$ is the metabolic activation energy (Metabolic Theory of Ecology standard), and $k_B$ is Boltzmann's constant.
+
 * **Consumption Limit**:
-  $$C_{\text{max}}(T) = C_{\text{ref}} \cdot \left(\frac{M_{\text{body}}}{M_{\text{ref}}}\right)^{0.75} \cdot \exp\left( -\frac{E_a}{k_B} \left( \frac{1}{T} - \frac{1}{T_{\text{ref}}} \right) \right) \cdot \frac{\Delta \tau}{T_{\text{ref}}}$$
+
+$$C_{\text{max}}(T) = C_{\text{ref}} \cdot \left(\frac{M_{\text{body}}}{M_{\text{ref}}}\right)^{0.75} \cdot \exp\left( -\frac{E_a}{k_B} \left( \frac{1}{T} - \frac{1}{T_{\text{ref}}} \right) \right) \cdot \frac{\Delta \tau}{T_{\text{ref}}}$$
+
 * **Foraging Velocity & Grid Resolution Scaling**:
-  $$V_{\text{cells}} = \max\left(1, \left\lceil v_{\text{ref}} \cdot \left(\frac{M_{\text{body}}}{M_{\text{ref}}}\right)^{0.16} \cdot \frac{\Delta \tau}{\Delta L} \right\rceil\right)$$
+
+$$V_{\text{cells}} = \max\left(1, \left\lceil v_{\text{ref}} \cdot \left(\frac{M_{\text{body}}}{M_{\text{ref}}}\right)^{0.16} \cdot \frac{\Delta \tau}{\Delta L} \right\rceil\right)$$
+
 * **Cell Carrying Capacity**: Cell energy bounds scale quadratically with grid resolution: $E_{\text{max, cell}} = E_{\text{ref, cell}} \cdot \left(\frac{\Delta L}{\Delta L_{\text{ref}}}\right)^2$.
 
 ### Tier 3: Thermodynamic Invariants & Hard Biological Safeguards
@@ -80,15 +87,22 @@ Parameters scale automatically across 6 orders of magnitude in organism mass ($M
 ### Tier 4: Empirically Bounded DSE (Log-Normal Hyper-Cubes & Taxonomic Imputation)
 
 1. **Log-Normal Space Transformation**:
-   Because ecological traits (body mass, seed mass, SLA, metabolic rates) span multiple orders of magnitude following log-normal distributions, DSE hyper-cubes are constructed in **log-transformed parameter space** to prevent unphysical negative lower bounds or linear skew:
-   $$p_k \in \left[ 10^{\mu_{\log, k} - 2\sigma_{\log, k}}, \, 10^{\mu_{\log, k} + 2\sigma_{\log, k}} \right]$$
+    Because ecological traits (body mass, seed mass, SLA, metabolic rates) span multiple orders of magnitude following log-normal distributions, DSE hyper-cubes are constructed in **log-transformed parameter space** to prevent unphysical negative lower bounds or linear skew:
+
+    $$p_k \in \left[ 10^{\mu_{\log, k} - 2\sigma_{\log, k}}, \, 10^{\mu_{\log, k} + 2\sigma_{\log, k}} \right]$$
+
 2. **Hierarchical Taxonomic Imputation**:
-   When empirical database entries are missing for a specific species, the ETL pipeline imputes trait parameters using geometric means following a strict phylogenetic hierarchy: $\text{Species} \to \text{Genus} \to \text{Family} \to \text{Functional Group}$.
+    When empirical database entries are missing for a specific species, the ETL pipeline imputes trait parameters using geometric means following a strict phylogenetic hierarchy:
+
+    $$\text{Species} \to \text{Genus} \to \text{Family} \to \text{Functional Group}$$
+
 3. **Multi-Objective Cost Function**:
-   $$J_{\text{eco}} = w_1 \cdot S_{\text{LV}} + w_2 \cdot \sum_{k=1}^K \left( \frac{\log_{10}(p_k) - \mu_{\log, k}}{\sigma_{\log, k}} \right)^2 + w_3 \cdot P_{\text{thermo}}$$
-   * Rewards stable Lotka-Volterra limit cycles ($S_{\text{LV}}$ via FFT spectral analysis).
-   * Penalizes Mahalanobis distance from empirical log-space biological distributions ($D_{\text{bio}}$).
-   * Imposes step penalties for thermodynamic violations ($P_{\text{thermo}}$).
+
+    $$J_{\text{eco}} = w_1 \cdot S_{\text{LV}} + w_2 \cdot \sum_{k=1}^K \left( \frac{\log_{10}(p_k) - \mu_{\log, k}}{\sigma_{\log, k}} \right)^2 + w_3 \cdot P_{\text{thermo}}$$
+
+    * Rewards stable Lotka-Volterra limit cycles ($S_{\text{LV}}$ via FFT spectral analysis).
+    * Penalizes Mahalanobis distance from empirical log-space biological distributions ($D_{\text{bio}}$).
+    * Imposes step penalties for thermodynamic violations ($P_{\text{thermo}}$).
 
 ---
 
