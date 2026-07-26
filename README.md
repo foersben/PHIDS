@@ -338,31 +338,34 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 
 ```text
 src/phids/              canonical runtime package
-├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, Websockets
-├── engine/             The core determinism domain (ECS + Numba Double-Buffered grid fields)
-├── analytics/          Evolutionary Design Space Exploration (DSE) and database matching
-├── io/                 High-performance Zarr replays and scenario parsing
-├── telemetry/          Tick analytics, export routines, and Polars handlers
-├── shared/             Common utilities and logging configurations
-├── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
-└── __main__.py         Command-line interface (Typer) entry point
-tests/                  property-based invariant tests, two-pass Numba tests, and API integration
-examples/               curated scenario JSON files
-docs/                   Zensical documentation corpus
-scripts/                local CI and workflow rehearsal helpers
-packaging/              PyInstaller configuration
+├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, WebSockets
+├── engine/             Core determinism domain (ECS + Numba JIT double-buffered grid fields)
+├── analytics/          Evolutionary Design Space Exploration (DSE) & empirical database tuning
+├── io/                 High-performance Zarr replay serialization & scenario ingestion
+├── telemetry/          Tick analytics, batch export routines, and Polars handlers
+├── shared/             Common constants, rule-of-16 limits, and logging configurations
+├── mcp_server.py       Model Context Protocol (MCP) stdio entrypoint for AI agents
+└── __main__.py         Command-line interface (Typer CLI) entry point
+.agents/                AI agent ecosystem (OKF AGENTS.md, role definitions, skills & workflows)
+data/                   Empirical DuckDB trait database (TRY/PanTHERIA) & batch export ledgers
+docs/                   Zensical documentation corpus with OKF frontmatter & Future Prospects
+examples/               Curated scenario blueprint JSON files
+packaging/              PyInstaller desktop binary packaging configuration
+scripts/                Local CI runner (local_ci.sh), benchmark gates, and release helpers
+tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration
 ```
 
 ---
 
 ## 📄 Where to go next
 
-* Want to understand phase semantics? Start at [`docs/technical_architecture/engine_execution.md`](docs/technical_architecture/engine_execution.md).
+* Want to understand phase semantics & Numba JIT rules? Start at [`docs/technical_architecture/engine_execution.md`](docs/technical_architecture/engine_execution.md).
 * Want to build or edit scenarios? Start at [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md).
-* Want route and WebSocket details? Start at
-  [`docs/technical_architecture/interfaces_and_ui.md`](docs/technical_architecture/interfaces_and_ui.md).
-* Want contributor workflow and CI policy? Start at
-  [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
+* Want route and WebSocket details? Start at [`docs/technical_architecture/interfaces_and_ui.md`](docs/technical_architecture/interfaces_and_ui.md).
+* Want to calibrate traits to empirical scales? Start at [`docs/scientific_model/future_prospects/parameter_calibration_strategy.md`](docs/scientific_model/future_prospects/parameter_calibration_strategy.md).
+* Want to explore high-density replays & Polars exports? Start at [`docs/technical_architecture/telemetry.md`](docs/technical_architecture/telemetry.md).
+* Want to run evolutionary DSE searches? Start at [`docs/scenario_guide/design_space_exploration.md`](docs/scenario_guide/design_space_exploration.md).
+* Want contributor workflow and CI policy? Start at [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
 
 ---
 
