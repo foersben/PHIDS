@@ -240,9 +240,9 @@ uv run pre-commit run --all-files --hook-stage pre-push
 
 GitHub Actions policy summary:
 
-* CI runs on pushes to `main`, PRs targeting `main`, and manual dispatch.
-* `develop` is intentionally not configured as an automatic CI trigger.
-* Container publishing is release-focused (main/tag boundaries).
+* CI quality gates (`.github/workflows/ci.yml`) run automatically on pushes and PRs targeting `main` and `develop`.
+* Documentation site deployment to GitHub Pages triggers automatically on pushes to `main`.
+* Container image, DuckDB bio-database, and desktop binary releases publish automatically on semantic tag boundaries (`v*`).
 
 References:
 
@@ -273,11 +273,13 @@ Release and packaging policy:
 
 ## 📦 Release and distribution surfaces
 
-The repository includes:
+The repository includes automated GitHub Actions workflows:
 
-* `Dockerfile` and `docker-compose.yml` for container workflows
-* `.github/workflows/docker-publish.yml` for GHCR publication policy
-* `.github/workflows/release-binaries.yml` for bundled Linux/Windows/macOS artifacts
+* `Dockerfile` and `docker-compose.yml` for local container workflows
+* `.github/workflows/ci.yml` for quality gates, two-pass Numba testing, and GitHub Pages deployment
+* `.github/workflows/docker-publish.yml` for multi-arch GHCR image publication
+* `.github/workflows/etl-publish.yml` for empirical DuckDB bio-database release artifact publication
+* `.github/workflows/release-binaries.yml` for bundled standalone Linux/Windows/macOS PyInstaller desktop artifacts
 
 ### Release runbook (main + tag)
 
