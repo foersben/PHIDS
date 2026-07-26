@@ -297,22 +297,25 @@ Expected automation outcomes:
 
 ## 📚 Documentation map
 
-Start here for full subsystem detail:
+The documentation is organized into clear domain areas with Open Knowledge Format (OKF) frontmatter headers. You can read the raw Markdown source in the repository or explore the live, rendered site hosted via GitHub Pages:
 
-* docs home: [`docs/index.md`](docs/index.md)
-* scientific model: [`docs/scientific_model/index.md`](docs/scientific_model/index.md)
-* technical architecture: [`docs/technical_architecture/system_architecture.md`](docs/technical_architecture/system_architecture.md)
-* scenario guide: [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md)
-* development guide: [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md)
-* reference: [`docs/reference/index.md`](docs/reference/index.md)
+* **Published Zensical Site**: <https://foersben.github.io/PHIDS/>
+* **Local Interactive Server**: Run `uv run zensical serve` (or `just docs`)
 
-Published site: <https://foersben.github.io/PHIDS/>
+| Domain | Local Repository File | Live Hosted Page | Description |
+|---|---|---|---|
+| 🏠 **Docs Home** | [`docs/index.md`](docs/index.md) | [Home](https://foersben.github.io/PHIDS/) | High-level abstract, biological introduction, and core engineering principles. |
+| 🔬 **Scientific Model** | [`docs/scientific_model/index.md`](docs/scientific_model/index.md) | [Scientific Model](https://foersben.github.io/PHIDS/scientific_model/) | Reaction-diffusion PDEs, chemotaxis, Lotka-Volterra dynamics, and plant defenses. |
+| ⚙️ **Technical Architecture** | [`docs/technical_architecture/index.md`](docs/technical_architecture/index.md) | [Technical Architecture](https://foersben.github.io/PHIDS/technical_architecture/) | ECS data structures, Numba JIT double-buffering, FastAPI/HTMX UI, and Zarr telemetry. |
+| 🧪 **Scenario Guide** | [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md) | [Scenario Guide](https://foersben.github.io/PHIDS/scenario_guide/) | Pydantic V2 scenario schemas, curated blueprints, and DSE optimization workflows. |
+| 🛠️ **Development Guide** | [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md) | [Development Guide](https://foersben.github.io/PHIDS/development_guide/contribution_workflow/) | Two-pass Numba testing strategy, pre-commit hooks, local CI scripts, and release runbook. |
+| 📖 **Reference & API** | [`docs/reference/index.md`](docs/reference/index.md) | [Reference](https://foersben.github.io/PHIDS/reference/) | Module ownership map, glossary/concept index, requirements traceability, and Python API. |
 
-Serve docs locally:
+### 🔮 Future Prospects & Strategic Enhancements
 
-```bash
-uv run zensical serve
-```
+* 🧮 **[Parameter Calibration Strategy](docs/scientific_model/future_prospects/parameter_calibration_strategy.md)** ([Live](https://foersben.github.io/PHIDS/scientific_model/future_prospects/parameter_calibration_strategy/)): Non-dimensionalization, Buckingham $\Pi$-groups, log-normal hyper-cubes, and Kleiber-Arrhenius thermodynamic scaling.
+* ⚡ **[GPU CUDA Acceleration Engine](docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md)** ([Live](https://foersben.github.io/PHIDS/technical_architecture/future_prospects/gpu_cuda_acceleration/)): Architecture for offloading 2D/3D reaction-diffusion PDE stencil solvers and VOC advection to PyTorch and CUDA C++ GPU kernels.
+* 🤖 **[AI Coevolution & Distributed DSE](docs/scenario_guide/future_prospects/ai_coevolution_dse.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/ai_coevolution_dse/)): Ray/Tune distributed multi-objective Pareto optimization and reinforcement learning swarm coevolution.
 
 ---
 
