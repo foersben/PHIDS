@@ -55,14 +55,12 @@ This document defines the multiphase strategic development roadmap for the Plant
 
 Phase 2 is structured into granular, independent sub-stages. Each sub-stage can be implemented, tested, and published independently.
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                               PHIDS PHASE 2 SUB-STAGE ROADMAP                                   │
-├─────────────────┬─────────────────┬──────────────────┬─────────────────┬────────────────────────┤
-│  Sub-Stage 2.1  │  Sub-Stage 2.2  │  Sub-Stage 2.3   │  Sub-Stage 2.4  │  Sub-Stage 2.5 & 2.6   │
-│  Soil Seed Bank │  Zoochory       │  Trait-Based     │  Soil Detritus  │  Weather Profiles &    │
-│  & Dormancy     │  Dispersal      │  State Machines  │  & Recycling    │  3D Vertical Canopy    │
-└─────────────────┴─────────────────┴──────────────────┴─────────────────┴────────────────────────┘
+```mermaid
+block-beta
+    columns 5
+    title["PHIDS PHASE 2 SUB-STAGE ROADMAP"]:5
+    h1["Sub-Stage 2.1"] h2["Sub-Stage 2.2"] h3["Sub-Stage 2.3"] h4["Sub-Stage 2.4"] h5["Sub-Stage 2.5 & 2.6"]
+    c1["Soil Seed Bank<br>& Dormancy"] c2["Zoochory<br>Dispersal"] c3["Trait-Based<br>State Machines"] c4["Soil Detritus<br>& Recycling"] c5["Weather Profiles &<br>3D Vertical Canopy"]
 ```
 
 ---
