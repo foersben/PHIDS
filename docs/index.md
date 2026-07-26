@@ -1,3 +1,22 @@
+---
+type: reference
+title: PHIDS Documentation Overview & Abstract
+status: active
+version: 1.0
+description: Core landing page and abstract for the Plant-Herbivore Interaction & Defense Simulator (PHIDS) documentation.
+tags:
+- phids
+- abstract
+- biological-model
+- ecs
+timestamp: "2026-07-26T18:31:00Z"
+resources:
+- docs/scientific_model/index.md
+- docs/technical_architecture/index.md
+- docs/scenario_guide/index.md
+- docs/reference/index.md
+---
+
 <img src="assets/logo.png" align="right" width="200" alt="PHIDS Logo">
 
 ## Abstract

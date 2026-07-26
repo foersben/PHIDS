@@ -1,3 +1,19 @@
+---
+type: scientific_model
+title: Scientific Model Overview
+status: active
+version: 1.0
+description: High-level overview of theoretical foundations and mathematical chapters in the PHIDS scientific model.
+tags:
+- phids
+- scientific-model
+- theoretical-foundations
+timestamp: "2026-07-26T18:31:00Z"
+resources:
+- docs/scientific_model/mathematical_framework.md
+- docs/scientific_model/future_prospects/parameter_calibration_strategy.md
+---
+
 This section formally details the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a rigorous, deterministic computational ecology model. The documentation here defines the theoretical foundations, the explicit mathematical representations of the biological mechanisms, and the bounded approximations underlying the execution of the system.
 
 PHIDS operates as a coupled hybrid dynamical system. Discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers. This section will guide you through the algorithmic translation of complex phenomena-resource acquisition, herbivory pressure, induced signaling, metabolic attrition, and swarm dispersal-into transparent, causal operator chains.
