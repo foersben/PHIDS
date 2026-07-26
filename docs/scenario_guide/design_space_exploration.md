@@ -393,3 +393,31 @@ The PHIDS engine supports complex, multi-tiered defensive reactions by nesting a
 3. **Neighboring Plant Detects VOC:** The signal diffuses across the grid. A neighboring plant's trigger rule (conditioned on `environmental_signal`) evaluates to true.
 4. **Triggers Leaf Toxin Synthesis:** The neighbor preemptively synthesizes a lethal toxin.
 5. **Prolonged Ingestion Triggers Root Resource Reallocation:** If the herbivore presence persists despite the toxin, a secondary rule (conditioned on both `herbivore_presence` AND `substance_active`) triggers a `resource_withdrawal` action, dimming the plant's chemotactic profile and forcing the swarm to disperse.
+
+---
+
+## Future Required DSE Parameters (Phase 2 Roadmap Extensions)
+
+As Phase 2 biological modules mature from experimental features to core engine systems, the MINLP genotype search space ($G = (X_D, X_C)$) will be expanded with the following parameters:
+
+### 1. Sub-Stage 2.1: Soil Seed Bank & Dormancy
+* **Continuous Genes ($X_C$):** `germination_gdd_threshold` ($[50.0, 300.0]$ degree-days), `seed_dormancy_decay_rate` ($[0.001, 0.05]$ per tick).
+* **Discrete Genes ($X_D$):** `seed_dormancy_trigger_mode` (`THERMAL_GDD`, `MOISTURE_PULSE`, `COMBINED`).
+
+### 2. Sub-Stage 2.2: Zoochory Dispersal
+* **Continuous Genes ($X_C$):** `gut_retention_ticks` ($[10, 100]$ ticks), `zoochory_epizoochory_adhesion` ($[0.0, 1.0]$).
+* **Discrete Genes ($X_D$):** `zoochory_vector_species_mask` (Bitmask of herbivore species carrying seeds).
+
+### 3. Sub-Stage 2.3: Trait-Based Herbivore Demographic State Machines
+* **Continuous Genes ($X_C$):** Instar energy thresholds (`egg_incubation_ticks`, `larval_grazing_upkeep`, `pupal_metabolic_cost`).
+* **Discrete Genes ($X_D$):** `instar_mobility_type` (`SESSILE`, `CRAWLING`, `FLIGHT_SWARM`).
+
+### 4. Sub-Stage 2.4: Soil Detritus & Biomass Recycling
+* **Continuous Genes ($X_C$):** `mineralization_rate` ($[0.001, 0.05]$), `soil_nitrogen_baseline` ($[20.0, 200.0]$).
+* **Discrete Genes ($X_D$):** `soil_spatial_mode` (`MACRO_PATCH_16x16`, `DENSE_PER_CELL`).
+
+### 5. Sub-Stage 2.5: Macro-Patch Weather Profiles
+* **Continuous Genes ($X_C$):** `seasonal_temp_amplitude` ($[0.0, 15.0]^\circ\text{C}$), `drought_intensity_factor` ($[0.1, 1.0]$).
+
+### 6. Sub-Stage 2.6: 3D Canopy Structure
+* **Continuous Genes ($X_C$):** `canopy_height_layers` ($Z \in [2, 16]$), `vertical_wind_shear_alpha` ($[0.1, 0.4]$).
