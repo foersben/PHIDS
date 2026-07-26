@@ -1,6 +1,6 @@
 ---
 type: reference
-title: PHIDS Documentation Overview & Abstract
+title: PHIDS Documentation Overview
 status: active
 version: 1.0
 description: Core landing page and abstract for the Plant-Herbivore Interaction & Defense Simulator (PHIDS) documentation.
