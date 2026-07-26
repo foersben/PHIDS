@@ -2,14 +2,15 @@
 type: guide
 title: Contribution Workflow
 status: active
-version: 0.1
-description: Documentation for Contribution Workflow in the PHIDS framework.
+version: 1.0
+description: Quality gates, two-pass Numba testing strategy, and Zensical documentation build policy in PHIDS.
 tags:
 - phids
 - ecs
 - numba
 - performance
-timestamp: "2026-07-21T16:01:38Z"
+- zensical
+timestamp: "2026-07-26T18:53:00Z"
 resources:
 - src/phids/engine/core/flow_field.py
 - src/phids/engine/core/biotope.py
@@ -35,14 +36,14 @@ Before a contribution can be merged into `main` or `develop`, it must successful
 2. **Static Typing**: The `mypy` static type checker targets `src/phids` with strict mode enabled. `Any` suppression is explicitly rejected at the boundary layers to maintain pure object parsing.
 3. **Testing & Coverage**: Extensive unit and integration tests are required (`pytest`). To ensure broad resilience, `pytest-cov` enforces specific coverage thresholds before passing.
 4. **Performance Verification**: The crucial `pytest-benchmark` suite actively monitors the execution time of numerical kernels (like the Numba JIT gradients and the Spatial Hash). Introducing code that degrades a hot-path loop will result in a rejected CI build.
-5. **Documentation Build**: Changes must not break existing site structures, internal relative links, or LaTeX equations. Every run strictly executes `mkdocs build --strict`.
+5. **Documentation Build**: Changes must not break existing site structures, internal relative links, or LaTeX equations. Every run strictly executes `uv run zensical build --strict`.
 
 ## The Two-Stage Pre-Commit Model
 
 To improve developer iteration speed without compromising the integrity of the repository, PHIDS enforces a split-hook topology for `pre-commit`:
 
 * **Commit Stage**: Executes fast hooks. It normalizes trailing whitespaces, end-of-file carriage returns, and structural validations for JSON and YAML files.
-* **Push Stage**: Rather than forcing a 30-second wait on every local commit, the heavy operational commands (`pytest`, `mypy`, `mkdocs build --strict`) are deferred until the developer attempts to push the branch to the remote origin.
+* **Push Stage**: Rather than forcing a 30-second wait on every local commit, heavy operational checks (`pytest`, `mypy`, `uv run zensical build --strict`) can be executed prior to remote pushing.
 
 ```bash
 # Install the split hooks
