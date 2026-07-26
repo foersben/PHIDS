@@ -25,6 +25,8 @@ To guide your workflow from initial design to self-sustaining execution, the Sce
   Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
 * **[Empirical Database](empirical_database.md)** *(WIP / Under Construction)*
   Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
+* **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**
+  Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
 
 ### 1. Scenario Authoring & Schema
 

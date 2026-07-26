@@ -6,6 +6,10 @@ PHIDS operates as a coupled hybrid dynamical system. Discrete entity transitions
 
 - **[Mathematical Framework](mathematical_framework.md)**: A comprehensive, equation-driven exposition of the model. It elucidates the bounded ecological abstractions, details the deterministic phase sequence, and presents the formal update laws governing the biotope, flora lifecycle, swarm interaction, and the signaling pathways.
 
+## Future Prospects
+
+- **[Empirical Parameter Scaling & Calibration Strategy](future_prospects/parameter_calibration_strategy.md)**: Detailed non-dimensionalization strategy and calibration framework bridging empirical database traits (TRY, PanTHERIA, GloBI, Pherobase) to discrete simulation grid parameters across present and Phase 2 features.
+
 By prioritizing formal exposition, explicit boundaries, and the rationale behind each numerical approximation, this section ensures that the output telemetry from PHIDS is mathematically traceable and experimentally reproducible.
 
 ## Merged Legacy Concepts
