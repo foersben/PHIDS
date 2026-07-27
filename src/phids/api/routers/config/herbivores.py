@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, Response
 import phids.api.main as api_main
 from phids.api.schemas.species import HerbivoreSpeciesParams
 from phids.api.services.draft.species import add_herbivore, remove_herbivore
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 
 router = APIRouter()
 

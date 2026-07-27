@@ -23,7 +23,6 @@ from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
-    extract_ui_snapshot,
     shared,
 )
 from phids.api.presenters.diagnostics import build_energy_deficit_swarms, render_status_badge_html
@@ -36,11 +35,11 @@ from phids.api.services.draft.trigger_rules import (
     default_activation_condition_for_rule,
     trigger_rule_by_index,
 )
-from phids.api.ui_state import (
+from phids.api.ui_state.state import (
     DraftState,
-    SubstanceDefinition,
     get_draft,
 )
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
 
@@ -201,7 +200,7 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
         draft=get_draft(),
         substance_names=api_main._sim_substance_names,
     )
-    dashboard = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names=api_main._sim_substance_names)
+    dashboard = build_live_dashboard_payload(loop, substance_names=api_main._sim_substance_names)
 
     assert live_cell["mode"] == "live"
     assert preview_cell["mode"] == "draft"

@@ -477,7 +477,7 @@ def _is_swarm_anchored(
 
     herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
     for flora_species_id, is_compatible in enumerate(herbivore_row):
-        if is_compatible and env.plant_energy_by_species.item(flora_species_id, swarm.x, swarm.y) > 0:
+        if is_compatible and env.plant_energy_by_species[flora_species_id, swarm.x, swarm.y] > 0:
             return True
 
     return False
@@ -521,12 +521,6 @@ def _resolve_swarm_movement(
     if swarm.move_cooldown > 0:
         swarm.move_cooldown -= 1
         return False
-
-    # Decay aversion memory per movement tick
-    if getattr(swarm, "aversion_memory", 0.0) > 0.0:
-        swarm.aversion_memory *= 0.95
-        if swarm.aversion_memory < 0.01:
-            swarm.aversion_memory = 0.0
 
     old_x, old_y = swarm.x, swarm.y
 

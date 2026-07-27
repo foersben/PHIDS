@@ -139,34 +139,40 @@ class UIStreamManager:
 
     """
 
-    def __init__(
-        self,
-        payload_builder: Callable[[dict[str, Any]], dict[str, Any]],
-        snapshot_extractor: Callable[[SimulationLoop], dict[str, Any]] | None = None,
-    ) -> None:
-        """Initialize the UI stream manager.
+    def __init__(self, payload_builder: Callable[[SimulationLoop], dict[str, object]]) -> None:
+        """Store dependencies required to assemble UI payloads.
 
         Args:
-            payload_builder: Function mapping a snapshot to a JSON dictionary.
-            snapshot_extractor: Function mapping a loop to a snapshot dictionary.
+            payload_builder: Callable that builds one dashboard payload from a live loop.
+
         """
         self._payload_builder = payload_builder
-        self._snapshot_extractor = snapshot_extractor
         self._cache_signature: tuple[int, int, int, bool, bool, bool] | None = None
         self._cache_text = ""
 
-    def _encoded_payload(self, snapshot: dict[str, Any]) -> str:
+    def _encoded_payload(self, loop: SimulationLoop) -> str:
         """Return cached compact JSON text for the current UI-visible loop state.
 
         Args:
-            snapshot: Extracted thread-safe dictionary snapshot of the loop state.
+            loop: Active simulation loop used to assemble the UI payload.
 
         Returns:
             Compact JSON payload text for websocket transmission.
 
         """
-        payload = self._payload_builder(snapshot)
-        return json.dumps(payload, separators=(",", ":"))
+        state_signature = (
+            id(loop),
+            loop.tick,
+            loop.state_revision,
+            loop.running,
+            loop.paused,
+            loop.terminated,
+        )
+        if state_signature != self._cache_signature:
+            payload = self._payload_builder(loop)
+            self._cache_text = json.dumps(payload, separators=(",", ":"))
+            self._cache_signature = state_signature
+        return self._cache_text
 
     @staticmethod
     async def _safe_close(websocket: WebSocket, *, code: int = 1000, reason: str | None = None) -> None:
@@ -219,24 +225,7 @@ class UIStreamManager:
                     loop.terminated,
                 )
                 if state_signature != last_state_signature:
-                    try:
-                        async with loop._lock:
-                            if self._snapshot_extractor is not None:
-                                snapshot = self._snapshot_extractor(loop)
-                            else:
-                                from phids.api.presenters.dashboard.payloads import extract_ui_snapshot
-
-                                snapshot = extract_ui_snapshot(loop)
-
-                        payload_text = await asyncio.to_thread(self._encoded_payload, snapshot)
-                        await websocket.send_text(payload_text)
-                    except RuntimeError as exc:
-                        if "Unexpected ASGI message 'websocket.send'" in str(
-                            exc
-                        ) or "after sending 'websocket.close'" in str(exc):
-                            logger.info("WebSocket client disconnected from /ws/ui/stream (RuntimeError)")
-                            break
-                        raise
+                    await websocket.send_text(self._encoded_payload(loop))
                     last_state_signature = state_signature
 
                 await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from phids.api.services.draft.helpers import is_truthy_flag
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState
+    from phids.api.ui_state.state import DraftState
 
 
 def set_diet_compatibility(

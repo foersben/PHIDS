@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 import pytest
 
-from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
+from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.engine.loop import SimulationLoop
 
 
@@ -44,7 +44,7 @@ def test_dashboard_payload_build_and_json_encode_benchmark(  # type: ignore[no-u
     loop = SimulationLoop(loop_config_builder(max_ticks=30))
 
     def _build_and_encode() -> str:
-        payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
+        payload = build_live_dashboard_payload(loop, substance_names={})
         return json.dumps(payload, separators=(",", ":"))
 
     encoded = benchmark(_build_and_encode)

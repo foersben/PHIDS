@@ -23,7 +23,7 @@ from phids.api.schemas.triggers import (
     SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )
-from phids.api.ui_state import DraftState, get_draft, set_draft
+from phids.api.ui_state.state import DraftState, get_draft, set_draft
 
 if TYPE_CHECKING:
     from collections.abc import Callable

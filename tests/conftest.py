@@ -41,7 +41,7 @@ from phids.api.schemas.species import (
     HerbivoreSpeciesParams,
 )
 from phids.api.schemas.triggers import PassiveDefensesSchema
-from phids.api.ui_state import reset_draft
+from phids.api.ui_state.state import reset_draft
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment

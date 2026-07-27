@@ -90,6 +90,11 @@ def _serialize_live_substance(
 
     """
     trigger_herbivore_name = None
+    if substance.trigger_herbivore_species_id >= 0:
+        trigger_herbivore_name = herbivore_names.get(
+            substance.trigger_herbivore_species_id,
+            f"Herbivore {substance.trigger_herbivore_species_id}",
+        )
     activation_condition_summary = _describe_activation_condition(
         substance.activation_condition,
         herbivore_names=herbivore_names,
@@ -126,8 +131,8 @@ def _serialize_live_substance(
         "triggered_this_tick": bool(substance.triggered_this_tick),
         "lethal": bool(substance.lethal),
         "repellent_walk_ticks": int(substance.repellent_walk_ticks),
-        "trigger_herbivore_species_id": -1,
-        "trigger_min_herbivore_population": 0,
+        "trigger_herbivore_species_id": int(substance.trigger_herbivore_species_id),
+        "trigger_min_herbivore_population": int(substance.trigger_min_herbivore_population),
         "activation_condition": substance.activation_condition,
     }
 
