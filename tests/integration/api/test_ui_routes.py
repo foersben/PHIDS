@@ -266,44 +266,38 @@ async def test_dashboard_contains_extended_telemetry_canvases(api_client: AsyncC
     assert 'id="biomass-chart"' in resp.text
 
 
-def test_live_dashboard_payload_separates_render_layers_from_all_configured_species() -> None:
-    """Verifies that the dashboard payload preserves extinct-species metadata without repainting extinct layers.
+def _advance_loop_until_flora_extinction(loop: SimulationLoop, max_ticks: int = 140) -> None:
+    """Step simulation loop until only 1 flora species remains."""
+    while loop.tick < max_ticks:
+        asyncio.run(loop.step())
+        live = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
+        if len(live) <= 1:
+            break
 
-    This test validates the bifurcated payload contract used by the live dashboard. The canvas
-    renderer must receive only extant flora layers so stale or extinct species cannot reappear as
-    chromatic ghosts on the grid, whereas the legend and population bars must continue to enumerate
-    the full configured flora catalogue with an explicit ``extinct`` flag. The invariant preserves
-    ecological interpretability across collapse events while keeping the rendered field faithful to
-    the live ECS population state.
-    """
+
+def _extract_payload_species_ids(rows: list[dict[str, object]]) -> set[int]:
+    """Extract valid species IDs from dashboard payload rows."""
+    return {species_id for species_id in (_safe_int(spec.get("species_id")) for spec in rows) if species_id >= 0}
+
+
+def test_live_dashboard_payload_separates_render_layers_from_all_configured_species() -> None:
+    """Verifies that the dashboard payload preserves extinct-species metadata without repainting extinct layers."""
     config = load_scenario_from_json(Path("examples/meadow_defense.json"))
     loop = SimulationLoop(config)
-
-    # Advance until only one flora species remains in the ECS world.
-    while loop.tick < 140:
-        asyncio.run(loop.step())
-        live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
-        if len(live_species) <= 1:
-            break
+    _advance_loop_until_flora_extinction(loop)
 
     payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names=api_main._sim_substance_names)
     species_energy_rows = _as_object_dict_rows(payload.get("species_energy"))
     all_flora_rows = _as_object_dict_rows(payload.get("all_flora_species"))
-    payload_species = {
-        species_id
-        for species_id in (_safe_int(spec.get("species_id")) for spec in species_energy_rows)
-        if species_id >= 0
-    }
-    legend_species = {
-        species_id for species_id in (_safe_int(spec.get("species_id")) for spec in all_flora_rows) if species_id >= 0
-    }
+
+    payload_species = _extract_payload_species_ids(species_energy_rows)
+    legend_species = _extract_payload_species_ids(all_flora_rows)
     configured_species = {species.species_id for species in loop.config.flora_species}
     live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
 
     assert payload_species == live_species
     assert legend_species == configured_species
 
-    # Extinct entries must remain visible in the legend metadata but absent from the render layers.
     extinct_in_payload = {
         _safe_int(spec.get("species_id"))
         for spec in all_flora_rows
