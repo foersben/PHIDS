@@ -111,14 +111,34 @@ def build_replacements(symbols: list[str], indent: str) -> str:
     return "\n".join(lines)
 
 
+def _consume_parenthesized_import(lines: list[str], start_idx: int, initial_text: str) -> tuple[int, str]:
+    j = start_idx + 1
+    full = initial_text
+    while j < len(lines) and ")" not in lines[j]:
+        full += " " + lines[j].strip()
+        j += 1
+    if j < len(lines):
+        full += " " + lines[j].strip()
+    return j, full
+
+
+def _consume_backslash_import(lines: list[str], start_idx: int, initial_text: str) -> tuple[int, str]:
+    full = initial_text.rstrip("\\")
+    j = start_idx + 1
+    while j < len(lines) and lines[j].rstrip("\n").endswith("\\"):
+        full += " " + lines[j].strip().rstrip("\\")
+        j += 1
+    if j < len(lines):
+        full += " " + lines[j].strip()
+    return j, full
+
+
 def rewrite_file(path: Path) -> bool:
     """Return True if the file was modified."""
     text = path.read_text(encoding="utf-8")
     if "from phids.api.schemas import" not in text:
         return False
 
-    # Parse ALL import blocks in the file (including lazy/local ones)
-    # We handle multi-line imports with parentheses manually.
     out_lines: list[str] = []
     i = 0
     lines = text.splitlines(keepends=True)
@@ -130,28 +150,13 @@ def rewrite_file(path: Path) -> bool:
         indent_match = re.match(r"^(?P<indent>[ \t]*)from phids\.api\.schemas import", stripped)
         if indent_match:
             indent = indent_match.group("indent")
-            # Collect the full import statement (may span multiple lines with parens or backslash)
-            full = stripped
             j = i
+            full = stripped
             if "(" in full and ")" not in full:
-                # Multi-line parenthesised import
-                j += 1
-                while j < len(lines) and ")" not in lines[j]:
-                    full += " " + lines[j].strip()
-                    j += 1
-                if j < len(lines):
-                    full += " " + lines[j].strip()
+                j, full = _consume_parenthesized_import(lines, i, full)
             elif full.endswith("\\"):
-                # Backslash continuation
-                full = full.rstrip("\\")
-                j += 1
-                while j < len(lines) and lines[j].rstrip("\n").endswith("\\"):
-                    full += " " + lines[j].strip().rstrip("\\")
-                    j += 1
-                if j < len(lines):
-                    full += " " + lines[j].strip()
+                j, full = _consume_backslash_import(lines, i, full)
 
-            # Extract `import X, Y, Z` part
             sym_match = re.search(r"from phids\.api\.schemas import\s*\(?\s*(.+?)\s*\)?$", full, re.DOTALL)
             if sym_match:
                 symbols = extract_symbols(sym_match.group(1))
@@ -159,7 +164,6 @@ def rewrite_file(path: Path) -> bool:
                 out_lines.append(replacement + "\n")
                 changed = True
             else:
-                # Unexpected format - leave unchanged
                 out_lines.append(line)
             i = j + 1
         else:

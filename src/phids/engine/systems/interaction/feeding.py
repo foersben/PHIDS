@@ -107,6 +107,14 @@ def _feed_on_single_plant(
     return metabolized_energy, plant_killed
 
 
+def _is_diet_compatible(swarm_species_id: int, plant_species_id: int, diet_matrix: list[list[bool]]) -> bool:
+    """Check if target plant species is in swarm species diet matrix."""
+    if swarm_species_id >= len(diet_matrix):
+        return False
+    row = diet_matrix[swarm_species_id]
+    return plant_species_id < len(row) and row[plant_species_id]
+
+
 def _resolve_swarm_feeding(
     swarm: SwarmComponent,
     world: ECSWorld,
@@ -146,8 +154,7 @@ def _resolve_swarm_feeding(
         target_plant: PlantComponent = co_entity.get_component(PlantComponent)
 
         # Diet compatibility check
-        herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-        if not (target_plant.species_id < len(herbivore_row) and herbivore_row[target_plant.species_id]):
+        if not _is_diet_compatible(swarm.species_id, target_plant.species_id, diet_matrix):
             on_incompatible_plant = True
             continue
 

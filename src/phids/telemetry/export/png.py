@@ -344,6 +344,23 @@ def _plot_defense_economy(
     ax.grid(True, alpha=0.3)
 
 
+def _extract_series_and_labels(
+    rows: TelemetryRows,
+    flora_names: dict[int, str] | None,
+) -> tuple[list[int], list[list[float]], list[str], list[str]]:
+    """Extract species series, names, and colours for biomass stack plots."""
+    all_flora: set[int] = set()
+    for r in rows:
+        all_flora.update(r.get("plant_pop_by_species", {}).keys())
+    ordered = sorted(all_flora)
+    if not ordered:
+        return [], [], [], []
+    ys = [[float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows] for fid in ordered]
+    labels = [(flora_names or {}).get(fid, f"Flora {fid}") for fid in ordered]
+    colours = [_FLORA_COLOURS[i % len(_FLORA_COLOURS)] for i, _ in enumerate(ordered)]
+    return ordered, ys, labels, colours
+
+
 def _plot_biomass_stack(
     ax: Axes,
     rows: TelemetryRows,
@@ -354,28 +371,11 @@ def _plot_biomass_stack(
     x_label: str | None,
     y_label: str | None,
 ) -> None:
-    """Render stacked flora population trajectories as a biomass-proxy area chart.
-
-    Args:
-        ax: Matplotlib Axes instance.
-        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
-        ticks: Tick index list aligned with ``rows``.
-        flora_names: Optional display names for flora species.
-        title: Optional chart title override.
-        x_label: Optional x-axis label override.
-        y_label: Optional y-axis label override.
-
-    """
-    all_flora: set[int] = set()
-    for r in rows:
-        all_flora.update(r.get("plant_pop_by_species", {}).keys())
-    ordered = sorted(all_flora)
+    """Render stacked flora population trajectories as a biomass-proxy area chart."""
+    ordered, ys, labels, colours = _extract_series_and_labels(rows, flora_names)
     if not ordered:
         ax.plot(ticks, [0.0] * len(ticks), color="#94a3b8", linewidth=1.0, label="No flora")
     else:
-        ys = [[float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows] for fid in ordered]
-        labels = [(flora_names or {}).get(fid, f"Flora {fid}") for fid in ordered]
-        colours = [_FLORA_COLOURS[i % len(_FLORA_COLOURS)] for i, _ in enumerate(ordered)]
         ax.stackplot(ticks, ys, labels=labels, colors=colours, alpha=0.35)
         for i, series in enumerate(ys):
             ax.plot(ticks, series, color=colours[i], linewidth=0.9, alpha=0.7)

@@ -189,6 +189,27 @@ def _tikz_timeseries(
     )
 
 
+def _resolve_species_display_name(
+    sid: int,
+    names: dict[int, str] | None,
+    default_prefix: str,
+) -> str:
+    """Resolve species display name or return default label."""
+    if sid == 0:
+        return f"{default_prefix}s (Total)"
+    return (names or {}).get(sid, f"{default_prefix} {sid}")
+
+
+def _extract_phase_coordinate(r: dict[str, object], sid: int, total_key: str, species_key: str) -> float:
+    """Extract population value for phase plot axis."""
+    if sid == 0:
+        val = r.get(total_key, 0)
+    else:
+        m = r.get(species_key, {})
+        val = m.get(sid, 0) if isinstance(m, dict) else 0
+    return float(val) if isinstance(val, (int, float, str)) else 0.0
+
+
 def _tikz_phasespace(
     rows: TelemetryRows,
     *,
@@ -202,52 +223,15 @@ def _tikz_phasespace(
     x_max: float | None,
     y_max: float | None,
 ) -> str:
-    """Build PGFPlots code for a Lotka-Volterra phase-space chart.
-
-    Args:
-        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
-        plant_species_id: Flora species id for x-axis.
-        herbivore_species_id: Herbivore species id for y-axis.
-        flora_names: Optional display names for flora species.
-        herbivore_names: Optional display names for herbivore species.
-        title: Optional custom chart title.
-        x_label: Optional custom x-axis label.
-        y_label: Optional custom y-axis label.
-        x_max: Optional custom x-axis maximum value.
-        y_max: Optional custom y-axis maximum value.
-
-    Returns:
-        str: LaTeX ``tikzpicture`` source.
-
-    """
-    if plant_species_id == 0:
-        plant_name = "Flora (Total)"
-    else:
-        plant_name = (flora_names or {}).get(plant_species_id, f"Flora {plant_species_id}")
-
-    if herbivore_species_id == 0:
-        herbivore_name = "Herbivores (Total)"
-    else:
-        herbivore_name = (herbivore_names or {}).get(
-            herbivore_species_id,
-            f"Herbivore {herbivore_species_id}",
-        )
+    """Build PGFPlots code for a Lotka-Volterra phase-space chart."""
+    plant_name = _resolve_species_display_name(plant_species_id, flora_names, "Flora")
+    herbivore_name = _resolve_species_display_name(herbivore_species_id, herbivore_names, "Herbivore")
 
     def get_x(r: dict[str, object]) -> float:
-        val = (
-            r.get("flora_population", 0)
-            if plant_species_id == 0
-            else getattr(r.get("plant_pop_by_species", {}), "get", lambda *_: 0)(plant_species_id, 0)
-        )
-        return float(val) if isinstance(val, (int, float, str)) else 0.0
+        return _extract_phase_coordinate(r, plant_species_id, "flora_population", "plant_pop_by_species")
 
     def get_y(r: dict[str, object]) -> float:
-        val = (
-            r.get("herbivore_population", 0)
-            if herbivore_species_id == 0
-            else getattr(r.get("swarm_pop_by_species", {}), "get", lambda *_: 0)(herbivore_species_id, 0)
-        )
-        return float(val) if isinstance(val, (int, float, str)) else 0.0
+        return _extract_phase_coordinate(r, herbivore_species_id, "herbivore_population", "swarm_pop_by_species")
 
     coords = " ".join(f"({get_x(r)},{get_y(r)})" for r in rows)
 
