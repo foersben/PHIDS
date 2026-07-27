@@ -5,20 +5,17 @@
 
 from __future__ import annotations
 
-import random
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
-
-if TYPE_CHECKING:
-    from starlette.datastructures import FormData
 
 import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.services.draft.placements import (
     add_plant_placement,
     add_swarm_placement,
+    clear_placements,
     remove_plant_placement,
     remove_swarm_placement,
 )
@@ -26,7 +23,6 @@ from phids.api.ui_state.state import (
     DraftState,
     get_draft,
 )
-from phids.engine.core.placement import generate_banded, generate_clustered, generate_uniform
 
 router = APIRouter()
 
@@ -173,92 +169,6 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
 async def config_placements_clear(request: Request) -> Response:
     """Clear all plant and swarm placements and render the updated placement ledger."""
     draft = get_draft()
-    from phids.api.services.draft.placements import clear_placements as _clear_placements
-
-    _clear_placements(draft)
+    clear_placements(draft)
     api_main.logger.info("All draft placements cleared via API")
-    return _render_placement_list_partial(request, draft)
-
-
-@router.post("/api/config/placements/clear-plants", response_class=HTMLResponse, summary="Clear all plant placements")
-async def config_placements_clear_plants(request: Request) -> Response:
-    """Clear all plant placements and render the updated placement ledger."""
-    draft = get_draft()
-    from phids.api.services.draft.placements import clear_plant_placements
-
-    clear_plant_placements(draft)
-    api_main.logger.info("All draft plant placements cleared via API")
-    return _render_placement_list_partial(request, draft)
-
-
-@router.post("/api/config/placements/clear-swarms", response_class=HTMLResponse, summary="Clear all swarm placements")
-async def config_placements_clear_swarms(request: Request) -> Response:
-    """Clear all swarm placements and render the updated placement ledger."""
-    draft = get_draft()
-    from phids.api.services.draft.placements import clear_swarm_placements
-
-    clear_swarm_placements(draft)
-    api_main.logger.info("All draft swarm placements cleared via API")
-    return _render_placement_list_partial(request, draft)
-
-
-def _generate_autoassign_coords(distribution: str, width: int, height: int, form: FormData) -> list[tuple[int, int]]:
-    """Generate coordinate list based on procedural distribution type."""
-    if distribution == "uniform":
-        density = float(str(form.get("density", 0.05)))
-        return generate_uniform(width, height, density)
-    if distribution == "clustered":
-        cluster_count = int(str(form.get("cluster_count", 5)))
-        variance = float(str(form.get("variance", 2.0)))
-        return generate_clustered(width, height, cluster_count, variance)
-    if distribution == "banded":
-        band_count = int(str(form.get("band_count", 3)))
-        orientation = str(form.get("orientation", "horizontal"))
-        return generate_banded(width, height, band_count, orientation)
-    return []
-
-
-def _extract_species_weights(form: FormData) -> tuple[list[int], list[float]]:
-    """Extract species IDs and corresponding positive weights from form data."""
-    weights: list[float] = []
-    species_ids: list[int] = []
-    for key, val in form.items():
-        if key.startswith("weight_") and val:
-            try:
-                sid = int(key.split("_")[1])
-                weight = float(str(val))
-                if weight > 0:
-                    species_ids.append(sid)
-                    weights.append(weight)
-            except ValueError:
-                pass
-    return species_ids, weights
-
-
-@router.post("/api/config/placements/autoassign", response_class=HTMLResponse, summary="Autoassign placements")
-async def config_placement_autoassign(request: Request) -> Response:
-    """Generate manual placements using procedural logic."""
-    draft = get_draft()
-    form = await request.form()
-
-    target_type = str(form.get("target_type", "plant"))
-    distribution = str(form.get("distribution", "uniform"))
-    coords = _generate_autoassign_coords(distribution, draft.grid_width, draft.grid_height, form)
-    species_ids, weights = _extract_species_weights(form)
-
-    if not coords or not species_ids:
-        api_main.logger.warning("Autoassign skipped (no coords generated or no species weights > 0)")
-        return _render_placement_list_partial(request, draft)
-
-    # Assign coordinates based on weighted random selection
-    assignments = random.choices(species_ids, weights=weights, k=len(coords))
-
-    for (x, y), sid in zip(coords, assignments, strict=False):
-        if target_type == "plant":
-            add_plant_placement(draft, sid, x, y, energy=10.0)
-        else:
-            add_swarm_placement(draft, sid, x, y, population=10, energy=50.0)
-
-    api_main.logger.info("Autoassigned %d %s(s) via %s distribution", len(coords), target_type, distribution)
-
     return _render_placement_list_partial(request, draft)

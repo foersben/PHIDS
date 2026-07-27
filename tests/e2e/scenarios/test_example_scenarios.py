@@ -30,7 +30,6 @@ CURATED_EXAMPLE_STEMS = {
     "mixed_forest_understory",
     "rectangular_crossfire",
     "rectangular_crossfire_extended",
-    "rectangular_crossfire_enhanced",
     "root_network_alarm_chain",
     "wind_tunnel_orchard",
     "eternal_canopy_blueprint",

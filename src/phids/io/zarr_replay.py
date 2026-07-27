@@ -191,14 +191,6 @@ class ReplayBuffer:
         self._load_metadata()
         return self._root
 
-    def _scan_frame_count(self, root: zarr.Group) -> int:
-        self._metadata = []
-        self._frame_offset = 0
-        frame_idx = 0
-        while f"frames/{frame_idx:08d}" in root:
-            frame_idx += 1
-        return frame_idx
-
     def _load_metadata(self) -> None:
         """Load metadata array from Zarr store if it exists."""
         root = self._ensure_store()
@@ -218,9 +210,21 @@ class ReplayBuffer:
                 self._frame_count = len(self._metadata) + self._frame_offset
             except Exception as e:
                 logger.warning("Failed to load metadata from Zarr store: %s", e)
-                self._frame_count = self._scan_frame_count(root)
+                # Fall back to scanning for frame groups
+                self._metadata = []
+                self._frame_offset = 0
+                frame_idx = 0
+                while f"frames/{frame_idx:08d}" in root:
+                    frame_idx += 1
+                self._frame_count = frame_idx
         else:
-            self._frame_count = self._scan_frame_count(root)
+            # Scan for frame groups if no metadata exists
+            self._metadata = []
+            self._frame_offset = 0
+            frame_idx = 0
+            while f"frames/{frame_idx:08d}" in root:
+                frame_idx += 1
+            self._frame_count = frame_idx
 
     def _save_metadata(self) -> None:
         """Persist metadata array to Zarr store."""

@@ -79,26 +79,20 @@ def test_plant_apparent_nutrition_withdrawal_decay_and_reset() -> None:
         seed_min_dist=1.0,
         seed_max_dist=3.0,
         seed_energy_cost=2.0,
-        apparent_nutrition_factor=1.0,
-        target_nutrition_factor=0.5,
-        translocation_rate=0.5,
+        apparent_nutrition_factor=0.5,
         withdrawal_ticks_remaining=2,
     )
     world.add_component(plant_id, plant)
 
-    # Tick 1: Translocation moves factor towards 0.5; withdrawal ticks decrement from 2 to 1
+    # Tick 1: withdrawal_ticks_remaining decrements from 2 to 1; apparent_nutrition_factor remains 0.5
     _phase_manage_nutrition_recovery(world)
-    assert plant.apparent_nutrition_factor == pytest.approx(0.75)
+    assert plant.apparent_nutrition_factor == pytest.approx(0.5)
     assert plant.withdrawal_ticks_remaining == 1
-    assert plant.target_nutrition_factor == pytest.approx(0.5)
 
-    # Tick 2: Translocation continues; withdrawal ticks decrement from 1 to 0
+    # Tick 2: withdrawal_ticks_remaining decrements from 1 to 0; apparent_nutrition_factor resets to 1.0
     _phase_manage_nutrition_recovery(world)
     assert plant.withdrawal_ticks_remaining == 0
-
-    # Tick 3: Recovery moves factor back towards 1.0
-    _phase_manage_nutrition_recovery(world)
-    assert plant.apparent_nutrition_factor > 0.75
+    assert plant.apparent_nutrition_factor == pytest.approx(1.0)
 
 
 def test_plant_last_energy_loss_cause_herbivory_attribution() -> None:
@@ -244,77 +238,8 @@ def test_swarm_repelled_state_countdown_and_clearing() -> None:
     assert swarm.repelled is False
 
 
-def test_swarm_aversion_memory_exponential_decay() -> None:
-    """Verify swarm aversion memory decays by 0.95 each movement tick and resets below 0.01."""
-    world = ECSWorld()
-    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
-
-    swarm_entity = world.create_entity()
-    swarm_id = swarm_entity.entity_id
-    swarm = SwarmComponent(
-        entity_id=swarm_id,
-        species_id=0,
-        x=2,
-        y=2,
-        population=5,
-        initial_population=5,
-        energy=2.0,
-        energy_min=1.0,
-        velocity=1,
-        consumption_rate=1.0,
-        aversion_memory=0.02,
-    )
-    world.add_component(swarm_id, swarm)
-
-    # Tick 1: 0.02 * 0.95 = 0.019
-    _move_swarm(swarm, swarm_id, env, world)
-    assert swarm.aversion_memory == pytest.approx(0.019)
-
-    # Tick 2: 0.019 * 0.95 = 0.01805
-    _move_swarm(swarm, swarm_id, env, world)
-    assert swarm.aversion_memory == pytest.approx(0.01805)
-
-    # Set aversion memory close to threshold (0.0105 * 0.95 = 0.009975 < 0.01) -> resets to 0.0
-    swarm.aversion_memory = 0.0105
-    _move_swarm(swarm, swarm_id, env, world)
-    assert swarm.aversion_memory == 0.0
-
-
-def test_swarm_move_cooldown_velocity_decoupling() -> None:
-    """Verify velocity setting dictates movement period move_cooldown."""
-    world = ECSWorld()
-    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
-
-    swarm_entity = world.create_entity()
-    swarm_id = swarm_entity.entity_id
-    swarm = SwarmComponent(
-        entity_id=swarm_id,
-        species_id=0,
-        x=2,
-        y=2,
-        population=5,
-        initial_population=5,
-        energy=2.0,
-        energy_min=1.0,
-        velocity=3,  # Moves once every 3 ticks
-        consumption_rate=1.0,
-        move_cooldown=2,
-    )
-    world.add_component(swarm_id, swarm)
-
-    # Tick 1: move_cooldown=2 > 0 -> decrements to 1, no move
-    moved = _move_swarm(swarm, swarm_id, env, world)
-    assert moved is False
-    assert swarm.move_cooldown == 1
-
-    # Tick 2: move_cooldown=1 > 0 -> decrements to 0, no move
-    moved = _move_swarm(swarm, swarm_id, env, world)
-    assert moved is False
-    assert swarm.move_cooldown == 0
-
-
-def test_swarm_behavior_paradigm_configuration() -> None:
-    """Verify behavior_paradigm and split_population_threshold fields on SwarmComponent."""
+def test_swarm_mitosis_and_upkeep_configuration() -> None:
+    """Verify split_population_threshold, reproduction_energy_divisor, and energy_upkeep_per_individual fields."""
     swarm = SwarmComponent(
         entity_id=10,
         species_id=1,
@@ -326,9 +251,11 @@ def test_swarm_behavior_paradigm_configuration() -> None:
         energy_min=1.0,
         velocity=1,
         consumption_rate=2.0,
-        behavior_paradigm="solitary_grazer",
+        reproduction_energy_divisor=1.5,
+        energy_upkeep_per_individual=0.08,
         split_population_threshold=20,
     )
 
-    assert swarm.behavior_paradigm == "solitary_grazer"
     assert swarm.split_population_threshold == 20
+    assert swarm.reproduction_energy_divisor == 1.5
+    assert swarm.energy_upkeep_per_individual == 0.08

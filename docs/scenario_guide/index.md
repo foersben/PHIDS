@@ -1,22 +1,3 @@
----
-type: concept
-title: Scenarios Module Overview
-status: active
-version: 1.0
-description: Overview of scenario authoring, curated example blueprints, and DSE optimization pipelines.
-tags:
-- phids
-- scenarios
-- dse
-- blueprints
-timestamp: "2026-07-26T18:31:00Z"
-resources:
-- docs/scenario_guide/scenario_authoring.md
-- docs/scenario_guide/curated_examples.md
-- docs/scenario_guide/design_space_exploration.md
-- docs/scenario_guide/empirical_database.md
----
-
 In the study of computational ecology, the greatest challenge is managing the sheer volatility of natural systems. The parameter space of a spatial ecosystem is a chaotic, highly non-linear landscape. A minor $1\%$ tweak to a single herbivore's metabolic rate or a plant's regeneration speed can be the absolute boundary between eternal multi-species balance and immediate, cascading trophic collapse.
 
 The **Scenarios** module in PHIDS upgrades the framework from a simple "run-and-observe" simulator into a **generative biology tool**. It provides the interfaces, constraints, and optimization pipelines needed to design, validate, and calibrate complex ecological experiments.
@@ -34,19 +15,16 @@ graph TD
 
 ## Exploring the Scenarios Module
 
-## Core Guides
+To guide your workflow from initial design to self-sustaining execution, the Scenarios documentation is partitioned into three key guides:
 
-* **[Scenario Authoring](scenario_authoring.md)**: Documentation on the scenario `DraftState` pipeline and constraints.
-* **[Curated Examples](curated_examples.md)**: An overview of the built-in, chemically balanced default scenarios.
-* **[Design Space Exploration](design_space_exploration.md)**: Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
-* **[Empirical Database](empirical_database.md)**: Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
-
----
-
-## Future Prospects
-
-* **[AI Coevolution & Distributed DSE Engine](future_prospects/ai_coevolution_dse.md)**: Architecture for Ray/Tune distributed multi-objective Pareto optimization and reinforcement learning swarm coevolution.
-* **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**: Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
+* **[Scenario Authoring](scenario_authoring.md)**
+  Documentation on the scenario `DraftState` pipeline and constraints.
+* **[Curated Examples](curated_examples.md)**
+  An overview of the built-in, chemically balanced default scenarios.
+* **[Design Space Exploration](design_space_exploration.md)**
+  Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
+* **[Empirical Database](empirical_database.md)**
+  Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
 
 ### 1. Scenario Authoring & Schema
 

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
+from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.loop import SimulationLoop
@@ -50,7 +50,7 @@ def test_active_signal_ids_union_field_residue_with_visible_runtime_substances(
         ),
     )
 
-    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={0: "sig-0", 1: "sig-1"})
+    payload = build_live_dashboard_payload(loop, substance_names={0: "sig-0", 1: "sig-1"})
     index = payload["plants"]["entity_id"].index(plant_id)
     assert payload["plants"]["active_signal_ids"][index] == [0, 1]
 
@@ -76,6 +76,6 @@ def test_active_toxin_ids_union_field_residue_with_visible_runtime_substances(
         ),
     )
 
-    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={0: "tox-0", 1: "tox-1"})
+    payload = build_live_dashboard_payload(loop, substance_names={0: "tox-0", 1: "tox-1"})
     index = payload["plants"]["entity_id"].index(plant_id)
     assert payload["plants"]["active_toxin_ids"][index] == [0, 1]

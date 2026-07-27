@@ -282,7 +282,11 @@ async def batch_export(
     y_label: str | None = None,
     chart_type: str = "timeseries",
 ) -> Response:
-    """Export one persisted batch aggregate as CSV, table TeX, or TikZ source."""
+    """Export one persisted batch aggregate as CSV, table TeX, or TikZ source.
+
+    Raises:
+        HTTPException: If the requested summary file is missing or parameters are invalid.
+    """
     summary_path = api_main._BATCH_DIR / f"{job_id}_summary.json"
     if not summary_path.exists():
         raise HTTPException(status_code=404, detail=f"No summary found for job '{job_id}'.")
@@ -307,7 +311,20 @@ async def batch_export(
         filename = f"phids_batch_{job_id}_table.tex"
         media_type = "text/plain"
     elif format == "tex_tikz":
-        rows_agg = _build_tikz_rows(aggregate)
+        rows_agg: list[dict[str, object]] = []
+        ticks = _as_list(aggregate.get("ticks", []))
+        flora_mean = _as_list(aggregate.get("flora_population_mean", []))
+        herbivore_mean = _as_list(aggregate.get("herbivore_population_mean", []))
+        survival = _as_list(aggregate.get("survival_probability_curve", []))
+        for i, t in enumerate(ticks):
+            rows_agg.append(
+                {
+                    "tick": t,
+                    "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
+                    "swarm_pop_by_species": {0: herbivore_mean[i] if i < len(herbivore_mean) else 0},
+                    "survival_probability": _safe_float(survival[i]) if i < len(survival) else 0.0,
+                }
+            )
         normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
         tikz = generate_tikz_str(
             rows_agg,

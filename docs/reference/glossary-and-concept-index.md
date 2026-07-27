@@ -9,7 +9,7 @@ tags:
 - ecs
 - numba
 - python
-timestamp: "2026-07-25T10:52:00Z"
+timestamp: "2026-07-21T16:01:38Z"
 resources:
 - ../scientific_model/mathematical_framework.md
 - ../technical_architecture/system_architecture.md
@@ -170,17 +170,15 @@ sets. Key methods: `create_entity`, `add_component`, `get_entity`, `has_entity`,
 
 See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md)
 
-### `EnvironmentalSignalInitiator` (and `environmental_signal` condition)
+### `environmental_signal` (activation condition kind)
 
-An initiator (or nested activation-condition) that evaluates whether the concentration of a named ambient signal layer at the emitting plant's cell meets or exceeds a configured `min_concentration` threshold. This enables a plant to activate a defense (like `ResourceWithdrawalAction`) in response to ambient signal concentrations deposited by mycorrhizal relay or airborne diffusion from neighbouring plants, modeling primed systemic acquired resistance (SAR).
+An activation-condition predicate that evaluates whether the concentration of a named signal layer
+at the emitting plant's cell meets or exceeds a configured `min_concentration` threshold. This
+enables a plant to activate a defense in response to ambient signal concentrations deposited by
+mycorrhizal relay or airborne diffusion from neighbouring plants, providing a mechanistic basis for
+primed systemic acquired resistance.
 
 See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
-
-### `extract_ui_snapshot`
-
-An architectural pattern used in `UIStreamManager` to decouple heavy JSON serialization from the core `SimulationLoop`. Instead of locking the engine to build JSON, it performs a fast, synchronous, $O(N)$ thread-safe shallow copy of the necessary primitive state arrays (the snapshot). The heavy serialization is then offloaded to a background thread, preventing UI lockups.
-
-See: [`ui/interfaces-and-ui.md`](../technical_architecture/interfaces_and_ui.md)
 
 ---
 
@@ -319,12 +317,6 @@ performs a random-walk step rather than following the flow field, and the timer 
 tick until it reaches zero.
 
 See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
-
-### `ResourceWithdrawalAction`
-
-A trigger action payload (`resource_withdrawal`) representing stress-induced senescence. When executed, it overrides the plant's `apparent_nutrition_factor` (dropping it below 1.0) for a configured `withdrawal_duration` to dynamically reduce its caloric attractiveness in the global flow field, forcing herbivores to bypass the plant.
-
-See: [`engine/morphological_defenses.md`](../scientific_model/morphological_defenses.md)
 
 ### Rule of 16
 

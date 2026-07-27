@@ -54,47 +54,6 @@ async def config_herbivore_add(
     )
 
 
-def _build_herbivore_updates(
-    name: str | None,
-    energy_min: float | None,
-    velocity: int | None,
-    consumption_rate: float | None,
-    reproduction_energy_divisor: float | None,
-    energy_upkeep_per_individual: float | None,
-    split_population_threshold: int | None,
-    resistances_morph: float | None,
-    resistances_chem: float | None,
-    resistances_dig: float | None,
-    current_resistances: object,
-) -> dict[str, object]:
-    """Build field update dictionary from form inputs."""
-    updates: dict[str, object] = {}
-    field_map = {
-        "name": name,
-        "energy_min": energy_min,
-        "velocity": velocity,
-        "consumption_rate": consumption_rate,
-        "energy_upkeep_per_individual": energy_upkeep_per_individual,
-        "split_population_threshold": split_population_threshold,
-    }
-    for key, val in field_map.items():
-        if val is not None:
-            updates[key] = val
-    if reproduction_energy_divisor is not None:
-        updates["reproduction_energy_divisor"] = max(1.0, reproduction_energy_divisor)
-
-    res_updates: dict[str, object] = {}
-    if resistances_morph is not None:
-        res_updates["morphological_adaptation"] = max(0.0, min(1.0, resistances_morph))
-    if resistances_chem is not None:
-        res_updates["chemical_neutralization"] = max(0.0, min(1.0, resistances_chem))
-    if resistances_dig is not None:
-        res_updates["digestive_efficiency"] = max(0.0, resistances_dig)
-    if res_updates and hasattr(current_resistances, "model_copy"):
-        updates["resistances"] = current_resistances.model_copy(update=res_updates)
-    return updates
-
-
 @router.put(
     "/api/config/herbivores/{species_id}",
     response_class=HTMLResponse,
@@ -135,20 +94,32 @@ async def config_herbivore_update(
     pp = draft.herbivore_species[idx]
     if not isinstance(pp, HerbivoreSpeciesParams):
         raise HTTPException(status_code=400, detail="Invalid herbivore species entry in draft state.")
+    updates: dict[str, object] = {}
+    if name is not None:
+        updates["name"] = name
+    if energy_min is not None:
+        updates["energy_min"] = energy_min
+    if velocity is not None:
+        updates["velocity"] = velocity
+    if consumption_rate is not None:
+        updates["consumption_rate"] = consumption_rate
+    if reproduction_energy_divisor is not None:
+        updates["reproduction_energy_divisor"] = max(1.0, reproduction_energy_divisor)
+    if energy_upkeep_per_individual is not None:
+        updates["energy_upkeep_per_individual"] = energy_upkeep_per_individual
+    if split_population_threshold is not None:
+        updates["split_population_threshold"] = split_population_threshold
 
-    updates = _build_herbivore_updates(
-        name,
-        energy_min,
-        velocity,
-        consumption_rate,
-        reproduction_energy_divisor,
-        energy_upkeep_per_individual,
-        split_population_threshold,
-        resistances_morphological_adaptation,
-        resistances_chemical_neutralization,
-        resistances_digestive_efficiency,
-        pp.resistances,
-    )
+    # Handle nested resistances
+    resistances_updates: dict[str, object] = {}
+    if resistances_morphological_adaptation is not None:
+        resistances_updates["morphological_adaptation"] = max(0.0, min(1.0, resistances_morphological_adaptation))
+    if resistances_chemical_neutralization is not None:
+        resistances_updates["chemical_neutralization"] = max(0.0, min(1.0, resistances_chemical_neutralization))
+    if resistances_digestive_efficiency is not None:
+        resistances_updates["digestive_efficiency"] = max(0.0, resistances_digestive_efficiency)
+    if resistances_updates:
+        updates["resistances"] = pp.resistances.model_copy(update=resistances_updates)
 
     draft.herbivore_species[idx] = pp.model_copy(update=updates)
     api_main.logger.debug("Herbivore species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))

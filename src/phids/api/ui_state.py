@@ -169,16 +169,12 @@ class TriggerRule:
     """
 
     flora_species_id: int
-    initiator_type: Literal["herbivore_attack", "environmental_signal"] = "herbivore_attack"
-    herbivore_species_id: int = 0
-    min_herbivore_population: int = 5
-    initiator_signal_id: int = 0
-    initiator_min_concentration: float = 0.01
+    herbivore_species_id: int
     substance_id: int = 0
     action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
     apparent_nutrition_factor: float = 0.2
-    withdrawal_duration: int = 10
     aftereffect_ticks: int = 10
+    min_herbivore_population: int = 5
     activation_condition: ActivationConditionNode | None = None
 
 
@@ -465,38 +461,23 @@ class DraftState:
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
         from phids.api.schemas.triggers import (
-            EnvironmentalSignalInitiator,
-            HerbivoreAttackInitiator,
             ResourceWithdrawalAction,
             SynthesizeSubstanceAction,
-            TriggerInitiator,
         )
 
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
         for rule in self.trigger_rules:
-            initiator: TriggerInitiator
-            if rule.initiator_type == "environmental_signal":
-                initiator = EnvironmentalSignalInitiator(
-                    signal_id=rule.initiator_signal_id,
-                    min_concentration=rule.initiator_min_concentration,
-                )
-            else:
-                initiator = HerbivoreAttackInitiator(
-                    herbivore_species_id=rule.herbivore_species_id,
-                    min_herbivore_population=rule.min_herbivore_population,
-                )
-
             if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
                 # Resource Withdrawal
                 action = ResourceWithdrawalAction(
                     apparent_nutrition_factor=rule.apparent_nutrition_factor,
-                    withdrawal_duration=rule.withdrawal_duration,
                 )
                 aftereffect = rule.aftereffect_ticks
                 triggers_by_flora.setdefault(rule.flora_species_id, []).append(
                     TriggerConditionSchema(
-                        initiator=initiator,
+                        herbivore_species_id=rule.herbivore_species_id,
+                        min_herbivore_population=rule.min_herbivore_population,
                         aftereffect_ticks=aftereffect,
                         activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                         action=action,
@@ -528,7 +509,8 @@ class DraftState:
                 )  # type: ignore
                 triggers_by_flora.setdefault(rule.flora_species_id, []).append(
                     TriggerConditionSchema(
-                        initiator=initiator,
+                        herbivore_species_id=rule.herbivore_species_id,
+                        min_herbivore_population=rule.min_herbivore_population,
                         aftereffect_ticks=sd.aftereffect_ticks,
                         activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                         action=action,

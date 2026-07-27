@@ -38,6 +38,13 @@ def add_plant_placement(
 
     """
     draft.initial_plants.append(PlacedPlant(species_id=species_id, x=x, y=y, energy=energy))
+    logger.debug(
+        "Draft plant placement added (species_id=%d, x=%d, y=%d, total_plants=%d)",
+        species_id,
+        x,
+        y,
+        len(draft.initial_plants),
+    )
 
 
 def add_swarm_placement(
@@ -67,6 +74,14 @@ def add_swarm_placement(
             population=population,
             energy=energy,
         )
+    )
+    logger.debug(
+        "Draft swarm placement added (species_id=%d, x=%d, y=%d, population=%d, total_swarms=%d)",
+        species_id,
+        x,
+        y,
+        population,
+        len(draft.initial_swarms),
     )
 
 
@@ -130,35 +145,5 @@ def clear_placements(draft: DraftState) -> None:
     logger.debug(
         "Draft placements cleared (plants=%d, swarms=%d)",
         cleared_plants,
-        cleared_swarms,
-    )
-
-
-def clear_plant_placements(draft: DraftState) -> None:
-    """Clear all plant placements from the draft.
-
-    Args:
-        draft: Draft state mutated in place.
-
-    """
-    cleared_plants = len(draft.initial_plants)
-    draft.initial_plants.clear()
-    logger.debug(
-        "Draft plant placements cleared (plants=%d)",
-        cleared_plants,
-    )
-
-
-def clear_swarm_placements(draft: DraftState) -> None:
-    """Clear all swarm placements from the draft.
-
-    Args:
-        draft: Draft state mutated in place.
-
-    """
-    cleared_swarms = len(draft.initial_swarms)
-    draft.initial_swarms.clear()
-    logger.debug(
-        "Draft swarm placements cleared (swarms=%d)",
         cleared_swarms,
     )

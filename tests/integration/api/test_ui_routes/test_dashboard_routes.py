@@ -17,7 +17,7 @@ import pytest
 from httpx import AsyncClient
 
 import phids.api.main as api_main
-from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
+from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.engine.components.plant import PlantComponent
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
@@ -144,7 +144,7 @@ def test_live_dashboard_payload_separates_render_layers_from_all_configured_spec
     loop = SimulationLoop(config)
     _advance_loop_until_flora_extinction(loop)
 
-    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names=api_main._sim_substance_names)
+    payload = build_live_dashboard_payload(loop, substance_names=api_main._sim_substance_names)
     species_energy_rows = _as_object_dict_rows(payload.get("species_energy"))
     all_flora_rows = _as_object_dict_rows(payload.get("all_flora_species"))
 

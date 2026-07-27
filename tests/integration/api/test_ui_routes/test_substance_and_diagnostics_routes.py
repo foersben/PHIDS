@@ -17,7 +17,7 @@ from httpx import AsyncClient
 
 import phids.api.main as api_main
 import phids.api.routers.ui
-from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
+from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api.services.draft.placements import add_plant_placement, add_swarm_placement
 from phids.api.services.draft.trigger_rules import add_trigger_rule
 from phids.api.ui_state.state import get_draft
@@ -137,7 +137,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     assert step_resp.status_code == 200, step_resp.text
 
     dashboard_payload = build_live_dashboard_payload(
-        extract_ui_snapshot(api_main._sim_loop),
+        api_main._sim_loop,
         substance_names=api_main._sim_substance_names,
     )
     details_resp = await api_client.get("/api/ui/cell-details", params={"x": 2, "y": 2})

@@ -115,35 +115,4 @@ act-profiling:
     act -j architectural-profiling --secret-file .github/workflows/secrets.env
 
 act-complexity:
-    @LOG_FILE=$(mktemp); \
-    act -j cognitive-complexity --secret-file .github/workflows/secrets.env 2>&1 | tee "$LOG_FILE"; \
-    EXIT_CODE=${PIPESTATUS[0]}; \
-    echo ""; \
-    echo "========================================================================="; \
-    echo "                       COMPLEXITY FAILURE SUMMARY                        "; \
-    echo "========================================================================="; \
-    FAILURES=$(grep -E "❌|💥|FAILED" "$LOG_FILE" | grep -vE "✅|PASSED|Success -|Complete job"); \
-    if [ -n "$FAILURES" ]; then \
-        echo "$FAILURES"; \
-    else \
-        echo "✨ All cognitive complexity checks passed cleanly!"; \
-    fi; \
-    rm -f "$LOG_FILE"; \
-    exit $EXIT_CODE
-
-complexity:
-    @LOG_FILE=$(mktemp); \
-    uvx complexipy . 2>&1 | tee "$LOG_FILE"; \
-    EXIT_CODE=${PIPESTATUS[0]}; \
-    echo ""; \
-    echo "========================================================================="; \
-    echo "                       COMPLEXITY FAILURE SUMMARY                        "; \
-    echo "========================================================================="; \
-    FAILURES=$(grep -E "❌|💥|FAILED" "$LOG_FILE" | grep -vE "✅|PASSED|Success -|Complete job"); \
-    if [ -n "$FAILURES" ]; then \
-        echo "$FAILURES"; \
-    else \
-        echo "✨ All functions passed cognitive complexity checks!"; \
-    fi; \
-    rm -f "$LOG_FILE"; \
-    exit $EXIT_CODE
+    act -j cognitive-complexity --secret-file .github/workflows/secrets.env

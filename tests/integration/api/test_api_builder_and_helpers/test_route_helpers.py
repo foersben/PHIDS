@@ -20,7 +20,6 @@ from phids.api.main import app
 from phids.api.presenters.dashboard import (
     build_draft_mycorrhizal_links,
     build_live_dashboard_payload,
-    extract_ui_snapshot,
 )
 from phids.api.schemas.placement import InitialPlantPlacement, InitialSwarmPlacement
 from phids.api.schemas.simulation import SimulationConfig
@@ -436,7 +435,7 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
 
     loop = SimulationLoop(_config_with_trigger())
     api_main._sim_loop = loop
-    expected_payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
+    expected_payload = build_live_dashboard_payload(loop, substance_names={})
     with client.websocket_connect("/ws/ui/stream") as websocket:
         payload = json.loads(websocket.receive_text())
 
