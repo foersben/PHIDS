@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
     )
+    from phids.api.schemas.triggers import TriggerConditionSchema
 
 logger = logging.getLogger(__name__)
 
@@ -436,43 +437,17 @@ class DraftState:
     # Config export
     # ------------------------------------------------------------------
 
-    def build_sim_config(self) -> SimulationConfig:
-        """Assemble a :class:`~phids.api.schemas.SimulationConfig`.
-
-        Returns:
-            SimulationConfig: Validated simulation configuration.
-
-        Raises:
-            ValueError: If no flora or herbivore species defined.
-
-        """
-        from phids.api.schemas.placement import (
-            InitialPlantPlacement,
-            InitialSwarmPlacement,
-        )
-        from phids.api.schemas.simulation import SimulationConfig
-        from phids.api.schemas.species import DietCompatibilityMatrix
-        from phids.api.schemas.triggers import TriggerConditionSchema
-
-        if not self.flora_species or not self.herbivore_species:
-            logger.warning(
-                "Draft build rejected because required species are missing (flora=%d, herbivores=%d)",
-                len(self.flora_species),
-                len(self.herbivore_species),
-            )
-            raise ValueError("At least one flora and one herbivore species are required.")
-
-        subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
-
+    def _compile_triggers_by_flora(
+        self, subs_by_id: dict[int, SubstanceDefinition]
+    ) -> dict[int, list[TriggerConditionSchema]]:
         from phids.api.schemas.triggers import (
             EnvironmentalSignalInitiator,
             HerbivoreAttackInitiator,
             ResourceWithdrawalAction,
             SynthesizeSubstanceAction,
+            TriggerConditionSchema,
             TriggerInitiator,
         )
-
-        # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
         for rule in self.trigger_rules:
             initiator: TriggerInitiator
@@ -488,16 +463,14 @@ class DraftState:
                 )
 
             if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
-                # Resource Withdrawal
                 action = ResourceWithdrawalAction(
                     apparent_nutrition_factor=rule.apparent_nutrition_factor,
                     withdrawal_duration=rule.withdrawal_duration,
                 )
-                aftereffect = rule.aftereffect_ticks
                 triggers_by_flora.setdefault(rule.flora_species_id, []).append(
                     TriggerConditionSchema(
                         initiator=initiator,
-                        aftereffect_ticks=aftereffect,
+                        aftereffect_ticks=rule.aftereffect_ticks,
                         activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                         action=action,
                     )
@@ -534,6 +507,35 @@ class DraftState:
                         action=action,
                     )
                 )
+        return triggers_by_flora
+
+    def build_sim_config(self) -> SimulationConfig:
+        """Assemble a :class:`~phids.api.schemas.SimulationConfig`.
+
+        Returns:
+            SimulationConfig: Validated simulation configuration.
+
+        Raises:
+            ValueError: If no flora or herbivore species defined.
+
+        """
+        from phids.api.schemas.placement import (
+            InitialPlantPlacement,
+            InitialSwarmPlacement,
+        )
+        from phids.api.schemas.simulation import SimulationConfig
+        from phids.api.schemas.species import DietCompatibilityMatrix
+
+        if not self.flora_species or not self.herbivore_species:
+            logger.warning(
+                "Draft build rejected because required species are missing (flora=%d, herbivores=%d)",
+                len(self.flora_species),
+                len(self.herbivore_species),
+            )
+            raise ValueError("At least one flora and one herbivore species are required.")
+
+        subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
+        triggers_by_flora = self._compile_triggers_by_flora(subs_by_id)
 
         flora_with_triggers: list[FloraSpeciesParams] = []
         for fp in self.flora_species:

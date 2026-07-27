@@ -44,3 +44,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 24 vs. 9
 * **Performance Assessment:** Common-sense engineering determines this non-engine UI rendering function imposes no execution impact on the simulation engine or benchmark-critical loops. Existing `pytest-benchmark` payload JSON benchmarks continue passing perfectly.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-18 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/ui_state.py` and function `DraftState::build_sim_config`
+* **Selection Rationale:** The trigger rule compilation logic loop had deeply nested `if/else` conditions mapped to Pydantic objects, raising cognitive complexity without tight coupling. Extracting it to `_compile_triggers_by_flora` dramatically reduced the complexity of `build_sim_config` whilst avoiding hot-loop engine code, bringing risk of overhead to zero.
+* **Before/After Score:** 20 vs. 9 (and 11 for the extracted helper)
+* **Performance Assessment:** The extracted logic executes once before starting a batch or normal simulation, hence it does not affect any runtime loop or JIT computations. Benchmarks remain completely within expected ranges with no regressions.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
