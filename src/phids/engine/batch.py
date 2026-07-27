@@ -228,32 +228,21 @@ def _pad_telemetry_runs(per_run: TelemetryRuns, max_len: int) -> list[list[Telem
     return aligned
 
 
+def _extract_metric_matrix(aligned: list[list[TelemetryRow]], key: str) -> np.ndarray:
+    return np.array(
+        [[_coerce_float(r.get(key, 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+
+
 def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, object]:
     """Stack scalar population and energy metrics into NumPy arrays."""
-    flora_pop = np.array(
-        [[_coerce_float(r.get("flora_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    herb_pop = np.array(
-        [[_coerce_float(r.get("herbivore_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    flora_energy = np.array(
-        [[_coerce_float(r.get("total_flora_energy", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_herbivore = np.array(
-        [[_coerce_float(r.get("death_herbivore_feeding", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_defense = np.array(
-        [[_coerce_float(r.get("death_defense_maintenance", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_starvation = np.array(
-        [[_coerce_float(r.get("death_starvation", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
+    flora_pop = _extract_metric_matrix(aligned, "flora_population")
+    herb_pop = _extract_metric_matrix(aligned, "herbivore_population")
+    flora_energy = _extract_metric_matrix(aligned, "total_flora_energy")
+    death_herbivore = _extract_metric_matrix(aligned, "death_herbivore_feeding")
+    death_defense = _extract_metric_matrix(aligned, "death_defense_maintenance")
+    death_starvation = _extract_metric_matrix(aligned, "death_starvation")
 
     # Extinction probability: fraction of runs where flora hit zero at any tick
     extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
@@ -275,19 +264,38 @@ def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, obj
     }
 
 
+def _collect_keys(row: TelemetryRow, key: str, target_set: set[int]) -> None:
+    val = row.get(key, {})
+    if isinstance(val, dict):
+        target_set.update(k for k in val.keys() if isinstance(k, int))
+
+
 def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> tuple[set[int], set[int]]:
     """Collect all unique flora and herbivore species identifiers seen across runs."""
     all_flora_ids: set[int] = set()
     all_herb_ids: set[int] = set()
     for run in aligned:
         for row in run:
-            flora_map = row.get("plant_pop_by_species", {})
-            herb_map = row.get("swarm_pop_by_species", {})
-            if isinstance(flora_map, dict):
-                all_flora_ids.update(k for k in flora_map.keys() if isinstance(k, int))
-            if isinstance(herb_map, dict):
-                all_herb_ids.update(k for k in herb_map.keys() if isinstance(k, int))
+            _collect_keys(row, "plant_pop_by_species", all_flora_ids)
+            _collect_keys(row, "swarm_pop_by_species", all_herb_ids)
     return all_flora_ids, all_herb_ids
+
+
+def _aggregate_species_metric(
+    aligned: list[list[TelemetryRow]],
+    ids: set[int],
+    metric_key: str,
+) -> tuple[dict[str, list[float]], dict[str, list[float]]]:
+    means: dict[str, list[float]] = {}
+    stds: dict[str, list[float]] = {}
+    for sid in sorted(ids):
+        arr = np.array(
+            [[_species_count(r, metric_key, sid) for r in run] for run in aligned],
+            dtype=np.float64,
+        )
+        means[str(sid)] = arr.mean(axis=0).tolist()
+        stds[str(sid)] = arr.std(axis=0).tolist()
+    return means, stds
 
 
 def _compute_species_aggregates(
@@ -296,31 +304,13 @@ def _compute_species_aggregates(
     all_herb_ids: set[int],
 ) -> dict[str, dict[str, list[float]]]:
     """Compute mean and std dev for individual tracked species over the batch."""
-    per_flora_pop_mean: dict[int, list[float]] = {}
-    per_flora_pop_std: dict[int, list[float]] = {}
-    for fid in sorted(all_flora_ids):
-        arr = np.array(
-            [[_species_count(r, "plant_pop_by_species", fid) for r in run] for run in aligned],
-            dtype=np.float64,
-        )
-        per_flora_pop_mean[fid] = arr.mean(axis=0).tolist()
-        per_flora_pop_std[fid] = arr.std(axis=0).tolist()
-
-    per_herb_pop_mean: dict[int, list[float]] = {}
-    per_herb_pop_std: dict[int, list[float]] = {}
-    for pid in sorted(all_herb_ids):
-        arr = np.array(
-            [[_species_count(r, "swarm_pop_by_species", pid) for r in run] for run in aligned],
-            dtype=np.float64,
-        )
-        per_herb_pop_mean[pid] = arr.mean(axis=0).tolist()
-        per_herb_pop_std[pid] = arr.std(axis=0).tolist()
-
+    flora_means, flora_stds = _aggregate_species_metric(aligned, all_flora_ids, "plant_pop_by_species")
+    herb_means, herb_stds = _aggregate_species_metric(aligned, all_herb_ids, "swarm_pop_by_species")
     return {
-        "per_flora_pop_mean": {str(k): v for k, v in per_flora_pop_mean.items()},
-        "per_flora_pop_std": {str(k): v for k, v in per_flora_pop_std.items()},
-        "per_herbivore_pop_mean": {str(k): v for k, v in per_herb_pop_mean.items()},
-        "per_herbivore_pop_std": {str(k): v for k, v in per_herb_pop_std.items()},
+        "per_flora_pop_mean": flora_means,
+        "per_flora_pop_std": flora_stds,
+        "per_herbivore_pop_mean": herb_means,
+        "per_herbivore_pop_std": herb_stds,
     }
 
 
