@@ -115,3 +115,101 @@ def test_read_batch_summary_not_found(mock_root: MagicMock) -> None:
     result = read_batch_summary("job_123")
     assert result["status"] == "error"
     assert "Summary file not found" in result["message"]
+
+
+@patch("phids.mcp_server._PROJECT_ROOT")
+def test_read_batch_summary_exception(mock_root: MagicMock) -> None:
+    """Test read_batch_summary tool exception handling."""
+    mock_path = MagicMock()
+    mock_path.exists.return_value = True
+    mock_root.__truediv__.return_value.__truediv__.return_value.__truediv__.return_value = mock_path
+
+    with patch("builtins.open", side_effect=Exception("Read error")):
+        result = read_batch_summary("job_123")
+        assert result["status"] == "error"
+        assert "Failed to read summary file: Read error" in result["message"]
+
+
+def test_active_draft_resource_serialization() -> None:
+    """Test serialization hooks for DraftState types."""
+    from phids.api.schemas.species import FloraSpeciesParams
+    from phids.api.ui_state.state import DraftState
+
+    draft = DraftState()
+    draft.flora_species.append(
+        FloraSpeciesParams(
+            species_id=1,
+            name="Test",
+            base_energy=1.0,
+            max_energy=1.0,
+            growth_rate=1.0,
+            survival_threshold=1.0,
+            reproduction_interval=1,
+            seed_min_dist=1.0,
+            seed_max_dist=1.0,
+            seed_energy_cost=1.0,
+            triggers=[],
+        )
+    )
+
+    with patch("phids.mcp_server.get_draft", return_value=draft):
+        result = active_draft_resource()
+        assert "Test" in result
+
+
+def test_analyze_simulation_drift() -> None:
+    """Test prompt retrieval."""
+    from phids.mcp_server import analyze_simulation_drift
+
+    result = analyze_simulation_drift()
+    assert "stochastic drift" in result
+
+
+@patch("phids.mcp_server.mcp.run")
+def test_run_mcp_server(mock_run: MagicMock) -> None:
+    """Test MCP server entry point."""
+    from phids.mcp_server import run_mcp_server
+
+    run_mcp_server()
+    mock_run.assert_called_once()
+
+
+def test_active_draft_resource_serialization_error() -> None:
+    """Test serialization hooks for DraftState types failure."""
+    from phids.api.ui_state.state import DraftState
+
+    draft = DraftState()
+    draft.flora_placement_strategy = lambda x: x  # Unserializable
+
+    with patch("phids.mcp_server.get_draft", return_value=draft):
+        import pytest
+
+        with pytest.raises(TypeError):
+            active_draft_resource()
+
+
+def test_active_draft_resource_serialization_nested_dataclass() -> None:
+    """Test serialization hooks for DraftState types success nested."""
+    from phids.api.ui_state.state import DraftState
+
+    draft = DraftState()
+    import dataclasses
+
+    @dataclasses.dataclass
+    class Nested:
+        value: str
+
+    draft.flora_placement_strategy = Nested(value="test")  # type: ignore
+
+    with patch("phids.mcp_server.get_draft", return_value=draft):
+        result = active_draft_resource()
+        assert "test" in result
+
+
+def test_inspect_telemetry_schema_import_error() -> None:
+    """Test telemetry schema import error."""
+    import sys
+
+    with patch.dict(sys.modules, {"zarr": None}):
+        result = inspect_telemetry_schema("test")
+        assert result["status"] == "error"
