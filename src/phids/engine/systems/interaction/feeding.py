@@ -86,6 +86,8 @@ def _feed_on_single_plant(
         _accumulate_tile_population(tile_populations, swarm.x, swarm.y, env.width, -casualties)
 
     target_plant.energy -= consumed
+    if consumed > 0.0:
+        target_plant.last_energy_loss_cause = "death_herbivory"
     env.set_plant_energy(
         target_plant.x,
         target_plant.y,

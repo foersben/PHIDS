@@ -249,10 +249,6 @@ async def batch_view(request: Request, job_id: str) -> Response:
     )
 
 
-@router.get(
-    "/api/batch/export/{job_id}",
-    summary="Export batch aggregate in academic formats",
-)
 def _build_tikz_rows(aggregate: dict[str, object]) -> list[dict[str, object]]:
     """Build frame rows for TikZ chart export."""
     rows_agg: list[dict[str, object]] = []
@@ -272,6 +268,10 @@ def _build_tikz_rows(aggregate: dict[str, object]) -> list[dict[str, object]]:
     return rows_agg
 
 
+@router.get(
+    "/api/batch/export/{job_id}",
+    summary="Export batch aggregate in academic formats",
+)
 async def batch_export(
     job_id: str,
     format: str = "csv",
