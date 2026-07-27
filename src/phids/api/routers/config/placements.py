@@ -6,10 +6,13 @@
 from __future__ import annotations
 
 import random
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+
+if TYPE_CHECKING:
+    from starlette.datastructures import FormData
 
 import phids.api.main as api_main
 from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
@@ -199,35 +202,26 @@ async def config_placements_clear_swarms(request: Request) -> Response:
     return _render_placement_list_partial(request, draft)
 
 
-@router.post("/api/config/placements/autoassign", response_class=HTMLResponse, summary="Autoassign placements")
-async def config_placement_autoassign(request: Request) -> Response:
-    """Generate manual placements using procedural logic."""
-    draft = get_draft()
-    form = await request.form()
-
-    target_type = str(form.get("target_type", "plant"))
-    distribution = str(form.get("distribution", "uniform"))
-
-    # Generate coordinates
-    width = draft.grid_width
-    height = draft.grid_height
-    coords = []
-
+def _generate_autoassign_coords(distribution: str, width: int, height: int, form: FormData) -> list[tuple[int, int]]:
+    """Generate coordinate list based on procedural distribution type."""
     if distribution == "uniform":
         density = float(str(form.get("density", 0.05)))
-        coords = generate_uniform(width, height, density)
-    elif distribution == "clustered":
+        return generate_uniform(width, height, density)
+    if distribution == "clustered":
         cluster_count = int(str(form.get("cluster_count", 5)))
         variance = float(str(form.get("variance", 2.0)))
-        coords = generate_clustered(width, height, cluster_count, variance)
-    elif distribution == "banded":
+        return generate_clustered(width, height, cluster_count, variance)
+    if distribution == "banded":
         band_count = int(str(form.get("band_count", 3)))
         orientation = str(form.get("orientation", "horizontal"))
-        coords = generate_banded(width, height, band_count, orientation)
+        return generate_banded(width, height, band_count, orientation)
+    return []
 
-    # Extract weights for species
-    weights = []
-    species_ids = []
+
+def _extract_species_weights(form: FormData) -> tuple[list[int], list[float]]:
+    """Extract species IDs and corresponding positive weights from form data."""
+    weights: list[float] = []
+    species_ids: list[int] = []
     for key, val in form.items():
         if key.startswith("weight_") and val:
             try:
@@ -238,6 +232,19 @@ async def config_placement_autoassign(request: Request) -> Response:
                     weights.append(weight)
             except ValueError:
                 pass
+    return species_ids, weights
+
+
+@router.post("/api/config/placements/autoassign", response_class=HTMLResponse, summary="Autoassign placements")
+async def config_placement_autoassign(request: Request) -> Response:
+    """Generate manual placements using procedural logic."""
+    draft = get_draft()
+    form = await request.form()
+
+    target_type = str(form.get("target_type", "plant"))
+    distribution = str(form.get("distribution", "uniform"))
+    coords = _generate_autoassign_coords(distribution, draft.grid_width, draft.grid_height, form)
+    species_ids, weights = _extract_species_weights(form)
 
     if not coords or not species_ids:
         api_main.logger.warning("Autoassign skipped (no coords generated or no species weights > 0)")
