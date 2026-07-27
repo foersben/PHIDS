@@ -10,6 +10,8 @@ dimensions of the herbivore-flora edibility matrix.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import AliasChoices, Field, model_validator
 
 from phids.api.schemas.base import HerbivoreId, SpeciesId, StrictBaseModel
@@ -48,6 +50,12 @@ class FloraSpeciesParams(StrictBaseModel):
     )
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
+    translocation_rate: float = Field(
+        default=0.2, ge=0.0, le=1.0, description="Rate of nutrient translocation during resource withdrawal."
+    )
+    mycorrhizal_tax_per_link: float = Field(
+        default=0.0, ge=0.0, description="Continuous energy maintenance fee deducted per active root link per tick."
+    )
     passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
     triggers: list[TriggerConditionSchema] = Field(default_factory=list, max_length=MAX_SUBSTANCE_TYPES)
 
@@ -71,6 +79,9 @@ class HerbivoreResistancesSchema(StrictBaseModel):
     )
 
 
+SwarmBehaviorParadigm = Literal["macro_swarm", "solitary_grazer", "oviposition_seeker"]
+
+
 class HerbivoreSpeciesParams(StrictBaseModel):
     """Per-species parameters for herbivore swarms."""
 
@@ -79,6 +90,15 @@ class HerbivoreSpeciesParams(StrictBaseModel):
     energy_min: float = Field(..., gt=0.0)
     velocity: int = Field(..., gt=0)
     consumption_rate: float = Field(..., gt=0.0)
+    handling_time: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Handling time per calorie eaten (Holling Type II functional response). 0.0 retains linear intake.",
+    )
+    behavior_paradigm: SwarmBehaviorParadigm = Field(
+        default="macro_swarm",
+        description="Behavioral paradigm governing movement and foraging kinetics.",
+    )
     reproduction_energy_divisor: float = Field(
         default=1.0,
         gt=0.0,

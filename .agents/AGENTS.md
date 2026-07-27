@@ -1,4 +1,15 @@
-# PHIDS Routing & Capabilities
+---
+type: reference
+title: PHIDS Routing & Capabilities
+status: active
+version: 1.0
+description: Primary routing table for AI IDEs defining roles and core constraints.
+tags:
+- agents
+- guidelines
+timestamp: "2026-07-25T17:06:00Z"
+resources: []
+---
 
 Primary routing table for AI IDEs defining roles in `.agents/roles/` and core constraints.
 

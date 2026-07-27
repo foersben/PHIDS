@@ -130,23 +130,38 @@ class DraftState:
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
         from phids.api.schemas.triggers import (
+            EnvironmentalSignalInitiator,
+            HerbivoreAttackInitiator,
             ResourceWithdrawalAction,
             SynthesizeSubstanceAction,
+            TriggerInitiator,
         )
 
         # Group trigger rules by flora_species_id
         triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
         for rule in self.trigger_rules:
+            initiator: TriggerInitiator
+            if rule.initiator_type == "environmental_signal":
+                initiator = EnvironmentalSignalInitiator(
+                    signal_id=rule.initiator_signal_id,
+                    min_concentration=rule.initiator_min_concentration,
+                )
+            else:
+                initiator = HerbivoreAttackInitiator(
+                    herbivore_species_id=rule.herbivore_species_id,
+                    min_herbivore_population=rule.min_herbivore_population,
+                )
+
             if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
                 # Resource Withdrawal
                 action = ResourceWithdrawalAction(
                     apparent_nutrition_factor=rule.apparent_nutrition_factor,
+                    withdrawal_duration=rule.withdrawal_duration,
                 )
                 aftereffect = rule.aftereffect_ticks
                 triggers_by_flora.setdefault(rule.flora_species_id, []).append(
                     TriggerConditionSchema(
-                        herbivore_species_id=rule.herbivore_species_id,
-                        min_herbivore_population=rule.min_herbivore_population,
+                        initiator=initiator,
                         aftereffect_ticks=aftereffect,
                         activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                         action=action,
@@ -178,8 +193,7 @@ class DraftState:
                 )  # type: ignore
                 triggers_by_flora.setdefault(rule.flora_species_id, []).append(
                     TriggerConditionSchema(
-                        herbivore_species_id=rule.herbivore_species_id,
-                        min_herbivore_population=rule.min_herbivore_population,
+                        initiator=initiator,
                         aftereffect_ticks=sd.aftereffect_ticks,
                         activation_condition=cast("Any", deepcopy(rule.activation_condition)),
                         action=action,

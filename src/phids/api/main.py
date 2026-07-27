@@ -39,6 +39,7 @@ from phids.api.presenters.dashboard import (
     build_live_cell_details,
     build_live_dashboard_payload,
     build_preview_cell_details,
+    extract_ui_snapshot,
 )
 from phids.api.presenters.dashboard.shared import (
     _default_substance_name,
@@ -246,7 +247,8 @@ def _get_loop() -> SimulationLoop:
 
 _simulation_stream_manager = SimulationStreamManager()
 _ui_stream_manager = UIStreamManager(
-    payload_builder=partial(build_live_dashboard_payload, substance_names=_sim_substance_names)
+    payload_builder=partial(build_live_dashboard_payload, substance_names=_sim_substance_names),
+    snapshot_extractor=extract_ui_snapshot,
 )
 
 

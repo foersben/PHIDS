@@ -92,7 +92,10 @@ In ecological systems, plants must balance their energy budgets between growth a
 
 ---
 
-## Morphological Defense Barriers
+## Morphological Defense Barriers & Symbiosis
+
+!!! note "Scientific Progression: Zero-Cost Graph Relay vs. Symbiont Carbon Tax"
+    Earlier simulation versions modeled mycorrhizal networks as zero-cost graph connections. In biological reality, arbuscular mycorrhizal fungi act as obligate biotrophs extracting 10–20% of host plant photosynthate in exchange for hyphal network access. PHIDS models a continuous per-link carbon maintenance tax (`mycorrhizal_tax_per_link`), demonstrating that maintaining extensive warning networks creates a direct metabolic trade-off with plant vegetative growth and reproductive seed production.
 
 Constitutive defenses directly modify the trophic interaction loop without requiring spatial chemical diffusion.
 

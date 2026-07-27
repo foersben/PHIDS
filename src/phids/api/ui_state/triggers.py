@@ -15,37 +15,19 @@ type ActivationConditionNode = dict[str, object]
 
 @dataclasses.dataclass
 class TriggerRule:
-    """One explicit chemical-defense trigger rule.
-
-    A rule says: "when flora species *flora_species_id* is attacked by
-    herbivore species *herbivore_species_id* with at least
-    *min_herbivore_population* individuals, synthesise substance
-    *substance_id*. Optional nested activation conditions can additionally
-    require active substances and/or other herbivore presences via explicit
-    ``all_of`` / ``any_of`` predicate trees. ``None`` = unconditional."
-
-    Multiple rules may share the same (flora, herbivore) pair to express
-    production of different substances simultaneously.
-
-    Args:
-        flora_species_id: Flora species index (0-based).
-        herbivore_species_id: Herbivore species index (0-based).
-        substance_id: Substance layer index to synthesise.
-        action_type: Literal string for the action to take.
-        apparent_nutrition_factor: Factor for resource withdrawal actions.
-        aftereffect_ticks: Duration of aftereffects.
-        min_herbivore_population: Minimum swarm size to trigger this rule.
-        activation_condition: Optional JSON-serialisable predicate tree.
-
-    """
+    """One explicit chemical-defense trigger rule."""
 
     flora_species_id: int
-    herbivore_species_id: int
+    initiator_type: Literal["herbivore_attack", "environmental_signal"] = "herbivore_attack"
+    herbivore_species_id: int = 0
+    min_herbivore_population: int = 5
+    initiator_signal_id: int = 0
+    initiator_min_concentration: float = 0.01
     substance_id: int = 0
     action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
     apparent_nutrition_factor: float = 0.2
+    withdrawal_duration: int = 20
     aftereffect_ticks: int = 10
-    min_herbivore_population: int = 5
     activation_condition: ActivationConditionNode | None = None
 
 

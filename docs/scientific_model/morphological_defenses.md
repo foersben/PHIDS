@@ -1,141 +1,158 @@
 ---
-type: concept
-title: Morphological Defenses and Senescence
+type: scientific_model
+title: Morphological Defenses and Dynamic Resource Reallocation
 status: active
-version: 1.0
-description: Architectural record for morphological defenses and dynamic resource
-  reallocation.
+version: 1.1
+description: Mathematical and biological formulation of constitutive morphological defenses, digestibility modulation, and rate-limited phloem translocation in PHIDS.
 tags:
 - phids
 - ecs
-- numba
-- performance
-- python
-timestamp: "2026-07-21T16:01:38Z"
+- defenses
+- phloem
+- mathematical-biology
+timestamp: "2026-07-25T18:40:00Z"
 resources:
 - src/phids/api/schemas/species.py
 - src/phids/api/schemas/triggers.py
 - src/phids/engine/components/plant.py
-- swarm.py
-- signaling.py
+- src/phids/engine/systems/lifecycle.py
+- src/phids/engine/systems/interaction/feeding.py
 - src/phids/engine/core/flow_field.py
-- src/phids/engine/systems/interaction.py
 ---
 
-This document outlines the architectural implementation for the biological accuracy of the PHIDS engine, specifically the separation of morphological (passive) defenses from active chemical defenses, and dynamic resource reallocation (apparent nutrition withdrawal).
+This document provides the formal mathematical and biological formulation for plant morphological (constitutive) defenses and dynamic resource reallocation (apparent nutrition withdrawal) in the PHIDS ecosystem simulation model.
 
 ---
 
-## Step-by-Step Implementation Details
+## 1. Biological and Ecological Context
 
-### Step 1: Pydantic Schemas & Data Contracts
+Plants possess two distinct evolutionary defense paradigms against herbivory:
 
-**Target Files:** `src/phids/api/schemas/species.py` and `src/phids/api/schemas/triggers.py`
+1. **Constitutive (Morphological) Defenses**: Permanent structural barriers such as trichomes, thorns, spines, and indigestible cell-wall compounds (lignin and silica). These defenses are metabolically fixed and directly impair herbivore feeding mechanics or reduce nutrient assimilation efficiency during every trophic attack.
+2. **Inducible Defenses & Dynamic Allocation**: Physiological responses catalyzed by herbivore damage or volatile organic compound (VOC) warning signals. Upon perception, plants actively withdraw mobile nutrients and carbohydrates from vulnerable tissues (leaves and shoots) via vascular phloem transport into below-ground root sinks, temporarily lowering their nutritional attractiveness to foraging herbivores.
 
-1. **Introduce `PassiveDefensesSchema`**:
+---
+
+## 2. Mathematical Formulation
+
+### 2.1 Constitutive Mechanical Attrition
+
+Mechanical defenses (thorns and spines) inflict physical damage on grazing mouthparts during feeding events. Let $m_{\text{bite}} \ge 0$ represent the species-specific mechanical damage coefficient per bite, and $\rho_{\text{morph}} \in [0, 1]$ represent the herbivore's morphological resistance. The integer headcount reduction $\Delta n$ for a swarm cohort of size $n(t)$ feeding on plant tissue is given by:
+
+$$\Delta n = \left\lfloor m_{\text{bite}} \cdot (1 - \rho_{\text{morph}}) \right\rfloor$$
+
+$$n(t + \Delta t) = \max\left(0, n(t) - \Delta n\right)$$
+
+Where $\lfloor \cdot \rfloor$ denotes the floor function, enforcing discrete integer mortality within the herbivore population cohort.
+
+!!! info "Dual Perspectives: Mechanical Attrition"
+
+    * **Biological Perspective**: Thorns and trichomes do not alter plant nutrient chemistry; instead, they inflict physical trauma on herbivore mouthparts. This enforces an immediate population penalty per bite, favoring herbivores with specialized morphological mouthpart adaptations ($\rho_{\text{morph}}$).
+    * **Computer Science & Mathematical Rationale**: Modeled as an in-place $O(1)$ integer subtraction during the feeding pass inside `feeding.py`. Enforcing $\lfloor \cdot \rfloor$ prevents floating-point "fractional individuals" from cluttering the ECS entity array, maintaining clean headcount integers and strict zero-allocation JIT execution.
+
+---
+
+### 2.2 Caloric Attenuation & Digestibility Discounting
+
+Structural cell-wall barriers (lignin and silica) reduce the fraction of ingested plant biomass that herbivores can digest and metabolize into reproductive energy reserves. Let $\mu_{\text{digest}} \in [0, 1]$ represent the plant's digestibility modifier and $\delta_{\text{eff}} \ge 0$ represent the herbivore's digestive adaptation efficiency.
+
+Given total plant energy consumed $E_{\text{consumed}}$, the net metabolized energy $E_{\text{metabolized}}$ added to the herbivore energy pool is:
+
+$$\eta_{\text{net}} = \min\left(1.0, \max\left(0.0, \mu_{\text{digest}} \cdot \delta_{\text{eff}}\right)\right)$$
+
+$$E_{\text{metabolized}} = E_{\text{consumed}} \cdot \eta_{\text{net}}$$
+
+!!! info "Dual Perspectives: Caloric Attenuation"
+
+    * **Biological Perspective**: High-lignin or silica-heavy foliage reduces the net energetic yield per gram consumed. Herbivores ingest biomass but fail to assimilate calories, slowing their reproductive rate and mitigating population explosions without killing swarms outright.
+    * **Computer Science & Mathematical Rationale**: Implemented as a scalar multiplication $\eta_{\text{net}} = \min(1.0, \max(0.0, \mu_{\text{digest}} \cdot \delta_{\text{eff}}))$ during consumption accumulation. Decouples raw biomass consumption from energy transfer in a single arithmetic operation, preserving $O(1)$ per-entity state updates.
+
+---
+
+### 2.3 Rate-Limited Phloem Translocation Kinetics
+
+When a plant activates a `resource_withdrawal` defense action, it commits to reducing its apparent nutritional factor $N(t)$ toward a target factor $N_{\text{target}} \in [0, 1]$ (where lower values represent lower nutritional attraction).
+
+Because carbohydrate transport through vascular phloem sieve tubes is limited by hydrostatic pressure gradients and fluid viscosity, the transition is governed by a first-order rate-limited differential equation with translocation rate $k_{\text{trans}} \in (0, 1]$:
+
+$$\frac{d N(t)}{dt} = -k_{\text{trans}} \cdot \left(N(t) - N_{\text{target}}\right)$$
+
+In discrete simulation time with tick step $\Delta t = 1$:
+
+**Active Withdrawal Phase** ($\tau_{\text{withdrawal}} > 0$):
+
+$$N^{t+1} = N^t - k_{\text{trans}} \cdot \left(N^t - N_{\text{target}}\right)$$
+
+**Recovery Phase** ($\tau_{\text{withdrawal}} = 0$):
+
+$$N^{t+1} = N^t + k_{\text{trans}} \cdot \left(1.0 - N^t\right)$$
+
+!!! info "Dual Perspectives: Rate-Limited Phloem Translocation"
+
+    * **Biological Perspective**: Real plants cannot instantaneously empty their leaves of sugars. Vascular transport takes time ($k_{\text{trans}}$), creating an empirical "window of vulnerability" during which grazing herbivores continue feeding while translocation is underway.
+    * **Computer Science & Mathematical Rationale**: Approximated via an exponential relaxation recurrence step $N^{t+1} = N^t + k (N_{\text{target}} - N^t)$ evaluated in `lifecycle.py`. Prevents discontinuous step-function jumps in the flow-field potential matrix, ensuring smooth spatial gradient transitions for herbivore navigation.
+
+---
+
+### 2.4 Attractant Field Gradient Scaling
+
+The spatial attractiveness of a plant cell $(x, y)$ to foraging herbivores in the Numba-accelerated flow-field solver is scaled directly by the plant's current apparent nutrition factor $N(x, y)$:
+
+$$F(x, y) = \alpha \cdot \left(E_{\text{plant}}(x, y) \cdot N(x, y)\right) - \beta \cdot \sum_{k} T_k(x, y)$$
+
+Where $E_{\text{plant}}(x, y)$ is the total plant energy, $T_k(x, y)$ represents localized repellent toxin concentrations, and $\alpha, \beta$ are flow-field weighting coefficients. Down-regulating $N(x, y)$ flattens the local attractant gradient, causing spatial flow-field navigation to steer approaching herbivore swarms away from the defended plant patch.
+
+!!! info "Dual Perspectives: Attractant Field Scaling"
+
+    * **Biological Perspective**: By translocating nutrients to root sinks, plants mask their nutritional value from sensory-seeking herbivores (trophic camouflage), forcing grazers to disperse toward other patches.
+    * **Computer Science & Mathematical Rationale**: Multiplied directly into the 2D energy tensor $E(x,y) \cdot N(x,y)$ prior to JIT flow-field generation. Modifies the global potential surface without requiring separate pathfinding re-computations or dynamic graph re-routing.
+
+---
+
+## Appendix: Engine Implementation & Schema Mappings
+
+For software engineers and data interface developers, this section maps the mathematical formulation above to concrete data schemas and system modules in the PHIDS codebase.
+
+### Schema Definitions (`src/phids/api/schemas/species.py` & `triggers.py`)
 
     ```python
     class PassiveDefensesSchema(StrictBaseModel):
-        """Morphological (passive) defenses of a flora species."""
-        mechanical_damage_per_bite: float = Field(default=0.0, ge=0.0, description="Thorns/spines damage per feeding event.")
-        digestibility_modifier: float = Field(default=1.0, ge=0.0, le=1.0, description="Lignin/silica calorie discount multiplier (e.g. 0.5 = 50% metabolized).")
+        """Constitutive morphological defenses of a flora species."""
+
+        mechanical_damage_per_bite: float = Field(default=0.0, ge=0.0)
+        digestibility_modifier: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+    class ResourceWithdrawalAction(StrictBaseModel):
+        """Action configuring rate-limited phloem nutrient translocation."""
+
+        type: Literal["resource_withdrawal"] = "resource_withdrawal"
+        apparent_nutrition_factor: float = Field(default=0.1, ge=0.0, le=1.0)
+        withdrawal_duration: int = Field(default=5, ge=1)
     ```
 
-2. **Add `passive_defenses` to `FloraSpeciesParams`**:
+### Component State (`src/phids/engine/components/plant.py`)
 
     ```python
-    passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
+    @dataclass(slots=True)
+    class PlantComponent:
+        apparent_nutrition_factor: float = 1.0
+        target_nutrition_factor: float = 1.0
+        translocation_rate: float = 0.2
+        withdrawal_ticks_remaining: int = 0
     ```
 
-3. **Add `resistances` to `HerbivoreSpeciesParams`**:
+### System Execution Pipeline (`src/phids/engine/systems/lifecycle.py`)
 
     ```python
-    resistances: dict[str, float] = Field(default_factory=dict, description="Resistances to defense mechanisms (e.g. {'mechanical': 0.5}).")
-    ```
-
-4. **Update `TriggerActionSchema`**:
-    * Refactor the trigger action model to represent a discriminated union of action types using Pydantic's `Field(discriminator="type")`.
-    * **Action A**: `synthesize_substance` (holds the existing substance parameters: `substance_id`, `synthesis_duration`, etc.).
-    * **Action B**: `resource_withdrawal` (holds `apparent_nutrition_factor: float = 1.0` and duration parameters).
-
----
-
-### Step 2: ECS Component Expansion
-
-**Target Files:** `src/phids/engine/components/plant.py` and `swarm.py`
-
-1. In `PlantComponent`, add `apparent_nutrition_factor: float = 1.0` as a mutable runtime float scalar. This tracks the apparent attraction level of the plant.
-2. Ensure that the signaling lifecycle tracker (e.g., in `signaling.py`) manages resetting this value back to 1.0 when a `resource_withdrawal` trigger action duration expires.
-
----
-
-### Step 3: Numba Flow-Field Manipulation
-
-**Target File:** `src/phids/engine/core/flow_field.py`
-
-1. Locate the JIT-accelerated kernel `_compute_flow_field_impl` which takes plant energy and toxin levels.
-2. Pass a 2D array of `apparent_nutrition_factors` matching the grid layout.
-3. During baseline calculation:
-
-    ```python
-    base[x, y] = (plant_energy[x, y] * apparent_nutrition_factor[x, y]) - toxin_sum[x, y]
-    ```
-
-    This scales the attractant signal of the plant dynamically before it is diffused across the grid.
-
----
-
-### Step 4: The Trophic Interaction Loop (Feeding)
-
-**Target File:** `src/phids/engine/systems/interaction.py`
-
-1. In the `_process_feeding` loop:
-    * Extract the `passive_defenses` attributes for the targeted plant species.
-2. **Caloric Attenuation**:
-    * Apply the digestibility modifier to the transferred energy:
-
-    $$\text{calories\_metabolized} = \Delta e \times \text{digestibility\_modifier}$$
-
-    * Add `calories_metabolized` to the herbivore swarm's energy surplus rather than the raw $\Delta e$ eaten.
-3. **Mechanical Damage**:
-    * Compute mechanical damage:
-        $$\text{damage\_taken} = \text{mechanical\_damage\_per\_bite} \times (1.0 - \text{swarm.resistances.get('mechanical', 0.0)})$$
-    * Deduct `damage_taken` directly from the grazing swarm's population count ($n(t)$).
-
----
-
-### Step 5: The Empirical Database Overhaul
-
-**Target File:** `src/phids/analytics/bio_database.json`
-
-1. Completely refactor the JSON database structure to group parameters cleanly:
-    * `base_metrics` (growth, max energy, reproduction, etc.)
-    * `passive_defenses` (mechanical damage, digestibility modifier)
-    * `substances` (signals, toxins definitions)
-    * `trigger_rules` (triggers mapping to substance synthesis or resource withdrawal actions)
-2. Include realistic examples representing:
-    * A multi-level warning cascade (e.g., Neighbor VOC -> Local signal -> Toxin synthesis).
-    * A `resource_withdrawal` action triggering under high local herbivore density stress.
-
----
-
-### Step 6: The "Morphology & Defense" UI Tab
-
-**Target Files:** `src/phids/api/templates/partials/`
-
-1. Create a separate HTMX partial `morphology_defense_tab.html`.
-2. Render custom sliders for `Mechanical Damage` and `Digestibility Modifier`.
-3. Expose an interactive trigger array editor supporting both action types (`synthesize_substance` and `resource_withdrawal`).
-4. Add real-time warning indicators for invalid configurations (e.g., orphan signals that are emitted but never referenced in any trigger conditions).
-
----
-
-## QA & Pre-Commit Validation
-
-* **Fixed Dimension Matrix Boundary:** Verify that updates do not modify or bypass the $16 \times 16$ bounds configured in the `DietCompatibilityMatrix` or trigger rules.
-* **Performance Verification:** Run pytest and typecheck to verify there are no performance regressions or Numba typing failures:
-
-    ```bash
-    uv run pytest
-    uv run ruff check .
+    # Phloem translocation update during lifecycle tick
+    if plant.withdrawal_ticks_remaining > 0:
+        plant.withdrawal_ticks_remaining -= 1
+        plant.apparent_nutrition_factor += (
+            plant.target_nutrition_factor - plant.apparent_nutrition_factor
+        ) * plant.translocation_rate
+    else:
+        plant.apparent_nutrition_factor += (
+            1.0 - plant.apparent_nutrition_factor
+        ) * plant.translocation_rate
     ```

@@ -53,7 +53,16 @@ At the start of the interaction phase, PHIDS aggregates the total population of 
 
 This is a computational surrogate for crowding-induced displacement. When too many grazers cram into a single patch, physical jostling forces the groups to scatter radially, expanding the foraging front and alleviating the localized density pressure.
 
-## 4. Trophic Anchoring (The Arrestment Reflex & Anchoring Heuristic)
+## 4. Trophic Feeding & Functional Responses
+
+$$E_{\text{consumed}} = \frac{a \cdot E_{\text{plant}}}{1 + a \cdot T_h \cdot E_{\text{plant}}} \cdot n_i$$
+
+Where $a = \frac{\text{consumption\_rate}}{\text{velocity}}$ represents attack search efficiency, $T_h$ represents handling time per calorie, and $n_i$ is the population size of the co-located swarm.
+
+!!! note "Scientific Progression: Linear Intake vs. Holling Type II Response"
+    Earlier simulation versions modeled feeding as a strictly linear function of plant energy ($E_{\text{consumed}} = a \cdot E_{\text{plant}}$), assuming herbivores could digest infinite plant mass instantly at high densities. PHIDS incorporates Holling's Type II Functional Response incorporating handling time ($T_h$), recreating realistic biological saturation ceilings and preventing sudden, unnatural ecosystem collapses.
+
+## 5. Trophic Anchoring (The Arrestment Reflex & Anchoring Heuristic)
 
 ### I. Implementation Mechanics
 
