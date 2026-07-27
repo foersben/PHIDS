@@ -55,6 +55,28 @@ mcp = FastMCP(
 )
 
 
+@mcp.tool()
+def query_batch_jobs() -> dict[str, Any]:
+    """Return a summary of active and completed batch jobs from the draft state.
+
+    Provides visibility into long-running exploration tasks or evolutionary
+    exploration results.
+
+    Returns:
+        dict[str, Any]: Dictionary mapping job IDs to their state representations.
+    """
+    draft = get_draft()
+    return {
+        job_id: {
+            "status": state.status,
+            "completed_runs": state.completed,
+            "total_runs": state.total,
+            "finished_at": state.finished_at,
+        }
+        for job_id, state in draft.active_batch_jobs.items()
+    }
+
+
 # ===========================================================================
 # Internal helpers
 # ===========================================================================
@@ -135,12 +157,15 @@ def runtime_snapshot() -> dict[str, Any]:
         "grid_height": draft.grid_height,
         "max_ticks": draft.max_ticks,
         "tick_rate_hz": draft.tick_rate_hz,
+        "placement_mode": draft.placement_mode,
+        "mycorrhizal_inter_species": draft.mycorrhizal_inter_species,
         "flora_species_count": len(draft.flora_species),
         "herbivore_species_count": len(draft.herbivore_species),
         "substance_definitions_count": len(draft.substance_definitions),
         "trigger_rules_count": len(draft.trigger_rules),
         "initial_plants_count": len(draft.initial_plants),
         "initial_swarms_count": len(draft.initial_swarms),
+        "active_batch_jobs_count": len(draft.active_batch_jobs),
         "termination_thresholds": {
             "z2_flora_species_extinction": draft.z2_flora_species_extinction,
             "z4_herbivore_species_extinction": draft.z4_herbivore_species_extinction,
@@ -285,6 +310,31 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
 # ===========================================================================
 # 3. PROMPTS - pre-baked agent guidance
 # ===========================================================================
+
+
+@mcp.tool()
+def read_batch_summary(job_id: str) -> dict[str, Any]:
+    """Read the aggregated metrics inside a batch job's summary JSON file.
+
+    Allows agents to digest batch job metric summaries without manually
+    loading JSON artifacts.
+
+    Args:
+        job_id: The ID of the batch job to read.
+
+    Returns:
+        dict[str, Any]: Dictionary containing the aggregated metrics on success,
+        or an error message on failure.
+    """
+    summary_path = _PROJECT_ROOT / "data" / "batches" / f"{job_id}_summary.json"
+    if not summary_path.exists():
+        return {"status": "error", "message": f"Summary file not found: {summary_path}"}
+
+    try:
+        with open(summary_path, encoding="utf-8") as f:
+            return {"status": "success", "data": json.load(f)}
+    except Exception as exc:
+        return {"status": "error", "message": f"Failed to read summary file: {exc}"}
 
 
 @mcp.prompt()
