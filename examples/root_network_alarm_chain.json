@@ -31,6 +31,8 @@
       "camouflage_factor": 1.0,
       "triggers": [
         {
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 4,
           "aftereffect_ticks": 5,
           "activation_condition": {
             "kind": "herbivore_presence",
@@ -48,11 +50,6 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.45,
             "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 4,
-            "type": "herbivore_attack"
           }
         }
       ],
@@ -76,6 +73,8 @@
       "camouflage_factor": 1.0,
       "triggers": [
         {
+          "herbivore_species_id": 1,
+          "min_herbivore_population": 3,
           "aftereffect_ticks": 4,
           "activation_condition": {
             "kind": "any_of",
@@ -102,11 +101,6 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.55,
             "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 1,
-            "min_herbivore_population": 3,
-            "type": "herbivore_attack"
           }
         }
       ],
@@ -130,6 +124,8 @@
       "camouflage_factor": 0.5,
       "triggers": [
         {
+          "herbivore_species_id": 1,
+          "min_herbivore_population": 3,
           "aftereffect_ticks": 4,
           "activation_condition": {
             "kind": "any_of",
@@ -155,14 +151,11 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.45,
             "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 1,
-            "min_herbivore_population": 3,
-            "type": "herbivore_attack"
           }
         },
         {
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 4,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "all_of",
@@ -188,11 +181,6 @@
             "repellent_walk_ticks": 6,
             "energy_cost_per_tick": 0.95,
             "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 4,
-            "type": "herbivore_attack"
           }
         }
       ],

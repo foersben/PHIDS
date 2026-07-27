@@ -26,9 +26,11 @@ def _feed_on_single_plant(
     target_plant: PlantComponent,
     flora_species_params: list[FloraSpeciesParams],
     herbivore_species_params: list[HerbivoreSpeciesParams],
+    world: ECSWorld,
     env: GridEnvironment,
     tile_populations: list[int],
     plant_death_causes: dict[str, int] | None,
+    co_eid: int,
 ) -> tuple[float, bool]:
     """Feed on a single co-located plant, returning (metabolized_energy, plant_killed).
 
@@ -43,27 +45,17 @@ def _feed_on_single_plant(
         target_plant: The plant component to feed on.
         flora_species_params: The flora species parameters.
         herbivore_species_params: The herbivore species parameters.
-        herbivore_species_params: The herbivore species parameters.
+        world: The ECS world.
         env: The grid environment.
         tile_populations: The tile populations.
         plant_death_causes: The plant death causes.
+        co_eid: The co-eid.
 
     Returns:
         A tuple containing the metabolized energy and whether the plant was killed.
     """
     effective_velocity = max(1, swarm.velocity)
-    swarm_params = herbivore_species_params[swarm.species_id]
-    handling_time = getattr(swarm_params, "handling_time", 0.0)
-
-    raw_per_ind = swarm.consumption_rate / effective_velocity
-    if handling_time > 0.0:
-        potential_per_ind = (raw_per_ind * target_plant.energy) / (
-            1.0 + raw_per_ind * handling_time * target_plant.energy
-        )
-    else:
-        potential_per_ind = raw_per_ind
-
-    potential_consumption = potential_per_ind * swarm.population
+    potential_consumption = (swarm.consumption_rate / effective_velocity) * swarm.population
     consumed = min(potential_consumption, target_plant.energy)
 
     plant_params = flora_species_params[target_plant.species_id]
@@ -102,17 +94,11 @@ def _feed_on_single_plant(
             target_plant.y,
             target_plant.species_id,
         )
+        world.unregister_position(co_eid, target_plant.x, target_plant.y)
+        world.collect_garbage([co_eid])
         plant_killed = True
 
     return metabolized_energy, plant_killed
-
-
-def _is_diet_compatible(swarm_species_id: int, plant_species_id: int, diet_matrix: list[list[bool]]) -> bool:
-    """Check if target plant species is in swarm species diet matrix."""
-    if swarm_species_id >= len(diet_matrix):
-        return False
-    row = diet_matrix[swarm_species_id]
-    return plant_species_id < len(row) and row[plant_species_id]
 
 
 def _resolve_swarm_feeding(
@@ -143,9 +129,8 @@ def _resolve_swarm_feeding(
     """
     ate_anything = False
     on_incompatible_plant = False
-    dead_plants: list[int] = []
 
-    for co_eid in world.entities_at(swarm.x, swarm.y):
+    for co_eid in list(world.entities_at(swarm.x, swarm.y)):
         if not world.has_entity(co_eid):
             continue
         co_entity = world.get_entity(co_eid)
@@ -154,29 +139,25 @@ def _resolve_swarm_feeding(
         target_plant: PlantComponent = co_entity.get_component(PlantComponent)
 
         # Diet compatibility check
-        if not _is_diet_compatible(swarm.species_id, target_plant.species_id, diet_matrix):
+        herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
+        if not (target_plant.species_id < len(herbivore_row) and herbivore_row[target_plant.species_id]):
             on_incompatible_plant = True
             continue
 
-        metabolized, plant_killed = _feed_on_single_plant(
+        metabolized, _ = _feed_on_single_plant(
             swarm,
             target_plant,
             flora_species_params,
             herbivore_species_params,
+            world,
             env,
             tile_populations,
             plant_death_causes,
+            co_eid,
         )
         swarm.energy += metabolized
         if metabolized > 0:
             ate_anything = True
-        if plant_killed:
-            dead_plants.append(co_eid)
-
-    for eid in dead_plants:
-        world.unregister_position(eid, swarm.x, swarm.y)
-    if dead_plants:
-        world.collect_garbage(dead_plants)
 
     # Behavioral overrides based on feeding success
     if ate_anything:

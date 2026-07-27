@@ -2,15 +2,10 @@
   <div class="flex items-center justify-between">
     <h2 class="text-xl font-semibold text-slate-800">🗺️ Placement Editor</h2>
     <div class="flex gap-2">
-      <button hx-post="/api/config/placements/clear-plants" hx-target="#placement-list"
-        hx-swap="innerHTML" hx-confirm="Clear all plant placements?"
-        class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors">
-        🗑️ Clear Plants
-      </button>
-      <button hx-post="/api/config/placements/clear-swarms" hx-target="#placement-list"
-        hx-swap="innerHTML" hx-confirm="Clear all swarm placements?"
+      <button hx-post="/api/config/placements/clear" hx-target="#placement-list"
+        hx-swap="innerHTML" hx-confirm="Clear all placements?"
         class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium transition-colors">
-        🗑️ Clear Swarms
+        🗑️ Clear All
       </button>
     </div>
   </div>
@@ -46,24 +41,7 @@
       </div>
 
       <!-- Tool selector -->
-
-      <!-- Tabs for Manual / Autoassign -->
-      <div class="mt-4 border-b border-slate-200">
-        <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-          <button type="button" id="tab-btn-manual" onclick="switchPlacementTab('manual')"
-            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm border-indigo-500 text-indigo-600">
-            Manual Placement
-          </button>
-          <button type="button" id="tab-btn-autoassign" onclick="switchPlacementTab('autoassign')"
-            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">
-            Autoassign
-          </button>
-        </nav>
-      </div>
-
-      <!-- Tab Content: Manual -->
-      <div id="tab-content-manual" class="mt-4 flex flex-wrap gap-4 items-end block">
-
+      <div class="mt-4 flex flex-wrap gap-4 items-end">
 
         <!-- Mode -->
         <div>
@@ -112,91 +90,6 @@
           <input type="number" id="swarm-energy-input" value="50" min="0.1" step="1"
             class="w-20 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
         </div>
-
-      </div>
-
-      <!-- Tab Content: Autoassign -->
-      <div id="tab-content-autoassign" class="mt-4 hidden">
-        <form hx-post="/api/config/placements/autoassign" hx-target="#placement-list" hx-swap="innerHTML" class="space-y-4">
-          <div class="flex flex-wrap gap-4 items-end">
-            <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">Target Type</label>
-              <select name="target_type" id="auto-target-type" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="updateAutoassignForm()">
-                <option value="plant">Flora (Plants)</option>
-                <option value="swarm">Herbivore Swarms</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-600 mb-1">Distribution</label>
-              <select name="distribution" id="auto-distribution" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="updateAutoassignForm()">
-                <option value="uniform">Uniform</option>
-                <option value="clustered">Clustered</option>
-                <option value="banded">Banded</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-4 items-end bg-slate-50 p-3 rounded-lg border border-slate-100">
-             <!-- Uniform options -->
-             <div id="auto-opt-uniform" class="block">
-               <label class="block text-xs font-medium text-slate-600 mb-1">Density (0-1)</label>
-               <input type="number" name="density" value="0.05" min="0.0001" max="1.0" step="0.0001" class="w-24 border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
-             </div>
-
-             <!-- Clustered options -->
-             <div id="auto-opt-clustered" class="hidden flex gap-4">
-               <div>
-                 <label class="block text-xs font-medium text-slate-600 mb-1">Cluster Count</label>
-                 <input type="number" name="cluster_count" value="5" min="1" step="1" class="w-24 border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
-               </div>
-               <div>
-                 <label class="block text-xs font-medium text-slate-600 mb-1">Variance</label>
-                 <input type="number" name="variance" value="2.0" min="0.1" step="0.1" class="w-24 border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
-               </div>
-             </div>
-
-             <!-- Banded options -->
-             <div id="auto-opt-banded" class="hidden flex gap-4">
-               <div>
-                 <label class="block text-xs font-medium text-slate-600 mb-1">Band Count</label>
-                 <input type="number" name="band_count" value="3" min="1" step="1" class="w-24 border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
-               </div>
-               <div>
-                 <label class="block text-xs font-medium text-slate-600 mb-1">Orientation</label>
-                 <select name="orientation" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
-                   <option value="horizontal">Horizontal</option>
-                   <option value="vertical">Vertical</option>
-                 </select>
-               </div>
-             </div>
-          </div>
-
-          <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-            <label class="block text-xs font-semibold text-indigo-800 mb-2">Species Proportions (Weights)</label>
-            <div id="auto-flora-weights" class="space-y-2 block">
-              {% for fp in flora_species %}
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-600 w-32 truncate" title="{{ fp.name }}">{{ fp.name }}</span>
-                <input type="range" name="weight_{{ fp.species_id }}" value="10" min="0" max="100" class="flex-1 accent-indigo-500">
-              </div>
-              {% endfor %}
-            </div>
-
-            <div id="auto-swarm-weights" class="space-y-2 hidden">
-              {% for pp in herbivore_species %}
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-600 w-32 truncate" title="{{ pp.name }}">{{ pp.name }}</span>
-                <input type="range" name="weight_{{ pp.species_id }}" value="10" min="0" max="100" class="flex-1 accent-indigo-500">
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <button type="submit" onclick="setTimeout(()=>window.__phidsPlacementController.fetchData(), 200)"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors w-full">
-            ✨ Generate & Fill
-          </button>
-        </form>
       </div>
     </div>
 
@@ -583,72 +476,5 @@
 
   // Initial load
   loadData();
-
-  // Autoassign JS
-  window.switchPlacementTab = function(tabId) {
-    const manualBtn = document.getElementById('tab-btn-manual');
-    const autoBtn = document.getElementById('tab-btn-autoassign');
-    const manualContent = document.getElementById('tab-content-manual');
-    const autoContent = document.getElementById('tab-content-autoassign');
-
-    if (tabId === 'manual') {
-      manualBtn.classList.replace('border-transparent', 'border-indigo-500');
-      manualBtn.classList.replace('text-slate-500', 'text-indigo-600');
-      autoBtn.classList.replace('border-indigo-500', 'border-transparent');
-      autoBtn.classList.replace('text-indigo-600', 'text-slate-500');
-
-      manualContent.classList.remove('hidden');
-      manualContent.classList.add('block');
-      autoContent.classList.remove('block');
-      autoContent.classList.add('hidden');
-    } else {
-      autoBtn.classList.replace('border-transparent', 'border-indigo-500');
-      autoBtn.classList.replace('text-slate-500', 'text-indigo-600');
-      manualBtn.classList.replace('border-indigo-500', 'border-transparent');
-      manualBtn.classList.replace('text-indigo-600', 'text-slate-500');
-
-      autoContent.classList.remove('hidden');
-      autoContent.classList.add('block');
-      manualContent.classList.remove('block');
-      manualContent.classList.add('hidden');
-    }
-  };
-
-  window.updateAutoassignForm = function() {
-    const target = document.getElementById('auto-target-type').value;
-    const dist = document.getElementById('auto-distribution').value;
-
-    // Toggle distribution opts
-    document.getElementById('auto-opt-uniform').style.display = (dist === 'uniform') ? 'block' : 'none';
-    document.getElementById('auto-opt-clustered').style.display = (dist === 'clustered') ? 'flex' : 'none';
-    document.getElementById('auto-opt-banded').style.display = (dist === 'banded') ? 'flex' : 'none';
-
-    // Toggle weight sections
-    const floraWeights = document.getElementById('auto-flora-weights');
-    const swarmWeights = document.getElementById('auto-swarm-weights');
-
-    if (target === 'plant') {
-      floraWeights.classList.remove('hidden');
-      floraWeights.classList.add('block');
-      swarmWeights.classList.remove('block');
-      swarmWeights.classList.add('hidden');
-
-      // Disable inputs for hidden swarms so they aren't submitted
-      swarmWeights.querySelectorAll('input').forEach(el => el.disabled = true);
-      floraWeights.querySelectorAll('input').forEach(el => el.disabled = false);
-    } else {
-      swarmWeights.classList.remove('hidden');
-      swarmWeights.classList.add('block');
-      floraWeights.classList.remove('block');
-      floraWeights.classList.add('hidden');
-
-      floraWeights.querySelectorAll('input').forEach(el => el.disabled = true);
-      swarmWeights.querySelectorAll('input').forEach(el => el.disabled = false);
-    }
-  };
-
-  // Init
-  setTimeout(() => window.updateAutoassignForm(), 100);
-
 })();
 </script>

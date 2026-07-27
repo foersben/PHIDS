@@ -48,6 +48,8 @@
       "camouflage": false,
       "triggers": [
         {
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 3,
           "aftereffect_ticks": 5,
           "activation_condition": {
             "kind": "herbivore_presence",
@@ -65,11 +67,6 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.5,
             "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 3,
-            "type": "herbivore_attack"
           }
         }
       ],
@@ -110,6 +107,8 @@
       "camouflage": false,
       "triggers": [
         {
+          "herbivore_species_id": 2,
+          "min_herbivore_population": 2,
           "aftereffect_ticks": 1,
           "activation_condition": {
             "kind": "herbivore_presence",
@@ -127,11 +126,6 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 1.5,
             "irreversible": true
-          },
-          "initiator": {
-            "herbivore_species_id": 2,
-            "min_herbivore_population": 2,
-            "type": "herbivore_attack"
           }
         }
       ],
@@ -155,6 +149,8 @@
       "camouflage_factor": 0.1,
       "triggers": [
         {
+          "herbivore_species_id": 0,
+          "min_herbivore_population": 1,
           "aftereffect_ticks": 10,
           "activation_condition": null,
           "action": {
@@ -168,11 +164,6 @@
             "repellent_walk_ticks": 0,
             "energy_cost_per_tick": 0.1,
             "irreversible": false
-          },
-          "initiator": {
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 1,
-            "type": "herbivore_attack"
           }
         }
       ],

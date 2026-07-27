@@ -30,7 +30,7 @@ from httpx import AsyncClient
 import phids.__main__ as phids_cli
 import phids.api.main as api_main
 import phids.api.ui_state as draft_state_module
-from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
+from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api.schemas.responses import BatchJobState
 from phids.api.schemas.species import (
     FloraSpeciesParams,
@@ -266,38 +266,44 @@ async def test_dashboard_contains_extended_telemetry_canvases(api_client: AsyncC
     assert 'id="biomass-chart"' in resp.text
 
 
-def _advance_loop_until_flora_extinction(loop: SimulationLoop, max_ticks: int = 140) -> None:
-    """Step simulation loop until only 1 flora species remains."""
-    while loop.tick < max_ticks:
-        asyncio.run(loop.step())
-        live = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
-        if len(live) <= 1:
-            break
-
-
-def _extract_payload_species_ids(rows: list[dict[str, object]]) -> set[int]:
-    """Extract valid species IDs from dashboard payload rows."""
-    return {species_id for species_id in (_safe_int(spec.get("species_id")) for spec in rows) if species_id >= 0}
-
-
 def test_live_dashboard_payload_separates_render_layers_from_all_configured_species() -> None:
-    """Verifies that the dashboard payload preserves extinct-species metadata without repainting extinct layers."""
+    """Verifies that the dashboard payload preserves extinct-species metadata without repainting extinct layers.
+
+    This test validates the bifurcated payload contract used by the live dashboard. The canvas
+    renderer must receive only extant flora layers so stale or extinct species cannot reappear as
+    chromatic ghosts on the grid, whereas the legend and population bars must continue to enumerate
+    the full configured flora catalogue with an explicit ``extinct`` flag. The invariant preserves
+    ecological interpretability across collapse events while keeping the rendered field faithful to
+    the live ECS population state.
+    """
     config = load_scenario_from_json(Path("examples/meadow_defense.json"))
     loop = SimulationLoop(config)
-    _advance_loop_until_flora_extinction(loop)
 
-    payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names=api_main._sim_substance_names)
+    # Advance until only one flora species remains in the ECS world.
+    while loop.tick < 140:
+        asyncio.run(loop.step())
+        live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
+        if len(live_species) <= 1:
+            break
+
+    payload = build_live_dashboard_payload(loop, substance_names=api_main._sim_substance_names)
     species_energy_rows = _as_object_dict_rows(payload.get("species_energy"))
     all_flora_rows = _as_object_dict_rows(payload.get("all_flora_species"))
-
-    payload_species = _extract_payload_species_ids(species_energy_rows)
-    legend_species = _extract_payload_species_ids(all_flora_rows)
+    payload_species = {
+        species_id
+        for species_id in (_safe_int(spec.get("species_id")) for spec in species_energy_rows)
+        if species_id >= 0
+    }
+    legend_species = {
+        species_id for species_id in (_safe_int(spec.get("species_id")) for spec in all_flora_rows) if species_id >= 0
+    }
     configured_species = {species.species_id for species in loop.config.flora_species}
     live_species = {entity.get_component(PlantComponent).species_id for entity in loop.world.query(PlantComponent)}
 
     assert payload_species == live_species
     assert legend_species == configured_species
 
+    # Extinct entries must remain visible in the legend metadata but absent from the render layers.
     extinct_in_payload = {
         _safe_int(spec.get("species_id"))
         for spec in all_flora_rows
@@ -1434,7 +1440,7 @@ async def test_biotope_config_updates_and_clamps_mycorrhizal_growth_interval(
     assert 'name="z4_herbivore_species_extinction"' in resp.text
     assert 'name="z6_max_total_flora_energy"' in resp.text
     assert 'name="z7_max_total_herbivore_population"' in resp.text
-    assert 'hx-trigger="change"' in resp.text
+    assert "hx-trigger=\"input changed delay:200ms from:input:not([type='range']), change delay:200ms\"" in resp.text
     assert get_draft().mycorrhizal_growth_interval_ticks == 1
     assert get_draft().z2_flora_species_extinction == 15
     assert get_draft().z4_herbivore_species_extinction == -1
@@ -1649,7 +1655,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         assert step_resp.status_code == 200, step_resp.text
 
         dashboard_payload = build_live_dashboard_payload(
-            extract_ui_snapshot(api_main._sim_loop),
+            api_main._sim_loop,
             substance_names=api_main._sim_substance_names,
         )
         details_resp = await client.get("/api/ui/cell-details", params={"x": 2, "y": 2})

@@ -25,14 +25,6 @@ class _FakeConfig:
     tick_rate_hz: float = 10.0
 
 
-class _FakeLock:
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-
 class _FakeLoop:
     """Minimal loop surrogate exposing the stream-facing simulation contract."""
 
@@ -44,7 +36,6 @@ class _FakeLoop:
         self.paused = False
         self.config = _FakeConfig(tick_rate_hz=tick_rate_hz)
         self.snapshot_calls = 0
-        self._lock = _FakeLock()
 
     def get_state_snapshot(self) -> dict[str, int]:
         """Return deterministic snapshot payloads and count encoding requests."""
@@ -116,6 +107,29 @@ async def test_simulation_manager_reuses_snapshot_cache_for_unchanged_tick() -> 
     assert loop.snapshot_calls == 2
 
 
+def test_ui_manager_reuses_encoded_payload_for_unchanged_signature() -> None:
+    """Verify UI payload encoding is cached for unchanged loop state and refreshed on tick changes."""
+    loop = _FakeLoop(tick=7)
+    calls = {"count": 0}
+
+    def _payload_builder(current_loop: _FakeLoop) -> dict[str, int]:
+        calls["count"] += 1
+        return {"tick": current_loop.tick}
+
+    manager = UIStreamManager(payload_builder=_payload_builder)
+
+    first = manager._encoded_payload(loop)
+    second = manager._encoded_payload(loop)
+
+    assert first == second
+    assert calls["count"] == 1
+
+    loop.tick = 8
+    third = manager._encoded_payload(loop)
+    assert third != ""
+    assert calls["count"] == 2
+
+
 @pytest.mark.asyncio
 async def test_simulation_manager_closes_when_loop_missing() -> None:
     """Verifies explicit policy-close behavior when no simulation loop is loaded.
@@ -182,10 +196,7 @@ async def test_ui_manager_waits_for_loop_then_emits_and_handles_disconnect(
 
     monkeypatch.setattr("phids.api.websockets.manager.asyncio.sleep", _instant_sleep)
 
-    manager = UIStreamManager(
-        payload_builder=lambda snapshot: {"tick": snapshot["tick"]},
-        snapshot_extractor=lambda loop: loop.get_state_snapshot(),
-    )
+    manager = UIStreamManager(payload_builder=lambda loop: {"tick": loop.tick})
     loop = _FakeLoop(tick=3, terminated=False)
     websocket = _FakeWebSocket(disconnect_on_send_text=True)
     calls = {"count": 0}

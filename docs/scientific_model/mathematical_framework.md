@@ -21,49 +21,6 @@ resources:
 
 This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a coupled hybrid dynamical system. In this model, discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers.
 
----
-
-## Executive Introduction: Dual-Perspective Modeling Architecture
-
-To serve both quantitative biologists and computer scientists, every component in PHIDS is designed and documented from **two distinct, complementary perspectives**:
-
-### 1. The Biological Perspective (Why Biologists & Ecologists Should Use PHIDS)
-
-Classical ecological modeling relies heavily on continuous Ordinary Differential Equations (ODEs) such as the Lotka-Volterra predator-prey system. While mathematically tractable, ODEs assume **instantaneous spatial mixing**, **uniform environmental conditions**, and **continuous population densities**. In real-world botany and entomology, these assumptions fail catastrophically:
-
-* **Spatial Heterogeneity & Patch Exhaustion**: Plants are immobile spatial anchors. Herbivores do not graze uniform global averages; they navigate localized chemical gradients, exhaust local patches, and encounter spatial refugia.
-* **Complex Multi-Trophic Defense Pathways**: Plants deploy combinations of constitutive structural barriers (thorns, lignin), inducible chemical defenses (toxins, volatile organic compounds), and dynamic nutrient translocation via phloem transport.
-* **Atmospheric & Subterranean Alarm Networks**: Airborne Volatile Organic Compound (VOC) dispersion is driven by micro-climatic wind advection and atmospheric decay, while subterranean mycorrhizal fungi relay warning signals between root systems at metabolic photosynthate costs.
-* **Potential Gains for Empirical Researchers**: PHIDS provides an *in silico* laboratory to test multi-species plant defense strategies, conduct Design Space Exploration (DSE) via Pareto multi-objective optimization, and predict ecosystem tipping points under changing wind, density, or climate conditions before running multi-year field experiments.
-
-### 2. The Computer Science & Mathematical Perspective (Algorithmic Rationale & HPC Design)
-
-Simulating tens of thousands of interacting organisms and diffusing chemical fields at interactive frame rates (60+ FPS) requires strict computational disciplines:
-
-* **Coupled Hybrid Dynamical System**: We decouple discrete entity state updates ($O(N)$ ECS spatial hash) from continuous Partial Differential Equations ($O(W \cdot H)$ double-buffered cellular automata).
-* **Cache Locality & Data-Oriented Design**: Python object overhead is eliminated in hot path execution loops. Components are stored as contiguous 1D/2D NumPy arrays, and hot mathematical stencils (Gaussian convolution, flow-field generation) are compiled to native machine code using Numba `@njit`.
-* **Numerical Stability & Operator Splitting**: We approximate continuous parabolic PDEs ($\frac{\partial C}{\partial t} = D \nabla^2 C - \lambda C + Q$) using semi-Lagrangian advection and discrete spatial convolution kernels, enforcing floating-point denormalization clamps ($<10^{-4} \to 0.0$) to avoid CPU microcode performance degradation.
-* **Deterministic Telemetry Replay**: All stochastic tick outcomes are serialized tick-by-tick into Zarr zstandard-compressed chunked matrices, enabling exact playback directly from disk without re-executing engine logic.
-
----
-
-## Master Summary: Comprehensive Subsystem Behaviors & Dual Perspectives
-
-The following matrix provides a high-level master overview of all core scientific behaviors implemented in PHIDS, detailing the biological rationale, mathematical/CS formulation, and primary deep-dive documentation for each component:
-
-| Subsystem / Feature | Biological Perspective (Why it matters biologically) | Computer Science / Math Rationale (How it is computed) | Deep-Dive Reference |
-| :--- | :--- | :--- | :--- |
-| **Volatile Signal Dispersion & Wind Advection** | Airborne Volatile Organic Compound (VOC) warnings spread downwind from damaged plants to prime neighbors. | 2D Semi-Lagrangian advection + $3\times 3$ isotropic Gaussian convolution stencil + denormalization clamp ($<10^{-4} \to 0.0$). | [reaction_diffusion.md](reaction_diffusion.md) |
-| **Sigmoidal Hill Kinetics Priming** | Plant perception of airborne VOCs operates as a continuous, dose-dependent logarithmic response curve ($S(c) = \frac{c^n}{K^n + c^n}$). | Non-linear Hill activation function in `triggers.py` replacing artificial step-function threshold triggers. | [reaction_diffusion.md](reaction_diffusion.md#stress-induced-resource-reallocation-senescence) |
-| **Chemotaxis & Flow-Field Navigation** | Herbivore swarms navigate superposed attractant (food energy) and repellent (toxin) chemical landscapes. | Scalar potential surface tensor $F_t[x,y] = \alpha E \cdot N - \beta \sum T_k$ compiled via Numba `@njit(parallel=True)`. | [chemotaxis.md](chemotaxis.md) |
-| **Constitutive Morphological Defenses** | Mechanical thorns inflict physical mouthpart trauma; cell-wall lignin/silica reduces caloric digestibility. | $O(1)$ floor integer attrition $\lfloor m_{\text{bite}} (1-\rho) \rfloor$ and caloric discount factor $\eta_{\text{net}}$ in `feeding.py`. | [morphological_defenses.md](morphological_defenses.md) |
-| **Rate-Limited Phloem Translocation** | Mobile carbohydrates are translocated from leaves to roots via phloem sieve tubes, creating a vulnerability window. | First-order exponential relaxation recurrence equation $N^{t+1} = N^t - k(N^t - N_{\text{target}})$ in `lifecycle.py`. | [morphological_defenses.md](morphological_defenses.md#23-rate-limited-phloem-translocation-kinetics) |
-| **Mycorrhizal Networks & Carbon Tax** | Subterranean fungal hyphae relay signals between root systems, supported by obligate photosynthate fees. | Spatial graph adjacency relay bypassing atmospheric diffusion grids + per-tick carbon tax fee deducted in `lifecycle.py`. | [flora_and_symbiosis.md](flora_and_symbiosis.md) |
-| **Holling Type II Feeding Response** | Herbivore feeding saturates at high food density due to non-zero handling time ($T_h$). | Saturating intake equation $\Delta E = \frac{a E}{1 + a T_h E}$ evaluated per grazing interaction in `feeding.py`. | [herbivore_behavior.md](herbivore_behavior.md) |
-| **Swarm Behavioral Paradigms & Memory** | Swarms exhibit distinct flight modes (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`) and aversion memory decay. | Per-entity behavioral paradigm state + exponential memory decay array ($M_{t+1} = M_t \cdot 0.95$) in `movement.py`. | [herbivore_behavior.md](herbivore_behavior.md) |
-
----
-
 ## 1. Global State Representation
 
 Let the global state of the biotope at discrete time step (tick) $t$ be defined as:
