@@ -43,11 +43,10 @@ def _accumulate_tile_population(
     """
     # ⚡ Bolt Optimization:
     # Entities in PHIDS are constrained within grid boundaries by the movement systems,
-    # however, we retain the zero-bound checks because Python allows negative indexing
-    # which would silently corrupt the spatial hash array if an entity were somehow placed
-    # at a negative coordinate. We avoid the upper bounds check (which requires division)
-    # as IndexError will natively catch out-of-bounds positive indices.
-    if x >= 0 and y >= 0:
+    # however, we enforce 0 <= x < width and y >= 0 to prevent negative indexing or
+    # horizontal row-bleeding. We avoid calculating height via integer division (len // width)
+    # as IndexError will natively catch out-of-bounds vertical indices (y >= height).
+    if 0 <= x < width and y >= 0:
         try:
             tile_populations[y * width + x] += delta
         except IndexError:
