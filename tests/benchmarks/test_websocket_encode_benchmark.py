@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import pytest
 
-from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
+from phids.api.presenters.dashboard import build_live_dashboard_payload
 from phids.api.websockets.manager import SimulationStreamManager, UIStreamManager
 from phids.engine.loop import SimulationLoop
 
@@ -103,7 +103,7 @@ def test_ui_websocket_payload_encode_benchmark(  # type: ignore[no-untyped-def]
     loop = SimulationLoop(loop_config_builder(max_ticks=20))
     manager = UIStreamManager(
         payload_builder=lambda current_loop: build_live_dashboard_payload(
-            extract_ui_snapshot(current_loop),
+            current_loop,
             substance_names={},
         )
     )

@@ -26,7 +26,7 @@ from phids.api.schemas.responses import (
     BatchJobState,
     BatchStartPayload,
 )
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 from phids.telemetry.export.core import decimate_dataframe, filter_dataframe_columns
 from phids.telemetry.export.tikz import generate_tikz_str
 
@@ -247,6 +247,25 @@ async def batch_view(request: Request, job_id: str) -> Response:
         "partials/batch_view.html",
         {"job": job, "aggregate": aggregate, "job_id": job_id},
     )
+
+
+def _build_tikz_rows(aggregate: dict[str, object]) -> list[dict[str, object]]:
+    """Build frame rows for TikZ chart export."""
+    rows_agg: list[dict[str, object]] = []
+    ticks = _as_list(aggregate.get("ticks", []))
+    flora_mean = _as_list(aggregate.get("flora_population_mean", []))
+    herbivore_mean = _as_list(aggregate.get("herbivore_population_mean", []))
+    survival = _as_list(aggregate.get("survival_probability_curve", []))
+    for i, t in enumerate(ticks):
+        rows_agg.append(
+            {
+                "tick": t,
+                "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
+                "swarm_pop_by_species": {0: herbivore_mean[i] if i < len(herbivore_mean) else 0},
+                "survival_probability": _safe_float(survival[i]) if i < len(survival) else 0.0,
+            }
+        )
+    return rows_agg
 
 
 @router.get(

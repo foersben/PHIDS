@@ -1,11 +1,10 @@
 <!-- Placed plants -->
 {% if initial_plants %}
-{% set max_plants = 50 %}
 <h4 class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-2">
   🌿 Plants ({{ initial_plants|length }})
 </h4>
 <div class="space-y-1 mb-4">
-  {% for p in initial_plants[:max_plants] %}
+  {% for p in initial_plants %}
   {% set idx = loop.index0 %}
   <div class="flex items-center justify-between bg-emerald-50 rounded px-2 py-1 text-xs">
     <div>
@@ -26,22 +25,16 @@
       class="text-red-500 hover:text-red-700 font-medium ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded">✕</button>
   </div>
   {% endfor %}
-  {% if initial_plants|length > max_plants %}
-  <div class="text-xs text-slate-500 italic mt-2 text-center">
-    + {{ initial_plants|length - max_plants }} more hidden for UI performance
-  </div>
-  {% endif %}
 </div>
 {% endif %}
 
 <!-- Placed swarms -->
 {% if initial_swarms %}
-{% set max_swarms = 50 %}
 <h4 class="text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">
   🐛 Swarms ({{ initial_swarms|length }})
 </h4>
 <div class="space-y-1 mb-4">
-  {% for s in initial_swarms[:max_swarms] %}
+  {% for s in initial_swarms %}
   {% set idx = loop.index0 %}
   <div class="flex items-center justify-between bg-red-50 rounded px-2 py-1 text-xs">
     <div>
@@ -62,11 +55,6 @@
       class="text-red-500 hover:text-red-700 font-medium ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded">✕</button>
   </div>
   {% endfor %}
-  {% if initial_swarms|length > max_swarms %}
-  <div class="text-xs text-slate-500 italic mt-2 text-center">
-    + {{ initial_swarms|length - max_swarms }} more hidden for UI performance
-  </div>
-  {% endif %}
 </div>
 {% endif %}
 

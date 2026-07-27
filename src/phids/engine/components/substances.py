@@ -73,4 +73,6 @@ class SubstanceComponent:
     activation_condition: dict[str, object] | None = None
     energy_cost_per_tick: float = 0.0
     irreversible: bool = False
+    trigger_herbivore_species_id: int = -1
+    trigger_min_herbivore_population: int = 0
     triggered_this_tick: bool = False

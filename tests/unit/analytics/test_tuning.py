@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from phids.analytics.tuning import TrophicOptimizer
-from phids.api.ui_state import DraftState
+from phids.api.ui_state.state import DraftState
 
 
 @pytest.fixture

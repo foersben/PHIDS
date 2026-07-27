@@ -13,9 +13,14 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from phids.api.services.draft.helpers import find_substance_index, is_truthy_flag
-from phids.api.ui_state import DraftState, SubstanceDefinition, TriggerRule, _remap_condition_references
+from phids.api.ui_state.substances import SubstanceDefinition
+from phids.api.ui_state.triggers import TriggerRule, _remap_condition_references
+
+if TYPE_CHECKING:
+    from phids.api.ui_state.state import DraftState
 
 logger = logging.getLogger(__name__)
 

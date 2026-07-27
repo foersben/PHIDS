@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
@@ -26,11 +26,13 @@ from phids.api.services.draft.trigger_rules import (
     update_trigger_rule,
     update_trigger_rule_condition_node,
 )
-from phids.api.ui_state import (
-    ActivationConditionNode,
+from phids.api.ui_state.state import (
     DraftState,
     get_draft,
 )
+
+if TYPE_CHECKING:
+    from phids.api.ui_state.triggers import ActivationConditionNode
 
 router = APIRouter()
 
@@ -101,14 +103,10 @@ def _render_placement_list_partial(request: Request, draft: DraftState) -> Respo
 async def config_trigger_rule_add(
     request: Request,
     flora_species_id: Annotated[int, Form()],
-    herbivore_species_id: Annotated[int, Form()] = 0,
-    initiator_type: Annotated[Literal["herbivore_attack", "environmental_signal"], Form()] = "herbivore_attack",
-    initiator_signal_id: Annotated[int, Form()] = 0,
-    initiator_min_concentration: Annotated[float, Form()] = 0.01,
+    herbivore_species_id: Annotated[int, Form()],
     substance_id: Annotated[int, Form()] = 0,
     action_type: Annotated[Literal["synthesize_substance", "resource_withdrawal"], Form()] = "synthesize_substance",
     apparent_nutrition_factor: Annotated[float, Form()] = 0.2,
-    withdrawal_duration: Annotated[int, Form()] = 10,
     aftereffect_ticks: Annotated[int, Form()] = 10,
     min_herbivore_population: Annotated[int, Form()] = 5,
     activation_condition_json: Annotated[str, Form()] = "",
@@ -118,16 +116,12 @@ async def config_trigger_rule_add(
     add_trigger_rule(
         draft,
         flora_species_id=flora_species_id,
-        initiator_type=initiator_type,
         herbivore_species_id=herbivore_species_id,
-        min_herbivore_population=max(1, min_herbivore_population),
-        initiator_signal_id=initiator_signal_id,
-        initiator_min_concentration=initiator_min_concentration,
         substance_id=substance_id,
         action_type=action_type,
         apparent_nutrition_factor=apparent_nutrition_factor,
-        withdrawal_duration=withdrawal_duration,
         aftereffect_ticks=aftereffect_ticks,
+        min_herbivore_population=max(1, min_herbivore_population),
         activation_condition=parse_activation_condition_json(activation_condition_json),
     )
     api_main.logger.info(
@@ -149,13 +143,9 @@ async def config_trigger_rule_update(
     index: int,
     flora_species_id: Annotated[int | None, Form()] = None,
     herbivore_species_id: Annotated[int | None, Form()] = None,
-    initiator_type: Annotated[Literal["herbivore_attack", "environmental_signal"] | None, Form()] = None,
-    initiator_signal_id: Annotated[int | None, Form()] = None,
-    initiator_min_concentration: Annotated[float | None, Form()] = None,
     substance_id: Annotated[int | None, Form()] = None,
     action_type: Annotated[Literal["synthesize_substance", "resource_withdrawal"] | None, Form()] = None,
     apparent_nutrition_factor: Annotated[float | None, Form()] = None,
-    withdrawal_duration: Annotated[int | None, Form()] = None,
     aftereffect_ticks: Annotated[int | None, Form()] = None,
     min_herbivore_population: Annotated[int | None, Form()] = None,
     activation_condition_json: Annotated[str | None, Form()] = None,
@@ -170,16 +160,12 @@ async def config_trigger_rule_update(
         draft,
         index,
         flora_species_id=flora_species_id,
-        initiator_type=initiator_type,
         herbivore_species_id=herbivore_species_id,
-        min_herbivore_population=min_herbivore_population,
-        initiator_signal_id=initiator_signal_id,
-        initiator_min_concentration=initiator_min_concentration,
         substance_id=substance_id,
         action_type=action_type,
         apparent_nutrition_factor=apparent_nutrition_factor,
-        withdrawal_duration=withdrawal_duration,
         aftereffect_ticks=aftereffect_ticks,
+        min_herbivore_population=min_herbivore_population,
         activation_condition=(
             parse_activation_condition_json(activation_condition_json)
             if activation_condition_json is not None

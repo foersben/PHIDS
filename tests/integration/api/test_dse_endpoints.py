@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from phids.api.main import app
-from phids.api.ui_state import DraftState
+from phids.api.ui_state.state import DraftState
 
 
 @pytest.fixture

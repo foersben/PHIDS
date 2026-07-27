@@ -122,43 +122,7 @@ Imagine a swarm of 10 herbivores with a baseline upkeep $m_i = 1.0$ and a reprod
 
 If $N_{split} = 15$, the swarm will divide into two swarms of 7 and 8 individuals. One swarm retains the parent's coordinate, while the daughter swarm is stochastically displaced to an adjacent cell to begin active dispersal.
 
-## Alternatives & Omissions
-
-### Omission of Individual Chronological Aging (Senescence)
-
-In classic individual-based ecological models (IBMs), each organism tracks an explicit chronological birth date $t_0$ and accumulates senescent mortality or physiological decay as $t - t_0$ increases. In PHIDS, individual chronological aging is intentionally omitted from the core engine loop.
-
-#### 1. Biological Rationale & Swarm Averaging
-
-* **Ergodic Swarm Dynamics:** PHIDS models herbivores at the swarm scale ($N \ge 1$). In aggregate populations, individual birth dates and age distributions reach a stationary steady state. Physiological traits (metabolic upkeep $m_i$, feeding rate, and base natural mortality) reflect the **cohort average** across the swarm. Individual senescence averages out across large numbers of organisms ($N \gg 1$).
-* **Time-Scale Hierarchy:** Ecological outbreaks, defense induction cycles, and foraging movement typically unfold over seasonal time horizons (days to weeks). On these time scales, population turnover via starvation attrition and surplus reproduction dominates over gradual individual senescent decline.
-
-#### 2. High-Performance Computing (HPC) Rationale
-
-* **Data-Oriented Contiguity:** Tracking individual birth timestamps for $N$ organisms within a swarm breaks contiguous array memory layout in the Entity-Component-System (ECS). It would force $O(N)$ dynamic memory allocations inside Numba `@njit` JIT loops.
-* **Cache Efficiency:** Keeping `SwarmComponent` structs fixed-size ($O(\text{entities})$ instead of $O(\text{organisms})$) preserves SIMD vectorization and cache locality during spatial hashing and flow field evaluation.
-
-#### 3. Stage-Wise Phenology (v2.3) vs. Chronological Senescence
-
-PHIDS distinguishes between **continuous individual senescence** (omitted/averaged out) and **discrete stage-wise phenology** (planned in Sub-Stage 2.3: Trait-Based Herbivore Demographic State Machines):
-
-* **Senescence (Omitted):** Tracking continuous decline in vigor or health as an individual organism grows chronologically older.
-* **Phenology (Supported in v2.3):** Transitions between distinct developmental morphs (e.g., Egg Incubation $\to$ Larval Grazing $\to$ Adult Dispersal). These transitions are governed by accumulated Growing Degree-Days ($GDD = \sum \max(0, T - T_{\text{base}})$) at the cohort level, altering functional behaviors (sessile vs. mobile, grazing capacity) without requiring individual organism tracking.
-
-#### 4. How Aging Could Be Incorporated (Design Alternatives)
-
-If a scientific scenario requires explicit age-dependent behavior (e.g., declining motility in aging adults or age-dependent mortality), PHIDS provides three architecturally compatible extension patterns:
-
-1. **Mean Swarm Age Component (Scalar Approximation):**
-   Add a single float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age is updated via weighted arithmetic mean:
-   $$
-   A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}
-   $$
-   This enables age-dependent speed or upkeep decay at zero allocation overhead.
-2. **Weibull Cohort Mortality Rate ($\mu_{\text{age}}$):**
-   Model senescent mortality at the swarm level using a Weibull hazard function $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. The age-dependent casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without tracking individual entity instances.
-3. **Multi-Cohort Stage Partitioning (Matrix Model):**
-   Partition a single herbivore population on a tile into $K$ age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct parameter structs, maintaining vectorized execution while resolving fine-grained age demographics.
+## Alternatives Considered
 
 ### Continuous-Time ODE Solvers (Lotka-Volterra)
 

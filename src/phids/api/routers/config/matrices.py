@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
 from phids.api.services.draft.diet import set_diet_compatibility
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 
 router = APIRouter()
 
