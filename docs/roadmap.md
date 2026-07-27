@@ -203,3 +203,39 @@ block-beta
 | **v2.4** | Soil Detritus Recycling | Moderate ($\sim 350$ LOC) | `SoilModule` JIT mineralization kernels | Soil settings panel (Disabled/Dense/Patch), live N-map | Soil N baselines & tissue N:P decay ratios | Direct `/soil_nitrogen` Zarr array | `system_architecture.md` | `mineralization_rate`, `soil_nitrogen_baseline` |
 | **v2.5** | Weather Profiles | Low-Mod ($\sim 220$ LOC) | `WeatherModule`, `SimulationLoop` Phase 0 | Weather profile selector, dashboard temp badge | Species thermal limits ($T_{\text{min}}, T_{\text{max}}$) in JSON | Direct climate scalars in Zarr metadata | `mathematical_framework.md` | `seasonal_temp_amplitude`, `drought_factor` |
 | **v2.6** | 3D Canopy VOCs | High ($\sim 650$ LOC) | 3D arrays ($W\times H\times Z$), 3D Numba stencils | 3D layer height slider, vertical slice charts | Canopy height & boundary resistance ETL | Direct 3D tensor Zarr datasets | `engine_execution.md` | `canopy_height_layers`, `wind_shear_alpha` |
+
+---
+
+## Phase 4: Speculative Research Extensions & Future Prospects
+
+Beyond Phase 2 and 3, PHIDS maintains a speculative research pipeline evaluating advanced biological mechanisms and computational paradigms.
+
+### 4.1 Chronological Aging & Senescence Incorporation Models
+
+While PHIDS intentionally omits individual chronological aging in core execution because swarm dynamics average out senescence ($N \gg 10^2$), specialized ecological scenarios (e.g., senescent mortality during long migration or age-dependent foraging decline) can be realized through three architecturally compatible paradigms:
+
+1. **Mean Swarm Age Component (Scalar Approximation)**:
+   Add a float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age updates via weighted arithmetic mean:
+
+   $$A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}$$
+
+   This enables age-dependent velocity or upkeep decay at zero dynamic memory allocation overhead.
+2. **Weibull Cohort Hazard Mortality Rate ($\mu_{\text{age}}$)**:
+   Model senescent mortality at the swarm level using a Weibull hazard rate $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
+3. **Multi-Cohort Stage Partitioning (Matrix Model)**:
+   Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs, maintaining SIMD vectorization while capturing fine-grained age demographics.
+
+### 4.2 Non-Dimensional Empirical Parameter Calibration Pipeline
+
+To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB) to discrete simulation scales without generating unphysical Lotka-Volterra artifacts:
+
+1. **Spatiotemporal Dimensional Anchoring**: Non-dimensionalize all database traits using Buckingham $\Pi$-groups based on grid cell length $L_0 = \Delta L$, tick duration $T_0 = \Delta \tau$, and energy quantum $E_0 = \Delta E$.
+2. **Allometric Scaling Laws**: Enforce Kleiber's Law ($BMR \propto M^{0.75}$) and Metabolic Theory of Ecology ($C_{\text{max}} \propto M^{0.75}$) during ETL build passes in `src/data_pipeline/transform.py`.
+3. **Empirically Bounded DSE Hyper-Cubes**: Restrict DSE optimization search spaces to empirical confidence intervals $[\mu_k - 2\sigma_k, \mu_k + 2\sigma_k]$ derived from database taxonomic distributions.
+4. **Biologically Authenticated Cost Function**: Evaluate scenarios via multi-objective fitness $J_{\text{eco}} = w_1 S_{\text{LV}} + w_2 D_{\text{bio}} + w_3 P_{\text{thermo}}$, rewarding limit cycle stability while penalizing empirical parameter drift and thermodynamic violations.
+   * *Detailed Reference*: [Empirical Parameter Calibration Strategy](scientific_model/future_prospects/parameter_calibration_strategy.md).
+
+### 4.3 Evolutionary Arms Race & Dynamic Gene Mutation Solvers
+
+* **Biological Target**: Allow plant chemical defense pathways (induced VOC synthesis rates, toxin potency) and herbivore neutralization counter-adaptations to mutate dynamically across generations.
+* **HPC Execution**: Implemented via SIMD bit-mask mutations on ECS trait structs during mitosis and seed germination, enabling real-time co-evolutionary arms race simulations over $10^5$ ticks.

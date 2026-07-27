@@ -12,11 +12,13 @@ animation artifacts.
 Current release line: `v0.9.0`.
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
-[![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions)
-[![Coverage Status](https://coveralls.io/repos/github/foersben/PHIDS/badge.svg)](https://coveralls.io/github/foersben/PHIDS)
-[![License: EUPL-1.2](https://img.shields.io/badge/License-EUPL--1.2-blue.svg)](https://opensource.org/licenses/EUPL-1.2)
+[![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-zensical-blue.svg)](https://foersben.github.io/PHIDS/)
+[![Checked with mypy](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Dual License: EUPL-1.2 / Commercial](https://img.shields.io/badge/License-EUPL--1.2%20%7C%20Commercial-blue.svg)](#-licensing)
 
-*Dual-licensed under EUPL-1.2 and a Commercial License.*
+*Dual-licensed under EUPL-1.2 (Academic/Open Source) and a Commercial License.*
 
 Live documentation: <https://foersben.github.io/PHIDS/>
 
@@ -240,9 +242,9 @@ uv run pre-commit run --all-files --hook-stage pre-push
 
 GitHub Actions policy summary:
 
-* CI runs on pushes to `main`, PRs targeting `main`, and manual dispatch.
-* `develop` is intentionally not configured as an automatic CI trigger.
-* Container publishing is release-focused (main/tag boundaries).
+* CI quality gates (`.github/workflows/ci.yml`) run automatically on pushes and PRs targeting `main` and `develop`.
+* Documentation site deployment to GitHub Pages triggers automatically on pushes to `main`.
+* Container image, DuckDB bio-database, and desktop binary releases publish automatically on semantic tag boundaries (`v*`).
 
 References:
 
@@ -273,11 +275,13 @@ Release and packaging policy:
 
 ## 📦 Release and distribution surfaces
 
-The repository includes:
+The repository includes automated GitHub Actions workflows:
 
-* `Dockerfile` and `docker-compose.yml` for container workflows
-* `.github/workflows/docker-publish.yml` for GHCR publication policy
-* `.github/workflows/release-binaries.yml` for bundled Linux/Windows/macOS artifacts
+* `Dockerfile` and `docker-compose.yml` for local container workflows
+* `.github/workflows/ci.yml` for quality gates, two-pass Numba testing, and GitHub Pages deployment
+* `.github/workflows/docker-publish.yml` for multi-arch GHCR image publication
+* `.github/workflows/etl-publish.yml` for empirical DuckDB bio-database release artifact publication
+* `.github/workflows/release-binaries.yml` for bundled standalone Linux/Windows/macOS PyInstaller desktop artifacts
 
 ### Release runbook (main + tag)
 
@@ -297,22 +301,25 @@ Expected automation outcomes:
 
 ## 📚 Documentation map
 
-Start here for full subsystem detail:
+The documentation is organized into clear domain areas with Open Knowledge Format (OKF) frontmatter headers. You can read the raw Markdown source in the repository or explore the live, rendered site hosted via GitHub Pages:
 
-* docs home: [`docs/index.md`](docs/index.md)
-* scientific model: [`docs/scientific_model/index.md`](docs/scientific_model/index.md)
-* technical architecture: [`docs/technical_architecture/system_architecture.md`](docs/technical_architecture/system_architecture.md)
-* scenario guide: [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md)
-* development guide: [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md)
-* reference: [`docs/reference/index.md`](docs/reference/index.md)
+* **Published Zensical Site**: <https://foersben.github.io/PHIDS/>
+* **Local Interactive Server**: Run `uv run zensical serve` (or `just docs`)
 
-Published site: <https://foersben.github.io/PHIDS/>
+| Domain | Local Repository File | Live Hosted Page | Description |
+|---|---|---|---|
+| 🏠 **Docs Home** | [`docs/index.md`](docs/index.md) | [Home](https://foersben.github.io/PHIDS/) | High-level abstract, biological introduction, and core engineering principles. |
+| 🔬 **Scientific Model** | [`docs/scientific_model/index.md`](docs/scientific_model/index.md) | [Scientific Model](https://foersben.github.io/PHIDS/scientific_model/) | Reaction-diffusion PDEs, chemotaxis, Lotka-Volterra dynamics, and plant defenses. |
+| ⚙️ **Technical Architecture** | [`docs/technical_architecture/index.md`](docs/technical_architecture/index.md) | [Technical Architecture](https://foersben.github.io/PHIDS/technical_architecture/) | ECS data structures, Numba JIT double-buffering, FastAPI/HTMX UI, and Zarr telemetry. |
+| 🧪 **Scenario Guide** | [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md) | [Scenario Guide](https://foersben.github.io/PHIDS/scenario_guide/) | Pydantic V2 scenario schemas, curated blueprints, and DSE optimization workflows. |
+| 🛠️ **Development Guide** | [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md) | [Development Guide](https://foersben.github.io/PHIDS/development_guide/contribution_workflow/) | Two-pass Numba testing strategy, pre-commit hooks, local CI scripts, and release runbook. |
+| 📖 **Reference & API** | [`docs/reference/index.md`](docs/reference/index.md) | [Reference](https://foersben.github.io/PHIDS/reference/) | Module ownership map, glossary/concept index, requirements traceability, and Python API. |
 
-Serve docs locally:
+### 🔮 Future Prospects & Strategic Enhancements
 
-```bash
-uv run zensical serve
-```
+* 🧮 **[Parameter Calibration Strategy](docs/scientific_model/future_prospects/parameter_calibration_strategy.md)** ([Live](https://foersben.github.io/PHIDS/scientific_model/future_prospects/parameter_calibration_strategy/)): Non-dimensionalization, Buckingham $\Pi$-groups, log-normal hyper-cubes, and Kleiber-Arrhenius thermodynamic scaling.
+* ⚡ **[GPU CUDA Acceleration Engine](docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md)** ([Live](https://foersben.github.io/PHIDS/technical_architecture/future_prospects/gpu_cuda_acceleration/)): Architecture for offloading 2D/3D reaction-diffusion PDE stencil solvers and VOC advection to PyTorch and CUDA C++ GPU kernels.
+* 🤖 **[AI Coevolution & Distributed DSE](docs/scenario_guide/future_prospects/ai_coevolution_dse.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/ai_coevolution_dse/)): Ray/Tune distributed multi-objective Pareto optimization and reinforcement learning swarm coevolution.
 
 ---
 
@@ -333,31 +340,34 @@ uv run zensical serve
 
 ```text
 src/phids/              canonical runtime package
-├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, Websockets
-├── engine/             The core determinism domain (ECS + Numba Double-Buffered grid fields)
-├── analytics/          Evolutionary Design Space Exploration (DSE) and database matching
-├── io/                 High-performance Zarr replays and scenario parsing
-├── telemetry/          Tick analytics, export routines, and Polars handlers
-├── shared/             Common utilities and logging configurations
-├── mcp_server.py       Model Context Protocol stdio entrypoint for AI Agents
-└── __main__.py         Command-line interface (Typer) entry point
-tests/                  property-based invariant tests, two-pass Numba tests, and API integration
-examples/               curated scenario JSON files
-docs/                   Zensical documentation corpus
-scripts/                local CI and workflow rehearsal helpers
-packaging/              PyInstaller configuration
+├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, WebSockets
+├── engine/             Core determinism domain (ECS + Numba JIT double-buffered grid fields)
+├── analytics/          Evolutionary Design Space Exploration (DSE) & empirical database tuning
+├── io/                 High-performance Zarr replay serialization & scenario ingestion
+├── telemetry/          Tick analytics, batch export routines, and Polars handlers
+├── shared/             Common constants, rule-of-16 limits, and logging configurations
+├── mcp_server.py       Model Context Protocol (MCP) stdio entrypoint for AI agents
+└── __main__.py         Command-line interface (Typer CLI) entry point
+.agents/                AI agent ecosystem (OKF AGENTS.md, role definitions, skills & workflows)
+data/                   Empirical DuckDB trait database (TRY/PanTHERIA) & batch export ledgers
+docs/                   Zensical documentation corpus with OKF frontmatter & Future Prospects
+examples/               Curated scenario blueprint JSON files
+packaging/              PyInstaller desktop binary packaging configuration
+scripts/                Local CI runner (local_ci.sh), benchmark gates, and release helpers
+tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration
 ```
 
 ---
 
 ## 📄 Where to go next
 
-* Want to understand phase semantics? Start at [`docs/technical_architecture/engine_execution.md`](docs/technical_architecture/engine_execution.md).
+* Want to understand phase semantics & Numba JIT rules? Start at [`docs/technical_architecture/engine_execution.md`](docs/technical_architecture/engine_execution.md).
 * Want to build or edit scenarios? Start at [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md).
-* Want route and WebSocket details? Start at
-  [`docs/technical_architecture/interfaces_and_ui.md`](docs/technical_architecture/interfaces_and_ui.md).
-* Want contributor workflow and CI policy? Start at
-  [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
+* Want route and WebSocket details? Start at [`docs/technical_architecture/interfaces_and_ui.md`](docs/technical_architecture/interfaces_and_ui.md).
+* Want to calibrate traits to empirical scales? Start at [`docs/scientific_model/future_prospects/parameter_calibration_strategy.md`](docs/scientific_model/future_prospects/parameter_calibration_strategy.md).
+* Want to explore high-density replays & Polars exports? Start at [`docs/technical_architecture/telemetry.md`](docs/technical_architecture/telemetry.md).
+* Want to run evolutionary DSE searches? Start at [`docs/scenario_guide/design_space_exploration.md`](docs/scenario_guide/design_space_exploration.md).
+* Want contributor workflow and CI policy? Start at [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
 
 ---
 
