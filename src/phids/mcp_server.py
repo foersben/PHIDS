@@ -379,3 +379,7 @@ def analyze_simulation_drift() -> str:
 def run_mcp_server() -> None:
     """Spawn the headless stdio MCP communications loop."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    run_mcp_server()
