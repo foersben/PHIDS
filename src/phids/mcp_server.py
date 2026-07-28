@@ -33,11 +33,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.fastmcp import FastMCP
 
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 from phids.shared.logging_config import get_recent_logs
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState
+    from phids.api.ui_state.state import DraftState
 
 # Resolved at import time so subprocess calls can locate scripts/ reliably
 # regardless of the working directory set by the calling process.
@@ -55,6 +55,28 @@ mcp = FastMCP(
 )
 
 
+@mcp.tool()
+def query_batch_jobs() -> dict[str, Any]:
+    """Return a summary of active and completed batch jobs from the draft state.
+
+    Provides visibility into long-running exploration tasks or evolutionary
+    exploration results.
+
+    Returns:
+        dict[str, Any]: Dictionary mapping job IDs to their state representations.
+    """
+    draft = get_draft()
+    return {
+        job_id: {
+            "status": state.status,
+            "completed_runs": state.completed,
+            "total_runs": state.total,
+            "finished_at": state.finished_at,
+        }
+        for job_id, state in draft.active_batch_jobs.items()
+    }
+
+
 # ===========================================================================
 # Internal helpers
 # ===========================================================================
@@ -70,14 +92,24 @@ def _draft_to_json(draft: DraftState) -> str:
     models verbatim; the ``_default`` hook converts those during JSON encoding.
 
     Args:
-        draft: The active :class:`~phids.api.ui_state.DraftState` instance.
+        draft: The active :class:`~phids.api.ui_state.state.DraftState` instance.
 
     Returns:
         Indented JSON string suitable for agent consumption.
-
     """
 
     def _default(obj: object) -> Any:
+        """Convert non-serializable objects to JSON serializable format.
+
+        Args:
+            obj: Object to convert.
+
+        Raises:
+            TypeError: Object is not JSON serializable.
+
+        Returns:
+            JSON serializable representation of the object.
+        """
         if hasattr(obj, "model_dump"):
             return cast("Any", obj).model_dump()
         # Nested stdlib dataclasses that slipped past dataclasses.asdict recursion
@@ -102,7 +134,7 @@ def active_draft_resource() -> str:
     without spending a tool-call budget on ``runtime_snapshot``.
 
     Returns:
-        Indented JSON string of the current :class:`~phids.api.ui_state.DraftState`.
+        Indented JSON string of the current :class:`~phids.api.ui_state.state.DraftState`.
 
     """
     return _draft_to_json(get_draft())
@@ -125,7 +157,6 @@ def runtime_snapshot() -> dict[str, Any]:
         dict[str, Any]: Compact read-only summary including scenario metadata,
         grid dimensions, entity counts, and active termination thresholds
         (Z-codes).
-
     """
     draft = get_draft()
     return {
@@ -135,12 +166,15 @@ def runtime_snapshot() -> dict[str, Any]:
         "grid_height": draft.grid_height,
         "max_ticks": draft.max_ticks,
         "tick_rate_hz": draft.tick_rate_hz,
+        "placement_mode": draft.placement_mode,
+        "mycorrhizal_inter_species": draft.mycorrhizal_inter_species,
         "flora_species_count": len(draft.flora_species),
         "herbivore_species_count": len(draft.herbivore_species),
         "substance_definitions_count": len(draft.substance_definitions),
         "trigger_rules_count": len(draft.trigger_rules),
         "initial_plants_count": len(draft.initial_plants),
         "initial_swarms_count": len(draft.initial_swarms),
+        "active_batch_jobs_count": len(draft.active_batch_jobs),
         "termination_thresholds": {
             "z2_flora_species_extinction": draft.z2_flora_species_extinction,
             "z4_herbivore_species_extinction": draft.z4_herbivore_species_extinction,
@@ -166,7 +200,6 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
         dict[str, Any]: On success - ``status``, ``store_path``, ``frame_count``,
         ``tree_keys``, and ``store_attrs``.  On failure - ``status`` and
         ``message``.
-
     """
     try:
         import numpy as np
@@ -225,7 +258,6 @@ def validate_okf_compliance() -> dict[str, Any]:
     Returns:
         dict[str, Any]: ``compliant`` (bool), ``violations`` (list of extracted
         error lines), and ``output`` (full captured stdout+stderr).
-
     """
     uv_bin = shutil.which("uv") or "uv"
 
@@ -277,7 +309,6 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
     Returns:
         list[dict[str, str]]: Structured entries with ``timestamp``, ``level``,
         ``logger``, ``module``, and ``message`` keys.
-
     """
     return get_recent_logs(limit=limit)
 
@@ -285,6 +316,31 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
 # ===========================================================================
 # 3. PROMPTS - pre-baked agent guidance
 # ===========================================================================
+
+
+@mcp.tool()
+def read_batch_summary(job_id: str) -> dict[str, Any]:
+    """Read the aggregated metrics inside a batch job's summary JSON file.
+
+    Allows agents to digest batch job metric summaries without manually
+    loading JSON artifacts.
+
+    Args:
+        job_id: The ID of the batch job to read.
+
+    Returns:
+        dict[str, Any]: Dictionary containing the aggregated metrics on success,
+        or an error message on failure.
+    """
+    summary_path = _PROJECT_ROOT / "data" / "batches" / f"{job_id}_summary.json"
+    if not summary_path.exists():
+        return {"status": "error", "message": f"Summary file not found: {summary_path}"}
+
+    try:
+        with open(summary_path, encoding="utf-8") as f:
+            return {"status": "success", "data": json.load(f)}
+    except Exception as exc:
+        return {"status": "error", "message": f"Failed to read summary file: {exc}"}
 
 
 @mcp.prompt()

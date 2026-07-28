@@ -20,7 +20,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from phids.api.ui_state import DraftState
+from phids.api.ui_state.state import DraftState
 from phids.engine.loop import SimulationLoop
 from phids.shared.logging_config import configure_logging, get_simulation_debug_interval
 

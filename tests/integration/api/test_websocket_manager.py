@@ -22,21 +22,39 @@ from phids.api.websockets.manager import SimulationStreamManager, UIStreamManage
 
 @dataclass(slots=True)
 class _FakeConfig:
+    """Minimal configuration surrogate exposing the stream-facing simulation contract."""
+
     tick_rate_hz: float = 10.0
 
 
 class _FakeLock:
+    """Minimal lock surrogate exposing the stream-facing simulation contract."""
+
     async def __aenter__(self):
+        """Enter the context manager."""
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager."""
         pass
 
 
 class _FakeLoop:
-    """Minimal loop surrogate exposing the stream-facing simulation contract."""
+    """Minimal loop surrogate exposing the stream-facing simulation contract.
+
+    Note that this is a pure mock used for testing the manager. It is NOT intended to be used for
+    actual simulation execution.
+
+    """
 
     def __init__(self, *, tick: int = 0, terminated: bool = False, tick_rate_hz: float = 10.0) -> None:
+        """Initialize the fake loop.
+
+        Args:
+            tick: The initial tick number.
+            terminated: Whether the loop is terminated.
+            tick_rate_hz: The tick rate in Hz.
+        """
         self.tick = tick
         self.state_revision = 0
         self.terminated = terminated
@@ -47,13 +65,21 @@ class _FakeLoop:
         self._lock = _FakeLock()
 
     def get_state_snapshot(self) -> dict[str, int]:
-        """Return deterministic snapshot payloads and count encoding requests."""
+        """Return deterministic snapshot payloads and count encoding requests.
+
+        Returns:
+            dict[str, int]: The snapshot payload.
+        """
         self.snapshot_calls += 1
         return {"tick": self.tick}
 
 
 class _FakeWebSocket:
-    """Async WebSocket test double for manager-level transport tests."""
+    """Async WebSocket test double for manager-level transport tests.
+
+    This test double exercises transport-layer failure modes (e.g. ``WebSocketDisconnect`` on send,
+    ``RuntimeError`` on close) and records state change events for assertion.
+    """
 
     def __init__(
         self,
@@ -62,6 +88,13 @@ class _FakeWebSocket:
         disconnect_on_send_text: bool = False,
         close_raises_runtime_error: bool = False,
     ) -> None:
+        """Initialize the fake WebSocket.
+
+        Args:
+            disconnect_on_send_bytes: Whether to raise ``WebSocketDisconnect`` on ``send_bytes``.
+            disconnect_on_send_text: Whether to raise ``WebSocketDisconnect`` on ``send_text``.
+            close_raises_runtime_error: Whether to raise ``RuntimeError`` on ``close``.
+        """
         self.disconnect_on_send_bytes = disconnect_on_send_bytes
         self.disconnect_on_send_text = disconnect_on_send_text
         self.close_raises_runtime_error = close_raises_runtime_error
@@ -75,19 +108,32 @@ class _FakeWebSocket:
         self.accepted = True
 
     async def close(self, *, code: int = 1000, reason: str | None = None) -> None:
-        """Record close events or emulate close-time runtime errors."""
+        """Record close events or emulate close-time runtime errors.
+
+        Args:
+            code: The close code.
+            reason: The close reason.
+        """
         if self.close_raises_runtime_error:
             raise RuntimeError("socket already closed")
         self.closed.append((code, reason))
 
     async def send_bytes(self, payload: bytes) -> None:
-        """Record binary payloads or emulate client-initiated disconnects."""
+        """Record binary payloads or emulate client-initiated disconnects.
+
+        Args:
+            payload: The binary payload.
+        """
         if self.disconnect_on_send_bytes:
             raise WebSocketDisconnect()
         self.sent_bytes.append(payload)
 
     async def send_text(self, payload: str) -> None:
-        """Record text payloads or emulate client-initiated disconnects."""
+        """Record text payloads or emulate client-initiated disconnects.
+
+        Args:
+            payload: The text payload.
+        """
         if self.disconnect_on_send_text:
             raise WebSocketDisconnect()
         self.sent_text.append(payload)
@@ -175,9 +221,13 @@ async def test_ui_manager_waits_for_loop_then_emits_and_handles_disconnect(
 
     The UI stream must tolerate intervals with no live loop, then emit JSON payloads once a loop
     becomes available, and finally terminate cleanly on disconnect.
+
+    Args:
+        monkeypatch: Monkeypatch fixture for asyncio.sleep.
     """
 
     async def _instant_sleep(_delay: float) -> None:
+        """Instant sleep for testing."""
         return None
 
     monkeypatch.setattr("phids.api.websockets.manager.asyncio.sleep", _instant_sleep)
@@ -191,6 +241,11 @@ async def test_ui_manager_waits_for_loop_then_emits_and_handles_disconnect(
     calls = {"count": 0}
 
     def _get_loop() -> _FakeLoop | None:
+        """Return a fake loop or None based on the call count.
+
+        Returns:
+            _FakeLoop | None: The fake loop or None.
+        """
         calls["count"] += 1
         if calls["count"] == 1:
             return None

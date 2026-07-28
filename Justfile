@@ -116,3 +116,12 @@ act-profiling:
 
 act-complexity:
     act -j cognitive-complexity --secret-file .github/workflows/secrets.env
+
+complexity:
+    uvx complexipy . --failed
+
+complexity-local:
+    uvx complexipy . --failed
+
+complexity-ci:
+    uvx complexipy . --failed

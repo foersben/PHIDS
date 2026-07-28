@@ -103,10 +103,11 @@ jobs:
         uses: astral-sh/setup-uv@v8.3.2
 
       - name: Run Complexipy Scan
-        # Runs statelessly via uvx, exporting standard SARIF format
+        # Runs statelessly via uvx, exporting standard SARIF format and printing a failed-only summary
         run: |
           [ -d .cache/.complexity_cache ] && mv .cache/.complexity_cache .complexipy_cache || true
           uvx complexipy . --output-format sarif --output metrics-results.sarif --ignore-complexity
+          uvx complexipy . --failed || true
 
       - name: Cleanup Complexipy Cache
         if: always()

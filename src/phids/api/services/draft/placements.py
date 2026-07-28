@@ -10,8 +10,12 @@ within the draft scenario grid.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from phids.api.ui_state import DraftState, PlacedPlant, PlacedSwarm
+from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
+
+if TYPE_CHECKING:
+    from phids.api.ui_state.state import DraftState
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +35,6 @@ def add_plant_placement(
         x: The X-axis spatial grid coordinate.
         y: The Y-axis spatial grid coordinate.
         energy: Initial plant energy reserve.
-
     """
     draft.initial_plants.append(PlacedPlant(species_id=species_id, x=x, y=y, energy=energy))
 
@@ -53,7 +56,6 @@ def add_swarm_placement(
         y: The Y-axis spatial grid coordinate.
         population: Initial swarm population.
         energy: Initial swarm energy reserve.
-
     """
     draft.initial_swarms.append(
         PlacedSwarm(
@@ -75,7 +77,6 @@ def remove_plant_placement(draft: DraftState, index: int) -> None:
 
     Raises:
         IndexError: The plant placement index is out of range.
-
     """
     removed = draft.initial_plants[index]
     del draft.initial_plants[index]
@@ -98,7 +99,6 @@ def remove_swarm_placement(draft: DraftState, index: int) -> None:
 
     Raises:
         IndexError: The swarm placement index is out of range.
-
     """
     removed = draft.initial_swarms[index]
     del draft.initial_swarms[index]
@@ -117,7 +117,6 @@ def clear_placements(draft: DraftState) -> None:
 
     Args:
         draft: Draft state mutated in place.
-
     """
     cleared_plants = len(draft.initial_plants)
     cleared_swarms = len(draft.initial_swarms)
@@ -135,7 +134,6 @@ def clear_plant_placements(draft: DraftState) -> None:
 
     Args:
         draft: Draft state mutated in place.
-
     """
     cleared_plants = len(draft.initial_plants)
     draft.initial_plants.clear()
@@ -150,7 +148,6 @@ def clear_swarm_placements(draft: DraftState) -> None:
 
     Args:
         draft: Draft state mutated in place.
-
     """
     cleared_swarms = len(draft.initial_swarms)
     draft.initial_swarms.clear()

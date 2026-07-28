@@ -89,7 +89,6 @@ def extract_flora_archetypes(
 
     Raises:
         ValueError: If no valid feature columns are found in the DataFrame.
-
     """
     if FLORA_ARCHETYPE_CACHE.exists() and not force_refresh:
         logger.info("Archetypes: loading flora archetypes from cache")
@@ -139,7 +138,6 @@ def extract_herbivore_archetypes(
 
     Raises:
         ValueError: If no valid feature columns are found.
-
     """
     if HERBIVORE_ARCHETYPE_CACHE.exists() and not force_refresh:
         logger.info("Archetypes: loading herbivore archetypes from cache")
@@ -178,6 +176,70 @@ def extract_herbivore_archetypes(
 # ---------------------------------------------------------------------------
 
 
+def _prepare_features_for_kmeans(df: pl.DataFrame, feature_cols: list[str], label: str) -> np.ndarray:
+    """Prepare feature matrix for K-Means clustering.
+
+    Args:
+        df: Polars DataFrame containing feature columns.
+        feature_cols: List of column names to use as features.
+        label: Label for logging purposes.
+
+    Returns:
+        NumPy array of scaled feature values.
+    """
+    feature_matrix = df.select(feature_cols).to_numpy(allow_copy=True).astype(np.float64)
+    scaler = StandardScaler()
+    feature_scaled = scaler.fit_transform(feature_matrix)
+
+    nan_mask = np.any(np.isnan(feature_scaled), axis=1)
+    if nan_mask.sum() > 0:
+        logger.warning("Archetypes (%s): %d rows with NaN features replaced with zeros", label, nan_mask.sum())
+        feature_scaled[nan_mask] = 0.0
+
+    return feature_scaled
+
+
+def _find_best_species_in_cluster(
+    cluster_indices: np.ndarray,
+    df: pl.DataFrame,
+    species_col: str,
+    feature_scaled: np.ndarray,
+    centroid: np.ndarray,
+) -> tuple[int, float]:
+    """Find the best species in a cluster to represent it.
+
+    Priority species are checked first: "Atropa belladonna", "Taxus baccata",
+    "Aconitum napellus", "Datura stramonium". If none of these are in the
+    cluster, the species closest to the cluster centroid is chosen.
+
+    Args:
+        cluster_indices: Indices of species in the current cluster.
+        df: Polars DataFrame containing species names.
+        species_col: Column name for species names.
+        feature_scaled: Scaled feature matrix.
+        centroid: Cluster centroid vector.
+
+    Returns:
+        Tuple of (best species index, distance to centroid).
+    """
+    priority_species = {"Atropa belladonna", "Taxus baccata", "Aconitum napellus", "Datura stramonium"}
+
+    best_idx = -1
+    if species_col in df.columns:
+        for idx in cluster_indices:
+            if str(df.item(idx, species_col)) in priority_species:
+                best_idx = int(idx)
+                break
+
+    cluster_features = feature_scaled[cluster_indices]
+    distances = np.linalg.norm(cluster_features - centroid, axis=1)
+
+    if best_idx == -1:
+        best_idx = int(cluster_indices[int(np.argmin(distances))])
+
+    return best_idx, float(np.min(distances))
+
+
 def _run_kmeans_and_extract(
     df: pl.DataFrame,
     feature_cols: list[str],
@@ -196,66 +258,38 @@ def _run_kmeans_and_extract(
 
     Returns:
         Tuple of (centroid_array, archetype_DataFrame).
-
     """
-    feature_matrix = df.select(feature_cols).to_numpy(allow_copy=True).astype(np.float64)
-
-    # Standardise features for clustering (KMeans is Euclidean distance-based)
-    scaler = StandardScaler()
-    feature_scaled = scaler.fit_transform(feature_matrix)
-
-    # Replace NaN rows with zero (should be none after imputation, but defensive)
-    nan_mask = np.any(np.isnan(feature_scaled), axis=1)
-    if nan_mask.sum() > 0:
-        logger.warning("Archetypes (%s): %d rows with NaN features replaced with zeros", label, nan_mask.sum())
-        feature_scaled[nan_mask] = 0.0
+    feature_scaled = _prepare_features_for_kmeans(df, feature_cols, label)
 
     kmeans = KMeans(n_clusters=k, random_state=42, n_init="auto")
     cluster_labels = kmeans.fit_predict(feature_scaled)
     centroids = kmeans.cluster_centers_
 
-    # Priority list of heavily toxic species to preserve if possible
-    priority_species = {"Atropa belladonna", "Taxus baccata", "Aconitum napellus", "Datura stramonium"}
-
-    # Find the species closest to each cluster centroid
     archetype_indices: list[int] = []
+    distances_to_centroid: list[float] = []
+
     for cluster_id in range(k):
         cluster_mask = cluster_labels == cluster_id
         cluster_indices = np.where(cluster_mask)[0]
         if len(cluster_indices) == 0:
             continue
 
-        # Find priority species in cluster
-        best_idx = -1
-        if species_col in df.columns:
-            for idx in cluster_indices:
-                if str(df.item(idx, species_col)) in priority_species:
-                    best_idx = int(idx)
-                    break
-
-        cluster_features = feature_scaled[cluster_indices]
-        centroid = centroids[cluster_id]
-        distances = np.linalg.norm(cluster_features - centroid, axis=1)
-
-        # If no priority species, pick the one closest to centroid
-        if best_idx == -1:
-            best_idx = int(cluster_indices[int(np.argmin(distances))])
+        best_idx, min_dist = _find_best_species_in_cluster(
+            cluster_indices, df, species_col, feature_scaled, centroids[cluster_id]
+        )
 
         archetype_indices.append(best_idx)
+        distances_to_centroid.append(float(np.linalg.norm(feature_scaled[best_idx] - centroids[cluster_id])))
 
         species_name = "unknown"
         if species_col in df.columns:
             species_name = str(df[species_col][best_idx])
-        logger.debug(
-            "Archetypes (%s): cluster %d → %s (dist=%.4f)", label, cluster_id, species_name, float(np.min(distances))
-        )
+        logger.debug("Archetypes (%s): cluster %d → %s (dist=%.4f)", label, cluster_id, species_name, min_dist)
 
     archetype_df = df[archetype_indices]
 
     # Append K-Means provenance for the database
-    distances = [
-        float(np.linalg.norm(feature_scaled[idx] - centroids[cid])) for cid, idx in enumerate(archetype_indices)
-    ]
+    distances = distances_to_centroid
     archetype_df = archetype_df.with_columns(
         [
             pl.Series("cluster_id", list(range(k)), dtype=pl.Int32),
@@ -270,15 +304,13 @@ def _run_kmeans_and_extract(
 def _filter_herbivore_orders(df: pl.DataFrame) -> pl.DataFrame:
     """Filter mammal DataFrame to ecologically herbivorous orders only.
 
-    Excludes carnivore and omnivore-dominated orders to focus the cluster
-    space on genuine plant consumers.
+    Excludes carnivore and omnivore-dominated orders to focus the cluster space on genuine plant consumers.
 
     Args:
         df: PanTHERIA DataFrame with MSW05_Order column.
 
     Returns:
         Filtered DataFrame.
-
     """
     if "MSW05_Order" not in df.columns:
         return df

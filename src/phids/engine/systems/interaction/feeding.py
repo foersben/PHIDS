@@ -107,6 +107,22 @@ def _feed_on_single_plant(
     return metabolized_energy, plant_killed
 
 
+def _get_target_plant(world: ECSWorld, co_eid: int) -> PlantComponent | None:
+    if not world.has_entity(co_eid):
+        return None
+    co_entity = world.get_entity(co_eid)
+    if not co_entity.has_component(PlantComponent):
+        return None
+    return co_entity.get_component(PlantComponent)
+
+
+def _is_diet_compatible(herbivore_species_id: int, plant_species_id: int, diet_matrix: list[list[bool]]) -> bool:
+    if herbivore_species_id >= len(diet_matrix):
+        return False
+    herbivore_row = diet_matrix[herbivore_species_id]
+    return plant_species_id < len(herbivore_row) and herbivore_row[plant_species_id]
+
+
 def _resolve_swarm_feeding(
     swarm: SwarmComponent,
     world: ECSWorld,
@@ -138,16 +154,11 @@ def _resolve_swarm_feeding(
     dead_plants: list[int] = []
 
     for co_eid in world.entities_at(swarm.x, swarm.y):
-        if not world.has_entity(co_eid):
+        target_plant = _get_target_plant(world, co_eid)
+        if target_plant is None:
             continue
-        co_entity = world.get_entity(co_eid)
-        if not co_entity.has_component(PlantComponent):
-            continue
-        target_plant: PlantComponent = co_entity.get_component(PlantComponent)
 
-        # Diet compatibility check
-        herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-        if not (target_plant.species_id < len(herbivore_row) and herbivore_row[target_plant.species_id]):
+        if not _is_diet_compatible(swarm.species_id, target_plant.species_id, diet_matrix):
             on_incompatible_plant = True
             continue
 

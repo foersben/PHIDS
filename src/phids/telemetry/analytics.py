@@ -56,16 +56,30 @@ type TelemetryRow = dict[str, Any]
 
 
 def _as_species_count_map(value: TelemetryValue | object) -> SpeciesCountMap:
-    """Return a species-count mapping or an empty mapping when shape/type mismatch occurs."""
+    """Return a species-count mapping or an empty mapping when shape/type mismatch occurs.
+
+    Args:
+        value: The value to convert to a species-count mapping.
+
+    Returns:
+        SpeciesCountMap: The species-count mapping.
+    """
     if isinstance(value, dict):
-        return {int(k): int(v) for k, v in value.items() if isinstance(k, int) and isinstance(v, (int, float))}
+        return {k: int(v) for k, v in value.items() if isinstance(k, int) and isinstance(v, (int, float))}
     return {}
 
 
 def _as_species_energy_map(value: TelemetryValue | object) -> SpeciesEnergyMap:
-    """Return a species-energy mapping or an empty mapping when shape/type mismatch occurs."""
+    """Return a species-energy mapping or an empty mapping when shape/type mismatch occurs.
+
+    Args:
+        value: The value to convert to a species-energy mapping.
+
+    Returns:
+        SpeciesEnergyMap: The species-energy mapping.
+    """
     if isinstance(value, dict):
-        return {int(k): float(v) for k, v in value.items() if isinstance(k, int) and isinstance(v, (int, float))}
+        return {k: float(v) for k, v in value.items() if isinstance(k, int) and isinstance(v, (int, float))}
     return {}
 
 
@@ -91,11 +105,53 @@ class TelemetryRecorder:
 
         Args:
             max_rows: Maximum in-memory tick rows retained in the rolling window.
-
         """
         self._rows: list[TelemetryRow] = []
         self._df: pl.DataFrame | None = None
-        self._max_rows = max(1, int(max_rows))
+        self._max_rows = max(1, max_rows)
+
+    def _extract_death_counts(
+        self,
+        plant_death_causes: dict[str, int] | None,
+        metrics: TickMetrics | None,
+    ) -> dict[str, int]:
+        """Extract death counts from plant death causes and tick metrics.
+
+        Args:
+            plant_death_causes: Per-tick plant death diagnostics keyed by cause.
+            metrics: Tick metrics containing plant and herbivore death causes.
+
+        Returns:
+            A dictionary of death counts keyed by cause.
+        """
+        death_counts = {
+            "death_reproduction": 0,
+            "death_mycorrhiza": 0,
+            "death_defense_maintenance": 0,
+            "death_herbivore_feeding": 0,
+            "death_background_deficit": 0,
+            "death_starvation": 0,
+        }
+
+        def _update_counts(source: dict[str, int]) -> None:
+            """Update death counts from a source dictionary.
+
+            Args:
+                source: The source dictionary containing death counts.
+            """
+            for key in source:
+                if key in death_counts:
+                    death_counts[key] = source[key]
+
+        if plant_death_causes is not None:
+            _update_counts(plant_death_causes)
+        elif metrics and metrics.plant_death_causes:
+            _update_counts(metrics.plant_death_causes)
+
+        if metrics and metrics.herbivore_death_causes:
+            _update_counts(metrics.herbivore_death_causes)
+
+        return death_counts
 
     def record(
         self,
@@ -119,38 +175,16 @@ class TelemetryRecorder:
             tick: Current simulation tick index.
             plant_death_causes: Per-tick plant death diagnostics keyed by cause.
             tick_metrics: Optional pre-collected tick metrics; if omitted, they are gathered from the world.
-
         """
         metrics = tick_metrics or collect_tick_metrics(world)
-
-        death_counts = {
-            "death_reproduction": 0,
-            "death_mycorrhiza": 0,
-            "death_defense_maintenance": 0,
-            "death_herbivore_feeding": 0,
-            "death_background_deficit": 0,
-            "death_starvation": 0,
-        }
-        if plant_death_causes is not None:
-            for key in plant_death_causes:
-                if key in death_counts:
-                    death_counts[key] = int(plant_death_causes[key])
-        elif metrics and metrics.plant_death_causes:
-            for key in metrics.plant_death_causes:
-                if key in death_counts:
-                    death_counts[key] = int(metrics.plant_death_causes[key])
-
-        if metrics and metrics.herbivore_death_causes:
-            for key in metrics.herbivore_death_causes:
-                if key in death_counts:
-                    death_counts[key] = int(metrics.herbivore_death_causes[key])
+        death_counts = self._extract_death_counts(plant_death_causes, metrics)
 
         row: TelemetryRow = {
             "tick": tick,
-            "total_flora_energy": float(metrics.total_flora_energy),
-            "flora_population": int(metrics.flora_population),
-            "herbivore_clusters": int(metrics.herbivore_clusters),
-            "herbivore_population": int(metrics.herbivore_population),
+            "total_flora_energy": metrics.total_flora_energy,
+            "flora_population": metrics.flora_population,
+            "herbivore_clusters": metrics.herbivore_clusters,
+            "herbivore_population": metrics.herbivore_population,
             **death_counts,
             # Per-species flat columns
             "plant_pop_by_species": dict(metrics.plant_pop_by_species),
@@ -167,9 +201,9 @@ class TelemetryRecorder:
         logger.debug(
             "Telemetry row recorded (tick=%d, flora=%d, herbivores=%d, flora_energy=%.2f)",
             tick,
-            int(metrics.flora_population),
-            int(metrics.herbivore_population),
-            float(metrics.total_flora_energy),
+            metrics.flora_population,
+            metrics.herbivore_population,
+            metrics.total_flora_energy,
         )
 
     def get_latest_metrics(self) -> TelemetryRow | None:
@@ -177,7 +211,6 @@ class TelemetryRecorder:
 
         Returns:
             TelemetryRow | None: Most recent metrics row or ``None``.
-
         """
         if not self._rows:
             return None
@@ -194,7 +227,6 @@ class TelemetryRecorder:
         Returns:
             dict[str, list[int]]: Keys ``"flora_ids"`` and ``"herbivore_ids"``
             each mapping to a sorted list of integer species identifiers.
-
         """
         flora_ids: set[int] = set()
         herbivore_ids: set[int] = set()
@@ -205,6 +237,52 @@ class TelemetryRecorder:
             "flora_ids": sorted(flora_ids),
             "herbivore_ids": sorted(herbivore_ids),
         }
+
+    def _materialize_dataframe(self) -> pl.DataFrame:
+        """Materialize the telemetry rows into a Polars DataFrame.
+
+        Returns:
+            pl.DataFrame: The telemetry DataFrame.
+        """
+        if not self._rows:
+            return pl.DataFrame(
+                {
+                    "tick": pl.Series([], dtype=pl.Int64),
+                    "total_flora_energy": pl.Series([], dtype=pl.Float64),
+                    "flora_population": pl.Series([], dtype=pl.Int64),
+                    "herbivore_clusters": pl.Series([], dtype=pl.Int64),
+                    "herbivore_population": pl.Series([], dtype=pl.Int64),
+                    "death_reproduction": pl.Series([], dtype=pl.Int64),
+                    "death_mycorrhiza": pl.Series([], dtype=pl.Int64),
+                    "death_defense_maintenance": pl.Series([], dtype=pl.Int64),
+                    "death_herbivore_feeding": pl.Series([], dtype=pl.Int64),
+                    "death_background_deficit": pl.Series([], dtype=pl.Int64),
+                }
+            )
+
+        all_flora_ids: set[int] = set()
+        all_swarm_ids: set[int] = set()
+        for r in self._rows:
+            all_flora_ids.update(_as_species_count_map(r.get("plant_pop_by_species", {})).keys())
+            all_swarm_ids.update(_as_species_count_map(r.get("swarm_pop_by_species", {})).keys())
+        sorted_flora = sorted(all_flora_ids)
+        sorted_swarm = sorted(all_swarm_ids)
+
+        flat_rows: list[dict[str, object]] = []
+        for r in self._rows:
+            flat: dict[str, object] = {k: v for k, v in r.items() if not isinstance(v, dict)}
+            plant_pop = _as_species_count_map(r.get("plant_pop_by_species", {}))
+            plant_energy = _as_species_energy_map(r.get("plant_energy_by_species", {}))
+            defense_cost = _as_species_energy_map(r.get("defense_cost_by_species", {}))
+            swarm_pop = _as_species_count_map(r.get("swarm_pop_by_species", {}))
+            for fid in sorted_flora:
+                flat[f"plant_{fid}_pop"] = plant_pop.get(fid, 0)
+                flat[f"plant_{fid}_energy"] = plant_energy.get(fid, 0.0)
+                flat[f"defense_cost_{fid}"] = defense_cost.get(fid, 0.0)
+            for sid in sorted_swarm:
+                flat[f"swarm_{sid}_pop"] = swarm_pop.get(sid, 0)
+            flat_rows.append(flat)
+        return pl.DataFrame(flat_rows)
 
     @property
     def dataframe(self) -> pl.DataFrame:
@@ -237,50 +315,7 @@ class TelemetryRecorder:
         """
         if self._df is None:
             logger.debug("Materialising telemetry dataframe from %d rows", len(self._rows))
-            if self._rows:
-                # Union of all species IDs observed across the full retention window
-                all_flora_ids: set[int] = set()
-                all_swarm_ids: set[int] = set()
-                for r in self._rows:
-                    all_flora_ids.update(_as_species_count_map(r.get("plant_pop_by_species", {})).keys())
-                    all_swarm_ids.update(_as_species_count_map(r.get("swarm_pop_by_species", {})).keys())
-                sorted_flora = sorted(all_flora_ids)
-                sorted_swarm = sorted(all_swarm_ids)
-
-                # Build flat rows: aggregate scalars + per-species flat columns
-                flat_rows: list[dict[str, object]] = []
-                for r in self._rows:
-                    flat: dict[str, object] = {k: v for k, v in r.items() if not isinstance(v, dict)}
-                    plant_pop = _as_species_count_map(r.get("plant_pop_by_species", {}))
-                    plant_energy = _as_species_energy_map(r.get("plant_energy_by_species", {}))
-                    defense_cost = _as_species_energy_map(r.get("defense_cost_by_species", {}))
-                    swarm_pop = _as_species_count_map(r.get("swarm_pop_by_species", {}))
-                    for fid in sorted_flora:
-                        flat[f"plant_{fid}_pop"] = int(plant_pop.get(fid, 0))
-                        flat[f"plant_{fid}_energy"] = float(plant_energy.get(fid, 0.0))
-                        flat[f"defense_cost_{fid}"] = float(defense_cost.get(fid, 0.0))
-                    for sid in sorted_swarm:
-                        flat[f"swarm_{sid}_pop"] = int(swarm_pop.get(sid, 0))
-                    flat_rows.append(flat)
-                self._df = pl.DataFrame(flat_rows)
-            else:
-                # Stable aggregate-only schema when no ticks have been recorded.
-                # Per-species columns are absent because no species IDs are yet known;
-                # they will be added dynamically on the first post-tick materialisation.
-                self._df = pl.DataFrame(
-                    {
-                        "tick": pl.Series([], dtype=pl.Int64),
-                        "total_flora_energy": pl.Series([], dtype=pl.Float64),
-                        "flora_population": pl.Series([], dtype=pl.Int64),
-                        "herbivore_clusters": pl.Series([], dtype=pl.Int64),
-                        "herbivore_population": pl.Series([], dtype=pl.Int64),
-                        "death_reproduction": pl.Series([], dtype=pl.Int64),
-                        "death_mycorrhiza": pl.Series([], dtype=pl.Int64),
-                        "death_defense_maintenance": pl.Series([], dtype=pl.Int64),
-                        "death_herbivore_feeding": pl.Series([], dtype=pl.Int64),
-                        "death_background_deficit": pl.Series([], dtype=pl.Int64),
-                    }
-                )
+            self._df = self._materialize_dataframe()
         return self._df
 
     def reset(self) -> None:

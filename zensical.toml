@@ -31,10 +31,12 @@ features = [
     "search.highlight",
     "content.code.copy",
 ]
-palette = [
-    { media = "(prefers-color-scheme: dark)", scheme = "slate", primary = "black", accent = "deep-orange" },
-    # { media = "(prefers-color-scheme: light)", scheme = "default", primary = "black", accent = "deep-orange" },
-]
+
+[project.theme.palette]
+scheme = "slate"
+primary = "black"
+accent = "deep-orange"
+
 
 [project.theme.icon]
 repo = "fontawesome/brands/github"

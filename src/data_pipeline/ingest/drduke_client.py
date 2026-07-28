@@ -98,7 +98,6 @@ def fetch_drduke(force_refresh: bool = False) -> pl.DataFrame:
     Returns:
         Polars DataFrame with columns: species_name, compound_name,
         compound_class, has_compound, source_db.
-
     """
     if DRDUKE_CACHE.exists() and not force_refresh:
         logger.info("DrDuke: loading from cache %s", DRDUKE_CACHE)
@@ -125,7 +124,6 @@ def _fetch_compound_presence() -> pl.DataFrame:
 
     Returns:
         Polars DataFrame with species-compound presence records.
-
     """
     # Attempt live API queries first; fall back to literature-curated table
     records: list[dict[str, object]] = []
@@ -161,7 +159,6 @@ def _check_compound_presence_api(client: httpx.Client, species: str, compound: s
 
     Returns:
         Record dict with presence flag.
-
     """
     compound_class = _classify_compound(compound)
     # Attempt a targeted USDA phytochem search
@@ -193,7 +190,6 @@ def _fetch_toxval_ld50(force_refresh: bool = False) -> pl.DataFrame:
 
     Returns:
         Polars DataFrame with columns: compound_name, ld50_mg_kg, ld50_route.
-
     """
     if TOXVAL_CACHE.exists() and not force_refresh:
         logger.info("ToxValDB: loading from cache %s", TOXVAL_CACHE)
@@ -225,7 +221,6 @@ def _query_comptox_ld50(client: httpx.Client, compound: str) -> dict[str, object
 
     Returns:
         Dict with compound_name, ld50_mg_kg (float or None), ld50_route.
-
     """
     # Literature-sourced LD50 fallback (rat, oral, mg/kg body weight)
     # Sources: Merck Index, Goodman & Gilman, EFSA assessments
@@ -273,7 +268,24 @@ def _query_comptox_ld50(client: httpx.Client, compound: str) -> dict[str, object
     }
 
 
-def _extract_ld50_from_comptox(data: object) -> float | None:
+def _parse_tox_data_entry(entry: dict[str, object]) -> float | None:
+    """Extract oral LD50 value from a ToxValDB API response entry.
+
+    Args:
+        entry: API response entry (list element).
+
+    Returns:
+        LD50 value in mg/kg or None if not found.
+    """
+    if not isinstance(entry, dict) or entry.get("route", "").lower() != "oral":
+        return None
+    try:
+        return float(entry["value"])
+    except (KeyError, ValueError, TypeError):
+        return None
+
+
+def _extract_ld50_from_comptox(data: dict[str, object]) -> float | None:
     """Extract the lowest oral LD50 from a CompTox API response payload.
 
     Args:
@@ -281,7 +293,6 @@ def _extract_ld50_from_comptox(data: object) -> float | None:
 
     Returns:
         Float LD50 value in mg/kg or None if not found.
-
     """
     if not isinstance(data, list):
         return None
@@ -289,12 +300,12 @@ def _extract_ld50_from_comptox(data: object) -> float | None:
         if not isinstance(item, dict):
             continue
         tox_data = item.get("toxValues", [])
-        for entry in tox_data if isinstance(tox_data, list) else []:
-            if isinstance(entry, dict) and entry.get("route", "").lower() == "oral":
-                try:
-                    return float(entry["value"])
-                except (KeyError, ValueError, TypeError):
-                    continue
+        if not isinstance(tox_data, list):
+            continue
+        for entry in tox_data:
+            val = _parse_tox_data_entry(entry)
+            if val is not None:
+                return val
     return None
 
 
@@ -306,7 +317,6 @@ def _classify_compound(compound: str) -> str:
 
     Returns:
         Class string: 'alkaloid', 'glycoside', 'tannin', or 'other'.
-
     """
     if compound in ALKALOID_COMPOUNDS:
         return "alkaloid"
@@ -329,7 +339,6 @@ def _lookup_curated_presence(species: str, compound: str) -> bool:
 
     Returns:
         True if the compound is documented for this species.
-
     """
     curated: dict[str, list[str]] = {
         "Taxus baccata": ["taxine"],
@@ -355,7 +364,6 @@ def _curated_presence_fallback() -> pl.DataFrame:
 
     Returns:
         Polars DataFrame with species-compound presence records.
-
     """
     from data_pipeline.ingest.try_client import TARGET_SPECIES
 

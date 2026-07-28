@@ -20,10 +20,11 @@ import pytest
 import phids.api.main as api_main
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.schemas.triggers import (
+    HerbivoreAttackInitiator,
     SynthesizeSubstanceAction,
     TriggerConditionSchema,
 )
-from phids.api.ui_state import DraftState, get_draft, set_draft
+from phids.api.ui_state.state import DraftState, get_draft, set_draft
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -397,8 +398,7 @@ async def test_scenario_import_materializes_trigger_rules_and_substances(
         update={
             "triggers": [
                 TriggerConditionSchema(
-                    herbivore_species_id=0,
-                    min_herbivore_population=2,
+                    initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=2),
                     action=SynthesizeSubstanceAction(
                         substance_id=1,
                         synthesis_duration=3,

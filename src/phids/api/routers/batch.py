@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -26,7 +26,7 @@ from phids.api.schemas.responses import (
     BatchJobState,
     BatchStartPayload,
 )
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 from phids.telemetry.export.core import decimate_dataframe, filter_dataframe_columns
 from phids.telemetry.export.tikz import generate_tikz_str
 
@@ -249,6 +249,57 @@ async def batch_view(request: Request, job_id: str) -> Response:
     )
 
 
+def _export_csv(df: Any, job_id: str) -> tuple[bytes, str, str]:
+    data = df.to_csv(index=False).encode("utf-8")
+    filename = f"phids_batch_{job_id}.csv"
+    media_type = "text/csv"
+    return data, filename, media_type
+
+
+def _export_tex_table(df: Any, job_id: str) -> tuple[bytes, str, str]:
+    latex: str = df.to_latex(index=False, float_format="%.2f")
+    data = latex.encode("utf-8")
+    filename = f"phids_batch_{job_id}_table.tex"
+    media_type = "text/plain"
+    return data, filename, media_type
+
+
+def _export_tex_tikz(
+    aggregate: dict[str, object],
+    chart_type: str,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+    job_id: str,
+) -> tuple[bytes, str, str]:
+    rows_agg: list[dict[str, object]] = []
+    ticks = _as_list(aggregate.get("ticks", []))
+    flora_mean = _as_list(aggregate.get("flora_population_mean", []))
+    herbivore_mean = _as_list(aggregate.get("herbivore_population_mean", []))
+    survival = _as_list(aggregate.get("survival_probability_curve", []))
+    for i, t in enumerate(ticks):
+        rows_agg.append(
+            {
+                "tick": t,
+                "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
+                "swarm_pop_by_species": {0: herbivore_mean[i] if i < len(herbivore_mean) else 0},
+                "survival_probability": _safe_float(survival[i]) if i < len(survival) else 0.0,
+            }
+        )
+    normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
+    tikz = generate_tikz_str(
+        rows_agg,
+        normalized_chart_type,
+        title=title,
+        x_label=x_label,
+        y_label=y_label,
+    )
+    data = tikz.encode("utf-8")
+    filename = f"phids_batch_{job_id}.tex"
+    media_type = "text/plain"
+    return data, filename, media_type
+
+
 @router.get(
     "/api/batch/export/{job_id}",
     summary="Export batch aggregate in academic formats",
@@ -283,40 +334,11 @@ async def batch_export(
     df = decimate_dataframe(df, tick_interval)
 
     if format == "csv":
-        data = df.to_csv(index=False).encode("utf-8")
-        filename = f"phids_batch_{job_id}.csv"
-        media_type = "text/csv"
+        data, filename, media_type = _export_csv(df, job_id)
     elif format == "tex_table":
-        latex: str = df.to_latex(index=False, float_format="%.2f")
-        data = latex.encode("utf-8")
-        filename = f"phids_batch_{job_id}_table.tex"
-        media_type = "text/plain"
+        data, filename, media_type = _export_tex_table(df, job_id)
     elif format == "tex_tikz":
-        rows_agg: list[dict[str, object]] = []
-        ticks = _as_list(aggregate.get("ticks", []))
-        flora_mean = _as_list(aggregate.get("flora_population_mean", []))
-        herbivore_mean = _as_list(aggregate.get("herbivore_population_mean", []))
-        survival = _as_list(aggregate.get("survival_probability_curve", []))
-        for i, t in enumerate(ticks):
-            rows_agg.append(
-                {
-                    "tick": t,
-                    "plant_pop_by_species": {0: flora_mean[i] if i < len(flora_mean) else 0},
-                    "swarm_pop_by_species": {0: herbivore_mean[i] if i < len(herbivore_mean) else 0},
-                    "survival_probability": _safe_float(survival[i]) if i < len(survival) else 0.0,
-                }
-            )
-        normalized_chart_type = "survival_probability" if chart_type == "survival" else chart_type
-        tikz = generate_tikz_str(
-            rows_agg,
-            normalized_chart_type,
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-        )
-        data = tikz.encode("utf-8")
-        filename = f"phids_batch_{job_id}.tex"
-        media_type = "text/plain"
+        data, filename, media_type = _export_tex_tikz(aggregate, chart_type, title, x_label, y_label, job_id)
     else:
         raise HTTPException(
             status_code=400,

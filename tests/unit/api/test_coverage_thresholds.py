@@ -36,11 +36,8 @@ from phids.api.services.draft.trigger_rules import (
     default_activation_condition_for_rule,
     trigger_rule_by_index,
 )
-from phids.api.ui_state import (
-    DraftState,
-    SubstanceDefinition,
-    get_draft,
-)
+from phids.api.ui_state.state import DraftState, get_draft
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
 

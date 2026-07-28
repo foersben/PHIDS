@@ -52,7 +52,6 @@ class DSEOptimizer:
             base_config: The template simulation configuration schema.
             pop_size: The number of individuals in the population. Defaults to 50.
             generations: Number of evolutionary generations to run. Defaults to 20.
-
         """
         self.base_config = base_config
         self.pop_size = pop_size
@@ -95,7 +94,6 @@ class DSEOptimizer:
 
         Returns:
             A tuple of float fitnesses: (longevity, stability, dispersion).
-
         """
         import asyncio
 
@@ -109,7 +107,6 @@ class DSEOptimizer:
 
         Returns:
             A tuple of float fitnesses: (longevity, stability, dispersion).
-
         """
         genotype: DSEGenotype | None = individual.genotype
 
@@ -159,6 +156,77 @@ class DSEOptimizer:
 
         return (longevity, stability, dispersion)
 
+    def _evaluate_population(self, population: list["creator.Individual"]) -> None:
+        """Evaluate the population.
+
+        Args:
+            population: The population to evaluate.
+        """
+        invalid_ind = [ind for ind in population if not ind.fitness.valid]
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            fitnesses = list(executor.map(self.toolbox.evaluate, invalid_ind))
+
+        for ind, fit in zip(invalid_ind, fitnesses, strict=False):
+            ind.fitness.values = fit
+
+    def _dispatch_sync_callback(
+        self,
+        pop: list["creator.Individual"],
+        gen: int,
+        sync_callback: Callable[[dict[str, Any], list[SimulationConfig]], None],
+    ) -> None:
+        """Dispatch a callback with the Pareto front.
+
+        Args:
+            pop: The population.
+            gen: The generation number.
+            sync_callback: The callback function.
+        """
+        pareto_front_inds = pop[:10]
+        pareto_configs = []
+        for _ind in pareto_front_inds:
+            cfg = self.base_config.model_copy(deep=True)
+            # (Stub mapping of DEAP floats -> Pydantic Config)
+            # The float bounding and preservation logic operates here natively
+            pareto_configs.append(cfg)
+
+        payload = {
+            "generation": gen,
+            "pareto_front": [
+                {
+                    "longevity": ind.fitness.values[0],
+                    "stability": ind.fitness.values[1],
+                    "dispersion": ind.fitness.values[2],
+                }
+                for ind in pareto_front_inds
+            ],
+        }
+        try:
+            sync_callback(payload, pareto_configs)
+        except Exception as e:
+            logger.error("Failed to dispatch DSE callback: %s", e)
+
+    def _generate_offspring(self, pop: list["creator.Individual"]) -> list["creator.Individual"]:
+        """Generate offspring.
+
+        Args:
+            pop: The population.
+
+        Returns:
+            The offspring.
+        """
+        offspring = tools.selTournamentDCD(pop, len(pop))
+        offspring = [self.toolbox.clone(ind) for ind in offspring]
+
+        for ind1, ind2 in zip(offspring[::2], offspring[1::2], strict=False):
+            if random.random() <= 0.9:
+                self.toolbox.mate(ind1, ind2)
+            self.toolbox.mutate(ind1)
+            self.toolbox.mutate(ind2)
+            del ind1.fitness.values, ind2.fitness.values
+
+        return offspring
+
     def run(
         self,
         sync_callback: Callable[[dict[str, Any], list[SimulationConfig]], None] | None = None,
@@ -186,38 +254,19 @@ class DSEOptimizer:
             ind.genotype = None  # The evaluator handles None by evaluating the base_config directly
 
         # Evaluate the initial population
-        invalid_ind = [ind for ind in pop if not ind.fitness.valid]
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            fitnesses = list(executor.map(self.toolbox.evaluate, invalid_ind))
-
-        for ind, fit in zip(invalid_ind, fitnesses, strict=False):
-            ind.fitness.values = fit
-
+        self._evaluate_population(pop)
         pop = self.toolbox.select(pop, len(pop))
 
         # The NSGA-II Loop
         for gen in range(1, self.generations + 1):
             logger.info("--- DSE Generation %d/%d ---", gen, self.generations)
 
-            offspring = tools.selTournamentDCD(pop, len(pop))
-            offspring = [self.toolbox.clone(ind) for ind in offspring]
-
-            for ind1, ind2 in zip(offspring[::2], offspring[1::2], strict=False):
-                if random.random() <= 0.9:
-                    self.toolbox.mate(ind1, ind2)
-                self.toolbox.mutate(ind1)
-                self.toolbox.mutate(ind2)
-                del ind1.fitness.values, ind2.fitness.values
+            offspring = self._generate_offspring(pop)
 
             # In a full implementation, we must re-sync the continuous DEAP float lists
             # back to the explicit MINLP DSEGenotype here before evaluation.
 
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            with ThreadPoolExecutor(max_workers=4) as executor:
-                fitnesses = list(executor.map(self.toolbox.evaluate, invalid_ind))
-
-            for ind, fit in zip(invalid_ind, fitnesses, strict=False):
-                ind.fitness.values = fit
+            self._evaluate_population(offspring)
 
             # Select the next generation population
             pop = self.toolbox.select(pop + offspring, self.pop_size)
@@ -228,28 +277,6 @@ class DSEOptimizer:
                 break
 
             if sync_callback:
-                pareto_front_inds = pop[:10]
-                pareto_configs = []
-                for _ind in pareto_front_inds:
-                    cfg = self.base_config.model_copy(deep=True)
-                    # (Stub mapping of DEAP floats -> Pydantic Config)
-                    # The float bounding and preservation logic operates here natively
-                    pareto_configs.append(cfg)
-
-                payload = {
-                    "generation": gen,
-                    "pareto_front": [
-                        {
-                            "longevity": ind.fitness.values[0],
-                            "stability": ind.fitness.values[1],
-                            "dispersion": ind.fitness.values[2],
-                        }
-                        for ind in pareto_front_inds
-                    ],
-                }
-                try:
-                    sync_callback(payload, pareto_configs)
-                except Exception as e:
-                    logger.error("Failed to dispatch DSE callback: %s", e)
+                self._dispatch_sync_callback(pop, gen, sync_callback)
 
         return list(pop)

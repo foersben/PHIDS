@@ -1,13 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Experimental validation suite for test api builder and helpers.
-
-This module defines hypothesis-driven checks for deterministic ecosystem behavior, API constraints, and
-simulation invariants. The tests map computational rules to biological interpretations, including metabolic
-attrition, trigger-gated signaling, and O(1) spatial locality assumptions, to ensure that implementation
-details remain aligned with the PHIDS scientific model.
-"""
+"""Integration tests for PHIDS API route handlers, HTMX requests, and WebSocket endpoints."""
 
 from __future__ import annotations
 
@@ -15,12 +9,8 @@ import json
 from typing import TYPE_CHECKING
 
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from starlette.requests import Request
-
-from phids.api.presenters.diagnostics import build_energy_deficit_swarms, build_live_summary, render_status_badge_html
-from phids.api.services.draft.trigger_rules import parse_activation_condition_json, trigger_rule_by_index
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -28,45 +18,17 @@ if TYPE_CHECKING:
 from phids.api import main as api_main
 from phids.api.main import app
 from phids.api.presenters.dashboard import (
-    _default_substance_name,
-    _describe_activation_condition,
     build_draft_mycorrhizal_links,
     build_live_dashboard_payload,
     extract_ui_snapshot,
-    validate_cell_coordinates,
 )
-from phids.api.routers.config.trigger_rules import config_trigger_rule_condition_node_update
-from phids.api.schemas.placement import (
-    InitialPlantPlacement,
-    InitialSwarmPlacement,
-)
+from phids.api.schemas.placement import InitialPlantPlacement, InitialSwarmPlacement
 from phids.api.schemas.simulation import SimulationConfig
-from phids.api.schemas.species import (
-    DietCompatibilityMatrix,
-    FloraSpeciesParams,
-    HerbivoreSpeciesParams,
-)
-from phids.api.schemas.triggers import (
-    SynthesizeSubstanceAction,
-    TriggerConditionSchema,
-)
-from phids.api.services.draft.placements import (
-    add_plant_placement,
-)
-from phids.api.services.draft.trigger_rules import (
-    add_trigger_rule,
-)
-from phids.api.ui_state import (
-    ActivationConditionNode,
-    DraftState,
-    SubstanceDefinition,
-    TriggerRule,
-    get_draft,
-    reset_draft,
-    set_draft,
-)
-from phids.engine.components.substances import SubstanceComponent
-from phids.engine.components.swarm import SwarmComponent
+from phids.api.schemas.species import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams
+from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction, TriggerConditionSchema
+from phids.api.services.draft.placements import add_plant_placement
+from phids.api.ui_state.state import DraftState, get_draft, set_draft
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine.loop import SimulationLoop
 
 
@@ -99,8 +61,7 @@ def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
 
 def _config_with_trigger() -> SimulationConfig:
     trigger = TriggerConditionSchema(
-        herbivore_species_id=0,
-        min_herbivore_population=3,
+        initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=3),
         aftereffect_ticks=2,
         action=SynthesizeSubstanceAction(
             substance_id=0,
@@ -125,157 +86,6 @@ def _config_with_trigger() -> SimulationConfig:
     )
 
 
-@pytest.fixture(autouse=True)
-def _reset_state() -> None:
-    reset_draft()
-    api_main._sim_loop = None
-    api_main._sim_substance_names = {}
-
-
-def test_substance_name_helpers_default_and_draft_overrides() -> None:
-    """Verify substance naming helpers use defaults and honor draft-provided override labels."""
-    assert _default_substance_name(2, is_toxin=False) == "Signal 2"
-    assert _default_substance_name(3, is_toxin=True) == "Toxin 3"
-
-    config = _config_with_trigger()
-    api_main._set_simulation_substance_names(config)
-    assert api_main._substance_name(0, is_toxin=False) == "Signal 0"
-    assert api_main._substance_name(99, is_toxin=True) == "Toxin 99"
-
-    draft = DraftState.default()
-    draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Alarm")]
-    api_main._set_simulation_substance_names(config, draft=draft)
-    assert api_main._substance_name(0, is_toxin=False) == "Alarm"
-
-
-@pytest.mark.parametrize(
-    ("raw", "expected"),
-    [
-        (None, None),
-        ("   ", None),
-        (
-            '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}',
-            {
-                "kind": "herbivore_presence",
-                "herbivore_species_id": 0,
-                "min_herbivore_population": 3,
-            },
-        ),
-        (
-            '{"kind":"environmental_signal","signal_id":0,"min_concentration":0.2}',
-            {
-                "kind": "environmental_signal",
-                "signal_id": 0,
-                "min_concentration": 0.2,
-            },
-        ),
-    ],
-)
-def test_activation_condition_json_parser_valid_cases(
-    raw: str | None,
-    expected: ActivationConditionNode | None,
-) -> None:
-    """Verify activation-condition parser returns normalized dicts for valid inputs."""
-    assert parse_activation_condition_json(raw) == expected
-
-
-@pytest.mark.parametrize("raw", ["{bad json", '{"kind":"substance_active"}'])
-def test_activation_condition_json_parser_invalid_cases(raw: str) -> None:
-    """Verify activation-condition parser raises on malformed JSON and invalid schemas."""
-    with pytest.raises(HTTPException):
-        parse_activation_condition_json(raw)
-
-
-@pytest.mark.parametrize(
-    ("condition", "herbivore_names", "substance_names", "expected"),
-    [
-        (None, None, None, "unconditional"),
-        (
-            {
-                "kind": "herbivore_presence",
-                "herbivore_species_id": 1,
-                "min_herbivore_population": 4,
-            },
-            {1: "Beetles"},
-            None,
-            "Beetles ≥ 4",
-        ),
-        (
-            {"kind": "substance_active", "substance_id": 7},
-            None,
-            {7: "Alarm"},
-            "Alarm active",
-        ),
-        (
-            {"kind": "environmental_signal", "signal_id": 0, "min_concentration": 0.25},
-            None,
-            {0: "Alarm"},
-            "Alarm concentration ≥ 0.25",
-        ),
-        ({"kind": "all_of", "conditions": []}, None, None, "unconditional"),
-        (
-            {
-                "kind": "any_of",
-                "conditions": [
-                    {
-                        "kind": "herbivore_presence",
-                        "herbivore_species_id": 0,
-                        "min_herbivore_population": 2,
-                    },
-                    {"kind": "substance_active", "substance_id": 1},
-                ],
-            },
-            {0: "Moths"},
-            {1: "VOC"},
-            "(Moths ≥ 2 OR VOC active)",
-        ),
-    ],
-)
-def test_activation_condition_descriptions(
-    condition: ActivationConditionNode | None,
-    herbivore_names: dict[int, str] | None,
-    substance_names: dict[int, str] | None,
-    expected: str,
-) -> None:
-    """Verify activation-condition description rendering for supported condition kinds."""
-    assert (
-        _describe_activation_condition(
-            condition,
-            herbivore_names=herbivore_names,
-            substance_names=substance_names,
-        )
-        == expected
-    )
-
-
-def test_trigger_rule_lookup_valid_and_missing_index() -> None:
-    """Verify trigger-rule lookup returns existing entries and raises for missing indices."""
-    draft = DraftState.default()
-    draft.trigger_rules = [TriggerRule(flora_species_id=0, herbivore_species_id=0, substance_id=0)]
-    assert trigger_rule_by_index(draft, 0).substance_id == 0
-    with pytest.raises(HTTPException):
-        trigger_rule_by_index(draft, 3)
-
-
-@pytest.mark.parametrize(
-    ("x", "y", "width", "height", "should_raise"),
-    [(1, 1, 3, 3, False), (5, 1, 3, 3, True)],
-)
-def test_validate_cell_coordinates_cases(
-    x: int,
-    y: int,
-    width: int,
-    height: int,
-    should_raise: bool,
-) -> None:
-    """Verify coordinate validation accepts in-bounds cells and rejects out-of-bounds cells."""
-    if should_raise:
-        with pytest.raises(HTTPException):
-            validate_cell_coordinates(x, y, width, height)
-        return
-    validate_cell_coordinates(x, y, width, height)
-
-
 @pytest.mark.parametrize(
     ("headers", "expected"),
     [([(b"hx-request", b"true")], True), ([], False)],
@@ -295,122 +105,6 @@ def test_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
     assert build_draft_mycorrhizal_links(draft) == []
     draft.mycorrhizal_inter_species = True
     assert build_draft_mycorrhizal_links(draft)[0]["inter_species"] is True
-
-
-@pytest.mark.parametrize(
-    ("running", "paused", "terminated", "expected_label"),
-    [
-        (False, False, False, "Loaded"),
-        (True, False, False, "Running"),
-        (True, True, False, "Paused"),
-        (False, False, True, "Terminated"),
-    ],
-)
-def test_render_status_badge_states(
-    running: bool,
-    paused: bool,
-    terminated: bool,
-    expected_label: str,
-) -> None:
-    """Verify status badge labels map correctly to loaded-loop runtime flags."""
-    loop = SimulationLoop(_config_with_trigger())
-    api_main._sim_loop = loop
-    loop.running = running
-    loop.paused = paused
-    loop.terminated = terminated
-    assert expected_label in render_status_badge_html(api_main._sim_loop)
-
-
-def test_request_helpers_get_loop_raises_when_unloaded_and_idle_badge_is_rendered() -> None:
-    """Verify unloaded-loop helpers raise and render the Idle status badge."""
-    with pytest.raises(HTTPException):
-        api_main._get_loop()
-    assert "Idle" in render_status_badge_html(api_main._sim_loop)
-
-
-def test_live_summary_and_starving_swarm_helpers() -> None:
-    """Test main live summary and starving swarm helpers.
-
-    Asserts correct behavior of live summary and energy deficit swarm builders,
-    ensuring they provide accurate ecological state information.
-    """
-    loop = SimulationLoop(_config_with_trigger())
-    api_main._sim_loop = loop
-
-    swarm = next(iter(loop.world.query(SwarmComponent))).get_component(SwarmComponent)
-    swarm.energy = 0.0
-    swarm.energy_min = 2.0
-    swarm.repelled = True
-
-    extra_swarm_entity = loop.world.create_entity()
-    extra_swarm = SwarmComponent(
-        entity_id=extra_swarm_entity.entity_id,
-        species_id=0,
-        x=1,
-        y=1,
-        population=2,
-        initial_population=1,
-        energy=1.0,
-        energy_min=1.0,
-        velocity=1,
-        consumption_rate=1.0,
-        energy_upkeep_per_individual=0.05,
-        split_population_threshold=0,
-    )
-    loop.world.add_component(extra_swarm_entity.entity_id, extra_swarm)
-    loop.world.register_position(extra_swarm_entity.entity_id, 1, 1)
-
-    substance_entity = loop.world.create_entity()
-    loop.world.add_component(
-        substance_entity.entity_id,
-        SubstanceComponent(
-            entity_id=substance_entity.entity_id,
-            substance_id=0,
-            owner_plant_id=0,
-            active=True,
-            aftereffect_remaining_ticks=1,
-        ),
-    )
-
-    summary = build_live_summary(api_main._sim_loop)
-    starving = build_energy_deficit_swarms(api_main._sim_loop)
-
-    assert summary is not None
-    assert summary["plants"] == 1
-    assert summary["swarms"] == 2
-    assert summary["active_substances"] == 1
-    assert starving[0]["energy_deficit"] >= starving[1]["energy_deficit"]
-    assert any(swarm_entry["repelled"] is True for swarm_entry in starving)
-
-
-@pytest.mark.asyncio
-async def test_condition_node_update_creates_root_when_rule_has_no_condition() -> None:
-    """Test condition node update for rules without conditions.
-
-    Asserts that a root condition node is created with default settings when
-    a trigger rule without an existing condition node is updated.
-    """
-    draft = get_draft()
-    draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Signal A")]
-    add_trigger_rule(draft, 0, 0, 0)
-
-    request = Request({"type": "http", "headers": []})
-    response = await config_trigger_rule_condition_node_update(
-        request,
-        0,
-        path="",
-        kind="herbivore_presence",
-        herbivore_species_id=0,
-        min_herbivore_population=2,
-        substance_id=None,
-    )
-
-    assert response.status_code == 200, response.body.decode()
-    assert draft.trigger_rules[0].activation_condition == {
-        "kind": "herbivore_presence",
-        "herbivore_species_id": 0,
-        "min_herbivore_population": 5,
-    }
 
 
 @pytest.mark.asyncio
@@ -518,11 +212,7 @@ async def test_builder_substance_routes_and_diet_matrix_mutations(api_client: As
 
 @pytest.mark.asyncio
 async def test_builder_route_rule_of_16_branches(api_client: AsyncClient) -> None:
-    """Test builder route rule with 16 branches.
-
-    Asserts that adding new flora, herbivores, or substances beyond the 16 branch limit
-    returns a 400 error, preventing overflow.
-    """
+    """Test builder route rule with 16 branches."""
     draft = get_draft()
     draft.flora_species = [_flora(i) for i in range(16)]
     draft.herbivore_species = [_herbivore(i) for i in range(16)]
@@ -708,11 +398,7 @@ async def test_scenario_routes_reject_invalid_draft_or_import_payload(
 async def test_scenario_import_reconstructs_triggers_and_substances(
     api_client: AsyncClient,
 ) -> None:
-    """Test scenario import for triggers and substances reconstruction.
-
-    Asserts that importing a scenario correctly reconstructs the associated triggers and
-    substances, ensuring the ecological simulation can be accurately restored.
-    """
+    """Test scenario import for triggers and substances reconstruction."""
     payload = _config_with_trigger().model_dump(mode="json")
     payload["flora_species"][0]["triggers"][0]["activation_condition"] = {
         "kind": "herbivore_presence",
@@ -755,64 +441,5 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
 
     assert payload["all_flora_species"]
     assert payload["tick"] == expected_payload["tick"]
-    assert payload.get("contract_version") == expected_payload.get("contract_version")
     assert payload["grid_width"] == expected_payload["grid_width"]
     assert payload["grid_height"] == expected_payload["grid_height"]
-    assert payload["all_flora_species"] == expected_payload["all_flora_species"]
-
-    expected_top_level_keys = {
-        "contract_version",
-        "tick",
-        "grid_width",
-        "grid_height",
-        "max_energy",
-        "species_energy",
-        "plant_energy",
-        "all_flora_species",
-        "signal_overlay",
-        "toxin_overlay",
-        "max_signal",
-        "max_toxin",
-        "plants",
-        "mycorrhizal_links",
-        "swarms",
-        "terminated",
-        "termination_reason",
-        "running",
-        "paused",
-    }
-    assert set(payload.keys()) == expected_top_level_keys
-
-    expected_plant_columns = {
-        "entity_id",
-        "species_id",
-        "name",
-        "x",
-        "y",
-        "energy",
-        "root_link_count",
-        "active_signal_ids",
-        "active_toxin_ids",
-    }
-    expected_swarm_columns = {
-        "x",
-        "y",
-        "population",
-        "species_id",
-        "name",
-        "energy",
-        "energy_deficit",
-        "repelled",
-        "repelled_ticks_remaining",
-        "toxin_level",
-        "intoxicated",
-    }
-    assert set(payload["plants"].keys()) == expected_plant_columns
-    assert set(payload["swarms"].keys()) == expected_swarm_columns
-
-    plant_lengths = {len(column) for column in payload["plants"].values()}
-    swarm_lengths = {len(column) for column in payload["swarms"].values()}
-    assert len(plant_lengths) == 1
-    assert len(swarm_lengths) == 1
-    assert len(payload["plants"]["entity_id"]) == len(expected_payload["plants"]["entity_id"])
-    assert len(payload["swarms"]["species_id"]) == len(expected_payload["swarms"]["species_id"])

@@ -27,7 +27,15 @@ _HERBIVORE_COLOURS = ["#ef4444", "#f97316", "#ec4899", "#f43f5e", "#fb923c"]
 
 
 def _species_map(row: TelemetryRow, key: str) -> dict[int, object]:
-    """Return a normalized integer-keyed species map for one telemetry row field."""
+    """Return a normalized integer-keyed species map for one telemetry row field.
+
+    Args:
+        row: The telemetry row to filter.
+        key: The key to filter.
+
+    Returns:
+        The filtered telemetry row.
+    """
     raw = row.get(key, {})
     if not isinstance(raw, dict):
         return {}
@@ -42,7 +50,15 @@ def _species_map(row: TelemetryRow, key: str) -> dict[int, object]:
 
 
 def _to_int(value: object, default: int = 0) -> int:
-    """Coerce heterogeneous scalar values to int with deterministic fallback."""
+    """Coerce heterogeneous scalar values to int with deterministic fallback.
+
+    Args:
+        value: The value to convert to int.
+        default: The default value to return if the value cannot be converted to int.
+
+    Returns:
+        The converted value.
+    """
     if isinstance(value, bool):
         return default
     if isinstance(value, int):
@@ -58,7 +74,14 @@ def _to_int(value: object, default: int = 0) -> int:
 
 
 def _object_mapping(value: object) -> Mapping[object, object]:
-    """Return mapping view when the input is dictionary-like, otherwise empty mapping."""
+    """Return mapping view when the input is dictionary-like, otherwise empty mapping.
+
+    Args:
+        value: The value to convert to a mapping view.
+
+    Returns:
+        The mapping view.
+    """
     if isinstance(value, Mapping):
         return value
     return {}
@@ -72,11 +95,10 @@ def _append_species_id(csv_ids: str | None, species_id: int) -> str:
         species_id: Species identifier that must be present.
 
     Returns:
-        str: Normalized CSV list including ``species_id``.
-
+        Normalized CSV list including ``species_id``.
     """
     ids = _parse_species_ids(csv_ids) or set()
-    ids.add(int(species_id))
+    ids.add(species_id)
     return ",".join(str(i) for i in sorted(ids))
 
 
@@ -88,10 +110,9 @@ def decimate_dataframe(df: pd.DataFrame, tick_interval: int) -> pd.DataFrame:
         tick_interval: Row stride; values below 1 are treated as 1.
 
     Returns:
-        pd.DataFrame: Decimated DataFrame.
-
+        Decimated DataFrame.
     """
-    stride = max(1, int(tick_interval))
+    stride = max(1, tick_interval)
     if stride <= 1 or df.empty:
         return df
     return df.iloc[::stride, :]
@@ -104,8 +125,7 @@ def _parse_species_ids(raw: str | None) -> set[int] | None:
         raw: Comma-delimited string (for example ``"0,2,4"``) or ``None``.
 
     Returns:
-        Optional set[int]: Parsed ids; ``None`` when input is empty.
-
+        Parsed ids; ``None`` when input is empty.
     """
     if raw is None or raw.strip() == "":
         return None
@@ -119,6 +139,35 @@ def _parse_species_ids(raw: str | None) -> set[int] | None:
         except ValueError:
             continue
     return out if out else None
+
+
+def _filter_single_row(
+    row: TelemetryRow,
+    flora_keep: set[int] | None,
+    herbivore_keep: set[int] | None,
+) -> TelemetryRow:
+    """Filter a single telemetry row to keep only specified species.
+
+    Args:
+        row: The telemetry row to filter.
+        flora_keep: Set of flora species IDs to keep, or None to keep all.
+        herbivore_keep: Set of herbivore species IDs to keep, or None to keep all.
+
+    Returns:
+        The filtered telemetry row.
+    """
+    clone = dict(row)
+    plant_pop = _species_map(row, "plant_pop_by_species")
+    plant_energy = _species_map(row, "plant_energy_by_species")
+    defense_cost = _species_map(row, "defense_cost_by_species")
+    swarm_pop = _species_map(row, "swarm_pop_by_species")
+    if flora_keep is not None:
+        clone["plant_pop_by_species"] = {sid: val for sid, val in plant_pop.items() if sid in flora_keep}
+        clone["plant_energy_by_species"] = {sid: val for sid, val in plant_energy.items() if sid in flora_keep}
+        clone["defense_cost_by_species"] = {sid: val for sid, val in defense_cost.items() if sid in flora_keep}
+    if herbivore_keep is not None:
+        clone["swarm_pop_by_species"] = {sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep}
+    return clone
 
 
 def filter_telemetry_rows(
@@ -135,8 +184,7 @@ def filter_telemetry_rows(
         herbivore_ids: Optional CSV herbivore species-id list.
 
     Returns:
-        TelemetryRows: Row list with filtered species dictionaries.
-
+        Row list with filtered species dictionaries.
     """
     flora_keep = _parse_species_ids(flora_ids)
     herbivore_keep = _parse_species_ids(herbivore_ids)
@@ -145,18 +193,7 @@ def filter_telemetry_rows(
 
     filtered: TelemetryRows = []
     for row in rows:
-        clone = dict(row)
-        plant_pop = _species_map(row, "plant_pop_by_species")
-        plant_energy = _species_map(row, "plant_energy_by_species")
-        defense_cost = _species_map(row, "defense_cost_by_species")
-        swarm_pop = _species_map(row, "swarm_pop_by_species")
-        if flora_keep is not None:
-            clone["plant_pop_by_species"] = {sid: val for sid, val in plant_pop.items() if sid in flora_keep}
-            clone["plant_energy_by_species"] = {sid: val for sid, val in plant_energy.items() if sid in flora_keep}
-            clone["defense_cost_by_species"] = {sid: val for sid, val in defense_cost.items() if sid in flora_keep}
-        if herbivore_keep is not None:
-            clone["swarm_pop_by_species"] = {sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep}
-        filtered.append(clone)
+        filtered.append(_filter_single_row(row, flora_keep, herbivore_keep))
     return filtered
 
 
@@ -168,8 +205,7 @@ def filter_dataframe_columns(df: pd.DataFrame, columns: str | None) -> pd.DataFr
         columns: Optional CSV column list.
 
     Returns:
-        pd.DataFrame: Filtered DataFrame containing only existing columns.
-
+        Filtered DataFrame containing only existing columns.
     """
     if columns is None or columns.strip() == "" or df.empty:
         return df
@@ -196,9 +232,8 @@ def telemetry_to_dataframe(rows: TelemetryRows) -> pd.DataFrame:
         rows: Raw row list from ``TelemetryRecorder._rows``.
 
     Returns:
-        pd.DataFrame: Wide-format DataFrame with one row per tick and one column per
+        Wide-format DataFrame with one row per tick and one column per
         scalar metric or per-species measurement.
-
     """
     import pandas as pd  # local import to keep dependency optional at module load
 
@@ -259,8 +294,7 @@ def aggregate_to_dataframe(
         herbivore_names: Optional display name mapping for herbivore species.
 
     Returns:
-        pd.DataFrame: Wide-format DataFrame ready for export.
-
+        Wide-format DataFrame ready for export.
     """
     import pandas as pd
 

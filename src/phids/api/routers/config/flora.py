@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, Response
 import phids.api.main as api_main
 from phids.api.schemas.species import FloraSpeciesParams
 from phids.api.services.draft.species import add_flora, remove_flora
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 
 router = APIRouter()
 
@@ -33,7 +33,25 @@ async def config_flora_add(
     camouflage: Annotated[str, Form()] = "off",
     camouflage_factor: Annotated[float, Form()] = 1.0,
 ) -> Response:
-    """Add one flora species to the draft and render the updated flora table."""
+    """Add one flora species to the draft and render the updated flora table.
+
+    Args:
+        request: The HTTP request.
+        name: The name of the flora species.
+        base_energy: The base energy of the flora species.
+        max_energy: The maximum energy of the flora species.
+        growth_rate: The growth rate of the flora species.
+        survival_threshold: The survival threshold of the flora species.
+        reproduction_interval: The reproduction interval of the flora species.
+        seed_min_dist: The minimum distance between seeds of the flora species.
+        seed_max_dist: The maximum distance between seeds of the flora species.
+        seed_energy_cost: The energy cost of seeding for the flora species.
+        camouflage: Whether the flora species has camouflage.
+        camouflage_factor: The camouflage factor of the flora species.
+
+    Returns:
+        The updated flora table.
+    """
     draft = get_draft()
     if len(draft.flora_species) >= 16:
         api_main.logger.warning("Rule-of-16 rejected flora creation")
@@ -90,7 +108,29 @@ async def config_flora_update(
         float | None, Form(alias="passive_defenses.digestibility_modifier")
     ] = None,
 ) -> Response:
-    """Patch one flora species in the draft and render the updated flora table."""
+    """Patch one flora species in the draft and render the updated flora table.
+
+    Args:
+        request: The HTTP request.
+        species_id: The species ID.
+        view: The view to render.
+        name: The name of the flora species.
+        base_energy: The base energy of the flora species.
+        max_energy: The maximum energy of the flora species.
+        growth_rate: The growth rate of the flora species.
+        survival_threshold: The survival threshold of the flora species.
+        reproduction_interval: The reproduction interval of the flora species.
+        seed_min_dist: The minimum distance between seeds of the flora species.
+        seed_max_dist: The maximum distance between seeds of the flora species.
+        seed_energy_cost: The energy cost of seeding for the flora species.
+        camouflage: Whether the flora species has camouflage.
+        camouflage_factor: The camouflage factor of the flora species.
+        passive_defenses_mechanical_damage_per_bite: The mechanical damage per bite of the flora species.
+        passive_defenses_digestibility_modifier: The digestibility modifier of the flora species.
+
+    Returns:
+        The updated flora table.
+    """
     draft = get_draft()
     idx = next(
         (
@@ -107,25 +147,22 @@ async def config_flora_update(
     fp = draft.flora_species[idx]
     if not isinstance(fp, FloraSpeciesParams):
         raise HTTPException(status_code=400, detail="Invalid flora species entry in draft state.")
-    updates: dict[str, object] = {}
-    if name is not None:
-        updates["name"] = name
-    if base_energy is not None:
-        updates["base_energy"] = base_energy
-    if max_energy is not None:
-        updates["max_energy"] = max_energy
-    if growth_rate is not None:
-        updates["growth_rate"] = growth_rate
-    if survival_threshold is not None:
-        updates["survival_threshold"] = survival_threshold
-    if reproduction_interval is not None:
-        updates["reproduction_interval"] = reproduction_interval
-    if seed_min_dist is not None:
-        updates["seed_min_dist"] = seed_min_dist
-    if seed_max_dist is not None:
-        updates["seed_max_dist"] = seed_max_dist
-    if seed_energy_cost is not None:
-        updates["seed_energy_cost"] = seed_energy_cost
+    updates: dict[str, object] = {
+        k: v
+        for k, v in {
+            "name": name,
+            "base_energy": base_energy,
+            "max_energy": max_energy,
+            "growth_rate": growth_rate,
+            "survival_threshold": survival_threshold,
+            "reproduction_interval": reproduction_interval,
+            "seed_min_dist": seed_min_dist,
+            "seed_max_dist": seed_max_dist,
+            "seed_energy_cost": seed_energy_cost,
+        }.items()
+        if v is not None
+    }
+
     if camouflage is not None:
         updates["camouflage"] = camouflage == "on"
     if camouflage_factor is not None:
@@ -156,7 +193,14 @@ async def config_flora_update(
 
 @router.delete("/api/config/flora/{species_id}", response_class=HTMLResponse, summary="Delete flora species")
 async def config_flora_delete(species_id: int) -> HTMLResponse:
-    """Remove one flora species from the draft."""
+    """Remove one flora species from the draft.
+
+    Args:
+        species_id: The species ID.
+
+    Returns:
+        The updated flora table.
+    """
     draft = get_draft()
     try:
         remove_flora(draft, species_id)

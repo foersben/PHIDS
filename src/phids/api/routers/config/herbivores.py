@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, Response
 import phids.api.main as api_main
 from phids.api.schemas.species import HerbivoreSpeciesParams
 from phids.api.services.draft.species import add_herbivore, remove_herbivore
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 
 router = APIRouter()
 
@@ -29,7 +29,21 @@ async def config_herbivore_add(
     energy_upkeep_per_individual: Annotated[float, Form()] = 0.05,
     split_population_threshold: Annotated[int, Form()] = 10,
 ) -> Response:
-    """Add one herbivore species to the draft and render the updated herbivore table."""
+    """Add one herbivore species to the draft and render the updated herbivore table.
+
+    Args:
+        request: The HTTP request.
+        name: The name of the herbivore species.
+        energy_min: The minimum energy of the herbivore species.
+        velocity: The velocity of the herbivore species.
+        consumption_rate: The consumption rate of the herbivore species.
+        reproduction_energy_divisor: The reproduction energy divisor of the herbivore species.
+        energy_upkeep_per_individual: The energy upkeep per individual of the herbivore species.
+        split_population_threshold: The split population threshold of the herbivore species.
+
+    Returns:
+        The updated herbivore table.
+    """
     draft = get_draft()
     if len(draft.herbivore_species) >= 16:
         api_main.logger.warning("Rule-of-16 rejected herbivore creation")
@@ -77,7 +91,25 @@ async def config_herbivore_update(
     ] = None,
     resistances_digestive_efficiency: Annotated[float | None, Form(alias="resistances.digestive_efficiency")] = None,
 ) -> Response:
-    """Patch one herbivore species in the draft and render the updated herbivore table."""
+    """Patch one herbivore species in the draft and render the updated herbivore table.
+
+    Args:
+        request: The HTTP request.
+        species_id: The species ID.
+        name: The name of the herbivore species.
+        energy_min: The minimum energy of the herbivore species.
+        velocity: The velocity of the herbivore species.
+        consumption_rate: The consumption rate of the herbivore species.
+        reproduction_energy_divisor: The reproduction energy divisor of the herbivore species.
+        energy_upkeep_per_individual: The energy upkeep per individual of the herbivore species.
+        split_population_threshold: The split population threshold of the herbivore species.
+        resistances_morphological_adaptation: The morphological adaptation of the herbivore species.
+        resistances_chemical_neutralization: The chemical neutralization of the herbivore species.
+        resistances_digestive_efficiency: The digestive efficiency of the herbivore species.
+
+    Returns:
+        The updated herbivore table.
+    """
     draft = get_draft()
     idx = next(
         (
@@ -94,21 +126,20 @@ async def config_herbivore_update(
     pp = draft.herbivore_species[idx]
     if not isinstance(pp, HerbivoreSpeciesParams):
         raise HTTPException(status_code=400, detail="Invalid herbivore species entry in draft state.")
-    updates: dict[str, object] = {}
-    if name is not None:
-        updates["name"] = name
-    if energy_min is not None:
-        updates["energy_min"] = energy_min
-    if velocity is not None:
-        updates["velocity"] = velocity
-    if consumption_rate is not None:
-        updates["consumption_rate"] = consumption_rate
+    updates: dict[str, object] = {
+        k: v
+        for k, v in {
+            "name": name,
+            "energy_min": energy_min,
+            "velocity": velocity,
+            "consumption_rate": consumption_rate,
+            "energy_upkeep_per_individual": energy_upkeep_per_individual,
+            "split_population_threshold": split_population_threshold,
+        }.items()
+        if v is not None
+    }
     if reproduction_energy_divisor is not None:
         updates["reproduction_energy_divisor"] = max(1.0, reproduction_energy_divisor)
-    if energy_upkeep_per_individual is not None:
-        updates["energy_upkeep_per_individual"] = energy_upkeep_per_individual
-    if split_population_threshold is not None:
-        updates["split_population_threshold"] = split_population_threshold
 
     # Handle nested resistances
     resistances_updates: dict[str, object] = {}
@@ -136,7 +167,14 @@ async def config_herbivore_update(
     summary="Delete herbivore species",
 )
 async def config_herbivore_delete(species_id: int) -> HTMLResponse:
-    """Remove one herbivore species from the draft."""
+    """Remove one herbivore species from the draft.
+
+    Args:
+        species_id: The species ID.
+
+    Returns:
+        The updated herbivore table.
+    """
     draft = get_draft()
     try:
         remove_herbivore(draft, species_id)

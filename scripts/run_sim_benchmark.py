@@ -245,7 +245,14 @@ def _print_scenario_table(
     modes: list[str],
     repeats: int,
 ) -> None:
-    """Print the detailed benchmark raw table for a single scenario."""
+    """Print the detailed benchmark raw table for a single scenario.
+
+    Args:
+        scenario_name: The name of the scenario.
+        scenario_res: The results for the scenario.
+        modes: The JIT modes to print.
+        repeats: The number of repeats.
+    """
     print("\n" + "=" * 100)
     print(f"Results for Scenario: {scenario_name}")
     print("=" * 100)
@@ -271,6 +278,85 @@ def _print_scenario_table(
             print(f"{ref:<40} | {mode:<10} | {dur_str:<16} | {ticks_val:<11} | {tps:<11}")
 
 
+def _check_scenario_mismatches(
+    scenario_res: dict[str, dict[str, float | int | None]],
+    modes: list[str],
+    base_ref: str,
+    opt_ref: str,
+) -> list[str]:
+    """Check for mismatches between the base and optimized references.
+
+    Args:
+        scenario_res: The results for the scenario.
+        modes: The JIT modes to check.
+        base_ref: The base reference.
+        opt_ref: The optimized reference.
+
+    Returns:
+        A list of modes that have mismatches.
+    """
+    mismatch_modes = []
+    for mode in modes:
+        k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+        b_ticks = scenario_res[base_ref].get(k_ticks)
+        o_ticks = scenario_res[opt_ref].get(k_ticks)
+        if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
+            mismatch_modes.append(mode)
+    return mismatch_modes
+
+
+def _print_mode_scenario_summary(
+    mode: str,
+    scenario_res: dict[str, dict[str, float | int | None]],
+    base_ref: str,
+    opt_ref: str,
+    repeats: int,
+) -> None:
+    """Print a scenario summary for a single JIT mode across both references.
+
+    Args:
+        mode: The JIT mode to print.
+        scenario_res: The results for the scenario.
+        base_ref: The base reference.
+        opt_ref: The optimized reference.
+        repeats: The number of repeats.
+    """
+    key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
+    key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+
+    base_dur_val = scenario_res[base_ref][key_dur]
+    base_ticks_val = scenario_res[base_ref][key_ticks]
+    opt_dur_val = scenario_res[opt_ref][key_dur]
+    opt_ticks_val = scenario_res[opt_ref][key_ticks]
+
+    if (
+        base_dur_val is not None
+        and opt_dur_val is not None
+        and base_ticks_val is not None
+        and opt_ticks_val is not None
+        and base_dur_val > 0
+        and opt_dur_val > 0
+    ):
+        bd: float = float(base_dur_val)
+        od: float = float(opt_dur_val)
+        base_t: int = int(base_ticks_val)
+        opt_t: int = int(opt_ticks_val)
+
+        base_tps = (base_t / repeats) / bd
+        opt_tps = (opt_t / repeats) / od
+
+        diff_pct = ((opt_tps - base_tps) / base_tps) * 100
+        faster_slower = "faster" if diff_pct >= 0 else "slower"
+
+        print(f"{mode} Mode:")
+        print(f"  * Baseline:  {base_tps:.2f} ticks/s ({bd:.4f}s)")
+        print(f"  * Optimized: {opt_tps:.2f} ticks/s ({od:.4f}s)")
+        print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower}.")
+    else:
+        print(f"{mode} Mode: N/A (runs failed)")
+    print("-" * 100)
+
+
 def _print_scenario_summary(
     scenario_name: str,
     scenario_res: dict[str, dict[str, float | int | None]],
@@ -279,21 +365,23 @@ def _print_scenario_summary(
     modes: list[str],
     repeats: int,
 ) -> None:
-    """Print the comparative benchmark statistics for a single scenario."""
+    """Print the comparative benchmark statistics for a single scenario.
+
+    Args:
+        scenario_name: The name of the scenario.
+        scenario_res: The results for the scenario.
+        base_ref: The base reference.
+        opt_ref: The optimized reference.
+        modes: The JIT modes to print.
+        repeats: The number of repeats.
+    """
     print("\n" + "-" * 100)
     print(f"Evaluation Summary: {scenario_name}")
     print("-" * 100)
     print(f"- Baseline Version:  {base_ref}")
     print(f"- Optimized Version: {opt_ref}")
 
-    mismatch_modes = []
-    for mode in modes:
-        k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
-        b_ticks = scenario_res[base_ref].get(k_ticks)
-        o_ticks = scenario_res[opt_ref].get(k_ticks)
-        if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
-            mismatch_modes.append(mode)
-
+    mismatch_modes = _check_scenario_mismatches(scenario_res, modes, base_ref, opt_ref)
     if mismatch_modes:
         print(f"- [WARNING]: TICK COUNT MISMATCH DETECTED ({', '.join(mismatch_modes)})")
         print("             The simulations terminated at different points.")
@@ -303,40 +391,102 @@ def _print_scenario_summary(
     print("-" * 100)
 
     for mode in modes:
-        key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
-        key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+        _print_mode_scenario_summary(mode, scenario_res, base_ref, opt_ref, repeats)
 
-        base_dur_val = scenario_res[base_ref][key_dur]
-        base_ticks_val = scenario_res[base_ref][key_ticks]
-        opt_dur_val = scenario_res[opt_ref][key_dur]
-        opt_ticks_val = scenario_res[opt_ref][key_ticks]
+
+def _check_global_mismatches(
+    scenarios: list[str],
+    results: dict[str, dict[str, dict[str, float | int | None]]],
+    modes: list[str],
+    base_ref: str,
+    opt_ref: str,
+) -> bool:
+    """Check for global mismatches across all scenarios.
+
+    Args:
+        scenarios: The list of scenarios.
+        results: The results for each scenario.
+        modes: The JIT modes to check.
+        base_ref: The base reference.
+        opt_ref: The optimized reference.
+
+    Returns:
+        True if there are any mismatches, False otherwise.
+    """
+    for scenario_path in scenarios:
+        scen_res = results[scenario_path]
+        for mode in modes:
+            k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+            b_ticks = scen_res[base_ref].get(k_ticks)
+            o_ticks = scen_res[opt_ref].get(k_ticks)
+            if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
+                return True
+    return False
+
+
+def _print_mode_global_summary(
+    mode: str,
+    scenarios: list[str],
+    results: dict[str, dict[str, dict[str, float | int | None]]],
+    base_ref: str,
+    opt_ref: str,
+    repeats: int,
+) -> None:
+    """Print a global summary for a single JIT mode across all scenarios.
+
+    Args:
+        mode: The JIT mode to print.
+        scenarios: The list of scenarios.
+        results: The results for each scenario.
+        base_ref: The base reference.
+        opt_ref: The optimized reference.
+        repeats: The number of repeats.
+    """
+    key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
+    key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
+
+    total_base_dur = 0.0
+    total_base_ticks = 0
+    total_opt_dur = 0.0
+    total_opt_ticks = 0
+
+    all_valid = True
+    for scenario_path in scenarios:
+        scen_res = results[scenario_path]
+        b_dur_val = scen_res[base_ref][key_dur]
+        b_ticks_val = scen_res[base_ref][key_ticks]
+        o_dur_val = scen_res[opt_ref][key_dur]
+        o_ticks_val = scen_res[opt_ref][key_ticks]
 
         if (
-            base_dur_val is not None
-            and opt_dur_val is not None
-            and base_ticks_val is not None
-            and opt_ticks_val is not None
-            and base_dur_val > 0
-            and opt_dur_val > 0
+            b_dur_val is not None
+            and o_dur_val is not None
+            and b_ticks_val is not None
+            and o_ticks_val is not None
+            and b_dur_val > 0
+            and o_dur_val > 0
         ):
-            bd: float = float(base_dur_val)
-            od: float = float(opt_dur_val)
-            base_t: int = int(base_ticks_val)
-            opt_t: int = int(opt_ticks_val)
-
-            base_tps = (base_t / repeats) / bd
-            opt_tps = (opt_t / repeats) / od
-
-            diff_pct = ((opt_tps - base_tps) / base_tps) * 100
-            faster_slower = "faster" if diff_pct >= 0 else "slower"
-
-            print(f"{mode} Mode:")
-            print(f"  * Baseline:  {base_tps:.2f} ticks/s ({bd:.4f}s)")
-            print(f"  * Optimized: {opt_tps:.2f} ticks/s ({od:.4f}s)")
-            print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower}.")
+            total_base_dur += float(b_dur_val)
+            total_base_ticks += int(b_ticks_val)
+            total_opt_dur += float(o_dur_val)
+            total_opt_ticks += int(o_ticks_val)
         else:
-            print(f"{mode} Mode: N/A (runs failed)")
-        print("-" * 100)
+            all_valid = False
+
+    if all_valid and total_base_dur > 0 and total_opt_dur > 0:
+        base_tps = (total_base_ticks / repeats) / total_base_dur
+        opt_tps = (total_opt_ticks / repeats) / total_opt_dur
+
+        diff_pct = ((opt_tps - base_tps) / base_tps) * 100
+        faster_slower = "faster" if diff_pct >= 0 else "slower"
+
+        print(f"{mode} Mode (All Scenarios Combined):")
+        print(f"  * Baseline:  {base_tps:.2f} ticks/s ({total_base_dur:.4f}s total)")
+        print(f"  * Optimized: {opt_tps:.2f} ticks/s ({total_opt_dur:.4f}s total)")
+        print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower} overall.")
+    else:
+        print(f"{mode} Mode (All Scenarios Combined): N/A (some runs failed)")
+    print("-" * 100)
 
 
 def _print_global_summary(
@@ -347,7 +497,16 @@ def _print_global_summary(
     modes: list[str],
     repeats: int,
 ) -> None:
-    """Print the aggregate overall benchmark statistics spanning all scenarios."""
+    """Print the aggregate overall benchmark statistics spanning all scenarios.
+
+    Args:
+        results: The results for each scenario.
+        scenarios: The list of scenarios.
+        base_ref: The base reference.
+        opt_ref: The optimized reference.
+        modes: The JIT modes to print.
+        repeats: The number of repeats.
+    """
     if len(scenarios) <= 1:
         return
 
@@ -357,18 +516,7 @@ def _print_global_summary(
     print(f"- Baseline Version:  {base_ref}")
     print(f"- Optimized Version: {opt_ref}")
 
-    global_mismatches = False
-    for scenario_path in scenarios:
-        scen_res = results[scenario_path]
-        for mode in modes:
-            k_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
-            b_ticks = scen_res[base_ref].get(k_ticks)
-            o_ticks = scen_res[opt_ref].get(k_ticks)
-            if b_ticks is not None and o_ticks is not None and b_ticks != o_ticks:
-                global_mismatches = True
-                break
-
-    if global_mismatches:
+    if _check_global_mismatches(scenarios, results, modes, base_ref, opt_ref):
         print("- [WARNING]: TICK MISMATCHES DETECTED IN ONE OR MORE SCENARIOS")
         print("             The overall average speed comparison is biased.")
         print("             Behavioral outcomes diverged between the branches.")
@@ -376,51 +524,7 @@ def _print_global_summary(
     print("-" * 100)
 
     for mode in modes:
-        key_dur = "jit_dur" if mode == "JIT" else "nojit_dur"
-        key_ticks = "jit_ticks" if mode == "JIT" else "nojit_ticks"
-
-        total_base_dur = 0.0
-        total_base_ticks = 0
-        total_opt_dur = 0.0
-        total_opt_ticks = 0
-
-        all_valid = True
-        for scenario_path in scenarios:
-            scen_res = results[scenario_path]
-            b_dur_val = scen_res[base_ref][key_dur]
-            b_ticks_val = scen_res[base_ref][key_ticks]
-            o_dur_val = scen_res[opt_ref][key_dur]
-            o_ticks_val = scen_res[opt_ref][key_ticks]
-
-            if (
-                b_dur_val is not None
-                and o_dur_val is not None
-                and b_ticks_val is not None
-                and o_ticks_val is not None
-                and b_dur_val > 0
-                and o_dur_val > 0
-            ):
-                total_base_dur += float(b_dur_val)
-                total_base_ticks += int(b_ticks_val)
-                total_opt_dur += float(o_dur_val)
-                total_opt_ticks += int(o_ticks_val)
-            else:
-                all_valid = False
-
-        if all_valid and total_base_dur > 0 and total_opt_dur > 0:
-            base_tps = (total_base_ticks / repeats) / total_base_dur
-            opt_tps = (total_opt_ticks / repeats) / total_opt_dur
-
-            diff_pct = ((opt_tps - base_tps) / base_tps) * 100
-            faster_slower = "faster" if diff_pct >= 0 else "slower"
-
-            print(f"{mode} Mode (All Scenarios Combined):")
-            print(f"  * Baseline:  {base_tps:.2f} ticks/s ({total_base_dur:.4f}s total)")
-            print(f"  * Optimized: {opt_tps:.2f} ticks/s ({total_opt_dur:.4f}s total)")
-            print(f"  * Result:    Optimized is {abs(diff_pct):.2f}% {faster_slower} overall.")
-        else:
-            print(f"{mode} Mode (All Scenarios Combined): N/A (some runs failed)")
-        print("-" * 100)
+        _print_mode_global_summary(mode, scenarios, results, base_ref, opt_ref, repeats)
 
 
 def _print_tabular_results(
@@ -431,7 +535,16 @@ def _print_tabular_results(
     repeats: int,
     jit_only: bool,
 ) -> None:
-    """Print the formatted evaluation tables and summaries."""
+    """Print the formatted evaluation tables and summaries.
+
+    Args:
+        results: The results for each scenario.
+        scenarios: The list of scenarios.
+        ref1: The first reference.
+        ref2: The second reference.
+        repeats: The number of repeats.
+        jit_only: Whether to only print JIT results.
+    """
     # Determine more recent vs less recent commit/ref using git logs
     try:
         time_ref1 = float("inf") if ref1.lower() == "worktree" else float(git_cmd(["log", "-1", "--format=%ct", ref1]))

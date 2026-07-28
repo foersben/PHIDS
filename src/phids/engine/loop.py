@@ -59,6 +59,34 @@ class _ReplayBackend(Protocol):
 logger = logging.getLogger(__name__)
 
 
+def _metric_float(value: object, default: float) -> float:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _metric_int(value: object, default: int) -> int:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
 class SimulationLoop:
     """Orchestrate deterministic, double-buffered simulation ticks.
 
@@ -371,65 +399,33 @@ class SimulationLoop:
         phase_timings_ms: dict[str, float],
     ) -> None:
         """Emit a coarse DEBUG snapshot for the current tick."""
-
-        def _metric_float(value: object, default: float) -> float:
-            if isinstance(value, bool):
-                return default
-            if isinstance(value, (int, float)):
-                return float(value)
-            if isinstance(value, str):
-                try:
-                    return float(value)
-                except ValueError:
-                    return default
-            return default
-
-        def _metric_int(value: object, default: int) -> int:
-            if isinstance(value, bool):
-                return default
-            if isinstance(value, int):
-                return value
-            if isinstance(value, float):
-                return int(value)
-            if isinstance(value, str):
-                try:
-                    return int(value)
-                except ValueError:
-                    return default
-            return default
-
-        flora_energy = (
-            _metric_float(
+        flora_energy = float(tick_metrics.total_flora_energy)
+        if latest_metrics is not None:
+            flora_energy = _metric_float(
                 latest_metrics.get("total_flora_energy", tick_metrics.total_flora_energy),
-                float(tick_metrics.total_flora_energy),
+                flora_energy,
             )
-            if latest_metrics is not None
-            else float(tick_metrics.total_flora_energy)
-        )
-        flora_population = (
-            _metric_int(
+
+        flora_population = int(tick_metrics.flora_population)
+        if latest_metrics is not None:
+            flora_population = _metric_int(
                 latest_metrics.get("flora_population", tick_metrics.flora_population),
-                int(tick_metrics.flora_population),
+                flora_population,
             )
-            if latest_metrics is not None
-            else int(tick_metrics.flora_population)
-        )
-        herbivore_clusters = (
-            _metric_int(
+
+        herbivore_clusters = int(tick_metrics.herbivore_clusters)
+        if latest_metrics is not None:
+            herbivore_clusters = _metric_int(
                 latest_metrics.get("herbivore_clusters", tick_metrics.herbivore_clusters),
-                int(tick_metrics.herbivore_clusters),
+                herbivore_clusters,
             )
-            if latest_metrics is not None
-            else int(tick_metrics.herbivore_clusters)
-        )
-        herbivore_population = (
-            _metric_int(
+
+        herbivore_population = int(tick_metrics.herbivore_population)
+        if latest_metrics is not None:
+            herbivore_population = _metric_int(
                 latest_metrics.get("herbivore_population", tick_metrics.herbivore_population),
-                int(tick_metrics.herbivore_population),
+                herbivore_population,
             )
-            if latest_metrics is not None
-            else int(tick_metrics.herbivore_population)
-        )
 
         logger.debug(
             (

@@ -183,6 +183,52 @@ class UIStreamManager:
         except RuntimeError:
             return
 
+    async def _send_update_if_changed(
+        self,
+        websocket: WebSocket,
+        loop: SimulationLoop,
+        last_signature: tuple[int, int, int, bool, bool, bool] | None,
+    ) -> tuple[int, int, int, bool, bool, bool] | None:
+        """Send update if the loop state has changed since the last call.
+
+        Args:
+            websocket: The WebSocket connection.
+            loop: The simulation loop.
+            last_signature: The last signature.
+
+        Returns:
+            The new signature.
+        """
+        state_signature = (
+            id(loop),
+            loop.tick,
+            loop.state_revision,
+            loop.running,
+            loop.paused,
+            loop.terminated,
+        )
+        if state_signature == last_signature:
+            return last_signature
+
+        try:
+            async with loop._lock:
+                if self._snapshot_extractor is not None:
+                    snapshot = self._snapshot_extractor(loop)
+                else:
+                    from phids.api.presenters.dashboard.payloads import extract_ui_snapshot
+
+                    snapshot = extract_ui_snapshot(loop)
+
+            payload_text = await asyncio.to_thread(self._encoded_payload, snapshot)
+            await websocket.send_text(payload_text)
+        except RuntimeError as exc:
+            if "Unexpected ASGI message 'websocket.send'" in str(exc) or "after sending 'websocket.close'" in str(exc):
+                logger.info("WebSocket client disconnected from /ws/ui/stream (RuntimeError)")
+                raise WebSocketDisconnect() from exc
+            raise
+
+        return state_signature
+
     async def handle_connection(
         self,
         websocket: WebSocket,
@@ -197,7 +243,6 @@ class UIStreamManager:
         Notes:
             The connection remains open while no loop is loaded. This allows browser clients to
             subscribe once and begin receiving payloads immediately after a scenario is loaded.
-
         """
         await websocket.accept()
         logger.debug("WebSocket connected: /ws/ui/stream")
@@ -210,35 +255,7 @@ class UIStreamManager:
                     await asyncio.sleep(0.5)
                     continue
 
-                state_signature = (
-                    id(loop),
-                    loop.tick,
-                    loop.state_revision,
-                    loop.running,
-                    loop.paused,
-                    loop.terminated,
-                )
-                if state_signature != last_state_signature:
-                    try:
-                        async with loop._lock:
-                            if self._snapshot_extractor is not None:
-                                snapshot = self._snapshot_extractor(loop)
-                            else:
-                                from phids.api.presenters.dashboard.payloads import extract_ui_snapshot
-
-                                snapshot = extract_ui_snapshot(loop)
-
-                        payload_text = await asyncio.to_thread(self._encoded_payload, snapshot)
-                        await websocket.send_text(payload_text)
-                    except RuntimeError as exc:
-                        if "Unexpected ASGI message 'websocket.send'" in str(
-                            exc
-                        ) or "after sending 'websocket.close'" in str(exc):
-                            logger.info("WebSocket client disconnected from /ws/ui/stream (RuntimeError)")
-                            break
-                        raise
-                    last_state_signature = state_signature
-
+                last_state_signature = await self._send_update_if_changed(websocket, loop, last_state_signature)
                 await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected from /ws/ui/stream")
@@ -266,8 +283,7 @@ class DSEStreamManager:
         """Accept and register a new DSE websocket connection.
 
         Args:
-        websocket: The WebSocket connection to establish.
-        task_id: The unique task identifier for the DSE run.
+            websocket: The WebSocket connection to establish.
         """
         await websocket.accept()
         self.active_dse_connections.append(websocket)
@@ -277,8 +293,7 @@ class DSEStreamManager:
         """Remove a DSE websocket connection.
 
         Args:
-        websocket: The WebSocket connection to terminate.
-        task_id: The unique task identifier for the DSE run.
+            websocket: The WebSocket connection to terminate.
         """
         if websocket in self.active_dse_connections:
             self.active_dse_connections.remove(websocket)

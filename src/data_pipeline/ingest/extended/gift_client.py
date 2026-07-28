@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 
@@ -77,6 +78,49 @@ assert SOURCE_NAME in NC_SOURCES, "GIFT must be registered in NC_SOURCES"
 # ---------------------------------------------------------------------------
 
 
+def _fetch_trait_data(client: Any, trait_name: str, trait_id: int, all_records: list[dict[str, object]]) -> None:
+    """Fetch a single trait from GIFT and append records to all_records.
+
+    Args:
+        client: The HTTP client to use for the request.
+        trait_name: The name of the trait to fetch.
+        trait_id: The ID of the trait to fetch.
+        all_records: The list to append records to.
+    """
+    try:
+        response = client.get(
+            GIFT_API_BASE,
+            params={"trait_id": trait_id, "format": "json"},
+        )
+        if response.status_code != 200:
+            logger.warning(
+                "GIFT (CC-BY-SA): HTTP %d for trait '%s'",
+                response.status_code,
+                trait_name,
+            )
+            return
+
+        data = response.json()
+        for entry in data if isinstance(data, list) else []:
+            try:
+                all_records.append(
+                    {
+                        "species_name": str(entry.get("taxon_name", "")).strip(),
+                        "trait_id": _gift_trait_to_try_id(trait_name),
+                        "trait_name": trait_name,
+                        "std_value": float(entry.get("trait_value", 0)),
+                        "unit_name": str(entry.get("unit", "")),
+                        "observation_id": str(entry.get("entity_id", "")),
+                        "dataset_id": f"GIFT-{SOURCE_NAME}",
+                    }
+                )
+            except (ValueError, TypeError):
+                continue
+
+    except Exception as exc:
+        logger.warning("GIFT (CC-BY-SA): error for '%s': %s", trait_name, exc)
+
+
 def fetch_gift(force_refresh: bool = False) -> pl.DataFrame:
     """Fetch plant trait data from the GIFT REST API.
 
@@ -90,7 +134,6 @@ def fetch_gift(force_refresh: bool = False) -> pl.DataFrame:
     Returns:
         A Polars DataFrame with TRY-compatible schema annotated with
         source_db="GIFT".
-
     """
     if CACHE_PATH.exists() and not force_refresh:
         logger.info("GIFT (CC-BY-SA): loading from cache %s", CACHE_PATH)
@@ -114,38 +157,7 @@ def fetch_gift(force_refresh: bool = False) -> pl.DataFrame:
     with httpx.Client(timeout=60.0, follow_redirects=True) as client:
         for trait_name, trait_id in gift_traits.items():
             logger.info("GIFT (CC-BY-SA): fetching trait '%s' (ID=%d)", trait_name, trait_id)
-            try:
-                response = client.get(
-                    GIFT_API_BASE,
-                    params={"trait_id": trait_id, "format": "json"},
-                )
-                if response.status_code != 200:
-                    logger.warning(
-                        "GIFT (CC-BY-SA): HTTP %d for trait '%s'",
-                        response.status_code,
-                        trait_name,
-                    )
-                    continue
-
-                data = response.json()
-                for entry in data if isinstance(data, list) else []:
-                    try:
-                        all_records.append(
-                            {
-                                "species_name": str(entry.get("taxon_name", "")).strip(),
-                                "trait_id": _gift_trait_to_try_id(trait_name),
-                                "trait_name": trait_name,
-                                "std_value": float(entry.get("trait_value", 0)),
-                                "unit_name": str(entry.get("unit", "")),
-                                "observation_id": str(entry.get("entity_id", "")),
-                                "dataset_id": f"GIFT-{SOURCE_NAME}",
-                            }
-                        )
-                    except (ValueError, TypeError):
-                        continue
-
-            except Exception as exc:
-                logger.warning("GIFT (CC-BY-SA): error for '%s': %s", trait_name, exc)
+            _fetch_trait_data(client, trait_name, trait_id, all_records)
 
     if not all_records:
         logger.warning("GIFT (CC-BY-SA): no records fetched - API may require registration")
@@ -166,7 +178,6 @@ def _gift_trait_to_try_id(trait_name: str) -> int:
 
     Returns:
         Integer pseudo-trait ID.
-
     """
     mapping: dict[str, int] = {
         "plant_height_max": 3106,
@@ -181,7 +192,6 @@ def _empty_gift_frame() -> pl.DataFrame:
 
     Returns:
         Empty Polars DataFrame.
-
     """
     return pl.DataFrame(
         {
