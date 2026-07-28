@@ -74,6 +74,24 @@ def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
     return f"{'Toxin' if is_toxin else 'Signal'} {substance_id}"
 
 
+def _describe_composite_condition(
+    condition: Mapping[str, object],
+    joiner: str,
+    h_names: dict[int, str],
+    s_names: dict[int, str],
+) -> str:
+    """Helper to format composite activation conditions."""
+    sub_conditions = condition.get("conditions", [])
+    if not isinstance(sub_conditions, list):
+        return "invalid condition"
+    parts = [
+        _describe_activation_condition(sub, herbivore_names=h_names, substance_names=s_names)
+        for sub in sub_conditions
+        if isinstance(sub, dict)
+    ]
+    return f"({joiner.join(parts)})" if parts else "unconditional"
+
+
 def _describe_activation_condition(
     condition: Mapping[str, object] | None,
     *,
@@ -125,25 +143,9 @@ def _describe_activation_condition(
         name = s_names.get(sid, _default_substance_name(sid, is_toxin=False))
         return f"{name} concentration ≥ {thresh}"
     if kind == "all_of":
-        sub_conditions = condition.get("conditions", [])
-        if not isinstance(sub_conditions, list):
-            return "invalid condition"
-        parts = [
-            _describe_activation_condition(sub, herbivore_names=h_names, substance_names=s_names)
-            for sub in sub_conditions
-            if isinstance(sub, dict)
-        ]
-        return f"({' AND '.join(parts)})" if parts else "unconditional"
+        return _describe_composite_condition(condition, " AND ", h_names, s_names)
     if kind == "any_of":
-        sub_conditions = condition.get("conditions", [])
-        if not isinstance(sub_conditions, list):
-            return "invalid condition"
-        parts = [
-            _describe_activation_condition(sub, herbivore_names=h_names, substance_names=s_names)
-            for sub in sub_conditions
-            if isinstance(sub, dict)
-        ]
-        return f"({' OR '.join(parts)})" if parts else "unconditional"
+        return _describe_composite_condition(condition, " OR ", h_names, s_names)
 
     return "unknown condition"
 
