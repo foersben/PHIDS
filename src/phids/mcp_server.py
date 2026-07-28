@@ -96,10 +96,20 @@ def _draft_to_json(draft: DraftState) -> str:
 
     Returns:
         Indented JSON string suitable for agent consumption.
-
     """
 
     def _default(obj: object) -> Any:
+        """Convert non-serializable objects to JSON serializable format.
+
+        Args:
+            obj: Object to convert.
+
+        Raises:
+            TypeError: Object is not JSON serializable.
+
+        Returns:
+            JSON serializable representation of the object.
+        """
         if hasattr(obj, "model_dump"):
             return cast("Any", obj).model_dump()
         # Nested stdlib dataclasses that slipped past dataclasses.asdict recursion
@@ -147,7 +157,6 @@ def runtime_snapshot() -> dict[str, Any]:
         dict[str, Any]: Compact read-only summary including scenario metadata,
         grid dimensions, entity counts, and active termination thresholds
         (Z-codes).
-
     """
     draft = get_draft()
     return {
@@ -191,7 +200,6 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
         dict[str, Any]: On success - ``status``, ``store_path``, ``frame_count``,
         ``tree_keys``, and ``store_attrs``.  On failure - ``status`` and
         ``message``.
-
     """
     try:
         import numpy as np
@@ -250,7 +258,6 @@ def validate_okf_compliance() -> dict[str, Any]:
     Returns:
         dict[str, Any]: ``compliant`` (bool), ``violations`` (list of extracted
         error lines), and ``output`` (full captured stdout+stderr).
-
     """
     uv_bin = shutil.which("uv") or "uv"
 
@@ -302,7 +309,6 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
     Returns:
         list[dict[str, str]]: Structured entries with ``timestamp``, ``level``,
         ``logger``, ``module``, and ``message`` keys.
-
     """
     return get_recent_logs(limit=limit)
 

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "phids-orchestrator": {
+      "command": "uv",
+      "args": [
+        "run",
+        "mcp",
+        "run",
+        "src/phids/mcp_server.py:mcp"
+      ],
+      "env": {
+        "PYTHONPATH": "src"
+      },
+      "cwd": "${workspaceRoot}"
+    }
+  }
+}
