@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse
 from phids.api import main as api_main
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.services.dse.task_manager import get_dse_manager
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 from phids.api.websockets.manager import dse_stream_manager
 
 router = APIRouter(prefix="/api/dse", tags=["DSE"])

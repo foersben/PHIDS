@@ -29,7 +29,8 @@ from httpx import AsyncClient
 
 import phids.__main__ as phids_cli
 import phids.api.main as api_main
-import phids.api.ui_state as draft_state_module
+import phids.api.ui_state.state as ui_state_state
+import phids.api.ui_state.triggers as draft_state_module
 from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
 from phids.api.schemas.responses import BatchJobState
 from phids.api.schemas.species import (
@@ -54,7 +55,8 @@ from phids.api.services.draft.trigger_rules import (
     update_trigger_rule,
     update_trigger_rule_condition_node,
 )
-from phids.api.ui_state import DraftState, SubstanceDefinition, get_draft, reset_draft, set_draft
+from phids.api.ui_state.state import DraftState, get_draft, reset_draft, set_draft
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine import batch as batch_engine
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core import flow_field
@@ -742,7 +744,7 @@ def test_export_helper_maps_batch_aggregate_to_dataframe_columns() -> None:
 def test_draft_singleton_helpers_and_substance_type_labels() -> None:
     """Verify draft singleton helpers and substance type labels preserve expected defaults and mappings."""
     draft = DraftState.default()
-    draft_state_module._draft = None
+    ui_state_state._draft = None
     assert get_draft().scenario_name == "Default Scenario"
     set_draft(draft)
     assert get_draft() is draft

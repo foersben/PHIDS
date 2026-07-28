@@ -54,10 +54,7 @@ from phids.api.routers import (
     telemetry_router,
     ui_router,
 )
-from phids.api.ui_state import (
-    DraftState,
-    get_draft,
-)
+from phids.api.ui_state.state import DraftState, get_draft
 from phids.api.websockets import SimulationStreamManager, UIStreamManager
 from phids.shared.logging_config import configure_logging
 

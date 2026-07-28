@@ -56,15 +56,9 @@ from phids.api.services.draft.placements import (
 from phids.api.services.draft.trigger_rules import (
     add_trigger_rule,
 )
-from phids.api.ui_state import (
-    ActivationConditionNode,
-    DraftState,
-    SubstanceDefinition,
-    TriggerRule,
-    get_draft,
-    reset_draft,
-    set_draft,
-)
+from phids.api.ui_state.state import DraftState, get_draft, reset_draft, set_draft
+from phids.api.ui_state.substances import SubstanceDefinition
+from phids.api.ui_state.triggers import ActivationConditionNode, TriggerRule
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop

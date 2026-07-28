@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState
+    from phids.api.ui_state.state import DraftState
     from phids.engine.loop import SimulationLoop
 
 

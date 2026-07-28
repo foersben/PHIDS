@@ -10,8 +10,12 @@ within the draft scenario grid.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from phids.api.ui_state import DraftState, PlacedPlant, PlacedSwarm
+from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
+
+if TYPE_CHECKING:
+    from phids.api.ui_state.state import DraftState
 
 logger = logging.getLogger(__name__)
 

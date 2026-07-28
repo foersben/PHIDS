@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
     from httpx import AsyncClient
 
 from phids.api import main as api_main
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 
 
 @pytest.mark.asyncio

@@ -49,18 +49,15 @@ from phids.api.services.draft.trigger_rules import (
     update_trigger_rule,
     update_trigger_rule_condition_node,
 )
-from phids.api.ui_state import (
-    DraftState,
-    SubstanceDefinition,
+from phids.api.ui_state.state import DraftState, get_draft, reset_draft, set_draft
+from phids.api.ui_state.substances import SubstanceDefinition
+from phids.api.ui_state.triggers import (
     TriggerRule,
     _condition_node_at_path,
     _default_activation_condition_node,
     _parse_condition_path,
     _prune_empty_condition_groups,
     _remap_condition_references,
-    get_draft,
-    reset_draft,
-    set_draft,
 )
 
 

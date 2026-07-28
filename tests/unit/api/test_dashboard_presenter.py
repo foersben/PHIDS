@@ -82,7 +82,9 @@ from phids.api.services.draft.placements import (
 from phids.api.services.draft.trigger_rules import (
     add_trigger_rule,
 )
-from phids.api.ui_state import DraftState, SubstanceDefinition, TriggerRule, reset_draft
+from phids.api.ui_state.state import DraftState, reset_draft
+from phids.api.ui_state.substances import SubstanceDefinition
+from phids.api.ui_state.triggers import TriggerRule
 from phids.engine.components.plant import PlantComponent
 from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json

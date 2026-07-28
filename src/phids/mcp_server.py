@@ -33,11 +33,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.fastmcp import FastMCP
 
-from phids.api.ui_state import get_draft
+from phids.api.ui_state.state import get_draft
 from phids.shared.logging_config import get_recent_logs
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState
+    from phids.api.ui_state.state import DraftState
 
 # Resolved at import time so subprocess calls can locate scripts/ reliably
 # regardless of the working directory set by the calling process.

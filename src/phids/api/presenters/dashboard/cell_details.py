@@ -34,7 +34,10 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 
 if TYPE_CHECKING:
-    from phids.api.ui_state import DraftState, PlacedPlant, SubstanceDefinition, TriggerRule
+    from phids.api.ui_state.placements import PlacedPlant
+    from phids.api.ui_state.state import DraftState
+    from phids.api.ui_state.substances import SubstanceDefinition
+    from phids.api.ui_state.triggers import TriggerRule
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
