@@ -76,7 +76,12 @@ class NoOpReplayBuffer:
     """A no-op replay buffer that does not store or write any frames, preventing disk usage during tuning."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the NoOpReplayBuffer (does nothing)."""
+        """Initialize the NoOpReplayBuffer (does nothing).
+
+        Args:
+            args: Positional arguments (ignored).
+            kwargs: Keyword arguments (ignored).
+        """
         pass
 
     def append(self, state: object) -> None:
@@ -84,16 +89,16 @@ class NoOpReplayBuffer:
 
         Args:
             state: The simulation state object to append.
-
-        Args:
-        world: The ECSWorld registry containing current entity state.
-        env: The GridEnvironment containing current spatial field states.
-        metrics: The TickMetrics snapshot to append for this tick.
         """
         pass
 
     def append_raw_arrays(self, *args: Any, **kwargs: Any) -> None:
-        """Append raw environment arrays to the buffer (no-op)."""
+        """Append raw environment arrays to the buffer (no-op).
+
+        Args:
+            args: Positional arguments (ignored).
+            kwargs: Keyword arguments (ignored).
+        """
         pass
 
     def __len__(self) -> int:
@@ -140,7 +145,14 @@ class ReplayBuffer:
         self._frame_offset: int = 0  # Index of oldest retained frame in Zarr store
 
     def _coerce_metadata_entries(self, payload: object) -> list[_MetadataEntry]:
-        """Return metadata entries that match the persisted per-frame metadata schema."""
+        """Return metadata entries that match the persisted per-frame metadata schema.
+
+        Args:
+            payload: The payload to coerce.
+
+        Returns:
+            The coerced metadata entries.
+        """
         if not isinstance(payload, list):
             return []
         entries: list[_MetadataEntry] = []
@@ -169,6 +181,12 @@ class ReplayBuffer:
         The `_metadata` Zarr node is expected to store a uint8 array containing
         UTF-8 JSON bytes. This helper performs explicit runtime narrowing before
         conversion so callers avoid unchecked indexing/type-ignore patterns.
+
+        Args:
+            payload: The payload to decode.
+
+        Returns:
+            The decoded byte payload.
         """
         if not isinstance(payload, zarr.Array):
             raise TypeError("_metadata node is not a Zarr array")
@@ -176,7 +194,11 @@ class ReplayBuffer:
         return bytes(np.asarray(array_obj[:], dtype=np.uint8).tolist())
 
     def _ensure_store(self) -> zarr.Group:
-        """Lazily create or open the Zarr store group."""
+        """Lazily create or open the Zarr store group.
+
+        Returns:
+            zarr.Group: The Zarr store group.
+        """
         if self._root is not None:
             return self._root
 
@@ -191,6 +213,21 @@ class ReplayBuffer:
         self._load_metadata()
         return self._root
 
+    def _parse_metadata_obj(self, meta_obj: object) -> None:
+        """Parse the metadata object and update the replay buffer's metadata.
+
+        Args:
+            meta_obj: The metadata object to parse.
+        """
+        if isinstance(meta_obj, list):
+            self._metadata = self._coerce_metadata_entries(meta_obj)
+            self._frame_offset = 0
+        elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
+            self._metadata = self._coerce_metadata_entries(meta_obj["_metadata"])
+            frame_offset = meta_obj.get("_frame_offset", 0)
+            self._frame_offset = frame_offset if isinstance(frame_offset, int) else 0
+        self._frame_count = len(self._metadata) + self._frame_offset
+
     def _load_metadata(self) -> None:
         """Load metadata array from Zarr store if it exists."""
         root = self._ensure_store()
@@ -199,15 +236,7 @@ class ReplayBuffer:
                 meta_bytes = self._decode_metadata_bytes(root["_metadata"])
                 meta_str = meta_bytes.decode("utf-8")
                 meta_obj = json.loads(meta_str)
-                # Support both old format (direct array) and new format (with offset)
-                if isinstance(meta_obj, list):
-                    self._metadata = self._coerce_metadata_entries(meta_obj)
-                    self._frame_offset = 0
-                elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
-                    self._metadata = self._coerce_metadata_entries(meta_obj["_metadata"])
-                    frame_offset = meta_obj.get("_frame_offset", 0)
-                    self._frame_offset = frame_offset if isinstance(frame_offset, int) else 0
-                self._frame_count = len(self._metadata) + self._frame_offset
+                self._parse_metadata_obj(meta_obj)
             except Exception as e:
                 logger.warning("Failed to load metadata from Zarr store: %s", e)
                 # Fall back to scanning for frame groups
@@ -306,7 +335,14 @@ class ReplayBuffer:
         termination_reason: str | None,
         fields: dict[str, ReplayValue | np.ndarray],
     ) -> None:
-        """Persist one frame's metadata and field payloads into the store."""
+        """Persist one frame's metadata and field payloads into the store.
+
+        Args:
+            tick: The current tick.
+            terminated: Whether the simulation is terminated.
+            termination_reason: The reason for termination.
+            fields: The fields to store.
+        """
         root = self._ensure_store()
 
         metadata_entry: _MetadataEntry = {
@@ -344,7 +380,13 @@ class ReplayBuffer:
         field_name: str,
         field_data: ReplayValue | np.ndarray,
     ) -> None:
-        """Store a single field (array or nested list) into the frame group."""
+        """Store a single field (array or nested list) into the frame group.
+
+        Args:
+            frame_group: The frame group to store the field in.
+            field_name: The name of the field.
+            field_data: The field data to store.
+        """
         if isinstance(field_data, (list, tuple)):
             field_data = np.asarray(field_data, dtype=np.float32)
         elif isinstance(field_data, np.ndarray):
@@ -380,7 +422,11 @@ class ReplayBuffer:
         )
 
     def __len__(self) -> int:
-        """Return total number of retained frames."""
+        """Return total number of retained frames.
+
+        Returns:
+            Total number of retained frames.
+        """
         return len(self._metadata)
 
     def get_frame(self, tick: int) -> ReplayState:
@@ -468,7 +514,7 @@ class ReplayBuffer:
             path: Path to the Zarr directory.
 
         Returns:
-            ReplayBuffer: Zarr replay buffer attached to the loaded directory.
+            Zarr replay buffer attached to the loaded directory.
         """
         source = Path(path)
 

@@ -11,73 +11,74 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 
 if TYPE_CHECKING:
-    from phids.api.schemas.triggers import TriggerConditionSchema
+    from phids.api.schemas.triggers import (
+        EnvironmentalSignalInitiator,
+        TriggerConditionSchema,
+    )
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
 
 
-def _process_single_trigger(
+def _evaluate_environmental_signal(
+    initiator: EnvironmentalSignalInitiator,
+    plant: PlantComponent,
+    env: GridEnvironment,
+) -> bool:
+    if not (0 <= initiator.signal_id < env.num_signals):
+        return False
+
+    conc = float(env.signal_layers[initiator.signal_id, plant.x, plant.y])
+    mode = initiator.response_curve
+
+    if mode == "step":
+        return conc >= initiator.min_concentration
+    if mode == "hill":
+        kd = initiator.half_saturation
+        n = initiator.hill_cooperativity
+        if conc > 0.0:
+            cn = conc**n
+            priming_factor = cn / (kd**n + cn)
+            return bool(priming_factor >= 0.05)
+        return False
+    if mode == "logarithmic":
+        return conc >= initiator.min_concentration
+
+    return False
+
+
+def _evaluate_initiator(
     trig: TriggerConditionSchema,
     plant: PlantComponent,
-    world: ECSWorld,
     env: GridEnvironment,
-    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
     swarm_population_by_cell_species: dict[tuple[int, int, int], int],
-    active_substance_ids_by_owner: dict[int, set[int]],
-    substance_entities: list[Entity],
-) -> None:
+) -> bool:
     from phids.api.schemas.triggers import (
         EnvironmentalSignalInitiator,
         HerbivoreAttackInitiator,
-        ResourceWithdrawalAction,
-        SynthesizeSubstanceAction,
     )
 
-    initiator_met = False
     if isinstance(trig.initiator, HerbivoreAttackInitiator):
-        initiator_met = (
+        return (
             swarm_population_by_cell_species.get((plant.x, plant.y, trig.initiator.herbivore_species_id), 0)
             >= trig.initiator.min_herbivore_population
         )
-    elif isinstance(trig.initiator, EnvironmentalSignalInitiator):
-        if 0 <= trig.initiator.signal_id < env.num_signals:
-            conc = float(env.signal_layers[trig.initiator.signal_id, plant.x, plant.y])
-            mode = trig.initiator.response_curve
-            if mode == "step":
-                initiator_met = conc >= trig.initiator.min_concentration
-            elif mode == "hill":
-                kd = trig.initiator.half_saturation
-                n = trig.initiator.hill_cooperativity
-                if conc > 0.0:
-                    cn = conc**n
-                    priming_factor = cn / (kd**n + cn)
-                    initiator_met = priming_factor >= 0.05
-            elif mode == "logarithmic":
-                initiator_met = conc >= trig.initiator.min_concentration
 
-    condition_met = False
-    if trig.activation_condition is not None:
-        from phids.engine.systems.signaling.conditions import _check_activation_condition
+    if isinstance(trig.initiator, EnvironmentalSignalInitiator):
+        return _evaluate_environmental_signal(trig.initiator, plant, env)
 
-        condition_met = _check_activation_condition(
-            plant,
-            plant.entity_id,
-            trig.activation_condition.model_dump(mode="json"),
-            env,
-            swarm_population_by_cell_species,
-            active_substance_ids_by_owner,
-        )
+    return False
 
-    if not (initiator_met or condition_met):
-        return
-    if isinstance(trig.action, ResourceWithdrawalAction):
-        plant.target_nutrition_factor = trig.action.apparent_nutrition_factor
-        plant.withdrawal_ticks_remaining = trig.action.withdrawal_duration
-        return
 
-    if not isinstance(trig.action, SynthesizeSubstanceAction):
-        return
+def _apply_synthesize_action(
+    trig: TriggerConditionSchema,
+    plant: PlantComponent,
+    world: ECSWorld,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    substance_entities: list[Entity],
+) -> None:
+    from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
+    assert isinstance(trig.action, SynthesizeSubstanceAction)
     substance_id = trig.action.substance_id
     existing_sub = owner_substance_by_key.get((plant.entity_id, substance_id))
 
@@ -114,6 +115,49 @@ def _process_single_trigger(
             existing_sub.synthesis_remaining = existing_sub.synthesis_duration
 
     existing_sub.triggered_this_tick = True
+
+
+def _process_single_trigger(
+    trig: TriggerConditionSchema,
+    plant: PlantComponent,
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+) -> None:
+    from phids.api.schemas.triggers import (
+        ResourceWithdrawalAction,
+        SynthesizeSubstanceAction,
+    )
+
+    initiator_met = _evaluate_initiator(trig, plant, env, swarm_population_by_cell_species)
+
+    condition_met = False
+    if trig.activation_condition is not None:
+        from phids.engine.systems.signaling.conditions import _check_activation_condition
+
+        condition_met = _check_activation_condition(
+            plant,
+            plant.entity_id,
+            trig.activation_condition.model_dump(mode="json"),
+            env,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+        )
+
+    if not (initiator_met or condition_met):
+        return
+    if isinstance(trig.action, ResourceWithdrawalAction):
+        plant.target_nutrition_factor = trig.action.apparent_nutrition_factor
+        plant.withdrawal_ticks_remaining = trig.action.withdrawal_duration
+        return
+
+    if not isinstance(trig.action, SynthesizeSubstanceAction):
+        return
+
+    _apply_synthesize_action(trig, plant, world, owner_substance_by_key, substance_entities)
 
 
 def _phase_evaluate_triggers(

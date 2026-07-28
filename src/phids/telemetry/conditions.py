@@ -41,11 +41,68 @@ class TerminationResult:
     Attributes:
         terminated: True when a termination condition has been met.
         reason: Human-readable explanation for termination.
-
     """
 
     terminated: bool
     reason: str
+
+
+def _gather_flora_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> tuple[set[int], float, bool]:
+    """Gather flora metrics from the ECS world or tick metrics.
+
+    Args:
+        world: The ECS world instance.
+        tick_metrics: Pre-computed tick metrics.
+
+    Returns:
+        A tuple containing the set of flora species alive, the total flora energy, and a
+        boolean indicating whether any flora are alive.
+    """
+    if tick_metrics is not None:
+        return (
+            set(tick_metrics.flora_species_alive),
+            tick_metrics.total_flora_energy,
+            tick_metrics.flora_alive,
+        )
+
+    flora_species_alive: set[int] = set()
+    total_flora_energy = 0.0
+    flora_alive = False
+    for entity in world.query(PlantComponent):
+        plant: PlantComponent = entity.get_component(PlantComponent)
+        flora_species_alive.add(plant.species_id)
+        total_flora_energy += plant.energy
+        flora_alive = True
+    return flora_species_alive, total_flora_energy, flora_alive
+
+
+def _gather_herbivore_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> tuple[set[int], int, bool]:
+    """Gather herbivore metrics from the ECS world or tick metrics.
+
+    Args:
+        world: The ECS world instance.
+        tick_metrics: Pre-computed tick metrics.
+
+    Returns:
+        A tuple containing the set of herbivore species alive, the total herbivore population,
+        and a boolean indicating whether any herbivores are alive.
+    """
+    if tick_metrics is not None:
+        return (
+            set(tick_metrics.herbivore_species_alive),
+            int(tick_metrics.total_herbivore_population),
+            bool(tick_metrics.herbivores_alive),
+        )
+
+    herbivore_species_alive: set[int] = set()
+    total_herbivore_population = 0
+    herbivores_alive = False
+    for entity in world.query(SwarmComponent):
+        swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        herbivore_species_alive.add(swarm.species_id)
+        total_herbivore_population += swarm.population
+        herbivores_alive = True
+    return herbivore_species_alive, total_herbivore_population, herbivores_alive
 
 
 def check_termination(
@@ -76,26 +133,12 @@ def check_termination(
 
     Returns:
         TerminationResult: Object indicating whether termination occurred and why.
-
     """
     # Z1 - maximum tick count
     if tick >= max_ticks:
         return TerminationResult(terminated=True, reason=f"Z1: reached max_ticks={max_ticks}")
 
-    if tick_metrics is None:
-        # Gather live flora
-        flora_species_alive: set[int] = set()
-        total_flora_energy = 0.0
-        flora_alive = False
-        for entity in world.query(PlantComponent):
-            plant: PlantComponent = entity.get_component(PlantComponent)
-            flora_species_alive.add(plant.species_id)
-            total_flora_energy += plant.energy
-            flora_alive = True
-    else:
-        flora_species_alive = set(tick_metrics.flora_species_alive)
-        total_flora_energy = float(tick_metrics.total_flora_energy)
-        flora_alive = bool(tick_metrics.flora_alive)
+    flora_species_alive, total_flora_energy, flora_alive = _gather_flora_metrics(world, tick_metrics)
 
     # Z2 - specific flora species extinction
     if z2_flora_species >= 0 and z2_flora_species not in flora_species_alive:
@@ -112,20 +155,9 @@ def check_termination(
             reason=f"Z6: total flora energy {total_flora_energy:.1f} > {z6_max_flora_energy}",
         )
 
-    if tick_metrics is None:
-        # Gather live herbivores
-        herbivore_species_alive: set[int] = set()
-        total_herbivore_population = 0
-        herbivores_alive = False
-        for entity in world.query(SwarmComponent):
-            swarm: SwarmComponent = entity.get_component(SwarmComponent)
-            herbivore_species_alive.add(swarm.species_id)
-            total_herbivore_population += swarm.population
-            herbivores_alive = True
-    else:
-        herbivore_species_alive = set(tick_metrics.herbivore_species_alive)
-        total_herbivore_population = int(tick_metrics.total_herbivore_population)
-        herbivores_alive = bool(tick_metrics.herbivores_alive)
+    herbivore_species_alive, total_herbivore_population, herbivores_alive = _gather_herbivore_metrics(
+        world, tick_metrics
+    )
 
     # Z4 - specific herbivore species extinction
     if z4_herbivore_species >= 0 and z4_herbivore_species not in herbivore_species_alive:

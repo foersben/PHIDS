@@ -68,11 +68,10 @@ def generate_tikz_str(
         y_max: Optional custom y-axis maximum value.
 
     Returns:
-        str: LaTeX source code for a complete ``tikzpicture`` environment.
+        LaTeX source code for a complete ``tikzpicture`` environment.
 
     Raises:
         ValueError: If ``plot_type`` is not a supported chart mode.
-
     """
     flora_filter = include_flora_ids
     herbivore_filter = include_herbivore_ids
@@ -148,8 +147,7 @@ def _tikz_timeseries(
         y_label: Optional custom y-axis label.
 
     Returns:
-        str: LaTeX ``tikzpicture`` source.
-
+        LaTeX ``tikzpicture`` source.
     """
     all_flora: set[int] = set()
     all_herbivores: set[int] = set()
@@ -189,6 +187,37 @@ def _tikz_timeseries(
     )
 
 
+def _get_phasespace_axis(
+    rows: TelemetryRows,
+    species_id: int,
+    is_flora: bool,
+    names: dict[int, str] | None,
+) -> tuple[list[float], str]:
+    """Get the phasespace axis data and label.
+
+    Args:
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
+        species_id: Species identifier.
+        is_flora: Whether the species is flora.
+        names: Optional display names for species.
+
+    Returns:
+        The phasespace axis data and label.
+    """
+    if species_id == 0:
+        if is_flora:
+            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
+        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
+
+    if is_flora:
+        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Flora {species_id}")
+    else:
+        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Herbivore {species_id}")
+    return y, name
+
+
 def _tikz_phasespace(
     rows: TelemetryRows,
     *,
@@ -217,39 +246,12 @@ def _tikz_phasespace(
         y_max: Optional custom y-axis maximum value.
 
     Returns:
-        str: LaTeX ``tikzpicture`` source.
-
+        LaTeX ``tikzpicture`` source.
     """
-    if plant_species_id == 0:
-        plant_name = "Flora (Total)"
-    else:
-        plant_name = (flora_names or {}).get(plant_species_id, f"Flora {plant_species_id}")
+    x, plant_name = _get_phasespace_axis(rows, plant_species_id, True, flora_names)
+    y, herbivore_name = _get_phasespace_axis(rows, herbivore_species_id, False, herbivore_names)
 
-    if herbivore_species_id == 0:
-        herbivore_name = "Herbivores (Total)"
-    else:
-        herbivore_name = (herbivore_names or {}).get(
-            herbivore_species_id,
-            f"Herbivore {herbivore_species_id}",
-        )
-
-    def get_x(r: dict[str, object]) -> float:
-        val = (
-            r.get("flora_population", 0)
-            if plant_species_id == 0
-            else getattr(r.get("plant_pop_by_species", {}), "get", lambda *_: 0)(plant_species_id, 0)
-        )
-        return float(val) if isinstance(val, (int, float, str)) else 0.0
-
-    def get_y(r: dict[str, object]) -> float:
-        val = (
-            r.get("herbivore_population", 0)
-            if herbivore_species_id == 0
-            else getattr(r.get("swarm_pop_by_species", {}), "get", lambda *_: 0)(herbivore_species_id, 0)
-        )
-        return float(val) if isinstance(val, (int, float, str)) else 0.0
-
-    coords = " ".join(f"({get_x(r)},{get_y(r)})" for r in rows)
+    coords = " ".join(f"({x[i]},{y[i]})" for i in range(len(rows)))
 
     x_bound = f"    xmax={float(x_max)},\n" if x_max is not None and x_max > 0 else ""
     y_bound = f"    ymax={float(y_max)},\n" if y_max is not None and y_max > 0 else ""
@@ -288,8 +290,7 @@ def _tikz_defense_economy(
         y_label: Optional y-axis label override.
 
     Returns:
-        str: LaTeX ``tikzpicture`` source.
-
+        LaTeX ``tikzpicture`` source.
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -343,8 +344,7 @@ def _tikz_biomass_stack(
         y_label: Optional y-axis label override.
 
     Returns:
-        str: LaTeX ``tikzpicture`` source.
-
+        LaTeX ``tikzpicture`` source.
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -391,8 +391,7 @@ def _tikz_survival_probability(
         y_label: Optional y-axis label override.
 
     Returns:
-        str: LaTeX ``tikzpicture`` source.
-
+        LaTeX ``tikzpicture`` source.
     """
     coords = " ".join(f"({r.get('tick', 0)},{100.0 * float(r.get('survival_probability', 0.0))})" for r in rows)
     return (

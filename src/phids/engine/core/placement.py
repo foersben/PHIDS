@@ -58,6 +58,28 @@ def generate_clustered(width: int, height: int, cluster_count: int, variance: fl
     return list(coords)
 
 
+def _generate_horizontal_band(width: int, height: int, band_count: int) -> list[tuple[int, int]]:
+    coords = []
+    band_spacing = height / max(1, band_count)
+    for b in range(band_count):
+        cy = int(b * band_spacing + band_spacing / 2)
+        for x in range(width):
+            if random.random() < 0.6:  # 60% dense along the band
+                coords.append((x, max(0, min(height - 1, cy + random.randint(-2, 2)))))
+    return coords
+
+
+def _generate_vertical_band(width: int, height: int, band_count: int) -> list[tuple[int, int]]:
+    coords = []
+    band_spacing = width / max(1, band_count)
+    for b in range(band_count):
+        cx = int(b * band_spacing + band_spacing / 2)
+        for y in range(height):
+            if random.random() < 0.6:
+                coords.append((max(0, min(width - 1, cx + random.randint(-2, 2))), y))
+    return coords
+
+
 def generate_banded(width: int, height: int, band_count: int, orientation: str) -> list[tuple[int, int]]:
     """Place entities in dense lines/stripes across the grid.
 
@@ -71,19 +93,6 @@ def generate_banded(width: int, height: int, band_count: int, orientation: str) 
         A list of generated (x, y) coordinates.
 
     """
-    coords = []
     if orientation == "horizontal":
-        band_spacing = height / max(1, band_count)
-        for b in range(band_count):
-            cy = int(b * band_spacing + band_spacing / 2)
-            for x in range(width):
-                if random.random() < 0.6:  # 60% dense along the band
-                    coords.append((x, max(0, min(height - 1, cy + random.randint(-2, 2)))))
-    else:
-        band_spacing = width / max(1, band_count)
-        for b in range(band_count):
-            cx = int(b * band_spacing + band_spacing / 2)
-            for y in range(height):
-                if random.random() < 0.6:
-                    coords.append((max(0, min(width - 1, cx + random.randint(-2, 2))), y))
-    return coords
+        return _generate_horizontal_band(width, height, band_count)
+    return _generate_vertical_band(width, height, band_count)

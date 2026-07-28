@@ -56,7 +56,14 @@ type BatchAggregate = dict[str, object]
 
 
 def _coerce_int(value: object) -> int:
-    """Convert telemetry scalar to int with stable fallback semantics."""
+    """Convert telemetry scalar to int with stable fallback semantics.
+
+    Args:
+        value: The value to convert.
+
+    Returns:
+        The converted value.
+    """
     if isinstance(value, bool):
         return int(value)
     if isinstance(value, (int, float, str)):
@@ -68,7 +75,14 @@ def _coerce_int(value: object) -> int:
 
 
 def _coerce_float(value: object) -> float:
-    """Convert telemetry scalar to float with stable fallback semantics."""
+    """Convert telemetry scalar to float with stable fallback semantics.
+
+    Args:
+        value: The value to convert.
+
+    Returns:
+        The converted value.
+    """
     if isinstance(value, bool):
         return float(value)
     if isinstance(value, (int, float, str)):
@@ -80,7 +94,16 @@ def _coerce_float(value: object) -> float:
 
 
 def _species_count(row: TelemetryRow, field: str, species_id: int) -> float:
-    """Read one species count from a telemetry row field map with numeric fallback."""
+    """Read one species count from a telemetry row field map with numeric fallback.
+
+    Args:
+        row: The telemetry row.
+        field: The field name.
+        species_id: The species identifier.
+
+    Returns:
+        The species count.
+    """
     raw_map = row.get(field, {})
     if not isinstance(raw_map, dict):
         return 0.0
@@ -154,7 +177,6 @@ def _run_single_headless(
     Returns:
         list[TelemetryRow]: List of per-tick telemetry row dicts accumulated by
         :class:`~phids.telemetry.analytics.TelemetryRecorder`.
-
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -166,6 +188,7 @@ def _run_single_headless(
     loop = SimulationLoop(config, disable_replay=True)
 
     async def _advance() -> None:
+        """Advance the simulation for max_ticks ticks."""
         for _ in range(max_ticks):
             result = await loop.step()
             if result.terminated:
@@ -199,8 +222,7 @@ def _run_and_save(
             ``(scenario_dict, max_ticks, seed, job_id, run_index, output_dir_str)``.
 
     Returns:
-        list[TelemetryRow]: Per-tick telemetry rows for this run.
-
+        Per-tick telemetry rows for this run.
     """
     scenario_dict, max_ticks, seed, job_id, run_index, _output_dir_str = args
     rows = _run_single_headless(scenario_dict, max_ticks, seed)
@@ -214,7 +236,15 @@ def _run_and_save(
 
 
 def _pad_telemetry_runs(per_run: TelemetryRuns, max_len: int) -> list[list[TelemetryRow]]:
-    """Pad run telemetry with terminal data to match max_len."""
+    """Pad run telemetry with terminal data to match max_len.
+
+    Args:
+        per_run: The per-run telemetry.
+        max_len: The maximum length.
+
+    Returns:
+        The padded per-run telemetry.
+    """
     aligned: list[list[TelemetryRow]] = []
     for rows in per_run:
         if len(rows) < max_len:
@@ -228,32 +258,68 @@ def _pad_telemetry_runs(per_run: TelemetryRuns, max_len: int) -> list[list[Telem
     return aligned
 
 
+def _extract_scalar_matrix(aligned: list[list[TelemetryRow]], key: str) -> np.ndarray:
+    """Extract a 2D matrix of scalars from aligned telemetry runs.
+
+    Args:
+        aligned: The aligned per-run telemetry.
+        key: The key to extract.
+
+    Returns:
+        The extracted matrix.
+    """
+    return np.array(
+        [[_coerce_float(r.get(key, 0.0)) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+
+
+def _extract_species_matrix(aligned: list[list[TelemetryRow]], field: str, species_id: int) -> np.ndarray:
+    """Extract a 2D matrix of specific species counts from aligned telemetry runs.
+
+    Args:
+        aligned: The aligned per-run telemetry.
+        field: The field name.
+        species_id: The species identifier.
+
+    Returns:
+        The extracted matrix.
+    """
+    return np.array(
+        [[_species_count(r, field, species_id) for r in run] for run in aligned],
+        dtype=np.float64,
+    )
+
+
+def _get_int_keys(d: object) -> set[int]:
+    """Return all integer keys from a dict.
+
+    Args:
+        d: The object to extract keys from.
+
+    Returns:
+        The extracted keys.
+    """
+    if isinstance(d, dict):
+        return {k for k in d.keys() if isinstance(k, int)}
+    return set()
+
+
 def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, object]:
-    """Stack scalar population and energy metrics into NumPy arrays."""
-    flora_pop = np.array(
-        [[_coerce_float(r.get("flora_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    herb_pop = np.array(
-        [[_coerce_float(r.get("herbivore_population", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    flora_energy = np.array(
-        [[_coerce_float(r.get("total_flora_energy", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_herbivore = np.array(
-        [[_coerce_float(r.get("death_herbivore_feeding", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_defense = np.array(
-        [[_coerce_float(r.get("death_defense_maintenance", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
-    death_starvation = np.array(
-        [[_coerce_float(r.get("death_starvation", 0.0)) for r in run] for run in aligned],
-        dtype=np.float64,
-    )
+    """Stack scalar population and energy metrics into NumPy arrays.
+
+    Args:
+        aligned: The aligned per-run telemetry.
+
+    Returns:
+        The stacked scalar aggregates.
+    """
+    flora_pop = _extract_scalar_matrix(aligned, "flora_population")
+    herb_pop = _extract_scalar_matrix(aligned, "herbivore_population")
+    flora_energy = _extract_scalar_matrix(aligned, "total_flora_energy")
+    death_herbivore = _extract_scalar_matrix(aligned, "death_herbivore_feeding")
+    death_defense = _extract_scalar_matrix(aligned, "death_defense_maintenance")
+    death_starvation = _extract_scalar_matrix(aligned, "death_starvation")
 
     # Extinction probability: fraction of runs where flora hit zero at any tick
     extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
@@ -276,17 +342,20 @@ def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, obj
 
 
 def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> tuple[set[int], set[int]]:
-    """Collect all unique flora and herbivore species identifiers seen across runs."""
+    """Collect all unique flora and herbivore species identifiers seen across runs.
+
+    Args:
+        aligned: The aligned per-run telemetry.
+
+    Returns:
+        A tuple containing the set of flora species identifiers and the set of herbivore species identifiers.
+    """
     all_flora_ids: set[int] = set()
     all_herb_ids: set[int] = set()
     for run in aligned:
         for row in run:
-            flora_map = row.get("plant_pop_by_species", {})
-            herb_map = row.get("swarm_pop_by_species", {})
-            if isinstance(flora_map, dict):
-                all_flora_ids.update(k for k in flora_map.keys() if isinstance(k, int))
-            if isinstance(herb_map, dict):
-                all_herb_ids.update(k for k in herb_map.keys() if isinstance(k, int))
+            all_flora_ids.update(_get_int_keys(row.get("plant_pop_by_species", {})))
+            all_herb_ids.update(_get_int_keys(row.get("swarm_pop_by_species", {})))
     return all_flora_ids, all_herb_ids
 
 
@@ -295,24 +364,27 @@ def _compute_species_aggregates(
     all_flora_ids: set[int],
     all_herb_ids: set[int],
 ) -> dict[str, dict[str, list[float]]]:
-    """Compute mean and std dev for individual tracked species over the batch."""
+    """Compute mean and std dev for individual tracked species over the batch.
+
+    Args:
+        aligned: The aligned per-run telemetry.
+        all_flora_ids: The set of flora species identifiers.
+        all_herb_ids: The set of herbivore species identifiers.
+
+    Returns:
+        The computed species aggregates.
+    """
     per_flora_pop_mean: dict[int, list[float]] = {}
     per_flora_pop_std: dict[int, list[float]] = {}
     for fid in sorted(all_flora_ids):
-        arr = np.array(
-            [[_species_count(r, "plant_pop_by_species", fid) for r in run] for run in aligned],
-            dtype=np.float64,
-        )
+        arr = _extract_species_matrix(aligned, "plant_pop_by_species", fid)
         per_flora_pop_mean[fid] = arr.mean(axis=0).tolist()
         per_flora_pop_std[fid] = arr.std(axis=0).tolist()
 
     per_herb_pop_mean: dict[int, list[float]] = {}
     per_herb_pop_std: dict[int, list[float]] = {}
     for pid in sorted(all_herb_ids):
-        arr = np.array(
-            [[_species_count(r, "swarm_pop_by_species", pid) for r in run] for run in aligned],
-            dtype=np.float64,
-        )
+        arr = _extract_species_matrix(aligned, "swarm_pop_by_species", pid)
         per_herb_pop_mean[pid] = arr.mean(axis=0).tolist()
         per_herb_pop_std[pid] = arr.std(axis=0).tolist()
 
@@ -342,8 +414,7 @@ def aggregate_batch_telemetry(
     strictly positive flora population at each aligned tick.
 
     Args:
-        per_run: List of per-run row lists, each produced by
-            :func:`_run_single_headless`.
+        per_run: List of per-run row lists, each produced by :func:`_run_single_headless`.
 
     Returns:
         BatchAggregate: Aggregate summary containing mean, std dev, and extinction metrics.
@@ -391,7 +462,6 @@ def _sanitize_for_json(value: object) -> object:
 
     Returns:
         object: JSON-safe structure preserving the original shape.
-
     """
     if isinstance(value, dict):
         return {str(k): _sanitize_for_json(v) for k, v in value.items()}
@@ -455,8 +525,7 @@ class BatchRunner:
                 restored ledgers can retain operator-selected names.
 
         Returns:
-            BatchResult: Completed result with all per-run telemetry and aggregate.
-
+            Completed result with all per-run telemetry and aggregate.
         """
         save_dir = output_dir or _DEFAULT_BATCH_DIR
         save_dir.mkdir(parents=True, exist_ok=True)

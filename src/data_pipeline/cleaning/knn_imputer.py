@@ -41,6 +41,7 @@ allow subnormal floats to enter the normalisation pipeline.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -57,6 +58,54 @@ _K_WITHIN_ORDER: int = 5
 _K_GLOBAL_FALLBACK: int = 10
 
 
+def _process_single_family(
+    family: str,
+    df: pl.DataFrame,
+    result_df: pl.DataFrame,
+    family_col: str,
+    order_col: str,
+    existing_numeric: list[str],
+) -> tuple[pl.DataFrame, bool]:
+    """Process imputation for a single family group.
+
+    It tries to impute missing values using KNN within the family group. If the family group has fewer than
+    `_K_WITHIN_FAMILY` members, it falls back to using the order group, and if that also has fewer than
+    `_K_WITHIN_FAMILY` members, it uses the full dataset.
+
+    Args:
+        family: The family name to process.
+        df: The input DataFrame.
+        result_df: The result DataFrame to update.
+        family_col: The family column name.
+        order_col: The order column name.
+        existing_numeric: List of numeric columns to impute.
+
+    Returns:
+        The updated result DataFrame and a boolean indicating whether processing was successful.
+    """
+    mask = pl.col(family_col) == family
+    group_df = df.filter(mask)
+
+    if len(group_df) >= _K_WITHIN_FAMILY:
+        imputed = _run_knn_imputer(group_df, existing_numeric, k=_K_WITHIN_FAMILY)
+        return _update_rows(result_df, mask, imputed, existing_numeric), True
+
+    if order_col in df.columns:
+        order_val = group_df[order_col].drop_nulls().first() if len(group_df) > 0 else None
+        if order_val is not None:
+            order_mask = pl.col(order_col) == order_val
+            order_group = df.filter(order_mask)
+            if len(order_group) >= _K_WITHIN_ORDER:
+                imputed = _run_knn_imputer(order_group, existing_numeric, k=_K_WITHIN_ORDER)
+                family_in_order = (
+                    imputed.filter(pl.col(family_col) == family) if family_col in imputed.columns else imputed
+                )
+                return _update_rows(result_df, mask, family_in_order, existing_numeric), True
+
+    imputed = _run_knn_imputer(df, existing_numeric, k=_K_GLOBAL_FALLBACK)
+    return _update_rows(result_df, mask, imputed.filter(mask), existing_numeric), True
+
+
 def _process_taxonomic_groups(
     df: pl.DataFrame,
     result_df: pl.DataFrame,
@@ -65,36 +114,24 @@ def _process_taxonomic_groups(
     order_col: str,
     existing_numeric: list[str],
 ) -> tuple[pl.DataFrame, int]:
-    """Process imputation iteratively for each family, falling back to order or global."""
+    """Process imputation iteratively for each family, falling back to order or global.
+
+    Args:
+        df: Input Polars DataFrame with potential null values in numeric columns.
+        result_df: The result DataFrame to update.
+        families: List of family names to process.
+        family_col: The family column name.
+        order_col: The order column name.
+        existing_numeric: List of numeric columns to impute.
+
+    Returns:
+        The updated result DataFrame and the number of groups processed.
+    """
     groups_processed = 0
     for family in families:
-        mask = pl.col(family_col) == family
-        group_df = df.filter(mask)
-
-        if len(group_df) >= _K_WITHIN_FAMILY:
-            imputed = _run_knn_imputer(group_df, existing_numeric, k=_K_WITHIN_FAMILY)
-            result_df = _update_rows(result_df, mask, imputed, existing_numeric)
+        result_df, processed = _process_single_family(family, df, result_df, family_col, order_col, existing_numeric)
+        if processed:
             groups_processed += 1
-        elif order_col in df.columns:
-            # Fall back to order-level imputation
-            order_val = group_df[order_col].drop_nulls().first() if len(group_df) > 0 else None
-            if order_val is not None:
-                order_mask = pl.col(order_col) == order_val
-                order_group = df.filter(order_mask)
-                if len(order_group) >= _K_WITHIN_ORDER:
-                    imputed = _run_knn_imputer(order_group, existing_numeric, k=_K_WITHIN_ORDER)
-                    # Only update the rows from this family within the order group
-                    family_in_order = (
-                        imputed.filter(pl.col(family_col) == family) if family_col in imputed.columns else imputed
-                    )
-                    result_df = _update_rows(result_df, mask, family_in_order, existing_numeric)
-                    groups_processed += 1
-                    continue
-
-        # Global fallback for very small clades
-        imputed = _run_knn_imputer(df, existing_numeric, k=_K_GLOBAL_FALLBACK)
-        result_df = _update_rows(result_df, mask, imputed.filter(mask), existing_numeric)
-        groups_processed += 1
     return result_df, groups_processed
 
 
@@ -115,7 +152,6 @@ def impute_missing_traits(
     Returns:
         Polars DataFrame with imputed values in the specified columns.
         All imputed values are clamped to >= 1e-4.
-
     """
     existing_numeric = [c for c in numeric_cols if c in df.columns]
     if not existing_numeric:
@@ -163,6 +199,49 @@ def impute_missing_traits(
     return result_df
 
 
+def _compute_imputed_array(pdf: Any, k: int, df_len: int) -> np.ndarray:
+    """Compute imputed array using KNNImputer.
+
+    Args:
+        pdf: Pandas DataFrame with numeric columns to impute.
+        k: Number of nearest neighbors to use.
+        df_len: Length of the DataFrame.
+
+    Returns:
+        NumPy array with imputed values.
+    """
+    imputer = KNNImputer(n_neighbors=min(k, max(1, df_len - 1)), keep_empty_features=True)
+    return imputer.fit_transform(pdf.values.astype(np.float64))
+
+
+def _compute_knn_influences(imputed_array: np.ndarray, species_list: list[str], k: int, df_len: int) -> list[str]:
+    """Compute KNN influences using NearestNeighbors.
+
+    Args:
+        imputed_array: NumPy array with imputed values.
+        species_list: List of species names.
+        k: Number of nearest neighbors to use.
+        df_len: Length of the DataFrame.
+
+    Returns:
+        List of JSON strings representing the KNN influences.
+    """
+    import json
+
+    from sklearn.neighbors import NearestNeighbors
+
+    influences = ["[]"] * df_len
+    nn = NearestNeighbors(n_neighbors=min(k, df_len - 1))
+    nn.fit(imputed_array)
+    distances, indices = nn.kneighbors(imputed_array)
+
+    for i, (_dist_row, idx_row) in enumerate(zip(distances, indices, strict=False)):
+        neighbor_species = [species_list[idx] for idx in idx_row if idx != i and idx < len(species_list)]
+        influences[i] = json.dumps(neighbor_species)
+
+    return influences
+
+
 def _run_knn_imputer(
     df: pl.DataFrame,
     numeric_cols: list[str],
@@ -177,7 +256,6 @@ def _run_knn_imputer(
 
     Returns:
         Polars DataFrame with imputed numeric columns and knn_influences.
-
     """
     available = [c for c in numeric_cols if c in df.columns]
     if not available:
@@ -200,27 +278,10 @@ def _run_knn_imputer(
 
     # We only have neighbors if there are >= 2 rows
     if len(df) > 1 and species_list:
-        import json
-
-        from sklearn.neighbors import NearestNeighbors
-
-        # We find neighbors using only rows that don't have NaNs for a rough approximation,
-        # or just find neighbors using the imputed values.
-        imputer = KNNImputer(n_neighbors=min(k, max(1, len(df) - 1)), keep_empty_features=True)
-        imputed_array = imputer.fit_transform(pdf.values.astype(np.float64))
-
-        nn = NearestNeighbors(n_neighbors=min(k, len(df) - 1))
-        nn.fit(imputed_array)
-        distances, indices = nn.kneighbors(imputed_array)
-
-        for i, (_dist_row, idx_row) in enumerate(zip(distances, indices, strict=False)):
-            # Record neighbors (excluding self)
-            neighbor_species = [species_list[idx] for idx in idx_row if idx != i and idx < len(species_list)]
-            influences[i] = json.dumps(neighbor_species)
-
+        imputed_array = _compute_imputed_array(pdf, k, len(df))
+        influences = _compute_knn_influences(imputed_array, species_list, k, len(df))
     else:
-        imputer = KNNImputer(n_neighbors=min(k, max(1, len(df) - 1)), keep_empty_features=True)
-        imputed_array = imputer.fit_transform(pdf.values.astype(np.float64))
+        imputed_array = _compute_imputed_array(pdf, k, len(df))
 
     imputed_df = pl.from_numpy(imputed_array, schema=available)
     imputed_df = imputed_df.with_columns(pl.Series("knn_influences", influences))
@@ -240,8 +301,7 @@ def _update_rows(
 ) -> pl.DataFrame:
     """Update specific rows in full_df with values from imputed_group.
 
-    This is a safe in-place-style update: rows not matching the mask
-    are untouched.
+    This is a safe in-place-style update: rows not matching the mask are untouched.
 
     Args:
         full_df: The complete DataFrame to update.

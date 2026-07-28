@@ -97,7 +97,6 @@ def fetch_leda(force_refresh: bool = False) -> pl.DataFrame:
     Returns:
         A Polars DataFrame with TRY-compatible schema annotated with
         source_db="LEDA".
-
     """
     if CACHE_PATH.exists() and not force_refresh:
         logger.info("LEDA (Academic): loading from cache %s", CACHE_PATH)
@@ -142,6 +141,30 @@ def fetch_leda(force_refresh: bool = False) -> pl.DataFrame:
 # ---------------------------------------------------------------------------
 
 
+def _extract_leda_value(row: dict[str, str]) -> float | None:
+    """Extract numeric mean value from a LEDA trait row.
+
+    Args:
+        row: Dictionary representing a single row from a LEDA trait file.
+
+    Returns:
+        Float value if found and valid, None otherwise.
+    """
+    raw_val = None
+    for col in ("mean", "Mean", "value", "Value", "SLA_mean", "height_mean", "SW_mean"):
+        if col in row and row[col].strip():
+            raw_val = row[col].strip()
+            break
+
+    if raw_val is None:
+        return None
+
+    try:
+        return float(raw_val)
+    except ValueError:
+        return None
+
+
 def _parse_leda_txt(text: str, trait_name: str) -> list[dict[str, object]]:
     """Parse a LEDA tab-delimited trait file into record dicts.
 
@@ -151,7 +174,6 @@ def _parse_leda_txt(text: str, trait_name: str) -> list[dict[str, object]]:
 
     Returns:
         List of record dicts with TRY-compatible keys.
-
     """
     import csv
 
@@ -168,19 +190,8 @@ def _parse_leda_txt(text: str, trait_name: str) -> list[dict[str, object]]:
         if not species:
             continue
 
-        # Try common value column names
-        raw_val = None
-        for col in ("mean", "Mean", "value", "Value", "SLA_mean", "height_mean", "SW_mean"):
-            if col in row and row[col].strip():
-                raw_val = row[col].strip()
-                break
-
-        if raw_val is None:
-            continue
-
-        try:
-            std_value = float(raw_val)
-        except ValueError:
+        std_value = _extract_leda_value(row)
+        if std_value is None:
             continue
 
         records.append(
@@ -206,7 +217,6 @@ def _leda_trait_to_id(trait_name: str) -> int:
 
     Returns:
         Integer pseudo-trait ID.
-
     """
     mapping: dict[str, int] = {
         "SLA": 3117,
@@ -222,7 +232,6 @@ def _empty_leda_frame() -> pl.DataFrame:
 
     Returns:
         Empty Polars DataFrame.
-
     """
     return pl.DataFrame(
         {

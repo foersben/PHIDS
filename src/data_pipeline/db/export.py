@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 import duckdb  # noqa: TC002
 
@@ -62,7 +63,6 @@ def export_bio_database_json(
     Raises:
         FileNotFoundError: If the DuckDB file does not exist and no connection
             is provided.
-
     """
     out = Path(output_path) if output_path else JSON_PATH
     own_conn = conn is None
@@ -108,7 +108,6 @@ def export_manifest_json(
 
     Returns:
         The path to the written manifest file.
-
     """
     import datetime
 
@@ -156,7 +155,6 @@ def _export_flora(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
 
     Returns:
         Dict keyed by canonical_name with full flora entry payloads.
-
     """
     flora_rows = conn.execute("""
         SELECT
@@ -242,7 +240,6 @@ def _export_herbivores(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
 
     Returns:
         Dict keyed by canonical_name with full herbivore entry payloads.
-
     """
     herb_rows = conn.execute("""
         SELECT
@@ -313,7 +310,6 @@ def _export_substances(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
 
     Returns:
         Dict keyed by substance_id (as string) with substance payloads.
-
     """
     rows = conn.execute("SELECT * FROM substances ORDER BY substance_id").pl()
     result: dict[str, object] = {}
@@ -346,6 +342,64 @@ def _export_substances(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
 # ---------------------------------------------------------------------------
 
 
+def _check_nc_source_guard(conn: duckdb.DuckDBPyConnection | None) -> None:
+    """Check for NC sources in the database.
+
+    Args:
+        conn: Active DuckDB connection.
+    """
+    own_conn_check = conn is None
+    _check_conn = open_connection(read_only=True) if own_conn_check else conn
+    try:
+        nc_rows = _check_conn.execute(
+            "SELECT DISTINCT source_db FROM provenance WHERE source_db IN ('BIEN', 'LEDA', 'GIFT')"
+        ).fetchall()
+    finally:
+        if own_conn_check:
+            _check_conn.close()
+
+    if nc_rows:
+        found = {r[0] for r in nc_rows}
+        core_repo = "foersben/PHIDS-empirical-database"
+        raise RuntimeError(
+            "\n"
+            "=" * 70 + "\n"
+            "LICENSE VIOLATION BLOCKED: NC data detected in core dataset publish.\n"
+            "=" * 70 + "\n"
+            f"\nThe DuckDB provenance table contains records from NC-licensed\n"
+            f"sources: {found}\n\n"
+            f"These sources are INCOMPATIBLE with the Proprietary Commercial\n"
+            f"License and MUST NOT be published to:\n"
+            f"  {core_repo}\n\n"
+            f"To publish the extended academic dataset, use:\n"
+            f"  publish_to_huggingface(repo_id='foersben/PHIDS-extended-dataset')\n"
+            f"Or run: just etl-publish-extended\n" + "=" * 70
+        )
+    logger.info("License guard OK: no NC sources in provenance. Proceeding with publish.")
+
+
+def _upload_hf_files(api: Any, repo_id: str, uploads: list[tuple[str, str]]) -> None:
+    """Upload files to HuggingFace Hub.
+
+    Args:
+        api: The HuggingFace API client.
+        repo_id: The HuggingFace Hub dataset repository ID.
+        uploads: A list of tuples containing the local path and the remote name of the file to upload.
+    """
+    for local_path, remote_name in uploads:
+        if not Path(local_path).exists():
+            logger.warning("HuggingFace: skipping %s (file not found)", local_path)
+            continue
+        logger.info("HuggingFace: uploading %s → %s/%s", local_path, repo_id, remote_name)
+        api.upload_file(
+            path_or_fileobj=local_path,
+            path_in_repo=remote_name,
+            repo_id=repo_id,
+            repo_type="dataset",
+            commit_message=f"chore(etl): update {remote_name}",
+        )
+
+
 def publish_to_huggingface(
     repo_id: str = "foersben/PHIDS-empirical-database",
     hf_token: str | None = None,
@@ -365,45 +419,12 @@ def publish_to_huggingface(
         repo_id: Hugging Face Hub dataset repository ID.
         hf_token: Explicit HF access token. Falls back to ``HF_TOKEN`` env var.
         conn: Active DuckDB connection for on-demand export. Opened if None.
-
     """
     import os
 
-    # -------------------------------------------------------------------------
-    # Layer 3 Protection: NC-Source Publish Guard
-    # Scan the provenance table for any records sourced from NC-licensed
-    # databases before a single byte is uploaded. This is a hard abort.
-    # -------------------------------------------------------------------------
     core_repo = "foersben/PHIDS-empirical-database"
-
     if repo_id == core_repo:
-        own_conn_check = conn is None
-        _check_conn = open_connection(read_only=True) if own_conn_check else conn
-        try:
-            nc_rows = _check_conn.execute(
-                "SELECT DISTINCT source_db FROM provenance WHERE source_db IN ('BIEN', 'LEDA', 'GIFT')"
-            ).fetchall()
-        finally:
-            if own_conn_check:
-                _check_conn.close()
-
-        if nc_rows:
-            found = {r[0] for r in nc_rows}
-            raise RuntimeError(
-                "\n"
-                "=" * 70 + "\n"
-                "LICENSE VIOLATION BLOCKED: NC data detected in core dataset publish.\n"
-                "=" * 70 + "\n"
-                f"\nThe DuckDB provenance table contains records from NC-licensed\n"
-                f"sources: {found}\n\n"
-                f"These sources are INCOMPATIBLE with the Proprietary Commercial\n"
-                f"License and MUST NOT be published to:\n"
-                f"  {core_repo}\n\n"
-                f"To publish the extended academic dataset, use:\n"
-                f"  publish_to_huggingface(repo_id='foersben/PHIDS-extended-dataset')\n"
-                f"Or run: just etl-publish-extended\n" + "=" * 70
-            )
-        logger.info("License guard OK: no NC sources in provenance. Proceeding with publish.")
+        _check_nc_source_guard(conn)
 
     try:
         from huggingface_hub import HfApi
@@ -432,18 +453,7 @@ def publish_to_huggingface(
         (str(manifest_path), "manifest.json"),
     ]
 
-    for local_path, remote_name in uploads:
-        if not Path(local_path).exists():
-            logger.warning("HuggingFace: skipping %s (file not found)", local_path)
-            continue
-        logger.info("HuggingFace: uploading %s → %s/%s", local_path, repo_id, remote_name)
-        api.upload_file(
-            path_or_fileobj=local_path,
-            path_in_repo=remote_name,
-            repo_id=repo_id,
-            repo_type="dataset",
-            commit_message=f"chore(etl): update {remote_name}",
-        )
+    _upload_hf_files(api, repo_id, uploads)
 
     logger.info("HuggingFace: all uploads complete → https://huggingface.co/datasets/%s", repo_id)
 
@@ -461,7 +471,6 @@ def _parse_json_field(value: object) -> dict[str, object] | None:
 
     Returns:
         Parsed dict or None if value is None/empty.
-
     """
     if value is None:
         return None

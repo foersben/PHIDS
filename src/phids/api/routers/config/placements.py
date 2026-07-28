@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import random
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -26,7 +26,15 @@ router = APIRouter()
 
 
 def _render_placement_list_partial(request: Request, draft: DraftState) -> Response:
-    """Render the canonical placement-ledger partial response."""
+    """Render the canonical placement-ledger partial response.
+
+    Args:
+        request: The incoming HTTP request.
+        draft: The draft state containing placement information.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
     return api_main.templates.TemplateResponse(
         request,
         "partials/placement_list.html",
@@ -41,7 +49,11 @@ def _render_placement_list_partial(request: Request, draft: DraftState) -> Respo
 
 @router.get("/api/config/placements/data", summary="Get placement data as JSON")
 async def placement_data() -> JSONResponse:
-    """Return draft placement data and inferred root links for canvas rendering."""
+    """Return draft placement data and inferred root links for canvas rendering.
+
+    Returns:
+        JSON response with placement data.
+    """
     draft = get_draft()
     plants = [
         {"idx": i, "species_id": p.species_id, "x": p.x, "y": p.y, "energy": p.energy}
@@ -91,7 +103,18 @@ async def config_placement_plant_add(
     y: Annotated[int, Form()],
     energy: Annotated[float, Form()] = 10.0,
 ) -> Response:
-    """Create one plant placement and render the updated placement ledger."""
+    """Create one plant placement and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+        species_id: The ID of the plant species to place.
+        x: The x-coordinate for placement.
+        y: The y-coordinate for placement.
+        energy: The initial energy of the plant.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
@@ -109,7 +132,19 @@ async def config_placement_swarm_add(
     population: Annotated[int, Form()] = 10,
     energy: Annotated[float, Form()] = 50.0,
 ) -> Response:
-    """Create one swarm placement and render the updated placement ledger."""
+    """Create one swarm placement and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+        species_id: The ID of the swarm species to place.
+        x: The x-coordinate for placement.
+        y: The y-coordinate for placement.
+        population: The initial population of the swarm.
+        energy: The initial energy of the swarm.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
     draft = get_draft()
     x = max(0, min(draft.grid_width - 1, x))
     y = max(0, min(draft.grid_height - 1, y))
@@ -137,7 +172,18 @@ async def config_placement_swarm_add(
     summary="Remove a placed plant",
 )
 async def config_placement_plant_delete(request: Request, index: int) -> Response:
-    """Remove one plant placement and render the updated placement ledger."""
+    """Remove one plant placement and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+        index: The index of the plant placement to remove.
+
+    Returns:
+        HTML response with the updated placement list.
+
+    Raises:
+        HTTPException: If the plant index is not found.
+    """
     draft = get_draft()
     try:
         remove_plant_placement(draft, index)
@@ -153,7 +199,18 @@ async def config_placement_plant_delete(request: Request, index: int) -> Respons
     summary="Remove a placed swarm",
 )
 async def config_placement_swarm_delete(request: Request, index: int) -> Response:
-    """Remove one swarm placement and render the updated placement ledger."""
+    """Remove one swarm placement and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+        index: The index of the swarm placement to remove.
+
+    Returns:
+        HTML response with the updated placement list.
+
+    Raises:
+        HTTPException: If the swarm index is not found.
+    """
     draft = get_draft()
     try:
         remove_swarm_placement(draft, index)
@@ -165,7 +222,14 @@ async def config_placement_swarm_delete(request: Request, index: int) -> Respons
 
 @router.post("/api/config/placements/clear", response_class=HTMLResponse, summary="Clear all placements")
 async def config_placements_clear(request: Request) -> Response:
-    """Clear all plant and swarm placements and render the updated placement ledger."""
+    """Clear all plant and swarm placements and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
     draft = get_draft()
     from phids.api.services.draft.placements import clear_placements as _clear_placements
 
@@ -176,7 +240,14 @@ async def config_placements_clear(request: Request) -> Response:
 
 @router.post("/api/config/placements/clear-plants", response_class=HTMLResponse, summary="Clear all plant placements")
 async def config_placements_clear_plants(request: Request) -> Response:
-    """Clear all plant placements and render the updated placement ledger."""
+    """Clear all plant placements and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
     draft = get_draft()
     from phids.api.services.draft.placements import clear_plant_placements
 
@@ -187,7 +258,14 @@ async def config_placements_clear_plants(request: Request) -> Response:
 
 @router.post("/api/config/placements/clear-swarms", response_class=HTMLResponse, summary="Clear all swarm placements")
 async def config_placements_clear_swarms(request: Request) -> Response:
-    """Clear all swarm placements and render the updated placement ledger."""
+    """Clear all swarm placements and render the updated placement ledger.
+
+    Args:
+        request: The incoming HTTP request.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
     draft = get_draft()
     from phids.api.services.draft.placements import clear_swarm_placements
 
@@ -196,35 +274,44 @@ async def config_placements_clear_swarms(request: Request) -> Response:
     return _render_placement_list_partial(request, draft)
 
 
-@router.post("/api/config/placements/autoassign", response_class=HTMLResponse, summary="Autoassign placements")
-async def config_placement_autoassign(request: Request) -> Response:
-    """Generate manual placements using procedural logic."""
-    draft = get_draft()
-    form = await request.form()
+def _generate_autoassign_coords(
+    distribution: str, form: dict[str, Any], width: int, height: int
+) -> list[tuple[int, int]]:
+    """Generate coordinates for auto-assignment of placements based on distribution type.
 
-    target_type = str(form.get("target_type", "plant"))
-    distribution = str(form.get("distribution", "uniform"))
+    Args:
+        distribution: The distribution type (uniform, clustered, or banded)
+        form: The form containing distribution parameters
+        width: The width of the grid
+        height: The height of the grid
 
-    # Generate coordinates
-    width = draft.grid_width
-    height = draft.grid_height
-    coords = []
-
+    Returns:
+        List of coordinates for auto-assignment.
+    """
     if distribution == "uniform":
         density = float(str(form.get("density", 0.05)))
-        coords = generate_uniform(width, height, density)
-    elif distribution == "clustered":
+        return generate_uniform(width, height, density)
+    if distribution == "clustered":
         cluster_count = int(str(form.get("cluster_count", 5)))
         variance = float(str(form.get("variance", 2.0)))
-        coords = generate_clustered(width, height, cluster_count, variance)
-    elif distribution == "banded":
+        return generate_clustered(width, height, cluster_count, variance)
+    if distribution == "banded":
         band_count = int(str(form.get("band_count", 3)))
         orientation = str(form.get("orientation", "horizontal"))
-        coords = generate_banded(width, height, band_count, orientation)
+        return generate_banded(width, height, band_count, orientation)
+    return []
 
-    # Extract weights for species
-    weights = []
-    species_ids = []
+
+def _extract_autoassign_weights(form: dict[str, Any]) -> tuple[list[int], list[float]]:
+    """Extract species IDs and weights from the form.
+
+    Args:
+        form: The form containing distribution parameters.
+
+    Returns:
+        tuple[list[int], list[float]]: Tuple of species IDs and weights.
+    """
+    species_ids, weights = [], []
     for key, val in form.items():
         if key.startswith("weight_") and val:
             try:
@@ -235,6 +322,27 @@ async def config_placement_autoassign(request: Request) -> Response:
                     weights.append(weight)
             except ValueError:
                 pass
+    return species_ids, weights
+
+
+@router.post("/api/config/placements/autoassign", response_class=HTMLResponse, summary="Autoassign placements")
+async def config_placement_autoassign(request: Request) -> Response:
+    """Generate manual placements using procedural logic.
+
+    Args:
+        request: The incoming HTTP request.
+
+    Returns:
+        HTML response with the updated placement list.
+    """
+    draft = get_draft()
+    form = dict(await request.form())
+
+    target_type = str(form.get("target_type", "plant"))
+    distribution = str(form.get("distribution", "uniform"))
+
+    coords = _generate_autoassign_coords(distribution, form, draft.grid_width, draft.grid_height)
+    species_ids, weights = _extract_autoassign_weights(form)
 
     if not coords or not species_ids:
         api_main.logger.warning("Autoassign skipped (no coords generated or no species weights > 0)")

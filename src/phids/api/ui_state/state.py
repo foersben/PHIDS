@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
     )
+    from phids.api.schemas.triggers import TriggerConditionSchema
     from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
     from phids.api.ui_state.substances import SubstanceDefinition
     from phids.api.ui_state.triggers import TriggerRule
@@ -40,6 +41,73 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DEFAULT_SCENARIO_NAME: Final[str] = "Default Scenario"
+
+
+def _build_triggers_by_flora(
+    trigger_rules: list[TriggerRule], subs_by_id: dict[int, SubstanceDefinition]
+) -> dict[int, list[TriggerConditionSchema]]:
+    """Build triggers for each flora species.
+
+    Args:
+        trigger_rules: The trigger rules.
+        subs_by_id: The substance definitions.
+
+    Returns:
+        The triggers for each flora species.
+    """
+    from phids.api.schemas.triggers import (
+        EnvironmentalSignalInitiator,
+        HerbivoreAttackInitiator,
+        ResourceWithdrawalAction,
+        SynthesizeSubstanceAction,
+        TriggerConditionSchema,
+    )
+
+    triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
+    for rule in trigger_rules:
+        initiator: EnvironmentalSignalInitiator | HerbivoreAttackInitiator
+        if rule.initiator_type == "environmental_signal":
+            initiator = EnvironmentalSignalInitiator(
+                signal_id=rule.initiator_signal_id,
+                min_concentration=rule.initiator_min_concentration,
+            )
+        else:
+            initiator = HerbivoreAttackInitiator(
+                herbivore_species_id=rule.herbivore_species_id,
+                min_herbivore_population=rule.min_herbivore_population,
+            )
+        action: ResourceWithdrawalAction | SynthesizeSubstanceAction
+        if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
+            action = ResourceWithdrawalAction(
+                apparent_nutrition_factor=rule.apparent_nutrition_factor,
+                withdrawal_duration=rule.withdrawal_duration,
+            )
+            aftereffect = rule.aftereffect_ticks
+        else:
+            sd = subs_by_id.get(rule.substance_id)
+            if sd is None:
+                continue
+            action = SynthesizeSubstanceAction(
+                substance_id=rule.substance_id,
+                synthesis_duration=sd.synthesis_duration,
+                is_toxin=sd.is_toxin,
+                lethal=sd.lethal,
+                lethality_rate=sd.lethality_rate,
+                repellent=sd.repellent,
+                repellent_walk_ticks=sd.repellent_walk_ticks,
+                energy_cost_per_tick=sd.energy_cost_per_tick,
+                irreversible=sd.irreversible,
+            )
+            aftereffect = sd.aftereffect_ticks
+        triggers_by_flora.setdefault(rule.flora_species_id, []).append(
+            TriggerConditionSchema(
+                initiator=initiator,
+                aftereffect_ticks=aftereffect,
+                activation_condition=cast("Any", deepcopy(rule.activation_condition)),
+                action=action,
+            )
+        )
+    return triggers_by_flora
 
 
 @dataclasses.dataclass
@@ -122,7 +190,6 @@ class DraftState:
 
         Raises:
             ValueError: If no flora or herbivore species defined.
-
         """
         from phids.api.schemas.placement import (
             InitialPlantPlacement,
@@ -130,7 +197,6 @@ class DraftState:
         )
         from phids.api.schemas.simulation import SimulationConfig
         from phids.api.schemas.species import DietCompatibilityMatrix
-        from phids.api.schemas.triggers import TriggerConditionSchema
 
         if not self.flora_species or not self.herbivore_species:
             logger.warning(
@@ -142,76 +208,7 @@ class DraftState:
 
         subs_by_id: dict[int, SubstanceDefinition] = {sd.substance_id: sd for sd in self.substance_definitions}
 
-        from phids.api.schemas.triggers import (
-            EnvironmentalSignalInitiator,
-            HerbivoreAttackInitiator,
-            ResourceWithdrawalAction,
-            SynthesizeSubstanceAction,
-            TriggerInitiator,
-        )
-
-        # Group trigger rules by flora_species_id
-        triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
-        for rule in self.trigger_rules:
-            initiator: TriggerInitiator
-            if rule.initiator_type == "environmental_signal":
-                initiator = EnvironmentalSignalInitiator(
-                    signal_id=rule.initiator_signal_id,
-                    min_concentration=rule.initiator_min_concentration,
-                )
-            else:
-                initiator = HerbivoreAttackInitiator(
-                    herbivore_species_id=rule.herbivore_species_id,
-                    min_herbivore_population=rule.min_herbivore_population,
-                )
-
-            if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
-                # Resource Withdrawal
-                action = ResourceWithdrawalAction(
-                    apparent_nutrition_factor=rule.apparent_nutrition_factor,
-                    withdrawal_duration=rule.withdrawal_duration,
-                )
-                aftereffect = rule.aftereffect_ticks
-                triggers_by_flora.setdefault(rule.flora_species_id, []).append(
-                    TriggerConditionSchema(
-                        initiator=initiator,
-                        aftereffect_ticks=aftereffect,
-                        activation_condition=cast("Any", deepcopy(rule.activation_condition)),
-                        action=action,
-                    )
-                )
-            else:
-                sd = subs_by_id.get(rule.substance_id)
-                if sd is None:
-                    logger.warning(
-                        (
-                            "Skipping trigger rule with missing substance definition "
-                            "(flora_species_id=%d, herbivore_species_id=%d, substance_id=%d)"
-                        ),
-                        rule.flora_species_id,
-                        rule.herbivore_species_id,
-                        rule.substance_id,
-                    )
-                    continue
-                action = SynthesizeSubstanceAction(
-                    substance_id=rule.substance_id,
-                    synthesis_duration=sd.synthesis_duration,
-                    is_toxin=sd.is_toxin,
-                    lethal=sd.lethal,
-                    lethality_rate=sd.lethality_rate,
-                    repellent=sd.repellent,
-                    repellent_walk_ticks=sd.repellent_walk_ticks,
-                    energy_cost_per_tick=sd.energy_cost_per_tick,
-                    irreversible=sd.irreversible,
-                )  # type: ignore
-                triggers_by_flora.setdefault(rule.flora_species_id, []).append(
-                    TriggerConditionSchema(
-                        initiator=initiator,
-                        aftereffect_ticks=sd.aftereffect_ticks,
-                        activation_condition=cast("Any", deepcopy(rule.activation_condition)),
-                        action=action,
-                    )
-                )
+        triggers_by_flora = _build_triggers_by_flora(self.trigger_rules, subs_by_id)
 
         flora_with_triggers: list[FloraSpeciesParams] = []
         for fp in self.flora_species:
@@ -284,7 +281,11 @@ class DraftState:
 
     @classmethod
     def default(cls) -> DraftState:
-        """Create the built-in default draft state."""
+        """Create the built-in default draft state.
+
+        Returns:
+            DraftState: The default draft state.
+        """
         from phids.api.schemas.species import (
             FloraSpeciesParams,
             HerbivoreSpeciesParams,
@@ -336,7 +337,6 @@ def get_draft() -> DraftState:
 
     Returns:
         DraftState: The active draft configuration.
-
     """
     global _draft
     if _draft is None:
@@ -350,7 +350,6 @@ def set_draft(state: DraftState) -> None:
 
     Args:
         state: New :class:`DraftState` to activate.
-
     """
     global _draft
     _draft = state

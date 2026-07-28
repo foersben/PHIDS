@@ -73,8 +73,7 @@ def generate_png_bytes(
         dpi: Dots-per-inch scaling factor for rasterization.
 
     Returns:
-        bytes: Raw PNG-encoded bytes of the rendered figure.
-
+        Raw PNG-encoded bytes of the rendered figure.
     """
     import matplotlib
     import matplotlib.pyplot as plt
@@ -207,7 +206,6 @@ def _plot_timeseries(
         title: Optional custom chart title.
         x_label: Optional custom x-axis label.
         y_label: Optional custom y-axis label.
-
     """
     all_flora: set[int] = set()
     all_herbivores: set[int] = set()
@@ -232,6 +230,37 @@ def _plot_timeseries(
     ax.set_title(title or "PHIDS - Population Time Series")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
+
+
+def _get_phasespace_axis(
+    rows: TelemetryRows,
+    species_id: int,
+    is_flora: bool,
+    names: dict[int, str] | None,
+) -> tuple[list[float], str]:
+    """Get the phasespace axis data and label.
+
+    Args:
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
+        species_id: Species identifier.
+        is_flora: Whether the species is flora.
+        names: Optional display names for species.
+
+    Returns:
+        tuple[list[float], str]: The phasespace axis data and label.
+    """
+    if species_id == 0:
+        if is_flora:
+            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
+        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
+
+    if is_flora:
+        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Flora {species_id}")
+    else:
+        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Herbivore {species_id}")
+    return y, name
 
 
 def _plot_phasespace(
@@ -262,24 +291,9 @@ def _plot_phasespace(
         y_label: Optional custom y-axis label.
         x_max: Optional custom x-axis maximum value.
         y_max: Optional custom y-axis maximum value.
-
     """
-    if plant_species_id == 0:
-        x = [r.get("flora_population", 0) for r in rows]
-        plant_name = "Flora (Total)"
-    else:
-        x = [r.get("plant_pop_by_species", {}).get(plant_species_id, 0) for r in rows]
-        plant_name = (flora_names or {}).get(plant_species_id, f"Flora {plant_species_id}")
-
-    if herbivore_species_id == 0:
-        y = [r.get("herbivore_population", 0) for r in rows]
-        herbivore_name = "Herbivores (Total)"
-    else:
-        y = [r.get("swarm_pop_by_species", {}).get(herbivore_species_id, 0) for r in rows]
-        herbivore_name = (herbivore_names or {}).get(
-            herbivore_species_id,
-            f"Herbivore {herbivore_species_id}",
-        )
+    x, plant_name = _get_phasespace_axis(rows, plant_species_id, True, flora_names)
+    y, herbivore_name = _get_phasespace_axis(rows, herbivore_species_id, False, herbivore_names)
 
     n = len(x)
     if n > 0:
@@ -320,7 +334,6 @@ def _plot_defense_economy(
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
-
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -344,6 +357,19 @@ def _plot_defense_economy(
     ax.grid(True, alpha=0.3)
 
 
+def _extract_biomass_series(rows: TelemetryRows, fid: int) -> list[float]:
+    """Extract biomass series for a given species id.
+
+    Args:
+        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
+        fid: Species identifier.
+
+    Returns:
+        The biomass series.
+    """
+    return [float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows]
+
+
 def _plot_biomass_stack(
     ax: Axes,
     rows: TelemetryRows,
@@ -364,7 +390,6 @@ def _plot_biomass_stack(
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
-
     """
     all_flora: set[int] = set()
     for r in rows:
@@ -373,7 +398,7 @@ def _plot_biomass_stack(
     if not ordered:
         ax.plot(ticks, [0.0] * len(ticks), color="#94a3b8", linewidth=1.0, label="No flora")
     else:
-        ys = [[float(r.get("plant_pop_by_species", {}).get(fid, 0.0)) for r in rows] for fid in ordered]
+        ys = [_extract_biomass_series(rows, fid) for fid in ordered]
         labels = [(flora_names or {}).get(fid, f"Flora {fid}") for fid in ordered]
         colours = [_FLORA_COLOURS[i % len(_FLORA_COLOURS)] for i, _ in enumerate(ordered)]
         ax.stackplot(ticks, ys, labels=labels, colors=colours, alpha=0.35)
@@ -405,7 +430,6 @@ def _plot_survival_probability(
         title: Optional chart title override.
         x_label: Optional x-axis label override.
         y_label: Optional y-axis label override.
-
     """
     y = [100.0 * float(r.get("survival_probability", 0.0)) for r in rows]
     ax.plot(ticks, y, color="#0ea5e9", linewidth=2.0, label="Survival probability")
