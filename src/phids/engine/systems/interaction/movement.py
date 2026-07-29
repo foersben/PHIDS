@@ -475,10 +475,14 @@ def _is_swarm_anchored(
     if env.apparent_nutrition_layer[swarm.x, swarm.y] < 0.999:
         return False
 
-    herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-    for flora_species_id, is_compatible in enumerate(herbivore_row):
-        if is_compatible and env.plant_energy_by_species.item(flora_species_id, swarm.x, swarm.y) > 0:
-            return True
+    if swarm.species_id < len(diet_matrix):
+        herbivore_row = diet_matrix[swarm.species_id]
+        for flora_species_id in range(len(herbivore_row)):
+            if (
+                herbivore_row[flora_species_id]
+                and env.plant_energy_by_species.item(flora_species_id, swarm.x, swarm.y) > 0
+            ):
+                return True
 
     return False
 
