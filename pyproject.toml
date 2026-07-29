@@ -113,11 +113,12 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/engine/core/test_ecs_mutation_pilot.py",
     "tests/unit/engine/core/test_biotope_diffusion.py",
     "tests/unit/engine/core/test_biotope_state_mutation_pilot.py",
-    "tests/unit/engine/systems/test_systems_mutation_pilot.py",
+    "tests/unit/engine/systems/test_interaction_py_helpers.py",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 asyncio_mode = "auto"
 markers = [
     "benchmark: performance benchmark tests; deselect with -m 'not benchmark'",

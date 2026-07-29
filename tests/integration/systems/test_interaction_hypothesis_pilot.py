@@ -1,235 +1,45 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Optional Hypothesis pilot for bounded interaction-system arithmetic invariants."""
+"""Optional Hypothesis pilot for bounded interaction-system arithmetic invariants.
+
+# MUTATION_TESTING_EXEMPTION: Stochastic / Hypothesis-driven test suite.
+# Non-deterministic input generation makes mutmut results unreliable and
+# causes excessive runtime. The equivalent deterministic parametric coverage
+# lives in test_interaction_invariants/.
+
+This pilot draws random inputs from bounded ``hypothesis`` strategies to
+extend confidence beyond the fixed parametric grid in
+``test_interaction_invariants/``. When Hypothesis is not installed the
+entire module is skipped gracefully.
+
+Step-runner helpers (``run_attrition_step``, ``run_reproduction_step``,
+``run_mitosis_step``) are imported from
+``test_interaction_invariants/conftest.py`` - the single authoritative source
+shared with the deterministic parametric suite.
+"""
 
 from __future__ import annotations
 
 import math
-from unittest.mock import patch
 
-import numpy as np
 import pytest
 
-from phids.api.schemas.species import (
-    FloraSpeciesParams,
-    HerbivoreSpeciesParams,
+# Import shared step-runners from the authoritative single source.
+# This eliminates all previously duplicated helper functions.
+from tests.integration.systems._interaction_helpers import (
+    run_attrition_step,
+    run_mitosis_step,
+    run_reproduction_step,
 )
+
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.biotope import GridEnvironment
-from phids.engine.core.ecs import ECSWorld
-from phids.engine.systems.interaction import run_interaction
 
 try:
     from hypothesis import given, settings
     from hypothesis import strategies as st
 except ModuleNotFoundError:
     pytest.skip("Install hypothesis to run optional property pilots.", allow_module_level=True)
-
-
-_NO_DIET_MATRIX = np.zeros((1, 1), dtype=np.bool_)
-
-
-def _spawn_swarm(
-    world: ECSWorld,
-    *,
-    x: int,
-    y: int,
-    species_id: int,
-    population: int,
-    energy: float,
-    energy_min: float,
-    velocity: int,
-    consumption_rate: float,
-) -> int:
-    """Spawn and register one swarm entity for local pilot setup."""
-    entity = world.create_entity()
-    world.add_component(
-        entity.entity_id,
-        SwarmComponent(
-            entity_id=entity.entity_id,
-            species_id=species_id,
-            x=x,
-            y=y,
-            population=population,
-            initial_population=max(1, population // 2),
-            energy=energy,
-            energy_min=energy_min,
-            velocity=velocity,
-            consumption_rate=consumption_rate,
-        ),
-    )
-    world.register_position(entity.entity_id, x, y)
-    return entity.entity_id
-
-
-def _run_attrition_only(
-    *,
-    population: int,
-    initial_energy: float,
-    energy_min: float,
-    upkeep: float,
-) -> tuple[ECSWorld, int]:
-    """Run one interaction tick with only metabolic attrition enabled."""
-    world = ECSWorld()
-    env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
-
-    swarm_id = _spawn_swarm(
-        world,
-        x=1,
-        y=1,
-        species_id=0,
-        population=population,
-        energy=initial_energy,
-        energy_min=energy_min,
-        velocity=1,
-        consumption_rate=1.0,
-    )
-    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
-    swarm.move_cooldown = 1
-    swarm.energy_upkeep_per_individual = upkeep
-    swarm.reproduction_energy_divisor = 1_000_000.0
-    swarm.split_population_threshold = 1000
-
-    dummy_flora = [
-        FloraSpeciesParams(
-            species_id=0,
-            name="Dummy",
-            base_energy=10.0,
-            max_energy=20.0,
-            growth_rate=1.0,
-            survival_threshold=1.0,
-            reproduction_interval=1,
-        )
-    ]
-    dummy_herbivore = [
-        HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
-    ]
-
-    run_interaction(
-        world,
-        env,
-        diet_matrix=_NO_DIET_MATRIX,
-        flora_species_params=dummy_flora,
-        herbivore_species_params=dummy_herbivore,
-        tick=0,
-    )
-    return world, swarm_id
-
-
-def _run_reproduction_only(
-    *,
-    population: int,
-    initial_energy: float,
-    energy_min: float,
-    reproduction_divisor: float,
-) -> tuple[ECSWorld, int]:
-    """Run one interaction tick with only reproduction arithmetic enabled."""
-    world = ECSWorld()
-    env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
-
-    swarm_id = _spawn_swarm(
-        world,
-        x=1,
-        y=1,
-        species_id=0,
-        population=population,
-        energy=initial_energy,
-        energy_min=energy_min,
-        velocity=1,
-        consumption_rate=1.0,
-    )
-    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
-    swarm.move_cooldown = 1
-    swarm.energy_upkeep_per_individual = 0.0
-    swarm.reproduction_energy_divisor = reproduction_divisor
-    swarm.split_population_threshold = 1000
-
-    dummy_flora = [
-        FloraSpeciesParams(
-            species_id=0,
-            name="Dummy",
-            base_energy=10.0,
-            max_energy=20.0,
-            growth_rate=1.0,
-            survival_threshold=1.0,
-            reproduction_interval=1,
-        )
-    ]
-    dummy_herbivore = [
-        HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
-    ]
-
-    run_interaction(
-        world,
-        env,
-        diet_matrix=_NO_DIET_MATRIX,
-        flora_species_params=dummy_flora,
-        herbivore_species_params=dummy_herbivore,
-        tick=0,
-    )
-    return world, swarm_id
-
-
-def _run_mitosis_only(
-    *,
-    population: int,
-    initial_population: int,
-    split_population_threshold: int,
-    energy: float,
-    energy_min: float,
-) -> tuple[ECSWorld, int, tuple[int, int], float]:
-    """Run one interaction tick with only the mitosis branch enabled and deterministic offspring placement."""
-    world = ECSWorld()
-    env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
-    offspring_pos = (2, 1)
-
-    swarm_id = _spawn_swarm(
-        world,
-        x=1,
-        y=1,
-        species_id=0,
-        population=population,
-        energy=energy,
-        energy_min=energy_min,
-        velocity=1,
-        consumption_rate=1.0,
-    )
-    swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
-    swarm.initial_population = initial_population
-    swarm.move_cooldown = 1
-    swarm.energy_upkeep_per_individual = 0.0
-    swarm.reproduction_energy_divisor = 1_000_000.0
-    swarm.split_population_threshold = split_population_threshold
-
-    dummy_flora = [
-        FloraSpeciesParams(
-            species_id=0,
-            name="Dummy",
-            base_energy=10.0,
-            max_energy=20.0,
-            growth_rate=1.0,
-            survival_threshold=1.0,
-            reproduction_interval=1,
-        )
-    ]
-    dummy_herbivore = [
-        HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1.0, velocity=1, consumption_rate=1.0)
-    ]
-
-    with patch(
-        "phids.engine.systems.interaction.metabolism._random_walk_step",
-        return_value=offspring_pos,
-    ):
-        run_interaction(
-            world,
-            env,
-            diet_matrix=_NO_DIET_MATRIX,
-            flora_species_params=dummy_flora,
-            herbivore_species_params=dummy_herbivore,
-            tick=0,
-        )
-    return world, swarm_id, offspring_pos, energy
 
 
 @pytest.mark.hypothesis_pilot
@@ -246,7 +56,21 @@ def test_attrition_closed_form_holds_for_bounded_hypothesis_samples(
     upkeep_quarters: int,
     initial_energy_units: int,
 ) -> None:
-    """Bounded random inputs preserve the documented attrition casualty and residual formulas."""
+    """Bounded random inputs preserve the documented attrition casualty and residual formulas.
+
+    Intent:
+        Extend the deterministic parametric sweep with Hypothesis-generated inputs
+        to increase statistical confidence in the closed-form attrition model.
+
+    Preconditions:
+        - upkeep derived from upkeep_quarters / 4.0 to avoid floating-point drift.
+        - initial_energy scaled to half-unit multiples of energy_min.
+        - Hypothesis profile: max_examples=128, derandomize=True for reproducibility.
+
+    Invariants Tested:
+        - Same casualty and residual energy formulas as the deterministic suite.
+        - Extinct swarms are removed from ECS; non-zero survivors retain non-negative energy.
+    """
     upkeep = upkeep_quarters / 4.0
     initial_energy = initial_energy_units * (energy_min / 2.0)
 
@@ -261,7 +85,7 @@ def test_attrition_closed_form_holds_for_bounded_hypothesis_samples(
         expected_population = max(0, population - casualties)
         expected_energy = max(0.0, (casualties * energy_min) - deficit)
 
-    world, swarm_id = _run_attrition_only(
+    world, swarm_id = run_attrition_step(
         population=population,
         initial_energy=initial_energy,
         energy_min=energy_min,
@@ -295,7 +119,20 @@ def test_reproduction_closed_form_holds_for_bounded_hypothesis_samples(
     whole_surplus_units: int,
     fractional_surplus: float,
 ) -> None:
-    """Bounded random inputs preserve floor-based surplus-to-offspring conversion."""
+    """Bounded random inputs preserve floor-based surplus-to-offspring conversion.
+
+    Intent:
+        Extend the deterministic parametric reproduction tests using Hypothesis to
+        cover fractional surplus combinations not enumerated in the fixed grid.
+
+    Preconditions:
+        - initial_energy = baseline + (whole_surplus_units + fractional_surplus) * cost_per_offspring.
+        - Hypothesis profile: max_examples=128, derandomize=True for reproducibility.
+
+    Invariants Tested:
+        - updated.population == population + floor(surplus / cost_per_offspring).
+        - Residual energy satisfies 0 <= residual < cost_per_offspring.
+    """
     baseline_energy = float(population) * energy_min
     cost_per_offspring = max(energy_min, energy_min * reproduction_divisor)
     initial_energy = baseline_energy + ((whole_surplus_units + fractional_surplus) * cost_per_offspring)
@@ -305,7 +142,7 @@ def test_reproduction_closed_form_holds_for_bounded_hypothesis_samples(
     expected_population = population + expected_offspring
     expected_energy = initial_energy - (expected_offspring * cost_per_offspring)
 
-    world, swarm_id = _run_reproduction_only(
+    world, swarm_id = run_reproduction_step(
         population=population,
         initial_energy=initial_energy,
         energy_min=energy_min,
@@ -338,12 +175,26 @@ def test_mitosis_threshold_partition_and_energy_halving_hold_for_bounded_hypothe
     energy: float,
     energy_min: float,
 ) -> None:
-    """Bounded random inputs preserve threshold semantics and binary fission conservation laws."""
-    world, parent_id, offspring_pos, pre_split_energy = _run_mitosis_only(
+    """Bounded random inputs preserve threshold semantics and binary fission conservation laws.
+
+    Intent:
+        Extend the deterministic six-case mitosis parametrization with Hypothesis-
+        generated inputs spanning the full combinatorial space of threshold, energy,
+        and population parameters.
+
+    Preconditions:
+        - Hypothesis profile: max_examples=96, derandomize=True for reproducibility.
+        - Offspring placement deterministically patched to (2,1) inside run_mitosis_step.
+
+    Invariants Tested:
+        - Below threshold: single swarm, population and energy unchanged.
+        - At or above threshold: exactly two swarms; binary fission conserves population and energy.
+    """
+    world, parent_id, offspring_pos, pre_split_energy = run_mitosis_step(
         population=population,
         initial_population=initial_population,
         split_population_threshold=split_population_threshold,
-        energy=energy,
+        initial_energy=energy,
         energy_min=energy_min,
     )
 
