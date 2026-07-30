@@ -56,3 +56,7 @@ Action: Use `TypeAdapter(ConditionNode)` to correctly validate the root of the r
 
 Learning: Extracting utility methods and Pydantic schemas out of a monolithic `phids.api.main` file cleans the module graph significantly but introduces severe import-ordering strictness under `ruff`. `from __future__ import annotations` must be the absolute first statement following the module docstring, overriding `typing.TYPE_CHECKING` blocks and standard library imports, otherwise `F404` and `E402` linting errors block PR validation.
 Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.
+
+## 2024-05-18 - Extraction of database compilation helpers from run_all.py
+Learning: Extracting functional helpers requires careful handling of multiline functions and docstrings when replacing code. While it's tempting to use string replacement or regex tools directly in shell scripts, Python AST parsing or simply rewriting cleaner functions with proper imports and manual formatting verification is safer to preserve Google-style docstrings, especially across heavily typed DataFrame builders.
+Action: Next time a monolith is identified, ensure that all extracted functions strictly inherit their full Google-style docstrings into the new modules to prevent CI or persona constraint failures for documentation debt.
