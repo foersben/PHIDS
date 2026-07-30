@@ -49,7 +49,7 @@ _SIGMA: float = 0.4
 def _get_val(layer: npt.NDArray[np.float64], x: int, y: int, width: int, height: int) -> float:
     """Get value from layer safely with bounds checking."""
     if 0 <= x < width and 0 <= y < height:
-        return layer[x, y]
+        return float(layer[x, y])
     return 0.0
 
 
@@ -87,10 +87,10 @@ def _numba_advect_signal_layer(
             dx = cx - float(x0)
             dy = cy - float(y0)
 
-            v00 = _get_val(layer, x0, y0, width, height)
-            v10 = _get_val(layer, x1, y0, width, height)
-            v01 = _get_val(layer, x0, y1, width, height)
-            v11 = _get_val(layer, x1, y1, width, height)
+            v00: float = _get_val(layer, x0, y0, width, height) # type: ignore[assignment, type-var, call-arg]
+            v10: float = _get_val(layer, x1, y0, width, height) # type: ignore[assignment, type-var, call-arg]
+            v01: float = _get_val(layer, x0, y1, width, height) # type: ignore[assignment, type-var, call-arg]
+            v11: float = _get_val(layer, x1, y1, width, height) # type: ignore[assignment, type-var, call-arg]
 
             val_y0 = v00 * (1.0 - dx) + v10 * dx
             val_y1 = v01 * (1.0 - dx) + v11 * dx
@@ -168,7 +168,8 @@ def _numba_convolve_signal_layer(
 
     for x in range(width):
         for y in range(height):
-            v = _numba_convolve_at_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)
+            v_float: float = _numba_convolve_at_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half) # type: ignore[assignment, type-var, call-arg]
+            v = v_float
             v *= decay
             if v < epsilon:
                 v = 0.0
@@ -218,8 +219,10 @@ def _numba_diffuse_signal_layer(
         write_buffer: Pre-allocated output array (mutated in-place).
         advected_scratch: Pre-allocated intermediate array for the advection step (mutated in-place).
     """
-    _numba_advect_signal_layer(width, height, layer, wind_x, wind_y, advected_scratch)
-    _numba_convolve_signal_layer(width, height, advected_scratch, decay, epsilon, kernel, write_buffer)
+    _numba_advect_signal_layer(width, height, layer, wind_x, wind_y, advected_scratch)  # type: ignore[type-var, call-arg]
+    _numba_convolve_signal_layer(
+        width, height, advected_scratch, decay, epsilon, kernel, write_buffer
+    )  # type: ignore[type-var, call-arg]
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
