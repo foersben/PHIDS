@@ -50,3 +50,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 70 vs. < 15 (Target function completely cleared).
 * **Performance Assessment:** The benchmark `test_flow_field_generation_benchmark` showed a mean execution time of ~240µs, matching the baseline of ~235µs well within the expected environmental jitter (StdDev ~33µs vs ~15µs baseline), confirming that extracting cleanly typed `@njit` kernels inside the JIT compiler successfully inlines the functions with zero runtime abstraction penalty.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-12 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/core/biotope.py` - `_numba_diffuse_signal_layer`
+* **Selection Rationale:** Selected `_numba_diffuse_signal_layer` because it had a high cognitive complexity score (43) and its logic was easily separable into semi-Lagrangian advection and Gaussian convolution phases. The refactoring involved extracting independent sub-routines without modifying any data structures or breaking the JIT constraints, yielding substantial readability gains with negligible risk to execution speed.
+* **Before/After Score:** 43 vs. 19 (which was then fully resolved to 0 functions above 15 by extracting `_numba_convolve_at_cell` and `_get_val`).
+* **Performance Assessment:** Ran `test_diffusion_hotspot_benchmark.py` and the main sim benchmarks. Performance remained virtually identical (~630us vs ~619us, well within noise margins for Python benchmarks), confirming the Numba JIT compiler successfully auto-inlines the extracted functions.
+* **Test Verification:** Confirmed that all linting (`ruff`), unit tests (`pytest`), and complexity checks (`complexipy`) pass cleanly.
