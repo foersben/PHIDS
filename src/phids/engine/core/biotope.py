@@ -74,7 +74,7 @@ def _advect_cell(
 
     val_y0 = v00 * (1.0 - dx) + v10 * dx
     val_y1 = v01 * (1.0 - dx) + v11 * dx
-    return val_y0 * (1.0 - dy) + val_y1 * dy
+    return float(val_y0 * (1.0 - dy) + val_y1 * dy)
 
 
 @njit
@@ -100,7 +100,7 @@ def _convolve_cell(
                 ay = y - j
                 if 0 <= ay < height:
                     v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-    return v
+    return float(v)
 
 
 @njit
@@ -151,7 +151,7 @@ def _numba_diffuse_signal_layer(
     # 1. Semi-Lagrangian Advection (backward interpolation)
     for x in range(width):
         for y in range(height):
-            advected_scratch[x, y] = _advect_cell(x, y, width, height, layer, wind_x, wind_y)
+            advected_scratch[x, y] = _advect_cell(x, y, width, height, layer, wind_x, wind_y)  # type: ignore
 
     # 2. Gaussian Diffusion (Convolution) & Decay
     # We must support an arbitrarily sized symmetric 2D kernel.
@@ -162,11 +162,11 @@ def _numba_diffuse_signal_layer(
 
     for x in range(width):
         for y in range(height):
-            v = _convolve_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)
-            v *= decay
-            if v < epsilon:
-                v = 0.0
-            write_buffer[x, y] = v
+            v = _convolve_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)  # type: ignore
+            v *= decay  # type: ignore
+            if v < epsilon:  # type: ignore
+                v = 0.0  # type: ignore
+            write_buffer[x, y] = v  # type: ignore
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
