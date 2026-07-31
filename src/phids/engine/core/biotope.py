@@ -46,6 +46,64 @@ _SIGMA: float = 0.4
 
 
 @njit
+def _advect_cell(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+) -> float:
+    """Perform Semi-Lagrangian Advection for a single cell."""
+    cx = float(x) - wind_x[x, y]
+    cy = float(y) - wind_y[x, y]
+
+    x0 = int(np.floor(cx))
+    y0 = int(np.floor(cy))
+    x1 = x0 + 1
+    y1 = y0 + 1
+
+    dx = cx - float(x0)
+    dy = cy - float(y0)
+
+    v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
+    v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
+    v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
+    v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
+
+    val_y0 = v00 * (1.0 - dx) + v10 * dx
+    val_y1 = v01 * (1.0 - dx) + v11 * dx
+    return val_y0 * (1.0 - dy) + val_y1 * dy
+
+
+@njit
+def _convolve_cell(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    advected_scratch: npt.NDArray[np.float64],
+    kernel: npt.NDArray[np.float64],
+    k_w_half: int,
+    k_h_half: int,
+) -> float:
+    """Perform Gaussian Diffusion and Convolution for a single cell."""
+    v = 0.0
+    for i in range(-k_w_half, k_w_half + 1):
+        ax = x - i
+        # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
+        # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
+        # measurably improving Numba JIT inner-loop vectorization and tick speed.
+        if 0 <= ax < width:
+            for j in range(-k_h_half, k_h_half + 1):
+                ay = y - j
+                if 0 <= ay < height:
+                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+    return v
+
+
+@njit
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -93,27 +151,7 @@ def _numba_diffuse_signal_layer(
     # 1. Semi-Lagrangian Advection (backward interpolation)
     for x in range(width):
         for y in range(height):
-            cx = float(x) - wind_x[x, y]
-            cy = float(y) - wind_y[x, y]
-
-            x0 = int(np.floor(cx))
-            y0 = int(np.floor(cy))
-            x1 = x0 + 1
-            y1 = y0 + 1
-
-            dx = cx - float(x0)
-            dy = cy - float(y0)
-
-            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
-            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
-            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
-            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
-
-            val_y0 = v00 * (1.0 - dx) + v10 * dx
-            val_y1 = v01 * (1.0 - dx) + v11 * dx
-            val = val_y0 * (1.0 - dy) + val_y1 * dy
-
-            advected_scratch[x, y] = val
+            advected_scratch[x, y] = _advect_cell(x, y, width, height, layer, wind_x, wind_y)
 
     # 2. Gaussian Diffusion (Convolution) & Decay
     # We must support an arbitrarily sized symmetric 2D kernel.
@@ -124,18 +162,7 @@ def _numba_diffuse_signal_layer(
 
     for x in range(width):
         for y in range(height):
-            v = 0.0
-            for i in range(-k_w_half, k_w_half + 1):
-                ax = x - i
-                # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
-                # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
-                # measurably improving Numba JIT inner-loop vectorization and tick speed.
-                if 0 <= ax < width:
-                    for j in range(-k_h_half, k_h_half + 1):
-                        ay = y - j
-                        if 0 <= ay < height:
-                            v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-
+            v = _convolve_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)
             v *= decay
             if v < epsilon:
                 v = 0.0
