@@ -66,8 +66,10 @@ Home = "index.md"
     { "Flora & Symbiosis" = "scientific_model/flora_and_symbiosis.md" },
     { "Morphological Defenses" = "scientific_model/morphological_defenses.md" },
     { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
+    { "Related Works" = "scientific_model/related_works.md" },
     { "Future Prospects" = [
         { "Parameter Calibration Strategy" = "scientific_model/future_prospects/parameter_calibration_strategy.md" },
+        { "Spatiotemporal Scaling Architecture" = "scientific_model/future_prospects/spatiotemporal_scaling.md" },
     ] },
 ]
 
