@@ -50,3 +50,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 70 vs. < 15 (Target function completely cleared).
 * **Performance Assessment:** The benchmark `test_flow_field_generation_benchmark` showed a mean execution time of ~240µs, matching the baseline of ~235µs well within the expected environmental jitter (StdDev ~33µs vs ~15µs baseline), confirming that extracting cleanly typed `@njit` kernels inside the JIT compiler successfully inlines the functions with zero runtime abstraction penalty.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-17 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/core/biotope.py` - `_numba_diffuse_signal_layer`
+* **Selection Rationale:** The `_numba_diffuse_signal_layer` function was chosen because it was the only function identified by `complexipy` with a cognitive complexity score above 15 (score: 43). Extracting the inner advection and convolution logic into `@njit(inline="always")` helper functions provides massive readability gains and reduces complexity by isolating dense algorithms, while explicitly instructing Numba to inline the logic to preserve tight loop performance.
+* **Before/After Score:** 43 vs. 10 (highest new helper score)
+* **Performance Assessment:** Ran Pytest benchmarks before and after changes. The operations per second (`OPS (Kops/s)`) for `test_diffusion_sparse_fast_path_benchmark` and `test_diffusion_active_hotspot_benchmark` were identical before and after. The Numba compiler efficiently auto-inlined the subroutines, maintaining execution speed.
+* **Test Verification:** Confirmed that all linting (`ruff`), unit/integration tests (`pytest`), and complexity checks (`complexipy`) pass without error.
