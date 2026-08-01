@@ -45,7 +45,139 @@ _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.4
 
 
-@njit
+@njit(cache=True)
+def _advect_cell(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+) -> float:
+    """Compute the advected value for a single grid cell.
+
+    Args:
+        x: The x-coordinate of the cell.
+        y: The y-coordinate of the cell.
+        width: The width of the grid environment.
+        height: The height of the grid environment.
+        layer: The current concentration of the signal layer.
+        wind_x: The X-component of the wind field for advection.
+        wind_y: The Y-component of the wind field for advection.
+
+    Returns:
+        The semi-Lagrangian interpolated scalar value for this cell.
+    """
+    cx = float(x) - wind_x[x, y]
+    cy = float(y) - wind_y[x, y]
+
+    x0 = int(np.floor(cx))
+    y0 = int(np.floor(cy))
+    x1 = x0 + 1
+    y1 = y0 + 1
+
+    dx = cx - float(x0)
+    dy = cy - float(y0)
+
+    v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
+    v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
+    v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
+    v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
+
+    val_y0 = v00 * (1.0 - dx) + v10 * dx
+    val_y1 = v01 * (1.0 - dx) + v11 * dx
+    return val_y0 * (1.0 - dy) + val_y1 * dy
+
+
+@njit(cache=True)
+def _numba_advect_layer(
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+) -> None:
+    """JIT-compiled semi-Lagrangian advection helper layer computation.
+
+    Args:
+        width: Grid width.
+        height: Grid height.
+        layer: Current concentration of the signal.
+        wind_x: X-component of the wind field for advection.
+        wind_y: Y-component of the wind field for advection.
+        advected_scratch: Pre-allocated intermediate array for the advection step (mutated in-place).
+    """
+    advected_scratch.fill(0.0)
+    for x in range(width):
+        for y in range(height):
+            advected_scratch[x, y] = _advect_cell(x, y, width, height, layer, wind_x, wind_y)
+
+
+@njit(cache=True)
+def _convolve_cell(
+    x: int, y: int, width: int, height: int, kernel: npt.NDArray[np.float64], advected_scratch: npt.NDArray[np.float64]
+) -> float:
+    """Compute the convoluted value for a single grid cell.
+
+    Args:
+        x: The x-coordinate of the cell.
+        y: The y-coordinate of the cell.
+        width: The width of the grid environment.
+        height: The height of the grid environment.
+        kernel: The 2D diffusion kernel array for spreading the signal.
+        advected_scratch: The advected concentration layer to compute over.
+
+    Returns:
+        The resulting scalar value after applying the convolution kernel at the specified cell.
+    """
+    k_w = kernel.shape[0]
+    k_h = kernel.shape[1]
+    k_w_half = k_w // 2
+    k_h_half = k_h // 2
+    v = 0.0
+    for i in range(-k_w_half, k_w_half + 1):
+        ax = x - i
+        if 0 <= ax < width:
+            for j in range(-k_h_half, k_h_half + 1):
+                ay = y - j
+                if 0 <= ay < height:
+                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+    return v
+
+
+@njit(cache=True)
+def _numba_convolve_and_decay_layer(
+    width: int,
+    height: int,
+    kernel: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+    decay: float,
+    epsilon: float,
+    write_buffer: npt.NDArray[np.float64],
+) -> None:
+    """JIT-compiled convolution and decay helper logic over the entire layer.
+
+    Args:
+        width: Grid width.
+        height: Grid height.
+        kernel: 2D diffusion kernel for spreading the signal.
+        advected_scratch: Advected concentration layer.
+        decay: Evaporation/decay rate of the signal.
+        epsilon: Minimum concentration threshold to zero-out noise.
+        write_buffer: Pre-allocated output array (mutated in-place).
+    """
+    for x in range(width):
+        for y in range(height):
+            v = _convolve_cell(x, y, width, height, kernel, advected_scratch)
+            v *= decay
+            if v < epsilon:
+                v = 0.0
+            write_buffer[x, y] = v
+
+
+@njit(cache=True)
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -88,58 +220,8 @@ def _numba_diffuse_signal_layer(
         write_buffer: Pre-allocated output array (mutated in-place).
         advected_scratch: Pre-allocated intermediate array for the advection step (mutated in-place).
     """
-    advected_scratch.fill(0.0)
-
-    # 1. Semi-Lagrangian Advection (backward interpolation)
-    for x in range(width):
-        for y in range(height):
-            cx = float(x) - wind_x[x, y]
-            cy = float(y) - wind_y[x, y]
-
-            x0 = int(np.floor(cx))
-            y0 = int(np.floor(cy))
-            x1 = x0 + 1
-            y1 = y0 + 1
-
-            dx = cx - float(x0)
-            dy = cy - float(y0)
-
-            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
-            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
-            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
-            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
-
-            val_y0 = v00 * (1.0 - dx) + v10 * dx
-            val_y1 = v01 * (1.0 - dx) + v11 * dx
-            val = val_y0 * (1.0 - dy) + val_y1 * dy
-
-            advected_scratch[x, y] = val
-
-    # 2. Gaussian Diffusion (Convolution) & Decay
-    # We must support an arbitrarily sized symmetric 2D kernel.
-    k_w = kernel.shape[0]
-    k_h = kernel.shape[1]
-    k_w_half = k_w // 2
-    k_h_half = k_h // 2
-
-    for x in range(width):
-        for y in range(height):
-            v = 0.0
-            for i in range(-k_w_half, k_w_half + 1):
-                ax = x - i
-                # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
-                # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
-                # measurably improving Numba JIT inner-loop vectorization and tick speed.
-                if 0 <= ax < width:
-                    for j in range(-k_h_half, k_h_half + 1):
-                        ay = y - j
-                        if 0 <= ay < height:
-                            v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-
-            v *= decay
-            if v < epsilon:
-                v = 0.0
-            write_buffer[x, y] = v
+    _numba_advect_layer(width, height, layer, wind_x, wind_y, advected_scratch)
+    _numba_convolve_and_decay_layer(width, height, kernel, advected_scratch, decay, epsilon, write_buffer)
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:

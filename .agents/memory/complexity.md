@@ -50,3 +50,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 70 vs. < 15 (Target function completely cleared).
 * **Performance Assessment:** The benchmark `test_flow_field_generation_benchmark` showed a mean execution time of ~240µs, matching the baseline of ~235µs well within the expected environmental jitter (StdDev ~33µs vs ~15µs baseline), confirming that extracting cleanly typed `@njit` kernels inside the JIT compiler successfully inlines the functions with zero runtime abstraction penalty.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-18 - Complexity Refactoring Report
+
+**Target Function**: `_numba_diffuse_signal_layer` in `src/phids/engine/core/biotope.py`
+**Selection Rationale**: The function handled both advection and convolution/decay, resulting in a cognitive complexity of 43, significantly exceeding the limit of 15.
+**Before/After Score**: Reduced from 43 to 14 (advect) + 12 (convolve) + 2 (diffuse). `_numba_diffuse_signal_layer` is now 2. All functions are within the allowed limit.
+**Performance Assessment**: Performance should remain identical since the nested loops and scalar operations were preserved and all three functions are compiled with Numba `@njit(cache=True)`, allowing Numba to inline them with zero-allocation.
+**Test Verification**: Verified `uvx complexipy . --failed` and `pytest`.
