@@ -621,7 +621,8 @@ class SimulationLoop:
 
         The loop respects ``paused`` and sleeps to maintain ``tick_rate_hz``.
         """
-        self.start()
+        if not self.running:
+            self.start()
         logger.info("Simulation run loop entering background execution")
 
         while self.running and not self.terminated:

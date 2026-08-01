@@ -278,11 +278,16 @@ async def start_simulation(request: Request) -> Response:
 
     loop.start()
 
-    async def _bg() -> None:
-        await loop.run()
+    if api_main._sim_task is None or api_main._sim_task.done():
 
-    api_main._sim_task = asyncio.create_task(_bg())
-    api_main.logger.info("Background simulation task created")
+        async def _bg() -> None:
+            await loop.run()
+
+        api_main._sim_task = asyncio.create_task(_bg())
+        api_main.logger.info("Background simulation task created")
+    else:
+        api_main.logger.info("Simulation resumed using active background task")
+
     if api_main._is_htmx_request(request):
         return _status_badge_fragment()
     return JSONResponse({"message": "Simulation started."})
