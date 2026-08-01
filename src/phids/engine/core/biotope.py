@@ -75,7 +75,7 @@ def _numba_advect_cell(
     val_y1 = v01 * (1.0 - dx) + v11 * dx
     val = val_y0 * (1.0 - dy) + val_y1 * dy
 
-    return val
+    return float(val)
 
 
 @njit(inline="always")
@@ -100,7 +100,7 @@ def _numba_convolve_cell(
                 ay = y - j
                 if 0 <= ay < height:
                     v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-    return v
+    return float(v)
 
 
 @njit
