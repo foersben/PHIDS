@@ -87,7 +87,7 @@ def _advect_cell(
 
     val_y0 = v00 * (1.0 - dx) + v10 * dx
     val_y1 = v01 * (1.0 - dx) + v11 * dx
-    return val_y0 * (1.0 - dy) + val_y1 * dy
+    return float(val_y0 * (1.0 - dy) + val_y1 * dy)
 
 
 @njit(cache=True)
@@ -400,7 +400,7 @@ class GridEnvironment:
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
-            _numba_diffuse_signal_layer(  # type: ignore[type-var, call-arg]
+            _numba_diffuse_signal_layer(
                 self.width,
                 self.height,
                 layer,
