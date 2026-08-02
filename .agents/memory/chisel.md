@@ -56,3 +56,9 @@ Action: Use `TypeAdapter(ConditionNode)` to correctly validate the root of the r
 
 Learning: Extracting utility methods and Pydantic schemas out of a monolithic `phids.api.main` file cleans the module graph significantly but introduces severe import-ordering strictness under `ruff`. `from __future__ import annotations` must be the absolute first statement following the module docstring, overriding `typing.TYPE_CHECKING` blocks and standard library imports, otherwise `F404` and `E402` linting errors block PR validation.
 Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.
+
+## 2026-08-02 - Extracting Data Pipeline Monolithic Assemblers
+
+Learning: When extracting internal schema builders and assemblers (like `_build_trigger_rules_df`, `_build_diet_matrix_df`) from a large orchestration script (like `run_all.py`), they can be safely relocated to a `compile` subpackage as long as you preserve the exact function signatures, module-level state (`_SUBSTANCE_REGISTRY`), and local `transform` imports. Removing the extracted code significantly reduces orchestrator bloat while keeping the ETL structure correct.
+
+Action: For future monolithic scripts, actively identify groups of pure dataframe-building helper functions (e.g. Polars/DuckDB assemblers) and group them into logical functional modules to drastically simplify the orchestration file. Always verify dependencies and schema keys are preserved exactly.
