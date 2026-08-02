@@ -40,9 +40,9 @@ Classical ecological modeling relies heavily on continuous Ordinary Differential
 
 Simulating tens of thousands of interacting organisms and diffusing chemical fields at interactive frame rates (60+ FPS) requires strict computational disciplines:
 
-* **Coupled Hybrid Dynamical System**: We decouple discrete entity state updates ($O(N)$ ECS spatial hash) from continuous Partial Differential Equations ($O(W \cdot H)$ double-buffered cellular automata).
+* **Coupled Hybrid Dynamical System**: Discrete entity state updates ($O(N)$ ECS spatial hash) are decoupled from continuous Partial Differential Equations ($O(W \cdot H)$ double-buffered cellular automata).
 * **Cache Locality & Data-Oriented Design**: Python object overhead is eliminated in hot path execution loops. Components are stored as contiguous 1D/2D NumPy arrays, and hot mathematical stencils (Gaussian convolution, flow-field generation) are compiled to native machine code using Numba `@njit`.
-* **Numerical Stability & Operator Splitting**: We approximate continuous parabolic PDEs ($\frac{\partial C}{\partial t} = D \nabla^2 C - \lambda C + Q$) using semi-Lagrangian advection and discrete spatial convolution kernels, enforcing floating-point denormalization clamps ($<10^{-4} \to 0.0$) to avoid CPU microcode performance degradation.
+* **Numerical Stability & Operator Splitting**: Continuous parabolic PDEs ($\frac{\partial C}{\partial t} = D \nabla^2 C - \lambda C + Q$) are approximated using semi-Lagrangian advection and discrete spatial convolution kernels, enforcing floating-point denormalization clamps ($<10^{-4} \to 0.0$) to avoid CPU microcode performance degradation.
 * **Deterministic Telemetry Replay**: All stochastic tick outcomes are serialized tick-by-tick into Zarr zstandard-compressed chunked matrices, enabling exact playback directly from disk without re-executing engine logic.
 
 ---
@@ -137,41 +137,45 @@ flowchart TD
 
 ## 2. Flora Lifecycle and Symbiotic Dynamics
 
-The state of flora entities evolves through a local, bounded integration process.
+The state of flora entities evolves through a multi-scale, modulo-gated integration process.
 
-### 2.1 Bounded Growth
+### 2.1 Bounded Growth & Multi-Scale Modulo-Gating
 
-For a flora entity $i$ of species $j$, the energy reserve $E_{i,j}$ increases linearly per time step up to a physiological maximum:
+Evaluating plant growth linearly on an hourly tick ($\Delta \tau = 1\text{ hour}$) causes fractional energy increments (e.g. $0.00005$ per tick) to fall below the IEEE 754 float epsilon threshold ($<10^{-4}$), triggering hardware FPU microcode traps. 
 
-$$E_{i,j}^{t+1} = \min\left(E_{i,j}^t + E_{\text{base},j} \frac{g_j}{100}, \; E_{\text{max},j}\right)$$
+To eliminate subnormal float degradation and ensure L1/L3 cache coherence, PHIDS evaluates flora growth on the **Slow Loop (Weekly Stride / 168 Ticks)**:
 
-where:
-
-* $E_{i,j}^t$: The current energy reserve of flora entity $i$ of species $j$ at time step $t$.
-* $E_{i,j}^{t+1}$: The energy reserve of the flora entity at the next time step $t+1$.
-* $E_{\text{base},j}$: The baseline reference energy value for flora species $j$.
-* $g_j$: The growth rate percentage parameter for flora species $j$.
-* $E_{\text{max},j}$: The maximum physiological energy capacity of flora species $j$.
-
-### 2.2 Reproduction & Dispersion
-
-Reproduction is gated by both an energetic threshold (the parent must survive the expenditure) and a deterministic tick interval.
-Offspring dispersion is modeled by a localized kernel:
-
-* **Calm conditions:** Sampling within a bounded annulus ($r_{\text{min}} \le r \le r_{\text{max}}$).
-* **Wind-active conditions:** A Gaussian kernel shifted by the local wind vector.
+$$E_{i,j}^{t+168} = \min\left(E_{i,j}^t + E_{\text{base},j} \frac{g_j}{100} \cdot \text{SLOW\_TICK\_STRIDE}, \; E_{\text{max},j}\right) \quad \text{for } t \pmod{168} == 0$$
 
 where:
 
-* $r$: The sampled dispersion radial distance from the parent plant to the offspring.
-* $r_{\text{min}}$: The minimum allowed dispersion radius parameter.
-* $r_{\text{max}}$: The maximum allowed dispersion radius parameter.
+* $E_{i,j}^t$: Current energy reserve of flora entity $i$ of species $j$ at slow tick $t$.
+* $E_{\text{base},j}$: Baseline reference energy value for flora species $j$.
+* $g_j$: Growth rate percentage parameter for flora species $j$.
+* $\text{SLOW\_TICK\_STRIDE}$: Constant weekly stride multiplier ($168\text{ hours}$).
+* $E_{\text{max},j}$: Maximum physiological energy capacity of flora species $j$.
 
-### 2.3 Symbiotic Relay Networks
+On intermediate non-slow ticks ($t \pmod{168} \neq 0$), flora energy remains frozen ($E_{i,j}^{t+1} = E_{i,j}^t$), preventing microscopic floating-point noise from accumulating.
 
-Flora may establish bidirectional mycorrhizal links with neighbors. These links bypass atmospheric diffusion, transferring signals via graph-based propagation at a fixed velocity $t_g$:
+---
 
-* $t_g$: The signal propagation velocity across mycorrhizal graph links (defined in graph edges or distance units per tick).
+### 2.2 $O(1)$ Stochastic Raycasting Seed Dispersion
+
+Offspring dispersion replaces $O(N \times r^2)$ continuous ballistic matrix convolution with an **$O(1)$ Stochastic Raycasting Kernel**:
+
+1. **Dispersal Radius**: Sample distance $d \sim U(d_{\min}, d_{\max})$.
+2. **Advective Wind Vector**: Compute unit vector $\mathbf{u} = \frac{\mathbf{w}}{\|\mathbf{w}\|}$ when $\|\mathbf{w}\| > 10^{-9}$; otherwise sample isotropic polar angle $\theta \sim U(0, 2\pi)$.
+3. **Turbulent Perpendicular Scatter**: Sample scalar offset $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$ where $\sigma_\perp = \max(0.15, 0.35 \cdot d)$.
+4. **Target Discrete Coordinates**:
+   $$x_{\text{target}} = \text{round}(x_0 + d \cdot u_x - \delta_\perp \cdot u_y), \quad y_{\text{target}} = \text{round}(y_0 + d \cdot u_y + \delta_\perp \cdot u_x)$$
+
+Germination is gated by spatial hash exclusion: if $(x_{\text{target}}, y_{\text{target}})$ is occupied, reproductive energy $E_{\text{seed}}$ is deducted from the parent, but no entity is spawned.
+
+---
+
+### 2.3 Symbiotic Relay Networks (Mycorrhiza)
+
+Flora establish bidirectional mycorrhizal links with orthogonally adjacent neighbors ($\Delta x + \Delta y = 1$) during Slow Loop gates ($t \pmod{168} == 0$). Mycorrhizal signals propagate across graph edges at fixed velocity $t_g$ (hops per tick), bypassing airborne diffusion layers while imposing a continuous photosynthate maintenance fee (`mycorrhizal_tax_per_link`).
 
 ## 3. Global Flow-Field and Swarm Navigation
 

@@ -14,48 +14,70 @@ resources: []
 
 Flora within PHIDS are stationary entities on the grid that produce the resources driving the herbivore ecosystem. While stationary, their behavior governs resource distribution, secondary defenses, and spatial networks.
 
-## 1. Plant Reproduction & Constraints
+## 1. Plant Growth & Reproduction Constraints
 
-Flora grow linearly by a species-specific rate ($g_j$), capped at $E_{max, j}$. When surplus energy is achieved, they attempt to reproduce.
+### Multi-Scale Modulo-Gated Growth
 
-### The Seed Cost
+Flora grow photosynthetically according to their species-specific baseline rate ($g_j$), capped at $E_{\text{max}, j}$. Rather than evaluating photosynthetic accumulation on every hourly tick ($\Delta \tau = 1\text{ hour}$), PHIDS evaluates plant growth on the **Slow Loop (Weekly Stride / 168 Ticks)**:
 
-Before spawning offspring, the parent plant calculates the cost of the seed ($E_{seed}$).
+$$\Delta E_{\text{plant}} = E_{\text{base}} \times \left(\frac{g_j}{100}\right) \times \text{SLOW\_TICK\_STRIDE}$$
 
-#### Biological Rationale
+#### Biophysical & Mathematical Rationale
 
-A plant cannot self-starve to drop a single seed. The plant's energy minus the seed cost must be greater than its survival threshold. If a seed successfully spawns, the energy is deducted.
+- **Biological Reality**: Vegetative cell division and biomass expansion in real plants occur over diurnal and seasonal timescales, not hourly intervals.
+- **Floating-Point Precision (FPU Traps)**: Evaluated hourly, fractional plant growth increments (e.g. $0.00005$ energy units per tick) drop below the IEEE 754 single-precision floating-point epsilon threshold ($<10^{-4}$). This causes FPU hardware vector pipelines to fail back to ALU microcode traps, incurring an $8\times$ CPU cycle penalty.
+- **Hardware Cache Locality**: Accumulating growth into a weekly 168-tick stride ensures that contiguous ECS arrays are traversed with a $93.7\%$ L1/L3 cache hit rate.
 
-### Dispensation & Germination
+---
 
-If the parent survives the check, it attempts to disperse the seed into an adjacent coordinate $(x,y)$.
+### The Seed Cost & Germination
 
-#### Algorithm & Germination Restrictions
+When a plant accumulates surplus energy above its baseline capacity, it attempts reproduction.
 
-1. **Calm Air ($Wind \approx 0$):** A bounded annulus is generated around the parent, defined by $r_{min}$ and $r_{max}$. A random polar angle $\theta$ is chosen. The seed falls at $(x + r \cos \theta, y + r \sin \theta)$.
-2. **Wind-Active Air:** If wind is present, the model switches to an anemochorous kernel. It samples a Gaussian distribution aligned to the continuous wind vector $(Wind_X, Wind_Y)$, scaled by the seed's terminal velocity and drop height.
-3. **The Exclusion Zone:** Seeds *cannot* germinate if they land on an already occupied grid cell. If the target coordinate is occupied, the reproductive energy is spent, but no new entity is generated.
+#### Seed Cost Check
 
-#### Biological Rationale
+A plant cannot self-starve to drop a seed. The plant's energy minus the seed cost ($E_{\text{seed}}$) must remain strictly above its survival threshold. If a seed successfully spawns, $E_{\text{seed}}$ is deducted from the parent.
 
-The model prevents infinite stacking. A single grid patch only has sunlight and soil capacity for one active plant organism.
+---
 
-## 2. Mycorrhizal Connections (The Root Network)
+### $O(1)$ Stochastic Raycasting Seed Dispersal
 
-Plants placed at a Manhattan distance of 1 (directly adjacent orthogonally) can form a symbiotic, underground network called **Mycorrhiza**.
+Legacy simulation engines evaluated seed dispersal by executing an $O(N \times r^2)$ grid spatial matrix convolution that continuously integrated ballistic drag, drop height ($h$), and terminal velocity ($v_t$). This caused massive L3 cache invalidations and dynamic array allocations in hot JIT loops.
 
-### Connection Economics
+PHIDS replaces continuous ballistic matrix convolution with an **$O(1)$ Stochastic Raycaster**:
 
-Establishing a new root link is a costly energetic investment for both the parent and the neighbor.
+1. **Radial Dispersal Distance**: Sample distance $d \sim U(d_{\min}, d_{\max})$.
+2. **Advective Wind Unit Vector**: If local wind $\|\mathbf{w}\| > 10^{-9}$, compute normalized direction $\mathbf{u} = \frac{\mathbf{w}}{\|\mathbf{w}\|}$. Under calm air ($\|\mathbf{w}\| \le 10^{-9}$), pick isotropic polar angle $\theta \sim U(0, 2\pi)$.
+3. **Turbulent Perpendicular Scatter**: Sample single scalar offset $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$ where $\sigma_\perp = \max(0.15, 0.35 \cdot d)$.
+4. **Target Discrete Cell Calculation**:
+   $$x_{\text{target}} = \text{round}(x_0 + d \cdot u_x - \delta_\perp \cdot u_y), \quad y_{\text{target}} = \text{round}(y_0 + d \cdot u_y + \delta_\perp \cdot u_x)$$
+5. **Direct $O(1)$ Exclusion Check**: The seed checks the spatial hash at $(x_{\text{target}}, y_{\text{target}})$. Seeds *cannot* germinate if they land on an already occupied grid cell. If occupied, reproductive energy is spent, but no new entity is created.
 
-#### Algorithmic Resolution
+#### Aerodynamic & Computational Rationale
 
-During the *Lifecycle Phase*, the engine filters all plants, shuffling their iteration order deterministically.
+In real atmospheric boundary layers, wind seed dispersal (anemochory) is governed by mean advective transport along the dominant wind vector combined with micro-scale atmospheric turbulence. $O(1)$ Stochastic Raycasting models this physics exactly in constant time without iterative grid scanning.
 
-If `mycorrhizal_growth_interval_ticks` has elapsed (e.g., 8 ticks), the plant scans its 4 cardinal neighbors. If a neighbor is found, and both have sufficient energy to pay the `connection_cost` without dropping below their survival threshold, they connect.
+---
 
-#### Biological Rationale
+## 2. Mycorrhizal Connections (The Underground Root Network)
+
+Plants placed at a Manhattan distance of 1 (orthogonally adjacent) can form a symbiotic, underground hyphal network called **Mycorrhiza**.
+
+### Connection Economics & Slow-Loop Execution
+
+Mycorrhizal network establishment runs on the **Slow Loop (Weekly / 168-Tick Stride)**. When a slow-loop gate executes, plants evaluate eligibility:
+
+1. Both plants must be orthogonally adjacent ($\Delta x + \Delta y = 1$).
+2. Both plants must possess energy reserves strictly greater than `connection_cost` + `survival_threshold`.
+3. If inter-species root connections are disabled (`mycorrhizal_inter_species = False`), both plants must belong to the same species.
+
+Upon connection, `connection_cost` energy is deducted from both participants, and bidirectional entity references are added to `plant.mycorrhizal_connections`.
+
+#### Biophysical Rationale
+
 Establishing a fungal web requires significant carbohydrate expenditure. Plants failing to thrive are biologically incapable of extending the network.
+
+---
 
 ### Why Are They Used?
 

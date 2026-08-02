@@ -68,16 +68,16 @@ Primary state owners:
 * `src/phids/engine/core/ecs.py` (`ECSWorld`) - discrete entities and $O(1)$ spatial hash queries.
 * `src/phids/engine/core/biotope.py` (`GridEnvironment`) - vectorized field layers with read/write double-buffering.
 
-To ensure exact determinism and reproducibility, the engine executes a strict phase sequence:
+To ensure exact determinism and reproducibility, the engine executes a strict phase sequence orchestrated by **Deterministic Multi-Scale Modulo-Gating**:
 
-1. flow field
-2. lifecycle
-3. interaction
-4. signaling
+1. flow field (computed every tick)
+2. lifecycle (modulo-gated stride: plant growth, stochastic raycasting dispersal for seed drops)
+3. interaction (grazing, mitosis)
+4. signaling (VOC synthesis)
 5. termination assessment
 6. double-buffer commit and telemetry flush
 
-Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. Furthermore, the engine employs $O(1)$ fast-path optimizations, such as the **"Anchoring Heuristic"**, which bypasses costly flow-field pathfinding for swarms currently positioned directly on food sources, drastically reducing CPU overhead during grazing events. Finally, the spatial `GridEnvironment` enforces the **Rule of 16** (maximum 16 species/substances) to ensure predictable $L1/L2$ cache utilization and invariant execution times.
+Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. The engine employs $O(1)$ fast-path optimizations, such as **Stochastic Raycasting Dispersal** (for anemochorous flora trajectories) and the **"Anchoring Heuristic"** (bypassing costly flow-field pathfinding for swarms on food sources). Finally, the spatial `GridEnvironment` enforces the **Rule of 16** (maximum 16 species/substances) to ensure predictable $L1/L2$ cache utilization and invariant execution times.
 
 ### UI & WebSockets: FastAPI, HTMX & TailwindCSS
 
@@ -89,7 +89,7 @@ Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS 
 
 ### Agentic Integration: MCP Server Support
 
-PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration) and query `recent_logs()`. This enables autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
+PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely execute diagnostic workflows, read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration), and query complex batch outcomes via `query_batch_jobs()`. This enables autonomous scenario tuning, diagnostic debugging, telemetry schema inspection, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
 
 ### 🧬 Evolutionary Design Space Exploration (DSE) & Empirical Database
 
@@ -144,6 +144,7 @@ trigger-rule matrices, initial placements, wind conditions, and termination cons
 
 Curated examples are provided under `examples/`, including:
 
+* `examples/ecosystem_equilibrium_benchmark_200x200.json` (High-density, multi-species Lotka-Volterra trophic equilibrium)
 * `examples/dry_shrubland_cycles.json`
 * `examples/meadow_defense.json`
 * `examples/mixed_forest_understory.json`
@@ -202,11 +203,11 @@ Open:
 
 ## ✅ Development, Testing & CI behavior
 
-We enforce strict quality gates to guarantee arithmetic invariants, memory safety, and simulation stability.
+Strict quality gates are enforced to guarantee arithmetic invariants, memory safety, and simulation stability.
 
 ### Two-Pass Numba Testing Strategy
 
-The ECS engine relies heavily on Numba JIT compilation. To ensure both logical correctness and memory-safe machine code generation, our CI pipeline (`scripts/local_ci.sh`) employs a strict **Two-Pass Testing Strategy**:
+The ECS engine relies heavily on Numba JIT compilation. To ensure both logical correctness and memory-safe machine code generation, the CI pipeline (`scripts/local_ci.sh`) employs a strict **Two-Pass Testing Strategy**:
 
 1. **Pass 1: Logic & Coverage (`NUMBA_DISABLE_JIT=1`):** Tests are run with JIT explicitly disabled to enforce pure-Python line coverage and validate branch logic without compilation overhead masking interpreter coverage.
 2. **Pass 2: Compilation Verification:** Tests are re-run with JIT enabled to verify safe machine-code compilation, confirming parametric invariants and ensuring zero runtime segfaults during fast-math execution.

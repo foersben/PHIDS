@@ -155,8 +155,8 @@ To protect the simulation engine from performance regressions across refactoring
 
 #### Features
 
-* **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. Your active branch and uncommitted modifications remain completely untouched.
-* **Worktree Benchmarking:** Use the exact string `worktree` as a reference to automatically benchmark against your current, uncommitted working tree state without relying on the virtual clone.
+* **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. The active branch and uncommitted modifications remain completely untouched.
+* **Worktree Benchmarking:** Use the exact string `worktree` as a reference to automatically benchmark against the current, uncommitted working tree state without relying on the virtual clone.
 * **Directory Support:** Pass a directory instead of a single scenario file to automatically locate and benchmark every JSON scenario inside the folder, generating an overall folder evaluation summary.
 * **JIT-Only Mode:** Use `just bench-compare-jit` or pass `--jit-only` to skip the slow pure Python evaluations, drastically cutting down testing time.
 * **Warmup Phase:** Simulates 10 warmup ticks prior to starting the timer to allow JIT compilation to complete, ensuring the JIT measurements track execution throughput, not compiling latency.
