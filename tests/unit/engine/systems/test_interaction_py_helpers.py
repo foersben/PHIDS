@@ -495,7 +495,7 @@ def test_interaction_random_fallback_and_missing_entity(
 
 
 def test_accumulate_tile_population_bounds() -> None:
-    """Validate _accumulate_tile_population handles valid and out-of-bounds updates gracefully."""
+    """Validate _accumulate_tile_population updates the tile population."""
     from phids.engine.systems.interaction.population import _accumulate_tile_population
 
     tile_pops = [0] * 100
@@ -504,19 +504,3 @@ def test_accumulate_tile_population_bounds() -> None:
     # Valid in-bounds update
     _accumulate_tile_population(tile_pops, x=2, y=3, width=width, delta=5)
     assert tile_pops[3 * 10 + 2] == 5
-
-    # Out-of-bounds negative x
-    _accumulate_tile_population(tile_pops, x=-1, y=3, width=width, delta=5)
-    assert sum(tile_pops) == 5
-
-    # Out-of-bounds x >= width (horizontal out of bounds)
-    _accumulate_tile_population(tile_pops, x=15, y=3, width=width, delta=5)
-    assert sum(tile_pops) == 5
-
-    # Out-of-bounds negative y
-    _accumulate_tile_population(tile_pops, x=2, y=-1, width=width, delta=5)
-    assert sum(tile_pops) == 5
-
-    # Out-of-bounds y >= height (IndexError caught by except block)
-    _accumulate_tile_population(tile_pops, x=2, y=15, width=width, delta=5)
-    assert sum(tile_pops) == 5

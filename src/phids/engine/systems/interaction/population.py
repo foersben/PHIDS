@@ -41,15 +41,10 @@ def _accumulate_tile_population(
             negative for deaths or departures.
 
     """
-    # Entities in PHIDS are constrained within grid boundaries by the movement systems,
-    # however, we enforce 0 <= x < width and y >= 0 to prevent negative indexing or
-    # horizontal row-bleeding. We avoid calculating height via integer division (len // width)
-    # as IndexError will natively catch out-of-bounds vertical indices (y >= height).
-    if 0 <= x < width and y >= 0:
-        try:
-            tile_populations[y * width + x] += delta
-        except IndexError:
-            pass
+    # Entities in PHIDS are constrained within grid boundaries by the movement systems.
+    # We trust the mathematical invariants and avoid defensive bounds checking in this
+    # hot path to optimize JIT throughput.
+    tile_populations[y * width + x] += delta
 
 
 def _co_located_swarm_population(world: ECSWorld, x: int, y: int) -> int:
