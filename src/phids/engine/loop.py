@@ -479,6 +479,13 @@ class SimulationLoop:
                 "death_starvation": 0,
                 "death_lethal_toxin": 0,
             }
+
+            # Modulo-gating: decouple biological timescales.
+            # 1 tick = 1 hour. Daily and weekly gates batch discrete processes
+            # to match their natural biological pace and prevent subnormal float
+            # degradation from per-tick microscopic increments.
+            is_medium_tick: bool = self.tick % 24 == 0  # Daily gate (BMR, feeding)
+            is_slow_tick: bool = self.tick % 168 == 0  # Weekly gate (growth, mitosis, reproduction)
             phase_started = time.perf_counter()
 
             # --------------------------------------------------------
@@ -510,23 +517,32 @@ class SimulationLoop:
 
             # --------------------------------------------------------
             # Phase 2: Lifecycle (grow, connect, reproduce, cull)
+            # Gated to Slow Loop (weekly / 168 ticks) to avoid subnormal
+            # float degradation from per-tick microscopic increments and
+            # to match the natural biological cadence of plant macroscopic
+            # lifecycle events. Per-tick growth is replaced by a single
+            # weekly burst scaled by SLOW_TICK_STRIDE.
             # --------------------------------------------------------
-            run_lifecycle(
-                self.world,
-                self.env,
-                self.tick,
-                cast("dict[int, object]", self._flora_params),
-                mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
-                mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
-                mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
-                plant_death_causes=plant_death_causes,
-            )
+            if is_slow_tick:
+                run_lifecycle(
+                    self.world,
+                    self.env,
+                    self.tick,
+                    cast("dict[int, object]", self._flora_params),
+                    mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
+                    mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
+                    mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
+                    plant_death_causes=plant_death_causes,
+                )
             if debug_summary:
                 phase_timings_ms["lifecycle"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
             # --------------------------------------------------------
             # Phase 3: Interaction (movement, feeding, starvation, mitosis)
+            # Movement (chemotaxis) executes every tick (Fast Loop).
+            # Feeding + Metabolism execute on the Medium Loop (daily, 24-tick stride).
+            # Mitosis executes on the Slow Loop (weekly, 168-tick stride).
             # --------------------------------------------------------
             run_interaction(
                 self.world,
@@ -537,6 +553,8 @@ class SimulationLoop:
                 self.tick,
                 plant_death_causes=plant_death_causes,
                 herbivore_death_causes=herbivore_death_causes,
+                is_medium_tick=is_medium_tick,
+                is_slow_tick=is_slow_tick,
             )
             if debug_summary:
                 phase_timings_ms["interaction"] = (time.perf_counter() - phase_started) * 1000.0

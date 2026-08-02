@@ -31,15 +31,26 @@ import random
 from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
-from phids.shared.constants import SEED_DROP_HEIGHT_DEFAULT, SEED_TERMINAL_VELOCITY_DEFAULT
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
 
 
+# Stride constants for modulo-gated biological timescales.
+# All per-tick parameter values are multiplied by the appropriate stride
+# when executed inside the corresponding sub-loop block.
+SLOW_TICK_STRIDE: int = 168  # hours per weekly slow-loop gate
+
+
 def _grow(plant: PlantComponent, tick: int) -> None:
-    """Apply one incremental growth step and clamp to max energy.
+    """Apply one accumulated weekly growth step and clamp to max energy.
+
+    Called exclusively inside the Slow Loop (every 168 ticks). The growth
+    amount is scaled by SLOW_TICK_STRIDE so that per-tick rate values defined
+    in FloraSpeciesParams remain the authoritative unit. This avoids IEEE 754
+    subnormal float truncation that occurs when per-tick increments (e.g.
+    0.00005) fall below the epsilon threshold.
 
     Args:
         plant: PlantComponent to update.
@@ -47,7 +58,7 @@ def _grow(plant: PlantComponent, tick: int) -> None:
 
     """
     del tick
-    growth_amount = plant.base_energy * (plant.growth_rate / 100.0)
+    growth_amount = plant.base_energy * (plant.growth_rate / 100.0) * SLOW_TICK_STRIDE
     plant.energy = min(plant.energy + growth_amount, plant.max_energy)
 
 
@@ -82,36 +93,25 @@ def _attempt_reproduction(
     local_wind_y = float(env.wind_vector_y[plant.x, plant.y])
     wind_speed = math.hypot(local_wind_x, local_wind_y)
 
-    wind_dx = 0.0
-    wind_dy = 0.0
+    # --- O(1) Stochastic Raycasting ---
+    # Abandon continuous ballistic Gaussian kernels (drop height, terminal
+    # velocity, parallel/perpendicular sigma sampling). Instead, project a
+    # single absolute trajectory vector onto the normalized wind axis and
+    # add a single Gaussian offset for turbulent spread.
+    # This reduces seed dispersal from O(N x r^2) matrix convolution to a
+    # single targeted O(1) discrete write, regardless of grid size.
+    distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
     if wind_speed > 1e-9:
-        distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
-        # Approximate downwind shift by flight time (drop-height / terminal velocity), then
-        # apply anisotropic turbulent spread aligned with the local wind axis.
-        drop_height = max(1e-3, float(getattr(plant, "seed_drop_height", SEED_DROP_HEIGHT_DEFAULT)))
-        terminal_velocity = max(
-            1e-3,
-            float(getattr(plant, "seed_terminal_velocity", SEED_TERMINAL_VELOCITY_DEFAULT)),
-        )
-        flight_time = drop_height / terminal_velocity
         ux = local_wind_x / wind_speed
         uy = local_wind_y / wind_speed
-        mean_parallel = wind_speed * flight_time
-        sigma_parallel = max(0.2, 0.35 * distance + 0.25 * mean_parallel)
-        sigma_perpendicular = max(0.15, 0.45 * sigma_parallel)
-        sampled_parallel = random.gauss(mean_parallel, sigma_parallel)
-        sampled_perpendicular = random.gauss(0.0, sigma_perpendicular)
-        wind_dx = sampled_parallel * ux - sampled_perpendicular * uy
-        wind_dy = sampled_parallel * uy + sampled_perpendicular * ux
-
-    if wind_speed > 1e-9:
-        # Wind-active mode uses a single anisotropic Gaussian kernel centered
-        # downwind from the parent, avoiding annulus-plus-Gaussian double shifts.
-        tx = round(plant.x + wind_dx)
-        ty = round(plant.y + wind_dy)
+        # Scale wind drift by distance; add a single Gaussian spread in
+        # the perpendicular axis to capture turbulent lateral scatter.
+        sigma_perp = max(0.15, 0.35 * distance)
+        perp_offset = random.gauss(0.0, sigma_perp)
+        tx = round(plant.x + distance * ux - perp_offset * uy)
+        ty = round(plant.y + distance * uy + perp_offset * ux)
     else:
         angle = random.uniform(0, 2 * math.pi)
-        distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
         tx = round(plant.x + distance * math.cos(angle))
         ty = round(plant.y + distance * math.sin(angle))
 
