@@ -372,13 +372,19 @@ def _establish_mycorrhizal_connections(
 
 
 def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) -> bool:
-    """Return whether this lifecycle tick may grow one new root link.
+    """Return whether this lifecycle tick may grow new root links.
 
-    The first growth attempt happens only after ``growth_interval_ticks``
-    lifecycle passes have elapsed, which keeps root-network expansion slow
-    by default while remaining deterministic.
+    Supports both continuous per-tick interval gating (for direct unit calls)
+    and weekly slow-loop stride gating (for full simulation runs).
     """
-    return growth_interval_ticks <= 1 or (tick + 1) % growth_interval_ticks == 0
+    if growth_interval_ticks <= 1:
+        return True
+    if (tick + 1) % growth_interval_ticks == 0:
+        return True
+    if tick > 0 and tick % SLOW_TICK_STRIDE == 0:
+        slow_step = tick // SLOW_TICK_STRIDE
+        return slow_step % max(1, growth_interval_ticks) == 0 or growth_interval_ticks <= SLOW_TICK_STRIDE
+    return False
 
 
 def run_lifecycle(
