@@ -17,7 +17,7 @@ resources:
 - docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
 
-# AI Coevolution & Distributed DSE Engine (v3.2 Future Prospect)
+# AI Coevolution & Distributed DSE Engine (v3.2 Future Prospect) [Realized]
 
 This document details the planned framework for distributed multi-objective Design Space Exploration (DSE) and reinforcement learning-driven coevolutionary optimization in PHIDS.
 

@@ -126,7 +126,7 @@ block-beta
 
 To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically, PHIDS cannot rely on arbitrary grid units and abstract ticks. This phase rigorously enforces Dimensional Anchoring and integrates a multi-scale temporal loop to support high-fidelity biological abstraction.
 
-### Sub-Stage 3.1: Dimensional Anchoring & Modulo-Gated Loops (v3.1)
+### Sub-Stage 3.1: Dimensional Anchoring & Modulo-Gated Loops (v3.1) [Realized]
 
 * **Biological Target**: Lock the simulation scale to explicit physical units ($\Delta L = 1\text{m}$, $\Delta \tau = 1\text{hr}$, $\Delta E = 100\text{kcal}$) and decouple biological rules by their natural frequency.
 * **Standalone Researcher Utility**: Enables massive temporal scaling where VOC diffusion (seconds) and plant growth (months) can be modeled simultaneously without floating-point errors.
@@ -139,7 +139,7 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 * **Computational Target**: Shift from Moore (8-way) to Von Neumann (4-way) to halve DRAM fetches. Utilize 128-bit XMM / 512-bit ZMM SIMD vectors for batch Softmax probability generation ($\sim 20$ cycles per swarm).
 * **Implementation Scope**: Transition movement kernels. Implement Volumetric Collision using branchless boolean masking (`prob * (biomass < max_cap)`) to prevent CPU pipeline flushes from branch mispredictions in the spatial hash.
 
-### Sub-Stage 3.3: O(1) Stochastic Raycasting for Seed Dispersal (v3.3)
+### Sub-Stage 3.3: O(1) Stochastic Raycasting for Seed Dispersal (v3.3) [Realized]
 
 * **Biological Target**: Solve the seed dispersal computational bottleneck during massive reproduction waves.
 * **Computational Target**: Reduce algorithmic complexity from $O(N \times r^2)$ ($\sim 15\text{ ms}$ for 10k plants) to $O(N)$ ($\sim 20\,\mu\text{s}$ via `PCG64` generator).
@@ -155,7 +155,7 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 * **Standalone Researcher Utility**: Enables real-time simulation of massive biotope grids ($2048 \times 2048$ to $4096 \times 4096$) at over 60 FPS.
 * **Implementation Effort & Scope**: High ($\sim 800$ LOC; CUDA kernel bindings). Offloads CPU memory; GPU execution time $< 0.20\text{ ms/tick}$.
 
-### Sub-Stage 4.2: AI Agent Design Space Exploration (DSE) & Coevolution (v4.2)
+### Sub-Stage 4.2: AI Agent Design Space Exploration (DSE) & Coevolution (v4.2) [Realized]
 
 * **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios.
 * **Standalone Researcher Utility**: Provides evolutionary biologists with automated discovery of non-dominated evolutionary stable strategies (ESS) for plant chemical and morphological defense.
