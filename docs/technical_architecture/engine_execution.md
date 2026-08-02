@@ -50,9 +50,17 @@ Entities in PHIDS are lightweight, data-only records lacking encapsulated logic.
 
 To avoid $O(N)$ list allocations on every tick when systems iterate over component types, `ECSWorld` implements a `_structural_version` cache. The registry caches materialized query lists, only incrementing the version and invalidating the cache when entities or components are structurally added or removed. This provides near-instant lookup speeds for all hot-path systems on steady-state ticks.
 
-### $O(1)$ Locality Resolution
+### $O(1)$ Locality Resolution & Toroidal Geometry
 
-To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial Hash-a dictionary mapping $(x,y)$ coordinates to the sets of residing `entity_id`s. When an herbivore feeds, or a plant checks for grazing pressure, it queries the spatial hash at its immediate coordinate to retrieve co-located entities. This completely negates the need for global proximity iterations across the map.
+To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial Hash—a dictionary mapping $(x,y)$ coordinates to the sets of residing `entity_id`s. When an herbivore feeds, or a plant checks for grazing pressure, it queries the spatial hash at its immediate coordinate to retrieve co-located entities.
+
+To eliminate boundary edge-effect distortions and enforce strict physical mass conservation across arbitrary grid dimensions, PHIDS implements a **Toroidal (periodic wrap-around) Topology** across both discrete entity space and continuous biotope fields:
+
+- **Branchless Coordinate Wrapping**: All spatial coordinate updates enforce branchless modulo arithmetic: $x_{\text{wrapped}} = (x + \Delta x) \pmod W$ and $y_{\text{wrapped}} = (y + \Delta y) \pmod H$, completely eliminating branch mispredictions in Numba `@njit` loop kernels.
+- **Toroidal Spatial Distance**: Spatial distance between points $(x_1, y_1)$ and $(x_2, y_2)$ accounts for wrap-around seam boundaries:
+  $$\Delta x_{\text{toroidal}} = \min(|x_1 - x_2|, W - |x_1 - x_2|)$$
+  $$\Delta y_{\text{toroidal}} = \min(|y_1 - y_2|, H - |y_1 - y_2|)$$
+- **Shortest-Seam Inertia Vector Alignment**: When swarms cross boundary seams (e.g. from $x=W-1$ to $x=0$), inertia deltas are normalized to $\Delta x = -1$ rather than $-(W-1)$, ensuring smooth kinematic trajectory continuation across wrap boundaries.
 
 ### Active Garbage Collection
 

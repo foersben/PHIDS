@@ -83,3 +83,26 @@ def _collect_mycorrhizal_targets(
             continue
         targets.append(neighbour)
     return targets
+
+
+def toroidal_distance(x1: int, y1: int, x2: int, y2: int, width: int, height: int) -> float:
+    """Calculate shortest Euclidean distance across a toroidal grid seam.
+
+    Args:
+        x1: X coordinate of first point.
+        y1: Y coordinate of first point.
+        x2: X coordinate of second point.
+        y2: Y coordinate of second point.
+        width: Grid width.
+        height: Grid height.
+
+    Returns:
+        float: Shortest distance considering wrap-around boundary.
+    """
+    import math
+
+    dx = abs(x1 - x2)
+    dy = abs(y1 - y2)
+    tdx = min(dx, width - dx)
+    tdy = min(dy, height - dy)
+    return math.hypot(tdx, tdy)

@@ -81,20 +81,17 @@ def _sum_neighbours_jit(
         The sum of the neighbours and the number of neighbours.
     """
     neighbours_sum = 0.0
-    neighbour_count = 0
-    if x > 0:
-        neighbours_sum += current[x - 1, y]
-        neighbour_count += 1
-    if x < width - 1:
-        neighbours_sum += current[x + 1, y]
-        neighbour_count += 1
-    if y > 0:
-        neighbours_sum += current[x, y - 1]
-        neighbour_count += 1
-    if y < height - 1:
-        neighbours_sum += current[x, y + 1]
-        neighbour_count += 1
-    return neighbours_sum, neighbour_count
+    count = 0
+    if width > 1:
+        neighbours_sum += current[(x - 1) % width, y] + current[(x + 1) % width, y]
+        count += 2
+    if height > 1:
+        neighbours_sum += current[x, (y - 1) % height] + current[x, (y + 1) % height]
+        count += 2
+
+    if count == 0:
+        return 0.0, 0
+    return neighbours_sum, count
 
 
 @njit(cache=True)

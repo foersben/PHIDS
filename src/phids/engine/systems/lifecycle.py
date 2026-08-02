@@ -115,9 +115,9 @@ def _attempt_reproduction(
         tx = round(plant.x + distance * math.cos(angle))
         ty = round(plant.y + distance * math.sin(angle))
 
-    # Boundary check
-    if not (0 <= tx < env.width and 0 <= ty < env.height):
-        return []
+    # Toroidal coordinate wrap
+    tx = tx % env.width
+    ty = ty % env.height
 
     # Germination condition: target cell must be unoccupied by any plant
     occupants = world.entities_at(tx, ty)
@@ -224,9 +224,7 @@ def _find_valid_mycorrhizal_neighbours(
     """
     neighbours: list[PlantComponent] = []
     for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-        nx, ny = plant.x + dx, plant.y + dy
-        if not (0 <= nx < env.width and 0 <= ny < env.height):
-            continue
+        nx, ny = (plant.x + dx) % env.width, (plant.y + dy) % env.height
         for neighbour in pos_index.get((nx, ny), []):
             if _is_mycorrhizal_neighbour_eligible(
                 neighbour=neighbour,

@@ -90,24 +90,27 @@ def _numba_diffuse_signal_layer(
     """
     advected_scratch.fill(0.0)
 
-    # 1. Semi-Lagrangian Advection (backward interpolation)
+    # 1. Semi-Lagrangian Advection (backward interpolation with Toroidal wrap)
     for x in range(width):
         for y in range(height):
             cx = float(x) - wind_x[x, y]
             cy = float(y) - wind_y[x, y]
 
-            x0 = int(np.floor(cx))
-            y0 = int(np.floor(cy))
-            x1 = x0 + 1
-            y1 = y0 + 1
+            floor_x = int(np.floor(cx))
+            floor_y = int(np.floor(cy))
 
-            dx = cx - float(x0)
-            dy = cy - float(y0)
+            x0 = floor_x % width
+            y0 = floor_y % height
+            x1 = (floor_x + 1) % width
+            y1 = (floor_y + 1) % height
 
-            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
-            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
-            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
-            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
+            dx = cx - float(floor_x)
+            dy = cy - float(floor_y)
+
+            v00 = layer[x0, y0]
+            v10 = layer[x1, y0]
+            v01 = layer[x0, y1]
+            v11 = layer[x1, y1]
 
             val_y0 = v00 * (1.0 - dx) + v10 * dx
             val_y1 = v01 * (1.0 - dx) + v11 * dx
@@ -115,8 +118,8 @@ def _numba_diffuse_signal_layer(
 
             advected_scratch[x, y] = val
 
-    # 2. Gaussian Diffusion (Convolution) & Decay
-    # We must support an arbitrarily sized symmetric 2D kernel.
+    # 2. Toroidal Gaussian Diffusion (Convolution) & Decay
+    # Branchless stencil lookup across toroidal boundaries
     k_w = kernel.shape[0]
     k_h = kernel.shape[1]
     k_w_half = k_w // 2
@@ -126,15 +129,10 @@ def _numba_diffuse_signal_layer(
         for y in range(height):
             v = 0.0
             for i in range(-k_w_half, k_w_half + 1):
-                ax = x - i
-                # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
-                # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
-                # measurably improving Numba JIT inner-loop vectorization and tick speed.
-                if 0 <= ax < width:
-                    for j in range(-k_h_half, k_h_half + 1):
-                        ay = y - j
-                        if 0 <= ay < height:
-                            v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+                ax = (x - i) % width
+                for j in range(-k_h_half, k_h_half + 1):
+                    ay = (y - j) % height
+                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
 
             v *= decay
             if v < epsilon:
