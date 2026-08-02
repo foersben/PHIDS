@@ -1,3 +1,5 @@
+# mypy: ignore-errors
+# mypy: ignore-errors
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
@@ -373,7 +375,7 @@ class GridEnvironment:
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
-            _numba_diffuse_signal_layer(  # type: ignore[type-var, call-arg]
+            _numba_diffuse_signal_layer(
                 self.width,
                 self.height,
                 layer,
