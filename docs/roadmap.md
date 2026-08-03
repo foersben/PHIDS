@@ -188,6 +188,7 @@ While PHIDS intentionally omits individual chronological aging in core execution
    $$
 
    Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
+
 3. **Multi-Cohort Stage Partitioning (Matrix Model)**:
    Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs, maintaining SIMD vectorization while capturing fine-grained age demographics.
 
