@@ -35,7 +35,7 @@ phids = "phids.__main__:main"
 
 [dependency-groups]
 pipeline = [
-    "duckdb>=1.1.0",
+    "duckdb>=1.5.5",
     "scikit-learn>=1.5.0",
     "huggingface-hub>=0.24.0",
     "httpx2>=2.7.0",
