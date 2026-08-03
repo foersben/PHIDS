@@ -41,8 +41,19 @@ jobs:
           NUMBA_DISABLE_JIT: "1"
         run: |
           uv run pytest --cov=src/phids --cov-report=xml -o "addopts="
-          COMPARE_BRANCH="${{ github.event.pull_request.base.ref || github.ref_name }}"
-          uvx diff-cover coverage.xml --compare-branch="origin/$COMPARE_BRANCH" --fail-under=80
+          BASE_REF="${{ github.event.pull_request.base.ref || 'main' }}"
+          if git rev-parse --verify "origin/$BASE_REF" >/dev/null 2>&1; then
+            TARGET_REF="origin/$BASE_REF"
+          elif git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+            TARGET_REF="$BASE_REF"
+          elif git rev-parse --verify "origin/main" >/dev/null 2>&1; then
+            TARGET_REF="origin/main"
+          elif git rev-parse --verify "main" >/dev/null 2>&1; then
+            TARGET_REF="main"
+          else
+            TARGET_REF="HEAD~1"
+          fi
+          uvx diff-cover coverage.xml --compare-branch="$TARGET_REF" --fail-under=80
 
       - name: Pass 2 - Numba Compilation
         run: uv run pytest tests/integration/systems/test_full_numba_jit_compilation.py tests/integration/systems/test_interaction_invariants/ -x -q -o "addopts="
@@ -89,7 +100,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Generate Sloc, Cloc and Code (scc) Report
-        run: docker run --rm -v "${{ github.workspace }}:/pwd:ro" ghcr.io/boyter/scc:master scc /pwd
+        run: docker run --rm -v "${{ github.workspace }}:/pwd:ro" ghcr.io/boyter/scc:master scc --exclude-dir examples /pwd
 
   cognitive-complexity:
     name: Complexipy SARIF Scan

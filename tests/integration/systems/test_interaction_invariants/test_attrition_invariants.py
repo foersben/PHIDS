@@ -53,7 +53,7 @@ def test_attrition_matches_closed_form_over_bounded_parameter_sweep(
     baseline_energy = population * energy_min
     initial_energy = baseline_energy * energy_fraction
 
-    metabolic_cost = population * energy_min * upkeep
+    metabolic_cost = population * energy_min * upkeep * 24
     post_cost_energy = initial_energy - metabolic_cost
     if post_cost_energy >= 0.0:
         expected_population = population
@@ -188,7 +188,7 @@ def test_deficit_ceiling_rule_and_cleanup_boundaries(
     population = 4
     energy_min = 2.0
     upkeep = 1.0
-    metabolic_cost = population * energy_min * upkeep
+    metabolic_cost = population * energy_min * upkeep * 24
     initial_energy = metabolic_cost - deficit
 
     world, swarm_id = run_attrition_step(

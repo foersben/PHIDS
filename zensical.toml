@@ -91,10 +91,13 @@ Scenarios = [
     { "Overview" = "scenario_guide/index.md" },
     { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
     { "Curated Examples" = "scenario_guide/curated_examples.md" },
-    { "Design Space Exploration (DSE)" = "scenario_guide/design_space_exploration.md" },
-    { "Empirical Database" = "scenario_guide/empirical_database.md" },
+    { "Work in Progress" = [
+        { "Design Space Exploration (DSE)" = "scenario_guide/design_space_exploration.md" },
+        { "Empirical Database" = "scenario_guide/empirical_database.md" },
+    ] },
     { "Future Prospects" = [
         { "AI Coevolution & Distributed DSE" = "scenario_guide/future_prospects/ai_coevolution_dse.md" },
+        { "Agentic Diagnostic Log Writer" = "scenario_guide/future_prospects/agentic_log_writer.md" },
     ] },
 ]
 

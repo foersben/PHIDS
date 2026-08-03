@@ -12,7 +12,7 @@ install:
     @just setup
 
 test:
-    uv run pytest
+    uv run --all-groups pytest
 
 mutate:
     uv run mutmut run
