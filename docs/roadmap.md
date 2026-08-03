@@ -140,7 +140,7 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 * **Biological Target**: Convert precise individual collision mechanics into abstracted fluid-like macro-diffusion (Gradient Ascent via Softmax).
 * **Why (The Problem)**: Traditional entity-collision models scale as $O(N^2)$, which halts execution at ecosystem scales. Individual collision checking also introduces massive CPU branch mispredictions.
 * **How (The Implementation)**: We treat swarms as a probabilistic fluid, moving them toward resource gradients. By substituting conditional boundary checks with boolean logic arrays, the CPU pipeline is never flushed.
-* **Computational Target**: Shift from Moore (8-way) to Von Neumann (4-way) to halve DRAM fetches. Utilize 128-bit XMM / 512-bit ZMM SIMD vectors for batch Softmax probability generation ($\sim 20$ cycles per swarm).
+* **Computational Target**: Utilize Von Neumann (4-way) kinematics to halve DRAM fetches compared to Moore neighborhoods. Utilize 128-bit XMM / 512-bit ZMM SIMD vectors for batch Softmax probability generation ($\sim 20$ cycles per swarm).
 * **Implementation Scope**: Transition movement kernels. Implement Volumetric Collision using branchless boolean masking (`prob * (biomass < max_cap)`) to prevent CPU pipeline flushes from branch mispredictions in the spatial hash.
 
 ### Sub-Stage 3.3: O(1) Stochastic Raycasting for Seed Dispersal (v3.3) [Realized]
@@ -163,11 +163,15 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 * **Standalone Researcher Utility**: Enables real-time simulation of massive biotope grids ($2048 \times 2048$ to $4096 \times 4096$) at over 60 FPS.
 * **Implementation Effort & Scope**: High ($\sim 800$ LOC; CUDA kernel bindings). Offloads CPU memory; GPU execution time $< 0.20\text{ ms/tick}$.
 
-### Sub-Stage 4.2: AI Agent Design Space Exploration (DSE) & Coevolution (v4.2) [Realized]
+### Sub-Stage 4.2: AI Agent Design Space Exploration (DSE) & Coevolution (v4.2)
 
 * **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios.
 * **Why (The Problem)**: Exploring multidimensional trait parameters manually is statistically blind. We need algorithms that can dynamically search the hyper-cube of genetic configurations to locate evolutionary stable peaks.
 * **How (The Implementation)**: Utilize Ray/Tune to orchestrate parallel headless instances of the simulator, evaluating fitness gradients ($J_{\text{eco}}$) across millions of mutations.
+* **What the AI Agents Do**: 
+    * The AI acts as an evolutionary meta-optimizer (a "genetic puppet master"). During headless simulations, the AI agent dynamically tweaks specific multi-dimensional species traits (e.g., VOC emission rates, root depth allocation, toxin biosynthesis pathways).
+    * It runs thousands of identical simulation seeds with varied traits, measures long-term biomass survivability ($J_{\text{eco}}$), and iteratively mutates these traits across generations.
+    * Rather than controlling real-time swarm movement, the AI's role is to "design" the optimal genetic blueprint for the species to survive the specified simulated biotope conditions.
 * **Standalone Researcher Utility**: Provides evolutionary biologists with automated discovery of non-dominated evolutionary stable strategies (ESS) for plant chemical and morphological defense.
 * **Implementation Effort & Scope**: High ($\sim 700$ LOC; Ray/Tune distributed integration). Cluster-scale parallel execution ($O(N_{\text{simulations}})$).
 
