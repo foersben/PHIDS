@@ -49,7 +49,7 @@ _SIGMA: float = 0.4
 def _sample_layer(layer: npt.NDArray[np.float64], x: int, y: int, width: int, height: int) -> float:
     """Sample a layer with boundary checking."""
     if 0 <= x < width and 0 <= y < height:
-        return layer[x, y]
+        return float(layer[x, y])
     return 0.0
 
 
@@ -138,10 +138,10 @@ def _numba_diffuse_signal_layer(
             dx = cx - float(x0)
             dy = cy - float(y0)
 
-            v00 = _sample_layer(layer, x0, y0, width, height)
-            v10 = _sample_layer(layer, x1, y0, width, height)
-            v01 = _sample_layer(layer, x0, y1, width, height)
-            v11 = _sample_layer(layer, x1, y1, width, height)
+            v00 = _sample_layer(layer, x0, y0, width, height)  # type: ignore[type-var, call-arg]
+            v10 = _sample_layer(layer, x1, y0, width, height)  # type: ignore[type-var, call-arg]
+            v01 = _sample_layer(layer, x0, y1, width, height)  # type: ignore[type-var, call-arg]
+            v11 = _sample_layer(layer, x1, y1, width, height)  # type: ignore[type-var, call-arg]
 
             val_y0 = v00 * (1.0 - dx) + v10 * dx
             val_y1 = v01 * (1.0 - dx) + v11 * dx
@@ -158,7 +158,7 @@ def _numba_diffuse_signal_layer(
 
     for x in range(width):
         for y in range(height):
-            v = _convolve_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)
+            v: float = _convolve_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)  # type: ignore[type-var, call-arg, assignment]
             v *= decay
             if v < epsilon:
                 v = 0.0
