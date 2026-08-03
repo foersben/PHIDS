@@ -41,12 +41,12 @@ flowchart TD
     classDef database fill:#34495e,stroke:#2c3e50,stroke-width:2px,color:#fff;
 
     %% One-Time Initial Ingress
-    Init([Initial Pre-Phase<br/>Design Space Delimitation]):::initial
+    Init(["Initial Pre-Phase<br/>Design Space Delimitation"]):::initial
 
     %% Encapsulated Evolutionary Loop Nodes
-    G{{Genotypes<br/>(Heuristic Sub-DSE Solvers)}}:::genotype
-    P{{Phenotypes<br/>(High-Fidelity Validation)}}:::phenotype
-    DB[(Database & Epistemic<br/>Learning Feedback)]:::database
+    G{{"Genotypes<br/>(Heuristic Sub-DSE Solvers)"}}:::genotype
+    P{{"Phenotypes<br/>(High-Fidelity Validation)"}}:::phenotype
+    DB[("Database & Epistemic<br/>Learning Feedback")]:::database
 
     %% Workflow Edges
     Init -- "Initial Design Spaces<br/>& DSE Models" --> G
@@ -105,6 +105,7 @@ flowchart TD
 $$
 \max_{\mathbf{x}} \; \sum_{j=1}^{16} \left( g_j \cdot y_j - m_j \cdot y_j - c_{mechanical, j} \cdot x_{mech, j} \right)
 $$
+
 $$
 \text{subject to } \sum_{j=1}^{16} \left( e_{build, j} \cdot y_j + e_{armor, j} \cdot x_{mech, j} \right) \le E_{photosynthate}, \quad x_{mech, j} \in \{0, 1\}, \; y_j \in [0, 1]
 $$
@@ -119,6 +120,7 @@ $$
 $$
 \sum_{j=1}^{16} D_{ij} \ge 1 \quad \forall i \in \text{Active Herbivores} \quad (\text{Prevents isolated starving species})
 $$
+
 $$
 \sum_{i=1}^{16} D_{ij} \le K_{predation\_limit} \quad \forall j \in \text{Active Flora} \quad (\text{Prevents over-grazing singularity})
 $$
@@ -131,6 +133,7 @@ $$
 $$
 \alpha_{priming}(C) = \frac{C^n}{K_d^n + C^n}, \quad n \ge 1, \; K_d > 0
 $$
+
 $$
 \text{subject to } \tau_{synthesis} + \tau_{aftereffect} \le \tau_{max\_response}
 $$
@@ -205,7 +208,7 @@ flowchart LR
     classDef sim fill:#3498DB,stroke:#2980B9,stroke-width:2px,color:#fff;
     classDef error fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff;
 
-    Heuristic["Fast Algebraic Guess<br/>(F_heuristic)"]:::model --> Diff(("−"))
+    Heuristic["Fast Algebraic Guess<br/>(F_heuristic)"]:::model --> Diff(("Difference"))
     Sim["Physical Simulation Reality<br/>(F_actual)"]:::sim --> Diff
     Diff --> Delta["Epistemic Error Delta<br/>(Δ_epistemic)"]:::error
 ```
