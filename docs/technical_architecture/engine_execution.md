@@ -58,8 +58,11 @@ To eliminate boundary edge-effect distortions and enforce strict physical mass c
 
 - **Branchless Coordinate Wrapping**: All spatial coordinate updates enforce branchless modulo arithmetic: $x_{\text{wrapped}} = (x + \Delta x) \pmod W$ and $y_{\text{wrapped}} = (y + \Delta y) \pmod H$, completely eliminating branch mispredictions in Numba `@njit` loop kernels.
 - **Toroidal Spatial Distance**: Spatial distance between points $(x_1, y_1)$ and $(x_2, y_2)$ accounts for wrap-around seam boundaries:
+
   $$\Delta x_{\text{toroidal}} = \min(|x_1 - x_2|, W - |x_1 - x_2|)$$
+
   $$\Delta y_{\text{toroidal}} = \min(|y_1 - y_2|, H - |y_1 - y_2|)$$
+
 - **Shortest-Seam Inertia Vector Alignment**: When swarms cross boundary seams (e.g. from $x=W-1$ to $x=0$), inertia deltas are normalized to $\Delta x = -1$ rather than $-(W-1)$, ensuring smooth kinematic trajectory continuation across wrap boundaries.
 
 ### Active Garbage Collection

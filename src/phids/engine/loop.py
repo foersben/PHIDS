@@ -60,6 +60,15 @@ logger = logging.getLogger(__name__)
 
 
 def _metric_float(value: object, default: float) -> float:
+    """Convert telemetry dict values to float with safe fallbacks.
+
+    Args:
+        value: The value to convert.
+        default: The default value to use if the conversion fails.
+
+    Returns:
+        The converted value.
+    """
     if isinstance(value, bool):
         return default
     if isinstance(value, (int, float)):
@@ -73,6 +82,15 @@ def _metric_float(value: object, default: float) -> float:
 
 
 def _metric_int(value: object, default: int) -> int:
+    """Convert telemetry dict values to int with safe fallbacks.
+
+    Args:
+        value: The value to convert.
+        default: The default value to use if the conversion fails.
+
+    Returns:
+        The converted value.
+    """
     if isinstance(value, bool):
         return default
     if isinstance(value, int):
@@ -98,6 +116,23 @@ class SimulationLoop:
     Args:
         config: Validated :class:`~phids.api.schemas.SimulationConfig`.
 
+    Attributes:
+        config: Validated :class:`~phids.api.schemas.SimulationConfig`.
+        tick: Current simulation tick number.
+        running: Whether the simulation is running.
+        paused: Whether the simulation is paused.
+        terminated: Whether the simulation is terminated.
+        termination_reason: The reason for termination.
+        _lock: Lock for synchronising concurrent access.
+        _debug_tick_interval: Interval for logging debug information.
+        _state_revision: Revision counter for cached snapshots.
+        _cached_snapshot_tick: The tick number of the cached snapshot.
+        _cached_snapshot: Cached simulation snapshot.
+        run_id: Unique identifier for the simulation run.
+        env: The grid environment.
+        world: The ECS world.
+        telemetry: The telemetry recorder.
+        replay: The replay backend.
     """
 
     def __init__(self, config: SimulationConfig, *, disable_replay: bool = False) -> None:
@@ -106,7 +141,6 @@ class SimulationLoop:
         Args:
             config: Validated SimulationConfig instance from the API payload.
             disable_replay: If True, disables Zarr replay recording to disk.
-
         """
         self.config = config
         self.tick: int = 0
@@ -262,9 +296,7 @@ class SimulationLoop:
             species_id: Herbivore species identifier to look up.
 
         Returns:
-            float: Configured minimum energy if found, otherwise a sensible
-            default of 1.0.
-
+            Configured minimum energy if found, otherwise a sensible default of 1.0.
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -279,7 +311,6 @@ class SimulationLoop:
 
         Returns:
             int: Movement period in ticks; defaults to 1 when not found.
-
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -294,7 +325,6 @@ class SimulationLoop:
 
         Returns:
             float: Consumption rate if present, otherwise 1.0 by default.
-
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -309,7 +339,6 @@ class SimulationLoop:
 
         Returns:
             float: Reproduction divisor if present, otherwise 1.0.
-
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -324,7 +353,6 @@ class SimulationLoop:
 
         Returns:
             Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
-
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -339,7 +367,6 @@ class SimulationLoop:
 
         Returns:
             Configured split threshold if found; otherwise 10.
-
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
@@ -398,7 +425,13 @@ class SimulationLoop:
         tick_metrics: TickMetrics,
         phase_timings_ms: dict[str, float],
     ) -> None:
-        """Emit a coarse DEBUG snapshot for the current tick."""
+        """Emit a coarse DEBUG snapshot for the current tick.
+
+        Args:
+            latest_metrics: Latest telemetry metrics.
+            tick_metrics: Tick metrics.
+            phase_timings_ms: Phase timings in milliseconds.
+        """
         flora_energy = tick_metrics.total_flora_energy
         if latest_metrics is not None:
             flora_energy = _metric_float(
@@ -456,7 +489,6 @@ class SimulationLoop:
 
         Returns:
             TerminationResult: Termination state after the tick.
-
         """
         async with self._lock:
             if self.terminated:
@@ -672,7 +704,6 @@ class SimulationLoop:
 
         Returns:
             Applied tick-rate value after clamping.
-
         """
         applied = max(0.1, tick_rate_hz)
         self.config.tick_rate_hz = applied
@@ -689,7 +720,6 @@ class SimulationLoop:
         Args:
             vx: The horizontal vector component of the globally applied wind force.
             vy: The vertical vector component of the globally applied wind force.
-
         """
         self.env.set_uniform_wind(vx, vy)
         # Wind can change snapshot content without advancing ticks.
@@ -713,7 +743,6 @@ class SimulationLoop:
         Returns:
             ReplayState: Snapshot containing tick, termination state and
             environment dictionary (from :meth:`GridEnvironment.to_dict`).
-
         """
         if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
             return self._cached_snapshot
