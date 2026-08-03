@@ -1,6 +1,6 @@
 ---
 type: concept
-title: AI Coevolution & Distributed DSE Engine
+title: AI Coevolution & Distributed DSE Engine (v3.2 Future Prospect)
 status: active
 version: 1.0
 description: Future framework for distributed Ray/Tune multi-objective evolutionary algorithms and AI agent coevolution in PHIDS.
@@ -16,8 +16,6 @@ resources:
 - docs/scenario_guide/design_space_exploration.md
 - docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
-
-# AI Coevolution & Distributed DSE Engine (v3.2 Future Prospect)
 
 !!! warning "Status: WIP / CIP Construction Site"
     This feature is strictly a Work-In-Progress (WIP) and Context-In-Process (CIP) construction site. **AI is not used as a massive black box anywhere in PHIDS.** Rather, AI-in-the-loop (AITL) is evaluated strictly as an interpretable assistant to Human-in-the-loop (HITL) exploration, ensuring researchers retain full biological oversight.

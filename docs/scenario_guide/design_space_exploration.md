@@ -57,20 +57,20 @@ where:
 
 * $X_D \in \mathcal{D}$ represents the discrete subspace (categorical and binary choices):
 
-  $$\mathcal{D} = \{S_P, \mathbf{A}, \mathbf{T}\}$$
+    $$\mathcal{D} = \{S_P, \mathbf{A}, \mathbf{T}\}$$
 
-  * $S_P \in \{\text{Uniform}, \text{Clustered}, \text{Banded}\}$: Spatial placement strategy.
-  * $\mathbf{A} \in \{0, 1\}^{N_H \times N_F}$: Diet compatibility matrix ($N_H$ herbivores, $N_F$ flora).
-  * $\mathbf{T} \in \{0, 1\}^{N_F \times N_F}$: Toxin signaling trigger compatibility map.
+    * $S_P \in \{\text{Uniform}, \text{Clustered}, \text{Banded}\}$: Spatial placement strategy.
+    * $\mathbf{A} \in \{0, 1\}^{N_H \times N_F}$: Diet compatibility matrix ($N_H$ herbivores, $N_F$ flora).
+    * $\mathbf{T} \in \{0, 1\}^{N_F \times N_F}$: Toxin signaling trigger compatibility map.
 * $X_C \in \mathcal{C}$ represents the continuous parameters bounded by biological limits:
 
-  $$\mathcal{C} = \prod_{i=1}^{V} [l_i, u_i] \subset \mathbb{R}^V$$
+    $$\mathcal{C} = \prod_{i=1}^{V} [l_i, u_i] \subset \mathbb{R}^V$$
 
-  * Growth rate $g_j \in [0, 1]$
-  * Metabolic upkeep cost $m_i \in [0, \infty)$
-  * Mitosis threshold $e_{\text{rep}, i} \in [m_i, \infty)$
-  * Seed dispersal radius $r_{\text{seed}, j} \in [0, W]$ where $W$ is the grid width.
-  * Chemotaxis parameters: target attraction ($\alpha$), toxin repulsion ($\beta$), signal decay factor, and truncation thresholds.
+    * Growth rate $g_j \in [0, 1]$
+    * Metabolic upkeep cost $m_i \in [0, \infty)$
+    * Mitosis threshold $e_{\text{rep}, i} \in [m_i, \infty)$
+    * Seed dispersal radius $r_{\text{seed}, j} \in [0, W]$ where $W$ is the grid width.
+    * Chemotaxis parameters: target attraction ($\alpha$), toxin repulsion ($\beta$), signal decay factor, and truncation thresholds.
 
 ---
 
