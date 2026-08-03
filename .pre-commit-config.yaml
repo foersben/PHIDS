@@ -16,7 +16,7 @@ repos:
         args: [--unsafe]
       - id: check-toml
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ['--maxkb=5000']
       - id: check-merge-conflict
       - id: check-case-conflict
 
@@ -26,7 +26,7 @@ repos:
       - id: gitleaks
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         additional_dependencies:

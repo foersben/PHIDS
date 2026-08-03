@@ -35,7 +35,7 @@ Traditional mathematical ecology models populations as continuous variables (e.g
 
 ### The PHIDS Model Scope
 
-PHIDS is designed to investigate the complex, emergent phenomena that arise when we constrain these interactions to a physical grid. The simulator explicitly models:
+PHIDS is designed to investigate the complex, emergent phenomena that arise when these interactions are constrained to a physical grid. The simulator explicitly models:
 
 * **Chemotactic Foraging:** Herbivore swarms do not possess omniscient knowledge of the ecosystem. They must navigate the terrain by sensing localized chemical gradients-moving toward areas of high caloric reward while actively avoiding dense concentrations of toxic or repellent compounds.
 * **Constitutive vs. Induced Defenses:** Flora can possess baseline defenses (e.g., camouflage that masks their caloric gradient), but they can also deploy dynamic *induced* defenses. A plant may detect a minimum threshold of grazing pressure before synthesizing a targeted toxin or releasing an airborne alarm signal.
@@ -51,7 +51,8 @@ By providing researchers with the ability to define distinct flora/herbivore spe
 
 PHIDS is engineered as a research-grade simulation backend. To ensure that ecological outputs are mathematically traceable and experimentally reproducible, the system adheres to strict architectural constraints:
 
-* **Deterministic tick ordering** through `SimulationLoop.step()`. Given the same configuration, the simulation will yield the exact same tick-by-tick trajectory.
+* **Deterministic Multi-Scale Modulo-Gating** through `SimulationLoop.step()`. Evaluates fast physical processes (VOC diffusion, micro-chemotaxis) on every tick, daily metabolism on a 24x daily stride, and plant growth/mycorrhiza/reproduction on a 168x weekly stride. This eliminates subnormal IEEE 754 float truncation traps ($<10^{-4}$) while maintaining biological fidelity.
+* **$O(1)$ Stochastic Raycasting Dispersal** replacing $O(N \times r^2)$ spatial matrix convolution. Seeds project along advective wind unit vectors $\mathbf{u}$ with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$ in constant time.
 * **Data-oriented state storage** utilizing an `ECSWorld` to manage biological entities and pre-allocated NumPy array buffers to manage continuous environmental fields.
 * **Global flow-field navigation** instead of independent agent pathfinding. A unified scalar gradient is calculated via Numba JIT compilation, which swarms sample locally.
 * **Double-buffered environmental updates** for diffusion layers to prevent intra-tick read-after-write contamination.
@@ -93,14 +94,15 @@ During the migration from legacy Object-Oriented implementations to the current 
   * [Testing Architecture](technical_architecture/testing_architecture.md)
   [`technical_architecture/`](technical_architecture/system_architecture.md)
 * **Scenarios** - schema semantics, import/export, and curated examples:
-  * [Design Space Exploration (DSE)](scenario_guide/design_space_exploration.md)
+  * [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](scenario_guide/design_space_exploration.md)
+  * [Agentic Diagnostic Log Writer](scenario_guide/future_prospects/agentic_log_writer.md)
   [`scenario_guide/`](scenario_guide/scenario_authoring.md)
-* **Development & Reference** - API Reference, contribution workflows, agent orchestration (MCP), and historical archives:
+* **Development & Reference** - API Reference, contribution workflows, agent orchestration (MCP & AITL Diagnostic Observers), and historical archives:
   [`development_guide/`](development_guide/contribution_workflow.md)
 
 ## How to Read This Site
 
-If you are new to the project, a practical reading order is:
+For initial onboarding, the recommended reading progression is:
 
 1. Start with the deep dives in the [`scientific_model/`](scientific_model/mathematical_framework.md), especially [Chemotaxis & Flow Fields](scientific_model/chemotaxis.md) and [Reaction-Diffusion PDEs](scientific_model/reaction_diffusion.md).
 2. Continue to the architecture overview under [`technical_architecture/system_architecture.md`](technical_architecture/system_architecture.md).

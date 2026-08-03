@@ -8,13 +8,91 @@ from unittest.mock import MagicMock, patch
 
 from phids.mcp_server import (
     active_draft_resource,
+    inspect_live_simulation,
     inspect_telemetry_schema,
+    live_simulation_resource,
     query_batch_jobs,
     query_diagnostic_logs,
     read_batch_summary,
     runtime_snapshot,
+    validate_biological_invariants,
     validate_okf_compliance,
 )
+
+
+def test_live_simulation_resource_idle() -> None:
+    """Test live simulation resource returns idle status when no loop loaded."""
+    result = json.loads(live_simulation_resource())
+    assert result["status"] == "idle"
+
+
+def test_inspect_live_simulation_inactive() -> None:
+    """Test inspect_live_simulation tool returns inactive status when no loop loaded."""
+    result = inspect_live_simulation()
+    assert result["status"] == "inactive"
+
+
+def test_validate_biological_invariants_error() -> None:
+    """Test validate_biological_invariants tool returns error when no loop loaded."""
+    result = validate_biological_invariants()
+    assert result["status"] == "error"
+
+
+def test_live_simulation_tools_with_active_loop() -> None:
+    """Test live simulation resource and tools with a mock SimulationLoop."""
+    mock_loop = MagicMock()
+    mock_loop.running = True
+    mock_loop.paused = False
+    mock_loop.tick = 168
+    mock_loop.config.max_ticks = 1000
+    mock_loop.terminated = False
+    mock_loop.termination_reason = None
+
+    mock_plant = MagicMock()
+    mock_plant.energy = 50.0
+    mock_plant.entity_id = 1
+    mock_plant.mycorrhizal_connections = {2}
+
+    mock_plant2 = MagicMock()
+    mock_plant2.energy = 50.0
+    mock_plant2.entity_id = 2
+    mock_plant2.mycorrhizal_connections = {1}
+
+    mock_swarm = MagicMock()
+    mock_swarm.energy = 10.0
+    mock_swarm.population = 5
+
+    mock_entity1 = MagicMock()
+    mock_entity1.get_component.return_value = mock_plant
+    mock_entity2 = MagicMock()
+    mock_entity2.get_component.return_value = mock_plant2
+    mock_entity3 = MagicMock()
+    mock_entity3.get_component.return_value = mock_swarm
+
+    def query_mock(component_cls: type) -> list[MagicMock]:
+        if "PlantComponent" in component_cls.__name__:
+            return [mock_entity1, mock_entity2]
+        return [mock_entity3]
+
+    mock_loop.world.query.side_effect = query_mock
+    mock_loop.world._entities = {1: mock_entity1, 2: mock_entity2, 3: mock_entity3}
+
+    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        res = json.loads(live_simulation_resource())
+        assert res["status"] == "running"
+        assert res["tick"] == 168
+        assert res["active_plants"] == 2
+        assert res["active_swarms"] == 1
+
+        insp = inspect_live_simulation()
+        assert insp["status"] == "active"
+        assert insp["is_slow_tick"] is True
+        assert insp["plant_count"] == 2
+        assert insp["mycorrhizal_total_links"] == 1
+
+        inv = validate_biological_invariants()
+        assert inv["compliant"] is True
+        assert inv["violations_count"] == 0
 
 
 def test_active_draft_resource() -> None:

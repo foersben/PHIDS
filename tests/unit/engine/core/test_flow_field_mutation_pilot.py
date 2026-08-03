@@ -44,25 +44,23 @@ def _compute_flow_field_impl_test(plant_energy, apparent_nutrition_layer, toxin_
 
 def test_subnormal_clipping_is_strictly_less_than_boundary() -> None:
     """Values below 1e-4 clip to zero, while exactly 1e-4 remains non-zero."""
-    toxin_sum = np.zeros((1, 1, 1), dtype=np.float64)
-
     at_boundary = _compute_flow_field_impl_test(
-        np.array([[1e-4]], dtype=np.float64),
-        np.array([[1.0]], dtype=np.float64),
-        toxin_sum,
-        width=1,
-        height=1,
+        np.array([[0.0, 0.0, 0.0], [0.0, 1e-4, 0.0], [0.0, 0.0, 0.0]], dtype=np.float64),
+        np.ones((3, 3), dtype=np.float64),
+        np.zeros((1, 3, 3), dtype=np.float64),
+        width=3,
+        height=3,
     )
     below_boundary = _compute_flow_field_impl_test(
-        np.array([[9.9e-5]], dtype=np.float64),
-        np.array([[1.0]], dtype=np.float64),
-        toxin_sum,
-        width=1,
-        height=1,
+        np.array([[0.0, 0.0, 0.0], [0.0, 9.9e-5, 0.0], [0.0, 0.0, 0.0]], dtype=np.float64),
+        np.ones((3, 3), dtype=np.float64),
+        np.zeros((1, 3, 3), dtype=np.float64),
+        width=3,
+        height=3,
     )
 
-    assert at_boundary[0, 0] == pytest.approx(1e-4)
-    assert below_boundary[0, 0] == 0.0
+    assert at_boundary[1, 1] == pytest.approx(1e-4)
+    assert below_boundary[1, 1] == 0.0
 
 
 def test_base_term_sign_is_plant_minus_toxin() -> None:
@@ -123,9 +121,11 @@ def test_compute_flow_field_defaults() -> None:
     # Run with absolutely no kwargs
     result_default = compute_flow_field(plant_energy, apparent_nutrition_layer, toxin_layers, 1, 1)
 
-    # Since alpha=1.0, beta=1.0, the calculation for a 1x1 with 1.0 plant and 0.0 toxin
-    # should be exactly 1.0 * (1.0 - 0.0) = 1.0
-    assert result_default[0, 0] == 1.0
+    # Since alpha=1.0, beta=1.0, decay=0.6, the calculation for a 1x1 with 1.0 plant and 0.0 toxin
+    # converges towards 1.0 / (1.0 - 0.6) = 2.5 on an infinite number of iterations.
+    # However, max_iterations for a 1x1 grid is 2, so it does two passes of calculation
+    # ending up exactly at 1.96
+    assert result_default[0, 0] == pytest.approx(1.96)
 
     # And verify the strict float64 dtype requirement
     assert result_default.dtype == np.float64

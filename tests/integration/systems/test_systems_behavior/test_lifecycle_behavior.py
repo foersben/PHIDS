@@ -42,8 +42,8 @@ def test_lifecycle_establishes_mycorrhizal_connections_with_cost(add_plant: Call
     """Verify lifecycle creates reciprocal mycorrhizal links and deducts connection cost."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
-    p1 = add_plant(world, 1, 1, species_id=0, energy=10.0)
-    p2 = add_plant(world, 1, 2, species_id=0, energy=10.0)
+    p1 = add_plant(world, 1, 1, species_id=0, energy=10.0, growth_rate=0.0)
+    p2 = add_plant(world, 1, 2, species_id=0, energy=10.0, growth_rate=0.0)
     params = {0: _flora_params(0)}
     run_lifecycle(
         world,

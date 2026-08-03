@@ -227,3 +227,6 @@ src/phids/analytics/bio_database.json
 src/phids/analytics/bio_database_extended.duckdb
 src/phids/analytics/bio_database_extended.json
 src/data_pipeline/manifest.json
+
+# Benchmarking Scenarios
+examples/benchmarking_*.json
