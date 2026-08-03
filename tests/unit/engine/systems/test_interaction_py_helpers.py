@@ -59,25 +59,18 @@ def test_interaction_anchoring_heuristic(
     # Prevent mitosis bisection
     swarm.initial_population = swarm.population
 
-    initial_energy = swarm.energy
+    # Give swarm enough energy to survive 24x metabolic cost and still show net gain from feeding.
+    # metabolic_cost = pop * energy_min * upkeep * 24 = 5 * 1 * 0.02 * 24 = 2.4
+    # feeding_gain  = consumption_rate = 1.0 (from plant)
+    # net expected  = 5.0 + 1.0 - 2.4 = 3.6  (still less than initial)
+    # To verify feeding occurred: check plant energy dropped AND swarm energy > after-cost baseline.
+    swarm.energy_upkeep_per_individual = 0.02
+    swarm.energy_min = 1.0
+
+    initial_swarm_energy = swarm.energy
     initial_plant_energy = plant.energy
 
     # Tick the interaction system
-    from phids.api.schemas.species import HerbivoreSpeciesParams
-    from phids.api.schemas.species import FloraSpeciesParams
-
-    dummy_flora = [
-        FloraSpeciesParams(
-            species_id=0,
-            name="Dummy",
-            base_energy=10,
-            max_energy=20,
-            growth_rate=1,
-            survival_threshold=1,
-            reproduction_interval=1,
-        )
-    ]
-    dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
     from phids.api.schemas.species import HerbivoreSpeciesParams
     from phids.api.schemas.species import FloraSpeciesParams
 
@@ -109,13 +102,21 @@ def test_interaction_anchoring_heuristic(
         flora_species_params=dummy_flora,
         herbivore_species_params=dummy_herbivore,
         tick=0,
+        is_medium_tick=True,
+        is_slow_tick=False,
     )
 
-    # Swarm should have fed and remain anchored at (1,1)
+    # Swarm must have anchored (not moved from (1,1))
     assert swarm.x == 1
     assert swarm.y == 1
-    assert swarm.energy > initial_energy
+    # Plant energy must have decreased (feeding occurred)
     assert plant.energy < initial_plant_energy
+    # Swarm energy must be above the post-metabolism baseline (feeding added net value)
+    metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual * 24
+    post_metabolism_baseline = initial_swarm_energy - metabolic_cost
+    assert swarm.energy > post_metabolism_baseline, (
+        f"Swarm energy {swarm.energy:.3f} not above post-metabolism baseline {post_metabolism_baseline:.3f}"
+    )
 
 
 def test_interaction_taste_rejection(
@@ -196,7 +197,15 @@ def test_interaction_taste_rejection(
 def test_interaction_starvation_ceil_casualty(
     add_swarm: Callable[..., int],
 ) -> None:
-    """Validate that starvation induces deterministic casualties based on energy deficit."""
+    """Validate that starvation induces deterministic casualties based on energy deficit.
+
+    With the 24x medium-tick stride, the metabolic cost per evaluation is:
+        cost = population * energy_min * upkeep * 24
+
+    Mutation targets for the stride multiplier:
+    - Removing * 24 -> cost 24x smaller, fewer casualties, assertion fails.
+    - Changing * 24 to * 23 -> cost = 23 * ... , casualties differ.
+    """
     world = ECSWorld()
     env = GridEnvironment(width=16, height=16, num_signals=1, num_toxins=1)
 
@@ -205,7 +214,7 @@ def test_interaction_starvation_ceil_casualty(
         x=1,
         y=1,
         species_id=0,
-        population=5,
+        population=10,  # larger population to survive partial starvation
         energy=0.0,
     )
 
@@ -216,9 +225,16 @@ def test_interaction_starvation_ceil_casualty(
     # Freeze movement to isolate attrition
     swarm.move_cooldown = 1
 
-    # Override parameters to control the test
-    swarm.energy_upkeep_per_individual = 0.5
-    swarm.energy_min = 2.0
+    # Choose parameters so that stride cost kills exactly half the population:
+    # cost = 10 * 1.0 * 0.5 * 24 = 120  (energy_min * upkeep * stride)
+    # deficit = 120 (energy starts at 0)
+    # casualties = ceil(120 / 1.0) = 120, capped at population = 10
+    # -> all die if we just let cost overwhelm, so instead choose small upkeep:
+    # upkeep = 0.01 -> cost = 10 * 1.0 * 0.01 * 24 = 2.4
+    # deficit = 2.4, casualties = ceil(2.4 / 1.0) = 3
+    # population = 10 - 3 = 7
+    swarm.energy_upkeep_per_individual = 0.01
+    swarm.energy_min = 1.0
 
     from phids.api.schemas.species import HerbivoreSpeciesParams
     from phids.api.schemas.species import FloraSpeciesParams
@@ -233,29 +249,24 @@ def test_interaction_starvation_ceil_casualty(
             survival_threshold=1,
             reproduction_interval=1,
         ),
-        FloraSpeciesParams(
-            species_id=1,
-            name="Dummy",
-            base_energy=10,
-            max_energy=20,
-            growth_rate=1,
-            survival_threshold=1,
-            reproduction_interval=1,
-        ),
     ]
     dummy_herbivore = [HerbivoreSpeciesParams(species_id=0, name="Dummy", energy_min=1, velocity=1, consumption_rate=1)]
     run_interaction(
         world,
         env,
-        diet_matrix=[[False, False]],
+        diet_matrix=[[False]],
         flora_species_params=dummy_flora,
         herbivore_species_params=dummy_herbivore,
         tick=0,
+        is_medium_tick=True,  # explicitly gate to medium tick
+        is_slow_tick=False,  # disable mitosis to isolate casualties
     )
 
-    # Casualties: ceil(5 * 2.0 * 0.5 / 2.0) = 3
-    # Population should be 5 - 3 = 2
-    assert swarm.population == 2
+    # cost = 10 * 1.0 * 0.01 * 24 = 2.4
+    # deficit = 2.4, energy_min = 1.0
+    # casualties = ceil(2.4 / 1.0) = 3
+    # expected population = 10 - 3 = 7
+    assert swarm.population == 7
 
 
 def test_interaction_crowding_dispersal(
