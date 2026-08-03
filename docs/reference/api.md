@@ -112,7 +112,7 @@ This page exposes the current PHIDS Python API using `mkdocstrings`.
 
 ::: phids.engine.systems.signaling
 
-## Design Space Exploration (DSE)
+## Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)
 
 ::: phids.analytics.bio_database
 

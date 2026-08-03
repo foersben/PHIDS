@@ -22,12 +22,12 @@ dependencies = [
     "mcp>=1.26.0",
     "jinja2>=3.1.6",
     "pandas>=2.2.0",
-    "matplotlib>=3.10.0",
+    "matplotlib>=3.11.1",
     "zarr>=3.0.0",
-    "typer>=0.26.8",
+    "typer>=0.27.0",
     "pandas-stubs~=3.0.3",
-    "deap>=1.4.4",
     "optuna>=4.9.0",
+    "pymoo>=0.6.2",
 ]
 
 [project.scripts]
@@ -35,10 +35,10 @@ phids = "phids.__main__:main"
 
 [dependency-groups]
 pipeline = [
-    "duckdb>=1.1.0",
+    "duckdb>=1.5.5",
     "scikit-learn>=1.5.0",
     "huggingface-hub>=0.24.0",
-    "httpx>=0.27.0",
+    "httpx2>=2.7.0",
     "aiofiles>=24.1.0",
     "pyarrow>=25.0.0",
 ]
@@ -52,9 +52,9 @@ dev = [
     "pytest-asyncio>=0.25.0",
     "pytest-mock>=3.14.0",
     "hypothesis>=6.163.0",
-    "httpx>=0.27.0",
+    "httpx2>=2.7.0",
     "pre-commit>=4.0.0",
-    "zensical>=0.0.46",
+    "zensical>=0.0.51",
     "mkdocstrings[python]>=0.27.0",
     "mkdocs-htmlproofer-plugin>=1.5.0",
     "pyyaml>=6.0.2",
@@ -113,11 +113,12 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/engine/core/test_ecs_mutation_pilot.py",
     "tests/unit/engine/core/test_biotope_diffusion.py",
     "tests/unit/engine/core/test_biotope_state_mutation_pilot.py",
-    "tests/unit/engine/systems/test_systems_mutation_pilot.py",
+    "tests/unit/engine/systems/test_interaction_py_helpers.py",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 asyncio_mode = "auto"
 markers = [
     "benchmark: performance benchmark tests; deselect with -m 'not benchmark'",
@@ -139,10 +140,7 @@ cache_dir = ".cache/pytest"
 [tool.coverage.run]
 source = ["src/phids"]
 data_file = ".cache/coverage"
-omit = [
-    "src/phids/api/templates/*",
-    "src/phids/api/static/*",
-]
+omit = ["src/phids/api/templates/*", "src/phids/api/static/*"]
 
 [tool.coverage.report]
 show_missing = true

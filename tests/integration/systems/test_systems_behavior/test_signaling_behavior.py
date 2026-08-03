@@ -198,3 +198,38 @@ async def test_signaling_relay_splits_fixed_budget_across_air_and_roots(
     run_signaling(world, env, {0: [trigger]}, False, 1, 0)
     total_signal_mass = float(env.signal_layers[0].sum())
     assert total_signal_mass == pytest.approx(SUBSTANCE_EMIT_RATE)
+
+
+def test_signaling_aborts_incomplete_synthesis_when_trigger_leaves(
+    add_plant: Callable[..., int],
+    add_swarm: Callable[..., int],
+) -> None:
+    """Verify incomplete synthesis is cleared and aborted if triggering threat leaves mid-synthesis."""
+    world = ECSWorld()
+    env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
+    add_plant(world, 2, 2, species_id=0, energy=12.0)
+    swarm_id = add_swarm(world, 2, 2, species_id=0, pop=6)
+
+    # Synthesis duration is 3 ticks
+    trigger = TriggerConditionSchema(
+        initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=5),
+        action=SynthesizeSubstanceAction(substance_id=1, synthesis_duration=3, is_toxin=True),
+    )
+
+    # Tick 0: Trigger fires, synthesis starts (synthesis_remaining decrements from 3 to 2)
+    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+    assert sub.synthesis_remaining == 2
+    assert sub.triggered_this_tick is True
+
+    # Swarm leaves before synthesis completes
+    world.unregister_position(swarm_id, 2, 2)
+    world.collect_garbage([swarm_id])
+
+    # Tick 1: Threat is gone. Incomplete synthesis must be aborted and synthesis_remaining cleared.
+    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
+    assert sub.active is False
+    assert sub.synthesis_remaining == 0
+    assert sub.triggered_this_tick is False

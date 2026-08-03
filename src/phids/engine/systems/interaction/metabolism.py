@@ -99,19 +99,19 @@ def _resolve_swarm_metabolism_and_reproduction(
     scratch_cx: npt.NDArray[np.int32],
     scratch_cy: npt.NDArray[np.int32],
     herbivore_death_causes: dict[str, int] | None = None,
+    is_slow_tick: bool = True,
 ) -> bool:
-    """Apply metabolic upkeep, casualty liquidation, reproduction, and mitosis. Returns False if dead.
+    """Apply metabolic upkeep, casualty liquidation, reproduction, and mitosis.
 
-    This function consolidates the post-feeding life-cycle mechanics for a swarm:
+    Called on the Daily Loop (is_medium_tick). Per-tick parameter values
+    (``energy_upkeep_per_individual``) are multiplied by 24 to represent the
+    accumulated metabolic cost over the 24-hour stride.
 
-    1. **Metabolic Cost**: Deducts energy based on population size and baseline needs.
-    2. **Casualty Liquidation**: Triggers "death by starvation" if energy reserves are insufficient to support the
-    current population.
-    3. **Reproduction & Mitosis**: Calculates and executes population doubling (mitosis) if the swarm has accumulated
-    enough excess energy.
+    Mitosis (colony fission) is additionally gated to ``is_slow_tick`` (weekly,
+    168-tick stride) since demographic splits are macroscopic population events
+    that should not fire multiple times per day.
 
-    The function returns `False` if the swarm's population drops to zero, signaling to the main loop that the entity
-    should be cleaned up.
+    Returns False if the swarm's population drops to zero.
 
     Args:
         swarm: The swarm component.
@@ -123,11 +123,14 @@ def _resolve_swarm_metabolism_and_reproduction(
         scratch_cx: Pre-allocated buffer for random walk X offsets.
         scratch_cy: Pre-allocated buffer for random walk Y offsets.
         herbivore_death_causes: Dictionary to track herbivore death causes.
+        is_slow_tick: True on weekly (168-tick) boundaries - gates mitosis.
 
     Returns:
         False if the swarm died, True otherwise.
     """
-    metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual
+    # Metabolic cost: scaled by MEDIUM_TICK_STRIDE (24 hours) since this function
+    # is only called on the daily medium-loop gate.
+    metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual * 24
     swarm.energy -= metabolic_cost
 
     if swarm.energy < 0.0 and swarm.population > 0:
@@ -177,23 +180,26 @@ def _resolve_swarm_metabolism_and_reproduction(
             )
             swarm.energy -= new_individuals * cost_per_offspring
 
-    # Mitosis
-    threshold = swarm.split_population_threshold
-    if swarm.population >= threshold:
-        pre_split_population = swarm.population
-        offspring = _perform_mitosis(swarm, world, env, scratch_cx, scratch_cy)
-        _accumulate_tile_population(
-            tile_populations,
-            swarm.x,
-            swarm.y,
-            env.width,
-            swarm.population - pre_split_population,
-        )
-        _accumulate_tile_population(
-            tile_populations,
-            offspring.x,
-            offspring.y,
-            env.width,
-            offspring.population,
-        )
+    # Mitosis (Slow Loop - weekly, 168-tick stride).
+    # Colony fission is a macroscopic demographic event; gating it to the weekly
+    # slow loop prevents multiple splits per day while preserving biological realism.
+    if is_slow_tick:
+        threshold = swarm.split_population_threshold
+        if swarm.population >= threshold:
+            pre_split_population = swarm.population
+            offspring = _perform_mitosis(swarm, world, env, scratch_cx, scratch_cy)
+            _accumulate_tile_population(
+                tile_populations,
+                swarm.x,
+                swarm.y,
+                env.width,
+                swarm.population - pre_split_population,
+            )
+            _accumulate_tile_population(
+                tile_populations,
+                offspring.x,
+                offspring.y,
+                env.width,
+                offspring.population,
+            )
     return True

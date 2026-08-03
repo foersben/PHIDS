@@ -210,13 +210,13 @@ To respect these absolute memory bounds while maintaining maximum biological div
 
 ---
 
-## Phase 5: Synthesis, Trigger Logic Compiler & DSE
+## Phase 5: Synthesis, Trigger Logic Compiler & EEDSE
 
 **Target File:** `src/data_pipeline/json_builder.py`
 
 ### Design Space Exploration: Generative vs. Constrained Search
 
-The ultimate objective of parameterizing the simulation engine with empirical data is to execute an evolutionary Design Space Exploration (DSE) to discover stable, self-sustaining Lotka-Volterra dynamics. Finding a multi-species equilibrium is a highly complex Mixed-Integer Non-Linear Programming (MINLP) problem that suffers from the curse of dimensionality. The integration of the compiled empirical database provides two distinct operational paradigms for navigating this mathematical landscape: the Generative Mode and the Constrained Mode.
+The ultimate objective of parameterizing the simulation engine with empirical data is to execute an Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) to discover stable, self-sustaining Lotka-Volterra dynamics. Finding a multi-species equilibrium is a highly complex Mixed-Integer Non-Linear Programming (MINLP) problem that suffers from the curse of dimensionality. The integration of the compiled empirical database provides two distinct operational paradigms for navigating this mathematical landscape: the Generative Mode and the Constrained Mode.
 
 #### Mode A: Generative Tabula Rasa and Post-Processing
 
@@ -266,7 +266,7 @@ To resolve this, the pipeline leverages the **Hugging Face Hub** as the primary 
 Hugging Face datasets are inherently backed by Git infrastructure, meaning they natively support branching, tagging, and commit-based versioning. 
 
 * When the ETL pipeline executes and generates a mutated `bio_database.json`, the artifact is programmatically pushed to the Hugging Face Hub and tagged with a semantic version (e.g., `v1.2.0`).
-* Within the PHIDS application architecture, the `huggingface_hub` Python client can utilize the `revision` parameter to fetch a precise, immutable version of the database. This guarantees absolute reproducibility for Design Space Exploration (DSE) experiments; researchers can pin their simulations to a specific commit hash of the biological data, ensuring that future updates to the underlying trait databases do not retroactively invalidate their discovered Lotka-Volterra equilibria.
+* Within the PHIDS application architecture, the `huggingface_hub` Python client can utilize the `revision` parameter to fetch a precise, immutable version of the database. This guarantees absolute reproducibility for EEDSE experiments; researchers can pin their simulations to a specific commit hash of the biological data, ensuring that future updates to the underlying trait databases do not retroactively invalidate their discovered Lotka-Volterra equilibria.
 
 ### Programmatic Upload Pipeline
 
