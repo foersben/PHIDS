@@ -182,32 +182,32 @@ Beyond Phase 3 and 4, PHIDS maintains a speculative research pipeline evaluating
 While PHIDS intentionally omits individual chronological aging in core execution because swarm dynamics average out senescence ($N \gg 10^2$), specialized ecological scenarios (e.g., senescent mortality during long migration or age-dependent foraging decline) can be realized through three architecturally compatible paradigms:
 
 1. **Mean Swarm Age Component (Scalar Approximation)**:
-   * **Mechanism**: Add a float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age updates via a weighted arithmetic mean: $A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}$.
-   * **Why**: This enables age-dependent velocity or upkeep decay at zero dynamic memory allocation overhead.
+    * **Mechanism**: Add a float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age updates via a weighted arithmetic mean: $A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}$.
+    * **Why**: This enables age-dependent velocity or upkeep decay at zero dynamic memory allocation overhead.
 2. **Weibull Cohort Hazard Mortality Rate ($\mu_{\text{age}}$)**:
-   * **Mechanism**: Model senescent mortality at the swarm level using a Weibull hazard rate: $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
-   * **Why**: Captures exponential end-of-life decay mathematically without the ECS overhead of tracking a graveyard of distinct entities.
+    * **Mechanism**: Model senescent mortality at the swarm level using a Weibull hazard rate: $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
+    * **Why**: Captures exponential end-of-life decay mathematically without the ECS overhead of tracking a graveyard of distinct entities.
 3. **Multi-Cohort Stage Partitioning (Matrix Model)**:
-   * **Mechanism**: Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs.
-   * **Why**: Maintains SIMD vectorization while capturing fine-grained age demographics, ideal for modeling species with distinct larva-to-adult metamorphosis constraints.
+    * **Mechanism**: Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs.
+    * **Why**: Maintains SIMD vectorization while capturing fine-grained age demographics, ideal for modeling species with distinct larva-to-adult metamorphosis constraints.
 
 ### 5.2 Non-Dimensional Empirical Parameter Calibration Pipeline
 
 To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB) to discrete simulation scales without generating unphysical Lotka-Volterra artifacts:
 
 1. **Spatiotemporal Dimensional Anchoring**:
-   * **Why**: Raw biological traits are measured in mixed SI units (grams, hours, liters) which causes numerical instability when mixed in PDEs.
-   * **How**: Non-dimensionalize all database traits using Buckingham $\Pi$-groups based on grid cell length $L_0 = \Delta L$, tick duration $T_0 = \Delta \tau$, and energy quantum $E_0 = \Delta E$.
+    * **Why**: Raw biological traits are measured in mixed SI units (grams, hours, liters) which causes numerical instability when mixed in PDEs.
+    * **How**: Non-dimensionalize all database traits using Buckingham $\Pi$-groups based on grid cell length $L_0 = \Delta L$, tick duration $T_0 = \Delta \tau$, and energy quantum $E_0 = \Delta E$.
 2. **Allometric Scaling Laws**:
-   * **Why**: To extrapolate unrecorded metabolic values for unstudied species using their mass.
-   * **How**: Enforce Kleiber's Law ($BMR \propto M^{0.75}$) and Metabolic Theory of Ecology ($C_{\text{max}} \propto M^{0.75}$) during ETL build passes in `src/data_pipeline/transform.py`.
+    * **Why**: To extrapolate unrecorded metabolic values for unstudied species using their mass.
+    * **How**: Enforce Kleiber's Law ($BMR \propto M^{0.75}$) and Metabolic Theory of Ecology ($C_{\text{max}} \propto M^{0.75}$) during ETL build passes in `src/data_pipeline/transform.py`.
 3. **Empirically Bounded DSE Hyper-Cubes**:
-   * **Why**: Unbounded AI exploration will produce alien, non-biological entities that break physics.
-   * **How**: Restrict DSE optimization search spaces to empirical confidence intervals $[\mu_k - 2\sigma_k, \mu_k + 2\sigma_k]$ derived from database taxonomic distributions.
+    * **Why**: Unbounded AI exploration will produce alien, non-biological entities that break physics.
+    * **How**: Restrict DSE optimization search spaces to empirical confidence intervals $[\mu_k - 2\sigma_k, \mu_k + 2\sigma_k]$ derived from database taxonomic distributions.
 4. **Biologically Authenticated Cost Function**:
-   * **Why**: To filter out optimization results that are mathematically optimal but biologically dead-ends.
-   * **How**: Evaluate scenarios via multi-objective fitness $J_{\text{eco}} = w_1 S_{\text{LV}} + w_2 D_{\text{bio}} + w_3 P_{\text{thermo}}$, rewarding limit cycle stability while penalizing empirical parameter drift and thermodynamic violations.
-   * *Detailed Reference*: [Empirical Parameter Calibration Strategy](scientific_model/future_prospects/parameter_calibration_strategy.md).
+    * **Why**: To filter out optimization results that are mathematically optimal but biologically dead-ends.
+    * **How**: Evaluate scenarios via multi-objective fitness $J_{\text{eco}} = w_1 S_{\text{LV}} + w_2 D_{\text{bio}} + w_3 P_{\text{thermo}}$, rewarding limit cycle stability while penalizing empirical parameter drift and thermodynamic violations.
+    * *Detailed Reference*: [Empirical Parameter Calibration Strategy](scientific_model/future_prospects/parameter_calibration_strategy.md).
 
 ### 5.3 Evolutionary Arms Race & Dynamic Gene Mutation Solvers
 
@@ -220,14 +220,14 @@ To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB)
 Several mechanisms have been intentionally deferred to the speculative research horizon because they provide minimal macroscopic reality-complicity while introducing devastating architectural or computational overhead:
 
 1. **3D Canopy VOCs**:
-   * **The Issue**: Upgrading the 2D biotope to a fully 3D tensor grid ($W \times H \times Z$) with $Z=16$ layers inflates the environment memory footprint from $80\text{ MB}$ to over $128\text{ MB}$.
-   * **The Reality Check**: This completely evicts the CPU L3 cache, breaking SIMD performance. This feature is deferred indefinitely unless explicitly tied to the PyTorch/CUDA GPU engine (Phase 4.1).
+    * **The Issue**: Upgrading the 2D biotope to a fully 3D tensor grid ($W \times H \times Z$) with $Z=16$ layers inflates the environment memory footprint from $80\text{ MB}$ to over $128\text{ MB}$.
+    * **The Reality Check**: This completely evicts the CPU L3 cache, breaking SIMD performance. This feature is deferred indefinitely unless explicitly tied to the PyTorch/CUDA GPU engine (Phase 4.1).
 2. **Trait Herbivore Morphs (Instars)**:
-   * **The Issue**: Modeling distinct lifecycle stages (e.g., larva vs adult) breaks ECS SIMD uniformity by requiring fragmented cohorts on the same spatial tile.
-   * **The Reality Check**: The macroscopic impact is sufficiently approximated using mean swarm mass without splitting into distinct ECS entities.
+    * **The Issue**: Modeling distinct lifecycle stages (e.g., larva vs adult) breaks ECS SIMD uniformity by requiring fragmented cohorts on the same spatial tile.
+    * **The Reality Check**: The macroscopic impact is sufficiently approximated using mean swarm mass without splitting into distinct ECS entities.
 3. **Zoochory Dispersal**:
-   * **The Issue**: Tracking the gut-retention times of seeds inside animals adds significant logic branching.
-   * **The Reality Check**: Baseline anemochory (wind-dispersal) via the $O(1)$ stochastic raycasting solver is sufficient for broad spatial propagation without pathing overhead.
+    * **The Issue**: Tracking the gut-retention times of seeds inside animals adds significant logic branching.
+    * **The Reality Check**: Baseline anemochory (wind-dispersal) via the $O(1)$ stochastic raycasting solver is sufficient for broad spatial propagation without pathing overhead.
 4. **Sub-Tick PDE Slicing**:
-   * **The Issue**: Because $\Delta \tau = 1\text{ hr}$, simulating airborne diffusion might stretch the Courant stability limit.
-   * **The Reality Check**: Executing $K$ micro-steps internally per tick multiplies the PDE solver overhead by $K$. Sub-slicing is deferred; stability will first be pursued via empirical viscosity dampening.
+    * **The Issue**: Because $\Delta \tau = 1\text{ hr}$, simulating airborne diffusion might stretch the Courant stability limit.
+    * **The Reality Check**: Executing $K$ micro-steps internally per tick multiplies the PDE solver overhead by $K$. Sub-slicing is deferred; stability will first be pursued via empirical viscosity dampening.
