@@ -217,9 +217,13 @@ To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB)
 
 * **Biological Target**: Allow plant chemical defense pathways (induced VOC synthesis rates, toxin potency) and herbivore neutralization counter-adaptations to mutate dynamically across generations.
 * **Why (The Problem)**: Fixed traits prevent the simulation from exhibiting the Red Queen Hypothesis, a fundamental pillar of evolutionary biology.
-* **How (The Implementation)**: Implemented via SIMD bit-mask mutations on ECS trait structs during mitosis and seed germination, enabling real-time co-evolutionary arms race simulations over $10^5$ ticks.
+### 5.4 Agentic Diagnostic Log Writer & Systemic Integrity Observer
 
-### 5.4 Speculative Granularity & Reality Neglectables
+* **Target**: Integrate an asynchronous, non-blocking telemetry observer agent (`dse-log-observer`) to audit active DSE trajectories and detect systemic simulator distortions under a high-precision ($\ge 0.95$ confidence) policy.
+* **Why**: Prevents developer warning fatigue while catching Buckingham $\Pi$ conversion errors, allometric scaling mismatches ($BMR \propto M^{0.75}$), and heuristic solver disconnects before unphysical local minima corrupt scenario discovery.
+* **Implementation & References**: Integrated via MCP tools (`query_diagnostic_logs`, `inspect_telemetry_schema`, `runtime_snapshot`). Detailed reference: [Agentic Log Writer Guide](scenario_guide/agentic_log_writer.md).
+
+### 5.5 Speculative Granularity & Reality Neglectables
 
 Several mechanisms have been intentionally deferred to the speculative research horizon because they provide minimal macroscopic reality-complicity while introducing devastating architectural or computational overhead:
 

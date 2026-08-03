@@ -12,7 +12,8 @@ tags:
 - eedse
 - optimization
 timestamp: "2026-08-03T12:00:00Z"
-resources: []
+resources:
+- docs/scenario_guide/agentic_log_writer.md
 ---
 
 !!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"
@@ -187,6 +188,7 @@ $$
 $$
 
 Where:
+
 * **Spectral FFT Lotka-Volterra Stability ($\tilde{S}_{LV}$)**: FFT spectral density analysis measuring limit cycle oscillation endurance over 5,000 ticks:
 
 $$
@@ -263,6 +265,7 @@ $$
 #### 4. Co-Evolutionary Counter-Adaptation
 
 The historical database triggers adaptive mutations in opposing agents:
+
 * When flora evolve high mechanical resistance, the database mutates herbivore trait structs (`morphological_adaptation`, `digestive_efficiency`, `chemical_neutralization`) to model ongoing co-evolutionary arms races.
 * This prevents the DSE from settling into fragile, non-resilient local minima.
 
