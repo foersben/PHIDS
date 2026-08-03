@@ -120,6 +120,16 @@ def _draft_to_json(draft: DraftState) -> str:
     return json.dumps(dataclasses.asdict(draft), indent=2, default=_default)
 
 
+def _get_active_sim_loop() -> Any | None:
+    """Safely return the active live SimulationLoop instance if loaded under FastAPI."""
+    try:
+        from phids.api import main as api_main
+
+        return getattr(api_main, "_sim_loop", None)
+    except (ImportError, AttributeError):
+        return None
+
+
 # ===========================================================================
 # 1. RESOURCES - declarative context data feeds
 # ===========================================================================
@@ -138,6 +148,45 @@ def active_draft_resource() -> str:
 
     """
     return _draft_to_json(get_draft())
+
+
+@mcp.resource("phids://simulation/live.json")
+def live_simulation_resource() -> str:
+    """Provide real-time JSON snapshot of the active running SimulationLoop.
+
+    Returns live tick count, status flags, active ECS entity counts, total plant
+    energy, total herbivore population, and mycorrhizal connection stats.
+
+    Returns:
+        Indented JSON string of the live simulation loop status.
+    """
+    loop = _get_active_sim_loop()
+    if loop is None:
+        return json.dumps({"status": "idle", "message": "No active simulation loop currently loaded"})
+
+    from phids.engine.components.plant import PlantComponent
+    from phids.engine.components.swarm import SwarmComponent
+
+    plants = [e.get_component(PlantComponent) for e in loop.world.query(PlantComponent)]
+    swarms = [e.get_component(SwarmComponent) for e in loop.world.query(SwarmComponent)]
+
+    total_links = sum(len(p.mycorrhizal_connections) for p in plants) // 2
+
+    return json.dumps(
+        {
+            "status": "running" if loop.running and not loop.paused else ("paused" if loop.paused else "ready"),
+            "tick": loop.tick,
+            "max_ticks": loop.config.max_ticks,
+            "terminated": loop.terminated,
+            "termination_reason": loop.termination_reason,
+            "active_plants": len(plants),
+            "active_swarms": len(swarms),
+            "total_flora_energy": round(sum(p.energy for p in plants), 2),
+            "total_herbivore_population": sum(s.population for s in swarms),
+            "mycorrhizal_links_count": total_links,
+        },
+        indent=2,
+    )
 
 
 # ===========================================================================
@@ -181,6 +230,94 @@ def runtime_snapshot() -> dict[str, Any]:
             "z6_max_total_flora_energy": draft.z6_max_total_flora_energy,
             "z7_max_total_herbivore_population": draft.z7_max_total_herbivore_population,
         },
+    }
+
+
+@mcp.tool()
+def inspect_live_simulation() -> dict[str, Any]:
+    """Return compact operational summary of the active running simulation loop.
+
+    Useful for monitoring tick advancement, modulo-stride gates (is_medium_tick,
+    is_slow_tick), and mycorrhizal root network connectivity statistics.
+
+    Returns:
+        dict[str, Any]: Compact operational breakdown of the live running loop.
+    """
+    loop = _get_active_sim_loop()
+    if loop is None:
+        return {"status": "inactive", "message": "No live simulation loop currently loaded"}
+
+    from phids.engine.components.plant import PlantComponent
+    from phids.engine.components.swarm import SwarmComponent
+
+    plants = [e.get_component(PlantComponent) for e in loop.world.query(PlantComponent)]
+    swarms = [e.get_component(SwarmComponent) for e in loop.world.query(SwarmComponent)]
+
+    connected_plants = sum(1 for p in plants if p.mycorrhizal_connections)
+    total_links = sum(len(p.mycorrhizal_connections) for p in plants) // 2
+
+    return {
+        "status": "active",
+        "tick": loop.tick,
+        "is_medium_tick": loop.tick % 24 == 0,
+        "is_slow_tick": loop.tick % 168 == 0,
+        "running": loop.running,
+        "paused": loop.paused,
+        "terminated": loop.terminated,
+        "termination_reason": loop.termination_reason,
+        "plant_count": len(plants),
+        "swarm_count": len(swarms),
+        "total_flora_energy": round(sum(p.energy for p in plants), 2),
+        "total_herbivore_population": sum(s.population for s in swarms),
+        "mycorrhizal_total_links": total_links,
+        "mycorrhizal_connected_plants": connected_plants,
+    }
+
+
+@mcp.tool()
+def validate_biological_invariants() -> dict[str, Any]:
+    """Audit the running simulation against spatiotemporal biological mandates.
+
+    Checks for:
+    1. Orphaned mycorrhizal references to dead/culled entities.
+    2. Subnormal float energy levels (< 1e-12) indicative of FPU traps.
+    3. Negative plant or swarm energy values.
+
+    Returns:
+        dict[str, Any]: Verification status, violation count, and list of error details.
+    """
+    loop = _get_active_sim_loop()
+    if loop is None:
+        return {"status": "error", "message": "Simulation loop must be active to validate invariants"}
+
+    from phids.engine.components.plant import PlantComponent
+    from phids.engine.components.swarm import SwarmComponent
+
+    violations: list[str] = []
+    plants = [e.get_component(PlantComponent) for e in loop.world.query(PlantComponent)]
+    swarms = [e.get_component(SwarmComponent) for e in loop.world.query(SwarmComponent)]
+    active_eids = set(loop.world._entities.keys())
+
+    for p in plants:
+        if p.energy < 0.0:
+            violations.append(f"Plant {p.entity_id} has negative energy: {p.energy}")
+        elif 0.0 < p.energy < 1e-12:
+            violations.append(f"Plant {p.entity_id} has subnormal float energy: {p.energy}")
+
+        for target_eid in p.mycorrhizal_connections:
+            if target_eid not in active_eids:
+                violations.append(f"Plant {p.entity_id} holds dead mycorrhizal reference to entity {target_eid}")
+
+    for s in swarms:
+        if s.energy < 0.0:
+            violations.append(f"Swarm {s.entity_id} has negative energy: {s.energy}")
+        if s.population <= 0:
+            violations.append(f"Swarm {s.entity_id} has zero or negative population: {s.population}")
+
+    return {
+        "compliant": len(violations) == 0,
+        "violations_count": len(violations),
+        "violations": violations,
     }
 
 
@@ -379,3 +516,7 @@ def analyze_simulation_drift() -> str:
 def run_mcp_server() -> None:
     """Spawn the headless stdio MCP communications loop."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    run_mcp_server()

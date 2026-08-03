@@ -18,13 +18,13 @@ resources:
 - docs/scenario_guide/design_space_exploration.md
 ---
 
-This document details the scientific strategy for bridging raw empirical database entries (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB) and discrete simulation parameters within the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It establishes a non-dimensionalization framework ensuring Design Space Exploration (DSE) searches yield biologically authentic ecosystems rather than unphysical mathematical artifacts.
+This document details the scientific strategy for bridging raw empirical database entries (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB) and discrete simulation parameters within the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It establishes a non-dimensionalization framework ensuring Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) searches yield biologically authentic ecosystems rather than unphysical mathematical artifacts.
 
 ---
 
 ## 1. The Core Calibration Challenge
 
-1. **Unconstrained DSE Fallacy**: Search algorithms easily locate parameter sets that achieve Lotka-Volterra limit cycles or stable equilibria. However, without empirical bounds, these equilibria frequently rely on absurd biological ratios—such as a single aphid consuming $500\text{ kcal/sec}$ or a grass blade synthesizing $10\text{ MJ}$ per tick.
+1. **Unconstrained EEDSE Fallacy**: Search algorithms easily locate parameter sets that achieve Lotka-Volterra limit cycles or stable equilibria. However, without empirical bounds, these equilibria frequently rely on absurd biological ratios - such as a single aphid consuming $500\text{ kcal/sec}$ or a grass blade synthesizing $10\text{ MJ}$ per tick.
 2. **Heterogeneous Unit Mismatch**: Open empirical databases store quantitative traits in SI or scientific units:
 
     * **TRY**: Specific Leaf Area ($\text{mm}^2/\text{mg}$), Canopy Height ($\text{m}$), Seed Dry Mass ($\text{mg}$), Tensile Strength ($\text{N/mm}^2$).
@@ -43,12 +43,12 @@ flowchart TD
     RawDB["1. Raw Empirical Trait Ingestion<br><i>TRY, PanTHERIA, GloBI, Pherobase</i>"] --> NonDim["2. Non-Dimensionalization (Buckingham Π)<br><i>Spatiotemporal Grid Anchoring (ΔL, Δτ, ΔE)</i>"]
     NonDim --> Allometric["3. Allometric & Biophysical Scaling<br><i>Kleiber's Law (BMR ∝ M^0.75) & MTE</i>"]
     Allometric --> Invariants["4. Thermodynamic & Mass-Balance Invariants<br><i>Primary Production ≥ Metabolic Upkeep</i>"]
-    Invariants --> BoundedDSE["5. Empirically Bounded DSE Search<br><i>Search Hyper-Cubes [μ - 2σ, μ + 2σ]</i>"]
+    Invariants --> BoundedDSE["5. Empirically Bounded EEDSE Search<br><i>Search Hyper-Cubes [μ - 2σ, μ + 2σ]</i>"]
 ```
 
 ### Tier 1: Spatiotemporal Dimensional Anchoring ($\Pi$-Groups)
 
-All physical traits are non-dimensionalized using explicit grid anchors:
+All physical traits are non-dimensionalized using explicit grid anchors (as defined by the [Unified Forest-Scale Architecture](spatiotemporal_scaling.md)):
 
 * **Length Scale**: $L_0 = \Delta L$ (meters per cell).
 * **Time Scale**: $T_0 = \Delta \tau$ (seconds per tick).
@@ -84,10 +84,10 @@ $$V_{\text{cells}} = \max\left(1, \left\lceil v_{\text{ref}} \cdot \left(\frac{M
 * **Photosynthetic Cap**: Plant daily growth $r_{\text{growth}}$ bounded by incident solar irradiance per cell surface area: $r_{\text{growth}} \le I_{\text{solar}} \cdot \Delta L^2 \cdot \Delta \tau$.
 * **Digestibility Ceiling**: $\eta_{\text{digest}} \le 1.0$; Handling Time $T_h \ge \frac{1}{\text{max\_bite\_rate}}$.
 
-### Tier 4: Empirically Bounded DSE (Log-Normal Hyper-Cubes & Taxonomic Imputation)
+### Tier 4: Empirically Bounded EEDSE (Log-Normal Hyper-Cubes & Taxonomic Imputation)
 
 1. **Log-Normal Space Transformation**:
-    Because ecological traits (body mass, seed mass, SLA, metabolic rates) span multiple orders of magnitude following log-normal distributions, DSE hyper-cubes are constructed in **log-transformed parameter space** to prevent unphysical negative lower bounds or linear skew:
+    Because ecological traits (body mass, seed mass, SLA, metabolic rates) span multiple orders of magnitude following log-normal distributions, EEDSE hyper-cubes are constructed in **log-transformed parameter space** to prevent unphysical negative lower bounds or linear skew:
 
     $$p_k \in \left[ 10^{\mu_{\log, k} - 2\sigma_{\log, k}}, \, 10^{\mu_{\log, k} + 2\sigma_{\log, k}} \right]$$
 
@@ -116,6 +116,4 @@ $$V_{\text{cells}} = \max\left(1, \left\lceil v_{\text{ref}} \cdot \left(\frac{M
 | `consumption_rate` | Present | PanTHERIA (Food Intake) | $\text{g/day}$ | Float/tick ($0.1 - 50.0$) | $C_{\text{max}} = I_{\text{daily}} \cdot \frac{\Delta \tau}{86400 \cdot E_{\text{unit}}}$ |
 | `diffusivity` ($D$) | Present | Pherobase / NIST | $\text{cm}^2/\text{s}$ | Float ($0.001 - 0.25$) | $D_{\text{grid}} = D_{\text{physical}} \cdot \frac{\Delta \tau}{\Delta L^2}$ |
 | `germination_gdd_threshold` | v2.1 | TRY (GDD Threshold) | ${}^{\circ}\text{C}\cdot\text{days}$ | Float GDD | $\text{GDD}_{\text{thresh}} = \sum \max(0, T - T_{\text{base}})$ |
-| `gut_retention_ticks` | v2.2 | Zoochory Literature | $\text{hours}$ | Int ticks | $T_{\text{gut}} = \left\lfloor \frac{\text{Hours}_{\text{retention}} \cdot 3600}{\Delta \tau} \right\rfloor$ |
-| `mineralization_rate` | v2.4 | Soil Biology DB | $\text{mg N/kg/day}$ | Float $N/\text{tick}$ | $k_{\text{miner}} = k_{\text{ref}} \cdot Q_{10}^{(T-20)/10} \cdot \frac{\Delta \tau}{86400}$ |
-| `canopy_height_layers` ($Z$) | v2.6 | Forest Ecology LiDAR | $\text{meters}$ | Int layers ($1 - 16$) | $Z_{\text{layers}} = \left\lceil \frac{H_{\text{canopy}}}{\Delta Z_{\text{layer}}} \right\rceil$ |
+| `mineralization_rate` | v2.2 | Soil Biology DB | $\text{mg N/kg/day}$ | Float $N/\text{tick}$ | $k_{\text{miner}} = k_{\text{ref}} \cdot Q_{10}^{(T-20)/10} \cdot \frac{\Delta \tau}{86400}$ |

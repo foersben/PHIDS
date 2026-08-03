@@ -28,7 +28,7 @@ The simulator exposes operational boundaries required to drive experiments progr
 
 PHIDS establishes a strict barrier between the simulation currently under construction and the simulation actively executing. This prevents configuration adjustments from inadvertently modifying active scientific experiments mid-run.
 
-- **`DraftState`**: An ephemeral, mutable configuration stored on the server. This is heavily edited via the UI endpoints (e.g., toggling diet matrix compatibility, modifying reproduction bounds, adding species). Modifying the Draft State has absolutely zero ecological impact on the live model.
+- **`DraftState`**: A persistent, mutable scenario configuration stored on the server and auto-saved to `data/draft_autosave.json`. This is heavily edited via the UI endpoints (e.g., toggling diet matrix compatibility, modifying reproduction bounds, adding species). Disk persistence ensures draft configurations survive Uvicorn process reloads and server restarts. Modifying the Draft State has zero ecological impact on any running live model.
 - **`SimulationLoop` (Live Runtime)**: Created only when the operator explicitly "loads" the draft configuration into the engine. Once initialized, the runtime strictly divorces from the Draft State.
 
 ## UI Control Center (HTMX + Jinja)
@@ -49,9 +49,7 @@ The placement editor is part of the Draft State configuration UI. It provides an
 
 **Auto-Assignment Engine:** For massive scale setups, the backend exposes auto-assignment endpoints (e.g., `generate_uniform`, `generate_clustered`, `generate_banded`). This allows operators to mathematically distribute thousands of flora or herbivore swarms across the field at precise densities and proportions. During draft generation, structural dependencies like mycorrhizal links are resolved using an $O(N)$ spatial hashing algorithm rather than $O(N^2)$ iterations, preventing UI lockups during ingestion.
 
-#### Canvas Grid Resize Feature
-
-Similar to the live dashboard, the placement editor features an independent grid resizing control. The operator can toggle resizing and adjust the height slider to scale the interactive canvas. This state is isolated from the live dashboard and stored in its own `localStorage` keys (`phids.placement.heightPct` and `phids.placement.resizeEnabled`), allowing the user to maintain different layout preferences for authoring versus monitoring.
+Placement editor canvas dimensions can also be resized independently using dedicated local storage settings (`phids.placement.heightPct` and `phids.placement.resizeEnabled`).
 
 When a user clicks a checkbox to update the Diet Compatibility Matrix, the backend modifies the `DraftState` and responds immediately with a re-rendered partial HTML table. This architectural choice establishes the server as the absolute, single source of truth for the experimental schema, ensuring UI state cannot desynchronize from backend limits.
 
