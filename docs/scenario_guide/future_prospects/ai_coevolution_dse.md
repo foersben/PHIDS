@@ -17,7 +17,10 @@ resources:
 - docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
 
-# AI Coevolution & Distributed DSE Engine (v3.2 Future Prospect) [Realized]
+# AI Coevolution & Distributed DSE Engine (v3.2 Future Prospect)
+
+!!! warning "Status: WIP / CIP Construction Site"
+    This feature is strictly a Work-In-Progress (WIP) and Context-In-Process (CIP) construction site. **AI is not used as a massive black box anywhere in PHIDS.** Rather, AI-in-the-loop (AITL) is evaluated strictly as an interpretable assistant to Human-in-the-loop (HITL) exploration, ensuring researchers retain full biological oversight.
 
 This document details the planned framework for distributed multi-objective Design Space Exploration (DSE) and reinforcement learning-driven coevolutionary optimization in PHIDS.
 

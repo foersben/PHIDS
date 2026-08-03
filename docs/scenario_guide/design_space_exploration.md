@@ -14,8 +14,8 @@ timestamp: "2026-07-21T16:01:38Z"
 resources: []
 ---
 
-!!! warning "Module Status: Work In Progress (WIP) / Under Construction"
-    The Evolutionary Design Space Exploration (DSE) subsystem and its underlying optimization pipelines are currently under active development. The APIs, algorithms, and UI panels described in this document are subject to continuous refinement.
+!!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"
+    The Evolutionary Design Space Exploration (DSE) subsystem and its underlying optimization pipelines are strictly a Work-In-Progress (WIP) and Context-In-Process (CIP) construction site. Furthermore, **AI is not used as a massive black box anywhere in this architecture**. Any AI-in-the-loop features serve strictly to assist and evaluate configurations alongside Human-in-the-loop (HITL) processes, ensuring full biological interpretability. The APIs, algorithms, and UI panels described in this document are subject to continuous refinement.
 
 The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (DSE)** architecture. DSE systematically searches a vast landscape of ecological parameters, spatial configurations, and interaction topologies to discover stable Lotka-Volterra dynamics (stable equilibria) within simulated ecosystems.
 

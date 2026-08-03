@@ -168,10 +168,10 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 * **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios.
 * **Why (The Problem)**: Exploring multidimensional trait parameters manually is statistically blind. We need algorithms that can dynamically search the hyper-cube of genetic configurations to locate evolutionary stable peaks.
 * **How (The Implementation)**: Utilize Ray/Tune to orchestrate parallel headless instances of the simulator, evaluating fitness gradients ($J_{\text{eco}}$) across millions of mutations.
-* **What the AI Agents Do**: 
-    * The AI acts as an evolutionary meta-optimizer (a "genetic puppet master"). During headless simulations, the AI agent dynamically tweaks specific multi-dimensional species traits (e.g., VOC emission rates, root depth allocation, toxin biosynthesis pathways).
-    * It runs thousands of identical simulation seeds with varied traits, measures long-term biomass survivability ($J_{\text{eco}}$), and iteratively mutates these traits across generations.
-    * Rather than controlling real-time swarm movement, the AI's role is to "design" the optimal genetic blueprint for the species to survive the specified simulated biotope conditions.
+* **Evaluating AI-in-the-loop (AITL) for DSE**:
+    * Rather than deploying AI as a definitive, black-box "puppet master", this phase evaluates to what extent AI-in-the-loop can act as a viable replacement or assistant for Human-in-the-loop (HITL) steering during Design Space Exploration.
+    * We aim to test if headless AI agents can intelligently propose tweaks to multi-dimensional species traits (e.g., VOC emission rates, root depth allocation) across simulation seeds without producing biologically uninterpretable artifacts.
+    * The goal is to determine if algorithms can reliably parse long-term survivability ($J_{\text{eco}}$) to recommend evolutionary stable strategies (ESS) to human researchers for final validation, maintaining interpretability.
 * **Standalone Researcher Utility**: Provides evolutionary biologists with automated discovery of non-dominated evolutionary stable strategies (ESS) for plant chemical and morphological defense.
 * **Implementation Effort & Scope**: High ($\sim 700$ LOC; Ray/Tune distributed integration). Cluster-scale parallel execution ($O(N_{\text{simulations}})$).
 
