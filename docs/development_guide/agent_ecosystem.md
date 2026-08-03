@@ -21,7 +21,7 @@ To keep implementation truth, documentation truth, and verification truth separa
 - **`docs-operator`**: Focuses on operational, procedural guides tailored to developer execution, CI runbooks, and repository configurations.
 - **`git-ops`**: The sole agent authorized to manage repository commits, branches, and PR workflows. It safeguards clean commit slices and strictly respects remote-impacting authorizations.
 - **`test-ops`**: Triggers, evaluates, and resolves failures in the test suites, typing coverage, and benchmark outputs, isolating the smallest valid failing slice before pushing fixes upstream.
-- **`dse-log-observer`**: Asynchronous telemetry observer performing generational DSE journaling and high-precision systemic anomaly detection. See [Agentic Diagnostic Log Writer](../scenario_guide/agentic_log_writer.md).
+- **`dse-log-observer`**: Asynchronous telemetry observer performing generational DSE journaling and high-precision systemic anomaly detection. See [Agentic Diagnostic Log Writer](../scenario_guide/future_prospects/agentic_log_writer.md).
 
 ## Model Context Protocol (MCP) Capabilities
 

@@ -87,19 +87,22 @@ The web-based control center is served by **FastAPI**, rendered via server-side 
 
 Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS now defaults to the **Zarr** storage backend (`src/phids/io/zarr_replay.py`) for replay data and telemetry exports. This enables high-performance, chunked, and memory-decoupled visual slicing of long-running Monte Carlo batch simulations. Analysts can effortlessly load enormous multidimensional datasets into **Polars** or Pandas DataFrames seamlessly without memory exhaustion.
 
-### Agentic Integration: MCP Server Support
+### Agentic Integration: MCP Server Support & Diagnostic Observers
 
 PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely execute diagnostic workflows, read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration), and query complex batch outcomes via `query_batch_jobs()`. This enables autonomous scenario tuning, diagnostic debugging, telemetry schema inspection, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
 
-### 🧬 Evolutionary Design Space Exploration (DSE) & Empirical Database
+Furthermore, PHIDS introduces an **Agentic Diagnostic Log Writer & Systemic Integrity Observer** (`dse-log-observer`). This lightweight observer tracks scaling drift, structural violations (e.g., spatial physics vs. MILP disconnects), and execution anomalies without acting as an uninterpretable black box. EEDSE optimization pathways are governed by strict **Human-in-the-Loop (HITL) vs. AI-in-the-Loop (AITL) Intervention Gates**, ensuring algorithmic decisions remain interpretable.
+
+### 🧬 Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) & Empirical Database
 
 > [!WARNING]
 > **Status: Work In Progress (WIP) / Under Construction**
-> The Empirical Bio-Database pipeline and Evolutionary Design Space Exploration (DSE) modules are currently under active development and construction. The APIs, database integration pipelines, and optimization UI interfaces described below are in experimental preview status.
+> The Empirical Bio-Database pipeline and Evolutionary Design Space Exploration (EEDSE) modules are currently under active development and construction. The APIs, database integration pipelines, and optimization UI interfaces described below are in experimental preview status.
 
-To discover stable Lotka-Volterra configurations in complex ecosystems, PHIDS implements an evolutionary **Design Space Exploration (DSE)** subsystem (`src/phids/analytics/dse_optimizer.py`).
+To discover stable Lotka-Volterra configurations in complex ecosystems, PHIDS implements the **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)** subsystem (`src/phids/analytics/dse_optimizer.py`).
 
-* **Genetic Algorithm Optimization:** Uses the **DEAP** library to execute multi-objective NSGA-II optimization, evaluating populations on longevity, stability, and spatial dispersion.
+* **Macro Delimitation (Phase 1):** Restricts the infinite search volume to an empirically anchored, requirement-bounded hyper-cube ($\mathcal{X}_{init}$) before optimization begins.
+* **Genetic Algorithm Optimization:** Uses the **pymoo** library to execute vectorized multi-objective NSGA-III optimization (with **evosax** available for GPU scaling), evaluating populations on longevity, stability, and spatial dispersion.
 * **Analytical Pre-Pruning:** Filters out structurally infeasible genomes (e.g., total caloric deficits, extreme reproduction costs) via `dse_pruning.py` before running simulations, saving CPU cycles.
 * **Biotope Database Tuning:** Integrates a curated species database (`bio_database.py`) supporting Mode A (nearest-species matching via Euclidean distance) and Mode B (clamped parameter bounds mutation).
 * **Asynchronous WebSocket Telemetry:** Runs evaluations in background worker threads, dispatching Pareto front updates real-time to HTMX UI clients over `/ws/dse/stream` using thread-safe event loop scheduling.
@@ -320,13 +323,14 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 
 * 🧮 **[Parameter Calibration Strategy](docs/scientific_model/future_prospects/parameter_calibration_strategy.md)** ([Live](https://foersben.github.io/PHIDS/scientific_model/future_prospects/parameter_calibration_strategy/)): Non-dimensionalization, Buckingham $\Pi$-groups, log-normal hyper-cubes, and Kleiber-Arrhenius thermodynamic scaling.
 * ⚡ **[GPU CUDA Acceleration Engine](docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md)** ([Live](https://foersben.github.io/PHIDS/technical_architecture/future_prospects/gpu_cuda_acceleration/)): Architecture for offloading 2D/3D reaction-diffusion PDE stencil solvers and VOC advection to PyTorch and CUDA C++ GPU kernels.
-* 🤖 **[AI Coevolution & Distributed DSE](docs/scenario_guide/future_prospects/ai_coevolution_dse.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/ai_coevolution_dse/)): Ray/Tune distributed multi-objective Pareto optimization and reinforcement learning swarm coevolution.
+* 🤖 **[AI Coevolution & Distributed DSE](docs/scenario_guide/future_prospects/ai_coevolution_dse.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/ai_coevolution_dse/)): Ray/Tune distributed multi-objective Pareto optimization, AITL vs HITL intervention governance, and reinforcement learning swarm coevolution under EEDSE.
+* 📝 **[Agentic Diagnostic Log Writer](docs/scenario_guide/future_prospects/agentic_log_writer.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/agentic_log_writer/)): The diagnostic observer agent monitoring systemic integrity and execution anomalies.
 
 ---
 
 ## 🛠 Technology stack
 
-* simulation/math: `numpy`, `scipy`, `numba`, `deap`
+* simulation/math: `numpy`, `scipy`, `numba`, `pymoo`, `pyscipopt`
 * API/runtime: `fastapi`, `uvicorn`, `websockets`
 * UI/frontend: `HTMX`, `Tailwind CSS`, `Jinja2`, `Chart.js`
 * CLI: `typer`
@@ -367,7 +371,8 @@ tests/                  Hypothesis invariant tests, two-pass Numba tests, and AP
 * Want route and WebSocket details? Start at [`docs/technical_architecture/interfaces_and_ui.md`](docs/technical_architecture/interfaces_and_ui.md).
 * Want to calibrate traits to empirical scales? Start at [`docs/scientific_model/future_prospects/parameter_calibration_strategy.md`](docs/scientific_model/future_prospects/parameter_calibration_strategy.md).
 * Want to explore high-density replays & Polars exports? Start at [`docs/technical_architecture/telemetry.md`](docs/technical_architecture/telemetry.md).
-* Want to run evolutionary DSE searches? Start at [`docs/scenario_guide/design_space_exploration.md`](docs/scenario_guide/design_space_exploration.md).
+* Want to run evolutionary EEDSE searches? Start at [`docs/scenario_guide/design_space_exploration.md`](docs/scenario_guide/design_space_exploration.md).
+* Want to understand AI integration boundaries? Start at [`docs/scenario_guide/future_prospects/agentic_log_writer.md`](docs/scenario_guide/future_prospects/agentic_log_writer.md).
 * Want contributor workflow and CI policy? Start at [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
 
 ---
