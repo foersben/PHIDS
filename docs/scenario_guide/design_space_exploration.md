@@ -81,8 +81,9 @@ The Genotype phase functions as an encapsulated Sub-DSE component within the ove
 ```mermaid
 flowchart TD
     classDef milp fill:#9B59B6,stroke:#8E44AD,stroke-width:2px,color:#fff;
-    classDef graph fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff;
+    classDef graphstyle fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff;
     classDef minlp fill:#1ABC9C,stroke:#16A085,stroke-width:2px,color:#fff;
+
 
     G["Candidate Sub-Space (G_k)"]
     S21["Stage 2.1: Structural Carbon (MILP)"]
@@ -93,23 +94,24 @@ flowchart TD
     G --> S22
     G --> S23
     
-    Pareto1["Sub-Pareto Front"]
-    Pareto2["Sub-Pareto Front"]
-    Pareto3["Sub-Pareto Front"]
+    P1["Sub-Pareto Front"]
+    P2["Sub-Pareto Front"]
+    P3["Sub-Pareto Front"]
     
-    S21 --> Pareto1
-    S22 --> Pareto2
-    S23 --> Pareto3
+    S21 --> P1
+    S22 --> P2
+    S23 --> P3
     
-    Propagation["Pareto-Front Propagation"]
+    Prop["Pareto-Front Propagation"]
     
-    Pareto1 --> Propagation
-    Pareto2 --> Propagation
-    Pareto3 --> Propagation
+    P1 --> Prop
+    P2 --> Prop
+    P3 --> Prop
     
-    class S21 milp;
-    class S22 graph;
-    class S23 minlp;
+    class S21 milp
+    class S22 graphstyle
+    class S23 minlp
+
 ```
 
 #### Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)
@@ -292,7 +294,128 @@ The historical database triggers adaptive mutations in opposing agents:
 | **Epistemic Delta Learning** | Gaussian Process Surrogate Weights | GPyTorch, scikit-learn | `src/phids/analytics/tuning.py` |
 | **Cluster Orchestration** | Distributed Parallel Evaluation | Ray/Tune, Typer CLI | `src/phids/analytics/dse_distributed.py` |
 
-## 5. Architectural Summary & System Guarantees
+## 5. Governance & Interventions: Agentic AI-in-the-Loop (AITL) vs. Human-in-the-Loop (HITL)
+
+This section specifies the exact architectural touchpoints across the Evolutionary Encapsulated Design Space Exploration (EEDSE) pipeline where Human-in-the-Loop (HITL) and Agentic AI-in-the-Loop (AITL) toggles, intervention gates, and steering overrides are positioned in PHIDS.
+
+The core objective is to prevent the optimization engine from becoming an opaque black box while maintaining high-throughput compute efficiency ($T_{algebraic} \approx 1\text{ ms}$).
+
+### 5.1 High-Level Intervention Topology
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: MACRO DELIMITATION & PRE-PRUNING                                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Ingest Bounds ──► [ GATE 1: Requirement & Constraint Invariant Gate ] ──► Initial Hyper-Cube X_init│
+│                   │ Toggle: Fully Autonomous AI vs. Human Rule Override / Hard Locking           │
+└────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                                 │
+                                                 ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: GENOTYPE SUB-DSE (FAST HEURISTIC SOLVERS)                                                │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Algebraic MILP/MINLP ──► [ GATE 2: Sub-Pareto Structural Inspection & Slicing ] ──► P_genotype   │
+│                          │ Toggle: AI Multi-Objective Slicing vs. Human Pareto Steering          │
+└────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                                 │
+                                                 ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: PHENOTYPE HIGH-FIDELITY VALIDATION                                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Numba/CUDA Simulation ──► [ GATE 3: Unified Fitness Vector Weight & Penalty Tuning ] ──► J_sys    │
+│                            │ Toggle: AI Automated Relativization vs. Human Weight Adjustments    │
+└────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                                 │
+                                                 ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 4: CLOSED-LOOP EPISTEMIC LEARNING & RECOMBINATION                                          │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Epistemic Delta Δ ──► [ GATE 4: Surrogate Model (GPR) Recalibration Audit ]                      │
+│                       │ Toggle: AI Auto-Grad Weight Update vs. Human Epistemic Validation        │
+│                                                │                                                 │
+│ Co-Evolution     ──► [ GATE 5: Adversarial Arms Race Steering ]                                  │
+│                       │ Toggle: AI MARL Mutation Pass vs. Human Herbivore Trait Force-Inject     │
+│                                                │                                                 │
+│ Recombination    ──► [ GATE 6: Generational Gate & Exploration Entropy Safeguard ]              │
+│                       │ Toggle: Continuous Autonomous Loop vs. Step-by-Step Approval (Breakpoints) │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Detailed Intervention Points & Toggle Specifications
+
+#### Touchpoint 1: Delimitation Requirements & Constraint Gate (Phase 1 Ingress)
+
+* **Location in Codebase**: [`src/phids/analytics/bio_database.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/bio_database.py), [`src/phids/api/schemas/`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/api/schemas/)
+* **Purpose**: Defines the initial hyper-cube ($\mathcal{X}_{init}$) and pre-pruning masks ($\mathbf{g}_{req}$).
+* **Modes**:
+    * **Autonomous AI (AITL)**: Ingests database traits (TRY/PanTHERIA via DuckDB) and automatically non-dimensionalizes parameters using Buckingham $\Pi$-groups based on standard confidence intervals $[\mu \pm 2\sigma]$.
+    * **Human Control (HITL)**: A researcher toggles strict overrides:
+        * **Hard Trait Locking**: Pinning specific species traits (e.g., forcing a specific plant's max growth rate $g_j = 0.05$ or locking a $16 \times 16$ diet matrix topology).
+        * **Requirement Injections**: Specifying non-negotiable scenario goals (e.g., $E_{target\_flora} \ge 80\%$) that act as hard pre-pruning masks.
+* **UI Control Surface**: Contextual modal toggle in the Control Center Dashboard (`DraftState`) titled `Pre-Pruning Governance: [ Auto-Impute (AI) | Custom Constraint Overrides (Human) ]`.
+
+#### Touchpoint 2: Sub-Pareto Structural Inspection & Slicing (Phase 2 Output)
+
+* **Location in Codebase**: [`src/phids/analytics/dse_genotype.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_genotype.py), [`src/phids/analytics/dse_pruning.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_pruning.py)
+* **Purpose**: Manages the propagation of sub-Pareto fronts ($\mathcal{P}_{sub}$) generated by the fast MILP/MINLP solvers (Pyomo/HiGHS).
+* **Modes**:
+    * **Autonomous AI (AITL)**: Automatically computes crowding distances and non-dominated ranks, passing the top $K$ mathematical trade-off blueprints forward to Phase 3.
+    * **Human Control (HITL)**: The researcher inspects the trade-off curve (e.g., Morphological Lignin Cost vs. Growth Rate) in a live 2D/3D scatter plot and visually draws a regional bounding box (slice) to eliminate mathematically valid but scientifically uninteresting regions.
+* **UI Control Surface**: Interactive HTMX/Chart.js Pareto Front inspector with a `Propagate Front: [ AI Automated Rank | Manual Region Slice ]` switch.
+
+#### Touchpoint 3: Unified Fitness Vector Weighting & Relativization (Phase 3 Scoring)
+
+* **Location in Codebase**: [`src/phids/telemetry/analytics.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/telemetry/analytics.py), [`src/phids/api/presenters/`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/api/presenters/)
+* **Purpose**: Weights the components of the Unified Normalized Fitness Vector:
+
+$$
+\mathbf{J}_{sys} = w_1 \cdot \tilde{S}_{LV} + w_2 \cdot \tilde{E}_{ratio} - w_3 \cdot D_{bio} + w_4 \cdot H_{chem}
+$$
+
+* **Modes**:
+    * **Autonomous AI (AITL)**: Uses dynamic variance-scaling (e.g., Inverse Variance Weighting) to rebalance weights $w_1 \dots w_4$ across generations based on population entropy.
+    * **Human Control (HITL)**: The user manually adjusts sliders for $w_1$ (Lotka-Volterra Stability), $w_2$ (Biomass Energy), $w_3$ (Empirical Distance Penalty), and $w_4$ (Defensive Diversity), prioritizing what "success" means for their specific experiment.
+* **UI Control Surface**: Live slider control panel in the DSE dashboard with a toggle: `Objective Vector Calibration: [ Adaptive Entropic Weighting (AI) | User-Defined Sliders (Human) ]`.
+
+#### Touchpoint 4: Epistemic Error Delta Audit & Surrogate Recalibration (Phase 4 Ingress)
+
+* **Location in Codebase**: [`src/phids/analytics/tuning.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/tuning.py)
+* **Purpose**: Learns the error delta between fast algebraic models and high-fidelity physics ($\mathbf{\Delta}_{epistemic} = \mathbf{F}_{actual} - \mathbf{\hat{F}}_{heuristic}$) using Gaussian Process Regression (GPyTorch).
+* **Modes**:
+    * **Autonomous AI (AITL)**: Auto-evaluates loss $\mathcal{L}_{surrogate}$, calculates gradients $\nabla_{\mathbf{W}} \mathcal{L}_{surrogate}$, and immediately updates the solver weight matrix $\mathbf{\hat{W}}_{t+1}$ for the next cycle.
+    * **Human Control (HITL - Diagnostic Audit)**: Pauses the loop when $\mathbf{\Delta}_{epistemic}$ exceeds a user-defined threshold (e.g., $>30\%$ discrepancy between heuristic guess and physical simulation). The human inspects the physical cause (e.g., wind advection causing VOC plume bypass) before approving the weight recalibration.
+* **UI Control Surface**: Diagnostic alert banner: `Epistemic Drift Threshold Crossed (|Δ| > 30%). [ Auto-Apply Gradient Update | Audit Discrepancy & Override ]`.
+
+#### Touchpoint 5: Co-Evolutionary Arms Race & Counter-Strategy Steering (Phase 4 Evolution)
+
+* **Location in Codebase**: [`src/phids/analytics/dse_optimizer.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_optimizer.py), [`src/phids/analytics/dse_distributed.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_distributed.py)
+* **Purpose**: Drives the counter-adaptation of opposing agents (e.g., herbivore resistances) to prevent plants from settling into fragile local minima.
+* **Modes**:
+    * **Autonomous AI (AITL)**: Reinforcement Learning / MARL policies or SIMD bit-mask mutations automatically evolve herbivore traits (`chemical_neutralization`, `digestive_efficiency`) to attack the dominant plant defense strategies.
+    * **Human Control (HITL - Scenario Authoring)**: The researcher acts as an "adversarial designer," manually injecting specific counter-adaptations (e.g., force-mutating a specific herbivore pest to become $90\%$ resistant to a synthesized alkaloid) to test the robustness of candidate plant genotypes.
+* **UI Control Surface**: AITL/HITL switch under the Co-Evolution Panel: `Adversarial Dynamics: [ AI Agent Policy Adaptation | Manual Pest Resistance Injection ]`.
+
+#### Touchpoint 6: Generational Execution & Loop Breakpoints (Phase 4 Recombination)
+
+* **Location in Codebase**: [`src/phids/analytics/dse_distributed.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_distributed.py), `src/phids/api/services/dse/task_manager.py`
+* **Purpose**: Controls overall generation-to-generation execution flow and search space entropy management ($\mathcal{X}_{i+1}$).
+* **Modes**:
+    * **Autonomous Execution (Continuous AITL)**: Runs $G$ generations headless across Ray/Tune clusters until convergence criteria or maximum generations are met.
+    * **Human Step-by-Step Execution (Interactive HITL)**: Acts as a simulation "breakpoint engine." At the end of each generation, the DSE engine pauses, displays the newly derived candidate pool ($N \le 32$), and waits for explicit human confirmation to launch the next generational cycle.
+* **UI Control Surface**: Top-bar execution toolbar: `DSE Execution Mode: [ Continuous Autonomous Sweep | Step-by-Step Generational Breakpoints ]`.
+
+### 5.3 Summary of Value Proposition for HITL / AITL Toggles
+
+| Pipeline Gate / Touchpoint | Autonomous AI Mode (AITL) Value | Human-in-the-Loop Mode (HITL) Value |
+| :--- | :--- | :--- |
+| **Gate 1: Macro Delimitation** | Rapid auto-bounding via empirical DuckDB statistical confidence intervals. | Hard-locks specific species parameters and enforces non-negotiable scenario requirements. |
+| **Gate 2: Sub-Pareto Slicing** | Mathematical rank/distance extraction across multi-component MILP solvers. | Visual slicing of trade-off curves to focus compute power on scientifically relevant regions. |
+| **Gate 3: Fitness Vector Weighting** | Dynamic entropic weight balancing preventing search space collapse. | Custom multi-objective prioritization (e.g., valuing Lotka-Volterra stability over empirical distance). |
+| **Gate 4: Epistemic Audit** | Real-time gradient updates ($\mathbf{\hat{W}}_{t+1}$) via GPyTorch surrogate models. | Diagnostic safety barrier preventing the AI from learning unphysical edge-case exploits. |
+| **Gate 5: Co-Evolution Steering** | Automated MARL pest counter-adaptation preventing fragile local minima. | Targeted adversarial stress-testing against specific biological mutations. |
+| **Gate 6: Generational Breakpoints** | Unattended, high-throughput HPC execution across Ray/Tune clusters. | Full step-by-step oversight, scenario inspection, and steering control for researchers. |
+
+## 6. Architectural Summary & System Guarantees
 
 The Evolutionary Encapsulated Design Space Exploration (EEDSE) framework transforms ecological scenario discovery into a mathematically rigorous, self-correcting optimization pipeline:
 
