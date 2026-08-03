@@ -33,62 +33,69 @@ EEDSE solves this bottleneck through structural encapsulation:
 
 ## 1. Complete Workflow & Data Artifact Topology
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        MACRO-PHASE 1: DESIGN SPACE DELIMITATION                        │
-├────────────────────────────────────────────────────────────────────────────────────────┤
-│ Ingest Invariants ──► Requirements Pre-Pruning ──► Dimensional Anchoring ──► X_init    │
-│ Artifact Output: DelimitedSpaceSchema (Pydantic / DuckDB SQL View)                     │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        MACRO-PHASE 2: GENOTYPE SUB-DSE SOLVERS                         │
-├────────────────────────────────────────────────────────────────────────────────────────┤
-│ Candidate Sub-Space Partitioning (G_1, ..., G_k)                                      │
-│   ├── Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP via HiGHS)   │
-│   ├── Stage 2.2: Trophic Interaction & Diet Compatibility Matrices (Binary Graph)     │
-│   └── Stage 2.3: Chemical Defense & Trigger Rule Timers (MINLP via SCIP)              │
-│ Artifact Output: GenotypeBlueprintSet ({P_sub,1, P_sub,2, ..., P_sub,k})              │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                   MACRO-PHASE 3: PHENOTYPE HIGH-FIDELITY VALIDATION                    │
-├────────────────────────────────────────────────────────────────────────────────────────┤
-│ Instantiation in ECS World & GridEnvironment                                            │
-│   ├── Spatiotemporal Execution (Numba JIT Chemotaxis, PyTorch CUDA PDEs)              │
-│   ├── Drastic Multi-Criteria Pruning (Thermodynamics, Z1-Z7 Flags, Shannon Entropy H)  │
-│   └── Relativization & Normalization ──► Unified Fitness Vector J_sys                  │
-│ Artifact Output: PhenotypeEvaluationRecord (Zarr Telemetry + J_sys Payload)            │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                       MACRO-PHASE 4: CLOSED-LOOP EPISTEMIC LEARNING                    │
-├────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────────────────────┐          ┌────────────────────────────────────────┐  │
-│  │ Historical Zarr / DuckDB     │          │ Epistemic Delta Calculation            │  │
-│  │ Telemetry Database           │          │ Δ_epistemic = F_actual - F_heuristic   │  │
-│  └──────────────┬───────────────┘          └───────────────────┬────────────────────┘  │
-│                 │                                              │                       │
-│                 ▼                                              ▼                       │
-│  ┌──────────────────────────────┐          ┌────────────────────────────────────────┐  │
-│  │ Co-Evolutionary Arms Race    │          │ GPyTorch Surrogate Model Recalibration │  │
-│  │ (Herbivore Counter-Strategy) │          │ W_{t+1} = W_t + η ∇ L_surrogate        │  │
-│  └──────────────┬───────────────┘          └───────────────────┬────────────────────┘  │
-│                 │                                              │                       │
-│                 └───────────────────────┬──────────────────────┘                       │
-│                                         │                                              │
-│                                         ▼                                              │
-│            ┌────────────────────────────────────────────────────────┐                  │
-│            │ Search Bounds Contract/Expand & SIMD Bit-Mask Mutation  │                  │
-│            │ (Ray/Tune + NSGA-III Non-Dominated Cluster Sorting)    │                  │
-│            └────────────────────────────┬───────────────────────────┘                  │
-│                                         │                                              │
-│                                         ▼                                              │
-│            Artifact Output: NextGenGenotypePool (Bounded N <= 32)                      │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    classDef phase fill:#2C3E50,stroke:#34495E,stroke-width:2px,color:#ECF0F1;
+    classDef output fill:#27AE60,stroke:#2ECC71,stroke-width:2px,color:#ECF0F1;
+    classDef artifact fill:#8E44AD,stroke:#9B59B6,stroke-width:2px,color:#ECF0F1;
+    classDef process fill:#2980B9,stroke:#3498DB,stroke-width:2px,color:#ECF0F1;
+
+    subgraph Phase1["MACRO-PHASE 1: DESIGN SPACE DELIMITATION"]
+        direction LR
+        Ingest["Ingest Invariants"]:::process --> PrePruning["Requirements Pre-Pruning"]:::process
+        PrePruning --> Anchoring["Dimensional Anchoring"]:::process
+        Anchoring --> X_init["X_init"]:::output
+    end
+
+    Phase1 -- "Artifact Output: DelimitedSpaceSchema (Pydantic / DuckDB SQL View)" --> Phase2
+
+    subgraph Phase2["MACRO-PHASE 2: GENOTYPE SUB-DSE SOLVERS"]
+        direction TB
+        Partition["Candidate Sub-Space Partitioning (G_1, ..., G_k)"]:::process
+        Partition --> Stage21["Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP via HiGHS)"]:::process
+        Partition --> Stage22["Stage 2.2: Trophic Interaction & Diet Compatibility Matrices (Binary Graph)"]:::process
+        Partition --> Stage23["Stage 2.3: Chemical Defense & Trigger Rule Timers (MINLP via SCIP)"]:::process
+    end
+
+    Phase2 -- "Artifact Output: GenotypeBlueprintSet ({P_sub,1, P_sub,2, ..., P_sub,k})" --> Phase3
+
+    subgraph Phase3["MACRO-PHASE 3: PHENOTYPE HIGH-FIDELITY VALIDATION"]
+        direction TB
+        Inst["Instantiation in ECS World & GridEnvironment"]:::process
+        Inst --> Exec["Spatiotemporal Execution (Numba JIT Chemotaxis, PyTorch CUDA PDEs)"]:::process
+        Inst --> Prune["Drastic Multi-Criteria Pruning (Thermodynamics, Z1-Z7 Flags, Shannon Entropy H)"]:::process
+        Inst --> Norm["Relativization & Normalization ──► Unified Fitness Vector J_sys"]:::process
+    end
+
+    Phase3 -- "Artifact Output: PhenotypeEvaluationRecord (Zarr Telemetry + J_sys Payload)" --> Phase4
+
+    subgraph Phase4["MACRO-PHASE 4: CLOSED-LOOP EPISTEMIC LEARNING"]
+        direction TB
+        subgraph Historical["Historical Data"]
+            DB["Historical Zarr / DuckDB<br/>Telemetry Database"]:::process
+        end
+        subgraph Delta["Error Calculation"]
+            Calc["Epistemic Delta Calculation<br/>Δ_epistemic = F_actual - F_heuristic"]:::process
+        end
+        subgraph CoEvo["Adaptation"]
+            ArmsRace["Co-Evolutionary Arms Race<br/>(Herbivore Counter-Strategy)"]:::process
+        end
+        subgraph Recalib["Surrogate Recalibration"]
+            GPyTorch["GPyTorch Surrogate Model Recalibration<br/>W_{t+1} = W_t + η ∇ L_surrogate"]:::process
+        end
+        
+        DB --> ArmsRace
+        Calc --> GPyTorch
+        
+        ArmsRace --> Bounds
+        GPyTorch --> Bounds
+        
+        Bounds["Search Bounds Contract/Expand & SIMD Bit-Mask Mutation<br/>(Ray/Tune + NSGA-III Non-Dominated Cluster Sorting)"]:::process
+    end
+
+    Phase4 -. "Artifact Output: NextGenGenotypePool (Bounded N <= 32)" .-> Phase1
+
+    class Phase1,Phase2,Phase3,Phase4 phase;
 ```
 
 ## 2. Deep-Dive Subsystem Specifications & Mathematical Invariants
@@ -113,6 +120,25 @@ $$
 The Genotype phase functions as an encapsulated Sub-DSE component within the overarching cycle. It breaks down the massive ecosystem model into sub-components evaluated by fast algebraic and combinatorial solvers in milliseconds ($T_{algebraic} \approx 1\text{ ms}$).
 
 #### Mathematical Formulations per Sub-Stage:
+
+```mermaid
+flowchart TD
+    classDef milp fill:#9B59B6,stroke:#8E44AD,stroke-width:2px,color:#fff;
+    classDef graph fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff;
+    classDef minlp fill:#1ABC9C,stroke:#16A085,stroke-width:2px,color:#fff;
+
+    G["Candidate Sub-Space (G_k)"] --> S21["Stage 2.1: Structural Carbon (MILP)"]:::milp
+    G --> S22["Stage 2.2: Trophic Interaction Matrix (Graph)"]:::graph
+    G --> S23["Stage 2.3: Chemical Defense Kinetics (MINLP)"]:::minlp
+    
+    S21 --> Pareto1["Sub-Pareto Front"]
+    S22 --> Pareto2["Sub-Pareto Front"]
+    S23 --> Pareto3["Sub-Pareto Front"]
+    
+    Pareto1 --> Prop["Pareto-Front Propagation"]
+    Pareto2 --> Prop
+    Pareto3 --> Prop
+```
 
 **Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)**
 
@@ -215,6 +241,17 @@ Because evaluating thousands of phenotypes in $T_{sim}$ is computationally expen
 Phase 4 completes the evolutionary closed loop, processing evaluated Genotype-Phenotype-Fitness triads $(\mathbf{G}, \mathbf{P}, \mathbf{J}_{sys})$ stored in append-only Zarr binary buffers and indexed via DuckDB / Polars.
 
 #### 1. Epistemic Error Delta Calculation ($\mathbf{\Delta}_{epistemic}$)
+
+```mermaid
+flowchart LR
+    classDef model fill:#E67E22,stroke:#D35400,stroke-width:2px,color:#fff;
+    classDef sim fill:#3498DB,stroke:#2980B9,stroke-width:2px,color:#fff;
+    classDef error fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff;
+
+    Heuristic["Fast Algebraic Guess<br/>(F_heuristic)"]:::model --> Diff(("−"))
+    Sim["Physical Simulation Reality<br/>(F_actual)"]:::sim --> Diff
+    Diff --> Delta["Epistemic Error Delta<br/>(Δ_epistemic)"]:::error
+```
 
 The engine calculates discrepancies between fast algebraic guesses ($\mathbf{\hat{F}}_{heuristic}$) and physical simulation realities ($\mathbf{F}_{actual}$):
 
