@@ -17,7 +17,21 @@ if TYPE_CHECKING:
 
 
 class _MycorrhizalLinkPayload(TypedDict, total=False):
-    """Serializable link payload used by draft and live mycorrhizal helpers."""
+    """Serializable link payload used by draft and live mycorrhizal helpers.
+
+    Attributes:
+        plant_index_a: Index of the first plant in the link.
+        plant_index_b: Index of the second plant in the link.
+        entity_id_a: Entity ID of the first plant in the link.
+        entity_id_b: Entity ID of the second plant in the link.
+        x1: X coordinate of the first plant.
+        y1: Y coordinate of the first plant.
+        x2: X coordinate of the second plant.
+        y2: Y coordinate of the second plant.
+        inter_species: Whether the link is between plants of different species.
+        crosses_x_boundary: Whether the link crosses the X-axis boundary.
+        crosses_y_boundary: Whether the link crosses the Y-axis boundary.
+    """
 
     plant_index_a: int
     plant_index_b: int
@@ -53,7 +67,6 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
     Returns:
         A list of link dictionaries, each containing ``plant_index_a``, ``plant_index_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
-
     """
     links: list[_MycorrhizalLinkPayload] = []
 
@@ -113,7 +126,6 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     Returns:
         A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
-
     """
     from phids.engine.components.plant import PlantComponent
 
@@ -153,6 +165,13 @@ def _build_live_mycorrhizal_links_from_snapshot(snapshot: dict[str, Any]) -> lis
 
     Operates on a pre-extracted, thread-safe dictionary representation of the live plants
     to prevent blocking the simulation event loop during JSON serialisation.
+
+    Args:
+        snapshot: A dictionary representation of the live plants.
+
+    Returns:
+        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
+        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
     plants_data = snapshot["plants"]
     plant_lookup = {p["entity_id"]: p for p in plants_data}
@@ -199,11 +218,5 @@ def _links_touching_cell(links: list[_MycorrhizalLinkPayload], x: int, y: int) -
 
     Returns:
         The subset of ``links`` where either endpoint matches ``(x, y)``.
-
     """
     return [link for link in links if (link["x1"] == x and link["y1"] == y) or (link["x2"] == x and link["y2"] == y)]
-
-
-# ---------------------------------------------------------------------------
-# Public presenter functions
-# ---------------------------------------------------------------------------
