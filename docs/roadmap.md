@@ -78,7 +78,7 @@ block-beta
   * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
   * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
   * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#1-sub-stage-21-soil-seed-bank-dormancy) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
 
 ### Sub-Stage 2.2: Soil Detritus & Biomass Recycling Loop (v2.2)
 
@@ -94,7 +94,7 @@ block-beta
   * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
   * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
   * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#4-sub-stage-24-soil-detritus-biomass-recycling) for soil mineralization continuous/discrete genes.
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for soil mineralization continuous/discrete genes.
 
 ### Sub-Stage 2.3: Macro-Patch Weather & Micro-Climate Profile (v2.3)
 
@@ -110,7 +110,7 @@ block-beta
   * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
   * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
   * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#5-sub-stage-25-macro-patch-weather-profiles) for climate amplitude and drought intensity genes.
+  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for climate amplitude and drought intensity genes.
 
 ### Phase 2 Implementation Summary Matrix
 
