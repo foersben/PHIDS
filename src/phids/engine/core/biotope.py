@@ -46,6 +46,40 @@ _SIGMA: float = 0.4
 
 
 @njit
+def _sample_layer(layer: npt.NDArray[np.float64], x: int, y: int, width: int, height: int) -> float:
+    """Sample a layer with boundary checking."""
+    if 0 <= x < width and 0 <= y < height:
+        return layer[x, y]
+    return 0.0
+
+
+@njit
+def _convolve_cell(
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    advected_scratch: npt.NDArray[np.float64],
+    kernel: npt.NDArray[np.float64],
+    k_w_half: int,
+    k_h_half: int,
+) -> float:
+    """Convolve a single cell with the given kernel."""
+    v = 0.0
+    for i in range(-k_w_half, k_w_half + 1):
+        ax = x - i
+        # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
+        # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
+        # measurably improving Numba JIT inner-loop vectorization and tick speed.
+        if 0 <= ax < width:
+            for j in range(-k_h_half, k_h_half + 1):
+                ay = y - j
+                if 0 <= ay < height:
+                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+    return v
+
+
+@njit
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -104,10 +138,10 @@ def _numba_diffuse_signal_layer(
             dx = cx - float(x0)
             dy = cy - float(y0)
 
-            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
-            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
-            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
-            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
+            v00 = _sample_layer(layer, x0, y0, width, height)
+            v10 = _sample_layer(layer, x1, y0, width, height)
+            v01 = _sample_layer(layer, x0, y1, width, height)
+            v11 = _sample_layer(layer, x1, y1, width, height)
 
             val_y0 = v00 * (1.0 - dx) + v10 * dx
             val_y1 = v01 * (1.0 - dx) + v11 * dx
@@ -124,18 +158,7 @@ def _numba_diffuse_signal_layer(
 
     for x in range(width):
         for y in range(height):
-            v = 0.0
-            for i in range(-k_w_half, k_w_half + 1):
-                ax = x - i
-                # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
-                # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
-                # measurably improving Numba JIT inner-loop vectorization and tick speed.
-                if 0 <= ax < width:
-                    for j in range(-k_h_half, k_h_half + 1):
-                        ay = y - j
-                        if 0 <= ay < height:
-                            v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-
+            v = _convolve_cell(x, y, width, height, advected_scratch, kernel, k_w_half, k_h_half)
             v *= decay
             if v < epsilon:
                 v = 0.0
