@@ -174,11 +174,20 @@ While PHIDS intentionally omits individual chronological aging in core execution
 1. **Mean Swarm Age Component (Scalar Approximation)**:
    Add a float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age updates via weighted arithmetic mean:
 
-   $$A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}$$
+   $$
+   A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}
+   $$
 
    This enables age-dependent velocity or upkeep decay at zero dynamic memory allocation overhead.
+
 2. **Weibull Cohort Hazard Mortality Rate ($\mu_{\text{age}}$)**:
-   Model senescent mortality at the swarm level using a Weibull hazard rate $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
+   Model senescent mortality at the swarm level using a Weibull hazard rate:
+
+   $$
+   \mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}
+   $$
+
+   Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
 3. **Multi-Cohort Stage Partitioning (Matrix Model)**:
    Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs, maintaining SIMD vectorization while capturing fine-grained age demographics.
 
