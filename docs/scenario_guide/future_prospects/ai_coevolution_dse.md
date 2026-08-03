@@ -28,7 +28,7 @@ This document details the planned framework for distributed multi-objective Desi
 
 While single-objective DSE (such as SciPy Differential Evolution) successfully locates static Lotka-Volterra limit cycles, real-world ecosystems are driven by ongoing **coevolutionary arms races**. Flora species continuously adjust metabolic investment between morphological defenses (thorns) and induced volatile chemical signaling (VOCs), while herbivore species co-evolve specialized digestive efficiencies and chemical neutralization capabilities.
 
-For detailed touchpoints on human vs. AI intervention gates across the pipeline, see [DSE Governance & Interventions](../design_space_exploration.md#5-governance--interventions-agentic-ai-in-the-loop-aitl-vs-human-in-the-loop-hitl).
+For detailed touchpoints on human vs. AI intervention gates across the pipeline, see [DSE Governance & Interventions](../design_space_exploration.md#5-governance-interventions-agentic-ai-in-the-loop-aitl-vs-human-in-the-loop-hitl).
 
 ```mermaid
 flowchart LR
