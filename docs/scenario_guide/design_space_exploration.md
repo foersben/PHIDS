@@ -76,7 +76,7 @@ $$
 
 The Genotype phase functions as an encapsulated Sub-DSE component within the overarching cycle. It breaks down the massive ecosystem model into sub-components evaluated by fast algebraic and combinatorial solvers in milliseconds ($T_{algebraic} \approx 1\text{ ms}$).
 
-#### Mathematical Formulations per Sub-Stage:
+#### Mathematical Formulations per Sub-Stage
 
 ```mermaid
 flowchart TD
@@ -84,20 +84,20 @@ flowchart TD
     classDef graph fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff;
     classDef minlp fill:#1ABC9C,stroke:#16A085,stroke-width:2px,color:#fff;
 
-    G["Candidate Sub-Space (G_k)"] --> S21["Stage 2.1: Structural Carbon (MILP)"]:::milp
-    G --> S22["Stage 2.2: Trophic Interaction Matrix (Graph)"]:::graph
-    G --> S23["Stage 2.3: Chemical Defense Kinetics (MINLP)"]:::minlp
+    G("Candidate Sub-Space (G_k)") --> S21("Stage 2.1: Structural Carbon (MILP)"):::milp
+    G --> S22("Stage 2.2: Trophic Interaction Matrix (Graph)"):::graph
+    G --> S23("Stage 2.3: Chemical Defense Kinetics (MINLP)"):::minlp
     
-    S21 --> Pareto1["Sub-Pareto Front"]
-    S22 --> Pareto2["Sub-Pareto Front"]
-    S23 --> Pareto3["Sub-Pareto Front"]
+    S21 --> Pareto1("Sub-Pareto Front")
+    S22 --> Pareto2("Sub-Pareto Front")
+    S23 --> Pareto3("Sub-Pareto Front")
     
-    Pareto1 --> Prop["Pareto-Front Propagation"]
-    Pareto2 --> Prop
-    Pareto3 --> Prop
+    Pareto1 --> Propagation("Pareto-Front Propagation")
+    Pareto2 --> Propagation
+    Pareto3 --> Propagation
 ```
 
-**Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)**
+#### Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)
 
 * **Solver**: Pyomo + HiGHS / SCIP.
 * **Mathematical Model**:
@@ -112,7 +112,7 @@ $$
 
 * **Objective**: Maximizes growth rate $g_j$ against baseline maintenance metabolism $m_j$ and mechanical armor costs ($c_{mechanical, j}$).
 
-**Sub-Stage 2.2: Trophic Interaction & Diet Compatibility (Graph Constraints)**
+#### Sub-Stage 2.2: Trophic Interaction & Diet Compatibility (Graph Constraints)
 
 * **Solver**: Boolean Graph Matching Solver.
 * **Mathematical Model**: Given a $16 \times 16$ boolean diet matrix $D_{ij} \in \{0, 1\}$ (Rule-of-16 bound):
@@ -125,7 +125,7 @@ $$
 \sum_{i=1}^{16} D_{ij} \le K_{predation\_limit} \quad \forall j \in \text{Active Flora} \quad (\text{Prevents over-grazing singularity})
 $$
 
-**Sub-Stage 2.3: Chemical Defense & Trigger Rule Kinetics (MINLP)**
+#### Sub-Stage 2.3: Chemical Defense & Trigger Rule Kinetics (MINLP)
 
 * **Solver**: SCIP / Bonmin.
 * **Mathematical Model**: Solves sigmoidal Hill priming kinetics and timer state machines:
@@ -140,7 +140,7 @@ $$
 
 * **Objective**: Balances active defense synthesis maintenance against expected pest deterrence.
 
-**Multi-Stage Pareto-Front Propagation**:
+#### Multi-Stage Pareto-Front Propagation
 
 Rather than collapsing to a single heuristic guess, each sub-stage solver extracts a non-dominated sub-Pareto front ($\mathcal{P}_{sub}$). Valid continuous parameter ranges and discrete graph structures are propagated forward to subsequent sub-stages, preserving structural diversity and preventing premature convergence.
 
