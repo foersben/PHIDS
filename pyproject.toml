@@ -51,7 +51,7 @@ dev = [
     "pytest-benchmark>=5.0.0",
     "pytest-asyncio>=0.25.0",
     "pytest-mock>=3.14.0",
-    "hypothesis>=6.100.0",
+    "hypothesis>=6.163.0",
     "httpx2>=2.7.0",
     "pre-commit>=4.0.0",
     "zensical>=0.0.51",
@@ -140,10 +140,7 @@ cache_dir = ".cache/pytest"
 [tool.coverage.run]
 source = ["src/phids"]
 data_file = ".cache/coverage"
-omit = [
-    "src/phids/api/templates/*",
-    "src/phids/api/static/*",
-]
+omit = ["src/phids/api/templates/*", "src/phids/api/static/*"]
 
 [tool.coverage.report]
 show_missing = true
