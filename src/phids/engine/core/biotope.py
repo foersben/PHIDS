@@ -19,9 +19,16 @@ lookups and reproducible ecological dynamics.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import numpy.typing as npt
 from numba import njit
+
+if TYPE_CHECKING:
+    prange = range
+else:
+    from numba import prange
 
 from phids.shared.constants import (
     GRID_H_MAX,
@@ -45,7 +52,7 @@ _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.4
 
 
-@njit
+@njit(parallel=True, cache=True)
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -91,10 +98,10 @@ def _numba_diffuse_signal_layer(
     advected_scratch.fill(0.0)
 
     # 1. Semi-Lagrangian Advection (backward interpolation with Toroidal wrap)
-    for x in range(width):
+    for x in prange(width):
         for y in range(height):
-            cx = float(x) - wind_x[x, y]
-            cy = float(y) - wind_y[x, y]
+            cx = x - wind_x[x, y]
+            cy = y - wind_y[x, y]
 
             floor_x = int(np.floor(cx))
             floor_y = int(np.floor(cy))
@@ -104,8 +111,8 @@ def _numba_diffuse_signal_layer(
             x1 = (floor_x + 1) % width
             y1 = (floor_y + 1) % height
 
-            dx = cx - float(floor_x)
-            dy = cy - float(floor_y)
+            dx = cx - floor_x
+            dy = cy - floor_y
 
             v00 = layer[x0, y0]
             v10 = layer[x1, y0]
@@ -125,7 +132,7 @@ def _numba_diffuse_signal_layer(
     k_w_half = k_w // 2
     k_h_half = k_h // 2
 
-    for x in range(width):
+    for x in prange(width):
         for y in range(height):
             v = 0.0
             for i in range(-k_w_half, k_w_half + 1):
@@ -316,7 +323,7 @@ class GridEnvironment:
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
-            _numba_diffuse_signal_layer(  # type: ignore[type-var, call-arg]
+            _numba_diffuse_signal_layer(
                 self.width,
                 self.height,
                 layer,

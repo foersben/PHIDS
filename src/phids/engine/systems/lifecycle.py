@@ -55,7 +55,6 @@ def _grow(plant: PlantComponent, tick: int) -> None:
     Args:
         plant: PlantComponent to update.
         tick: Current simulation tick (unused; kept for call-site parity).
-
     """
     del tick
     growth_amount = plant.base_energy * (plant.growth_rate / 100.0) * SLOW_TICK_STRIDE
@@ -79,8 +78,7 @@ def _attempt_reproduction(
         flora_species_params: Mapping of species_id to species parameters.
 
     Returns:
-        list[PlantComponent]: Newly created plant components (empty if none).
-
+        Newly created plant components (empty if none).
     """
     from phids.api.schemas.species import FloraSpeciesParams
 
@@ -298,11 +296,10 @@ def _establish_mycorrhizal_connections(
         plant_death_causes: Optional dictionary tracking causes of plant death.
 
     Returns:
-        tuple[bool, list[int]]: ``(made_connection, dead_entity_ids)`` where
+        ``(made_connection, dead_entity_ids)`` where
         ``dead_entity_ids`` contains plants that crossed the survival threshold
         due to connection costs and were removed from spatial registration and
         energy layers in this same lifecycle pass.
-
     """
     excluded = excluded_entity_ids or set()
     plants: list[PlantComponent] = [
@@ -374,6 +371,13 @@ def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) ->
 
     Supports both continuous per-tick interval gating (for direct unit calls)
     and weekly slow-loop stride gating (for full simulation runs).
+
+    Args:
+        tick: The current tick.
+        growth_interval_ticks: The interval between growth attempts.
+
+    Returns:
+        True if this lifecycle tick may grow new root links, False otherwise.
     """
     if growth_interval_ticks <= 1:
         return True
@@ -407,7 +411,6 @@ def run_lifecycle(
             attempts. At most one new link is created per attempt.
         mycorrhizal_inter_species: Allow inter-species root connections.
         plant_death_causes: Mapping of death causes to their respective counts.
-
     """
     dead: list[int] = []
 

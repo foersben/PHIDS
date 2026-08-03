@@ -50,20 +50,18 @@ def _gather_neighbours_jit(
     c_y[0] = y
     count = 1
 
-    if width > 1:
-        c_x[count] = (x - 1) % width
-        c_y[count] = y
-        count += 1
-        c_x[count] = (x + 1) % width
-        c_y[count] = y
-        count += 1
-    if height > 1:
-        c_x[count] = x
-        c_y[count] = (y - 1) % height
-        count += 1
-        c_x[count] = x
-        c_y[count] = (y + 1) % height
-        count += 1
+    c_x[count] = (x - 1) % width
+    c_y[count] = y
+    count += 1
+    c_x[count] = (x + 1) % width
+    c_y[count] = y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y - 1) % height
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y + 1) % height
+    count += 1
     return count
 
 
@@ -335,12 +333,10 @@ def _random_walk_step(
     """
     if random.choice is not _orig_choice:
         candidates: list[tuple[int, int]] = [(x, y)]
-        if width > 1:
-            candidates.append(((x - 1) % width, y))
-            candidates.append(((x + 1) % width, y))
-        if height > 1:
-            candidates.append((x, (y - 1) % height))
-            candidates.append((x, (y + 1) % height))
+        candidates.append(((x - 1) % width, y))
+        candidates.append(((x + 1) % width, y))
+        candidates.append((x, (y - 1) % height))
+        candidates.append((x, (y + 1) % height))
         return random.choice(candidates)
 
     return _random_walk_step_jit(x, y, width, height, c_x, c_y, random.random())
@@ -410,12 +406,10 @@ def _choose_neighbour_by_flow_probability_python(
     """
     x, y = swarm.x, swarm.y
     candidates: list[tuple[int, int]] = [(x, y)]
-    if width > 1:
-        candidates.append(((x - 1) % width, y))
-        candidates.append(((x + 1) % width, y))
-    if height > 1:
-        candidates.append((x, (y - 1) % height))
-        candidates.append((x, (y + 1) % height))
+    candidates.append(((x - 1) % width, y))
+    candidates.append(((x + 1) % width, y))
+    candidates.append((x, (y - 1) % height))
+    candidates.append((x, (y + 1) % height))
 
     scores = [float(flow_field[cx, cy]) for cx, cy in candidates]
     max_score = max(scores)

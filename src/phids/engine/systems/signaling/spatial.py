@@ -15,7 +15,14 @@ if TYPE_CHECKING:
 
 
 def _build_swarm_population_index(world: ECSWorld) -> dict[tuple[int, int, int], int]:
-    """Return a per-cell, per-species swarm-population index for one signaling tick."""
+    """Return a per-cell, per-species swarm-population index for one signaling tick.
+
+    Args:
+        world: ECSWorld used for spatial hash lookup.
+
+    Returns:
+        A dictionary mapping ``(x, y, species_id)`` tuples to the total population of that species at that cell.
+    """
     populations: dict[tuple[int, int, int], int] = {}
     for entity in world.query(SwarmComponent):
         swarm: SwarmComponent = entity.get_component(SwarmComponent)
@@ -39,8 +46,7 @@ def _co_located_swarm_population(
         herbivore_species_id: Herbivore species to aggregate.
 
     Returns:
-        int: Sum of populations for matching swarms at ``(x, y)``.
-
+        Sum of populations for matching swarms at ``(x, y)``.
     """
     total_population = 0
     for co_eid in world.entities_at(x, y):
@@ -68,8 +74,7 @@ def _collect_mycorrhizal_targets(
         mycorrhizal_inter_species: Whether cross-species relay is allowed.
 
     Returns:
-        list[PlantComponent]: Relay targets that are alive and species-compatible.
-
+        Relay targets that are alive and species-compatible.
     """
     targets: list[PlantComponent] = []
     for neighbour_id in source_plant.mycorrhizal_connections:

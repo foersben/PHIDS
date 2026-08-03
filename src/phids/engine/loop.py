@@ -268,7 +268,7 @@ class SimulationLoop:
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
-            return float(params.energy_min)
+            return params.energy_min
         return 1.0
 
     def _get_herbivore_velocity(self, species_id: int) -> int:
@@ -283,7 +283,7 @@ class SimulationLoop:
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
-            return int(params.velocity)
+            return params.velocity
         return 1
 
     def _get_herbivore_consumption_rate(self, species_id: int) -> float:
@@ -298,7 +298,7 @@ class SimulationLoop:
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
-            return float(params.consumption_rate)
+            return params.consumption_rate
         return 1.0
 
     def _get_herbivore_reproduction_divisor(self, species_id: int) -> float:
@@ -313,7 +313,7 @@ class SimulationLoop:
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
-            return float(params.reproduction_energy_divisor)
+            return params.reproduction_energy_divisor
         return 1.0
 
     def _get_herbivore_energy_upkeep(self, species_id: int) -> float:
@@ -328,7 +328,7 @@ class SimulationLoop:
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
-            return float(params.energy_upkeep_per_individual)
+            return params.energy_upkeep_per_individual
         return 0.05
 
     def _get_herbivore_split_threshold(self, species_id: int) -> int:
@@ -343,7 +343,7 @@ class SimulationLoop:
         """
         params = self._herbivore_params.get(species_id)
         if params is not None:
-            return int(params.split_population_threshold)
+            return params.split_population_threshold
         return 10
 
     # ------------------------------------------------------------------
@@ -399,28 +399,28 @@ class SimulationLoop:
         phase_timings_ms: dict[str, float],
     ) -> None:
         """Emit a coarse DEBUG snapshot for the current tick."""
-        flora_energy = float(tick_metrics.total_flora_energy)
+        flora_energy = tick_metrics.total_flora_energy
         if latest_metrics is not None:
             flora_energy = _metric_float(
                 latest_metrics.get("total_flora_energy", tick_metrics.total_flora_energy),
                 flora_energy,
             )
 
-        flora_population = int(tick_metrics.flora_population)
+        flora_population = tick_metrics.flora_population
         if latest_metrics is not None:
             flora_population = _metric_int(
                 latest_metrics.get("flora_population", tick_metrics.flora_population),
                 flora_population,
             )
 
-        herbivore_clusters = int(tick_metrics.herbivore_clusters)
+        herbivore_clusters = tick_metrics.herbivore_clusters
         if latest_metrics is not None:
             herbivore_clusters = _metric_int(
                 latest_metrics.get("herbivore_clusters", tick_metrics.herbivore_clusters),
                 herbivore_clusters,
             )
 
-        herbivore_population = int(tick_metrics.herbivore_population)
+        herbivore_population = tick_metrics.herbivore_population
         if latest_metrics is not None:
             herbivore_population = _metric_int(
                 latest_metrics.get("herbivore_population", tick_metrics.herbivore_population),
@@ -674,7 +674,7 @@ class SimulationLoop:
             Applied tick-rate value after clamping.
 
         """
-        applied = max(0.1, float(tick_rate_hz))
+        applied = max(0.1, tick_rate_hz)
         self.config.tick_rate_hz = applied
         logger.info("Simulation tick rate updated to %.2f Hz", applied)
         return applied
