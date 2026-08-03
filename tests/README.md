@@ -10,7 +10,7 @@ without creating monolithic test modules.
   * `api/`: schemas, UI state, and presenter helper behavior
   * `analytics/`: DSE optimizer and candidate-pruning unit checks
   * `engine/core/`: ECS, biotope, and flow-field deterministic unit checks
-  * `engine/systems/`: low-level interaction helper contracts (Numba-bypass stubs)
+  * `engine/systems/`: modulo gating, stochastic raycasting, and low-level interaction helper contracts (Numba-bypass stubs)
   * `io/`: scenario I/O serialisation round-trips
   * `telemetry/`: per-species telemetry accumulation and metric-shape checks
   * `shared/`: logging and utility-layer invariants
@@ -60,7 +60,7 @@ module, which is the suitable denominator for individual-slice verification.
 
 ## Mutation Testing
 
-To ensure our test suite catches semantic edge cases-especially in Numba-compiled deterministic logic-we use `mutmut` to automatically mutate source code and verify that tests fail.
+To ensure the test suite catches semantic edge cases-especially in Numba-compiled deterministic logic-`mutmut` is used to automatically mutate source code and verify that tests fail.
 
 Currently, mutation testing is applied strictly to hot-path algorithms in `src/phids/engine/core/` (specifically `flow_field.py`, `ecs.py`, and `biotope.py`). Because these components are heavily optimized and often bypass standard Python class mechanisms (e.g. `GridEnvironment` methods and ECS double-buffering logic), unit tests must be exceptionally rigorous. Property-based tests are used to enforce exact normalized outputs and invariant state transitions.
 

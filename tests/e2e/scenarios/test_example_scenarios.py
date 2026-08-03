@@ -23,7 +23,7 @@ from phids.engine.loop import SimulationLoop
 from phids.io.scenario import load_scenario_from_json
 
 EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "examples"
-EXAMPLE_PATHS = sorted(EXAMPLES_DIR.glob("*.json"))
+EXAMPLE_PATHS = sorted([p for p in EXAMPLES_DIR.glob("*.json") if not p.stem.startswith("benchmarking_")])
 CURATED_EXAMPLE_STEMS = {
     "dry_shrubland_cycles",
     "meadow_defense",
@@ -34,6 +34,7 @@ CURATED_EXAMPLE_STEMS = {
     "root_network_alarm_chain",
     "wind_tunnel_orchard",
     "eternal_canopy_blueprint",
+    "ecosystem_equilibrium_benchmark_200x200",
 }
 
 

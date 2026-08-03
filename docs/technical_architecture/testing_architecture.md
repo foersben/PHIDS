@@ -15,11 +15,11 @@ resources:
 - test_dse_optimizer.py
 - test_dse_pruning.py
 - test_interaction_py_helpers.py
-- tests/integration/systems/test_interaction_property_invariants.py
+- tests/integration/systems/test_interaction_invariants/
 - tests/integration/systems/test_interaction_mutation_pilot.py
 - test_interaction_hypothesis_pilot.py
 - tests/integration/api/test_websocket_manager.py
-- test_interaction_property_invariants.py
+- test_interaction_invariants/
 - test_interaction_mutation_pilot.py
 - test_api_builder_and_helpers.py
 - test_websocket_manager.py
@@ -36,10 +36,27 @@ This document aggregates PHIDS test suite topography, taxonomy, system mapping, 
 The PHIDS testing rig is architecturally partitioned into seven distinct lanes, mapping the flow of data from property-invariant validation to live transport stream resilience. This layered defense ensures that computational rules align with the biological model, data structures gracefully serialize, and the engine correctly protects constraints (e.g., the Rule of 16).
 
 * **Unit Telemetry and Data Engineering:** Found in `tests/unit/telemetry/`, tests here ensure that Polars DataFrames correctly reflect cross-tick invariants. E.g., handling zeros correctly for absent species, preserving flat column paradigms over nested dicts, and maintaining data correctness.
-* **Unit Analytics (DSE):** Found in `tests/unit/analytics/`, tests verify the Differential Stability Explorer optimizer (`test_dse_optimizer.py`) and candidate-pruning logic (`test_dse_pruning.py`) using deterministic fixture parameter sets.
+* **Unit Analytics (EEDSE):** Found in `tests/unit/analytics/`, tests verify the Differential Stability Explorer optimizer (`test_dse_optimizer.py`) and candidate-pruning logic (`test_dse_pruning.py`) using deterministic fixture parameter sets.
+
+```mermaid
+graph TD
+    subgraph "Analytics (src/phids/analytics/)"
+        DSEOpt["EEDSE Optimizer"]
+        DSEPrune["EEDSE Candidate Pruning"]
+    end
+
+    subgraph "Tests (tests/unit/analytics/)"
+        DSEOptTests["EEDSE Optimizer (test_dse_optimizer.py)"]
+        DSEPruneTests["EEDSE Pruning (test_dse_pruning.py)"]
+    end
+
+    DSEOpt -.-> DSEOptTests
+    DSEPrune -.-> DSEPruneTests
+```
+
 * **Unit Engine Systems (Numba Helpers):** Found in `tests/unit/engine/systems/`, tests isolate low-level interaction helper contracts (`test_interaction_py_helpers.py`) using plain Python stubs that bypass the JIT boundary so branch semantics can be asserted without Numba's compilation overhead.
 * **Integration API and HTTP Boundaries:** Defined largely within `tests/integration/api/`, these tests enforce the outer perimeter. They ensure malformed payloads return specific (400, 422, 404) explicit HTTP codes before polluting internal state, validate type-coercion behaviors on builder routes, and protect hard limits like the maximum of 16 branches (Rule of 16).
-* **Property Invariants and Mathematics:** Managed within `tests/integration/systems/test_interaction_property_invariants.py`. These run deterministic, bounded parameterized loops enforcing exact closed-form solutions for metabolic attrition, reproduction bounds, and monotonic behaviors regarding populations and baseline energy.
+* **Property Invariants and Mathematics:** Managed within `tests/integration/systems/test_interaction_invariants/`. These run deterministic, bounded parameterized loops enforcing exact closed-form solutions for metabolic attrition, reproduction bounds, and monotonic behaviors regarding populations and baseline energy.
 * **Hypothesis and Mutation Pilot Lanes:** Found in `tests/integration/systems/test_interaction_mutation_pilot.py` and `test_interaction_hypothesis_pilot.py`. These pilots use random-walk crowding boundaries, test edge cases (like 0 velocity floors or precise survival boundaries), and use Hypothesis-generated sequences to ensure constraints hold unconditionally under bounded inputs.
 * **Performance Budgets and Websockets Transport:** Asserted under `tests/benchmarks/` and `tests/integration/api/test_websocket_manager.py`. These bounds verify deterministic, environment-overridable millisecond limits for specific hotspots (like diffusion flow fields or websocket payload generation) using `pytest-benchmark`. In addition, WebSockets verify graceful teardown, snapshot cache reuse for unchanged ticks, and resilience to client disconnection.
 
@@ -72,7 +89,7 @@ graph TD
 
     %% Test Paths
     subgraph Mathematical_Validation["Property Validation (Math Invariants)"]
-        PropTests["Parametrized Invariants (test_interaction_property_invariants.py)"]
+        PropTests["Parametrized Invariants (test_interaction_invariants/)"]
     end
 
     subgraph Pilot_Lanes["Pilot Lanes (Stochastic & Mutation)"]
@@ -129,7 +146,7 @@ graph TD
 
 **Current Status:** Excellent.
 
-The math checks found in `test_interaction_property_invariants.py` verify that attrition and reproduction mathematically map strictly to closed-form calculations under varying bounds. This guarantees exact conservation logic (especially via `test_mitosis_threshold_and_partition_invariants`) when partitions happen.
+The math checks found in `test_interaction_invariants/` verify that attrition and reproduction mathematically map strictly to closed-form calculations under varying bounds. This guarantees exact conservation logic (especially via `test_mitosis_invariants.py`) when partitions happen.
 
 **Masked Detail:** The current configuration heavily tests exact equality (`==`) or tight bounds (via `pytest.approx`), but it rarely exposes the explicit mathematical boundaries of floating-point arithmetic (specifically related to the `SIGNAL_EPSILON` truncation). While some unit tests do check this, larger trophic networks might conceal slow compounding truncation drift.
 
@@ -155,8 +172,8 @@ To protect the simulation engine from performance regressions across refactoring
 
 #### Features
 
-* **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. Your active branch and uncommitted modifications remain completely untouched.
-* **Worktree Benchmarking:** Use the exact string `worktree` as a reference to automatically benchmark against your current, uncommitted working tree state without relying on the virtual clone.
+* **No Workspace Intrusion:** Uses a temporary local repository clone (`.cache/bench_clone`) to perform all checkouts. The active branch and uncommitted modifications remain completely untouched.
+* **Worktree Benchmarking:** Use the exact string `worktree` as a reference to automatically benchmark against the current, uncommitted working tree state without relying on the virtual clone.
 * **Directory Support:** Pass a directory instead of a single scenario file to automatically locate and benchmark every JSON scenario inside the folder, generating an overall folder evaluation summary.
 * **JIT-Only Mode:** Use `just bench-compare-jit` or pass `--jit-only` to skip the slow pure Python evaluations, drastically cutting down testing time.
 * **Warmup Phase:** Simulates 10 warmup ticks prior to starting the timer to allow JIT compilation to complete, ensuring the JIT measurements track execution throughput, not compiling latency.

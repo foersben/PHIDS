@@ -26,8 +26,8 @@ dependencies = [
     "zarr>=3.0.0",
     "typer>=0.27.0",
     "pandas-stubs~=3.0.3",
-    "deap>=1.4.4",
     "optuna>=4.9.0",
+    "pymoo>=0.6.2",
 ]
 
 [project.scripts]
@@ -38,7 +38,7 @@ pipeline = [
     "duckdb>=1.1.0",
     "scikit-learn>=1.5.0",
     "huggingface-hub>=0.24.0",
-    "httpx>=0.27.0",
+    "httpx2>=2.7.0",
     "aiofiles>=24.1.0",
     "pyarrow>=25.0.0",
 ]
@@ -52,7 +52,7 @@ dev = [
     "pytest-asyncio>=0.25.0",
     "pytest-mock>=3.14.0",
     "hypothesis>=6.100.0",
-    "httpx>=0.27.0",
+    "httpx2>=2.7.0",
     "pre-commit>=4.0.0",
     "zensical>=0.0.46",
     "mkdocstrings[python]>=0.27.0",
@@ -113,11 +113,12 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/engine/core/test_ecs_mutation_pilot.py",
     "tests/unit/engine/core/test_biotope_diffusion.py",
     "tests/unit/engine/core/test_biotope_state_mutation_pilot.py",
-    "tests/unit/engine/systems/test_systems_mutation_pilot.py",
+    "tests/unit/engine/systems/test_interaction_py_helpers.py",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 asyncio_mode = "auto"
 markers = [
     "benchmark: performance benchmark tests; deselect with -m 'not benchmark'",
