@@ -34,50 +34,25 @@ EEDSE solves this bottleneck through structural encapsulation:
 
 ```mermaid
 flowchart TD
-    classDef initial fill:#7F8C8D,stroke:#34495E,stroke-width:2px,color:#ECF0F1;
-    classDef genotype fill:#27AE60,stroke:#1E8449,stroke-width:2px,color:#ECF0F1;
-    classDef phenotype fill:#C0392B,stroke:#922B21,stroke-width:2px,color:#ECF0F1;
-    classDef database fill:#2980B9,stroke:#1B4F72,stroke-width:2px,color:#ECF0F1;
+    %% Styling matched to the architectural conceptual model
+    classDef initial fill:#f39c12,stroke:#d35400,stroke-width:2px,color:#fff;
+    classDef genotype fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff;
+    classDef phenotype fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff;
+    classDef database fill:#34495e,stroke:#2c3e50,stroke-width:2px,color:#fff;
 
     %% One-Time Initial Ingress
-    subgraph InitialPhase["Initial Pre-Phase (Executes Once at Initialization)"]
-        direction LR
-        Analysis["Invariant & Threat/Requirement Analysis"] --> Delimitation["Design Space Delimitation"]
-        Delimitation --> X_init["Initial Search Hyper-Cube (X_init)<br/>& DelimitedSpaceSchema"]
-    end
+    Init([Initial Pre-Phase<br/>Design Space Delimitation]):::initial
 
-    X_init -- "Initial Design Spaces & Bounds" --> Genotypes
+    %% Encapsulated Evolutionary Loop Nodes
+    G{{Genotypes<br/>(Heuristic Sub-DSE Solvers)}}:::genotype
+    P{{Phenotypes<br/>(High-Fidelity Validation)}}:::phenotype
+    DB[(Database & Epistemic<br/>Learning Feedback)]:::database
 
-    %% Encapsulated Multi-Stage Loop
-    subgraph InnerLoop["Evolutionary Encapsulated Multi-Stage DSE Loop"]
-        direction TB
-        
-        subgraph Phase2["MACRO-PHASE 2: GENOTYPES (Fast Heuristic Optimization)"]
-            Genotypes["Genotype Sub-DSE Solvers<br/>• Environmental Factors & Requirements<br/>• Structural Carbon Allocation (MILP)<br/>• Trophic Compatibility Graphs<br/>• Chemical Defense Timers (MINLP)"]
-        end
-
-        Phase2 -- "Pareto-Efficient Solutions<br/>(GenotypeBlueprintSet Candidates)" --> Phase3
-
-        subgraph Phase3["MACRO-PHASE 3: PHENOTYPES (High-Fidelity Validation)"]
-            Phenotypes["Phenotype Spatiotemporal Simulation<br/>• Instantiation in ECS World & GridEnvironment<br/>• Numba JIT Chemotaxis & PyTorch PDEs<br/>• Multi-Criteria Pruning & Fitness Relativization (J_sys)"]
-        end
-
-        Phase3 -- "Transfer Selected:<br/>Phenotype with Evaluation Results (J_sys) & Generation Number" --> Phase4
-
-        subgraph Phase4["MACRO-PHASE 4: DATABASE & EPISTEMIC LEARNING"]
-            Database["Historical Telemetry Database (Zarr / DuckDB)<br/>(Phenotype, Generation) Pairs"]
-            Database --> DeltaCalc["Epistemic Error Delta Calculation<br/>Δ_epistemic = F_actual - F_heuristic"]
-            DeltaCalc --> Surrogate["GPyTorch Surrogate Model & Co-Evolutionary Counter-Strategy"]
-            Surrogate --> EvoTools["Evolutionary Tools Update:<br/>• Design Spaces & Search Bounds<br/>• Weights, Parameters, Variables<br/>• NSGA-III SIMD Bit-Mask Mutations"]
-        end
-
-        EvoTools -- "Next Generation Genotypes" --> Genotypes
-    end
-
-    class InitialPhase initial;
-    class Phase2 genotype;
-    class Phase3 phenotype;
-    class Phase4 database;
+    %% Workflow Edges
+    Init -- "Initial Design Spaces<br/>& DSE Models" --> G
+    G -- "Pareto-Efficient Solutions<br/>(Configuration Candidates)" --> P
+    P -- "Transfer Selected:<br/>Phenotype Evaluation Results" --> DB
+    DB -- "Evolutionary Tools Update:<br/>Bounds, Weights, Parameters" --> G
 ```
 
 ## 2. Deep-Dive Subsystem Specifications & Mathematical Invariants
