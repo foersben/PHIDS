@@ -84,17 +84,32 @@ flowchart TD
     classDef graph fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff;
     classDef minlp fill:#1ABC9C,stroke:#16A085,stroke-width:2px,color:#fff;
 
-    G("Candidate Sub-Space (G_k)") --> S21("Stage 2.1: Structural Carbon (MILP)"):::milp
-    G --> S22("Stage 2.2: Trophic Interaction Matrix (Graph)"):::graph
-    G --> S23("Stage 2.3: Chemical Defense Kinetics (MINLP)"):::minlp
+    G["Candidate Sub-Space (G_k)"]
+    S21["Stage 2.1: Structural Carbon (MILP)"]
+    S22["Stage 2.2: Trophic Interaction Matrix (Graph)"]
+    S23["Stage 2.3: Chemical Defense Kinetics (MINLP)"]
     
-    S21 --> Pareto1("Sub-Pareto Front")
-    S22 --> Pareto2("Sub-Pareto Front")
-    S23 --> Pareto3("Sub-Pareto Front")
+    G --> S21
+    G --> S22
+    G --> S23
     
-    Pareto1 --> Propagation("Pareto-Front Propagation")
+    Pareto1["Sub-Pareto Front"]
+    Pareto2["Sub-Pareto Front"]
+    Pareto3["Sub-Pareto Front"]
+    
+    S21 --> Pareto1
+    S22 --> Pareto2
+    S23 --> Pareto3
+    
+    Propagation["Pareto-Front Propagation"]
+    
+    Pareto1 --> Propagation
     Pareto2 --> Propagation
     Pareto3 --> Propagation
+    
+    class S21 milp;
+    class S22 graph;
+    class S23 minlp;
 ```
 
 #### Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)
