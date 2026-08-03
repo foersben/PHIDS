@@ -23,7 +23,7 @@ import logging
 import pathlib
 import time
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from fastapi import (
     FastAPI,
@@ -312,6 +312,9 @@ async def ui_status_badge() -> HTMLResponse:
     return HTMLResponse(content=render_status_badge_html(_sim_loop))
 
 
+_CELL_DETAILS_TICK_TOLERANCE: Final[int] = 8
+
+
 @app.get("/api/ui/cell-details", summary="Detailed tooltip payload for one grid cell")
 async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> JSONResponse:
     """Return rich grid-cell details for dashboard tooltips.
@@ -332,7 +335,11 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
         HTTPException: Upstream presenter validation rejects out-of-bounds coordinates.
 
     """
-    if _sim_loop is not None and expected_tick is not None and expected_tick != _sim_loop.tick:
+    if (
+        _sim_loop is not None
+        and expected_tick is not None
+        and abs(expected_tick - _sim_loop.tick) > _CELL_DETAILS_TICK_TOLERANCE
+    ):
         return JSONResponse(
             status_code=409,
             content={
