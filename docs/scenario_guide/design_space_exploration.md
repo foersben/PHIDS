@@ -18,84 +18,66 @@ resources: []
 !!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"
     The Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) subsystem and its underlying optimization pipelines are strictly a Work-In-Progress (WIP) and Context-In-Process (CIP) construction site. Furthermore, **AI is not used as a massive black box anywhere in this architecture**. Any AI-in-the-loop features serve strictly to assist and evaluate configurations alongside Human-in-the-loop (HITL) processes, ensuring full biological interpretability. The APIs, algorithms, and UI panels described in this document are subject to continuous refinement.
 
-# Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master Architectural Specification
-
 ## Abstract
 
-The Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) framework is the primary optimization and scenario discovery engine of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). High-dimensional ecosystem spaces ($100+$ continuous traits and discrete choice matrices across multiple species) suffer from exponential sample complexity ($O(2^N)$). Directly evaluating thousands of candidate scenarios in high-fidelity spatiotemporal physics engines is computationally intractable ($T_{sim} pprox 0.85\text{ ms/tick}$).
+The Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) framework is the primary optimization and scenario discovery engine of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). High-dimensional ecosystem spaces ($100+$ continuous traits and discrete choice matrices across multiple species) suffer from exponential sample complexity ($O(2^N)$). Directly evaluating thousands of candidate scenarios in high-fidelity spatiotemporal physics engines is computationally intractable ($T_{sim} \approx 0.85\text{ ms/tick}$).
 
 EEDSE solves this bottleneck through structural encapsulation:
 
-* **Macro Delimitation (Pre-Phase)**: Restricts the infinite search volume to an empirically anchored, requirement-bounded hyper-cube ($\mathcal{X}_{init}$).
-* **Genotype Sub-DSE (Fast Heuristic Optimization)**: Fractures the system into specialized sub-components, using fast algebraic and combinatorial solvers (Pyomo, HiGHS, SCIP) to output non-dominated Pareto-fronts in $O(\text{ms})$.
-* **Phenotype High-Fidelity Validation**: Instantiates Pareto-front candidates into concrete spatial simulations, applying drastic multi-criteria pruning and relativizing disparate outputs into a Unified Normalized Fitness Vector ($\mathbf{J}_{sys}$).
-* **Phase 4 Closed-Loop Epistemic Feedback**: Calculates the epistemic error delta ($\mathbf{\Delta}_{epistemic}$) between heuristic guesses and physical reality, using Gaussian Process surrogates (GPyTorch) to re-educate the fast algebraic generators while scheduling distributed co-evolutionary passes (Ray/Tune + NSGA-III).
+* **Macro Delimitation (Pre-Phase / One-Time Ingress)**: Executes once prior to the optimization loop to restrict the infinite search volume to an empirically anchored, requirement-bounded initial hyper-cube ($\mathcal{X}_{init}$).
+* **Encapsulated Evolutionary Loop (Phases 2–4)**:
+    * **Genotype Sub-DSE (Fast Heuristic Optimization)**: Evaluates sub-components using fast algebraic/combinatorial solvers (MILP/MINLP) to output candidate Pareto-fronts in $O(\text{ms})$.
+    * **Phenotype High-Fidelity Validation**: Instantiates candidate genotypes into concrete spatiotemporal simulations, applying multi-criteria pruning and relativizing metrics into a Unified Normalized Fitness Vector ($\mathbf{J}_{sys}$).
+    * **Database & Epistemic Learning (Closed-Loop Feedback)**: Stores (phenotype, generation) pairs in Zarr/DuckDB, calculates error deltas ($\mathbf{\Delta}_{epistemic}$) to recalibrate surrogate solvers, and feeds updated parameters directly back into the next generation of **Genotypes**.
 
 ## 1. Complete Workflow & Data Artifact Topology
 
 ```mermaid
 flowchart TD
-    classDef phase fill:#2C3E50,stroke:#34495E,stroke-width:2px,color:#ECF0F1;
-    classDef output fill:#27AE60,stroke:#2ECC71,stroke-width:2px,color:#ECF0F1;
-    classDef artifact fill:#8E44AD,stroke:#9B59B6,stroke-width:2px,color:#ECF0F1;
-    classDef process fill:#2980B9,stroke:#3498DB,stroke-width:2px,color:#ECF0F1;
+    classDef initial fill:#7F8C8D,stroke:#34495E,stroke-width:2px,color:#ECF0F1;
+    classDef genotype fill:#27AE60,stroke:#1E8449,stroke-width:2px,color:#ECF0F1;
+    classDef phenotype fill:#C0392B,stroke:#922B21,stroke-width:2px,color:#ECF0F1;
+    classDef database fill:#2980B9,stroke:#1B4F72,stroke-width:2px,color:#ECF0F1;
 
-    subgraph Phase1["MACRO-PHASE 1: DESIGN SPACE DELIMITATION"]
+    %% One-Time Initial Ingress
+    subgraph InitialPhase["Initial Pre-Phase (Executes Once at Initialization)"]
         direction LR
-        Ingest["Ingest Invariants"]:::process --> PrePruning["Requirements Pre-Pruning"]:::process
-        PrePruning --> Anchoring["Dimensional Anchoring"]:::process
-        Anchoring --> X_init["X_init"]:::output
+        Analysis["Invariant & Threat/Requirement Analysis"] --> Delimitation["Design Space Delimitation"]
+        Delimitation --> X_init["Initial Search Hyper-Cube (X_init)<br/>& DelimitedSpaceSchema"]
     end
 
-    Phase1 -- "Artifact Output: DelimitedSpaceSchema (Pydantic / DuckDB SQL View)" --> Phase2
+    X_init -- "Initial Design Spaces & Bounds" --> Genotypes
 
-    subgraph Phase2["MACRO-PHASE 2: GENOTYPE SUB-DSE SOLVERS"]
+    %% Encapsulated Multi-Stage Loop
+    subgraph InnerLoop["Evolutionary Encapsulated Multi-Stage DSE Loop"]
         direction TB
-        Partition["Candidate Sub-Space Partitioning (G_1, ..., G_k)"]:::process
-        Partition --> Stage21["Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP via HiGHS)"]:::process
-        Partition --> Stage22["Stage 2.2: Trophic Interaction & Diet Compatibility Matrices (Binary Graph)"]:::process
-        Partition --> Stage23["Stage 2.3: Chemical Defense & Trigger Rule Timers (MINLP via SCIP)"]:::process
+        
+        subgraph Phase2["MACRO-PHASE 2: GENOTYPES (Fast Heuristic Optimization)"]
+            Genotypes["Genotype Sub-DSE Solvers<br/>• Environmental Factors & Requirements<br/>• Structural Carbon Allocation (MILP)<br/>• Trophic Compatibility Graphs<br/>• Chemical Defense Timers (MINLP)"]
+        end
+
+        Phase2 -- "Pareto-Efficient Solutions<br/>(GenotypeBlueprintSet Candidates)" --> Phase3
+
+        subgraph Phase3["MACRO-PHASE 3: PHENOTYPES (High-Fidelity Validation)"]
+            Phenotypes["Phenotype Spatiotemporal Simulation<br/>• Instantiation in ECS World & GridEnvironment<br/>• Numba JIT Chemotaxis & PyTorch PDEs<br/>• Multi-Criteria Pruning & Fitness Relativization (J_sys)"]
+        end
+
+        Phase3 -- "Transfer Selected:<br/>Phenotype with Evaluation Results (J_sys) & Generation Number" --> Phase4
+
+        subgraph Phase4["MACRO-PHASE 4: DATABASE & EPISTEMIC LEARNING"]
+            Database["Historical Telemetry Database (Zarr / DuckDB)<br/>(Phenotype, Generation) Pairs"]
+            Database --> DeltaCalc["Epistemic Error Delta Calculation<br/>Δ_epistemic = F_actual - F_heuristic"]
+            DeltaCalc --> Surrogate["GPyTorch Surrogate Model & Co-Evolutionary Counter-Strategy"]
+            Surrogate --> EvoTools["Evolutionary Tools Update:<br/>• Design Spaces & Search Bounds<br/>• Weights, Parameters, Variables<br/>• NSGA-III SIMD Bit-Mask Mutations"]
+        end
+
+        EvoTools -- "Next Generation Genotypes" --> Genotypes
     end
 
-    Phase2 -- "Artifact Output: GenotypeBlueprintSet ({P_sub,1, P_sub,2, ..., P_sub,k})" --> Phase3
-
-    subgraph Phase3["MACRO-PHASE 3: PHENOTYPE HIGH-FIDELITY VALIDATION"]
-        direction TB
-        Inst["Instantiation in ECS World & GridEnvironment"]:::process
-        Inst --> Exec["Spatiotemporal Execution (Numba JIT Chemotaxis, PyTorch CUDA PDEs)"]:::process
-        Inst --> Prune["Drastic Multi-Criteria Pruning (Thermodynamics, Z1-Z7 Flags, Shannon Entropy H)"]:::process
-        Inst --> Norm["Relativization & Normalization ──► Unified Fitness Vector J_sys"]:::process
-    end
-
-    Phase3 -- "Artifact Output: PhenotypeEvaluationRecord (Zarr Telemetry + J_sys Payload)" --> Phase4
-
-    subgraph Phase4["MACRO-PHASE 4: CLOSED-LOOP EPISTEMIC LEARNING"]
-        direction TB
-        subgraph Historical["Historical Data"]
-            DB["Historical Zarr / DuckDB<br/>Telemetry Database"]:::process
-        end
-        subgraph Delta["Error Calculation"]
-            Calc["Epistemic Delta Calculation<br/>Δ_epistemic = F_actual - F_heuristic"]:::process
-        end
-        subgraph CoEvo["Adaptation"]
-            ArmsRace["Co-Evolutionary Arms Race<br/>(Herbivore Counter-Strategy)"]:::process
-        end
-        subgraph Recalib["Surrogate Recalibration"]
-            GPyTorch["GPyTorch Surrogate Model Recalibration<br/>W_{t+1} = W_t + η ∇ L_surrogate"]:::process
-        end
-        
-        DB --> ArmsRace
-        Calc --> GPyTorch
-        
-        ArmsRace --> Bounds
-        GPyTorch --> Bounds
-        
-        Bounds["Search Bounds Contract/Expand & SIMD Bit-Mask Mutation<br/>(Ray/Tune + NSGA-III Non-Dominated Cluster Sorting)"]:::process
-    end
-
-    Phase4 -. "Artifact Output: NextGenGenotypePool (Bounded N <= 32)" .-> Phase1
-
-    class Phase1,Phase2,Phase3,Phase4 phase;
+    class InitialPhase initial;
+    class Phase2 genotype;
+    class Phase3 phenotype;
+    class Phase4 database;
 ```
 
 ## 2. Deep-Dive Subsystem Specifications & Mathematical Invariants
