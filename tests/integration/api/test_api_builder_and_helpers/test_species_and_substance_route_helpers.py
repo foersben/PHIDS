@@ -1,35 +1,27 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Integration tests for PHIDS API route handlers, HTMX requests, and WebSocket endpoints."""
+"""Integration tests for PHIDS API route handlers, HTMX requests, and species/substance builder routes."""
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
 
 import pytest
-from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
 from phids.api import main as api_main
-from phids.api.main import app
-from phids.api.presenters.dashboard import (
-    build_draft_mycorrhizal_links,
-    build_live_dashboard_payload,
-    extract_ui_snapshot,
-)
+from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.schemas.placement import InitialPlantPlacement, InitialSwarmPlacement
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.schemas.species import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction, TriggerConditionSchema
 from phids.api.services.draft.placements import add_plant_placement
-from phids.api.ui_state.state import DraftState, get_draft, set_draft
+from phids.api.ui_state.state import DraftState, get_draft
 from phids.api.ui_state.substances import SubstanceDefinition
-from phids.engine.loop import SimulationLoop
 
 
 def _flora(species_id: int) -> FloraSpeciesParams:
@@ -126,15 +118,38 @@ async def test_builder_flora_routes_add_update_delete(api_client: AsyncClient) -
             "camouflage_factor": 5.0,
         },
     )
+    assert add_resp.status_code == 200, add_resp.text
+
+    draft = get_draft()
+    added_flora = draft.flora_species[-1]
+    assert isinstance(added_flora, FloraSpeciesParams)
+    assert added_flora.camouflage is True
+    assert added_flora.camouflage_factor == pytest.approx(1.0)
+
+    added_id = added_flora.species_id
     update_resp = await api_client.put(
-        "/api/config/flora/1",
-        data={"name": "Oak Updated", "camouflage": "on", "camouflage_factor": -1.0},
+        f"/api/config/flora/{added_id}",
+        data={
+            "name": "Oak Updated",
+            "camouflage": "off",
+            "camouflage_factor": -1.0,
+            "passive_defenses.mechanical_damage_per_bite": -5.0,
+            "passive_defenses.digestibility_modifier": 2.0,
+        },
     )
-    delete_resp = await api_client.delete("/api/config/flora/1")
+    assert update_resp.status_code == 200, update_resp.text
+
+    updated_flora = draft.flora_species[-1]
+    assert isinstance(updated_flora, FloraSpeciesParams)
+    assert updated_flora.name == "Oak Updated"
+    assert updated_flora.camouflage is False
+    assert updated_flora.camouflage_factor == pytest.approx(0.0)
+    assert updated_flora.passive_defenses.mechanical_damage_per_bite == pytest.approx(0.0)
+    assert updated_flora.passive_defenses.digestibility_modifier == pytest.approx(1.0)
+
+    delete_resp = await api_client.delete(f"/api/config/flora/{added_id}")
     delete_missing_resp = await api_client.delete("/api/config/flora/99")
 
-    assert add_resp.status_code == 200, add_resp.text
-    assert update_resp.status_code == 200, update_resp.text
     assert delete_resp.status_code == 200, delete_resp.text
     assert delete_missing_resp.status_code == 404, delete_missing_resp.text
 
@@ -144,17 +159,46 @@ async def test_builder_herbivore_routes_add_update_delete(api_client: AsyncClien
     """Verify herbivore routes support add/update/delete and return 404 for missing species IDs."""
     add_resp = await api_client.post(
         "/api/config/herbivores",
-        data={"name": "Locust", "energy_min": 2.0, "velocity": 2, "consumption_rate": 3.5},
+        data={
+            "name": "Locust",
+            "energy_min": 2.0,
+            "velocity": 2,
+            "consumption_rate": 3.5,
+            "energy_upkeep_per_individual": 0.1,
+            "split_population_threshold": 15,
+        },
     )
+    assert add_resp.status_code == 200, add_resp.text
+
+    draft = get_draft()
+    added_herbivore = draft.herbivore_species[-1]
+    assert isinstance(added_herbivore, HerbivoreSpeciesParams)
+    assert added_herbivore.energy_upkeep_per_individual == pytest.approx(0.1)
+    assert added_herbivore.split_population_threshold == 15
+
+    added_id = added_herbivore.species_id
     update_resp = await api_client.put(
-        "/api/config/herbivores/1",
-        data={"name": "Locust Updated", "velocity": 3},
+        f"/api/config/herbivores/{added_id}",
+        data={
+            "name": "Locust Updated",
+            "velocity": 3,
+            "resistances.morphological_adaptation": 1.5,
+            "resistances.chemical_neutralization": -0.5,
+            "resistances.digestive_efficiency": 2.5,
+        },
     )
-    delete_resp = await api_client.delete("/api/config/herbivores/1")
+    assert update_resp.status_code == 200, update_resp.text
+
+    updated_herbivore = draft.herbivore_species[-1]
+    assert isinstance(updated_herbivore, HerbivoreSpeciesParams)
+    assert updated_herbivore.name == "Locust Updated"
+    assert updated_herbivore.resistances.morphological_adaptation == pytest.approx(1.0)
+    assert updated_herbivore.resistances.chemical_neutralization == pytest.approx(0.0)
+    assert updated_herbivore.resistances.digestive_efficiency == pytest.approx(2.5)
+
+    delete_resp = await api_client.delete(f"/api/config/herbivores/{added_id}")
     delete_missing_resp = await api_client.delete("/api/config/herbivores/99")
 
-    assert add_resp.status_code == 200, add_resp.text
-    assert update_resp.status_code == 200, update_resp.text
     assert delete_resp.status_code == 200, delete_resp.text
     assert delete_missing_resp.status_code == 404, delete_missing_resp.text
 
@@ -254,192 +298,3 @@ async def test_herbivore_routes_clamp_reproduction_divisor_to_physical_minimum(
     draft = get_draft()
     herbivore = next(p for p in draft.herbivore_species if isinstance(p, HerbivoreSpeciesParams) and p.species_id == 1)
     assert herbivore.reproduction_energy_divisor == pytest.approx(1.0)
-
-
-@pytest.mark.asyncio
-async def test_trigger_rule_routes_add_update_and_delete(api_client: AsyncClient) -> None:
-    """Verify trigger-rule add/update/delete routes and missing-rule handling."""
-    draft = get_draft()
-    draft.substance_definitions = [
-        SubstanceDefinition(substance_id=0, name="Signal A"),
-        SubstanceDefinition(substance_id=1, name="Signal B"),
-    ]
-
-    add_resp = await api_client.post(
-        "/api/config/trigger-rules",
-        data={
-            "flora_species_id": 0,
-            "herbivore_species_id": 0,
-            "substance_id": 0,
-            "min_herbivore_population": 0,
-            "activation_condition_json": (
-                '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
-            ),
-        },
-    )
-    update_resp = await api_client.put(
-        "/api/config/trigger-rules/0",
-        data={"substance_id": 1, "min_herbivore_population": 7},
-    )
-    update_missing_resp = await api_client.put("/api/config/trigger-rules/9", data={"substance_id": 1})
-    delete_resp = await api_client.delete("/api/config/trigger-rules/0")
-    delete_missing_resp = await api_client.delete("/api/config/trigger-rules/9")
-
-    assert add_resp.status_code == 200, add_resp.text
-    assert update_resp.status_code == 200, update_resp.text
-    assert update_missing_resp.status_code == 404, update_missing_resp.text
-    assert delete_resp.status_code == 200, delete_resp.text
-    assert delete_missing_resp.status_code == 404, delete_missing_resp.text
-
-
-@pytest.mark.asyncio
-async def test_trigger_rule_condition_node_routes_validate_parent_paths(
-    api_client: AsyncClient,
-) -> None:
-    """Verify trigger-rule condition tree endpoints support valid edits and reject invalid parent paths."""
-    draft = get_draft()
-    draft.substance_definitions = [
-        SubstanceDefinition(substance_id=0, name="Signal A"),
-        SubstanceDefinition(substance_id=1, name="Signal B"),
-    ]
-
-    await api_client.post(
-        "/api/config/trigger-rules",
-        data={
-            "flora_species_id": 0,
-            "herbivore_species_id": 0,
-            "substance_id": 0,
-            "activation_condition_json": (
-                '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
-            ),
-        },
-    )
-    replace_root_resp = await api_client.post(
-        "/api/config/trigger-rules/0/condition/root",
-        data={"node_kind": "all_of"},
-    )
-    add_child_resp = await api_client.post(
-        "/api/config/trigger-rules/0/condition/child",
-        data={"node_kind": "substance_active", "parent_path": ""},
-    )
-    update_node_resp = await api_client.put(
-        "/api/config/trigger-rules/0/condition/node",
-        data={"path": "1", "substance_id": 1},
-    )
-    delete_child_resp = await api_client.post(
-        "/api/config/trigger-rules/0/condition/delete",
-        data={"path": "1"},
-    )
-    invalid_parent_resp = await api_client.post(
-        "/api/config/trigger-rules/0/condition/child",
-        data={"node_kind": "herbivore_presence", "parent_path": "0"},
-    )
-
-    assert replace_root_resp.status_code == 200, replace_root_resp.text
-    assert add_child_resp.status_code == 200, add_child_resp.text
-    assert update_node_resp.status_code == 200, update_node_resp.text
-    assert delete_child_resp.status_code == 200, delete_child_resp.text
-    assert invalid_parent_resp.status_code == 400, invalid_parent_resp.text
-
-
-@pytest.mark.asyncio
-async def test_placement_routes_add_remove_and_clear(api_client: AsyncClient) -> None:
-    """Verify placement endpoints add clamped entries, remove existing entries, and clear all placements."""
-    responses = {
-        "plant_add": await api_client.post(
-            "/api/config/placements/plant",
-            data={"species_id": 0, "x": 999, "y": -5, "energy": -3.0},
-        ),
-        "swarm_add": await api_client.post(
-            "/api/config/placements/swarm",
-            data={"species_id": 0, "x": -2, "y": 999, "population": 0, "energy": -7.0},
-        ),
-        "plant_delete": await api_client.delete("/api/config/placements/plant/0"),
-        "plant_delete_missing": await api_client.delete("/api/config/placements/plant/0"),
-        "swarm_delete": await api_client.delete("/api/config/placements/swarm/0"),
-        "swarm_delete_missing": await api_client.delete("/api/config/placements/swarm/0"),
-        "clear": await api_client.post("/api/config/placements/clear"),
-    }
-
-    expected_statuses = {
-        "plant_add": 200,
-        "swarm_add": 200,
-        "plant_delete": 200,
-        "plant_delete_missing": 404,
-        "swarm_delete": 200,
-        "swarm_delete_missing": 404,
-        "clear": 200,
-    }
-    for key, expected_status in expected_statuses.items():
-        assert responses[key].status_code == expected_status, responses[key].text
-
-
-@pytest.mark.asyncio
-async def test_scenario_routes_reject_invalid_draft_or_import_payload(
-    api_client: AsyncClient,
-) -> None:
-    """Verify scenario export/load reject invalid drafts and import rejects malformed JSON uploads."""
-    set_draft(DraftState(flora_species=[], herbivore_species=[]))
-    responses = {
-        "export": await api_client.get("/api/scenario/export"),
-        "load": await api_client.post("/api/scenario/load-draft"),
-        "import": await api_client.post(
-            "/api/scenario/import",
-            files={"file": ("broken.json", b"{not-json", "application/json")},
-        ),
-    }
-
-    assert responses["export"].status_code == 400, responses["export"].text
-    assert responses["load"].status_code == 400, responses["load"].text
-    assert responses["import"].status_code == 422, responses["import"].text
-
-
-@pytest.mark.asyncio
-async def test_scenario_import_reconstructs_triggers_and_substances(
-    api_client: AsyncClient,
-) -> None:
-    """Test scenario import for triggers and substances reconstruction."""
-    payload = _config_with_trigger().model_dump(mode="json")
-    payload["flora_species"][0]["triggers"][0]["activation_condition"] = {
-        "kind": "herbivore_presence",
-        "herbivore_species_id": 0,
-        "min_herbivore_population": 3,
-    }
-    content = json.dumps(payload).encode("utf-8")
-
-    resp = await api_client.post(
-        "/api/scenario/import",
-        files={"file": ("triggered.json", content, "application/json")},
-    )
-
-    draft = get_draft()
-    assert resp.status_code == 200, resp.text
-    assert draft.mycorrhizal_growth_interval_ticks == 6
-    assert len(draft.trigger_rules) == 1
-    assert draft.trigger_rules[0].activation_condition == {
-        "kind": "herbivore_presence",
-        "herbivore_species_id": 0,
-        "min_herbivore_population": 3,
-    }
-    assert draft.substance_definitions[0].name == "Substance 0"
-
-
-def test_websocket_stream_endpoints_close_cleanly() -> None:
-    """Verify websocket endpoints close correctly when idle and stream payloads once a loop exists."""
-    client = TestClient(app)
-
-    with client.websocket_connect("/ws/simulation/stream") as websocket:
-        close_message = websocket.receive()
-    assert close_message["type"] == "websocket.close"
-    assert close_message["code"] == 1008
-
-    loop = SimulationLoop(_config_with_trigger())
-    api_main._sim_loop = loop
-    expected_payload = build_live_dashboard_payload(extract_ui_snapshot(loop), substance_names={})
-    with client.websocket_connect("/ws/ui/stream") as websocket:
-        payload = json.loads(websocket.receive_text())
-
-    assert payload["all_flora_species"]
-    assert payload["tick"] == expected_payload["tick"]
-    assert payload["grid_width"] == expected_payload["grid_width"]
-    assert payload["grid_height"] == expected_payload["grid_height"]
