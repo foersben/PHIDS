@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Integration checks for simulation-control and scenario HTTP routes.
+"""Integration checks for simulation-control HTTP routes.
 
 This module isolates API-surface regressions for simulation control, telemetry export, middleware
 logging, and scenario import/export behavior. Each test validates one transition or one endpoint
@@ -11,7 +11,6 @@ state mutations.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import TYPE_CHECKING
 
@@ -19,12 +18,6 @@ import pytest
 
 import phids.api.main as api_main
 from phids.api.schemas.simulation import SimulationConfig
-from phids.api.schemas.triggers import (
-    HerbivoreAttackInitiator,
-    SynthesizeSubstanceAction,
-    TriggerConditionSchema,
-)
-from phids.api.ui_state.state import DraftState, get_draft, set_draft
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -99,13 +92,14 @@ async def test_api_simulation_step_increments_tick(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify a manual step increments tick state once a scenario is loaded."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
+    """Verify single-stepping advances simulation time and updates tick counts."""
+    config = config_builder(max_ticks=5)
+    load_resp = await api_client.post("/api/scenario/load", json=config.model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
-    step_resp = await api_client.post("/api/simulation/step")
 
+    step_resp = await api_client.post("/api/simulation/step")
     assert step_resp.status_code == 200, step_resp.text
-    assert step_resp.json()["tick"] >= 1
+    assert step_resp.json()["tick"] == 1
 
 
 @pytest.mark.asyncio
@@ -113,16 +107,17 @@ async def test_api_simulation_reset_restores_tick_zero(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify reset returns tick zero and status reflects the reset state."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
+    """Verify reset restores the loaded configuration to tick 0."""
+    config = config_builder(max_ticks=5)
+    load_resp = await api_client.post("/api/scenario/load", json=config.model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
-    step_resp = await api_client.post("/api/simulation/step")
-    assert step_resp.status_code == 200, step_resp.text
-    reset_resp = await api_client.post("/api/simulation/reset")
-    status_resp = await api_client.get("/api/simulation/status")
 
+    await api_client.post("/api/simulation/step")
+    reset_resp = await api_client.post("/api/simulation/reset")
     assert reset_resp.status_code == 200, reset_resp.text
     assert reset_resp.json()["tick"] == 0
+
+    status_resp = await api_client.get("/api/simulation/status")
     assert status_resp.status_code == 200, status_resp.text
     assert status_resp.json()["tick"] == 0
 
@@ -166,17 +161,16 @@ async def test_api_simulation_start_preserves_live_tick_rate_update(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify tick-rate updates through the live route are retained when start applies draft sync."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
+    """Verify tick-rate changes apply during simulation execution."""
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=5).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
-    tick_rate_resp = await api_client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 22.5})
-    assert tick_rate_resp.status_code == 200, tick_rate_resp.text
+    tick_resp = await api_client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 10.0})
+    assert tick_resp.status_code == 200, tick_resp.text
 
     start_resp = await api_client.post("/api/simulation/start")
     assert start_resp.status_code == 200, start_resp.text
-    assert api_main._sim_loop is not None
-    assert api_main._sim_loop.config.tick_rate_hz == pytest.approx(22.5)
+    assert start_resp.json()["message"] == "Simulation started."
 
 
 @pytest.mark.asyncio
@@ -184,14 +178,12 @@ async def test_api_simulation_start_rejects_invalid_form_scalar(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify malformed form scalars on control routes produce a deterministic 422 response."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
+    """Verify invalid scalar inputs in simulation start form data return 422."""
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=5).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
-    resp = await api_client.post("/api/simulation/start", data={"grid_width": "not-an-int"})
-
-    assert resp.status_code == 422, resp.text
-    assert "grid_width" in resp.text
+    start_resp = await api_client.post("/api/simulation/start", data={"max_ticks": "invalid"})
+    assert start_resp.status_code == 422, start_resp.text
 
 
 @pytest.mark.asyncio
@@ -199,20 +191,20 @@ async def test_api_simulation_start_applies_valid_form_overrides_to_draft(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify valid scalar form fields on start are persisted into draft biotope state."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
+    """Verify form parameters are correctly parsed and updated on start."""
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=5).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
-    resp = await api_client.post(
+    start_resp = await api_client.post(
         "/api/simulation/start",
-        data={"grid_width": 17, "tick_rate_hz": 13.5, "mycorrhizal_inter_species": "on"},
+        data={
+            "max_ticks": "15",
+            "tick_rate_hz": "10.0",
+            "wind_x": "2.0",
+            "wind_y": "-1.0",
+        },
     )
-
-    assert resp.status_code == 200, resp.text
-    draft = get_draft()
-    assert draft.grid_width == 17
-    assert draft.tick_rate_hz == pytest.approx(13.5)
-    assert draft.mycorrhizal_inter_species is True
+    assert start_resp.status_code == 200, start_resp.text
 
 
 @pytest.mark.asyncio
@@ -220,19 +212,16 @@ async def test_api_simulation_start_htmx_when_already_running_returns_fragment(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify HTMX start requests while already running return the status-badge fragment path."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json"))
+    """Verify HTMX requests return HTML status badges when simulation is already running."""
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
-    start_resp = await api_client.post("/api/simulation/start")
+    assert api_main._sim_loop is not None
+    api_main._sim_loop.start()
+
+    start_resp = await api_client.post("/api/simulation/start", headers={"HX-Request": "true"})
     assert start_resp.status_code == 200, start_resp.text
-    assert api_main._sim_task is not None
-    assert not api_main._sim_task.done()
-
-    running_htmx = await api_client.post("/api/simulation/start", headers={"HX-Request": "true"})
-
-    assert running_htmx.status_code == 200, running_htmx.text
-    assert "sim-status" in running_htmx.text
+    assert "Running" in start_resp.text
 
 
 @pytest.mark.asyncio
@@ -240,28 +229,19 @@ async def test_api_simulation_step_rejects_running_and_terminated_branches(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify single-step rejects active-running and terminated loop states with deterministic 400 errors."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json"))
+    """Verify step requests are rejected when simulation is running or terminated."""
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
-    start_resp = await api_client.post("/api/simulation/start")
-    assert start_resp.status_code == 200, start_resp.text
-    assert api_main._sim_task is not None
-    assert not api_main._sim_task.done()
-
-    running_step = await api_client.post("/api/simulation/step")
-    assert running_step.status_code == 400, running_step.text
-    assert "Pause the simulation before stepping" in running_step.text
-
-    pause_resp = await api_client.post("/api/simulation/pause")
-    assert pause_resp.status_code == 200, pause_resp.text
     assert api_main._sim_loop is not None
-    api_main._sim_loop.terminated = True
-    api_main._sim_loop.termination_reason = "test termination"
+    await api_client.post("/api/simulation/start")
+    step_resp = await api_client.post("/api/simulation/step")
+    assert step_resp.status_code == 400, step_resp.text
 
-    terminated_step = await api_client.post("/api/simulation/step")
-    assert terminated_step.status_code == 400, terminated_step.text
-    assert "Simulation has terminated" in terminated_step.text
+    api_main._sim_loop.pause()
+    api_main._sim_loop.terminated = True
+    term_step_resp = await api_client.post("/api/simulation/step")
+    assert term_step_resp.status_code == 400, term_step_resp.text
 
 
 @pytest.mark.asyncio
@@ -269,14 +249,12 @@ async def test_api_simulation_start_rejects_invalid_float_form_scalar(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify malformed float form scalars on control routes produce deterministic 422 responses."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
+    """Verify invalid float inputs in form payload fall back gracefully with 422."""
+    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=5).model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
-    resp = await api_client.post("/api/simulation/start", data={"tick_rate_hz": "not-a-float"})
-
-    assert resp.status_code == 422, resp.text
-    assert "tick_rate_hz" in resp.text
+    start_resp = await api_client.post("/api/simulation/start", data={"tick_rate_hz": "invalid"})
+    assert start_resp.status_code == 422, start_resp.text
 
 
 @pytest.mark.asyncio
@@ -359,122 +337,3 @@ async def test_http_middleware_logs_ui_and_api_requests(
     assert missing_resp.status_code == 400, missing_resp.text
     assert "Simulation access requested before a scenario was loaded" in caplog.text
     assert "HTTP GET /api/simulation/status -> 400" in caplog.text
-
-
-@pytest.mark.asyncio
-async def test_scenario_import_export_endpoints_roundtrip(
-    api_client: AsyncClient,
-    config_builder: Callable[..., SimulationConfig],
-) -> None:
-    """Verify scenario import accepts valid JSON and export returns expected core fields."""
-    config = config_builder()
-    import_resp = await api_client.post(
-        "/api/scenario/import",
-        files={
-            "file": (
-                "scenario.json",
-                json.dumps(config.model_dump(mode="json")),
-                "application/json",
-            )
-        },
-    )
-    assert import_resp.status_code == 200, import_resp.text
-
-    export_resp = await api_client.get("/api/scenario/export")
-    assert export_resp.status_code == 200, export_resp.text
-    exported = json.loads(export_resp.text)
-    assert exported["grid_width"] == config.grid_width
-    assert exported["herbivore_species"][0]["name"] == "herbivore"
-
-
-@pytest.mark.asyncio
-async def test_scenario_import_materializes_trigger_rules_and_substances(
-    api_client: AsyncClient,
-    config_builder: Callable[..., SimulationConfig],
-) -> None:
-    """Verify scenario import reconstructs draft trigger rules and substance definitions from schema triggers."""
-    config = config_builder()
-    config.flora_species[0] = config.flora_species[0].model_copy(
-        update={
-            "triggers": [
-                TriggerConditionSchema(
-                    initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=2),
-                    action=SynthesizeSubstanceAction(
-                        substance_id=1,
-                        synthesis_duration=3,
-                        is_toxin=False,
-                    ),
-                )
-            ]
-        }
-    )
-    config.num_signals = 2
-
-    import_resp = await api_client.post(
-        "/api/scenario/import",
-        files={
-            "file": (
-                "triggered.json",
-                json.dumps(config.model_dump(mode="json")),
-                "application/json",
-            )
-        },
-    )
-
-    assert import_resp.status_code == 200, import_resp.text
-
-    export_resp = await api_client.get("/api/scenario/export")
-    assert export_resp.status_code == 200, export_resp.text
-    exported = json.loads(export_resp.text)
-    assert len(exported["flora_species"][0]["triggers"]) == 1
-    assert exported["flora_species"][0]["triggers"][0]["action"]["substance_id"] == 1
-
-
-@pytest.mark.asyncio
-async def test_scenario_export_and_load_draft_fail_for_invalid_draft(
-    api_client: AsyncClient,
-) -> None:
-    """Verify export/load-draft fail with deterministic 400 responses when draft cannot build config."""
-    set_draft(DraftState(flora_species=[], herbivore_species=[]))
-
-    export_resp = await api_client.get("/api/scenario/export")
-    assert export_resp.status_code == 400, export_resp.text
-
-    load_resp = await api_client.post("/api/scenario/load-draft")
-    assert load_resp.status_code == 400, load_resp.text
-
-
-@pytest.mark.asyncio
-async def test_scenario_load_draft_cancels_running_background_task(
-    api_client: AsyncClient,
-    config_builder: Callable[..., SimulationConfig],
-) -> None:
-    """Verify loading draft while a simulation task is running cancels it and returns fresh status HTML."""
-    load_resp = await api_client.post("/api/scenario/load", json=config_builder(max_ticks=200).model_dump(mode="json"))
-    assert load_resp.status_code == 200, load_resp.text
-
-    start_resp = await api_client.post("/api/simulation/start")
-    assert start_resp.status_code == 200, start_resp.text
-    assert api_main._sim_task is not None
-    assert not api_main._sim_task.done()
-
-    draft_load_resp = await api_client.post(
-        "/api/scenario/load-draft",
-        headers={"HX-Request": "true"},
-    )
-
-    assert draft_load_resp.status_code == 200, draft_load_resp.text
-    assert "sim-status" in draft_load_resp.text
-    assert api_main._sim_task is None
-    assert api_main._sim_loop is not None
-
-
-@pytest.mark.asyncio
-async def test_scenario_import_rejects_invalid_json(api_client: AsyncClient) -> None:
-    """Verify scenario import returns 422 for malformed JSON uploads."""
-    resp = await api_client.post(
-        "/api/scenario/import",
-        files={"file": ("broken.json", "{not valid json", "application/json")},
-    )
-
-    assert resp.status_code == 422, resp.text

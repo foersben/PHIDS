@@ -79,19 +79,21 @@ def run_interaction(
     tick: int,  # noqa: ARG001
     plant_death_causes: dict[str, int] | None = None,
     herbivore_death_causes: dict[str, int] | None = None,
+    is_medium_tick: bool = True,
+    is_slow_tick: bool = True,
 ) -> None:
-    """Execute one complete interaction tick, advancing all swarm entities through seven ordered phases.
+    """Execute one interaction tick with modulo-gated temporal decoupling.
 
-    The interaction cycle is executed in the following deterministic order for all swarms:
+    The interaction cycle is executed in the following deterministic order:
 
-    1. **Calculate Tile Populations**: Computes the number of individuals per tile to establish density.
-    2. **Movement**: Determines new positions based on flow, repulsion, and anchoring.
-    3. **Feeding**: Consumes local flora, transfers energy, and handles plant mortality.
-    4. **Metabolism & Reproduction**: Applies energy costs, triggers "death by starvation" if needed, and executes
-    population doubling (mitosis).
+    1. **Calculate Tile Populations**: Computes the number of individuals per tile (every tick).
+    2. **Movement**: Determines new positions based on flow field chemotaxis (every tick - Fast Loop).
+    3. **Feeding**: Consumes local flora and transfers energy (is_medium_tick - Daily Loop, 24-tick stride).
+    4. **Metabolism & Reproduction**: Applies energy costs and casualty liquidation
+       (is_medium_tick - Daily Loop). Mitosis (is_slow_tick - Weekly Loop, 168-tick stride).
 
-    This ensures a consistent, phase-ordered simulation step where movement precedes feeding, and metabolic
-    consequences are resolved before the next tick.
+    This ensures consistent phase-ordering while matching computation frequency to biological
+    timescales. Per-tick rate values are scaled by the stride multiplier inside each gated block.
 
     Args:
         world: The ECS world.
@@ -102,6 +104,8 @@ def run_interaction(
         tick: The current simulation tick.
         plant_death_causes: The plant death causes.
         herbivore_death_causes: The herbivore death causes.
+        is_medium_tick: True on daily (24-tick) boundaries - gates feeding and metabolism.
+        is_slow_tick: True on weekly (168-tick) boundaries - gates mitosis and population events.
     """
     dead_swarms: list[int] = []
     tile_populations: list[int] = [0] * (env.width * env.height)
@@ -150,8 +154,8 @@ def run_interaction(
             scratch_weights,
         )
 
-        # 3. Feeding Phase
-        if not has_moved:
+        # 3. Feeding Phase (Daily Loop - gated to is_medium_tick)
+        if not has_moved and is_medium_tick:
             _resolve_swarm_feeding(
                 swarm,
                 world,
@@ -163,10 +167,19 @@ def run_interaction(
                 plant_death_causes,
             )
 
-        # 4. Metabolism & Reproduction
-        if not swarm.repelled:
+        # 4. Metabolism & Reproduction (Daily Loop - gated to is_medium_tick)
+        if not swarm.repelled and is_medium_tick:
             _resolve_swarm_metabolism_and_reproduction(
-                swarm, entity, world, env, tile_populations, dead_swarms, scratch_cx, scratch_cy, herbivore_death_causes
+                swarm,
+                entity,
+                world,
+                env,
+                tile_populations,
+                dead_swarms,
+                scratch_cx,
+                scratch_cy,
+                herbivore_death_causes,
+                is_slow_tick=is_slow_tick,
             )
 
     world.collect_garbage(dead_swarms)
