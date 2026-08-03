@@ -1,6 +1,6 @@
 ---
 type: concept
-title: Design Space Exploration (EEDSE)
+title: "Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master Architectural Specification"
 status: active
 version: 3.0
 description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)** architecture.
@@ -20,7 +20,7 @@ resources: []
 
 # Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master Architectural Specification
 
-## Executive Summary
+## Abstract
 
 The Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) framework is the primary optimization and scenario discovery engine of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). High-dimensional ecosystem spaces ($100+$ continuous traits and discrete choice matrices across multiple species) suffer from exponential sample complexity ($O(2^N)$). Directly evaluating thousands of candidate scenarios in high-fidelity spatiotemporal physics engines is computationally intractable ($T_{sim} pprox 0.85\text{ ms/tick}$).
 
