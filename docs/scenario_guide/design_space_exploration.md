@@ -1,423 +1,657 @@
 ---
 type: concept
-title: Design Space Exploration (DSE)
+title: "Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master Architectural Specification"
 status: active
-version: 2.0
-description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes
-  an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (DSE)** ar...
+version: 3.0
+description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)** architecture.
 tags:
 - phids
 - ecs
 - numba
 - chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+- eedse
+- optimization
+timestamp: "2026-08-03T12:00:00Z"
+resources:
+- docs/scenario_guide/agentic_log_writer.md
 ---
 
 !!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"
-    The Evolutionary Design Space Exploration (DSE) subsystem and its underlying optimization pipelines are strictly a Work-In-Progress (WIP) and Context-In-Process (CIP) construction site. Furthermore, **AI is not used as a massive black box anywhere in this architecture**. Any AI-in-the-loop features serve strictly to assist and evaluate configurations alongside Human-in-the-loop (HITL) processes, ensuring full biological interpretability. The APIs, algorithms, and UI panels described in this document are subject to continuous refinement.
+    The Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) subsystem and its underlying optimization pipelines are strictly a Work-In-Progress (WIP) and Context-In-Process (CIP) construction site. Furthermore, **AI is not used as a massive black box anywhere in this architecture**. Any AI-in-the-loop features serve strictly to assist and evaluate configurations alongside Human-in-the-loop (HITL) processes, ensuring full biological interpretability. The APIs, algorithms, and UI panels described in this document are subject to continuous refinement.
 
-The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (DSE)** architecture. DSE systematically searches a vast landscape of ecological parameters, spatial configurations, and interaction topologies to discover stable Lotka-Volterra dynamics (stable equilibria) within simulated ecosystems.
+## Abstract
 
----
+The Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) framework is the primary optimization and scenario discovery engine of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). High-dimensional ecosystem spaces ($100+$ continuous traits and discrete choice matrices across multiple species) suffer from exponential sample complexity ($O(2^N)$). Directly evaluating thousands of candidate scenarios in high-fidelity spatiotemporal physics engines is computationally intractable ($T_{sim} \approx 0.85\text{ ms/tick}$).
 
-## 1. The Hierarchical MINLP Genotype
+EEDSE solves this bottleneck through structural encapsulation:
 
-### 1.1 Conceptual Intuition
+* **Macro Delimitation (Pre-Phase / One-Time Ingress)**: Executes once prior to the optimization loop to restrict the infinite search volume to an empirically anchored, requirement-bounded initial hyper-cube ($\mathcal{X}_{init}$).
+* **Encapsulated Evolutionary Loop (Phases 2–4)**:
+    * **Genotype Sub-DSE (Fast Heuristic Optimization)**: Evaluates sub-components using fast algebraic/combinatorial solvers (MILP/MINLP) to output candidate Pareto-fronts in $O(\text{ms})$.
+    * **Phenotype High-Fidelity Validation**: Instantiates candidate genotypes into concrete spatiotemporal simulations, applying multi-criteria pruning and relativizing metrics into a Unified Normalized Fitness Vector ($\mathbf{J}_{sys}$).
+    * **Database & Epistemic Learning (Closed-Loop Feedback)**: Stores (phenotype, generation) pairs in Zarr/DuckDB, calculates error deltas ($\mathbf{\Delta}_{epistemic}$) to recalibrate surrogate solvers, and feeds updated parameters directly back into the next generation of **Genotypes**.
 
-Imagine you are designing an entire forest ecosystem. You have two types of decisions to make:
-
-* **Discrete Decisions (Yes/No or Choices)**: Which plant species exist? Who eats whom (the food web)? What layout strategy do we use (clumped vs. scattered)?
-* **Continuous Decisions (Sliders/Numbers)**: How fast does Plant A grow ($0.0$ to $1.0$)? How much energy does Herbivore B burn per step ($0.05$ to $0.5$)?
-
-Older versions of PHIDS treated this as a flat list of numbers (a single vector) and used standard optimization algorithms like SciPy's Differential Evolution. This failed because of the **curse of dimensionality**: if you have 10 parameters, the search space is large; if you have 50 parameters (some choices, some numbers), the search space becomes exponentially vast and complex ($O(d^N)$).
-
-The new DSE model treats this search space as a **Mixed-Integer Non-Linear Programming (MINLP)** problem. It separates the "discrete choices" (the structure) from the "continuous sliders" (the rates) in a hierarchy, pruning invalid structural combinations before tuning the rates.
+## 1. Complete Workflow & Data Artifact Topology
 
 ```mermaid
-graph TD
-    Root[Ecosystem Genotype <br/> Hierarchical MINLP]
-    Root --> B1[Discrete / Structural Genes <br/> Integer & Boolean Logic]
-    Root --> B2[Continuous / Parametric Genes <br/> Bounded Floats]
+flowchart TD
+    %% Styling matched to the architectural conceptual model
+    classDef initial fill:#f39c12,stroke:#d35400,stroke-width:2px,color:#fff;
+    classDef genotype fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff;
+    classDef phenotype fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff;
+    classDef database fill:#34495e,stroke:#2c3e50,stroke-width:2px,color:#fff;
 
-    B1 --> B1A[Placement Strategy <br/> Uniform, Clustered, Banded]
-    B1 --> B1B[Interaction Topologies <br/> Boolean Diet Matrices <br/> Toxin Trigger Maps <br/> Senescence Rules]
+    %% One-Time Initial Ingress
+    Init(["Initial Pre-Phase<br/>Design Space Delimitation"]):::initial
 
-    B2 --> B2A[Flora Traits <br/> Growth Rates <br/> Seed Dispersion Radii <br/> Passive Defenses]
-    B2 --> B2B[Herbivore Traits <br/> Metabolic Upkeep <br/> Mitosis Thresholds <br/> Resistances]
+    %% Encapsulated Evolutionary Loop Nodes
+    G{{"Genotypes<br/>(Heuristic Sub-DSE Solvers)"}}:::genotype
+    P{{"Phenotypes<br/>(High-Fidelity Validation)"}}:::phenotype
+    DB[("Database & Epistemic<br/>Learning Feedback")]:::database
+
+    %% Workflow Edges
+    Init -- "Initial Design Spaces<br/>& DSE Models" --> G
+    G -- "Pareto-Efficient Solutions<br/>(Configuration Candidates)" --> P
+    P -- "Transfer Selected:<br/>Phenotype Evaluation Results" --> DB
+    DB -- "Evolutionary Tools Update:<br/>Bounds, Weights, Parameters" --> G
 ```
 
-### 1.2 Mathematical Formulation
+## 2. Deep-Dive Subsystem Specifications & Mathematical Invariants
 
-A genotype $G$ is represented as a composite vector space:
+### 2.1 Macro-Phase 1: Design Space Delimitation (Pre-Phase)
 
-$$G = (X_D, X_C)$$
+The delimitation pre-phase executes once prior to starting the evolutionary loop. It establishes the bounded search hyper-cube $\mathcal{X}_{init} \subset \mathbb{R}^n \times \mathbb{Z}^m$.
 
-where:
+$$
+\mathcal{X}_{init} = \left\{ \mathbf{x} \in \mathbb{R}^n \times \mathbb{Z}^m \; \middle\vert{} \; \mathbf{g}_{req}(\mathbf{x}) \le \mathbf{0}, \; \mathbf{h}_{thermo}(\mathbf{x}) \le \mathbf{0}, \; \mathbf{x}_{L} \le \mathbf{x} \le \mathbf{x}_{U} \right\}
+$$
 
-* $X_D \in \mathcal{D}$ represents the discrete subspace (categorical and binary choices):
+* **Requirements-Based Pre-Pruning**: Hard scenario requirements act as preliminary logical masks $\mathbf{g}_{req}(\mathbf{x})$. Non-negotiable survival bounds (e.g., minimum target flora survival threshold $E_{target} \ge E_{min}$, carrying capacity ceiling $E_{max}$, or maximum allowable metabolic penalty) eliminate non-compliant parameter sets immediately.
+* **Sub-Space Partitioning**: The global parameter space is partitioned into $k$ discrete initial genotype sub-spaces ($\mathbf{G}_1, \mathbf{G}_2, \dots, \mathbf{G}_k$). Each initial genotype explores a specialized evolutionary sub-strategy:
+    * $\mathbf{G}_1$: Airborne Volatile Organic Compound (VOC) alarm networks.
+    * $\mathbf{G}_2$: Local tissue toxin synthesis and mechanical armor.
+    * $\mathbf{G}_3$: Subterranean mycorrhizal relay chains and nutrient withdrawal.
+* **Dimensional Anchoring (Buckingham $\Pi$-Theorem)**: Raw biological traits ingested from empirical databases (TRY, PanTHERIA, Pherobase) via DuckDB are non-dimensionalized relative to grid cell size ($L_0 = \Delta L$), tick duration ($T_0 = \Delta \tau$), and energy quantum ($E_0 = \Delta E$). Continuous traits are bounded within statistical intervals $[\mu_k - 2\sigma_k, \mu_k + 2\sigma_k]$.
 
-    $$\mathcal{D} = \{S_P, \mathbf{A}, \mathbf{T}\}$$
+### 2.2 Macro-Phase 2: Genotype Sub-DSE (Fast Heuristic Optimization)
 
-    * $S_P \in \{\text{Uniform}, \text{Clustered}, \text{Banded}\}$: Spatial placement strategy.
-    * $\mathbf{A} \in \{0, 1\}^{N_H \times N_F}$: Diet compatibility matrix ($N_H$ herbivores, $N_F$ flora).
-    * $\mathbf{T} \in \{0, 1\}^{N_F \times N_F}$: Toxin signaling trigger compatibility map.
-* $X_C \in \mathcal{C}$ represents the continuous parameters bounded by biological limits:
+The Genotype phase functions as an encapsulated Sub-DSE component within the overarching cycle. It breaks down the massive ecosystem model into sub-components evaluated by fast algebraic and combinatorial solvers in milliseconds ($T_{algebraic} \approx 1\text{ ms}$).
 
-    $$\mathcal{C} = \prod_{i=1}^{V} [l_i, u_i] \subset \mathbb{R}^V$$
-
-    * Growth rate $g_j \in [0, 1]$
-    * Metabolic upkeep cost $m_i \in [0, \infty)$
-    * Mitosis threshold $e_{\text{rep}, i} \in [m_i, \infty)$
-    * Seed dispersal radius $r_{\text{seed}, j} \in [0, W]$ where $W$ is the grid width.
-    * Chemotaxis parameters: target attraction ($\alpha$), toxin repulsion ($\beta$), signal decay factor, and truncation thresholds.
-
----
-
-## 2. Genotype-to-Phenotype Mapping
-
-### 2.1 Mapping Intuition
-
-A **Genotype** is a blueprint (the recipe). A **Phenotype** is the physical manifestation (the actual baked cake).
-Before the simulator can evaluate an ecosystem, it must map the abstract choices and values of the genotype into the actual working components inside the simulation engine.
-
-* Discrete choices determine *how many* entities are spawned, *where* they are placed on the grid, and how their interaction tables are set up.
-* Continuous parameters are assigned directly to the entities' internal components (e.g., speed, energy reserves).
+#### Mathematical Formulations per Sub-Stage
 
 ```mermaid
-graph LR
-    G[Hierarchical MINLP Genotype] --> T[Translation Layer <br/> SimulationConfig Validation <br/> Biological DB Bounds]
-    
-    T --> P1[Biotope & Matrices <br/> Spatial Initial Conditions <br/> 16x16 Interaction Rules]
-    T --> P2[ECSWorld Engine <br/> FloraComponent Instantiation <br/> SwarmComponent Instantiation]
+flowchart TD
+    classDef milp fill:#9B59B6,stroke:#8E44AD,stroke-width:2px,color:#fff;
+    classDef graphstyle fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff;
+    classDef minlp fill:#1ABC9C,stroke:#16A085,stroke-width:2px,color:#fff;
 
-    subgraph Phenotype Manifestation
-        P1
-        P2
-    end
+
+    G["Candidate Sub-Space (G_k)"]
+    S21["Stage 2.1: Structural Carbon (MILP)"]
+    S22["Stage 2.2: Trophic Interaction Matrix (Graph)"]
+    S23["Stage 2.3: Chemical Defense Kinetics (MINLP)"]
+    
+    G --> S21
+    G --> S22
+    G --> S23
+    
+    P1["Sub-Pareto Front"]
+    P2["Sub-Pareto Front"]
+    P3["Sub-Pareto Front"]
+    
+    S21 --> P1
+    S22 --> P2
+    S23 --> P3
+    
+    Prop["Pareto-Front Propagation"]
+    
+    P1 --> Prop
+    P2 --> Prop
+    P3 --> Prop
+    
+    class S21 milp
+    class S22 graphstyle
+    class S23 minlp
+
 ```
 
-### 2.2 Algorithmic Pipeline
+#### Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)
 
-Let $\Phi: G \to P$ be the mapping function from genotype to phenotype representation. The translation layer performs the following mapping pipeline:
+* **Solver**: PySCIPOpt (MINLP) / highspy (MILP) / CasADi.
+* **Mathematical Model**:
 
-1. **Validation**:
+$$
+\max_{\mathbf{x}} \; \sum_{j=1}^{16} \left( g_j \cdot y_j - m_j \cdot y_j - c_{mechanical, j} \cdot x_{mech, j} \right)
+$$
 
-    $$\Phi_{\text{val}}(G) \implies \text{SimulationConfig}$$
+$$
+\text{subject to } \sum_{j=1}^{16} \left( e_{build, j} \cdot y_j + e_{armor, j} \cdot x_{mech, j} \right) \le E_{photosynthate}, \quad x_{mech, j} \in \{0, 1\}, \; y_j \in [0, 1]
+$$
 
-    We validate $G$ against the Pydantic schema rules. If $\Phi_{\text{val}}(G)$ violates physical constraints (such as $N_F + N_H > 16$), the genotype is flagged as invalid.
-2. **Discrete-to-Matrix Translation**:
-    The diet compatibility matrix $\mathbf{A}$ maps directly to the active interaction registers in the ECS engine. The interaction coefficient for herbivore $i$ consuming plant $j$ is calculated as:
+* **Objective**: Maximizes growth rate $g_j$ against baseline maintenance metabolism $m_j$ and mechanical armor costs ($c_{mechanical, j}$).
 
-    $$C_{ij} = A_{ij} \times \omega_{ij}$$
+#### Sub-Stage 2.2: Trophic Interaction & Diet Compatibility (Graph Constraints)
 
-    where $A_{ij} \in \{0,1\}$ is the structural genotype gene, and $\omega_{ij} \in \mathbb{R}^+$ is the continuous rate gene.
-3. **Spatial Coordinates Deployment**:
-    Based on the placement strategy gene $S_P$, the translation layer generates coordinates $(x_k, y_k) \in [0, W]^2$ for each initial entity $k$. The placement generator function $f_{\text{place}}(S_P, \text{seed})$ populates the 2D grid matrix:
+* **Solver**: Boolean Graph Matching Solver.
+* **Mathematical Model**: Given a $16 \times 16$ boolean diet matrix $D_{ij} \in \{0, 1\}$ (Rule-of-16 bound):
 
-    $$\mathbf{M}_{\text{grid}} = f_{\text{place}}(S_P, \text{seed})$$
+$$
+\sum_{j=1}^{16} D_{ij} \ge 1 \quad \forall i \in \text{Active Herbivores} \quad (\text{Prevents isolated starving species})
+$$
 
----
+$$
+\sum_{i=1}^{16} D_{ij} \le K_{predation\_limit} \quad \forall j \in \text{Active Flora} \quad (\text{Prevents over-grazing singularity})
+$$
 
-## 3. The Evolutionary Iteration Loop (Pre-Pruning)
+#### Sub-Stage 2.3: Chemical Defense & Trigger Rule Kinetics (MINLP)
 
-### 3.1 Loop Intuition
+* **Solver**: SCIP / Bonmin.
+* **Mathematical Model**: Solves sigmoidal Hill priming kinetics and timer state machines:
 
-Running a full ecological simulation (thousands of ticks) takes a lot of computer processing time (CPU cycles). If a genotype specifies that plants grow at $0\%$ rate, or that herbivores burn $100$ units of energy per step but only get $1$ unit of energy from eating, we already know *mathematically* that this ecosystem will collapse instantly.
+$$
+\alpha_{priming}(C) = \frac{C^n}{K_d^n + C^n}, \quad n \ge 1, \; K_d > 0
+$$
 
-To save time, we introduce a filter called **Stage 1: Analytical Pre-Pruning**. Before starting the expensive simulation loop, we run simple thermodynamic check equations. If the candidate ecosystem fails the basic math of energy balance, it is instantly discarded with a severe penalty score, bypassing the simulation entirely.
+$$
+\text{subject to } \tau_{synthesis} + \tau_{aftereffect} \le \tau_{max\_response}
+$$
 
-```mermaid
-graph TD
-    Init[Population Initialization] --> Sel[Selection]
-    Sel --> Cross[Crossover & Splicing]
-    Cross --> Mut[Mutation]
-    
-    Mut --> PrePrune{Stage 1: Analytical Pre-Pruning <br/> Mass / Energy Bounds Check}
-    
-    PrePrune -- Mathematically Infeasible --> Penalty[Discard / Assign Infinite Penalty]
-    Penalty --> Fit[Fitness Assignment]
-    
-    PrePrune -- Feasible --> Sim[Stage 2 & 3: Run PHIDS Simulation Loop <br/> Structural & Parametric Search]
-    Sim --> Fit
-    
-    Fit --> NextGen{Next Generation?}
-    NextGen -- Yes --> Sel
-    NextGen -- No --> End[Evaluate Pareto Front]
-```
+* **Objective**: Balances active defense synthesis maintenance against expected pest deterrence.
 
-### 3.2 Stage 1 Pre-Pruning Formulation
+#### Multi-Stage Pareto-Front Propagation
 
-Stage 1 Pre-Pruning evaluates thermodynamic feasibility. Let $E_{\text{in}}$ be the maximum theoretical energy input into the trophic system per unit area, and $E_{\text{out}}$ be the minimum required metabolic upkeep.
+Rather than collapsing to a single heuristic guess, each sub-stage solver extracts a non-dominated sub-Pareto front ($\mathcal{P}_{sub}$). Valid continuous parameter ranges and discrete graph structures are propagated forward to subsequent sub-stages, preserving structural diversity and preventing premature convergence.
 
-1. **Thermodynamic Feasibility Constraint**:
-    For the ecosystem to support herbivores, the primary production energy rate must exceed the metabolic maintenance rate:
+### 2.3 Macro-Phase 3: Phenotype High-Fidelity Validation & Pruning
 
-    $$\sum_{j \in \text{Flora}} \left( \max(0, E_{\text{max},j} - E_{\text{survival\_threshold},j}) \cdot \frac{g_j}{100} \cdot N_{\text{max\_tiles}, j} \right) > \sum_{i \in \text{Herbivores}} \left( m_i \cdot N_i^{(0)} \right)$$
+Candidates from the Genotype Pareto-fronts are instantiated as concrete Phenotypes—living plant agents and herbivore swarms populated inside the double-buffered PHIDS GridEnvironment and ECSWorld.
 
-    where:
+#### 1. High-Fidelity Physics & Biology Evaluation ($T_{sim}$)
 
-    * $E_{\text{max},j} - E_{\text{survival\_threshold},j}$: The maximum usable caloric yield of plant $j$.
-    * $g_j / 100$: Fractional growth rate per tick for plant $j$.
-    * $N_{\text{max\_tiles}, j}$: The theoretical maximum tiles plant $j$ can occupy, derived from the placement strategy.
-    * $m_i$: Metabolic upkeep of herbivore $i$.
-    * $N_i^{(0)}$: Initial total population size of herbivore $i$ generated by the placement strategy.
+* **Numba-JIT Chemotaxis Guidance Fields**:
 
-    If this inequality is violated, the genotype is structurally unviable.
+$$
+F_t(x, y) = \alpha \cdot \left( E_t(x, y) \cdot N_t(x, y) \right) - \beta \sum_k T_{k,t}(x, y)
+$$
 
-2. **Trophic Link Check**:
-    For every herbivore $i$ present in the genotype, there must be at least one active trophic connection to a plant $j$:
+Computed via `@njit` kernels at $O(1)$ spatial hash complexity. Herbivore swarms sample the Moore neighborhood using probabilistic softmax routing and orthokinetic momentum.
 
-    $$\forall i, \exists j \text{ s.t. } A_{ij} = 1$$
+* **Reaction-Diffusion PDEs**: 2D parabolic PDEs model volatile plume dispersion, anisotropic semi-Lagrangian wind advection ($\tilde{C}^t(x,y) = C^t(x - u_x, y - u_y)$), and Gaussian convolution diffusion ($\mathcal{K}_{iso} * \tilde{C}^t$).
+* **Subnormal Float Truncation**: Values decaying below $\epsilon = 1 \times 10^{-4}$ are explicitly clamped to exact $0.0$ to prevent CPU denormalization slowdowns.
 
-    If $\sum_{j} A_{ij} = 0$, the herbivore has no food source.
+#### 2. The Unified Normalized Fitness Vector ($\mathbf{J}_{sys}$)
 
-If either check fails, the simulation phase is skipped, and the genotype is assigned a fitness vector:
+Raw simulation outputs operate across heterogeneous scales. EEDSE relativizes these metrics into a single dimensionless vector:
 
-$$\mathbf{F} = (+\infty, 0, 0)$$
-
-representing maximum volatility, zero biomass, and zero similarity.
-
----
-
-## 4. Multi-Objective Evaluation & Biological Database Connection
-
-### 4.1 Evaluation Intuition
-
-Ecosystem stability isn't just a single score. An ecosystem with 1,000 rabbits and 1 grass blade is unstable; an ecosystem that keeps exactly 50 rabbits and 200 grass blades alive for 10,000 steps is very stable. We evaluate configurations on three distinct goals simultaneously:
-
-1. **Minimize Volatility**: We want population sizes to remain steady (no wild swings or sudden extinctions).
-2. **Maximize Biomass**: We want a healthy amount of total living material.
-3. **Database Similarity**: We want the parameters to look like real-world biology (so we aren't creating "fantasy" creatures).
-
-We use an algorithm called **NSGA-II (Non-dominated Sorting Genetic Algorithm)**. Instead of looking for a single winner, NSGA-II finds a **Pareto Front**-a set of "elite" configurations that represent the best possible trade-offs. For example, one elite might have maximum biomass but slightly higher volatility, while another has perfect stability but lower biomass.
-
-```mermaid
-graph TD
-    Metrics[PHIDS TickMetrics Output] --> Obj1[Objective 1: <br/> Minimize Population Volatility]
-    Metrics --> Obj2[Objective 2: <br/> Maximize Ecosystem Biomass & Lifespan]
-    Metrics --> Obj3[Objective 3: <br/> Maximize Similarity to DB Archetype <br/> KNN / Cosine Matching]
-
-    Obj1 --> NSGA[Non-Dominated Sorting <br/> NSGA-II Algorithm]
-    Obj2 --> NSGA
-    Obj3 --> NSGA
-
-    NSGA --> Elites[Pareto Front Elites]
-    Elites --> UI[HTMX UI: 'Apply to Draft' Selection <br/> Human-in-the-Loop]
-```
-
-The database connection has two ways of working:
-
-* **Mode A (Generative)**: The computer finds a stable configuration mathematically, then searches the SQLite database using a nearest-neighbor formula to find which real-world plants and animals are the closest match.
-* **Mode B (Constrained)**: You tell the computer "I want to simulate a temperate oak forest." The database locks the variables to oak forest ranges, and the algorithm tries to find a stable configuration *within* those strict rules.
-
-### 4.2 Multi-Objective Formulation
-
-Let the fitness vector be $\mathbf{F}(G) = (f_1(G), f_2(G), f_3(G))$.
-
-1. **Objective 1 (Minimize Population Volatility)**:
-    We measure the coefficient of variation (CV) of the populations over $T$ steps:
-
-    $$f_1(G) = \sum_{k \in \text{Species}} \frac{\sigma(N_k)}{\mu(N_k)}$$
-
-    where $\mu$ and $\sigma$ are the mean and standard deviation of species population $N_k$ over time.
-2. **Objective 2 (Maximize Biomass & Lifespan)**:
-
-    $$f_2(G) = - \left( \sum_{t=1}^{T} \sum_{k} M_k \cdot N_k(t) \right)$$
-
-    where $M_k$ is the individual mass coefficient of species $k$. (Negative sign since genetic algorithms minimize by default).
-3. **Objective 3 (Maximize Database Similarity via KNN)**:
-    Let $\mathbf{v}_G$ be the trait vector of the genotype, and $\mathbf{v}_{\text{DB}}$ be the normalized trait vectors of biological species in the database.
-
-    $$f_3(G) = \min_{\mathbf{v}_{\text{DB}}} \sqrt{\sum_{d=1}^{V} w_d \left( v_{G, d} - v_{\text{DB}, d} \right)^2}$$
-
-    where $w_d$ is the weight coefficient for trait $d$.
-
-#### NSGA-II Domination Rules
-
-A genotype $G_1$ dominates $G_2$ ($G_1 \prec G_2$) if and only if:
-
-$$\forall j \in \{1, 2, 3\}, f_j(G_1) \le f_j(G_2) \quad \text{and} \quad \exists j \text{ s.t. } f_j(G_1) < f_j(G_2)$$
-
-#### Crowding Distance Calculation
-
-To maintain diversity along the Pareto Front, solutions are sorted by crowding distance in objective space. For each objective $m$:
-
-1. Sort the population based on objective value $m$.
-2. Assign infinite distance to boundary solutions: $I[1]_{\text{dist}} = I[l]_{\text{dist}} = \infty$.
-3. For all intermediate solutions $i \in [2, l-1]$:
-
-    $$I[i]_{\text{dist}} = I[i]_{\text{dist}} + \frac{f_m(I[i+1]) - f_m(I[i-1])}{f_m^{\text{max}} - f_m^{\text{min}}}$$
-
----
-
-## 5. Spatial Initial Conditions (The Placement Gene)
-
-### 5.1 Spatial Placement Intuition
-
-Where animals and plants start out on the grid dictates whether they survive. If all grass is on the left side and all herbivores start on the right side, the herbivores might starve before finding the grass.
-We represent three starting patterns using mathematical generation rules:
-
-1. **Uniform**: Organisms are scattered completely randomly using simple probability distributions.
-2. **Clustered**: Organisms start in tight groups or patches (like families or groves). We generate this using **Perlin Noise** (which makes smooth, cloud-like patterns) or **Gaussian Clusters**.
-3. **Banded**: Organisms are placed in stripes (representing ecological bands, like elevation zones on a mountain or lines of plants near water).
-
-```mermaid
-graph TD
-    SubP[Placement Strategies]
-    SubP --> Uniform[Uniform: Random Poisson Distribution]
-    SubP --> Clustered[Clustered: 2D Gaussian / Perlin Noise Fields]
-    SubP --> Banded[Banded: Sinusoidal Gradient Stripes]
-```
-
-### 5.2 Geometric Algorithms
-
-The spatial coordinates $(x, y)$ of spawned entities are generated by resolving the placement gene $S_P$:
-
-#### 1. Uniform Placement (Poisson Disk Sampling)
-
-To prevent overlaps while maintaining random placement, we sample coordinates such that no two entities start closer than a minimum distance $r_{\text{min}}$:
-
-$$\forall p_1, p_2 \in \mathbf{X}_{\text{spawn}}, \quad \|p_1 - p_2\|_2 \ge r_{\text{min}}$$
-
-#### 2. Clustered Placement (Multi-variate Gaussian Mixture)
-
-For $C$ clusters, we select centroids $\boldsymbol{\mu}_c \sim \mathcal{U}(0, W)^2$. Entities are spawned around these centroids using a normal distribution with covariance matrix $\boldsymbol{\Sigma}$:
-
-$$\mathbf{X}_{\text{spawn}, c} \sim \mathcal{N}(\boldsymbol{\mu}_c, \boldsymbol{\Sigma})$$
-
-where $\boldsymbol{\Sigma} = \sigma^2 \mathbf{I}$ controls cluster density (spread).
-
-#### 3. Banded Placement (Sinusoidal Probability Fields)
-
-We define a spatial probability density function $P(x, y)$ along a direction vector $\mathbf{v} = (\cos\theta, \sin\theta)$:
-
-$$P(x, y) = \frac{1}{2} \left[ \sin\left(\frac{2\pi (x\cos\theta + y\sin\theta)}{\lambda}\right) + 1 \right]$$
-
-where $\lambda$ represents the band wavelength. Entities are accepted or rejected on the grid using a random roll against $P(x, y)$.
-
----
-
-## Implementation Roadmap
-
-The transition to this architecture occurs across five phases:
-
-### Phase 1: Foundation & Biological Database
-
-* **Task 1.1: Database Schema Definition**: Define Pydantic models mapping biological archetypes to engine parameters.
-* **Task 1.2: Database Engine Initialization**: Set up a lightweight SQLite database with curated seed data.
-* **Task 1.3: Bi-Directional Mapping Services**: Implement KNN search (Generative Mode) and bounded limit fetching (Constrained Mode).
-
-### Phase 2: Engine Modifications for Structural Genes
-
-* **Task 2.1: Spatial Distribution Schemas**: Introduce PlacementStrategy Enums (Uniform, Clustered, Banded) for flora and herbivores.
-* **Task 2.2: Placement Resolution Logic**: Update Biotope/ECS generation to interpret placement strategies deterministically via seeds.
-
-### Phase 3: The Multi-Stage DSE Algorithm
-
-### Thermodynamic Pre-Pruning (Stage 1)
-
-#### The Theoretical Model (Continuous Thought)
-
-Before running computationally expensive discrete simulations, the Design Space Exploration (DSE) evaluates the mathematical viability of a genome. An ecosystem cannot violate the laws of thermodynamics: the total theoretical caloric yield of the primary producers (plants) must exceed the baseline metabolic requirements of the consumers (herbivores).
-
-#### The Numerical Mapping (Discrete Realization)
-
-The DSE pre-pruner evaluates this bound using the exact variables mapped to the engine components, crucially factoring in the plant's `survival_threshold` (energy that cannot be legally harvested by a swarm).
-
-To pass pre-pruning, the genome must satisfy:
-
-$$\sum_{j \in \text{Flora}} \left( \max(0, E_{\text{max},j} - E_{\text{survival\_threshold},j}) \cdot \frac{g_j}{100} \cdot N_{\text{max\_tiles}, j} \right) > \sum_{i \in \text{Herbivores}} \left( m_i \cdot N_i^{(0)} \right)$$
-
-If the combined initial populations $N_i^{(0)}$ demand a metabolic upkeep $m_i$ that exceeds the grid's maximum possible generation per tick (derived from the growth rate $g_j$), the genome is instantly mathematically pruned.
+$$
+\mathbf{J}_{sys} = w_1 \cdot \tilde{S}_{LV} + w_2 \cdot \tilde{E}_{ratio} - w_3 \cdot D_{bio} + w_4 \cdot H_{chem}
+$$
 
 Where:
 
-* $E_{\text{max},j}$: The maximum physiological energy capacity of flora species $j$.
-* $E_{\text{survival\_threshold},j}$: The absolute minimum energy flora species $j$ requires to live (unharvestable).
-* $g_j$: The percentage growth rate per tick for flora species $j$.
-* $N_{\text{max\_tiles}, j}$: The theoretical maximum grid coverage (carrying capacity) for flora species $j$.
-* $m_i$: The baseline metabolic upkeep requirement per tick for herbivore species $i$.
-* $N_i^{(0)}$: The initial spawned population count for herbivore species $i$.
+* **Spectral FFT Lotka-Volterra Stability ($\tilde{S}_{LV}$)**: FFT spectral density analysis measuring limit cycle oscillation endurance over 5,000 ticks:
 
-* **Task 3.1: Stage 1**: Implement Analytical Pre-Pruning validators.
-* **Task 3.2: Stage 2 & 3**: Build Structural and Parametric Search implementations (utilizing frameworks like DEAP or Optuna).
-* **Task 3.3: Pareto-Front Evaluation**: Establish multi-objective fitness evaluation via NSGA-II.
+$$
+\tilde{S}_{LV} = 1.0 - \frac{\int \vert{}F(\omega) - F_{ideal}(\omega)\vert{} d\omega}{\int F_{ideal}(\omega) d\omega}
+$$
 
-### Phase 4: Async Task Management & Telemetry
+* **Fractional Carrying Capacity ($\tilde{E}_{ratio}$)**: Ratio of aggregate biomass to maximum carrying capacity ($E / E_{max} \in [0, 1]$).
+* **Mahalanobis Empirical Distance ($D_{bio}$)**: Log-space distance measuring deviation from TRY/PanTHERIA empirical trait distributions:
 
-* **Task 4.1: Background Task Queue**: Integrate Celery/Asyncio to decouple DSE processing from the main web thread.
-* **Task 4.2: DSE WebSocket Stream**: Broadcast live Pareto Front coordinates.
+$$
+D_{bio} = \sqrt{(\ln \mathbf{x} - \boldsymbol{\mu}_{TRY})^T \boldsymbol{\Sigma}_{TRY}^{-1} (\ln \mathbf{x} - \boldsymbol{\mu}_{TRY})}
+$$
 
-### Phase 5: UI/UX Integration (Human-in-the-Loop)
+* **Chemical Defensive Diversity ($H_{chem}$)**: Shannon entropy across active secondary metabolite concentrations:
 
-* **Task 5.1: Configuration Menu Elements**: Add Mode A/B radio buttons and DB dropdowns to the HTMX UI.
-* **Task 5.2: Live Scatterplot Visualization**: Render real-time telemetry on the dashboard.
-* **Task 5.3: HITL Review Grid**: Allow the user to select one of the top 3-5 Pareto candidates and execute "Apply to Draft".
+$$
+H_{chem} = -\sum_{k=1}^{16} p_k \ln p_k, \quad p_k = \frac{C_k}{\sum_m C_m}
+$$
 
----
+#### 3. Drastic Multi-Criteria Pruning
 
-## Technical Safety Checks
+Because evaluating thousands of phenotypes in $T_{sim}$ is computationally expensive, strict pruning filters out candidates early:
 
-!!! warning "Constraint: Rule of 16 Adherence"
-    Ensure the DSE Structural Search never attempts to add a 17th species, preserving the engine's zero-allocation array bounds.
+* **Termination Code Penalties ($Z_1 - Z_7$)**: Scenarios triggering premature extinction ($Z_2 \dots Z_5$) or runaway trophic growth ($Z_6, Z_7$) receive instant fitness zeroing.
+* **Entropy & Variance Pruning**: Candidates that perform well but exhibit near-zero variance compared to existing population cohorts are pruned to prevent monoculture collapse.
 
-!!! warning "Constraint: Numba JIT Cache Warming"
-    Ensure the DSE worker shares the Numba JIT cache with the main application, or pre-warms the cache before starting the evolutionary loop to prevent compilation stalls on the first generation.
+### 2.4 Macro-Phase 4: Closed-Loop Epistemic Learning & Co-Evolution
 
-!!! warning "Constraint: The IEEE 754 Subnormal Float Problem"
-    When biological parameters decay infinitesimally close to zero, the CPU drops into 'subnormal' (denormalized) floating-point math, which incurs massive latency penalties. To prevent this, any value dropping below an epsilon threshold (e.g., $< 1 \times 10^{-4}$) must be explicitly clamped to exact `0.0`.
+Phase 4 completes the evolutionary closed loop, processing evaluated Genotype-Phenotype-Fitness triads $(\mathbf{G}, \mathbf{P}, \mathbf{J}_{sys})$ stored in append-only Zarr binary buffers and indexed via DuckDB / Polars.
 
-## Updated Genotype Structures
+#### 1. Epistemic Error Delta Calculation ($\mathbf{\Delta}_{epistemic}$)
 
-The MINLP genotype space has been expanded to include:
+```mermaid
+flowchart LR
+    classDef model fill:#E67E22,stroke:#D35400,stroke-width:2px,color:#fff;
+    classDef sim fill:#3498DB,stroke:#2980B9,stroke-width:2px,color:#fff;
+    classDef error fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff;
 
-* **Passive Defenses:** Morphological parameters (`mechanical_damage_per_bite`, `digestibility_modifier`) attached to `FloraSpeciesParams`.
-* **Resistances:** Counter-adaptations (`morphological_adaptation`, `chemical_neutralization`, `digestive_efficiency`) attached to `HerbivoreSpeciesParams`.
-* **Senescence Rules:** Utilizing the new `resource_withdrawal` action within the `TriggerRule` discriminated union.
+    Heuristic["Fast Algebraic Guess<br/>(F_heuristic)"]:::model --> Diff(("Difference"))
+    Sim["Physical Simulation Reality<br/>(F_actual)"]:::sim --> Diff
+    Diff --> Delta["Epistemic Error Delta<br/>(Δ_epistemic)"]:::error
+```
 
-The underlying empirical database (`bio_database.json`) reflects this deeply nested schema layout:
+The engine calculates discrepancies between fast algebraic guesses ($\mathbf{\hat{F}}_{heuristic}$) and physical simulation realities ($\mathbf{F}_{actual}$):
 
-* `base_metrics`
-* `passive_defenses`
-* `substances`
-* `trigger_rules`
-* `chemotaxis`
+$$
+\mathbf{\Delta}_{epistemic} = \mathbf{F}_{actual} - \mathbf{\hat{F}}_{heuristic}
+$$
 
-### Multi-Level Cascade Trigger Example
+#### 2. Surrogate Model Recalibration (GPyTorch)
 
-The PHIDS engine supports complex, multi-tiered defensive reactions by nesting activation conditions. For example:
+A Gaussian Process Regression (GPR) surrogate model is trained on historical error deltas $\mathcal{D} = \{(\mathbf{x}_k, \mathbf{\Delta}_{epistemic, k})\}$. Minimizing the negative marginal log-likelihood loss $\mathcal{L}_{surrogate}$:
 
-1. **Herbivore Presence:** A swarm begins feeding.
-2. **Activates Airborne Signal VOC:** The plant synthesizes an alarm signal.
-3. **Neighboring Plant Detects VOC:** The signal diffuses across the grid. A neighboring plant's trigger rule (conditioned on `environmental_signal`) evaluates to true.
-4. **Triggers Leaf Toxin Synthesis:** The neighbor preemptively synthesizes a lethal toxin.
-5. **Prolonged Ingestion Triggers Root Resource Reallocation:** If the herbivore presence persists despite the toxin, a secondary rule (conditioned on both `herbivore_presence` AND `substance_active`) triggers a `resource_withdrawal` action, dimming the plant's chemotactic profile and forcing the swarm to disperse.
+$$
+\mathcal{L}_{surrogate}(\boldsymbol{\theta}) = \frac{1}{2} \mathbf{\Delta}^T \mathbf{K}_{\boldsymbol{\theta}}^{-1} \mathbf{\Delta} + \frac{1}{2} \ln \vert{}\mathbf{K}_{\boldsymbol{\theta}}\vert{} + \frac{n}{2} \ln(2\pi)
+$$
 
----
+The surrogate gradient recalibrates the weight matrix $\mathbf{\hat{W}}_{t+1}$ used by the MILP/MINLP sub-solvers in the next generation:
 
-## Future Required DSE Parameters (Phase 2 Roadmap Extensions)
+$$
+\mathbf{\hat{W}}_{t+1} = \mathbf{\hat{W}}_t + \eta \cdot \nabla_{\mathbf{W}} \mathcal{L}_{surrogate}(\mathbf{\Delta}_{epistemic})
+$$
 
-As Phase 2 biological modules mature from experimental features to core engine systems, the MINLP genotype search space ($G = (X_D, X_C)$) will be expanded with the following parameters:
+This re-educates the fast algebraic solvers, forcing them to mathematically account for spatiotemporal realities (wind advection, spatial chemotaxis bypasses) during subsequent scenario generation passes.
 
-### 1. Sub-Stage 2.1: Soil Seed Bank & Dormancy
-* **Continuous Genes ($X_C$):** `germination_gdd_threshold` ($[50.0, 300.0]$ degree-days), `seed_dormancy_decay_rate` ($[0.001, 0.05]$ per tick).
-* **Discrete Genes ($X_D$):** `seed_dormancy_trigger_mode` (`THERMAL_GDD`, `MOISTURE_PULSE`, `COMBINED`).
+#### 3. Adaptive Search Space Bounds Refinement
 
-### 2. Sub-Stage 2.2: Zoochory Dispersal
-* **Continuous Genes ($X_C$):** `gut_retention_ticks` ($[10, 100]$ ticks), `zoochory_epizoochory_adhesion` ($[0.0, 1.0]$).
-* **Discrete Genes ($X_D$):** `zoochory_vector_species_mask` (Bitmask of herbivore species carrying seeds).
+Search bounds for generation $i+1$ contract around high-performing, validated regions while expanding along dimensions of high uncertainty ($\boldsymbol{\sigma}_j$):
 
-### 3. Sub-Stage 2.3: Trait-Based Herbivore Demographic State Machines
-* **Continuous Genes ($X_C$):** Instar energy thresholds (`egg_incubation_ticks`, `larval_grazing_upkeep`, `pupal_metabolic_cost`).
-* **Discrete Genes ($X_D$):** `instar_mobility_type` (`SESSILE`, `CRAWLING`, `FLIGHT_SWARM`).
+$$
+\mathcal{X}_{i+1} = \bigcup_{j \in \text{Surviving}} \left[ \mathbf{x}_j - \mathbf{k}_{adapt} \odot \boldsymbol{\sigma}_j, \; \mathbf{x}_j + \mathbf{k}_{adapt} \odot \boldsymbol{\sigma}_j \right] \cap \mathcal{X}_{init}
+$$
 
-### 4. Sub-Stage 2.4: Soil Detritus & Biomass Recycling
-* **Continuous Genes ($X_C$):** `mineralization_rate` ($[0.001, 0.05]$), `soil_nitrogen_baseline` ($[20.0, 200.0]$).
-* **Discrete Genes ($X_D$):** `soil_spatial_mode` (`MACRO_PATCH_16x16`, `DENSE_PER_CELL`).
+#### 4. Co-Evolutionary Counter-Adaptation
 
-### 5. Sub-Stage 2.5: Macro-Patch Weather Profiles
-* **Continuous Genes ($X_C$):** `seasonal_temp_amplitude` ($[0.0, 15.0]^\circ\text{C}$), `drought_intensity_factor` ($[0.1, 1.0]$).
+The historical database triggers adaptive mutations in opposing agents:
 
-### 6. Sub-Stage 2.6: 3D Canopy Structure
-* **Continuous Genes ($X_C$):** `canopy_height_layers` ($Z \in [2, 16]$), `vertical_wind_shear_alpha` ($[0.1, 0.4]$).
+* When flora evolve high mechanical resistance, the database mutates herbivore trait structs (`morphological_adaptation`, `digestive_efficiency`, `chemical_neutralization`) to model ongoing co-evolutionary arms races.
+* This prevents the DSE from settling into fragile, non-resilient local minima.
+
+#### 5. Distributed Recombination (Ray/Tune + OptunaSearch & NSGA-III)
+
+* High-throughput NSGA-III non-dominated sorting (vectorized via `pymoo`) extracts balanced scenario blueprints.
+* Chromosomal trait structs undergo SIMD bit-mask mutations across Ray/Tune + OptunaSearch distributed worker tasks.
+* Population size is strictly bounded ($N_{genotypes} \le 32$) to guarantee high-throughput completion within cluster memory budgets.
+
+## 3. Inter-Phase Data Schema & Interface Contracts
+
+| Phase Transition | Payload Schema Name | Data Format / Type | Core Fields Passed |
+| :--- | :--- | :--- | :--- |
+| Phase 1 $\to$ Phase 2 | `DelimitedSpaceSchema` | DuckDB View / Pydantic V2 | $\mathcal{X}_{init}$ bounds, requirements mask $\mathbf{g}_{req}$, Buckingham $\Pi$ scalars |
+| Phase 2 $\to$ Phase 3 | `GenotypeBlueprintSet` | JSON / YAML Scenario Draft | Propagated sub-Pareto sets $\mathcal{P}_{sub}$, Rule-of-16 $16\times16$ matrices, MINLP parameters |
+| Phase 3 $\to$ Phase 4 | `PhenotypeEvaluationRecord` | Zarr Array + Polars DataFrame | Raw tick telemetry, $Z_1-Z_7$ termination code, relativized vector $\mathbf{J}_{sys}$ |
+| Phase 4 $\to$ Phase 1/2 | `EpistemicWeightUpdate` | JSON Payload | Gradient updates $\mathbf{\hat{W}}_{t+1}$, GPR kernel params $\boldsymbol{\theta}$, adaptive bounds $\mathcal{X}_{i+1}$ |
+
+## 4. Runtime Software Boundary & Codebase Mapping
+
+| Subsystem Component | Technical Task | Primary Software Framework / Library | Codebase Location (`src/phids/`) |
+| :--- | :--- | :--- | :--- |
+| **Ingress & Delimitation** | Bounds Validation, Buckingham $\Pi$ Anchoring | Pydantic V2, DuckDB, NumPy | `src/phids/api/schemas/`, `src/phids/analytics/bio_database.py` |
+| **Genotype Sub-DSE** | Algebraic MILP / MINLP Solvers | PySCIPOpt, highspy, Linopy, CasADi | `src/phids/analytics/dse_genotype.py`, `dse_optimizer.py` |
+| **Sub-DSE Pareto Extraction** | Fast Non-Dominated Sorting | `pymoo` (NSGA-III), `evosax`, NumPy | `src/phids/analytics/dse_pruning.py` |
+| **Phenotype Validation** | High-Fidelity Spatial ECS & PDEs | Numba JIT (`@njit`), PyTorch CUDA | `src/phids/engine/core/biotope.py`, `flow_field.py`, `ecs.py` |
+| **Relativization & Scoring** | Unified Normalized Fitness Vector | Polars, PHIDS Presenter Layer | `src/phids/telemetry/analytics.py`, `src/phids/api/presenters/` |
+| **Telemetry Storage** | Append-Only High-Density Replays | Zarr, JSON, Zstd | `src/phids/io/zarr_replay.py` |
+| **Epistemic Delta Learning** | Gaussian Process Surrogate Weights | GPyTorch, scikit-learn | `src/phids/analytics/tuning.py` |
+| **Cluster Orchestration** | Distributed Parallel Evaluation | Ray/Tune, Optuna, Typer CLI | `src/phids/analytics/dse_distributed.py` |
+
+## 5. Governance & Interventions: Agentic AI-in-the-Loop (AITL) vs. Human-in-the-Loop (HITL)
+
+This section specifies the exact architectural touchpoints across the Evolutionary Encapsulated Design Space Exploration (EEDSE) pipeline where Human-in-the-Loop (HITL) and Agentic AI-in-the-Loop (AITL) toggles, intervention gates, and steering overrides are positioned in PHIDS.
+
+The core objective is to prevent the optimization engine from becoming an opaque black box while maintaining high-throughput compute efficiency ($T_{algebraic} \approx 1\text{ ms}$).
+
+### 5.1 High-Level Intervention Topology
+
+<div class="eedse-flow-wrapper">
+  <style>
+    .eedse-flow-wrapper {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 2rem 0;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+      color: #e2e8f0 !important;
+    }
+
+    .eedse-phase-card {
+      background-color: #182232 !important;
+      border: 1px solid #28354a !important;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .eedse-phase-header {
+      background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%) !important;
+      border-bottom: 1px solid #2a384c !important;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #38bdf8 !important;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eedse-phase-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .eedse-flow-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .eedse-node {
+      background-color: #0f172a !important;
+      border: 1px solid #334155 !important;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #f1f5f9 !important;
+      white-space: nowrap;
+    }
+
+    .eedse-arrow {
+      color: #64748b !important;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .eedse-gate-badge {
+      background-color: rgba(139, 92, 246, 0.18) !important;
+      border: 1px solid rgba(139, 92, 246, 0.45) !important;
+      color: #c4b5fd !important;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .eedse-toggle-bar {
+      background-color: rgba(15, 23, 42, 0.75) !important;
+      border-left: 3px solid #10b981 !important;
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.82rem;
+      color: #94a3b8 !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eedse-toggle-label {
+      color: #34d399 !important;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    .eedse-down-connector {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 24px;
+      color: #38bdf8 !important;
+      font-size: 1.2rem;
+    }
+
+    .eedse-sub-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .eedse-sub-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .eedse-sub-item:last-child {
+      border-bottom: none !important;
+      padding-bottom: 0;
+    }
+
+    .eedse-math {
+      font-family: "Cambria Math", "STIXTwoMath", "Lucida Calligraphy", "DejaVu Sans", ui-monospace, monospace;
+      color: #f59e0b !important;
+      font-weight: 700;
+      font-style: italic;
+    }
+  </style>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 1: Macro Delimitation &amp; Pre-Pruning</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-flow-row">
+        <span class="eedse-node">Ingest Bounds</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-gate-badge">GATE 1: Requirement &amp; Constraint Invariant Gate</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-node">Initial Hyper-Cube <span class="eedse-math">X<sub>init</sub></span></span>
+      </div>
+      <div class="eedse-toggle-bar">
+        <span class="eedse-toggle-label">Governance Toggle:</span>
+        Fully Autonomous AI vs. Human Rule Override / Hard Locking
+      </div>
+    </div>
+  </div>
+
+  <div class="eedse-down-connector">&darr;</div>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 2: Genotype Sub-DSE (Fast Heuristic Solvers)</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-flow-row">
+        <span class="eedse-node">Algebraic MILP / MINLP</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-gate-badge">GATE 2: Sub-Pareto Structural Inspection &amp; Slicing</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-node"><span class="eedse-math">&#119979;<sub>genotype</sub></span></span>
+      </div>
+      <div class="eedse-toggle-bar">
+        <span class="eedse-toggle-label">Governance Toggle:</span>
+        AI Multi-Objective Slicing vs. Human Pareto Steering
+      </div>
+    </div>
+  </div>
+
+  <div class="eedse-down-connector">&darr;</div>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 3: Phenotype High-Fidelity Validation</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-flow-row">
+        <span class="eedse-node">Numba / CUDA Simulation</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-gate-badge">GATE 3: Unified Fitness Vector Weight &amp; Penalty Tuning</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-node"><span class="eedse-math">J<sub>sys</sub></span></span>
+      </div>
+      <div class="eedse-toggle-bar">
+        <span class="eedse-toggle-label">Governance Toggle:</span>
+        AI Automated Relativization vs. Human Weight Adjustments
+      </div>
+    </div>
+  </div>
+
+  <div class="eedse-down-connector">&darr;</div>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 4: Closed-Loop Epistemic Learning &amp; Recombination</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-sub-grid">
+
+        <div class="eedse-sub-item">
+          <div class="eedse-flow-row">
+            <span class="eedse-node">Epistemic Delta <span class="eedse-math">&Delta;</span></span>
+            <span class="eedse-arrow">&rarr;</span>
+            <span class="eedse-gate-badge">GATE 4: Surrogate Model (GPR) Recalibration Audit</span>
+          </div>
+          <div class="eedse-toggle-bar">
+            <span class="eedse-toggle-label">Governance Toggle:</span>
+            AI Auto-Grad Weight Update vs. Human Epistemic Validation
+          </div>
+        </div>
+
+        <div class="eedse-sub-item">
+          <div class="eedse-flow-row">
+            <span class="eedse-node">Co-Evolution</span>
+            <span class="eedse-arrow">&rarr;</span>
+            <span class="eedse-gate-badge">GATE 5: Adversarial Arms Race Steering</span>
+          </div>
+          <div class="eedse-toggle-bar">
+            <span class="eedse-toggle-label">Governance Toggle:</span>
+            AI MARL Mutation Pass vs. Human Herbivore Trait Force-Inject
+          </div>
+        </div>
+
+        <div class="eedse-sub-item">
+          <div class="eedse-flow-row">
+            <span class="eedse-node">Recombination</span>
+            <span class="eedse-arrow">&rarr;</span>
+            <span class="eedse-gate-badge">GATE 6: Generational Gate &amp; Exploration Entropy Safeguard</span>
+          </div>
+          <div class="eedse-toggle-bar">
+            <span class="eedse-toggle-label">Governance Toggle:</span>
+            Continuous Autonomous Loop vs. Step-by-Step Approval (Breakpoints)
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+### 5.2 Detailed Intervention Points & Toggle Specifications
+
+#### Touchpoint 1: Delimitation Requirements & Constraint Gate (Phase 1 Ingress)
+
+* **Location in Codebase**: [`src/phids/analytics/bio_database.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/bio_database.py), [`src/phids/api/schemas/`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/api/schemas/)
+* **Purpose**: Defines the initial hyper-cube ($\mathcal{X}_{init}$) and pre-pruning masks ($\mathbf{g}_{req}$).
+* **Modes**:
+    * **Autonomous AI (AITL)**: Ingests database traits (TRY/PanTHERIA via DuckDB) and automatically non-dimensionalizes parameters using Buckingham $\Pi$-groups based on standard confidence intervals $[\mu \pm 2\sigma]$.
+    * **Human Control (HITL)**: A researcher toggles strict overrides:
+        * **Hard Trait Locking**: Pinning specific species traits (e.g., forcing a specific plant's max growth rate $g_j = 0.05$ or locking a $16 \times 16$ diet matrix topology).
+        * **Requirement Injections**: Specifying non-negotiable scenario goals (e.g., $E_{target\_flora} \ge 80\%$) that act as hard pre-pruning masks.
+* **UI Control Surface**: Contextual modal toggle in the Control Center Dashboard (`DraftState`) titled `Pre-Pruning Governance: [ Auto-Impute (AI) | Custom Constraint Overrides (Human) ]`.
+
+#### Touchpoint 2: Sub-Pareto Structural Inspection & Slicing (Phase 2 Output)
+
+* **Location in Codebase**: [`src/phids/analytics/dse_genotype.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_genotype.py), [`src/phids/analytics/dse_pruning.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_pruning.py)
+* **Purpose**: Manages the propagation of sub-Pareto fronts ($\mathcal{P}_{sub}$) generated by the fast MILP/MINLP solvers (PySCIPOpt/highspy/Linopy).
+* **Modes**:
+    * **Autonomous AI (AITL)**: Automatically computes crowding distances and non-dominated ranks, passing the top $K$ mathematical trade-off blueprints forward to Phase 3.
+    * **Human Control (HITL)**: The researcher inspects the trade-off curve (e.g., Morphological Lignin Cost vs. Growth Rate) in a live 2D/3D scatter plot and visually draws a regional bounding box (slice) to eliminate mathematically valid but scientifically uninteresting regions.
+* **UI Control Surface**: Interactive HTMX/Chart.js Pareto Front inspector with a `Propagate Front: [ AI Automated Rank | Manual Region Slice ]` switch.
+
+#### Touchpoint 3: Unified Fitness Vector Weighting & Relativization (Phase 3 Scoring)
+
+* **Location in Codebase**: [`src/phids/telemetry/analytics.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/telemetry/analytics.py), [`src/phids/api/presenters/`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/api/presenters/)
+* **Purpose**: Weights the components of the Unified Normalized Fitness Vector:
+
+$$
+\mathbf{J}_{sys} = w_1 \cdot \tilde{S}_{LV} + w_2 \cdot \tilde{E}_{ratio} - w_3 \cdot D_{bio} + w_4 \cdot H_{chem}
+$$
+
+* **Modes**:
+    * **Autonomous AI (AITL)**: Uses dynamic variance-scaling (e.g., Inverse Variance Weighting) to rebalance weights $w_1 \dots w_4$ across generations based on population entropy.
+    * **Human Control (HITL)**: The user manually adjusts sliders for $w_1$ (Lotka-Volterra Stability), $w_2$ (Biomass Energy), $w_3$ (Empirical Distance Penalty), and $w_4$ (Defensive Diversity), prioritizing what "success" means for their specific experiment.
+* **UI Control Surface**: Live slider control panel in the DSE dashboard with a toggle: `Objective Vector Calibration: [ Adaptive Entropic Weighting (AI) | User-Defined Sliders (Human) ]`.
+
+#### Touchpoint 4: Epistemic Error Delta Audit & Surrogate Recalibration (Phase 4 Ingress)
+
+* **Location in Codebase**: [`src/phids/analytics/tuning.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/tuning.py)
+* **Purpose**: Learns the error delta between fast algebraic models and high-fidelity physics ($\mathbf{\Delta}_{epistemic} = \mathbf{F}_{actual} - \mathbf{\hat{F}}_{heuristic}$) using Gaussian Process Regression (GPyTorch).
+* **Modes**:
+    * **Autonomous AI (AITL)**: Auto-evaluates loss $\mathcal{L}_{surrogate}$, calculates gradients $\nabla_{\mathbf{W}} \mathcal{L}_{surrogate}$, and immediately updates the solver weight matrix $\mathbf{\hat{W}}_{t+1}$ for the next cycle.
+    * **Human Control (HITL - Diagnostic Audit)**: Pauses the loop when $\mathbf{\Delta}_{epistemic}$ exceeds a user-defined threshold (e.g., $>30\%$ discrepancy between heuristic guess and physical simulation). The human inspects the physical cause (e.g., wind advection causing VOC plume bypass) before approving the weight recalibration.
+* **UI Control Surface**: Diagnostic alert banner: `Epistemic Drift Threshold Crossed (|Δ| > 30%). [ Auto-Apply Gradient Update | Audit Discrepancy & Override ]`.
+
+#### Touchpoint 5: Co-Evolutionary Arms Race & Counter-Strategy Steering (Phase 4 Evolution)
+
+* **Location in Codebase**: [`src/phids/analytics/dse_optimizer.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_optimizer.py), [`src/phids/analytics/dse_distributed.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_distributed.py)
+* **Purpose**: Drives the counter-adaptation of opposing agents (e.g., herbivore resistances) to prevent plants from settling into fragile local minima.
+* **Modes**:
+    * **Autonomous AI (AITL)**: Reinforcement Learning / MARL policies or SIMD bit-mask mutations automatically evolve herbivore traits (`chemical_neutralization`, `digestive_efficiency`) to attack the dominant plant defense strategies.
+    * **Human Control (HITL - Scenario Authoring)**: The researcher acts as an "adversarial designer," manually injecting specific counter-adaptations (e.g., force-mutating a specific herbivore pest to become $90\%$ resistant to a synthesized alkaloid) to test the robustness of candidate plant genotypes.
+* **UI Control Surface**: AITL/HITL switch under the Co-Evolution Panel: `Adversarial Dynamics: [ AI Agent Policy Adaptation | Manual Pest Resistance Injection ]`.
+
+#### Touchpoint 6: Generational Execution & Loop Breakpoints (Phase 4 Recombination)
+
+* **Location in Codebase**: [`src/phids/analytics/dse_distributed.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_distributed.py), `src/phids/api/services/dse/task_manager.py`
+* **Purpose**: Controls overall generation-to-generation execution flow and search space entropy management ($\mathcal{X}_{i+1}$).
+* **Modes**:
+    * **Autonomous Execution (Continuous AITL)**: Runs $G$ generations headless across Ray/Tune + OptunaSearch clusters until convergence criteria or maximum generations are met.
+    * **Human Step-by-Step Execution (Interactive HITL)**: Acts as a simulation "breakpoint engine." At the end of each generation, the DSE engine pauses, displays the newly derived candidate pool ($N \le 32$), and waits for explicit human confirmation to launch the next generational cycle.
+* **UI Control Surface**: Top-bar execution toolbar: `DSE Execution Mode: [ Continuous Autonomous Sweep | Step-by-Step Generational Breakpoints ]`.
+
+### 5.3 Summary of Value Proposition for HITL / AITL Toggles
+
+| Pipeline Gate / Touchpoint | Autonomous AI Mode (AITL) Value | Human-in-the-Loop Mode (HITL) Value |
+| :--- | :--- | :--- |
+| **Gate 1: Macro Delimitation** | Rapid auto-bounding via empirical DuckDB statistical confidence intervals. | Hard-locks specific species parameters and enforces non-negotiable scenario requirements. |
+| **Gate 2: Sub-Pareto Slicing** | Mathematical rank/distance extraction across multi-component MILP solvers. | Visual slicing of trade-off curves to focus compute power on scientifically relevant regions. |
+| **Gate 3: Fitness Vector Weighting** | Dynamic entropic weight balancing preventing search space collapse. | Custom multi-objective prioritization (e.g., valuing Lotka-Volterra stability over empirical distance). |
+| **Gate 4: Epistemic Audit** | Real-time gradient updates ($\mathbf{\hat{W}}_{t+1}$) via GPyTorch surrogate models. | Diagnostic safety barrier preventing the AI from learning unphysical edge-case exploits. |
+| **Gate 5: Co-Evolution Steering** | Automated MARL pest counter-adaptation preventing fragile local minima. | Targeted adversarial stress-testing against specific biological mutations. |
+| **Gate 6: Generational Breakpoints** | Unattended, high-throughput HPC execution across Ray/Tune clusters. | Full step-by-step oversight, scenario inspection, and Optuna pruning control for researchers. |
+
+## 6. Architectural Summary & System Guarantees
+
+The Evolutionary Encapsulated Design Space Exploration (EEDSE) framework transforms ecological scenario discovery into a mathematically rigorous, self-correcting optimization pipeline:
+
+* **$10^2\times$ Compute Reduction**: Eliminates $>99\%$ of unviable parameter combinations in $O(1\text{ ms})$ algebraic sub-solvers before running $T_{sim}$.
+* **Empirical Authenticity**: Bounds searches via DuckDB TRY/PanTHERIA distributions and Mahalanobis distances ($D_{bio}$).
+* **Self-Correcting Intelligence**: Recalibrates heuristic generator weights ($\mathbf{\hat{W}}_{t+1}$) using physical simulation error deltas ($\mathbf{\Delta}_{epistemic}$).
+* **Resilient Optimization**: Avoids local minima trap-in through co-evolutionary agent mutations and adaptive search space variance expansion.
+
+## 7. Future Prospects: Distributed EEDSE & AI Coevolution
+
+While single-objective and multi-stage EEDSE locate robust equilibrium parameters, real-world ecosystems are driven by continuous **coevolutionary arms races**. Flora species dynamically reallocate energy between structural defenses (thorns/lignin) and volatile chemical signals (VOCs), while herbivore species co-evolve specialized digestive mechanisms and chemical neutralization capabilities.
+
+```mermaid
+flowchart LR
+    Flora_Pop["Flora Population<br><i>Defense Investment Strategy</i>"] <-->|Coevolutionary Feedback| Herbivore_Pop["Herbivore Population<br><i>Neutralization Strategy</i>"]
+    
+    SubGraph_Ray["Ray / Tune Distributed Cluster<br><i>Parallel Multi-Scenario Execution</i>"] --> Pareto["Pareto Optimal Front<br><i>Evolutionary Stable Strategies (ESS)</i>"]
+```
+
+### 7.1 Distributed Cluster & Reinforcement Learning Scaling
+
+* **Ray/Tune Task Scheduling**: Scale scenario evaluations across HPC compute clusters ($O(N_{\text{simulations}})$ concurrent workers) via `phids.analytics.dse_distributed`.
+* **Multi-Objective Pareto Optimization (NSGA-III)**: Extract non-dominated trade-off fronts balancing Ecological Stability ($S_{\text{LV}}$), Empirical Trait Distance ($D_{\text{bio}}$), and Defensive Chemical Entropy ($H_{\text{chem}}$).
+* **Multi-Agent Reinforcement Learning (MARL)**: Model herbivore swarms as adaptive MARL policies reacting to dynamic plant defense induction.
+
+### 7.2 Targeted Milestones
+
+* **Phase 3.2.1**: Ray/Tune task scheduler integration in `phids.analytics.dse_distributed`.
+* **Phase 3.2.2**: Automated NSGA-III Pareto front export directly to `scenarios/*.yaml` blueprint sets.
+* **Phase 3.2.3**: SIMD bit-mask chromosomal gene mutation passes on ECS trait arrays during swarm mitosis and seed germination.

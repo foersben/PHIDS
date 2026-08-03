@@ -36,7 +36,24 @@ This document aggregates PHIDS test suite topography, taxonomy, system mapping, 
 The PHIDS testing rig is architecturally partitioned into seven distinct lanes, mapping the flow of data from property-invariant validation to live transport stream resilience. This layered defense ensures that computational rules align with the biological model, data structures gracefully serialize, and the engine correctly protects constraints (e.g., the Rule of 16).
 
 * **Unit Telemetry and Data Engineering:** Found in `tests/unit/telemetry/`, tests here ensure that Polars DataFrames correctly reflect cross-tick invariants. E.g., handling zeros correctly for absent species, preserving flat column paradigms over nested dicts, and maintaining data correctness.
-* **Unit Analytics (DSE):** Found in `tests/unit/analytics/`, tests verify the Differential Stability Explorer optimizer (`test_dse_optimizer.py`) and candidate-pruning logic (`test_dse_pruning.py`) using deterministic fixture parameter sets.
+* **Unit Analytics (EEDSE):** Found in `tests/unit/analytics/`, tests verify the Differential Stability Explorer optimizer (`test_dse_optimizer.py`) and candidate-pruning logic (`test_dse_pruning.py`) using deterministic fixture parameter sets.
+
+```mermaid
+graph TD
+    subgraph "Analytics (src/phids/analytics/)"
+        DSEOpt["EEDSE Optimizer"]
+        DSEPrune["EEDSE Candidate Pruning"]
+    end
+
+    subgraph "Tests (tests/unit/analytics/)"
+        DSEOptTests["EEDSE Optimizer (test_dse_optimizer.py)"]
+        DSEPruneTests["EEDSE Pruning (test_dse_pruning.py)"]
+    end
+
+    DSEOpt -.-> DSEOptTests
+    DSEPrune -.-> DSEPruneTests
+```
+
 * **Unit Engine Systems (Numba Helpers):** Found in `tests/unit/engine/systems/`, tests isolate low-level interaction helper contracts (`test_interaction_py_helpers.py`) using plain Python stubs that bypass the JIT boundary so branch semantics can be asserted without Numba's compilation overhead.
 * **Integration API and HTTP Boundaries:** Defined largely within `tests/integration/api/`, these tests enforce the outer perimeter. They ensure malformed payloads return specific (400, 422, 404) explicit HTTP codes before polluting internal state, validate type-coercion behaviors on builder routes, and protect hard limits like the maximum of 16 branches (Rule of 16).
 * **Property Invariants and Mathematics:** Managed within `tests/integration/systems/test_interaction_invariants/`. These run deterministic, bounded parameterized loops enforcing exact closed-form solutions for metabolic attrition, reproduction bounds, and monotonic behaviors regarding populations and baseline energy.

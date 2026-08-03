@@ -68,49 +68,49 @@ block-beta
 * **Biological Target**: Replace instant adult plant spawning with a persistent soil seed bank. Dispersed seeds land in a dormant state (`seed_bank_layer`) and require accumulated thermal degree-days ($GDD = \sum \max(0, T - T_{\text{base}})$) and a moisture threshold ($W > W_{\text{germ}}$) to sprout.
 * **Standalone Researcher Utility**: Enables plant ecologists to study seed longevity, seasonal germination windows, seed mortality, and weed bank dynamics without requiring subterranean soil chemistry or weather layers.
 * **Computational & Performance Cost**:
-  * **Memory**: $+4\text{ Bytes/cell}$ float32 seed density array ($\sim 1\text{ MB}$ for a $512 \times 512$ grid).
-  * **CPU Latency**: $< 0.05\text{ ms/tick}$ via vectorized Numba JIT array updates.
+    * **Memory**: $+4\text{ Bytes/cell}$ float32 seed density array ($\sim 1\text{ MB}$ for a $512 \times 512$ grid).
+    * **CPU Latency**: $< 0.05\text{ ms/tick}$ via vectorized Numba JIT array updates.
 * **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Add `SeedBankConfig` schema to `phids.api.schemas.simulation`, create `seed_bank_layer` in `GridEnvironment`, update `DraftState`/`DraftService` for hot-reloading, and integrate germination triggers in `lifecycle.py` ($\sim 250$ LOC).
-  * **UI & Dashboard**: Add a "Seed Bank & Dormancy" toggle card in `src/phids/api/templates/index.html`, GDD threshold sliders, scenario JSON export/import bindings, and a live "Seed Bank Heatmap" layer toggle in the web dashboard renderer.
-  * **Empirical Bio-Database Pipeline**: Extend DuckDB schema (`phids.analytics.bio_database`) and `src/data_pipeline/json_builder.py` to ingest `germination_gdd_threshold` and `seed_decay_rate` from the TRY database.
-  * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize `seed_bank_density`. All scenario examples (`scenarios/*.yaml`) updated to match.
-  * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
-  * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
-  * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#1-sub-stage-21-soil-seed-bank-dormancy) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
+    * **Backend & API**: Add `SeedBankConfig` schema to `phids.api.schemas.simulation`, create `seed_bank_layer` in `GridEnvironment`, update `DraftState`/`DraftService` for hot-reloading, and integrate germination triggers in `lifecycle.py` ($\sim 250$ LOC).
+    * **UI & Dashboard**: Add a "Seed Bank & Dormancy" toggle card in `src/phids/api/templates/index.html`, GDD threshold sliders, scenario JSON export/import bindings, and a live "Seed Bank Heatmap" layer toggle in the web dashboard renderer.
+    * **Empirical Bio-Database Pipeline**: Extend DuckDB schema (`phids.analytics.bio_database`) and `src/data_pipeline/json_builder.py` to ingest `germination_gdd_threshold` and `seed_decay_rate` from the TRY database.
+    * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize `seed_bank_density`. All scenario examples (`scenarios/*.yaml`) updated to match.
+    * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
+    * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
+    * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
 
 ### Sub-Stage 2.2: Soil Detritus & Biomass Recycling Loop (v2.2)
 
 * **Biological Target**: Convert dead plant tissue and herbivore carcasses into an organic detritus layer ($B_{\text{detritus}}$) that mineralizes into bio-available soil nitrogen ($N_{\text{soil}}$), establishing a closed-loop nutrient cycle.
 * **Standalone Researcher Utility**: Provides soil scientists and ecosystem ecologists with a tool to investigate nutrient turnover, plant competition under nitrogen limitation, and organic fertilizing feedback loops.
 * **Computational & Performance Cost**:
-  * **Memory**: Dense Mode: $+8\text{ Bytes/cell}$ ($\sim 2\text{ MB}$ for $512^2$). Macro-Patch Mode ($16 \times 16$ coarse grid): $+32\text{ Bytes/patch}$ ($\sim 32\text{ KB}$).
-  * **CPU Latency**: Dense Mode: $\sim 0.10\text{ ms/tick}$. Macro-Patch Mode: $< 0.01\text{ ms/tick}$.
+    * **Memory**: Dense Mode: $+8\text{ Bytes/cell}$ ($\sim 2\text{ MB}$ for $512^2$). Macro-Patch Mode ($16 \times 16$ coarse grid): $+32\text{ Bytes/patch}$ ($\sim 32\text{ KB}$).
+    * **CPU Latency**: Dense Mode: $\sim 0.10\text{ ms/tick}$. Macro-Patch Mode: $< 0.01\text{ ms/tick}$.
 * **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Add `SoilModule` to `GridEnvironment`, implement JIT mineralization kernels, and hook dead entity biomass into detritus pools during `lifecycle.py` and `interaction.py` passes ($\sim 350$ LOC).
-  * **UI & Dashboard**: Add "Soil & Biomass Recycling" settings panel (mode selection: Disabled / Dense / Macro-Patch 16x16), initial nitrogen slider, scenario JSON export/import bindings, and a live 2D "Soil Nitrogen Overlay" map view.
-  * **Empirical Bio-Database Pipeline**: Update DuckDB tables with soil nitrogen baselines and plant tissue N:P decomposition ratios.
-  * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
-  * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
-  * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#4-sub-stage-24-soil-detritus-biomass-recycling) for soil mineralization continuous/discrete genes.
+    * **Backend & API**: Add `SoilModule` to `GridEnvironment`, implement JIT mineralization kernels, and hook dead entity biomass into detritus pools during `lifecycle.py` and `interaction.py` passes ($\sim 350$ LOC).
+    * **UI & Dashboard**: Add "Soil & Biomass Recycling" settings panel (mode selection: Disabled / Dense / Macro-Patch 16x16), initial nitrogen slider, scenario JSON export/import bindings, and a live 2D "Soil Nitrogen Overlay" map view.
+    * **Empirical Bio-Database Pipeline**: Update DuckDB tables with soil nitrogen baselines and plant tissue N:P decomposition ratios.
+    * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
+    * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
+    * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for soil mineralization continuous/discrete genes.
 
 ### Sub-Stage 2.3: Macro-Patch Weather & Micro-Climate Profile (v2.3)
 
 * **Biological Target**: Introduce dynamic seasonal/diurnal temperature $T(t)$, relative humidity $H(t)$, and rainfall pulses $W(t)$ that modulate photosynthesis rates, VOC diffusion constants ($D_{\text{VOC}}(T)$), and insect activity.
 * **Standalone Researcher Utility**: Enables climate change impact assessments, heatwave/drought stress experiments, and diurnal VOC emission studies.
 * **Computational & Performance Cost**:
-  * **Memory**: $< 1\text{ KB}$ (scalar or $K \times K$ macro-patch struct).
-  * **CPU Latency**: $< 0.03\text{ ms/tick}$.
+    * **Memory**: $< 1\text{ KB}$ (scalar or $K \times K$ macro-patch struct).
+    * **CPU Latency**: $< 0.03\text{ ms/tick}$.
 * **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Implement `WeatherModule` in `phids.engine.core` and integrate climate parameter updates into `SimulationLoop.step()` Phase 0 ($\sim 220$ LOC).
-  * **UI & Dashboard**: Add "Weather Profile" selection menu (Constant, Sinusoidal Seasonal, Drought Pulse), ambient temperature live telemetry badge on the top dashboard bar, and scenario JSON import/export support.
-  * **Empirical Bio-Database Pipeline**: Ingest species thermal tolerance limits ($T_{\text{min}}, T_{\text{max}}$) into `bio_database.json`.
-  * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
-  * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
-  * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#5-sub-stage-25-macro-patch-weather-profiles) for climate amplitude and drought intensity genes.
+    * **Backend & API**: Implement `WeatherModule` in `phids.engine.core` and integrate climate parameter updates into `SimulationLoop.step()` Phase 0 ($\sim 220$ LOC).
+    * **UI & Dashboard**: Add "Weather Profile" selection menu (Constant, Sinusoidal Seasonal, Drought Pulse), ambient temperature live telemetry badge on the top dashboard bar, and scenario JSON import/export support.
+    * **Empirical Bio-Database Pipeline**: Ingest species thermal tolerance limits ($T_{\text{min}}, T_{\text{max}}$) into `bio_database.json`.
+    * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
+    * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
+    * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for climate amplitude and drought intensity genes.
 
 ### Phase 2 Implementation Summary Matrix
 
@@ -163,17 +163,17 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 * **Standalone Researcher Utility**: Enables real-time simulation of massive biotope grids ($2048 \times 2048$ to $4096 \times 4096$) at over 60 FPS.
 * **Implementation Effort & Scope**: High ($\sim 800$ LOC; CUDA kernel bindings). Offloads CPU memory; GPU execution time $< 0.20\text{ ms/tick}$.
 
-### Sub-Stage 4.2: AI Agent Design Space Exploration (DSE) & Coevolution (v4.2)
+### Sub-Stage 4.2: AI Agent Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) & Coevolution (v4.2)
 
-* **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios.
+* **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios within the EEDSE framework.
 * **Why (The Problem)**: Exploring multidimensional trait parameters manually is statistically blind. We need algorithms that can dynamically search the hyper-cube of genetic configurations to locate evolutionary stable peaks.
-* **How (The Implementation)**: Utilize Ray/Tune to orchestrate parallel headless instances of the simulator, evaluating fitness gradients ($J_{\text{eco}}$) across millions of mutations.
-* **Evaluating AI-in-the-loop (AITL) for DSE**:
-    * Rather than deploying AI as a definitive, black-box "puppet master", this phase evaluates to what extent AI-in-the-loop can act as a viable replacement or assistant for Human-in-the-loop (HITL) steering during Design Space Exploration.
-    * We aim to test if headless AI agents can intelligently propose tweaks to multi-dimensional species traits (e.g., VOC emission rates, root depth allocation) across simulation seeds without producing biologically uninterpretable artifacts.
-    * The goal is to determine if algorithms can reliably parse long-term survivability ($J_{\text{eco}}$) to recommend evolutionary stable strategies (ESS) to human researchers for final validation, maintaining interpretability.
+* **How (The Implementation)**: Utilize Ray/Tune and OptunaSearch to orchestrate parallel headless instances of the simulator, evaluating fitness gradients ($J_{\text{eco}}$) across millions of mutations.
+* **Governance (AITL vs HITL)**:
+    * Rather than deploying AI as a definitive, black-box "puppet master", this phase evaluates to what extent Agentic AI-in-the-Loop (AITL) can act as a viable diagnostic observer and steering assistant for Human-in-the-Loop (HITL) exploration during EEDSE.
+    * We aim to test if headless AI agents can intelligently propose tweaks to multi-dimensional species traits (e.g., VOC emission rates, root depth allocation) across simulation seeds without producing biologically uninterpretable artifacts, explicitly governed by intervention gates.
+    * The goal is to determine if algorithms can reliably parse long-term survivability ($J_{\text{eco}}$) to recommend evolutionary stable strategies (ESS) to human researchers for final validation, maintaining interpretability..
 * **Standalone Researcher Utility**: Provides evolutionary biologists with automated discovery of non-dominated evolutionary stable strategies (ESS) for plant chemical and morphological defense.
-* **Implementation Effort & Scope**: High ($\sim 700$ LOC; Ray/Tune distributed integration). Cluster-scale parallel execution ($O(N_{\text{simulations}})$).
+* **Implementation Effort & Scope**: High ($\sim 700$ LOC; Ray/Tune distributed integration with Optuna). Cluster-scale parallel execution ($O(N_{\text{simulations}})$).
 
 ---
 
@@ -217,9 +217,14 @@ To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB)
 
 * **Biological Target**: Allow plant chemical defense pathways (induced VOC synthesis rates, toxin potency) and herbivore neutralization counter-adaptations to mutate dynamically across generations.
 * **Why (The Problem)**: Fixed traits prevent the simulation from exhibiting the Red Queen Hypothesis, a fundamental pillar of evolutionary biology.
-* **How (The Implementation)**: Implemented via SIMD bit-mask mutations on ECS trait structs during mitosis and seed germination, enabling real-time co-evolutionary arms race simulations over $10^5$ ticks.
 
-### 5.4 Speculative Granularity & Reality Neglectables
+### 5.4 Agentic Diagnostic Log Writer & Systemic Integrity Observer
+
+* **Target**: Integrate an asynchronous, non-blocking telemetry observer agent (`dse-log-observer`) to audit active DSE trajectories and detect systemic simulator distortions under a high-precision ($\ge 0.95$ confidence) policy.
+* **Why**: Prevents developer warning fatigue while catching Buckingham $\Pi$ conversion errors, allometric scaling mismatches ($BMR \propto M^{0.75}$), and heuristic solver disconnects before unphysical local minima corrupt scenario discovery.
+* **Implementation & References**: Integrated via MCP tools (`query_diagnostic_logs`, `inspect_telemetry_schema`, `runtime_snapshot`). Detailed reference: [Agentic Log Writer Guide](scenario_guide/future_prospects/agentic_log_writer.md).
+
+### 5.5 Speculative Granularity & Reality Neglectables
 
 Several mechanisms have been intentionally deferred to the speculative research horizon because they provide minimal macroscopic reality-complicity while introducing devastating architectural or computational overhead:
 
