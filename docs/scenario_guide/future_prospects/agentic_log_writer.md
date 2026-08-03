@@ -14,7 +14,6 @@ tags:
 timestamp: "2026-08-03T15:00:00Z"
 resources:
 - docs/scenario_guide/design_space_exploration.md
-- docs/scenario_guide/future_prospects/ai_coevolution_dse.md
 - docs/development_guide/agent_ecosystem.md
 ---
 

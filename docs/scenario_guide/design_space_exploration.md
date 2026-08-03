@@ -117,7 +117,7 @@ flowchart TD
 
 #### Sub-Stage 2.1: Structural Carbon Allocation & Metabolic Balances (MILP)
 
-* **Solver**: Pyomo + HiGHS / SCIP.
+* **Solver**: PySCIPOpt (MINLP) / highspy (MILP) / CasADi.
 * **Mathematical Model**:
 
 $$
@@ -269,10 +269,10 @@ The historical database triggers adaptive mutations in opposing agents:
 * When flora evolve high mechanical resistance, the database mutates herbivore trait structs (`morphological_adaptation`, `digestive_efficiency`, `chemical_neutralization`) to model ongoing co-evolutionary arms races.
 * This prevents the DSE from settling into fragile, non-resilient local minima.
 
-#### 5. Distributed Recombination (Ray/Tune & NSGA-III)
+#### 5. Distributed Recombination (Ray/Tune + OptunaSearch & NSGA-III)
 
-* High-throughput NSGA-III non-dominated sorting (DEAP library integration) extracts balanced scenario blueprints.
-* Chromosomal trait structs undergo SIMD bit-mask mutations across Ray/Tune distributed worker tasks.
+* High-throughput NSGA-III non-dominated sorting (vectorized via `pymoo`) extracts balanced scenario blueprints.
+* Chromosomal trait structs undergo SIMD bit-mask mutations across Ray/Tune + OptunaSearch distributed worker tasks.
 * Population size is strictly bounded ($N_{genotypes} \le 32$) to guarantee high-throughput completion within cluster memory budgets.
 
 ## 3. Inter-Phase Data Schema & Interface Contracts
@@ -282,20 +282,20 @@ The historical database triggers adaptive mutations in opposing agents:
 | Phase 1 $\to$ Phase 2 | `DelimitedSpaceSchema` | DuckDB View / Pydantic V2 | $\mathcal{X}_{init}$ bounds, requirements mask $\mathbf{g}_{req}$, Buckingham $\Pi$ scalars |
 | Phase 2 $\to$ Phase 3 | `GenotypeBlueprintSet` | JSON / YAML Scenario Draft | Propagated sub-Pareto sets $\mathcal{P}_{sub}$, Rule-of-16 $16\times16$ matrices, MINLP parameters |
 | Phase 3 $\to$ Phase 4 | `PhenotypeEvaluationRecord` | Zarr Array + Polars DataFrame | Raw tick telemetry, $Z_1-Z_7$ termination code, relativized vector $\mathbf{J}_{sys}$ |
-| Phase 4 $\to$ Phase 1/2 | `EpistemicWeightUpdate` | Binary MsgPack Payload | Gradient updates $\mathbf{\hat{W}}_{t+1}$, GPR kernel params $\boldsymbol{\theta}$, adaptive bounds $\mathcal{X}_{i+1}$ |
+| Phase 4 $\to$ Phase 1/2 | `EpistemicWeightUpdate` | JSON Payload | Gradient updates $\mathbf{\hat{W}}_{t+1}$, GPR kernel params $\boldsymbol{\theta}$, adaptive bounds $\mathcal{X}_{i+1}$ |
 
 ## 4. Runtime Software Boundary & Codebase Mapping
 
 | Subsystem Component | Technical Task | Primary Software Framework / Library | Codebase Location (`src/phids/`) |
 | :--- | :--- | :--- | :--- |
 | **Ingress & Delimitation** | Bounds Validation, Buckingham $\Pi$ Anchoring | Pydantic V2, DuckDB, NumPy | `src/phids/api/schemas/`, `src/phids/analytics/bio_database.py` |
-| **Genotype Sub-DSE** | Algebraic MILP / MINLP Solvers | Pyomo, HiGHS, SCIP, PuLP | `src/phids/analytics/dse_genotype.py`, `dse_optimizer.py` |
-| **Sub-DSE Pareto Extraction** | Fast Non-Dominated Sorting | DEAP (NSGA-III), NumPy | `src/phids/analytics/dse_pruning.py` |
+| **Genotype Sub-DSE** | Algebraic MILP / MINLP Solvers | PySCIPOpt, highspy, Linopy, CasADi | `src/phids/analytics/dse_genotype.py`, `dse_optimizer.py` |
+| **Sub-DSE Pareto Extraction** | Fast Non-Dominated Sorting | `pymoo` (NSGA-III), `evosax`, NumPy | `src/phids/analytics/dse_pruning.py` |
 | **Phenotype Validation** | High-Fidelity Spatial ECS & PDEs | Numba JIT (`@njit`), PyTorch CUDA | `src/phids/engine/core/biotope.py`, `flow_field.py`, `ecs.py` |
 | **Relativization & Scoring** | Unified Normalized Fitness Vector | Polars, PHIDS Presenter Layer | `src/phids/telemetry/analytics.py`, `src/phids/api/presenters/` |
-| **Telemetry Storage** | Append-Only High-Density Replays | Zarr, msgpack, zlib | `src/phids/telemetry/zarr_replay.py` |
+| **Telemetry Storage** | Append-Only High-Density Replays | Zarr, JSON, Zstd | `src/phids/io/zarr_replay.py` |
 | **Epistemic Delta Learning** | Gaussian Process Surrogate Weights | GPyTorch, scikit-learn | `src/phids/analytics/tuning.py` |
-| **Cluster Orchestration** | Distributed Parallel Evaluation | Ray/Tune, Typer CLI | `src/phids/analytics/dse_distributed.py` |
+| **Cluster Orchestration** | Distributed Parallel Evaluation | Ray/Tune, Optuna, Typer CLI | `src/phids/analytics/dse_distributed.py` |
 
 ## 5. Governance & Interventions: Agentic AI-in-the-Loop (AITL) vs. Human-in-the-Loop (HITL)
 
@@ -305,44 +305,250 @@ The core objective is to prevent the optimization engine from becoming an opaque
 
 ### 5.1 High-Level Intervention Topology
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ PHASE 1: MACRO DELIMITATION & PRE-PRUNING                                                        │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Ingest Bounds ──► [ GATE 1: Requirement & Constraint Invariant Gate ] ──► Initial Hyper-Cube X_init│
-│                   │ Toggle: Fully Autonomous AI vs. Human Rule Override / Hard Locking           │
-└────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
-                                                 │
-                                                 ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ PHASE 2: GENOTYPE SUB-DSE (FAST HEURISTIC SOLVERS)                                                │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Algebraic MILP/MINLP ──► [ GATE 2: Sub-Pareto Structural Inspection & Slicing ] ──► P_genotype   │
-│                          │ Toggle: AI Multi-Objective Slicing vs. Human Pareto Steering          │
-└────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
-                                                 │
-                                                 ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ PHASE 3: PHENOTYPE HIGH-FIDELITY VALIDATION                                                       │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Numba/CUDA Simulation ──► [ GATE 3: Unified Fitness Vector Weight & Penalty Tuning ] ──► J_sys    │
-│                            │ Toggle: AI Automated Relativization vs. Human Weight Adjustments    │
-└────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
-                                                 │
-                                                 ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ PHASE 4: CLOSED-LOOP EPISTEMIC LEARNING & RECOMBINATION                                          │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Epistemic Delta Δ ──► [ GATE 4: Surrogate Model (GPR) Recalibration Audit ]                      │
-│                       │ Toggle: AI Auto-Grad Weight Update vs. Human Epistemic Validation        │
-│                                                │                                                 │
-│ Co-Evolution     ──► [ GATE 5: Adversarial Arms Race Steering ]                                  │
-│                       │ Toggle: AI MARL Mutation Pass vs. Human Herbivore Trait Force-Inject     │
-│                                                │                                                 │
-│ Recombination    ──► [ GATE 6: Generational Gate & Exploration Entropy Safeguard ]              │
-│                       │ Toggle: Continuous Autonomous Loop vs. Step-by-Step Approval (Breakpoints) │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+<div class="eedse-flow-wrapper">
+  <style>
+    .eedse-flow-wrapper {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 2rem 0;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+      color: #e2e8f0 !important;
+    }
+
+    .eedse-phase-card {
+      background-color: #182232 !important;
+      border: 1px solid #28354a !important;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .eedse-phase-header {
+      background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%) !important;
+      border-bottom: 1px solid #2a384c !important;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #38bdf8 !important;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eedse-phase-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .eedse-flow-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .eedse-node {
+      background-color: #0f172a !important;
+      border: 1px solid #334155 !important;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #f1f5f9 !important;
+      white-space: nowrap;
+    }
+
+    .eedse-arrow {
+      color: #64748b !important;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .eedse-gate-badge {
+      background-color: rgba(139, 92, 246, 0.18) !important;
+      border: 1px solid rgba(139, 92, 246, 0.45) !important;
+      color: #c4b5fd !important;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .eedse-toggle-bar {
+      background-color: rgba(15, 23, 42, 0.75) !important;
+      border-left: 3px solid #10b981 !important;
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.82rem;
+      color: #94a3b8 !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eedse-toggle-label {
+      color: #34d399 !important;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    .eedse-down-connector {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 24px;
+      color: #38bdf8 !important;
+      font-size: 1.2rem;
+    }
+
+    .eedse-sub-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .eedse-sub-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .eedse-sub-item:last-child {
+      border-bottom: none !important;
+      padding-bottom: 0;
+    }
+
+    .eedse-math {
+      font-family: "Cambria Math", "STIXTwoMath", "Lucida Calligraphy", "DejaVu Sans", ui-monospace, monospace;
+      color: #f59e0b !important;
+      font-weight: 700;
+      font-style: italic;
+    }
+  </style>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 1: Macro Delimitation &amp; Pre-Pruning</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-flow-row">
+        <span class="eedse-node">Ingest Bounds</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-gate-badge">GATE 1: Requirement &amp; Constraint Invariant Gate</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-node">Initial Hyper-Cube <span class="eedse-math">X<sub>init</sub></span></span>
+      </div>
+      <div class="eedse-toggle-bar">
+        <span class="eedse-toggle-label">Governance Toggle:</span>
+        Fully Autonomous AI vs. Human Rule Override / Hard Locking
+      </div>
+    </div>
+  </div>
+
+  <div class="eedse-down-connector">&darr;</div>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 2: Genotype Sub-DSE (Fast Heuristic Solvers)</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-flow-row">
+        <span class="eedse-node">Algebraic MILP / MINLP</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-gate-badge">GATE 2: Sub-Pareto Structural Inspection &amp; Slicing</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-node"><span class="eedse-math">&#119979;<sub>genotype</sub></span></span>
+      </div>
+      <div class="eedse-toggle-bar">
+        <span class="eedse-toggle-label">Governance Toggle:</span>
+        AI Multi-Objective Slicing vs. Human Pareto Steering
+      </div>
+    </div>
+  </div>
+
+  <div class="eedse-down-connector">&darr;</div>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 3: Phenotype High-Fidelity Validation</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-flow-row">
+        <span class="eedse-node">Numba / CUDA Simulation</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-gate-badge">GATE 3: Unified Fitness Vector Weight &amp; Penalty Tuning</span>
+        <span class="eedse-arrow">&rarr;</span>
+        <span class="eedse-node"><span class="eedse-math">J<sub>sys</sub></span></span>
+      </div>
+      <div class="eedse-toggle-bar">
+        <span class="eedse-toggle-label">Governance Toggle:</span>
+        AI Automated Relativization vs. Human Weight Adjustments
+      </div>
+    </div>
+  </div>
+
+  <div class="eedse-down-connector">&darr;</div>
+
+  <div class="eedse-phase-card">
+    <div class="eedse-phase-header">
+      <span>Phase 4: Closed-Loop Epistemic Learning &amp; Recombination</span>
+    </div>
+    <div class="eedse-phase-body">
+      <div class="eedse-sub-grid">
+
+        <div class="eedse-sub-item">
+          <div class="eedse-flow-row">
+            <span class="eedse-node">Epistemic Delta <span class="eedse-math">&Delta;</span></span>
+            <span class="eedse-arrow">&rarr;</span>
+            <span class="eedse-gate-badge">GATE 4: Surrogate Model (GPR) Recalibration Audit</span>
+          </div>
+          <div class="eedse-toggle-bar">
+            <span class="eedse-toggle-label">Governance Toggle:</span>
+            AI Auto-Grad Weight Update vs. Human Epistemic Validation
+          </div>
+        </div>
+
+        <div class="eedse-sub-item">
+          <div class="eedse-flow-row">
+            <span class="eedse-node">Co-Evolution</span>
+            <span class="eedse-arrow">&rarr;</span>
+            <span class="eedse-gate-badge">GATE 5: Adversarial Arms Race Steering</span>
+          </div>
+          <div class="eedse-toggle-bar">
+            <span class="eedse-toggle-label">Governance Toggle:</span>
+            AI MARL Mutation Pass vs. Human Herbivore Trait Force-Inject
+          </div>
+        </div>
+
+        <div class="eedse-sub-item">
+          <div class="eedse-flow-row">
+            <span class="eedse-node">Recombination</span>
+            <span class="eedse-arrow">&rarr;</span>
+            <span class="eedse-gate-badge">GATE 6: Generational Gate &amp; Exploration Entropy Safeguard</span>
+          </div>
+          <div class="eedse-toggle-bar">
+            <span class="eedse-toggle-label">Governance Toggle:</span>
+            Continuous Autonomous Loop vs. Step-by-Step Approval (Breakpoints)
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
 
 ### 5.2 Detailed Intervention Points & Toggle Specifications
 
@@ -360,7 +566,7 @@ The core objective is to prevent the optimization engine from becoming an opaque
 #### Touchpoint 2: Sub-Pareto Structural Inspection & Slicing (Phase 2 Output)
 
 * **Location in Codebase**: [`src/phids/analytics/dse_genotype.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_genotype.py), [`src/phids/analytics/dse_pruning.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_pruning.py)
-* **Purpose**: Manages the propagation of sub-Pareto fronts ($\mathcal{P}_{sub}$) generated by the fast MILP/MINLP solvers (Pyomo/HiGHS).
+* **Purpose**: Manages the propagation of sub-Pareto fronts ($\mathcal{P}_{sub}$) generated by the fast MILP/MINLP solvers (PySCIPOpt/highspy/Linopy).
 * **Modes**:
     * **Autonomous AI (AITL)**: Automatically computes crowding distances and non-dominated ranks, passing the top $K$ mathematical trade-off blueprints forward to Phase 3.
     * **Human Control (HITL)**: The researcher inspects the trade-off curve (e.g., Morphological Lignin Cost vs. Growth Rate) in a live 2D/3D scatter plot and visually draws a regional bounding box (slice) to eliminate mathematically valid but scientifically uninteresting regions.
@@ -403,7 +609,7 @@ $$
 * **Location in Codebase**: [`src/phids/analytics/dse_distributed.py`](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/analytics/dse_distributed.py), `src/phids/api/services/dse/task_manager.py`
 * **Purpose**: Controls overall generation-to-generation execution flow and search space entropy management ($\mathcal{X}_{i+1}$).
 * **Modes**:
-    * **Autonomous Execution (Continuous AITL)**: Runs $G$ generations headless across Ray/Tune clusters until convergence criteria or maximum generations are met.
+    * **Autonomous Execution (Continuous AITL)**: Runs $G$ generations headless across Ray/Tune + OptunaSearch clusters until convergence criteria or maximum generations are met.
     * **Human Step-by-Step Execution (Interactive HITL)**: Acts as a simulation "breakpoint engine." At the end of each generation, the DSE engine pauses, displays the newly derived candidate pool ($N \le 32$), and waits for explicit human confirmation to launch the next generational cycle.
 * **UI Control Surface**: Top-bar execution toolbar: `DSE Execution Mode: [ Continuous Autonomous Sweep | Step-by-Step Generational Breakpoints ]`.
 
@@ -416,7 +622,7 @@ $$
 | **Gate 3: Fitness Vector Weighting** | Dynamic entropic weight balancing preventing search space collapse. | Custom multi-objective prioritization (e.g., valuing Lotka-Volterra stability over empirical distance). |
 | **Gate 4: Epistemic Audit** | Real-time gradient updates ($\mathbf{\hat{W}}_{t+1}$) via GPyTorch surrogate models. | Diagnostic safety barrier preventing the AI from learning unphysical edge-case exploits. |
 | **Gate 5: Co-Evolution Steering** | Automated MARL pest counter-adaptation preventing fragile local minima. | Targeted adversarial stress-testing against specific biological mutations. |
-| **Gate 6: Generational Breakpoints** | Unattended, high-throughput HPC execution across Ray/Tune clusters. | Full step-by-step oversight, scenario inspection, and steering control for researchers. |
+| **Gate 6: Generational Breakpoints** | Unattended, high-throughput HPC execution across Ray/Tune clusters. | Full step-by-step oversight, scenario inspection, and Optuna pruning control for researchers. |
 
 ## 6. Architectural Summary & System Guarantees
 
@@ -426,3 +632,26 @@ The Evolutionary Encapsulated Design Space Exploration (EEDSE) framework transfo
 * **Empirical Authenticity**: Bounds searches via DuckDB TRY/PanTHERIA distributions and Mahalanobis distances ($D_{bio}$).
 * **Self-Correcting Intelligence**: Recalibrates heuristic generator weights ($\mathbf{\hat{W}}_{t+1}$) using physical simulation error deltas ($\mathbf{\Delta}_{epistemic}$).
 * **Resilient Optimization**: Avoids local minima trap-in through co-evolutionary agent mutations and adaptive search space variance expansion.
+
+## 7. Future Prospects: Distributed EEDSE & AI Coevolution
+
+While single-objective and multi-stage EEDSE locate robust equilibrium parameters, real-world ecosystems are driven by continuous **coevolutionary arms races**. Flora species dynamically reallocate energy between structural defenses (thorns/lignin) and volatile chemical signals (VOCs), while herbivore species co-evolve specialized digestive mechanisms and chemical neutralization capabilities.
+
+```mermaid
+flowchart LR
+    Flora_Pop["Flora Population<br><i>Defense Investment Strategy</i>"] <-->|Coevolutionary Feedback| Herbivore_Pop["Herbivore Population<br><i>Neutralization Strategy</i>"]
+    
+    SubGraph_Ray["Ray / Tune Distributed Cluster<br><i>Parallel Multi-Scenario Execution</i>"] --> Pareto["Pareto Optimal Front<br><i>Evolutionary Stable Strategies (ESS)</i>"]
+```
+
+### 7.1 Distributed Cluster & Reinforcement Learning Scaling
+
+* **Ray/Tune Task Scheduling**: Scale scenario evaluations across HPC compute clusters ($O(N_{\text{simulations}})$ concurrent workers) via `phids.analytics.dse_distributed`.
+* **Multi-Objective Pareto Optimization (NSGA-III)**: Extract non-dominated trade-off fronts balancing Ecological Stability ($S_{\text{LV}}$), Empirical Trait Distance ($D_{\text{bio}}$), and Defensive Chemical Entropy ($H_{\text{chem}}$).
+* **Multi-Agent Reinforcement Learning (MARL)**: Model herbivore swarms as adaptive MARL policies reacting to dynamic plant defense induction.
+
+### 7.2 Targeted Milestones
+
+* **Phase 3.2.1**: Ray/Tune task scheduler integration in `phids.analytics.dse_distributed`.
+* **Phase 3.2.2**: Automated NSGA-III Pareto front export directly to `scenarios/*.yaml` blueprint sets.
+* **Phase 3.2.3**: SIMD bit-mask chromosomal gene mutation passes on ECS trait arrays during swarm mitosis and seed germination.
