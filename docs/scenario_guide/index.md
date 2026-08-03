@@ -38,14 +38,18 @@ graph TD
 
 * **[Scenario Authoring](scenario_authoring.md)**: Documentation on the scenario `DraftState` pipeline and constraints.
 * **[Curated Examples](curated_examples.md)**: An overview of the built-in, chemically balanced default scenarios.
-* **[Design Space Exploration](design_space_exploration.md)**: Guide on utilizing the DSE Optimizer to discover stable ecological configurations.
+
+## Work in Progress
+
+* **[Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](design_space_exploration.md)**: Guide on utilizing the EEDSE Optimizer to discover stable ecological configurations.
 * **[Empirical Database](empirical_database.md)**: Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
 
 ---
 
 ## Future Prospects
 
-* **[AI Coevolution & Distributed DSE Engine](future_prospects/ai_coevolution_dse.md)**: Architecture for Ray/Tune distributed multi-objective Pareto optimization and reinforcement learning swarm coevolution.
+* **[AI Coevolution & Distributed EEDSE Engine](future_prospects/ai_coevolution_dse.md)**: Architecture for Ray/Tune + OptunaSearch distributed multi-objective Pareto optimization, AITL governance, and reinforcement learning swarm coevolution under EEDSE.
+* **[Agentic Diagnostic Log Writer](future_prospects/agentic_log_writer.md)**: Specification for the AITL diagnostic observer logging systemic integrity.
 * **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**: Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
 
 ### 1. Scenario Authoring & Schema
@@ -64,9 +68,9 @@ Inspect pre-configured blueprints designed to demonstrate specific ecological fe
 * **Trophic Collapse Scenario:** A demonstration of ecological breakdown when herbivore consumption rates breach flora regeneration thresholds.
 * **Volatile Warning Cascade:** A scenario highlighting chemical atmospheric warning diffusion across spatial grids.
 
-### 3. Design Space Exploration (DSE)
+### 3. Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)
 
-Discover how the framework uses SciPy's Differential Evolution to find stable parameters autonomously:
+Discover how the framework uses encapsulated parameter restriction and `pymoo` genetic algorithms to find stable parameters autonomously:
 
 * **Optimization Search:** Why genetic/evolutionary search beats Random Walk and Simulated Annealing in rugged biological landscapes.
 * **Cost Function Design:** How we penalize extinction events, reward survival time, and avoid "boring" stable states (e.g., $100\%$ flora, $0$ herbivores).

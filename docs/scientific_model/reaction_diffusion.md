@@ -39,7 +39,7 @@ Where:
 
 ### Discretization for Cellular Automata
 
-Because PHIDS operates on a discrete grid with discrete time steps (\Delta t), we cannot solve the continuous PDE directly. Instead, we approximate it using a two-step computational fluid dynamics approach:
+Because PHIDS operates on a discrete grid with discrete time steps (\Delta t), the continuous PDE cannot be solved directly. Instead, it is approximated using a two-step computational fluid dynamics approach:
 
 #### I. Implementation Mechanics
 
@@ -179,10 +179,9 @@ Where $\varepsilon$ is a configurable threshold (e.g., `1e-4`).
 
 ### Agent-Based Scent Particles
 
-We could spawn individual ECS entities representing "scent particles" that move randomly.
+An alternative approach would be to spawn individual ECS entities representing "scent particles" that move randomly. This accurately models Brownian motion but fails completely at ecological scale: simulating 10 million airborne molecules requires 10 million spatial hashes per tick, destroying the frame rate.
 
-* *Why rejected:* Tracking millions of particles per tick destroys the $O(1)$ scaling constraint of the engine.
-* *Our advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, we achieve mathematically accurate macro-dispersion in bounded time, regardless of how much substance is emitted.
+* *Methodological Advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, mathematically accurate macro-dispersion is achieved in bounded time, regardless of how much substance is emitted.
 
 ## Stress-Induced Resource Reallocation (Senescence)
 
