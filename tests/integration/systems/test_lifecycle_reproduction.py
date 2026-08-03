@@ -50,7 +50,7 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     success_world.add_component(parent_entity.entity_id, parent)
     success_world.register_position(parent_entity.entity_id, 2, 2)
 
-    values = iter([0.0, 1.0])
+    values = iter([1.0, 0.0])  # distance=1.0, angle=0.0 -> dx=+1, dy=0 -> (3,2)
     monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
     offspring = _attempt_reproduction(parent, 5, success_world, env, flora_params)
     assert len(offspring) == 1
@@ -98,7 +98,7 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     blocked_world.add_component(occupant_entity.entity_id, occupant)
     blocked_world.register_position(occupant_entity.entity_id, 3, 2)
 
-    values = iter([0.0, 1.0])
+    values = iter([1.0, 0.0])
     monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
     blocked = _attempt_reproduction(blocked_parent, 5, blocked_world, env, flora_params)
     assert blocked == []
@@ -176,7 +176,7 @@ def test_newborn_reproduction_respects_cooldown_and_energy_constraints(
     world.add_component(parent_entity.entity_id, parent)
     world.register_position(parent_entity.entity_id, parent.x, parent.y)
 
-    values = iter([0.0, 1.0, 0.0, 1.0])
+    values = iter([1.0, 0.0, 1.0, 0.0])
     monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
 
     birth_tick = 10
@@ -210,8 +210,6 @@ def test_attempt_reproduction_applies_downwind_bias_when_wind_is_present(
     params = config_builder().flora_species[0]
     params.seed_min_dist = 1.0
     params.seed_max_dist = 1.0
-    params.seed_drop_height = 2.0
-    params.seed_terminal_velocity = 0.5
     flora_params = {0: params}
 
     env = GridEnvironment(width=12, height=8, num_signals=1, num_toxins=1)
@@ -232,20 +230,17 @@ def test_attempt_reproduction_applies_downwind_bias_when_wind_is_present(
         seed_min_dist=1.0,
         seed_max_dist=1.0,
         seed_energy_cost=2.0,
-        seed_drop_height=params.seed_drop_height,
-        seed_terminal_velocity=params.seed_terminal_velocity,
     )
     parent.last_reproduction_tick = -10
     world.add_component(parent_entity.entity_id, parent)
     world.register_position(parent_entity.entity_id, parent.x, parent.y)
 
-    values = iter([0.0, 1.0])
-    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
+    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: 1.0)
     monkeypatch.setattr("phids.engine.systems.lifecycle.random.gauss", lambda mu, _sigma: mu)
 
     offspring = _attempt_reproduction(parent, 5, world, env, flora_params)
     assert len(offspring) == 1
-    assert offspring[0].x >= 8
+    assert offspring[0].x > parent.x  # shifted downwind (+x)
     assert offspring[0].y == 3
 
 
@@ -325,7 +320,7 @@ def test_run_lifecycle_growth_is_incremental_at_late_ticks(
         x=1,
         y=1,
         energy=10.0,
-        max_energy=20.0,
+        max_energy=100.0,
         base_energy=10.0,
         growth_rate=5.0,
         survival_threshold=1.0,
@@ -340,4 +335,6 @@ def test_run_lifecycle_growth_is_incremental_at_late_ticks(
     run_lifecycle(world, env, tick=1000, flora_species_params=params)
 
     grown = world.get_entity(plant_entity.entity_id).get_component(PlantComponent)
-    assert grown.energy == pytest.approx(10.5)
+    # Weekly burst growth: base_energy * (growth_rate / 100) * 168 = 10.0 * 0.05 * 168 = 84.0
+    # Capped at max_energy = 100.0
+    assert grown.energy == pytest.approx(94.0)

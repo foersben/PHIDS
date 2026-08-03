@@ -80,21 +80,14 @@ def _sum_neighbours_jit(
     Returns:
         The sum of the neighbours and the number of neighbours.
     """
-    neighbours_sum = 0.0
-    neighbour_count = 0
-    if x > 0:
-        neighbours_sum += current[x - 1, y]
-        neighbour_count += 1
-    if x < width - 1:
-        neighbours_sum += current[x + 1, y]
-        neighbour_count += 1
-    if y > 0:
-        neighbours_sum += current[x, y - 1]
-        neighbour_count += 1
-    if y < height - 1:
-        neighbours_sum += current[x, y + 1]
-        neighbour_count += 1
-    return neighbours_sum, neighbour_count
+    neighbours_sum = (
+        current[(x - 1) % width, y]
+        + current[(x + 1) % width, y]
+        + current[x, (y - 1) % height]
+        + current[x, (y + 1) % height]
+    )
+    # Toroidal grid always has width >= 4 and height >= 4; count is always 4.
+    return neighbours_sum, 4
 
 
 @njit(cache=True)
@@ -122,9 +115,9 @@ def _propagate_iteration_jit(
     max_diff = 0.0
     for x in range(width):
         for y in range(height):
-            neighbours_sum, neighbour_count = _sum_neighbours_jit(x, y, width, height, current)
-            propagated = neighbours_sum / neighbour_count if neighbour_count > 0 else 0.0
-            val = base[x, y] + (decay * propagated)
+            # neighbour_count is always 4 on a toroidal grid (width >= 4, height >= 4)
+            neighbours_sum, _ = _sum_neighbours_jit(x, y, width, height, current)
+            val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
 
             diff = abs(val - current[x, y])
@@ -153,6 +146,165 @@ def _truncate_subnormals_jit(
         for y in range(height):
             if current[x, y] > -threshold and current[x, y] < threshold:
                 current[x, y] = 0.0
+
+
+@njit(cache=True)
+def _update_boundary_x_jit(
+    x: int,
+    width: int,
+    height: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    """Helper function to update the top and bottom boundaries for a given x-coordinate.
+
+    Args:
+        x: The x-coordinate.
+        width: The width of the grid.
+        height: The height of the grid.
+        decay: The decay rate.
+        base: The base flow field.
+        current: The current flow field.
+        nxt: The next flow field.
+
+    Returns:
+        The maximum difference for this x-coordinate slice.
+    """
+    max_diff = 0.0
+    # Top boundary (y=0): neighbour_count always 4 on toroidal grid
+    n_sum, _ = _sum_neighbours_jit(x, 0, width, height, current)
+    val = base[x, 0] + (decay * n_sum * 0.25)
+    nxt[x, 0] = val
+    diff1 = abs(val - current[x, 0])
+    if diff1 > max_diff:
+        max_diff = diff1
+
+    # Bottom boundary (y=height-1)
+    n_sum, _ = _sum_neighbours_jit(x, height - 1, width, height, current)
+    val = base[x, height - 1] + (decay * n_sum * 0.25)
+    nxt[x, height - 1] = val
+    diff2 = abs(val - current[x, height - 1])
+    if diff2 > max_diff:
+        max_diff = diff2
+    return max_diff
+
+
+@njit(cache=True)
+def _update_boundary_y_jit(
+    y: int,
+    width: int,
+    height: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    """Helper function to update the left and right boundaries for a given y-coordinate.
+
+    Args:
+        y: The y-coordinate.
+        width: The width of the grid.
+        height: The height of the grid.
+        decay: The decay rate.
+        base: The base flow field.
+        current: The current flow field.
+        nxt: The next flow field.
+
+    Returns:
+        The maximum difference for this y-coordinate slice.
+    """
+    max_diff = 0.0
+    # Left boundary (x=0): neighbour_count always 4 on toroidal grid
+    n_sum, _ = _sum_neighbours_jit(0, y, width, height, current)
+    val = base[0, y] + (decay * n_sum * 0.25)
+    nxt[0, y] = val
+    diff1 = abs(val - current[0, y])
+    if diff1 > max_diff:
+        max_diff = diff1
+
+    # Right boundary (x=width-1)
+    n_sum, _ = _sum_neighbours_jit(width - 1, y, width, height, current)
+    val = base[width - 1, y] + (decay * n_sum * 0.25)
+    nxt[width - 1, y] = val
+    diff2 = abs(val - current[width - 1, y])
+    if diff2 > max_diff:
+        max_diff = diff2
+    return max_diff
+
+
+@njit(cache=True)
+def _propagate_boundaries_jit(
+    width: int,
+    height: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    """Helper function to propagate the flow field along the boundaries.
+
+    Args:
+        width: The width of the grid environment.
+        height: The height of the grid environment.
+        decay: The decay rate.
+        base: The base flow field.
+        current: The current flow field.
+        nxt: The next flow field.
+
+    Returns:
+        The maximum difference between the current and next flow fields along the boundaries.
+    """
+    max_diff = 0.0
+
+    for x in range(width):
+        d = _update_boundary_x_jit(x, width, height, decay, base, current, nxt)
+        if d > max_diff:
+            max_diff = d
+
+    for y in range(1, height - 1):
+        d = _update_boundary_y_jit(y, width, height, decay, base, current, nxt)
+        if d > max_diff:
+            max_diff = d
+
+    return max_diff
+
+
+@njit(cache=True)
+def _propagate_inner_jit(
+    width: int,
+    height: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    """Helper function to propagate the flow field in the inner grid.
+
+    Args:
+        width: The width of the grid environment.
+        height: The height of the grid environment.
+        decay: The decay rate.
+        base: The base flow field.
+        current: The current flow field.
+        nxt: The next flow field.
+
+    Returns:
+        The maximum difference between the current and next flow fields in the inner grid.
+    """
+    max_diff = 0.0
+    # Handle inner cells without boundary checks
+    for x in range(1, width - 1):
+        for y in range(1, height - 1):
+            n_sum = current[x - 1, y] + current[x + 1, y] + current[x, y - 1] + current[x, y + 1]
+            propagated = n_sum * 0.25  # neighbour_count is always 4
+            val = base[x, y] + (decay * propagated)
+            nxt[x, y] = val
+            diff = abs(val - current[x, y])
+            if diff > max_diff:
+                max_diff = diff
+    return max_diff
 
 
 # pragma: no mutate start
@@ -204,65 +356,10 @@ def _compute_flow_field_impl(
     # Iterative propagation lets attraction/repulsion travel multiple hops.
     max_iterations = width + height
     for _ in range(max_iterations):
-        max_diff = 0.0
+        diff_boundaries = _propagate_boundaries_jit(width, height, decay, base, current, nxt)
+        diff_inner = _propagate_inner_jit(width, height, decay, base, current, nxt)
 
-        # Handle boundaries (x=0, x=width-1, y=0, y=height-1)
-        for x in range(width):
-            for y in (0, height - 1):
-                n_sum = 0.0
-                n_count = 0
-                if x > 0:
-                    n_sum += current[x - 1, y]
-                    n_count += 1
-                if x < width - 1:
-                    n_sum += current[x + 1, y]
-                    n_count += 1
-                if y > 0:
-                    n_sum += current[x, y - 1]
-                    n_count += 1
-                if y < height - 1:
-                    n_sum += current[x, y + 1]
-                    n_count += 1
-                propagated = n_sum / n_count if n_count > 0 else 0.0
-                val = base[x, y] + (decay * propagated)
-                nxt[x, y] = val
-                diff = abs(val - current[x, y])
-                if diff > max_diff:
-                    max_diff = diff
-
-        for x in (0, width - 1):
-            for y in range(1, height - 1):
-                n_sum = 0.0
-                n_count = 0
-                if x > 0:
-                    n_sum += current[x - 1, y]
-                    n_count += 1
-                if x < width - 1:
-                    n_sum += current[x + 1, y]
-                    n_count += 1
-                if y > 0:
-                    n_sum += current[x, y - 1]
-                    n_count += 1
-                if y < height - 1:
-                    n_sum += current[x, y + 1]
-                    n_count += 1
-                propagated = n_sum / n_count if n_count > 0 else 0.0
-                val = base[x, y] + (decay * propagated)
-                nxt[x, y] = val
-                diff = abs(val - current[x, y])
-                if diff > max_diff:
-                    max_diff = diff
-
-        # Handle inner cells without boundary checks
-        for x in range(1, width - 1):
-            for y in range(1, height - 1):
-                n_sum = current[x - 1, y] + current[x + 1, y] + current[x, y - 1] + current[x, y + 1]
-                propagated = n_sum * 0.25  # neighbour_count is always 4
-                val = base[x, y] + (decay * propagated)
-                nxt[x, y] = val
-                diff = abs(val - current[x, y])
-                if diff > max_diff:
-                    max_diff = diff
+        max_diff = diff_boundaries if diff_boundaries > diff_inner else diff_inner
 
         current, nxt = nxt, current
 

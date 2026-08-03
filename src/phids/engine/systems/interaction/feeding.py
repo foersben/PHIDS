@@ -29,6 +29,7 @@ def _feed_on_single_plant(
     env: GridEnvironment,
     tile_populations: list[int],
     plant_death_causes: dict[str, int] | None,
+    stride_multiplier: float = 1.0,
 ) -> tuple[float, bool]:
     """Feed on a single co-located plant, returning (metabolized_energy, plant_killed).
 
@@ -43,10 +44,10 @@ def _feed_on_single_plant(
         target_plant: The plant component to feed on.
         flora_species_params: The flora species parameters.
         herbivore_species_params: The herbivore species parameters.
-        herbivore_species_params: The herbivore species parameters.
         env: The grid environment.
         tile_populations: The tile populations.
         plant_death_causes: The plant death causes.
+        stride_multiplier: The scaling factor for consumption rate over the stride interval.
 
     Returns:
         A tuple containing the metabolized energy and whether the plant was killed.
@@ -55,7 +56,8 @@ def _feed_on_single_plant(
     swarm_params = herbivore_species_params[swarm.species_id]
     handling_time = getattr(swarm_params, "handling_time", 0.0)
 
-    raw_per_ind = swarm.consumption_rate / effective_velocity
+    # Consumption rate is scaled by stride_multiplier (e.g. 24 hours on daily medium-tick steps).
+    raw_per_ind = (swarm.consumption_rate * stride_multiplier) / effective_velocity
     if handling_time > 0.0:
         potential_per_ind = (raw_per_ind * target_plant.energy) / (
             1.0 + raw_per_ind * handling_time * target_plant.energy
@@ -132,6 +134,7 @@ def _resolve_swarm_feeding(
     herbivore_species_params: list[HerbivoreSpeciesParams],
     tile_populations: list[int],
     plant_death_causes: dict[str, int] | None = None,
+    stride_multiplier: float = 1.0,
 ) -> None:
     """Execute feeding phase on target plants at current position.
 
@@ -148,6 +151,7 @@ def _resolve_swarm_feeding(
         herbivore_species_params: The herbivore species parameters.
         tile_populations: The tile populations.
         plant_death_causes: The plant death causes.
+        stride_multiplier: The scaling factor for consumption rate over the stride interval.
     """
     ate_anything = False
     on_incompatible_plant = False
@@ -170,6 +174,7 @@ def _resolve_swarm_feeding(
             env,
             tile_populations,
             plant_death_causes,
+            stride_multiplier=stride_multiplier,
         )
         swarm.energy += metabolized
         if metabolized > 0:

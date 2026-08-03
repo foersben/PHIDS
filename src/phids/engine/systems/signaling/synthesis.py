@@ -31,6 +31,8 @@ def _process_advance_single_synthesis(
     if sub.active:
         return
     if not sub.triggered_this_tick:
+        if sub.synthesis_remaining > 0:
+            sub.synthesis_remaining = 0
         return
     owner_entity = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
     if owner_entity is None:

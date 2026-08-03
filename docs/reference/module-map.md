@@ -23,7 +23,7 @@ symbol responsibility.
 
 ## How to Use This Page
 
-Use this guide when you need to answer one of the following:
+This guide is intended for resolving the following inquiries:
 
 * which module owns a behavior,
 * which package defines a particular symbol,
@@ -192,11 +192,11 @@ Narrative docs:
 
 Primary responsibility:
 
-* plant growth, reproduction, mycorrhizal connectivity, and death.
+- Modulo-gated (168-tick weekly stride) plant photosynthetic growth, $O(1)$ stochastic raycasting seed dispersal, mycorrhizal network establishment, and threshold culling.
 
 Key symbol:
 
-* `run_lifecycle`
+- `run_lifecycle`
 
 Narrative docs:
 
@@ -358,26 +358,23 @@ If you know the symbol but not the page, start here:
 
 * `SimulationLoop` → `docs/technical_architecture/engine_execution.md`
 * `DraftState` → `docs/technical_architecture/interfaces_and_ui.md`
-* `ECSWorld` → `docs/technical_architecture/engine_execution.md`
-* `GridEnvironment` → `docs/technical_architecture/engine_execution.md`
-* `TelemetryRecorder` → `docs/technical_architecture/telemetry.md`
-* `ReplayBuffer` → `docs/technical_architecture/telemetry.md`
-* `SimulationConfig` → `docs/scenario_guide/curated_examples.md`
-* `TriggerConditionSchema` → `docs/scenario_guide/scenario_authoring.md`
+If the symbol is known but the corresponding page is not, start here:
 
-## Reference vs Narrative Rule
+* `module-map.md` (this file) - to find which module the symbol belongs to.
 
-Use the narrative chapters when you need to know:
+### 2. Narrative vs. API Reference
 
-* why a subsystem exists,
-* what invariants it preserves,
-* how it behaves as part of a scientific workflow.
+Use the narrative chapters for resolving:
 
-Use the API reference when you need to know:
+* System-wide integration of a component.
+* The scientific or biological reasoning behind a module (e.g. why `SubnormalClamp` exists).
+* Execution order constraints (e.g. why `InteractionSystem` runs before `GrowthSystem`).
 
-* exact signatures,
-* fields and docstrings,
-* symbol-level declarations.
+Use the API reference for resolving:
+
+* Function signatures and arguments.
+* Returned shapes of NumPy arrays.
+* Field descriptions of dataclasses.
 
 ## Where to Read Next
 

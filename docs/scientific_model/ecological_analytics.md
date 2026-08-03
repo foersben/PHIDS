@@ -125,9 +125,9 @@ In Lotka-Volterra dynamics and spatially explicit cellular automata, physical li
 * **Toxicity:** A plant emitting `0.1` units of lethal toxin applies an exact, absolute metabolic penalty to a grazing herbivore. If this were a "percentage", the damage formula would require a dynamic denominator (e.g., percentage of *what*? The plant's capacity? The herbivore's resistance?) which introduces unstable feedback loops into the integration algorithms.
 * **Biomass Thresholds:** A swarm must consume absolute biomass (e.g., `4.5` energy units per individual) to stave off starvation. Translating this to a relative percentage would require recalculating the threshold every time the herd population fluctuates, destroying Numba's vectorization capabilities.
 
-### Analytics & Design Space Exploration (DSE)
+### Analytics & Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)
 
-While the engine computes physical absolutes, human operators exploring the scenario design space (DSE) rely on relative context. Therefore, PHIDS utilizes a decoupling pattern:
+While the engine computes physical absolutes, human operators exploring the scenario design space (EEDSE) rely on relative context. Therefore, PHIDS utilizes a decoupling pattern:
 
 * **Raw Telemetry:** The Zarr buffers and ECS engine record and evaluate strict absolutes.
 * **Relativization (Normalization):** The UI and analytics dashboards scale these raw limits on-the-fly (e.g., translating a plant's absolute energy of `45.0` against its genetic capacity of `50.0` to yield a `90%` health metric).
@@ -138,7 +138,7 @@ This dichotomy ensures the underlying scientific model remains mathematically ri
 
 Within the mathematical engine, species and environmental interactions are strictly calculated using raw, absolute numerical primitives (e.g., specific Joules of energy, precise entity headcounts, and raw concentration floats).
 
-However, from an analytical and design-space exploration (DSE) perspective, comparing a species with an absolute baseline energy of `5.0` to one with a baseline of `500.0` is ecologically opaque. A loss of `2.0` energy is devastating for the first, but trivial for the second.
+However, from an analytical and design-space exploration (EEDSE) perspective, comparing a species with an absolute baseline energy of `5.0` to one with a baseline of `500.0` is ecologically opaque. A loss of `2.0` energy is devastating for the first, but trivial for the second.
 
 To resolve this, the scientific framework employs **Relativization** (often referred to technically as normalization). Data points are transformed into dimensionless scales (ratios, percentages, and fractional multipliers) before presentation:
 
