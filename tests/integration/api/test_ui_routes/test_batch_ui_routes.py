@@ -98,7 +98,7 @@ def _patch_completed_batch_execution(
         )
 
     monkeypatch.setattr(api_main.asyncio, "create_task", _capture_task)
-    monkeypatch.setattr("phids.engine.batch.BatchRunner.execute_batch", _fake_execute_batch)
+    monkeypatch.setattr("phids.engine.batch.orchestrator.BatchRunner.execute_batch", _fake_execute_batch)
     return scheduled_tasks
 
 
