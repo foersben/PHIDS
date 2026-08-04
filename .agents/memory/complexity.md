@@ -50,3 +50,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 70 vs. < 15 (Target function completely cleared).
 * **Performance Assessment:** The benchmark `test_flow_field_generation_benchmark` showed a mean execution time of ~240µs, matching the baseline of ~235µs well within the expected environmental jitter (StdDev ~33µs vs ~15µs baseline), confirming that extracting cleanly typed `@njit` kernels inside the JIT compiler successfully inlines the functions with zero runtime abstraction penalty.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2025-02-18 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement.py and function `_resolve_swarm_movement`
+* **Selection Rationale:** Highest complexity score (21). The function has a clear block for executing the movement (updating ECS, population tiles, wrapping coordinates) which can be cleanly extracted into `_execute_swarm_move`. This avoids modifying the hot-path logic structure or using ultra-complex Numba engine rewrites, while significantly reducing cognitive complexity.
+* **Before/After Score:** 21 vs. 15
+* **Performance Assessment:** Common-sense reasoning implies zero performance regression as the logic extracted runs exactly the same instructions. Benchmark (`pytest tests/benchmarks/`) results confirm zero performance regression.
+* **Test Verification:** Confirmed that all linting (`ruff format .`, `ruff check .`), unit tests (`pytest`), and complexity checks (`complexipy . --failed`) pass.

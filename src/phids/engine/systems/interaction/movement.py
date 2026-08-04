@@ -451,6 +451,53 @@ def _is_swarm_anchored(
     return False
 
 
+def _execute_swarm_move(
+    swarm: SwarmComponent,
+    entity: Entity,
+    world: ECSWorld,
+    tile_populations: list[int],
+    width: int,
+    height: int,
+    old_x: int,
+    old_y: int,
+    nx: int,
+    ny: int,
+) -> None:
+    """Execute the swarm movement and update ECS and spatial tracking.
+
+    Args:
+        swarm: The swarm component.
+        entity: The entity being moved.
+        world: The ECS world.
+        tile_populations: The tile populations list.
+        width: Grid width.
+        height: Grid height.
+        old_x: Original x coordinate.
+        old_y: Original y coordinate.
+        nx: New x coordinate.
+        ny: New y coordinate.
+    """
+    world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
+    _accumulate_tile_population(tile_populations, old_x, old_y, width, -swarm.population)
+    _accumulate_tile_population(tile_populations, nx, ny, width, swarm.population)
+    swarm.x, swarm.y = nx, ny
+
+    dx = nx - old_x
+    if dx > width // 2:
+        dx -= width
+    elif dx < -width // 2:
+        dx += width
+
+    dy = ny - old_y
+    if dy > height // 2:
+        dy -= height
+    elif dy < -height // 2:
+        dy += height
+
+    swarm.last_dx = dx
+    swarm.last_dy = dy
+
+
 def _resolve_swarm_movement(
     swarm: SwarmComponent,
     entity: Entity,
@@ -533,25 +580,7 @@ def _resolve_swarm_movement(
 
     has_moved = False
     if (nx, ny) != (old_x, old_y):
-        world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
-        _accumulate_tile_population(tile_populations, old_x, old_y, env.width, -swarm.population)
-        _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
-        swarm.x, swarm.y = nx, ny
-
-        dx = nx - old_x
-        if dx > env.width // 2:
-            dx -= env.width
-        elif dx < -env.width // 2:
-            dx += env.width
-
-        dy = ny - old_y
-        if dy > env.height // 2:
-            dy -= env.height
-        elif dy < -env.height // 2:
-            dy += env.height
-
-        swarm.last_dx = dx
-        swarm.last_dy = dy
+        _execute_swarm_move(swarm, entity, world, tile_populations, env.width, env.height, old_x, old_y, nx, ny)
         has_moved = True
 
     swarm.move_cooldown = swarm.velocity - 1
