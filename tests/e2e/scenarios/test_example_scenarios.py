@@ -34,6 +34,7 @@ CURATED_EXAMPLE_STEMS = {
     "root_network_alarm_chain",
     "wind_tunnel_orchard",
     "eternal_canopy_blueprint",
+    "ecosystem_equilibrium_benchmark_200x200",
 }
 
 

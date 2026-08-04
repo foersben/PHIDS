@@ -66,6 +66,7 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
         energy_min=1.0,
         velocity=1,
         consumption_rate=2.0,
+        energy_upkeep_per_individual=0.0,
         split_population_threshold=1000,
         reproduction_energy_divisor=1000.0,
     )
@@ -102,7 +103,7 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
     run_interaction(world, env, diet, flora_params, herb_params, tick=0)
 
     assert plant.energy == 80.0
-    assert swarm.energy == 59.5
+    assert swarm.energy == 60.0
 
 
 def test_resource_withdrawal_dims_apparent_nutrition() -> None:
@@ -221,7 +222,7 @@ def test_mechanical_attrition_enforces_integer_casualties() -> None:
         velocity=1,
         consumption_rate=5.0,  # Bites taken per individual
         reproduction_energy_divisor=1.0,
-        energy_upkeep_per_individual=0.1,
+        energy_upkeep_per_individual=0.0,
         split_population_threshold=20,
         move_cooldown=1,
     )

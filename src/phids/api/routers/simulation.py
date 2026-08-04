@@ -30,10 +30,7 @@ from phids.api.schemas.responses import (
 )
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.services.draft.biotope import update_biotope as draft_update_biotope
-from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
 from phids.api.ui_state.state import DraftState, get_draft, set_draft
-from phids.api.ui_state.substances import SubstanceDefinition
-from phids.api.ui_state.triggers import TriggerRule
 from phids.engine.loop import SimulationLoop
 
 if TYPE_CHECKING:
@@ -494,102 +491,9 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
         api_main.logger.warning("Scenario import failed for file %s: %s", file.filename, exc)
         raise HTTPException(status_code=422, detail=f"Invalid scenario JSON: {exc}") from exc
 
-    imported_trigger_rules: list[TriggerRule] = []
-    imported_substances: list[SubstanceDefinition] = []
-    seen_substance_ids: set[int] = set()
-    for flora_spec in config.flora_species:
-        for trig in flora_spec.triggers:
-            from typing import Literal
-
-            from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
-
-            i_type: Literal["herbivore_attack", "environmental_signal"]
-            if isinstance(trig.initiator, HerbivoreAttackInitiator):
-                i_type = "herbivore_attack"
-                h_id = trig.initiator.herbivore_species_id
-                min_pop = trig.initiator.min_herbivore_population
-                sig_id = -1
-                min_conc = 0.0
-            else:
-                i_type = "environmental_signal"
-                h_id = -1
-                min_pop = 0
-                sig_id = trig.initiator.signal_id
-                min_conc = trig.initiator.min_concentration
-
-            imported_trigger_rules.append(
-                TriggerRule(
-                    flora_species_id=flora_spec.species_id,
-                    initiator_type=i_type,
-                    herbivore_species_id=h_id,
-                    min_herbivore_population=min_pop,
-                    initiator_signal_id=sig_id,
-                    initiator_min_concentration=min_conc,
-                    substance_id=getattr(trig.action, "substance_id", -1),
-                    activation_condition=(
-                        trig.activation_condition.model_dump(mode="json")
-                        if trig.activation_condition is not None
-                        else None
-                    ),
-                )
-            )
-
-            if isinstance(trig.action, SynthesizeSubstanceAction):
-                if trig.action.substance_id not in seen_substance_ids:
-                    seen_substance_ids.add(trig.action.substance_id)
-
-                    imported_substances.append(
-                        SubstanceDefinition(
-                            substance_id=trig.action.substance_id,
-                            name=f"Substance {trig.action.substance_id}",
-                            is_toxin=trig.action.is_toxin,
-                            lethal=trig.action.lethal,
-                            repellent=trig.action.repellent,
-                            synthesis_duration=trig.action.synthesis_duration,
-                            aftereffect_ticks=trig.aftereffect_ticks,
-                            lethality_rate=trig.action.lethality_rate,
-                            repellent_walk_ticks=trig.action.repellent_walk_ticks,
-                            energy_cost_per_tick=trig.action.energy_cost_per_tick,
-                            irreversible=trig.action.irreversible,
-                        )
-                    )
-
-    new_draft = DraftState(
+    new_draft = DraftState.from_sim_config(
+        config,
         scenario_name=(file.filename or "imported").replace(".json", ""),
-        grid_width=config.grid_width,
-        grid_height=config.grid_height,
-        max_ticks=config.max_ticks,
-        tick_rate_hz=config.tick_rate_hz,
-        wind_x=config.wind_x,
-        wind_y=config.wind_y,
-        num_signals=config.num_signals,
-        num_toxins=config.num_toxins,
-        z2_flora_species_extinction=config.z2_flora_species_extinction,
-        z4_herbivore_species_extinction=config.z4_herbivore_species_extinction,
-        z6_max_total_flora_energy=config.z6_max_total_flora_energy,
-        z7_max_total_herbivore_population=config.z7_max_total_herbivore_population,
-        mycorrhizal_inter_species=config.mycorrhizal_inter_species,
-        mycorrhizal_connection_cost=config.mycorrhizal_connection_cost,
-        mycorrhizal_growth_interval_ticks=config.mycorrhizal_growth_interval_ticks,
-        mycorrhizal_signal_velocity=config.mycorrhizal_signal_velocity,
-        flora_species=list(config.flora_species),
-        herbivore_species=list(config.herbivore_species),
-        diet_matrix=[list(row) for row in config.diet_matrix.rows],
-        trigger_rules=imported_trigger_rules,
-        substance_definitions=imported_substances,
-        initial_plants=[
-            PlacedPlant(species_id=p.species_id, x=p.x, y=p.y, energy=p.energy) for p in config.initial_plants
-        ],
-        initial_swarms=[
-            PlacedSwarm(
-                species_id=s.species_id,
-                x=s.x,
-                y=s.y,
-                population=s.population,
-                energy=s.energy,
-            )
-            for s in config.initial_swarms
-        ],
     )
     set_draft(new_draft)
     api_main.logger.info(

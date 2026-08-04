@@ -25,15 +25,22 @@ The core execution loop of PHIDS updates ecological state deterministically. The
 
 ## The Simulation Tick Order
 
-The `SimulationLoop.step()` method executes the following components consecutively, forming a single discrete timeframe ($\Delta t$):
+The `SimulationLoop.step()` method executes the following components consecutively, adhering to **Multi-Scale Temporal Decoupling (Modulo-Gating)** to prevent IEEE 754 subnormal floating-point truncation traps and ensure extreme cache locality:
 
-1. **Flow-Field Generation**: Utilizes Numba JIT compilation to compute the singular global guidance gradient based on plant energy, apparent nutrition, and toxic zones.
-2. **Camouflage Attenuation**: Post-processes the flow-field matrix by masking local guidance gradients for flora utilizing camouflage traits.
-3. **Lifecycle (`run_lifecycle`)**: Updates flora-centric state. Handles resource growth, rate-limited phloem translocation, mycorrhizal carbon tax, connection maintenance fees, threshold culling, and anemochorous seed dispersal logic.
-4. **Interaction (`run_interaction`)**: Determines swarm dynamics. Handles spatial hash crowding (inducing repelled random-walk dispersal), gradient navigation according to flight paradigms (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`), Holling Type II saturating feeding intake, constitutive morphological defenses (mechanical mouthpart damage $\lfloor m_{\text{bite}}(1-\rho) \rfloor$ and caloric discounting $\eta_{\text{net}}$), continuous deficit attrition, and mitosis.
-5. **Signaling (`run_signaling`)**: Evaluates trigger rules via continuous dose-dependent Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$) or threshold predicates. Manages substance synthesis, rate-limited phloem resource withdrawal, airborne advection-diffusion and mycorrhizal signal propagation, aftereffects, and lethal toxin casualties.
+1. **Flow-Field Generation (Fast Loop - Every Tick)**: Utilizes Numba `@njit` compilation to compute the singular global guidance gradient based on plant energy, apparent nutrition, and toxic zones.
+2. **Camouflage Attenuation (Fast Loop - Every Tick)**: Post-processes the flow-field matrix by masking local guidance gradients for flora utilizing camouflage traits.
+3. **Lifecycle (`run_lifecycle`) (Slow Loop - Weekly / 168-Tick Stride)**:
+   - **Photosynthetic Growth**: Applies accumulated weekly photosynthetic biomass growth scaled by `SLOW_TICK_STRIDE` (168x). This prevents FPU microcode traps caused by microscopic per-tick increments ($<10^{-4}$).
+   - **$O(1)$ Stochastic Raycasting Dispersal**: Replaces legacy $O(N \times r^2)$ grid spatial convolution with constant-time vector projection along wind unit vector $\mathbf{u} = \mathbf{w} / \|\mathbf{w}\|$ combined with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$.
+   - **Mycorrhizal Symbiosis**: Establishes bidirectional root connections between adjacent plants on slow-loop gates, applying continuous carbon maintenance taxes (`mycorrhizal_tax_per_link`).
+   - **Threshold Culling & Garbage Collection**: Removes plants whose energy drops below `survival_threshold`.
+4. **Interaction (`run_interaction`) (Fast / Medium / Slow Gated)**:
+   - **Movement & Chemotaxis (Fast Loop - Every Tick)**: Micro-swarm kinetic movement and spatial repulsion.
+   - **Metabolism & Foraging (Medium Loop - Daily / 24-Tick Stride)**: Swarm feeding and daily metabolic cost drain scaled by 24x stride ($\text{cost} = \text{pop} \times E_{\text{min}} \times \text{upkeep} \times 24$).
+   - **Colony Fission / Mitosis (Slow Loop - Weekly / 168-Tick Stride)**: Swarms with substantial caloric surpluses split into new entities.
+5. **Signaling (`run_signaling`) (Fast Loop - Every Tick)**: Evaluates trigger rules via continuous dose-dependent Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$) or threshold predicates. Manages airborne advection-diffusion, mycorrhizal signal propagation, and lethal toxin casualties.
 6. **Energy Layer Rebuild & Telemetry Logging**: Rebuilds the double-buffered energy layer (`rebuild_energy_layer()`), records a metrics snapshot of the current tick, and appends raw arrays to the Zarr replay buffer and Polars telemetry exporter.
-7. **Termination Check**: Evaluates configured extinction, max energy, max tick, and population threshold limits to determine whether simulation termination conditions have been met.
+7. **Termination Check**: Evaluates configured extinction ($Z_2, Z_4$), max energy ($Z_6$), max tick, and population ($Z_7$) threshold limits.
 
 ## Entity Component System (ECS) & Spatial Hashing
 
@@ -43,9 +50,20 @@ Entities in PHIDS are lightweight, data-only records lacking encapsulated logic.
 
 To avoid $O(N)$ list allocations on every tick when systems iterate over component types, `ECSWorld` implements a `_structural_version` cache. The registry caches materialized query lists, only incrementing the version and invalidating the cache when entities or components are structurally added or removed. This provides near-instant lookup speeds for all hot-path systems on steady-state ticks.
 
-### $O(1)$ Locality Resolution
+### $O(1)$ Locality Resolution & Toroidal Geometry
 
-To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial Hash-a dictionary mapping $(x,y)$ coordinates to the sets of residing `entity_id`s. When an herbivore feeds, or a plant checks for grazing pressure, it queries the spatial hash at its immediate coordinate to retrieve co-located entities. This completely negates the need for global proximity iterations across the map.
+To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial Hash—a dictionary mapping $(x,y)$ coordinates to the sets of residing `entity_id`s. When an herbivore feeds, or a plant checks for grazing pressure, it queries the spatial hash at its immediate coordinate to retrieve co-located entities.
+
+To eliminate boundary edge-effect distortions and enforce strict physical mass conservation across arbitrary grid dimensions, PHIDS implements a **Toroidal (periodic wrap-around) Topology** across both discrete entity space and continuous biotope fields:
+
+- **Branchless Coordinate Wrapping**: All spatial coordinate updates enforce branchless modulo arithmetic: $x_{\text{wrapped}} = (x + \Delta x) \pmod W$ and $y_{\text{wrapped}} = (y + \Delta y) \pmod H$, completely eliminating branch mispredictions in Numba `@njit` loop kernels.
+- **Toroidal Spatial Distance**: Spatial distance between points $(x_1, y_1)$ and $(x_2, y_2)$ accounts for wrap-around seam boundaries:
+
+  $$\Delta x_{\text{toroidal}} = \min(|x_1 - x_2|, W - |x_1 - x_2|)$$
+
+  $$\Delta y_{\text{toroidal}} = \min(|y_1 - y_2|, H - |y_1 - y_2|)$$
+
+- **Shortest-Seam Inertia Vector Alignment**: When swarms cross boundary seams (e.g. from $x=W-1$ to $x=0$), inertia deltas are normalized to $\Delta x = -1$ rather than $-(W-1)$, ensuring smooth kinematic trajectory continuation across wrap boundaries.
 
 ### Active Garbage Collection
 
