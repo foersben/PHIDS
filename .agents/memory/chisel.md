@@ -56,3 +56,8 @@ Action: Use `TypeAdapter(ConditionNode)` to correctly validate the root of the r
 
 Learning: Extracting utility methods and Pydantic schemas out of a monolithic `phids.api.main` file cleans the module graph significantly but introduces severe import-ordering strictness under `ruff`. `from __future__ import annotations` must be the absolute first statement following the module docstring, overriding `typing.TYPE_CHECKING` blocks and standard library imports, otherwise `F404` and `E402` linting errors block PR validation.
 Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.
+
+## 2026-08-03 - Extracting Multiprocessing Runners
+
+Learning: When extracting a `multiprocessing.spawn`-based runner function (like `_run_single_headless` or `_run_and_save`) from a monolith into a package submodule, the target functions must remain top-level module functions in their new locations to satisfy `pickle` serialization requirements. Wrapping them in classes or inner scopes will immediately break the `ProcessPoolExecutor` dispatcher.
+Action: Retain module-level runner functions in isolation (e.g. `runner.py`) when dismantling batch execution engines.

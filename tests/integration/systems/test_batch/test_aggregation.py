@@ -63,7 +63,7 @@ class TestAggregateBatchTelemetry:
             - flora_population_mean[0] == 10.0.
             - herbivore_population_mean[0] == 3.0.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(5, 10, 3) for _ in range(4)]
         agg = aggregate_batch_telemetry(runs)
@@ -83,7 +83,7 @@ class TestAggregateBatchTelemetry:
         Invariants Tested:
             - All values in flora_population_std are < 1e-6.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(5, 10, 3) for _ in range(3)]
         agg = aggregate_batch_telemetry(runs)
@@ -103,7 +103,7 @@ class TestAggregateBatchTelemetry:
         Invariants Tested:
             - agg["extinction_probability"] == 0.0.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(5, 10, 3) for _ in range(4)]
         agg = aggregate_batch_telemetry(runs)
@@ -121,7 +121,7 @@ class TestAggregateBatchTelemetry:
         Invariants Tested:
             - agg["extinction_probability"] == 1.0.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(5, 0, 0) for _ in range(3)]
         agg = aggregate_batch_telemetry(runs)
@@ -140,7 +140,7 @@ class TestAggregateBatchTelemetry:
         Invariants Tested:
             - len(agg["ticks"]) == 5.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(3, 5, 2), _make_rows(5, 5, 2)]
         agg = aggregate_batch_telemetry(runs)
@@ -158,7 +158,7 @@ class TestAggregateBatchTelemetry:
         Invariants Tested:
             - agg == {}.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         agg = aggregate_batch_telemetry([])
         assert agg == {}
@@ -178,7 +178,7 @@ class TestAggregateBatchTelemetry:
             - "0" in agg["per_flora_pop_mean"].
             - agg["per_flora_pop_mean"]["0"][0] == 8.0.
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(4, 8, 2) for _ in range(2)]
         agg = aggregate_batch_telemetry(runs)
@@ -200,7 +200,7 @@ class TestAggregateBatchTelemetry:
             - "survival_probability_curve" in agg.
             - agg["survival_probability_curve"] == [1.0, 1.0, 1.0, 1.0].
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         runs = [_make_rows(4, 8, 2), _make_rows(4, 8, 2)]
         agg = aggregate_batch_telemetry(runs)
@@ -220,7 +220,7 @@ class TestAggregateBatchTelemetry:
         Invariants Tested:
             - survival_probability_curve == [1.0, 0.5, 0.5, 0.5].
         """
-        from phids.engine.batch import aggregate_batch_telemetry
+        from phids.engine.batch.aggregation import aggregate_batch_telemetry
 
         alive = _make_rows(4, 6, 2)
         extinct = [
@@ -278,7 +278,7 @@ def test_sanitize_for_json_replaces_non_finite_values_with_none() -> None:
         - sanitized["nested"]["arr"] == [1.0, None, None].
         - json.dumps(sanitized, allow_nan=False) does not raise.
     """
-    from phids.engine.batch import _sanitize_for_json
+    from phids.engine.batch.utils import _sanitize_for_json
 
     raw = {
         "scalar_nan": float("nan"),
