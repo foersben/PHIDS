@@ -1,4 +1,5 @@
 """Registry for hardcoded substance and VOC mappings."""
+
 from __future__ import annotations
 
 _SUBSTANCE_REGISTRY: dict[str, int] = {
