@@ -274,6 +274,28 @@ def inspect_live_simulation() -> dict[str, Any]:
     }
 
 
+def _validate_plant_invariants(plants: list[Any], active_eids: set[int], violations: list[str]) -> None:
+    """Validate invariants for all active plants."""
+    for p in plants:
+        if p.energy < 0.0:
+            violations.append(f"Plant {p.entity_id} has negative energy: {p.energy}")
+        elif 0.0 < p.energy < 1e-12:
+            violations.append(f"Plant {p.entity_id} has subnormal float energy: {p.energy}")
+
+        for target_eid in p.mycorrhizal_connections:
+            if target_eid not in active_eids:
+                violations.append(f"Plant {p.entity_id} holds dead mycorrhizal reference to entity {target_eid}")
+
+
+def _validate_swarm_invariants(swarms: list[Any], violations: list[str]) -> None:
+    """Validate invariants for all active swarms."""
+    for s in swarms:
+        if s.energy < 0.0:
+            violations.append(f"Swarm {s.entity_id} has negative energy: {s.energy}")
+        if s.population <= 0:
+            violations.append(f"Swarm {s.entity_id} has zero or negative population: {s.population}")
+
+
 @mcp.tool()
 def validate_biological_invariants() -> dict[str, Any]:
     """Audit the running simulation against spatiotemporal biological mandates.
@@ -298,21 +320,8 @@ def validate_biological_invariants() -> dict[str, Any]:
     swarms = [e.get_component(SwarmComponent) for e in loop.world.query(SwarmComponent)]
     active_eids = set(loop.world._entities.keys())
 
-    for p in plants:
-        if p.energy < 0.0:
-            violations.append(f"Plant {p.entity_id} has negative energy: {p.energy}")
-        elif 0.0 < p.energy < 1e-12:
-            violations.append(f"Plant {p.entity_id} has subnormal float energy: {p.energy}")
-
-        for target_eid in p.mycorrhizal_connections:
-            if target_eid not in active_eids:
-                violations.append(f"Plant {p.entity_id} holds dead mycorrhizal reference to entity {target_eid}")
-
-    for s in swarms:
-        if s.energy < 0.0:
-            violations.append(f"Swarm {s.entity_id} has negative energy: {s.energy}")
-        if s.population <= 0:
-            violations.append(f"Swarm {s.entity_id} has zero or negative population: {s.population}")
+    _validate_plant_invariants(plants, active_eids, violations)
+    _validate_swarm_invariants(swarms, violations)
 
     return {
         "compliant": len(violations) == 0,
