@@ -58,5 +58,11 @@ Learning: Extracting utility methods and Pydantic schemas out of a monolithic `p
 Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.
 
 ## 2024-05-18 - Extraction of database compilation helpers from run_all.py
+
 Learning: Extracting functional helpers requires careful handling of multiline functions and docstrings when replacing code. While it's tempting to use string replacement or regex tools directly in shell scripts, Python AST parsing or simply rewriting cleaner functions with proper imports and manual formatting verification is safer to preserve Google-style docstrings, especially across heavily typed DataFrame builders.
 Action: Next time a monolith is identified, ensure that all extracted functions strictly inherit their full Google-style docstrings into the new modules to prevent CI or persona constraint failures for documentation debt.
+
+## 2026-08-03 - Extracting Multiprocessing Runners
+
+Learning: When extracting a `multiprocessing.spawn`-based runner function (like `_run_single_headless` or `_run_and_save`) from a monolith into a package submodule, the target functions must remain top-level module functions in their new locations to satisfy `pickle` serialization requirements. Wrapping them in classes or inner scopes will immediately break the `ProcessPoolExecutor` dispatcher.
+Action: Retain module-level runner functions in isolation (e.g. `runner.py`) when dismantling batch execution engines.

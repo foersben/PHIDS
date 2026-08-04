@@ -39,7 +39,7 @@ class TestRunSingleHeadless:
             - rows is a list.
             - len(rows) >= 1.
         """
-        from phids.engine.batch import _run_single_headless
+        from phids.engine.batch.runner import _run_single_headless
 
         rows = _run_single_headless(minimal_scenario, max_ticks=3, seed=42)
         assert isinstance(rows, list)
@@ -57,7 +57,7 @@ class TestRunSingleHeadless:
         Invariants Tested:
             - rows[0]["tick"] == 0.
         """
-        from phids.engine.batch import _run_single_headless
+        from phids.engine.batch.runner import _run_single_headless
 
         rows = _run_single_headless(minimal_scenario, max_ticks=3, seed=0)
         assert rows[0]["tick"] == 0
@@ -76,7 +76,7 @@ class TestRunSingleHeadless:
             - len(rows_a) >= 1.
             - len(rows_b) >= 1.
         """
-        from phids.engine.batch import _run_single_headless
+        from phids.engine.batch.runner import _run_single_headless
 
         rows_a = _run_single_headless(minimal_scenario, max_ticks=5, seed=1)
         rows_b = _run_single_headless(minimal_scenario, max_ticks=5, seed=99)
@@ -97,7 +97,7 @@ class TestRunSingleHeadless:
             - "flora_population" in every row.
             - "herbivore_population" in every row.
         """
-        from phids.engine.batch import _run_single_headless
+        from phids.engine.batch.runner import _run_single_headless
 
         rows = _run_single_headless(minimal_scenario, max_ticks=3, seed=7)
         for row in rows:
@@ -124,7 +124,7 @@ def test_run_single_headless_breaks_when_termination_detected(
         - rows equals the single pre-populated row from the fake loop.
     """
     import phids.engine.loop as loop_mod
-    from phids.engine import batch as batch_mod
+    from phids.engine.batch import runner as batch_mod
 
     class _TerminatedResult:
         terminated = True
@@ -161,7 +161,7 @@ def test_run_and_save_delegates_to_single_runner(
     Invariants Tested:
         - rows returned by _run_and_save equal the stubbed payload.
     """
-    from phids.engine import batch as batch_mod
+    from phids.engine.batch import runner as batch_mod
 
     expected_rows = [{"tick": 0, "flora_population": 1, "herbivore_population": 0}]
 

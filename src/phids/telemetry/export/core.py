@@ -284,7 +284,7 @@ def aggregate_to_dataframe(
 
     Constructs a per-tick DataFrame from the mean and standard deviation arrays
     stored inside the aggregate summary produced by
-    :func:`~phids.engine.batch.aggregate_batch_telemetry`.
+    :func:`~phids.engine.batch.aggregation.aggregate_batch_telemetry`.
 
     Args:
         aggregate: Dict with keys ``ticks``, ``flora_population_mean``,
