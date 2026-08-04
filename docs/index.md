@@ -95,7 +95,7 @@ During the migration from legacy Object-Oriented implementations to the current 
   [`technical_architecture/`](technical_architecture/system_architecture.md)
 * **Scenarios** - schema semantics, import/export, and curated examples:
   * [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](scenario_guide/design_space_exploration.md)
-  * [Agentic Diagnostic Log Writer](scenario_guide/future_prospects/agentic_log_writer.md)
+  * [Agentic Diagnostic Log Writer](speculative_research/agentic_log_writer.md)
   [`scenario_guide/`](scenario_guide/scenario_authoring.md)
 * **Development & Reference** - API Reference, contribution workflows, agent orchestration (MCP & AITL Diagnostic Observers), and historical archives:
   [`development_guide/`](development_guide/contribution_workflow.md)

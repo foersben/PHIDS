@@ -30,7 +30,7 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | `@scientific-architect` | Translates reaction-diffusion PDEs/chemotaxis. | Mathematical/biological models. |
 | `@engine-developer` | ECS & Numba developer. Handles double-buffering. | Core performance, ECS arrays, loops. |
 | `@qa-automator` | Testing. Isolates failures; runs benchmarks. | Coverage, tests, mutation/hypothesis. |
-| `@docs-librarian` | Maintains docs, Zensical, mkdocstrings. | Documentation, diagrams, LaTeX. |
+| `@docs-librarian` | Maintains docs, Zensical. | Documentation, diagrams, LaTeX. |
 | `@git-operator` | Manages branches, commits, releases. | Git actions, commits, release tags. |
 | `@api-and-ui-developer` | HTMX, Jinja2, and FastAPI developer. | Dashboard UI, endpoints, websockets. |
 | `@telemetry-and-data-engineer`| Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |

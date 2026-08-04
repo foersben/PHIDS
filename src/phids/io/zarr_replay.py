@@ -37,7 +37,7 @@ from typing import Any, Protocol, TypedDict, cast
 
 import numpy as np
 
-type ReplayScalar = None | bool | int | float | str
+type ReplayScalar = bool | int | float | str | None
 type ReplayValue = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
 type ReplayState = dict[str, ReplayValue]
 
