@@ -19,9 +19,16 @@ lookups and reproducible ecological dynamics.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import numpy.typing as npt
 from numba import njit
+
+if TYPE_CHECKING:
+    prange = range
+else:
+    from numba import prange
 
 from phids.shared.constants import (
     GRID_H_MAX,
@@ -45,7 +52,79 @@ _KERNEL_SIZE: int = 5
 _SIGMA: float = 0.4
 
 
-@njit
+@njit(parallel=True, cache=True)
+def _numba_advect_signal_layer(
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+) -> None:
+    advected_scratch.fill(0.0)
+    # 1. Semi-Lagrangian Advection (backward interpolation with Toroidal wrap)
+    for x in prange(width):
+        for y in range(height):
+            cx = x - wind_x[x, y]
+            cy = y - wind_y[x, y]
+
+            floor_x = int(np.floor(cx))
+            floor_y = int(np.floor(cy))
+
+            x0 = floor_x % width
+            y0 = floor_y % height
+            x1 = (floor_x + 1) % width
+            y1 = (floor_y + 1) % height
+
+            dx = cx - floor_x
+            dy = cy - floor_y
+
+            v00 = layer[x0, y0]
+            v10 = layer[x1, y0]
+            v01 = layer[x0, y1]
+            v11 = layer[x1, y1]
+
+            val_y0 = v00 * (1.0 - dx) + v10 * dx
+            val_y1 = v01 * (1.0 - dx) + v11 * dx
+            val = val_y0 * (1.0 - dy) + val_y1 * dy
+
+            advected_scratch[x, y] = val
+
+
+@njit(parallel=True, cache=True)
+def _numba_convolve_signal_layer(
+    width: int,
+    height: int,
+    decay: float,
+    epsilon: float,
+    kernel: npt.NDArray[np.float64],
+    write_buffer: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+) -> None:
+    # 2. Toroidal Gaussian Diffusion (Convolution) & Decay
+    # Branchless stencil lookup across toroidal boundaries
+    k_w = kernel.shape[0]
+    k_h = kernel.shape[1]
+    k_w_half = k_w // 2
+    k_h_half = k_h // 2
+
+    for x in prange(width):
+        for y in range(height):
+            v = 0.0
+            for i in range(-k_w_half, k_w_half + 1):
+                ax = (x - i) % width
+                for j in range(-k_h_half, k_h_half + 1):
+                    ay = (y - j) % height
+                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+
+            # Apply decay and zero-out subnormal floats
+            v *= decay
+            if v < epsilon:
+                v = 0.0
+            write_buffer[x, y] = v
+
+
+@njit(cache=True)
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -88,58 +167,8 @@ def _numba_diffuse_signal_layer(
         write_buffer: Pre-allocated output array (mutated in-place).
         advected_scratch: Pre-allocated intermediate array for the advection step (mutated in-place).
     """
-    advected_scratch.fill(0.0)
-
-    # 1. Semi-Lagrangian Advection (backward interpolation)
-    for x in range(width):
-        for y in range(height):
-            cx = float(x) - wind_x[x, y]
-            cy = float(y) - wind_y[x, y]
-
-            x0 = int(np.floor(cx))
-            y0 = int(np.floor(cy))
-            x1 = x0 + 1
-            y1 = y0 + 1
-
-            dx = cx - float(x0)
-            dy = cy - float(y0)
-
-            v00 = layer[x0, y0] if 0 <= x0 < width and 0 <= y0 < height else 0.0
-            v10 = layer[x1, y0] if 0 <= x1 < width and 0 <= y0 < height else 0.0
-            v01 = layer[x0, y1] if 0 <= x0 < width and 0 <= y1 < height else 0.0
-            v11 = layer[x1, y1] if 0 <= x1 < width and 0 <= y1 < height else 0.0
-
-            val_y0 = v00 * (1.0 - dx) + v10 * dx
-            val_y1 = v01 * (1.0 - dx) + v11 * dx
-            val = val_y0 * (1.0 - dy) + val_y1 * dy
-
-            advected_scratch[x, y] = val
-
-    # 2. Gaussian Diffusion (Convolution) & Decay
-    # We must support an arbitrarily sized symmetric 2D kernel.
-    k_w = kernel.shape[0]
-    k_h = kernel.shape[1]
-    k_w_half = k_w // 2
-    k_h_half = k_h // 2
-
-    for x in range(width):
-        for y in range(height):
-            v = 0.0
-            for i in range(-k_w_half, k_w_half + 1):
-                ax = x - i
-                # Bolt Optimization: Hoisting the X-axis bounds check out of the inner Y-axis
-                # loop reduces bounds-checking branches from 25 per cell down to 5 per cell,
-                # measurably improving Numba JIT inner-loop vectorization and tick speed.
-                if 0 <= ax < width:
-                    for j in range(-k_h_half, k_h_half + 1):
-                        ay = y - j
-                        if 0 <= ay < height:
-                            v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-
-            v *= decay
-            if v < epsilon:
-                v = 0.0
-            write_buffer[x, y] = v
+    _numba_advect_signal_layer(width, height, layer, wind_x, wind_y, advected_scratch)
+    _numba_convolve_signal_layer(width, height, decay, epsilon, kernel, write_buffer, advected_scratch)
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:
@@ -318,7 +347,7 @@ class GridEnvironment:
                 self._signal_layers_write[s].fill(0.0)
                 continue
 
-            _numba_diffuse_signal_layer(  # type: ignore[type-var, call-arg]
+            _numba_diffuse_signal_layer(
                 self.width,
                 self.height,
                 layer,

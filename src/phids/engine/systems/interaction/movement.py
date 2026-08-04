@@ -50,22 +50,18 @@ def _gather_neighbours_jit(
     c_y[0] = y
     count = 1
 
-    if x > 0:
-        c_x[count] = x - 1
-        c_y[count] = y
-        count += 1
-    if x < width - 1:
-        c_x[count] = x + 1
-        c_y[count] = y
-        count += 1
-    if y > 0:
-        c_x[count] = x
-        c_y[count] = y - 1
-        count += 1
-    if y < height - 1:
-        c_x[count] = x
-        c_y[count] = y + 1
-        count += 1
+    c_x[count] = (x - 1) % width
+    c_y[count] = y
+    count += 1
+    c_x[count] = (x + 1) % width
+    c_y[count] = y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y - 1) % height
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y + 1) % height
+    count += 1
     return count
 
 
@@ -307,27 +303,7 @@ def _random_walk_step_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    c_x[0] = x
-    c_y[0] = y
-    count = 1
-
-    if x > 0:
-        c_x[count] = x - 1
-        c_y[count] = y
-        count += 1
-    if x < width - 1:
-        c_x[count] = x + 1
-        c_y[count] = y
-        count += 1
-    if y > 0:
-        c_x[count] = x
-        c_y[count] = y - 1
-        count += 1
-    if y < height - 1:
-        c_x[count] = x
-        c_y[count] = y + 1
-        count += 1
-
+    count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
     idx = int(rand_val * count)
     if idx >= count:
         idx = count - 1
@@ -357,14 +333,10 @@ def _random_walk_step(
     """
     if random.choice is not _orig_choice:
         candidates: list[tuple[int, int]] = [(x, y)]
-        if x > 0:
-            candidates.append((x - 1, y))
-        if x < width - 1:
-            candidates.append((x + 1, y))
-        if y > 0:
-            candidates.append((x, y - 1))
-        if y < height - 1:
-            candidates.append((x, y + 1))
+        candidates.append(((x - 1) % width, y))
+        candidates.append(((x + 1) % width, y))
+        candidates.append((x, (y - 1) % height))
+        candidates.append((x, (y + 1) % height))
         return random.choice(candidates)
 
     return _random_walk_step_jit(x, y, width, height, c_x, c_y, random.random())
@@ -433,15 +405,11 @@ def _choose_neighbour_by_flow_probability_python(
         The selected neighbour coordinates.
     """
     x, y = swarm.x, swarm.y
-    candidates = [(x, y)]
-    if x > 0:
-        candidates.append((x - 1, y))
-    if x < width - 1:
-        candidates.append((x + 1, y))
-    if y > 0:
-        candidates.append((x, y - 1))
-    if y < height - 1:
-        candidates.append((x, y + 1))
+    candidates: list[tuple[int, int]] = [(x, y)]
+    candidates.append(((x - 1) % width, y))
+    candidates.append(((x + 1) % width, y))
+    candidates.append((x, (y - 1) % height))
+    candidates.append((x, (y + 1) % height))
 
     scores = [float(flow_field[cx, cy]) for cx, cy in candidates]
     max_score = max(scores)
@@ -481,6 +449,16 @@ def _is_swarm_anchored(
             return True
 
     return False
+
+
+def _calculate_toroidal_delta(n_coord: int, old_coord: int, size: int) -> int:
+    """Calculate the shortest path delta across a toroidal boundary."""
+    delta = n_coord - old_coord
+    if delta > size // 2:
+        delta -= size
+    elif delta < -size // 2:
+        delta += size
+    return delta
 
 
 def _resolve_swarm_movement(
@@ -569,8 +547,9 @@ def _resolve_swarm_movement(
         _accumulate_tile_population(tile_populations, old_x, old_y, env.width, -swarm.population)
         _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
         swarm.x, swarm.y = nx, ny
-        swarm.last_dx = nx - old_x
-        swarm.last_dy = ny - old_y
+
+        swarm.last_dx = _calculate_toroidal_delta(nx, old_x, env.width)
+        swarm.last_dy = _calculate_toroidal_delta(ny, old_y, env.height)
         has_moved = True
 
     swarm.move_cooldown = swarm.velocity - 1

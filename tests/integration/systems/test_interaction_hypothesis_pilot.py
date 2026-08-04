@@ -74,7 +74,7 @@ def test_attrition_closed_form_holds_for_bounded_hypothesis_samples(
     upkeep = upkeep_quarters / 4.0
     initial_energy = initial_energy_units * (energy_min / 2.0)
 
-    metabolic_cost = population * energy_min * upkeep
+    metabolic_cost = population * energy_min * upkeep * 24
     post_cost_energy = initial_energy - metabolic_cost
     if post_cost_energy >= 0.0:
         expected_population = population

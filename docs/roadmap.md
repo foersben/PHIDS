@@ -23,7 +23,7 @@ resources:
 - docs/scenario_guide/empirical_database.md
 ---
 
-This document defines the multiphase strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details realized and planned milestones across **biological fidelity**, **full-stack software architecture**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)** perspectives.
+This document defines the multiphase strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details realized and planned milestones across **biological fidelity**, **full-stack software architecture**, **spatiotemporal scaling**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)** perspectives.
 
 ---
 
@@ -57,185 +57,186 @@ Phase 2 is structured into granular, independent sub-stages. Each sub-stage can 
 
 ```mermaid
 block-beta
-    columns 5
-    title["PHIDS PHASE 2 SUB-STAGE ROADMAP"]:5
-    h1["Sub-Stage 2.1"] h2["Sub-Stage 2.2"] h3["Sub-Stage 2.3"] h4["Sub-Stage 2.4"] h5["Sub-Stage 2.5 & 2.6"]
-    c1["Soil Seed Bank<br>& Dormancy"] c2["Zoochory<br>Dispersal"] c3["Trait-Based<br>State Machines"] c4["Soil Detritus<br>& Recycling"] c5["Weather Profiles &<br>3D Vertical Canopy"]
+    columns 3
+    title["PHIDS PHASE 2 SUB-STAGE ROADMAP"]:3
+    h1["Sub-Stage 2.1"] h2["Sub-Stage 2.2"] h3["Sub-Stage 2.3"]
+    c1["Soil Seed Bank<br>& Dormancy"] c2["Soil Detritus<br>& Recycling"] c3["Weather Profiles<br>& Micro-Climate"]
 ```
-
----
 
 ### Sub-Stage 2.1: Soil Seed Bank & Dormancy Kinetics (v2.1)
 
 * **Biological Target**: Replace instant adult plant spawning with a persistent soil seed bank. Dispersed seeds land in a dormant state (`seed_bank_layer`) and require accumulated thermal degree-days ($GDD = \sum \max(0, T - T_{\text{base}})$) and a moisture threshold ($W > W_{\text{germ}}$) to sprout.
 * **Standalone Researcher Utility**: Enables plant ecologists to study seed longevity, seasonal germination windows, seed mortality, and weed bank dynamics without requiring subterranean soil chemistry or weather layers.
 * **Computational & Performance Cost**:
-  * **Memory**: $+4\text{ Bytes/cell}$ float32 seed density array ($\sim 1\text{ MB}$ for a $512 \times 512$ grid).
-  * **CPU Latency**: $< 0.05\text{ ms/tick}$ via vectorized Numba JIT array updates.
+    * **Memory**: $+4\text{ Bytes/cell}$ float32 seed density array ($\sim 1\text{ MB}$ for a $512 \times 512$ grid).
+    * **CPU Latency**: $< 0.05\text{ ms/tick}$ via vectorized Numba JIT array updates.
 * **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Add `SeedBankConfig` schema to `phids.api.schemas.simulation`, create `seed_bank_layer` in `GridEnvironment`, update `DraftState`/`DraftService` for hot-reloading, and integrate germination triggers in `lifecycle.py` ($\sim 250$ LOC).
-  * **UI & Dashboard**: Add a "Seed Bank & Dormancy" toggle card in `src/phids/api/templates/index.html`, GDD threshold sliders, scenario JSON export/import bindings, and a live "Seed Bank Heatmap" layer toggle in the web dashboard renderer.
-  * **Empirical Bio-Database Pipeline**: Extend DuckDB schema (`phids.analytics.bio_database`) and `src/data_pipeline/json_builder.py` to ingest `germination_gdd_threshold` and `seed_decay_rate` from the TRY database.
-  * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize `seed_bank_density`. All scenario examples (`scenarios/*.yaml`) updated to match.
-  * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
-  * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
-  * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#1-sub-stage-21-soil-seed-bank-dormancy) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
+    * **Backend & API**: Add `SeedBankConfig` schema to `phids.api.schemas.simulation`, create `seed_bank_layer` in `GridEnvironment`, update `DraftState`/`DraftService` for hot-reloading, and integrate germination triggers in `lifecycle.py` ($\sim 250$ LOC).
+    * **UI & Dashboard**: Add a "Seed Bank & Dormancy" toggle card in `src/phids/api/templates/index.html`, GDD threshold sliders, scenario JSON export/import bindings, and a live "Seed Bank Heatmap" layer toggle in the web dashboard renderer.
+    * **Empirical Bio-Database Pipeline**: Extend DuckDB schema (`phids.analytics.bio_database`) and `src/data_pipeline/json_builder.py` to ingest `germination_gdd_threshold` and `seed_decay_rate` from the TRY database.
+    * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize `seed_bank_density`. All scenario examples (`scenarios/*.yaml`) updated to match.
+    * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
+    * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
+    * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
 
----
-
-### Sub-Stage 2.2: Multi-Vector Seed Dispersal & Zoochory (v2.2)
-
-* **Biological Target**: Expand seed dispersal beyond wind (anemochory) to animal-mediated transport (zoochory). Grazing herbivores ingesting reproductive plants transport seeds internally or on their bodies, releasing them along migration paths via frass/droppings.
-* **Standalone Researcher Utility**: Allows landscape ecologists to model invasive plant spread along herbivore corridors and animal-mediated seed shadow patterns independently of soil chemistry.
-* **Computational & Performance Cost**:
-  * **Memory**: $0$ additional grid arrays (uses existing `SwarmComponent` fields).
-  * **CPU Latency**: Negligible ($O(N_{\text{swarms}})$, $< 0.02\text{ ms/tick}$).
-* **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Add `zoochory_seed_payload` field to `SwarmComponent`, isolate PRNG seed generator per swarm entity, and update `interaction.py` for seed transport along velocity vectors ($\sim 180$ LOC).
-  * **UI & Dashboard**: Add "Zoochory Vector Settings" form inputs to herbivore species modal editor; update scenario JSON export/import buttons.
-  * **Empirical Bio-Database Pipeline**: Update `src/data_pipeline/archetype_extractor.py` to map seed gut-retention times from PanTHERIA / GloBI datasets into `bio_database.json`.
-  * **Telemetry & Replay Schema**: Direct update to Zarr swarm entity metadata attributes.
-  * **QA & Verification Gates**: Integration tests verifying deterministic zoochory transport under identical PRNG seeds.
-  * **Documentation**: Update `docs/scientific_model/ecological_analytics.md` with zoochory dispersal kernel formulations.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#2-sub-stage-22-zoochory-dispersal) for new continuous/discrete genes (`gut_retention_ticks`, `zoochory_vector_species_mask`).
-
----
-
-### Sub-Stage 2.3: Trait-Based Herbivore Demographic State Machines (v2.3)
-
-* **Biological Target**: Generalize insect development from static swarms into data-driven ECS developmental morphs (sessile incubation $\to$ localized grazing larvae $\to$ adult macro-dispersal flight) driven by degree-days and nutritional intake.
-* **Standalone Researcher Utility**: Enables entomologists and agricultural researchers to simulate multi-instar pest outbreaks, egg-laying preferences, and stage-specific grazing damage without needing soil or weather systems.
-* **Computational & Performance Cost**:
-  * **Memory**: $+64\text{ Bytes/entity}$ for development tracking components.
-  * **CPU Latency**: $< 0.08\text{ ms/tick}$ via vectorized ECS entity processing.
-* **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Create `DevelopmentComponent` and `MobilityComponent` in `phids.engine.components`, and add developmental state machine transitions in `interaction.py` ($\sim 400$ LOC).
-  * **UI & Dashboard**: Add multi-stage lifecycle tabs in the Herbivore Species UI editor; enable per-stage population telemetry charts on the live HTMX dashboard.
-  * **Empirical Bio-Database Pipeline**: Add instar metabolic rates and incubation degree-days to `HerbivoreSpeciesParams` ETL schemas in `src/data_pipeline/transform.py`.
-  * **Telemetry & Replay Schema**: Direct update to Zarr tick metrics to track instar stage distributions.
-  * **QA & Verification Gates**: State machine invariant tests ensuring conservation of population across metamorphosis steps.
-  * **Documentation**: Create dedicated lifecycle kinetics guide in `docs/scientific_model/`.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#3-sub-stage-23-trait-based-herbivore-demographic-state-machines) for new instar transition genes.
-
----
-
-### Sub-Stage 2.4: Soil Detritus & Biomass Recycling Loop (v2.4)
+### Sub-Stage 2.2: Soil Detritus & Biomass Recycling Loop (v2.2)
 
 * **Biological Target**: Convert dead plant tissue and herbivore carcasses into an organic detritus layer ($B_{\text{detritus}}$) that mineralizes into bio-available soil nitrogen ($N_{\text{soil}}$), establishing a closed-loop nutrient cycle.
 * **Standalone Researcher Utility**: Provides soil scientists and ecosystem ecologists with a tool to investigate nutrient turnover, plant competition under nitrogen limitation, and organic fertilizing feedback loops.
 * **Computational & Performance Cost**:
-  * **Memory**: Dense Mode: $+8\text{ Bytes/cell}$ ($\sim 2\text{ MB}$ for $512^2$). Macro-Patch Mode ($16 \times 16$ coarse grid): $+32\text{ Bytes/patch}$ ($\sim 32\text{ KB}$).
-  * **CPU Latency**: Dense Mode: $\sim 0.10\text{ ms/tick}$. Macro-Patch Mode: $< 0.01\text{ ms/tick}$.
+    * **Memory**: Dense Mode: $+8\text{ Bytes/cell}$ ($\sim 2\text{ MB}$ for $512^2$). Macro-Patch Mode ($16 \times 16$ coarse grid): $+32\text{ Bytes/patch}$ ($\sim 32\text{ KB}$).
+    * **CPU Latency**: Dense Mode: $\sim 0.10\text{ ms/tick}$. Macro-Patch Mode: $< 0.01\text{ ms/tick}$.
 * **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Add `SoilModule` to `GridEnvironment`, implement JIT mineralization kernels, and hook dead entity biomass into detritus pools during `lifecycle.py` and `interaction.py` passes ($\sim 350$ LOC).
-  * **UI & Dashboard**: Add "Soil & Biomass Recycling" settings panel (mode selection: Disabled / Dense / Macro-Patch 16x16), initial nitrogen slider, scenario JSON export/import bindings, and a live 2D "Soil Nitrogen Overlay" map view.
-  * **Empirical Bio-Database Pipeline**: Update DuckDB tables with soil nitrogen baselines and plant tissue N:P decomposition ratios.
-  * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
-  * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
-  * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#4-sub-stage-24-soil-detritus-biomass-recycling) for soil mineralization continuous/discrete genes.
+    * **Backend & API**: Add `SoilModule` to `GridEnvironment`, implement JIT mineralization kernels, and hook dead entity biomass into detritus pools during `lifecycle.py` and `interaction.py` passes ($\sim 350$ LOC).
+    * **UI & Dashboard**: Add "Soil & Biomass Recycling" settings panel (mode selection: Disabled / Dense / Macro-Patch 16x16), initial nitrogen slider, scenario JSON export/import bindings, and a live 2D "Soil Nitrogen Overlay" map view.
+    * **Empirical Bio-Database Pipeline**: Update DuckDB tables with soil nitrogen baselines and plant tissue N:P decomposition ratios.
+    * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
+    * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
+    * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for soil mineralization continuous/discrete genes.
 
----
-
-### Sub-Stage 2.5: Macro-Patch Weather & Micro-Climate Profile (v2.5)
+### Sub-Stage 2.3: Macro-Patch Weather & Micro-Climate Profile (v2.3)
 
 * **Biological Target**: Introduce dynamic seasonal/diurnal temperature $T(t)$, relative humidity $H(t)$, and rainfall pulses $W(t)$ that modulate photosynthesis rates, VOC diffusion constants ($D_{\text{VOC}}(T)$), and insect activity.
 * **Standalone Researcher Utility**: Enables climate change impact assessments, heatwave/drought stress experiments, and diurnal VOC emission studies.
 * **Computational & Performance Cost**:
-  * **Memory**: $< 1\text{ KB}$ (scalar or $K \times K$ macro-patch struct).
-  * **CPU Latency**: $< 0.03\text{ ms/tick}$.
+    * **Memory**: $< 1\text{ KB}$ (scalar or $K \times K$ macro-patch struct).
+    * **CPU Latency**: $< 0.03\text{ ms/tick}$.
 * **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Implement `WeatherModule` in `phids.engine.core` and integrate climate parameter updates into `SimulationLoop.step()` Phase 0 ($\sim 220$ LOC).
-  * **UI & Dashboard**: Add "Weather Profile" selection menu (Constant, Sinusoidal Seasonal, Drought Pulse), ambient temperature live telemetry badge on the top dashboard bar, and scenario JSON import/export support.
-  * **Empirical Bio-Database Pipeline**: Ingest species thermal tolerance limits ($T_{\text{min}}, T_{\text{max}}$) into `bio_database.json`.
-  * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
-  * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
-  * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#5-sub-stage-25-macro-patch-weather-profiles) for climate amplitude and drought intensity genes.
+    * **Backend & API**: Implement `WeatherModule` in `phids.engine.core` and integrate climate parameter updates into `SimulationLoop.step()` Phase 0 ($\sim 220$ LOC).
+    * **UI & Dashboard**: Add "Weather Profile" selection menu (Constant, Sinusoidal Seasonal, Drought Pulse), ambient temperature live telemetry badge on the top dashboard bar, and scenario JSON import/export support.
+    * **Empirical Bio-Database Pipeline**: Ingest species thermal tolerance limits ($T_{\text{min}}, T_{\text{max}}$) into `bio_database.json`.
+    * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
+    * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
+    * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for climate amplitude and drought intensity genes.
 
----
-
-### Sub-Stage 2.6: 3D Vertical Canopy Structure & Boundary Layer Diffusion (v2.6)
-
-* **Biological Target**: Extend atmospheric VOC diffusion to 3D vertical grid layers ($W \times H \times Z$), modeling height-dependent wind shear, canopy boundary layer resistance, and vertical thermal convection.
-* **Standalone Researcher Utility**: Provides atmospheric chemists and forest canopy ecologists with 3D VOC plume visualization and vertical thermal stratification analysis.
-* **Computational & Performance Cost**:
-  * **Memory**: $+4 \times Z\text{ Bytes/cell}$ ($\sim 8\text{ MB}$ for $Z=8, 512^2$).
-  * **CPU Latency**: $\sim 1.20\text{ ms/tick}$ (parallelized 3D Numba JIT kernel).
-* **Implementation Effort & Full-Stack Scope**:
-  * **Backend & API**: Expand 2D `GridEnvironment` signaling arrays to 3D NumPy arrays ($W \times H \times Z$) and implement 3D Numba stencil solvers in `signaling.py` ($\sim 650$ LOC).
-  * **UI & Dashboard**: Add 3D layer height selector slider, vertical profile slice charts in HTMX UI, and scenario JSON import/export bindings for $Z$-layer configurations.
-  * **Empirical Bio-Database Pipeline**: Map canopy height classes and boundary layer resistance coefficients in `src/data_pipeline/`.
-  * **Telemetry & Replay Schema**: Upgrade Zarr signal datasets directly to 3D tensor arrays ($T \times W \times H \times Z$). Example scenarios updated to 3D formats.
-  * **QA & Verification Gates**: 3D conservation of mass tests and Numba SIMD vectorization benchmarks.
-  * **Packaging**: Re-verify PyInstaller standalone binary performance on Linux/macOS/Windows.
-  * **Documentation**: Update `docs/technical_architecture/engine_execution.md` with 3D stencil array memory layouts.
-  * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md#6-sub-stage-26-3d-canopy-structure) for vertical canopy height $Z$ and shear alpha parameters.
-
----
-
-## Phase 3: Distributed HPC Execution & AI-Driven Ecosystem Optimization (v3.0 - Future Vision)
-
-### Sub-Stage 3.1: GPU-Accelerated PyTorch/CUDA PDE Engines (v3.1)
-
-* **Computational Target**: Port 2D/3D reaction-diffusion cellular automata layers to GPU tensor accelerators (PyTorch / CUDA C++ kernels).
-* **Standalone Researcher Utility**: Enables real-time simulation of massive biotope grids ($2048 \times 2048$ to $4096 \times 4096$) at over 60 FPS.
-* **Implementation Effort & Scope**: High ($\sim 800$ LOC; CUDA kernel bindings). Offloads CPU memory; GPU execution time $< 0.20\text{ ms/tick}$.
-
----
-
-### Sub-Stage 3.2: AI Agent Design Space Exploration (DSE) & Coevolution (v3.2)
-
-* **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios.
-* **Standalone Researcher Utility**: Provides evolutionary biologists with automated discovery of non-dominated evolutionary stable strategies (ESS) for plant chemical and morphological defense.
-* **Implementation Effort & Scope**: High ($\sim 700$ LOC; Ray/Tune distributed integration). Cluster-scale parallel execution ($O(N_{\text{simulations}})$).
-
----
-
-## Phase 2 Implementation Summary Matrix
+### Phase 2 Implementation Summary Matrix
 
 | Sub-Stage | Core Feature | Dev Complexity | Backend & API | UI & Scenario Import/Export | Empirical DB & ETL | Zarr Telemetry & QA Gates | Target Docs | DSE Parameters Added |
 |---|---|---|---|---|---|---|---|---|
 | **v2.1** | Soil Seed Bank | Low-Mod ($\sim 250$ LOC) | `seed_bank_layer`, `lifecycle.py` GDD logic | HTMX Seed Bank toggle, GDD sliders, JSON buttons, live overlay | Ingest `gdd_threshold`, `seed_decay` in DuckDB | Direct `/seed_bank_density` Zarr update, `mutmut` $>85\%$ | `engine_execution.md` | `germination_gdd_threshold`, `seed_decay_rate` |
-| **v2.2** | Zoochory Dispersal | Low ($\sim 180$ LOC) | `SwarmComponent` payload, `interaction.py` | Zoochory vector settings modal, scenario JSON export/import | Map gut retention times from PanTHERIA/GloBI | Deterministic PRNG seed transport tests | `ecological_analytics.md` | `gut_retention_ticks`, `zoochory_vector_mask` |
-| **v2.3** | Trait Herbivore Morphs | Moderate ($\sim 400$ LOC) | `DevelopmentComponent`, instar transitions | Multi-stage species UI editor, per-stage telemetry charts | Instar metabolic & incubation ETL in `transform.py` | Instar population telemetry in Zarr | New lifecycle kinetics doc | Instar transition degree-days & upkeep |
-| **v2.4** | Soil Detritus Recycling | Moderate ($\sim 350$ LOC) | `SoilModule` JIT mineralization kernels | Soil settings panel (Disabled/Dense/Patch), live N-map | Soil N baselines & tissue N:P decay ratios | Direct `/soil_nitrogen` Zarr array | `system_architecture.md` | `mineralization_rate`, `soil_nitrogen_baseline` |
-| **v2.5** | Weather Profiles | Low-Mod ($\sim 220$ LOC) | `WeatherModule`, `SimulationLoop` Phase 0 | Weather profile selector, dashboard temp badge | Species thermal limits ($T_{\text{min}}, T_{\text{max}}$) in JSON | Direct climate scalars in Zarr metadata | `mathematical_framework.md` | `seasonal_temp_amplitude`, `drought_factor` |
-| **v2.6** | 3D Canopy VOCs | High ($\sim 650$ LOC) | 3D arrays ($W\times H\times Z$), 3D Numba stencils | 3D layer height slider, vertical slice charts | Canopy height & boundary resistance ETL | Direct 3D tensor Zarr datasets | `engine_execution.md` | `canopy_height_layers`, `wind_shear_alpha` |
+| **v2.2** | Soil Detritus Recycling | Moderate ($\sim 350$ LOC) | `SoilModule` JIT mineralization kernels | Soil settings panel (Disabled/Dense/Patch), live N-map | Soil N baselines & tissue N:P decay ratios | Direct `/soil_nitrogen` Zarr array | `system_architecture.md` | `mineralization_rate`, `soil_nitrogen_baseline` |
+| **v2.3** | Weather Profiles | Low-Mod ($\sim 220$ LOC) | `WeatherModule`, `SimulationLoop` Phase 0 | Weather profile selector, dashboard temp badge | Species thermal limits ($T_{\text{min}}, T_{\text{max}}$) in JSON | Direct climate scalars in Zarr metadata | `mathematical_framework.md` | `seasonal_temp_amplitude`, `drought_factor` |
 
 ---
 
-## Phase 4: Speculative Research Extensions & Future Prospects
+## Phase 3: Unified Forest-Scale Architecture & Spatiotemporal Scaling (v3.0 - Planned)
 
-Beyond Phase 2 and 3, PHIDS maintains a speculative research pipeline evaluating advanced biological mechanisms and computational paradigms.
+To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically, PHIDS cannot rely on arbitrary grid units and abstract ticks. This phase rigorously enforces Dimensional Anchoring and integrates a multi-scale temporal loop to support high-fidelity biological abstraction.
 
-### 4.1 Chronological Aging & Senescence Incorporation Models
+### Sub-Stage 3.1: Dimensional Anchoring & Modulo-Gated Loops (v3.1) [Realized]
+
+* **Biological Target**: Lock the simulation scale to explicit physical units ($\Delta L = 1\text{m}$, $\Delta \tau = 1\text{hr}$, $\Delta E = 100\text{kcal}$) and decouple biological rules by their natural frequency.
+* **Why (The Problem)**: Without physical units, biological rates (e.g., reproduction vs. diffusion) become unanchored and arbitrary, preventing empirical validation against real-world databases. High-fidelity ecosystems require matching simulation ticks to real-world diurnal and seasonal cycles.
+* **How (The Implementation)**: We introduce a multi-tiered temporal loop. A `Slow Loop` manages growth and metabolism (1hr/tick), while a `Fast PDE Solver Loop` manages diffusion and wind (1s/tick).
+* **Standalone Researcher Utility**: Enables massive temporal scaling where VOC diffusion (seconds) and plant growth (months) can be modeled simultaneously without floating-point errors.
+* **Computational Target**: Shift from a $1000 \times 1000$ to $1024 \times 1024$ grid to allow 1-cycle bitwise modulo `& 1023` for Toroidal wrapping. Enforce Modulo-Gated loops (1hr, 24hr, 168hr) guaranteeing a 93.7% cache hit rate when streaming 64-byte ECS component cache lines during the Slow Loop.
+* **Implementation Scope**: Add dimensional limits to `SimulationConfig`, refactor `SimulationLoop.step()`, and implement a Sparse Zarr playback layer (reducing network UI stream from $4.8\text{ GB/s}$ down to $720\text{ KB/s}$ via a Temporal Lens).
+
+### Sub-Stage 3.2: Stochastic Von Neumann Kinematics & Capacity Masking (v3.2)
+
+* **Biological Target**: Convert precise individual collision mechanics into abstracted fluid-like macro-diffusion (Gradient Ascent via Softmax).
+* **Why (The Problem)**: Traditional entity-collision models scale as $O(N^2)$, which halts execution at ecosystem scales. Individual collision checking also introduces massive CPU branch mispredictions.
+* **How (The Implementation)**: We treat swarms as a probabilistic fluid, moving them toward resource gradients. By substituting conditional boundary checks with boolean logic arrays, the CPU pipeline is never flushed.
+* **Computational Target**: Utilize Von Neumann (4-way) kinematics to halve DRAM fetches compared to Moore neighborhoods. Utilize 128-bit XMM / 512-bit ZMM SIMD vectors for batch Softmax probability generation ($\sim 20$ cycles per swarm).
+* **Implementation Scope**: Transition movement kernels. Implement Volumetric Collision using branchless boolean masking (`prob * (biomass < max_cap)`) to prevent CPU pipeline flushes from branch mispredictions in the spatial hash.
+
+### Sub-Stage 3.3: O(1) Stochastic Raycasting for Seed Dispersal (v3.3) [Realized]
+
+* **Biological Target**: Solve the seed dispersal computational bottleneck during massive reproduction waves.
+* **Why (The Problem)**: Calculating continuous wind-drift dispersal for tens of thousands of seeds geometrically explodes simulation latency.
+* **How (The Implementation)**: Instead of tracing a seed frame-by-frame, we compute its terminal flight distance via a closed-form kinematic integral, then perform a stochastic $O(1)$ coordinate raycast to deposit it instantly.
+* **Computational Target**: Reduce algorithmic complexity from $O(N \times r^2)$ ($\sim 15\text{ ms}$ for 10k plants) to $O(N)$ ($\sim 20\,\mu\text{s}$ via `PCG64` generator).
+* **Implementation Scope**: Replace the continuous spatial convolution for seed drops with a discrete $O(1)$ stochastic raycasting coordinate selection.
+
+---
+
+## Phase 4: Distributed HPC Execution & AI-Driven Ecosystem Optimization (v4.0 - Future Vision)
+
+### Sub-Stage 4.1: GPU-Accelerated PyTorch/CUDA PDE Engines (v4.1)
+
+* **Computational Target**: Port 2D/3D reaction-diffusion cellular automata layers to GPU tensor accelerators (PyTorch / CUDA C++ kernels).
+* **Why (The Problem)**: The CPU memory bandwidth (even on DDR5) becomes the absolute bottleneck when running fluid diffusion algorithms (Navier-Stokes/Reaction-Diffusion) across millions of grid cells.
+* **How (The Implementation)**: Wrap `flow_field.py` inside PyTorch Tensors. Offload the advection and diffusion convolutions directly to VRAM, syncing with the CPU only during ECS data-exchange ticks.
+* **Standalone Researcher Utility**: Enables real-time simulation of massive biotope grids ($2048 \times 2048$ to $4096 \times 4096$) at over 60 FPS.
+* **Implementation Effort & Scope**: High ($\sim 800$ LOC; CUDA kernel bindings). Offloads CPU memory; GPU execution time $< 0.20\text{ ms/tick}$.
+
+### Sub-Stage 4.2: AI Agent Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) & Coevolution (v4.2)
+
+* **Computational Target**: Automate Pareto multi-objective optimization using reinforcement learning and genetic algorithms to discover optimal plant defense investment strategies under multi-stress climate scenarios within the EEDSE framework.
+* **Why (The Problem)**: Exploring multidimensional trait parameters manually is statistically blind. We need algorithms that can dynamically search the hyper-cube of genetic configurations to locate evolutionary stable peaks.
+* **How (The Implementation)**: Utilize Ray/Tune and OptunaSearch to orchestrate parallel headless instances of the simulator, evaluating fitness gradients ($J_{\text{eco}}$) across millions of mutations.
+* **Governance (AITL vs HITL)**:
+    * Rather than deploying AI as a definitive, black-box "puppet master", this phase evaluates to what extent Agentic AI-in-the-Loop (AITL) can act as a viable diagnostic observer and steering assistant for Human-in-the-Loop (HITL) exploration during EEDSE.
+    * We aim to test if headless AI agents can intelligently propose tweaks to multi-dimensional species traits (e.g., VOC emission rates, root depth allocation) across simulation seeds without producing biologically uninterpretable artifacts, explicitly governed by intervention gates.
+    * The goal is to determine if algorithms can reliably parse long-term survivability ($J_{\text{eco}}$) to recommend evolutionary stable strategies (ESS) to human researchers for final validation, maintaining interpretability..
+* **Standalone Researcher Utility**: Provides evolutionary biologists with automated discovery of non-dominated evolutionary stable strategies (ESS) for plant chemical and morphological defense.
+* **Implementation Effort & Scope**: High ($\sim 700$ LOC; Ray/Tune distributed integration with Optuna). Cluster-scale parallel execution ($O(N_{\text{simulations}})$).
+
+---
+
+## Phase 5: Speculative Research Extensions & Future Prospects
+
+Beyond Phase 3 and 4, PHIDS maintains a speculative research pipeline evaluating advanced biological mechanisms and computational paradigms.
+
+### 5.1 Chronological Aging & Senescence Incorporation Models
 
 While PHIDS intentionally omits individual chronological aging in core execution because swarm dynamics average out senescence ($N \gg 10^2$), specialized ecological scenarios (e.g., senescent mortality during long migration or age-dependent foraging decline) can be realized through three architecturally compatible paradigms:
 
 1. **Mean Swarm Age Component (Scalar Approximation)**:
-   Add a float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age updates via weighted arithmetic mean:
-
-   $$A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}$$
-
-   This enables age-dependent velocity or upkeep decay at zero dynamic memory allocation overhead.
+    * **Mechanism**: Add a float32 scalar `mean_age` to `SwarmComponent` ($+4\text{ Bytes/entity}$). On each tick, $\text{mean\_age} \leftarrow \text{mean\_age} + \Delta t$. Upon reproduction or split, the new mean age updates via a weighted arithmetic mean: $A_{\text{new}} = \frac{N_{\text{parent}} \cdot A_{\text{parent}} + \Delta N \cdot 0}{N_{\text{parent}} + \Delta N}$.
+    * **Why**: This enables age-dependent velocity or upkeep decay at zero dynamic memory allocation overhead.
 2. **Weibull Cohort Hazard Mortality Rate ($\mu_{\text{age}}$)**:
-   Model senescent mortality at the swarm level using a Weibull hazard rate $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
+    * **Mechanism**: Model senescent mortality at the swarm level using a Weibull hazard rate: $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. Casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without instantiating individual organism entities.
+    * **Why**: Captures exponential end-of-life decay mathematically without the ECS overhead of tracking a graveyard of distinct entities.
 3. **Multi-Cohort Stage Partitioning (Matrix Model)**:
-   Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs, maintaining SIMD vectorization while capturing fine-grained age demographics.
+    * **Mechanism**: Partition a single herbivore population on a tile into $K$ discrete age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct trait structs.
+    * **Why**: Maintains SIMD vectorization while capturing fine-grained age demographics, ideal for modeling species with distinct larva-to-adult metamorphosis constraints.
 
-### 4.2 Non-Dimensional Empirical Parameter Calibration Pipeline
+### 5.2 Non-Dimensional Empirical Parameter Calibration Pipeline
 
 To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB) to discrete simulation scales without generating unphysical Lotka-Volterra artifacts:
 
-1. **Spatiotemporal Dimensional Anchoring**: Non-dimensionalize all database traits using Buckingham $\Pi$-groups based on grid cell length $L_0 = \Delta L$, tick duration $T_0 = \Delta \tau$, and energy quantum $E_0 = \Delta E$.
-2. **Allometric Scaling Laws**: Enforce Kleiber's Law ($BMR \propto M^{0.75}$) and Metabolic Theory of Ecology ($C_{\text{max}} \propto M^{0.75}$) during ETL build passes in `src/data_pipeline/transform.py`.
-3. **Empirically Bounded DSE Hyper-Cubes**: Restrict DSE optimization search spaces to empirical confidence intervals $[\mu_k - 2\sigma_k, \mu_k + 2\sigma_k]$ derived from database taxonomic distributions.
-4. **Biologically Authenticated Cost Function**: Evaluate scenarios via multi-objective fitness $J_{\text{eco}} = w_1 S_{\text{LV}} + w_2 D_{\text{bio}} + w_3 P_{\text{thermo}}$, rewarding limit cycle stability while penalizing empirical parameter drift and thermodynamic violations.
-   * *Detailed Reference*: [Empirical Parameter Calibration Strategy](scientific_model/future_prospects/parameter_calibration_strategy.md).
+1. **Spatiotemporal Dimensional Anchoring**:
+    * **Why**: Raw biological traits are measured in mixed SI units (grams, hours, liters) which causes numerical instability when mixed in PDEs.
+    * **How**: Non-dimensionalize all database traits using Buckingham $\Pi$-groups based on grid cell length $L_0 = \Delta L$, tick duration $T_0 = \Delta \tau$, and energy quantum $E_0 = \Delta E$.
+2. **Allometric Scaling Laws**:
+    * **Why**: To extrapolate unrecorded metabolic values for unstudied species using their mass.
+    * **How**: Enforce Kleiber's Law ($BMR \propto M^{0.75}$) and Metabolic Theory of Ecology ($C_{\text{max}} \propto M^{0.75}$) during ETL build passes in `src/data_pipeline/transform.py`.
+3. **Empirically Bounded DSE Hyper-Cubes**:
+    * **Why**: Unbounded AI exploration will produce alien, non-biological entities that break physics.
+    * **How**: Restrict DSE optimization search spaces to empirical confidence intervals $[\mu_k - 2\sigma_k, \mu_k + 2\sigma_k]$ derived from database taxonomic distributions.
+4. **Biologically Authenticated Cost Function**:
+    * **Why**: To filter out optimization results that are mathematically optimal but biologically dead-ends.
+    * **How**: Evaluate scenarios via multi-objective fitness $J_{\text{eco}} = w_1 S_{\text{LV}} + w_2 D_{\text{bio}} + w_3 P_{\text{thermo}}$, rewarding limit cycle stability while penalizing empirical parameter drift and thermodynamic violations.
+    * *Detailed Reference*: [Empirical Parameter Calibration Strategy](scientific_model/future_prospects/parameter_calibration_strategy.md).
 
-### 4.3 Evolutionary Arms Race & Dynamic Gene Mutation Solvers
+### 5.3 Evolutionary Arms Race & Dynamic Gene Mutation Solvers
 
 * **Biological Target**: Allow plant chemical defense pathways (induced VOC synthesis rates, toxin potency) and herbivore neutralization counter-adaptations to mutate dynamically across generations.
-* **HPC Execution**: Implemented via SIMD bit-mask mutations on ECS trait structs during mitosis and seed germination, enabling real-time co-evolutionary arms race simulations over $10^5$ ticks.
+* **Why (The Problem)**: Fixed traits prevent the simulation from exhibiting the Red Queen Hypothesis, a fundamental pillar of evolutionary biology.
+
+### 5.4 Agentic Diagnostic Log Writer & Systemic Integrity Observer
+
+* **Target**: Integrate an asynchronous, non-blocking telemetry observer agent (`dse-log-observer`) to audit active DSE trajectories and detect systemic simulator distortions under a high-precision ($\ge 0.95$ confidence) policy.
+* **Why**: Prevents developer warning fatigue while catching Buckingham $\Pi$ conversion errors, allometric scaling mismatches ($BMR \propto M^{0.75}$), and heuristic solver disconnects before unphysical local minima corrupt scenario discovery.
+* **Implementation & References**: Integrated via MCP tools (`query_diagnostic_logs`, `inspect_telemetry_schema`, `runtime_snapshot`). Detailed reference: [Agentic Log Writer Guide](scenario_guide/future_prospects/agentic_log_writer.md).
+
+### 5.5 Speculative Granularity & Reality Neglectables
+
+Several mechanisms have been intentionally deferred to the speculative research horizon because they provide minimal macroscopic reality-complicity while introducing devastating architectural or computational overhead:
+
+1. **3D Canopy VOCs**:
+    * **The Issue**: Upgrading the 2D biotope to a fully 3D tensor grid ($W \times H \times Z$) with $Z=16$ layers inflates the environment memory footprint from $80\text{ MB}$ to over $128\text{ MB}$.
+    * **The Reality Check**: This completely evicts the CPU L3 cache, breaking SIMD performance. This feature is deferred indefinitely unless explicitly tied to the PyTorch/CUDA GPU engine (Phase 4.1).
+2. **Trait Herbivore Morphs (Instars)**:
+    * **The Issue**: Modeling distinct lifecycle stages (e.g., larva vs adult) breaks ECS SIMD uniformity by requiring fragmented cohorts on the same spatial tile.
+    * **The Reality Check**: The macroscopic impact is sufficiently approximated using mean swarm mass without splitting into distinct ECS entities.
+3. **Zoochory Dispersal**:
+    * **The Issue**: Tracking the gut-retention times of seeds inside animals adds significant logic branching.
+    * **The Reality Check**: Baseline anemochory (wind-dispersal) via the $O(1)$ stochastic raycasting solver is sufficient for broad spatial propagation without pathing overhead.
+4. **Sub-Tick PDE Slicing**:
+    * **The Issue**: Because $\Delta \tau = 1\text{ hr}$, simulating airborne diffusion might stretch the Courant stability limit.
+    * **The Reality Check**: Executing $K$ micro-steps internally per tick multiplies the PDE solver overhead by $K$. Sub-slicing is deferred; stability will first be pursued via empirical viscosity dampening.

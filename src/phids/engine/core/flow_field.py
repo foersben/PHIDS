@@ -80,21 +80,14 @@ def _sum_neighbours_jit(
     Returns:
         The sum of the neighbours and the number of neighbours.
     """
-    neighbours_sum = 0.0
-    neighbour_count = 0
-    if x > 0:
-        neighbours_sum += current[x - 1, y]
-        neighbour_count += 1
-    if x < width - 1:
-        neighbours_sum += current[x + 1, y]
-        neighbour_count += 1
-    if y > 0:
-        neighbours_sum += current[x, y - 1]
-        neighbour_count += 1
-    if y < height - 1:
-        neighbours_sum += current[x, y + 1]
-        neighbour_count += 1
-    return neighbours_sum, neighbour_count
+    neighbours_sum = (
+        current[(x - 1) % width, y]
+        + current[(x + 1) % width, y]
+        + current[x, (y - 1) % height]
+        + current[x, (y + 1) % height]
+    )
+    # Toroidal grid always has width >= 4 and height >= 4; count is always 4.
+    return neighbours_sum, 4
 
 
 @njit(cache=True)
@@ -122,9 +115,9 @@ def _propagate_iteration_jit(
     max_diff = 0.0
     for x in range(width):
         for y in range(height):
-            neighbours_sum, neighbour_count = _sum_neighbours_jit(x, y, width, height, current)
-            propagated = neighbours_sum / neighbour_count if neighbour_count > 0 else 0.0
-            val = base[x, y] + (decay * propagated)
+            # neighbour_count is always 4 on a toroidal grid (width >= 4, height >= 4)
+            neighbours_sum, _ = _sum_neighbours_jit(x, y, width, height, current)
+            val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
 
             diff = abs(val - current[x, y])
@@ -180,24 +173,21 @@ def _update_boundary_x_jit(
         The maximum difference for this x-coordinate slice.
     """
     max_diff = 0.0
-    # Top boundary (y=0)
-    n_sum, n_count = _sum_neighbours_jit(x, 0, width, height, current)
-    propagated = n_sum / n_count if n_count > 0 else 0.0
-    val = base[x, 0] + (decay * propagated)
+    # Top boundary (y=0): neighbour_count always 4 on toroidal grid
+    n_sum, _ = _sum_neighbours_jit(x, 0, width, height, current)
+    val = base[x, 0] + (decay * n_sum * 0.25)
     nxt[x, 0] = val
     diff1 = abs(val - current[x, 0])
     if diff1 > max_diff:
         max_diff = diff1
 
     # Bottom boundary (y=height-1)
-    if height > 1:
-        n_sum, n_count = _sum_neighbours_jit(x, height - 1, width, height, current)
-        propagated = n_sum / n_count if n_count > 0 else 0.0
-        val = base[x, height - 1] + (decay * propagated)
-        nxt[x, height - 1] = val
-        diff2 = abs(val - current[x, height - 1])
-        if diff2 > max_diff:
-            max_diff = diff2
+    n_sum, _ = _sum_neighbours_jit(x, height - 1, width, height, current)
+    val = base[x, height - 1] + (decay * n_sum * 0.25)
+    nxt[x, height - 1] = val
+    diff2 = abs(val - current[x, height - 1])
+    if diff2 > max_diff:
+        max_diff = diff2
     return max_diff
 
 
@@ -226,24 +216,21 @@ def _update_boundary_y_jit(
         The maximum difference for this y-coordinate slice.
     """
     max_diff = 0.0
-    # Left boundary (x=0)
-    n_sum, n_count = _sum_neighbours_jit(0, y, width, height, current)
-    propagated = n_sum / n_count if n_count > 0 else 0.0
-    val = base[0, y] + (decay * propagated)
+    # Left boundary (x=0): neighbour_count always 4 on toroidal grid
+    n_sum, _ = _sum_neighbours_jit(0, y, width, height, current)
+    val = base[0, y] + (decay * n_sum * 0.25)
     nxt[0, y] = val
     diff1 = abs(val - current[0, y])
     if diff1 > max_diff:
         max_diff = diff1
 
     # Right boundary (x=width-1)
-    if width > 1:
-        n_sum, n_count = _sum_neighbours_jit(width - 1, y, width, height, current)
-        propagated = n_sum / n_count if n_count > 0 else 0.0
-        val = base[width - 1, y] + (decay * propagated)
-        nxt[width - 1, y] = val
-        diff2 = abs(val - current[width - 1, y])
-        if diff2 > max_diff:
-            max_diff = diff2
+    n_sum, _ = _sum_neighbours_jit(width - 1, y, width, height, current)
+    val = base[width - 1, y] + (decay * n_sum * 0.25)
+    nxt[width - 1, y] = val
+    diff2 = abs(val - current[width - 1, y])
+    if diff2 > max_diff:
+        max_diff = diff2
     return max_diff
 
 
