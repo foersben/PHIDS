@@ -261,6 +261,132 @@ async def telemetry_table_preview(
     )
 
 
+async def _export_csv(
+    filtered_rows: list[dict[str, object]],
+    columns: str | None,
+    tick_interval: int,
+    normalized_data_type: str,
+) -> tuple[bytes, str, str]:
+    def _build_export_csv() -> bytes:
+        df = telemetry_to_dataframe(filtered_rows)
+        df = filter_dataframe_columns(df, columns)
+        df = decimate_dataframe(df, tick_interval)
+        return str(df.to_csv(index=False)).encode("utf-8")
+
+    data = await run_in_threadpool(_build_export_csv)
+    filename = f"phids_{normalized_data_type}.csv"
+    media_type = "text/csv"
+    return data, filename, media_type
+
+
+async def _export_tex_table(
+    rows: list[dict[str, object]],
+    columns: str | None,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    tick_interval: int,
+    normalized_data_type: str,
+) -> tuple[bytes, str, str]:
+    def _build_export_tex_table() -> bytes:
+        return export_bytes_tex_table(
+            rows,
+            columns=columns,
+            include_flora_ids=flora_ids,
+            include_herbivore_ids=herbivore_ids,
+            tick_interval=tick_interval,
+        )
+
+    data = await run_in_threadpool(_build_export_tex_table)
+    filename = f"phids_{normalized_data_type}_table.tex"
+    media_type = "text/plain"
+    return data, filename, media_type
+
+
+async def _export_tex_tikz(
+    filtered_rows: list[dict[str, object]],
+    normalized_data_type: str,
+    flora_names: dict[int, str],
+    herbivore_names: dict[int, str],
+    plant_species_id: int,
+    herbivore_species_id: int,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+    x_max: float | None,
+    y_max: float | None,
+) -> tuple[bytes, str, str]:
+    try:
+
+        def _build_export_tikz() -> str:
+            return generate_tikz_str(
+                filtered_rows,
+                normalized_data_type,
+                flora_names=flora_names,
+                herbivore_names=herbivore_names,
+                plant_species_id=plant_species_id,
+                herbivore_species_id=herbivore_species_id,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
+            )
+
+        tikz = await run_in_threadpool(_build_export_tikz)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    data = tikz.encode("utf-8")
+    filename = f"phids_{normalized_data_type}.tex"
+    media_type = "text/plain"
+    return data, filename, media_type
+
+
+async def _export_png(
+    filtered_rows: list[dict[str, object]],
+    normalized_data_type: str,
+    flora_names: dict[int, str],
+    herbivore_names: dict[int, str],
+    plant_species_id: int,
+    herbivore_species_id: int,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+    x_max: float | None,
+    y_max: float | None,
+) -> tuple[bytes, str, str]:
+    try:
+
+        def _build_export_png() -> bytes:
+            return generate_png_bytes(
+                filtered_rows,
+                normalized_data_type,
+                flora_names=flora_names,
+                herbivore_names=herbivore_names,
+                plant_species_id=plant_species_id,
+                herbivore_species_id=herbivore_species_id,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
+            )
+
+        data = await run_in_threadpool(_build_export_png)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    filename = f"phids_{normalized_data_type}.png"
+    media_type = "image/png"
+    return data, filename, media_type
+
+
 @router.get("/api/export/{data_type}", summary="Export telemetry data in academic formats")
 async def export_telemetry_format(
     data_type: str,
@@ -324,81 +450,43 @@ async def export_telemetry_format(
     filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
     if format == "csv":
-
-        def _build_export_csv() -> bytes:
-            df = telemetry_to_dataframe(filtered_rows)
-            df = filter_dataframe_columns(df, columns)
-            df = decimate_dataframe(df, tick_interval)
-            return str(df.to_csv(index=False)).encode("utf-8")
-
-        data = await run_in_threadpool(_build_export_csv)
-        filename = f"phids_{normalized_data_type}.csv"
-        media_type = "text/csv"
+        data, filename, media_type = await _export_csv(filtered_rows, columns, tick_interval, normalized_data_type)
     elif format == "tex_table":
-
-        def _build_export_tex_table() -> bytes:
-            return export_bytes_tex_table(
-                rows,
-                columns=columns,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                tick_interval=tick_interval,
-            )
-
-        data = await run_in_threadpool(_build_export_tex_table)
-        filename = f"phids_{normalized_data_type}_table.tex"
-        media_type = "text/plain"
+        data, filename, media_type = await _export_tex_table(
+            rows, columns, flora_ids, herbivore_ids, tick_interval, normalized_data_type
+        )
     elif format == "tex_tikz":
-        try:
-
-            def _build_export_tikz() -> str:
-                return generate_tikz_str(
-                    filtered_rows,
-                    normalized_data_type,
-                    flora_names=flora_names,
-                    herbivore_names=herbivore_names,
-                    plant_species_id=plant_species_id,
-                    herbivore_species_id=herbivore_species_id,
-                    include_flora_ids=flora_ids,
-                    include_herbivore_ids=herbivore_ids,
-                    title=title,
-                    x_label=x_label,
-                    y_label=y_label,
-                    x_max=x_max,
-                    y_max=y_max,
-                )
-
-            tikz = await run_in_threadpool(_build_export_tikz)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        data = tikz.encode("utf-8")
-        filename = f"phids_{normalized_data_type}.tex"
-        media_type = "text/plain"
+        data, filename, media_type = await _export_tex_tikz(
+            filtered_rows,
+            normalized_data_type,
+            flora_names,
+            herbivore_names,
+            plant_species_id,
+            herbivore_species_id,
+            flora_ids,
+            herbivore_ids,
+            title,
+            x_label,
+            y_label,
+            x_max,
+            y_max,
+        )
     elif format == "png":
-        try:
-
-            def _build_export_png() -> bytes:
-                return generate_png_bytes(
-                    filtered_rows,
-                    normalized_data_type,
-                    flora_names=flora_names,
-                    herbivore_names=herbivore_names,
-                    plant_species_id=plant_species_id,
-                    herbivore_species_id=herbivore_species_id,
-                    include_flora_ids=flora_ids,
-                    include_herbivore_ids=herbivore_ids,
-                    title=title,
-                    x_label=x_label,
-                    y_label=y_label,
-                    x_max=x_max,
-                    y_max=y_max,
-                )
-
-            data = await run_in_threadpool(_build_export_png)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        filename = f"phids_{normalized_data_type}.png"
-        media_type = "image/png"
+        data, filename, media_type = await _export_png(
+            filtered_rows,
+            normalized_data_type,
+            flora_names,
+            herbivore_names,
+            plant_species_id,
+            herbivore_species_id,
+            flora_ids,
+            herbivore_ids,
+            title,
+            x_label,
+            y_label,
+            x_max,
+            y_max,
+        )
     else:
         raise HTTPException(
             status_code=400,
