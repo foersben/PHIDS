@@ -29,6 +29,14 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
+from phids.engine.core.herbivore_params import (
+    get_herbivore_consumption_rate,
+    get_herbivore_energy_min,
+    get_herbivore_energy_upkeep,
+    get_herbivore_reproduction_divisor,
+    get_herbivore_split_threshold,
+    get_herbivore_velocity,
+)
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
@@ -271,12 +279,18 @@ class SimulationLoop:
                 population=swarm_placement.population,
                 initial_population=swarm_placement.population,
                 energy=swarm_placement.energy,
-                energy_min=self._get_herbivore_energy_min(swarm_placement.species_id),
-                velocity=self._get_herbivore_velocity(swarm_placement.species_id),
-                consumption_rate=self._get_herbivore_consumption_rate(swarm_placement.species_id),
-                reproduction_energy_divisor=self._get_herbivore_reproduction_divisor(swarm_placement.species_id),
-                energy_upkeep_per_individual=self._get_herbivore_energy_upkeep(swarm_placement.species_id),
-                split_population_threshold=self._get_herbivore_split_threshold(swarm_placement.species_id),
+                energy_min=get_herbivore_energy_min(self._herbivore_params, swarm_placement.species_id),
+                velocity=get_herbivore_velocity(self._herbivore_params, swarm_placement.species_id),
+                consumption_rate=get_herbivore_consumption_rate(self._herbivore_params, swarm_placement.species_id),
+                reproduction_energy_divisor=get_herbivore_reproduction_divisor(
+                    self._herbivore_params, swarm_placement.species_id
+                ),
+                energy_upkeep_per_individual=get_herbivore_energy_upkeep(
+                    self._herbivore_params, swarm_placement.species_id
+                ),
+                split_population_threshold=get_herbivore_split_threshold(
+                    self._herbivore_params, swarm_placement.species_id
+                ),
             )
             self.world.add_component(entity.entity_id, swarm)
             self.world.register_position(entity.entity_id, swarm_placement.x, swarm_placement.y)
@@ -288,90 +302,6 @@ class SimulationLoop:
             spawned_plants,
             spawned_swarms,
         )
-
-    def _get_herbivore_energy_min(self, species_id: int) -> float:
-        """Return the configured minimum energy for a herbivore species.
-
-        Args:
-            species_id: Herbivore species identifier to look up.
-
-        Returns:
-            Configured minimum energy if found, otherwise a sensible default of 1.0.
-        """
-        params = self._herbivore_params.get(species_id)
-        if params is not None:
-            return params.energy_min
-        return 1.0
-
-    def _get_herbivore_velocity(self, species_id: int) -> int:
-        """Return the configured movement period (velocity) for a herbivore.
-
-        Args:
-            species_id: Herbivore species identifier to look up.
-
-        Returns:
-            int: Movement period in ticks; defaults to 1 when not found.
-        """
-        params = self._herbivore_params.get(species_id)
-        if params is not None:
-            return params.velocity
-        return 1
-
-    def _get_herbivore_consumption_rate(self, species_id: int) -> float:
-        """Return the per-tick consumption rate for a herbivore species.
-
-        Args:
-            species_id: Herbivore species identifier to look up.
-
-        Returns:
-            float: Consumption rate if present, otherwise 1.0 by default.
-        """
-        params = self._herbivore_params.get(species_id)
-        if params is not None:
-            return params.consumption_rate
-        return 1.0
-
-    def _get_herbivore_reproduction_divisor(self, species_id: int) -> float:
-        """Return the configured reproduction divisor for a herbivore species.
-
-        Args:
-            species_id: Herbivore species identifier to look up.
-
-        Returns:
-            float: Reproduction divisor if present, otherwise 1.0.
-        """
-        params = self._herbivore_params.get(species_id)
-        if params is not None:
-            return params.reproduction_energy_divisor
-        return 1.0
-
-    def _get_herbivore_energy_upkeep(self, species_id: int) -> float:
-        """Return the configured per-individual metabolic upkeep scalar for a herbivore species.
-
-        Args:
-            species_id: Herbivore species identifier to look up.
-
-        Returns:
-            Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
-        """
-        params = self._herbivore_params.get(species_id)
-        if params is not None:
-            return params.energy_upkeep_per_individual
-        return 0.05
-
-    def _get_herbivore_split_threshold(self, species_id: int) -> int:
-        """Return the configured explicit mitosis population threshold for a herbivore species.
-
-        Args:
-            species_id: Herbivore species identifier to look up.
-
-        Returns:
-            Configured split threshold if found; otherwise 10.
-        """
-        params = self._herbivore_params.get(species_id)
-        if params is not None:
-            return params.split_population_threshold
-        return 10
 
     # ------------------------------------------------------------------
     # Simulation control

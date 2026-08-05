@@ -66,3 +66,9 @@ Action: Next time a monolith is identified, ensure that all extracted functions 
 
 Learning: When extracting a `multiprocessing.spawn`-based runner function (like `_run_single_headless` or `_run_and_save`) from a monolith into a package submodule, the target functions must remain top-level module functions in their new locations to satisfy `pickle` serialization requirements. Wrapping them in classes or inner scopes will immediately break the `ProcessPoolExecutor` dispatcher.
 Action: Retain module-level runner functions in isolation (e.g. `runner.py`) when dismantling batch execution engines.
+
+## 2026-08-03 - Extracting Utility Methods from SimulationLoop
+
+Learning: Extracting parameter lookup utilities out of large ECS orchestrator classes (like `SimulationLoop`) into dedicated pure functional modules (`herbivore_params.py`) prevents the God class from acting as a centralized dictionary wrapper. When extracting these, ensure they take `dict` instances rather than object references to decouple state effectively.
+
+Action: When dismantling ECS God classes, extract lookup/calculation utilities that only access static or pre-computed data (`_herbivore_params`) into independent pure functional packages (`core/herbivore_params.py`) to reduce file length and increase testability.
