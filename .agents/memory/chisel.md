@@ -72,3 +72,9 @@ Action: Retain module-level runner functions in isolation (e.g. `runner.py`) whe
 Learning: Extracting parameter lookup utilities out of large ECS orchestrator classes (like `SimulationLoop`) into dedicated pure functional modules (`herbivore_params.py`) prevents the God class from acting as a centralized dictionary wrapper. When extracting these, ensure they take `dict` instances rather than object references to decouple state effectively.
 
 Action: When dismantling ECS God classes, extract lookup/calculation utilities that only access static or pre-computed data (`_herbivore_params`) into independent pure functional packages (`core/herbivore_params.py`) to reduce file length and increase testability.
+
+## 2025-05-15 - Splitting the Cell Details Monolith
+
+Learning: The `src/phids/api/presenters/dashboard/cell_details.py` file grew to over 700 lines, mixing both live simulation state extraction and draft/preview state extraction into a single monolith. This created a structural bottleneck in the UI layer. By splitting it into `cell_details/live.py` and `cell_details/preview.py`, we maintained strict domain segregation without breaking any tests, as long as `__init__.py` properly exported the expected functions. The `ruff` linting and formatting successfully cleaned up the unused imports automatically.
+
+Action: When dealing with presentation layers that handle distinct application modes (e.g., live engine vs draft builder), extract them into isolated modules within a package, and rely on `__init__.py` to provide a unified public interface. This preserves backwards compatibility for importers while eliminating the monolith.

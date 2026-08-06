@@ -7,7 +7,8 @@ Exposes helpers, presenters, and serializers for rendering the biotope
 dashboard, cell details, and mycorrhizal root network state in the UI.
 """
 
-from phids.api.presenters.dashboard.cell_details import build_live_cell_details, build_preview_cell_details
+from phids.api.presenters.dashboard.cell_details.live import build_live_cell_details
+from phids.api.presenters.dashboard.cell_details.preview import build_preview_cell_details
 from phids.api.presenters.dashboard.mycorrhizal import _links_touching_cell, build_draft_mycorrhizal_links
 from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload, extract_ui_snapshot
 from phids.api.presenters.dashboard.shared import (

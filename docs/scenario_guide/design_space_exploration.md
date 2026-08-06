@@ -13,7 +13,7 @@ tags:
 - optimization
 timestamp: "2026-08-03T12:00:00Z"
 resources:
-- docs/scenario_guide/agentic_log_writer.md
+- future_prospects/agentic_log_writer.md
 ---
 
 !!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"

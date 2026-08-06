@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-type TelemetryScalar = None | bool | int | float | str
+type TelemetryScalar = bool | int | float | str | None
 type SpeciesCountMap = dict[int, int]
 type SpeciesEnergyMap = dict[int, float]
 type TelemetryValue = Any

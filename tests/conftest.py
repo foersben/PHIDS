@@ -10,7 +10,7 @@ preserving deterministic state isolation per test invocation.
 
 from __future__ import annotations
 
-# ruff: noqa: I001, E402, TC003
+# ruff: noqa: I001, E402
 
 import asyncio
 from collections.abc import AsyncGenerator, Callable

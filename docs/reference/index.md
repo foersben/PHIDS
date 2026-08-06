@@ -32,7 +32,7 @@ The reference section separates human-oriented explanation from symbol-oriented 
 - `reference/glossary-and-concept-index.md` - current-state definitions for scientific and
   engineering vocabulary, each cross-linked to the owning narrative chapter.
 - `reference/requirements-traceability.md` - current-state mapping from requirements to code, docs, and tests.
-- `reference/api.md` - mkdocstrings-backed Python API reference.
+- `reference/api.md` - Zensical-backed Python API reference.
 - `appendices/readme.md` - mirror of the repository README inside the docs site.
 - legacy reference material preserved in `legacy/`.
 
