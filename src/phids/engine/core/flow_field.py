@@ -159,10 +159,9 @@ def _truncate_subnormals_jit(
         current: The current flow field.
         threshold: Subnormal truncation threshold.
     """
-    # ⚡ Bolt Optimization: Replace abs() call with inline logic to avoid function overhead.
     for x in range(width):
         for y in range(height):
-            if current[x, y] > -threshold and current[x, y] < threshold:
+            if abs(current[x, y]) < threshold:
                 current[x, y] = 0.0
 
 
