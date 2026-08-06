@@ -74,6 +74,7 @@ logger = logging.getLogger("phids.etl")
 # Substance registry (stable IDs across pipeline runs)
 # ---------------------------------------------------------------------------
 
+
 def run_all(
     force_refresh: bool = False,
     publish: bool = False,

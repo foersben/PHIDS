@@ -11,6 +11,7 @@ without creating monolithic test modules.
   * `analytics/`: DSE optimizer and candidate-pruning unit checks
   * `engine/core/`: ECS, biotope, and flow-field deterministic unit checks
   * `engine/systems/`: modulo gating, stochastic raycasting, and low-level interaction helper contracts (Numba-bypass stubs)
+  * `engine/invariants/`: pure mathematical, physical conservation, Numba JIT parity, denormalization clamp, and zero-allocation memory invariants
   * `io/`: scenario I/O serialisation round-trips
   * `telemetry/`: per-species telemetry accumulation and metric-shape checks
   * `shared/`: logging and utility-layer invariants
@@ -18,6 +19,7 @@ without creating monolithic test modules.
 * `tests/integration/`
   * `api/`: route/websocket/export behavior across FastAPI boundaries and UI builder flows
   * `systems/`: multi-system simulation interactions, loop semantics, and batch orchestration
+  * `scientific_invariants/`: multi-system double-buffering isolation, Holling Type II & Hill kinetics properties, phloem translocation stability, and Zarr replay parity
 * `tests/e2e/`
   * `scenarios/`: curated scenario fixture execution and compatibility checks
   * `replay_and_io/`: replay persistence and zarr roundtrip compatibility tests
