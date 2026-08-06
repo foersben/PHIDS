@@ -141,6 +141,14 @@ def _process_signal_emission(
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
 ) -> None:
+    """Emit signal concentration from an active substance into airborne and mycorrhizal layers.
+
+    The total emission budget ``substance_emit_rate`` is split between the airborne layer at the
+    source cell and the mycorrhizal relay targets. Each relay target receives
+    ``per_target_amount * signal_velocity`` concentration units, where ``signal_velocity`` is the
+    hops-per-tick transfer rate: a higher value delivers *more* signal per tick to connected
+    neighbours, modelling a faster subterranean relay network.
+    """
     relay_targets = _collect_mycorrhizal_targets(
         plant,
         world,
@@ -162,7 +170,7 @@ def _process_signal_emission(
                     sub.substance_id,
                     relay_target.x,
                     relay_target.y,
-                ] += per_target_amount / max(1, signal_velocity)
+                ] += per_target_amount * float(max(1, signal_velocity))
 
 
 def _process_single_emission(

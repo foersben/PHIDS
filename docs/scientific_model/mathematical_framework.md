@@ -142,7 +142,7 @@ The state of flora entities evolves through a multi-scale, modulo-gated integrat
 
 ### 2.1 Bounded Growth & Multi-Scale Modulo-Gating
 
-Evaluating plant growth linearly on an hourly tick ($\Delta \tau = 1\text{ hour}$) causes fractional energy increments (e.g. $0.00005$ per tick) to fall below the IEEE 754 float epsilon threshold ($<10^{-4}$), triggering hardware FPU microcode traps. 
+Evaluating plant growth linearly on an hourly tick ($\Delta \tau = 1\text{ hour}$) causes fractional energy increments (e.g. $0.00005$ per tick) to fall below the IEEE 754 float epsilon threshold ($<10^{-4}$), triggering hardware FPU microcode traps.
 
 To eliminate subnormal float degradation and ensure L1/L3 cache coherence, PHIDS evaluates flora growth on the **Slow Loop (Weekly Stride / 168 Ticks)**:
 
@@ -176,7 +176,29 @@ Germination is gated by spatial hash exclusion: if $(x_{\text{target}}, y_{\text
 
 ### 2.3 Symbiotic Relay Networks (Mycorrhiza)
 
-Flora establish bidirectional mycorrhizal links with orthogonally adjacent neighbors ($\Delta x + \Delta y = 1$) during Slow Loop gates ($t \pmod{168} == 0$). Mycorrhizal signals propagate across graph edges at fixed velocity $t_g$ (hops per tick), bypassing airborne diffusion layers while imposing a continuous photosynthate maintenance fee (`mycorrhizal_tax_per_link`).
+Flora establish bidirectional mycorrhizal links with orthogonally adjacent neighbors ($\Delta x + \Delta y = 1$) during Slow Loop gates ($t \pmod{168} == 0$). Mycorrhizal signals propagate across graph edges at fixed transfer velocity $v_{\text{signal}} = \text{max}(1, \text{mycorrhizal\_signal\_velocity})$ (hops per tick), bypassing airborne diffusion layers while imposing a continuous photosynthate maintenance fee (`mycorrhizal_tax_per_link`).
+
+#### Subterranean Signal Emission Formula
+
+When an active plant entity emits a Volatile Organic Compound (VOC) signal into its mycorrhizal network, the total per-tick emission budget $S_{\text{emit}}$ is divided between local airborne emission and subterranean relay targets $N_{\text{relay}}$:
+
+$$S_{\text{airborne}} = \frac{S_{\text{emit}}}{N_{\text{relay}} + 1}$$
+
+$$S_{\text{relay\_total}} = S_{\text{emit}} - S_{\text{airborne}} = S_{\text{emit}} \cdot \frac{N_{\text{relay}}}{N_{\text{relay}} + 1}$$
+
+Each connected mycorrhizal neighbor target $k \in \{1, \dots, N_{\text{relay}}\}$ receives a subterranean concentration increment scaled multiplicatively by the subterranean transfer velocity $v_{\text{signal}}$:
+
+$$\Delta S_{\text{relay}, k} = \left( \frac{S_{\text{relay\_total}}}{N_{\text{relay}}} \right) \cdot v_{\text{signal}} = \left( \frac{S_{\text{emit}}}{N_{\text{relay}} + 1} \right) \cdot v_{\text{signal}}$$
+
+A higher `mycorrhizal_signal_velocity` ($v_{\text{signal}} \ge 1$) directly scales the signal flux delivered to connected roots per tick, modeling faster subterranean hyphal conductance and heightened systemic alarm transmission.
+
+#### Nutrient Translocation Recovery Kinetics
+
+When a plant undergoes stress-induced resource withdrawal, its apparent nutrition factor $\eta(t)$ translocates toward target factor $\eta_{\text{target}}$ at rate $\gamma = \text{translocation\_rate} \in [0.0, 1.0]$. During recovery phases, $\eta(t)$ relaxes exponentially toward baseline (1.0):
+
+$$\eta(t+1) = \eta(t) + (1.0 - \eta(t)) \cdot \gamma$$
+
+This ensures a continuous convex combination bounding $\eta(t) \in [0.0, 1.0]$ without overshoot or subnormal precision loss.
 
 ## 3. Global Flow-Field and Swarm Navigation
 

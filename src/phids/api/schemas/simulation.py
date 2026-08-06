@@ -59,7 +59,7 @@ class SimulationConfig(StrictBaseModel):
         le=256,
         description=("Ticks between mycorrhizal growth attempts. At most one new root link is formed per interval."),
     )
-    mycorrhizal_signal_velocity: int = Field(default=1, gt=0, description="Signal transfer speed t_g (ticks per hop).")
+    mycorrhizal_signal_velocity: int = Field(default=1, gt=0, description="Signal transfer speed t_g (hops per tick).")
 
     # Termination conditions
     z2_flora_species_extinction: int = Field(

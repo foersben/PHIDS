@@ -127,8 +127,11 @@ For software engineers and data interface developers, this section maps the math
         """Action configuring rate-limited phloem nutrient translocation."""
 
         type: Literal["resource_withdrawal"] = "resource_withdrawal"
-        apparent_nutrition_factor: float = Field(default=0.1, ge=0.0, le=1.0)
-        withdrawal_duration: int = Field(default=5, ge=1)
+        # Pydantic sentinel default: 1.0 = no-op (full apparent nutrition).
+        # Explicit payloads must always supply the intended target factor.
+        # The HTMX UI layer defaults to 0.2 for operator convenience.
+        apparent_nutrition_factor: float = Field(default=1.0, ge=0.0, le=1.0)
+        withdrawal_duration: int = Field(default=10, ge=1)
     ```
 
 ### Component State (`src/phids/engine/components/plant.py`)

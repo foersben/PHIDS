@@ -89,7 +89,7 @@ def test_global_energy_accounting_invariants() -> None:
     diet = [[True]]
 
     initial_plant_energy = plant.energy
-    initial_swarm_total_energy = swarm.energy * swarm.population
+    initial_swarm_total_energy = swarm.energy
 
     run_interaction(world, env, diet, flora_params, herb_params, tick=0)
 
@@ -102,6 +102,6 @@ def test_global_energy_accounting_invariants() -> None:
     assert energy_lost_by_plant >= 0.0, "Plant should lose energy during feeding"
 
     # Energy gained by swarm (before upkeep) is bounded by energy lost by plant
-    final_swarm_total_energy = swarm.energy * swarm.population
+    final_swarm_total_energy = swarm.energy
     energy_gained_by_swarm = final_swarm_total_energy - initial_swarm_total_energy
     assert energy_gained_by_swarm <= energy_lost_by_plant + 1e-6, "Energy gain cannot exceed intake"

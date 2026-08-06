@@ -258,6 +258,8 @@ class SimulationLoop:
                 seed_terminal_velocity=params.seed_terminal_velocity,
                 camouflage=params.camouflage,
                 camouflage_factor=params.camouflage_factor,
+                translocation_rate=params.translocation_rate,
+                mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
             )
             self.world.add_component(entity.entity_id, plant)
             self.world.register_position(entity.entity_id, plant_placement.x, plant_placement.y)

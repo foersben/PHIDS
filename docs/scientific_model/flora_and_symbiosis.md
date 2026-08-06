@@ -24,9 +24,9 @@ $$\Delta E_{\text{plant}} = E_{\text{base}} \times \left(\frac{g_j}{100}\right) 
 
 #### Biophysical & Mathematical Rationale
 
-- **Biological Reality**: Vegetative cell division and biomass expansion in real plants occur over diurnal and seasonal timescales, not hourly intervals.
-- **Floating-Point Precision (FPU Traps)**: Evaluated hourly, fractional plant growth increments (e.g. $0.00005$ energy units per tick) drop below the IEEE 754 single-precision floating-point epsilon threshold ($<10^{-4}$). This causes FPU hardware vector pipelines to fail back to ALU microcode traps, incurring an $8\times$ CPU cycle penalty.
-- **Hardware Cache Locality**: Accumulating growth into a weekly 168-tick stride ensures that contiguous ECS arrays are traversed with a $93.7\%$ L1/L3 cache hit rate.
+* **Biological Reality**: Vegetative cell division and biomass expansion in real plants occur over diurnal and seasonal timescales, not hourly intervals.
+* **Floating-Point Precision (FPU Traps)**: Evaluated hourly, fractional plant growth increments (e.g. $0.00005$ energy units per tick) drop below the IEEE 754 single-precision floating-point epsilon threshold ($<10^{-4}$). This causes FPU hardware vector pipelines to fail back to ALU microcode traps, incurring an $8\times$ CPU cycle penalty.
+* **Hardware Cache Locality**: Accumulating growth into a weekly 168-tick stride ensures that contiguous ECS arrays are traversed with a $93.7\%$ L1/L3 cache hit rate.
 
 ---
 
@@ -87,7 +87,7 @@ Mycorrhizal networks bypass the airborne Volatile Organic Compound (VOC) diffusi
 2. Plant A begins emitting VOCs into the air above it.
 3. Simultaneously, Plant A injects the exact same signal concentration *directly* into the connected root node of Plant B.
 
-Because the signal travels over the Graph Structure of the Mycorrhiza at $t_{velocity}$ (hops per tick), it propagates significantly faster than atmospheric diffusion.
+Because subterranean signals propagate over the Graph Structure of the Mycorrhiza at velocity $v_{\text{signal}} = \text{mycorrhizal\_signal\_velocity}$ (hops per tick), the network delivers an amplified per-tick concentration increment ($\Delta S = \text{per\_target\_amount} \times v_{\text{signal}}$) directly to connected neighbor root systems, bypassing airborne diffusion delays.
 
 Plant B receives the chemical warning of herbivory without having to wait for the Gaussian convolution kernel to disperse the signal through the air, allowing Plant B to synthesize its own localized Toxins preemptively.
 

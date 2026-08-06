@@ -153,6 +153,8 @@ def _attempt_reproduction(
         camouflage=params.camouflage,
         camouflage_factor=params.camouflage_factor,
         last_reproduction_tick=tick,
+        translocation_rate=params.translocation_rate,
+        mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
     )
     world.add_component(new_entity.entity_id, new_plant)
     world.register_position(new_entity.entity_id, tx, ty)
