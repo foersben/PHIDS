@@ -121,8 +121,8 @@ class DraftState:
 
     Attributes:
         scenario_name: Human-readable label used in the UI header.
-        grid_width: Biotope width in cells (1-200).
-        grid_height: Biotope height in cells (1-200).
+        grid_width: Biotope width in cells (ge=1).
+        grid_height: Biotope height in cells (ge=1).
         max_ticks: Simulation tick budget.
         tick_rate_hz: WebSocket streaming rate in ticks per second.
         wind_x: Initial uniform wind x-component.
