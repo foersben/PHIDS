@@ -27,17 +27,43 @@ The core execution loop of PHIDS updates ecological state deterministically. The
 
 The `SimulationLoop.step()` method executes the following components consecutively, adhering to **Multi-Scale Temporal Decoupling (Modulo-Gating)** to prevent IEEE 754 subnormal floating-point truncation traps and ensure extreme cache locality:
 
+```mermaid
+flowchart TD
+    %% Base Styling
+    classDef loopContainer fill:#1e293b, stroke:#475569, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef fastPhase fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef medPhase fill:#854D0E, stroke:#EAB308, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef slowPhase fill:#7F1D1D, stroke:#EF4444, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef checkPhase fill:#312E81, stroke:#6366F1, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    
+    subgraph EngineLoop ["SimulationLoop.step() Execution Sequence"]
+        P1["1. Flow-Field Generation<br/>(Fast Loop - Every Tick)"]:::fastPhase
+        P2["2. Camouflage Attenuation<br/>(Fast Loop - Every Tick)"]:::fastPhase
+        P3["3. Lifecycle (Growth, Dispersal, Roots)<br/>(Slow Loop - 168 Tick Stride)"]:::slowPhase
+        P4["4a. Movement & Chemotaxis<br/>(Fast Loop - Every Tick)"]:::fastPhase
+        P4b["4b. Metabolism & Foraging<br/>(Medium Loop - 24 Tick Stride)"]:::medPhase
+        P4c["4c. Colony Fission / Mitosis<br/>(Slow Loop - 168 Tick Stride)"]:::slowPhase
+        P5["5. Signaling (VOCs & Toxins)<br/>(Fast Loop - Every Tick)"]:::fastPhase
+        P6["6. Telemetry & Energy Rebuild<br/>(Buffer Swap & Logging)"]:::checkPhase
+        P7["7. Termination Check<br/>(Threshold Limits)"]:::checkPhase
+    end
+
+    P1 --> P2 --> P3 --> P4 --> P4b --> P4c --> P5 --> P6 --> P7
+```
+
+As depicted in the flowchart, the engine does not evaluate every biological process at the same frequency. The **Fast Loop** (green) executes critical pathfinding and signaling calculations every single tick. The **Medium Loop** (yellow) batches swarm feeding into daily chunks (24 ticks), while the **Slow Loop** (red) batches microscopic plant growth and colony reproduction into weekly chunks (168 ticks). This temporal decoupling prevents catastrophic CPU stalls that occur when attempting to add microscopic floating-point values (subnormals) during every tick.
+
 1. **Flow-Field Generation (Fast Loop - Every Tick)**: Utilizes Numba `@njit` compilation to compute the singular global guidance gradient based on plant energy, apparent nutrition, and toxic zones.
 2. **Camouflage Attenuation (Fast Loop - Every Tick)**: Post-processes the flow-field matrix by masking local guidance gradients for flora utilizing camouflage traits.
 3. **Lifecycle (`run_lifecycle`) (Slow Loop - Weekly / 168-Tick Stride)**:
-   - **Photosynthetic Growth**: Applies accumulated weekly photosynthetic biomass growth scaled by `SLOW_TICK_STRIDE` (168x). This prevents FPU microcode traps caused by microscopic per-tick increments ($<10^{-4}$).
-   - **$O(1)$ Stochastic Raycasting Dispersal**: Replaces legacy $O(N \times r^2)$ grid spatial convolution with constant-time vector projection along wind unit vector $\mathbf{u} = \mathbf{w} / \|\mathbf{w}\|$ combined with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$.
-   - **Mycorrhizal Symbiosis**: Establishes bidirectional root connections between adjacent plants on slow-loop gates, applying continuous carbon maintenance taxes (`mycorrhizal_tax_per_link`).
-   - **Threshold Culling & Garbage Collection**: Removes plants whose energy drops below `survival_threshold`.
+    - **Photosynthetic Growth**: Applies accumulated weekly photosynthetic biomass growth scaled by `SLOW_TICK_STRIDE` (168x). This prevents FPU microcode traps caused by microscopic per-tick increments ($<10^{-4}$).
+    - **$O(1)$ Stochastic Raycasting Dispersal**: Replaces legacy $O(N \times r^2)$ grid spatial convolution with constant-time vector projection along wind unit vector $\mathbf{u} = \mathbf{w} / \|\mathbf{w}\|$ combined with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$.
+    - **Mycorrhizal Symbiosis**: Establishes bidirectional root connections between adjacent plants on slow-loop gates, applying continuous carbon maintenance taxes (`mycorrhizal_tax_per_link`).
+    - **Threshold Culling & Garbage Collection**: Removes plants whose energy drops below `survival_threshold`.
 4. **Interaction (`run_interaction`) (Fast / Medium / Slow Gated)**:
-   - **Movement & Chemotaxis (Fast Loop - Every Tick)**: Micro-swarm kinetic movement and spatial repulsion.
-   - **Metabolism & Foraging (Medium Loop - Daily / 24-Tick Stride)**: Swarm feeding and daily metabolic cost drain scaled by 24x stride ($\text{cost} = \text{pop} \times E_{\text{min}} \times \text{upkeep} \times 24$).
-   - **Colony Fission / Mitosis (Slow Loop - Weekly / 168-Tick Stride)**: Swarms with substantial caloric surpluses split into new entities.
+    - **Movement & Chemotaxis (Fast Loop - Every Tick)**: Micro-swarm kinetic movement and spatial repulsion.
+    - **Metabolism & Foraging (Medium Loop - Daily / 24-Tick Stride)**: Swarm feeding and daily metabolic cost drain scaled by 24x stride ($\text{cost} = \text{pop} \times E_{\text{min}} \times \text{upkeep} \times 24$).
+    - **Colony Fission / Mitosis (Slow Loop - Weekly / 168-Tick Stride)**: Swarms with substantial caloric surpluses split into new entities.
 5. **Signaling (`run_signaling`) (Fast Loop - Every Tick)**: Evaluates trigger rules via continuous dose-dependent Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$) or threshold predicates. Manages airborne advection-diffusion, mycorrhizal signal propagation, and lethal toxin casualties.
 6. **Energy Layer Rebuild & Telemetry Logging**: Rebuilds the double-buffered energy layer (`rebuild_energy_layer()`), records a metrics snapshot of the current tick, and appends raw arrays to the Zarr replay buffer and Polars telemetry exporter.
 7. **Termination Check**: Evaluates configured extinction ($Z_2, Z_4$), max energy ($Z_6$), max tick, and population ($Z_7$) threshold limits.
@@ -59,9 +85,9 @@ To eliminate boundary edge-effect distortions and enforce strict physical mass c
 - **Branchless Coordinate Wrapping**: All spatial coordinate updates enforce branchless modulo arithmetic: $x_{\text{wrapped}} = (x + \Delta x) \pmod W$ and $y_{\text{wrapped}} = (y + \Delta y) \pmod H$, completely eliminating branch mispredictions in Numba `@njit` loop kernels.
 - **Toroidal Spatial Distance**: Spatial distance between points $(x_1, y_1)$ and $(x_2, y_2)$ accounts for wrap-around seam boundaries:
 
-  $$\Delta x_{\text{toroidal}} = \min(|x_1 - x_2|, W - |x_1 - x_2|)$$
+    $$\Delta x_{\text{toroidal}} = \min(|x_1 - x_2|, W - |x_1 - x_2|)$$
 
-  $$\Delta y_{\text{toroidal}} = \min(|y_1 - y_2|, H - |y_1 - y_2|)$$
+    $$\Delta y_{\text{toroidal}} = \min(|y_1 - y_2|, H - |y_1 - y_2|)$$
 
 - **Shortest-Seam Inertia Vector Alignment**: When swarms cross boundary seams (e.g. from $x=W-1$ to $x=0$), inertia deltas are normalized to $\Delta x = -1$ rather than $-(W-1)$, ensuring smooth kinematic trajectory continuation across wrap boundaries.
 

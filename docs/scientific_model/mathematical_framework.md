@@ -67,30 +67,37 @@ The following matrix provides a high-level master overview of all core scientifi
 
 ## 1. Global State Representation
 
-Let the global state of the biotope at discrete time step (tick) $t$ be defined as:
+Before diving into complex formulas, it is important to understand how PHIDS measures time and reality. The simulation does not run continuously like the real world. Instead, it operates in discrete "snapshots" of time called **ticks**. During a single tick, the engine pauses the universe, calculates how much every plant has grown, how far every smell has drifted on the wind, and where every insect swarm has moved, and then instantaneously applies all those changes to create the next snapshot.
+
+To build each snapshot, the engine must look at the total state of the entire ecosystem, process it through a strict sequence of rules (e.g., plants grow *before* bugs eat them), and output the next frame.
+
+### The Formal State Tuple
+
+Mathematically, we define the global state of the biotope at a discrete time step (tick) $t$ as a unified tuple:
 
 $$\mathcal{X}_t = (\mathcal{E}_t, \mathcal{G}_t, \mathcal{P}_t)$$
 
 where:
 
 * $\mathcal{X}_t$: The comprehensive global state tuple of the biotope at time step $t$.
-* $\mathcal{E}_t$: The set of discrete biological entities (flora and herbivore swarms) active in the spatial hash of the Entity-Component-System (ECS).
-* $\mathcal{G}_t$: The continuous, vectorized environmental lattice fields representing plant energy, signal concentrations, and toxins.
-* $\mathcal{P}_t$: The static configuration parameters (such as the inter-species diet compatibility matrix and plant defense parameters).
+* $\mathcal{E}_t$: The discrete biological entities (flora and herbivore swarms) active in the Entity-Component-System (ECS). These are the physical organisms moving and living in the simulation.
+* $\mathcal{G}_t$: The continuous environmental fields (plant energy, signal concentrations, toxins). These are the invisible landscapes of smells and resources mapped across the entire grid.
+* $\mathcal{P}_t$: The static configuration parameters, such as which bugs can eat which plants, and how strong certain toxins are.
 
-The deterministic progression of the system is the ordered composition of distinct phase operators:
+### The Composition of Phase Operators
+
+The deterministic progression from the current snapshot ($\mathcal{X}_t$) to the next snapshot ($\mathcal{X}_{t+1}$) is calculated by piping the entire world state through a strict, ordered chain of mathematical functions, known as phase operators:
 
 $$\mathcal{X}_{t+1} = \mathcal{T}_{\text{termination\_check}} \circ \mathcal{T}_{\text{telemetry}} \circ \mathcal{T}_{\text{signaling}} \circ \mathcal{T}_{\text{interaction}} \circ \mathcal{T}_{\text{lifecycle}} \circ \mathcal{T}_{\text{camouflage}} \circ \mathcal{T}_{\text{flow\_field}} (\mathcal{X}_t)$$
 
-Where:
-
-* $\mathcal{T}_{\text{flow\_field}}$: Generates the unified navigation potential landscape.
-* $\mathcal{T}_{\text{camouflage}}$: Adjusts the apparent attractiveness of camouflage-enabled flora.
-* $\mathcal{T}_{\text{lifecycle}}$: Evaluates flora growth, reproduction, and natural mortality rules.
-* $\mathcal{T}_{\text{interaction}}$: Resolves grazing, energy transfer, mechanical damage, and attrition.
-* $\mathcal{T}_{\text{signaling}}$: Simulates volatile organic compound (VOC) airborne diffusion and mycorrhizal relay.
-* $\mathcal{T}_{\text{telemetry}}$: Records state variables into Zarr replay buffers.
-* $\mathcal{T}_{\text{termination\_check}}$: Tests scenario termination invariants.
+In plain terms, this equation simply dictates the hardcoded order of operations for every tick:
+1. **$\mathcal{T}_{\text{flow\_field}}$**: First, calculate the scent trails and navigation landscapes so bugs know where to go.
+2. **$\mathcal{T}_{\text{camouflage}}$**: Adjust the visual/chemical footprint of plants that are hiding.
+3. **$\mathcal{T}_{\text{lifecycle}}$**: Allow all plants to grow, reproduce, or die of old age.
+4. **$\mathcal{T}_{\text{interaction}}$**: Resolve the physical collisions—bugs eating plants, taking damage from thorns, or multiplying.
+5. **$\mathcal{T}_{\text{signaling}}$**: Let injured plants release airborne distress chemicals and send warnings through their roots.
+6. **$\mathcal{T}_{\text{telemetry}}$**: Record all these events to the data buffer for later analysis.
+7. **$\mathcal{T}_{\text{termination\_check}}$**: Finally, check if the ecosystem has completely collapsed or reached an equilibrium, ending the simulation if necessary.
 
 ### 1.1 Toroidal Coordinate Acceleration and Power-of-Two Grid Mapping
 
@@ -250,7 +257,9 @@ Transitioning to a discrete domain, $F_t[x, y]$ dictates the potential field val
 
 ##### Implementation Rules for Flow Fields
 
-1. **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
+- **Matrix Superposition:** The repellent layers are stored as a 3D array tensor. The term $\sum_{k=1}^{N_T}$ is implemented as a vectorized `np.sum(toxins, axis=0)` call inside a Numba `@njit(parallel=True)` block, efficiently collapsing the axis without memory thrashing.
+- **Toroidal Boundary Wrap:** Spatial boundary checks use branchless modulo arithmetic (`(x + 1) % width`), ensuring the flow field remains continuous and infinite across grid edges. When grids are explicitly sized to powers of two (e.g. 1024), this modulo collapses into a single-cycle bitwise AND (`x & 1023`).
+- **Subnormal Float Truncation:** To protect the CPU's floating-point unit (FPU) from microcode stalls, any gradient values that decay below a strict epsilon threshold ($1 \times 10^{-4}$) are instantly snapped to `0.0`.
 
 ### 3.2 Swarm Advection and Behavior
 
@@ -278,7 +287,13 @@ Energy transferred from plant $j$ to swarm $i$ with population $N_i$ and velocit
 
 $$\Delta E_{i\leftarrow j} = \min\left( \frac{r_i}{\max(1, v_i)} N_i, \; E_j \right)$$
 
-In this intake model, $\Delta E_{i\leftarrow j}$ quantifies the total energy transferred from the target plant entity $j$ to the grazing herbivore swarm $i$. The transfer is bottlenecked by $r_i$, the biological consumption rate (base bites taken per individual), scaled over the total population $N_i$. Crucially, intake is inversely penalized by $v_i$, the current movement velocity of the swarm, representing the reduction in physical grazing dwell-time when the herd is highly mobile. The ultimate extraction is rigidly bounded by $E_j$, ensuring that the swarm cannot consume more energy than is physically present in the plant.
+When the swarm's intrinsic handling time parameter $T_h > 0$, this linear extraction is formally bottlenecked by the **Holling Type II** saturating functional response:
+
+$$\Delta E_{\text{type\_II}} = \frac{\Delta E_{i\leftarrow j}}{1 + \frac{r_i}{\max(1, v_i)} \cdot T_h \cdot E_j}$$
+
+In this intake model, $\Delta E_{i\leftarrow j}$ quantifies the base energy transfer from the target plant entity $j$ to the grazing herbivore swarm $i$. The transfer is scaled by $r_i$, the biological consumption rate (base bites taken per individual), over the total population $N_i$, and is inversely penalized by $v_i$, the current movement velocity of the swarm, representing reduced grazing dwell-time. 
+
+Crucially, the Holling Type II denominator ensures that herbivore feeding saturates at extremely high food densities ($E_j$). As the available plant energy approaches infinity, the intake rate asymptotically approaches a hard limit dictated by $T_h$, modeling the physical time required for an organism to chew, digest, and process each bite of food before it can take another. The ultimate extraction is then rigidly bounded by $E_j$, ensuring that the swarm cannot consume more energy than is physically present.
 
 The velocity denominator accounts for reduced feeding dwell-time when moving rapidly.
 

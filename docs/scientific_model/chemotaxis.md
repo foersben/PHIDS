@@ -34,7 +34,9 @@ This scalar lattice is a spatial superposition of two primary potentials:
 
 ### Mathematical Formulation
 
-The baseline gradient at cell $(x, y)$ before propagation is computed as:
+To calculate exactly how desirable a specific patch of land is for a grazing swarm, we need to mathematically weigh the rewards against the dangers. We take the total caloric value of all the food at that spot and subtract the total strength of all the defensive toxins present. This simple subtraction gives us a baseline "desirability score" for every single cell on the map.
+
+In formal terms, the baseline gradient at cell $(x, y)$ before propagation is computed as:
 
 $$
 G_t(x,y) = \alpha E_t(x,y) - \beta \sum_k T_{k,t}(x,y)
@@ -48,7 +50,7 @@ To create an "influence map" that swarms can detect from a short distance away, 
 
 A swarm located at $(x, y)$ determines its next position by evaluating the Flow Field $F_t$ in its immediate **Von-Neumann Neighborhood** $\mathcal{V}(x,y)$ (the current cell plus its 4 orthogonal adjacent cells: North, South, East, and West).
 
-Rather than deterministically selecting the absolute highest gradient (strict gradient ascent), the engine applies **probability-weighted sampling**. The probability $P(u,v)$ of transitioning to a neighbor $(u,v) \in \mathcal{V}(x,y)$ is strictly proportional to its normalized flow-field magnitude relative to the neighborhood minimum. 
+Rather than deterministically selecting the absolute highest gradient (strict gradient ascent), the engine applies **probability-weighted sampling**. The probability $P(u,v)$ of transitioning to a neighbor $(u,v) \in \mathcal{V}(x,y)$ is strictly proportional to its normalized flow-field magnitude relative to the neighborhood minimum.
 
 This stochastic approach mathematically models biological sensory noise, receptor saturation, and the physical turbulence of volatile organic compounds in a real ecosystem.
 

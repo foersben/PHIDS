@@ -78,8 +78,8 @@ Home = "index.md"
         { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
     ] },
     { "Future Prospects" = [
-        { "Parameter Calibration Strategy" = "speculative_research/parameter_calibration_strategy.md" },
-        { "Spatiotemporal Scaling Architecture" = "speculative_research/spatiotemporal_scaling.md" },
+        { "Parameter Calibration Strategy" = "scientific_model/future_prospects/parameter_calibration_strategy.md" },
+        { "Spatiotemporal Scaling Architecture" = "scientific_model/future_prospects/spatiotemporal_scaling.md" },
     ] },
 ]
 

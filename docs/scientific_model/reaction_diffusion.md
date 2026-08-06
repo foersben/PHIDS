@@ -26,7 +26,9 @@ To simulate this without tracking billions of individual molecules, physics and 
 
 ## The Mathematical Model
 
-The continuous parabolic PDE describing this phenomenon for a substance concentration $C$ is:
+To track the exact concentration of a scent in the air at any given moment, we must account for three competing forces: how quickly the scent is spreading outward, how quickly the wind is blowing it away, and how much new scent the plant is currently producing. If we add up the spread and the new emissions, and subtract the natural fading, we know exactly how the smell changes over time.
+
+In analytical chemistry, this continuous balancing act is described by a parabolic Partial Differential Equation (PDE) for a substance concentration $C$:
 
 $$\frac{\partial C}{\partial t} = D \nabla^2 C - \lambda C + Q$$
 
@@ -42,24 +44,23 @@ The biotope layer (`src/phids/engine/core/biotope.py`) handles volatile organic 
 
 **Step 1: Semi-Lagrangian Advection (Wind):**
 
-For every cell, the engine traces a trajectory backward in time along a localized wind vector field to determine the upstream concentration, interpolating the value from the read buffer. If the per-cell wind vector is $\mathbf{u} = (u_x, u_y)$, the advected concentration at cell $(x, y)$ is sampled from $(x - u_x, y - u_y)$ in the previous tick's read-buffer.
+Before a scent can spread smoothly outward, it is violently pushed by the wind. To calculate this efficiently, the engine asks a simple question for every cell on the grid: *"Where did the wind blowing over this spot come from?"* It traces the wind backwards, grabs the smell from that upwind location, and pulls it forward into the current cell.
+
+Mathematically, for every cell, the engine traces a trajectory backward in time along a localized wind vector field to determine the upstream concentration, interpolating the value from the read buffer. If the per-cell wind vector is $\mathbf{u} = (u_x, u_y)$, the advected concentration at cell $(x, y)$ is sampled from $(x - u_x, y - u_y)$ in the previous tick's read-buffer.
 
 $$\tilde{C}^{t}(x,y) = C^t(x - u_x, y - u_y)$$
 
 **Step 2: Isotropic Gaussian Convolution:**
 
-The engine applies a discrete convolution step using a strictly odd-sized Gaussian kernel (3x3 by default). The kernel creation routine (`_make_gaussian_kernel()`) enforces this structural constraint via an explicit check:
+Once the wind has shifted the scent downwind, the scent naturally blurs and spreads equally in all directions. The engine achieves this by mathematically "smudging" each cell's concentration into its immediate neighbors, similar to applying a blur filter to a digital photograph.
 
-```python
-if size % 2 == 0:
-    raise ValueError("Kernel size must be odd to maintain central symmetry.")
-```
+The engine applies a discrete convolution step using a strictly odd-sized Gaussian kernel (5x5 by default). The pre-computed convolution avoids expensive transcendental operations inside the Numba kernel.
 
 Let the advected 2D grid matrix of signal concentration at tick $t$ be $\tilde{C}^t$. The update for tick $t+1$ becomes:
 
 $$C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * \tilde{C}^t) + Q^t$$
 
-In the discrete algorithmic realization, $\mathcal{K}_{iso}$ represents an odd-sized Gaussian blur kernel (e.g., a $3 \times 3$ matrix) that ensures strictly symmetric spatial dispersion. The operator $*$ denotes the 2D discrete spatial convolution function across the grid. Environmental clearance is approximated by $\gamma$, the discrete decay factor (e.g., $0.85$, meaning 15% of the total mass dissipates per tick). Finally, $Q^t$ is the source matrix where cells containing active, emitting plants have their concentration algebraically increased by a fixed emission rate, completing the step integration.
+In the discrete algorithmic realization, $\mathcal{K}_{iso}$ represents an odd-sized Gaussian blur kernel (specifically a $5 \times 5$ matrix) that ensures strictly symmetric spatial dispersion. The operator $*$ denotes the 2D discrete spatial convolution function across the grid. Environmental clearance is approximated by $\gamma$, the discrete decay factor (e.g., $0.85$, meaning 15% of the total mass dissipates per tick). Finally, $Q^t$ is the source matrix where cells containing active, emitting plants have their concentration algebraically increased by a fixed emission rate, completing the step integration.
 
 ```mermaid
 flowchart LR
@@ -69,7 +70,7 @@ flowchart LR
     end
 
     subgraph Step_2 ["Step II: Center-Symmetric Diffusion & Cleansing"]
-        C --> D["Apply Odd-Sized Symmetric Gaussian Kernel<br><i>(3x3 Centered Convolution Matrix)</i>"]
+        C --> D["Apply Odd-Sized Symmetric Gaussian Kernel<br><i>(5x5 Centered Convolution Matrix)</i>"]
         D --> E["Apply Substance Cleansing Factor<br><i>Subtract Lambda Coefficient * Concentration</i>"]
         E --> F{"Value Below Truncation<br>Bound (Value < epsilon)?"}
         F -- Yes --> G["Hard Snap Grid Cell to Zero<br><i>Removes Floating-Point Underflows</i>"]

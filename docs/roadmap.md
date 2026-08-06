@@ -47,7 +47,7 @@ This document defines the multiphase strategic development roadmap for the Plant
 * **Rate-Limited Phloem Translocation** `[Realized]`: Modeled vascular carbohydrate movement from leaves to roots ($\frac{dN}{dt} = -k(N - N_{\text{target}})$).
 * **Constitutive Morphological Defenses** `[Realized]`: Integrated mechanical mouthpart damage ($\lfloor m_{\text{bite}} (1-\rho) \rfloor$) and cell-wall caloric discounting ($\eta_{\text{net}}$).
 * **Holling Type II Response & Swarm Paradigms** `[Realized]`: Implemented saturating feeding curves with handling time $T_h$ and multi-tier flight behavior (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`).
-* **Operator-Splitting PDE Solvers & Telemetry** `[Realized]`: Combined semi-Lagrangian wind advection with $3\times 3$ Gaussian stencils, Zarr telemetry, and HTMX web visualization.
+* **Operator-Splitting PDE Solvers & Telemetry** `[Realized]`: Combined semi-Lagrangian wind advection with $5\times 5$ Gaussian stencils, Zarr telemetry, and HTMX web visualization.
 
 ---
 
@@ -240,3 +240,17 @@ Several mechanisms have been intentionally deferred to the speculative research 
 4. **Sub-Tick PDE Slicing**:
     * **The Issue**: Because $\Delta \tau = 1\text{ hr}$, simulating airborne diffusion might stretch the Courant stability limit.
     * **The Reality Check**: Executing $K$ micro-steps internally per tick multiplies the PDE solver overhead by $K$. Sub-slicing is deferred; stability will first be pursued via empirical viscosity dampening.
+
+### 5.6 High-Performance Data Structures & Telemetry (Deferred Architectures)
+
+Several extreme optimization strategies have been analyzed but deferred to avoid premature optimization and maintain Pythonic code readability:
+
+1. **Linearized 1D Flat Buffers**:
+    * **The Concept**: Flattening all 2D grid arrays into 1D contiguous arrays (`index = y * width + x`) and enforcing explicit 64-byte alignment to guarantee SIMD vectorization.
+    * **The Reality Check**: Numba's `@njit(parallel=True)` natively optimizes 2D NumPy array access via `prange`, maintaining cache coherence without the code obfuscation of manual 1D index tracking.
+2. **Zero-Allocation Spatial Hashing**:
+    * **The Concept**: Replacing the `ecs.py` spatial hash (which currently uses heap-allocated Python `dict` and `set` structures) with pre-allocated integer flat arrays and collision-bucket bounds ($O(1)$ bounds).
+    * **The Reality Check**: The current dictionary approach is sufficiently performant for the target entity counts ($<10^5$). Refactoring into a pure array-based ECS would require writing a custom memory allocator in Python.
+3. **Asynchronous Telemetry Ring Buffers**:
+    * **The Concept**: Implementing a non-blocking lock-free ring buffer between `loop.py` and the telemetry writers (Zarr/Polars) to completely isolate the hot simulation path from disk IO stalls.
+    * **The Reality Check**: The current synchronous chunked Zstd compression (Zarr) and dictionary appends (Polars) are extremely fast ($< 2 \text{ ms}$). An asynchronous queue would introduce complex multi-threading race conditions and buffer-bloat debugging overhead that isn't justified until FPS drops below the target threshold.

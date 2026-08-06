@@ -18,15 +18,15 @@ Flora within PHIDS are stationary entities on the grid that produce the resource
 
 ### Multi-Scale Modulo-Gated Growth
 
-Flora grow photosynthetically according to their species-specific baseline rate ($g_j$), capped at $E_{\text{max}, j}$. Rather than evaluating photosynthetic accumulation on every hourly tick ($\Delta \tau = 1\text{ hour}$), PHIDS evaluates plant growth on the **Slow Loop (Weekly Stride / 168 Ticks)**:
+In nature, plants do not grow visibly every single second; vegetative cell division and root extension are slow, metabolically expensive processes governed by seasonal and daily light cycles. Attempting to simulate this on a microscopic, second-by-second scale in a computer forces it to calculate infinitesimally small fractions (like growing 0.00005 leaves per tick). Computers struggle with numbers this small—a phenomenon known as floating-point underflow—which causes massive performance crashes.
+
+To solve this, PHIDS batches plant growth. Rather than growing tiny amounts every tick, plants save up their growth and apply it all at once during a **Slow Loop** (e.g., once every 168 ticks, simulating a weekly cycle). This perfectly matches biological reality while keeping the simulation running at maximum speed.
+
+Mathematically, flora grow photosynthetically according to their species-specific baseline rate ($g_j$), capped at $E_{\text{max}, j}$. The batched evaluation equation is:
 
 $$\Delta E_{\text{plant}} = E_{\text{base}} \times \left(\frac{g_j}{100}\right) \times \text{SLOW\_TICK\_STRIDE}$$
 
-#### Biophysical & Mathematical Rationale
-
-The decision to gate vegetative growth strictly to a coarse, periodic slow-loop execution stride ($168$ ticks, mapping to a diurnal/weekly simulation horizon) reconciles profound biophysical realities with strict hardware execution limits. Biologically, vegetative cell division, root extension, and carbohydrate accumulation are metabolically expensive processes governed by seasonal and daily actinic light availability; they do not unfold uniformly across instantaneous hourly bounds.
-
-From a mathematical and hardware optimization standpoint, calculating an hourly incremental expansion forces the calculation of infinitesimal floating-point quantities (e.g., fractional caloric increments of $\approx 0.00005$ units per tick). These infinitesimals frequently cross the IEEE 754 single-precision subnormal threshold. Operating within the subnormal floating-point regime causes vector processing units (FPUs) to stall, forcing the processor to trap into slow ALU microcode to prevent arithmetic underflow. By batching metabolic growth accumulation, PHIDS maintains operations well above the epsilon boundary, ensuring uninterrupted parallel vector execution. Furthermore, deferring these state modifications prevents cache line invalidation during the hot inner-loops of the spatial interaction phases, yielding deterministic scaling with over $93.7\%$ L1/L3 cache coherency.
+By batching metabolic growth accumulation, PHIDS maintains operations well above the floating-point subnormal boundary, ensuring uninterrupted parallel vector execution in the CPU. Furthermore, deferring these state modifications prevents cache line invalidation during the fast-paced inner-loops of the simulation (like bugs moving), yielding deterministic scaling with over $93.7\%$ L1/L3 cache coherency.
 
 ---
 
@@ -40,21 +40,21 @@ A plant cannot self-starve to drop a seed. The plant's energy minus the seed cos
 
 ---
 
-### $O(1)$ Stochastic Polar Seed Dispersal
+### Stochastic Polar Seed Dispersal
 
-Legacy computational models simulate reproductive dispersal by continuously integrating complex ballistic drag, computing drop height matrices, and calculating terminal velocity arrays using an $O(N \times r^2)$ grid spatial convolution. However, allocating dynamic mass arrays during just-in-time execution heavily fragments the L3 cache, severely degrading performance.
+When a plant releases seeds into the air, we intuitively know what happens: the wind picks them up, blows them in a general direction, and turbulence scatters them a bit left or right before they hit the ground. Many simulators try to calculate the exact aerodynamics, drag, and gravity for every single seed. This is computationally disastrous and entirely unnecessary for ecological scaling.
 
-PHIDS resolves this computational bottleneck by projecting anemochorous dispersal via an **$O(1)$ Stochastic Polar Algorithm**, synthesizing advective aerodynamic drift with localized Gaussian turbulence directly into the discrete Cartesian lattice. The process is defined mathematically as follows:
+Instead, PHIDS resolves seed dispersal using a fast, one-step mathematical shortcut (an **$O(1)$ Stochastic Polar Algorithm**) that perfectly mimics this natural chaos without simulating the physics of the fall.
 
-First, a discrete scalar radial distance $d$ is stochastically sampled from the configured genetic bounds:
+First, the engine randomly picks a distance $d$ based on how far the plant's seeds can theoretically fly:
 $$d \sim U(d_{\min}, d_{\max})$$
 
-Next, the mean advective atmospheric trajectory is resolved. If the local wind velocity matrix detects momentum ($\left\| \mathbf{w} \right\| > 10^{-9}$), the engine computes a normalized directional wind vector $\mathbf{u} = \frac{\mathbf{w}}{\left\| \mathbf{w} \right\|}$. During calm, isotropic conditions, the vector defaults to a uniformly distributed polar azimuth $\theta \sim U(0, 2\pi)$.
+Next, it checks the local wind. If the wind is blowing, it creates a directional vector $\mathbf{u}$. If it's totally calm, it just picks a random compass direction $\theta \sim U(0, 2\pi)$.
 
-To model the chaotic, non-linear atmospheric boundary layer, a turbulent perpendicular scatter factor is sampled from a zero-mean normal distribution scaled by the primary dispersal distance:
+To model the chaotic tumbling through the air (turbulence), it adds a random perpendicular sideways drift, scaled by how far the seed is flying (longer flights mean more time to drift off course):
 $$\delta_{\perp} \sim \mathcal{N}(0, \sigma_{\perp}^2) \quad \text{where } \sigma_{\perp} = \max(0.15, 0.35 \cdot d)$$
 
-The final landing coordinate is computationally mapped back into discrete Cartesian space via rotation and integer truncation:
+Finally, this flight path is mapped back onto the discrete grid, landing the seed at a specific coordinate:
 $$x_{\text{target}} = \lfloor x_0 + d \cdot u_x - \delta_{\perp} \cdot u_y \rceil$$
 $$y_{\text{target}} = \lfloor y_0 + d \cdot u_y + \delta_{\perp} \cdot u_x \rceil$$
 

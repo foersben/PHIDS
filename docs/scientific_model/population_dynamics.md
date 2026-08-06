@@ -27,7 +27,9 @@ Instead of modeling the populations of foxes and rabbits continuously via Ordina
 
 ### 1. Metabolic Attrition
 
-Swarms continuously deplete their stored energy ($E_i$) proportional to their population size ($N_i$).
+In a natural ecosystem, starvation is not a delayed, all-or-nothing event. A swarm of 100 insects needs a strict number of calories every day just to keep their collective hearts beating and wings flapping. If they only find enough food to support 90 insects, 10 insects will immediately perish.
+
+To model this, swarms continuously deplete their stored energy ($E_i$) proportional to their population size ($N_i$).
 
 Let $m_i$ be the species-specific metabolic upkeep rate per individual per tick.
 

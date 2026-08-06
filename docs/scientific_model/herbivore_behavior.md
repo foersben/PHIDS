@@ -18,28 +18,22 @@ Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Th
 
 ## 1. Locomotion & Probabilistic Sampling
 
-Swarms do not move in absolute straight lines toward a distant target. When sampling their Moore Neighborhood $\mathcal{N}(x,y)$ against the unified Flow Field $F_t$, they utilize **probabilistic softmax-like weighting**.
+In real ecological systems, individuals in a herd do not possess perfect information. If 1,000 herbivores all determined that coordinate (5,5) had the absolutely perfect combination of food and safety, and all moved there simultaneously, they would form a physically impossible singularity. To model the "diffuse foraging fronts" observed in grazing animals or insects, the swarm as a whole moves *generally* toward the target, but individual entities exhibit slight, chaotic variations.
 
-### Biological Rationale
-
-In real ecological systems, individuals in a herd do not possess perfect information. If 1,000 herbivores all determined that coordinate (5,5) had the absolute highest gradient mathematically, and all moved there simultaneously, they would form a physically impossible singularity. By using probabilistic sampling weighted heavily toward the gradient peak, PHIDS naturally models the "diffuse foraging fronts" observed in grazing animals or hymenoptera (insects). The swarm as a whole moves *generally* toward the target, but individual entities exhibit slight variations.
+To achieve this computationally, swarms do not move in absolute straight lines toward a distant target. When sampling their Moore Neighborhood $\mathcal{N}(x,y)$ against the unified Flow Field $F_t$, they utilize **probabilistic softmax-like weighting**. By using probabilistic sampling weighted heavily toward the gradient peak, PHIDS naturally prevents unnatural swarming behavior while remaining mathematically robust.
 
 ## 2. Inertial Persistence (The Orthokinetic Rule)
 
-A critical edge case occurs when the entire gradient is flat (values $< 1 \times 10^{-6}$). This implies the swarm is outside the sensory horizon of any plant or toxin.
+An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature. This directional persistence is biologically known as *orthokinesis*.
 
-If gradient ascent alone drove the system, the swarm would halt completely.
+A critical edge case occurs in the engine when the entire gradient is mathematically flat (values $< 1 \times 10^{-6}$). This implies the swarm is entirely outside the sensory horizon of any plant or toxin. If gradient ascent alone drove the system, the swarm would halt completely.
 
 ### Algorithmic Resolution
 
-When $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
+To prevent unnatural paralysis when $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
 
 * A 10:1 preference weight is given to continue moving in the current heading.
-* If no previous heading exists, isotropic random dispersal (Random Walk) is applied.
-
-### Biological Rationale
-
-This emulates *orthokinesis*-directional persistence. An animal searching a barren landscape does not spin in circles; it maintains a general heading until it intersects a new scent trail or geographic feature.
+* If no previous heading exists, isotropic random dispersal (Random Walk) is applied until a new scent gradient is found.
 
 ## 3. Capacity Limits & Physical Repulsion
 

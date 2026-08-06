@@ -35,6 +35,38 @@ PHIDS establishes a strict barrier between the simulation currently under constr
 
 The administrative control center intentionally avoids the complexity of a Single Page Application (SPA) like React or Vue. By leveraging HTMX, server-side Jinja templates directly replace DOM fragments in response to user events.
 
+```mermaid
+flowchart LR
+    %% Base Styling
+    classDef browser fill:#0f172a, stroke:#38bdf8, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef htmx fill:#312e81, stroke:#818cf8, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef fastapi fill:#14532d, stroke:#4ade80, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef ws fill:#701a75, stroke:#f472b6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+
+    subgraph Client ["Client Browser"]
+        UI["HTML DOM UI"]:::browser
+        HTMX["HTMX Interceptor"]:::htmx
+        JS["Canvas Rendering JS"]:::browser
+    end
+
+    subgraph Server ["FastAPI Backend"]
+        REST["REST Endpoints<br/>(Draft Mutations)"]:::fastapi
+        JINJA["Jinja2 Templates"]:::fastapi
+        WS_MGR["WebSocket Manager<br/>(Live Streaming)"]:::ws
+    end
+
+    UI -- "User Clicks (hx-post)" --> HTMX
+    HTMX -- "HTTP POST" --> REST
+    REST -- "Renders HTML" --> JINJA
+    JINJA -- "Returns HTML Snippet" --> HTMX
+    HTMX -- "Swaps DOM Elements" --> UI
+
+    WS_MGR -- "Compressed Binary State (60FPS)" --> JS
+    JS -- "Draws to Screen" --> UI
+```
+
+This dual-channel architecture strictly isolates administrative interactions from ecological rendering. When an operator edits the `DraftState` (e.g., adding a new plant species), the interaction is handled by standard HTTP POST requests. HTMX intercepts the form submission, sends it to the FastAPI REST endpoint, and Jinja2 returns a tiny HTML snippet to seamlessly update the UI without reloading the page. Conversely, the live visual representation of the simulation bypasses HTTP entirely. The engine blasts compressed binary frames at 60 FPS over a WebSocket directly to the client's `<canvas>`, preventing the massive memory overhead that would occur if we tried to represent thousands of entities as HTML DOM elements.
+
 ### Live Simulation Dashboard
 
 The live dashboard is the primary view for observing an actively running simulation. It features a real-time rendered `<canvas>` grid depicting spatial entities (Flora, Swarms, signals, toxins).

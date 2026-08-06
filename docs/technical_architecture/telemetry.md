@@ -38,6 +38,40 @@ Simultaneous to metric tracking, PHIDS serializes continuous-field representatio
 
 When the `zarr` package is installed and `replay_backend = "zarr"` is requested, PHIDS leverages a high-performance chunked columnar storage model:
 
+```mermaid
+flowchart LR
+    %% Base Styling
+    classDef memory fill:#1E293B, stroke:#3B82F6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef process fill:#047857, stroke:#34D399, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef storage fill:#9333EA, stroke:#C084FC, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+
+    subgraph Memory ["Live Tick Engine State"]
+        F1["NumPy Plant Energy"]:::memory
+        F2["NumPy Signal VOCs"]:::memory
+        F3["TickMetrics Payload"]:::memory
+    end
+
+    subgraph Serialization ["Zarr Compression Pipeline"]
+        Z1["Subnormal Float Truncation<br/>(Mask < 1e-4)"]:::process
+        Z2["Zstandard (Zstd) Compression"]:::process
+        Z3["JSON Metadata Aggregation"]:::process
+        F2 --> Z1 --> Z2
+        F1 --> Z2
+        F3 --> Z3
+    end
+
+    subgraph Disk ["File System (.zarr/)"]
+        D1["/frames/00000001/plant_energy<br/>(Chunked Array)"]:::storage
+        D2["/frames/00000001/signal_layers<br/>(Chunked Array)"]:::storage
+        D3["/_metadata<br/>(Consolidated Tick Logs)"]:::storage
+        Z2 --> D1
+        Z2 --> D2
+        Z3 --> D3
+    end
+```
+
+The flowchart demonstrates how PHIDS achieves its high-throughput logging. Rather than dumping raw memory to disk, the engine pipelines the data. Continuous float arrays (like plant energy and signals) are masked to prevent subnormal floats, compressed via Zstandard, and written to chunked directories. Concurrently, discrete scalar metrics (like populations and death causes) are aggregated into a single JSON metadata file. This ensures that when scientists later analyze the replay, they do not have to load the entire simulation into memory just to check a few frames or conditions.
+
 * **Chunked Group Layout**: Frames are persisted directly to disk inside a `.zarr` directory structured as `frames/{frame_idx:08d}/{field_name}`.
 * **Consolidated Metadata**: High-frequency metadata (tick, termination state, reason) is written in a single consolidated JSON array (`_metadata`) at the root, enabling rapid seeking and boundary checks without decompressing spatial field chunks.
 * **Zstd Compression**: Field chunks are compressed using Zstandard, providing superior compression ratios and read/write speeds for dense floating-point grids.
