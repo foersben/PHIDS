@@ -56,6 +56,7 @@ from phids.api.routers import (
 )
 from phids.api.ui_state.state import DraftState, get_draft
 from phids.api.websockets import SimulationStreamManager, UIStreamManager
+from phids.engine.core.grid_utils import is_power_of_two
 from phids.shared.logging_config import configure_logging
 
 if TYPE_CHECKING:
@@ -75,6 +76,7 @@ _TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
 
 templates = Jinja2Templates(directory=str(_TEMPLATE_DIR))
+templates.env.globals["is_power_of_two"] = is_power_of_two
 
 app = FastAPI(
     title="PHIDS - Plant-Herbivore Interaction & Defense Simulator",

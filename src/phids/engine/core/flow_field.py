@@ -91,6 +91,24 @@ def _sum_neighbours_jit(
 
 
 @njit(cache=True)
+def _sum_neighbours_jit_pow2(
+    x: int,
+    y: int,
+    mask_x: int,
+    mask_y: int,
+    current: npt.NDArray[np.float64],
+) -> tuple[float, int]:
+    """Helper function to sum the neighbours of a cell using bitwise AND masking."""
+    neighbours_sum = (
+        current[(x - 1) & mask_x, y]
+        + current[(x + 1) & mask_x, y]
+        + current[x, (y - 1) & mask_y]
+        + current[x, (y + 1) & mask_y]
+    )
+    return neighbours_sum, 4
+
+
+@njit(cache=True)
 def _propagate_iteration_jit(
     width: int,
     height: int,
@@ -272,6 +290,88 @@ def _propagate_boundaries_jit(
 
 
 @njit(cache=True)
+def _update_boundary_x_jit_pow2(
+    x: int,
+    height: int,
+    mask_x: int,
+    mask_y: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    max_diff = 0.0
+    n_sum, _ = _sum_neighbours_jit_pow2(x, 0, mask_x, mask_y, current)
+    val = base[x, 0] + (decay * n_sum * 0.25)
+    nxt[x, 0] = val
+    diff1 = abs(val - current[x, 0])
+    if diff1 > max_diff:
+        max_diff = diff1
+
+    n_sum, _ = _sum_neighbours_jit_pow2(x, height - 1, mask_x, mask_y, current)
+    val = base[x, height - 1] + (decay * n_sum * 0.25)
+    nxt[x, height - 1] = val
+    diff2 = abs(val - current[x, height - 1])
+    if diff2 > max_diff:
+        max_diff = diff2
+    return max_diff
+
+
+@njit(cache=True)
+def _update_boundary_y_jit_pow2(
+    y: int,
+    width: int,
+    mask_x: int,
+    mask_y: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    max_diff = 0.0
+    n_sum, _ = _sum_neighbours_jit_pow2(0, y, mask_x, mask_y, current)
+    val = base[0, y] + (decay * n_sum * 0.25)
+    nxt[0, y] = val
+    diff1 = abs(val - current[0, y])
+    if diff1 > max_diff:
+        max_diff = diff1
+
+    n_sum, _ = _sum_neighbours_jit_pow2(width - 1, y, mask_x, mask_y, current)
+    val = base[width - 1, y] + (decay * n_sum * 0.25)
+    nxt[width - 1, y] = val
+    diff2 = abs(val - current[width - 1, y])
+    if diff2 > max_diff:
+        max_diff = diff2
+    return max_diff
+
+
+@njit(cache=True)
+def _propagate_boundaries_jit_pow2(
+    width: int,
+    height: int,
+    mask_x: int,
+    mask_y: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+) -> float:
+    max_diff = 0.0
+
+    for x in range(width):
+        d = _update_boundary_x_jit_pow2(x, height, mask_x, mask_y, decay, base, current, nxt)
+        if d > max_diff:
+            max_diff = d
+
+    for y in range(1, height - 1):
+        d = _update_boundary_y_jit_pow2(y, width, mask_x, mask_y, decay, base, current, nxt)
+        if d > max_diff:
+            max_diff = d
+
+    return max_diff
+
+
+@njit(cache=True)
 def _propagate_inner_jit(
     width: int,
     height: int,
@@ -355,8 +455,15 @@ def _compute_flow_field_impl(
 
     # Iterative propagation lets attraction/repulsion travel multiple hops.
     max_iterations = width + height
+    is_pow2 = (width > 0 and (width & (width - 1)) == 0) and (height > 0 and (height & (height - 1)) == 0)
+    mask_x = width - 1
+    mask_y = height - 1
+
     for _ in range(max_iterations):
-        diff_boundaries = _propagate_boundaries_jit(width, height, decay, base, current, nxt)
+        if is_pow2:
+            diff_boundaries = _propagate_boundaries_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt)
+        else:
+            diff_boundaries = _propagate_boundaries_jit(width, height, decay, base, current, nxt)
         diff_inner = _propagate_inner_jit(width, height, decay, base, current, nxt)
 
         max_diff = diff_boundaries if diff_boundaries > diff_inner else diff_inner

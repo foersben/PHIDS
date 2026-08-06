@@ -66,6 +66,35 @@ def _gather_neighbours_jit(
 
 
 @njit(cache=True)
+def _gather_neighbours_jit_pow2(
+    x: int,
+    y: int,
+    mask_x: int,
+    mask_y: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+) -> int:
+    """Numba-compiled helper function to gather neighbours using bitwise AND masking."""
+    c_x[0] = x
+    c_y[0] = y
+    count = 1
+
+    c_x[count] = (x - 1) & mask_x
+    c_y[count] = y
+    count += 1
+    c_x[count] = (x + 1) & mask_x
+    c_y[count] = y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y - 1) & mask_y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y + 1) & mask_y
+    count += 1
+    return count
+
+
+@njit(cache=True)
 def _flat_field_choice_jit(
     count: int,
     x: int,
@@ -209,7 +238,11 @@ def _choose_neighbour_by_flow_probability_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
+    is_pow2 = (width > 0 and (width & (width - 1)) == 0) and (height > 0 and (height & (height - 1)) == 0)
+    if is_pow2:
+        count = _gather_neighbours_jit_pow2(x, y, width - 1, height - 1, c_x, c_y)
+    else:
+        count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
 
     for i in range(count):
         scores[i] = flow_field[c_x[i], c_y[i]]
