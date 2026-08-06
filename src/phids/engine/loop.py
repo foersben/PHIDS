@@ -32,6 +32,7 @@ from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
+from phids.engine.systems.signaling.types import CompiledTrigger
 from phids.io.zarr_replay import ReplayBuffer, ReplayState
 from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.shared.logging_config import get_simulation_debug_interval
@@ -45,7 +46,6 @@ if TYPE_CHECKING:
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
     )
-    from phids.api.schemas.triggers import TriggerConditionSchema
 
 
 class _ReplayBackend(Protocol):
@@ -186,8 +186,17 @@ class SimulationLoop:
         self._herbivore_params: dict[int, HerbivoreSpeciesParams] = {
             sp.species_id: sp for sp in config.herbivore_species
         }
-        self._trigger_conditions: dict[int, list[TriggerConditionSchema]] = {
-            sp.species_id: list(sp.triggers) for sp in config.flora_species
+        self._trigger_conditions: dict[int, list[CompiledTrigger]] = {
+            sp.species_id: [
+                CompiledTrigger(
+                    schema=trig,
+                    activation_condition_dump=trig.activation_condition.model_dump(mode="json")
+                    if trig.activation_condition is not None
+                    else None,
+                )
+                for trig in sp.triggers
+            ]
+            for sp in config.flora_species
         }
         self._diet_matrix: list[list[bool]] = config.diet_matrix.rows
 

@@ -26,6 +26,7 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.signaling import run_signaling
+from phids.engine.systems.signaling.types import CompiledTrigger
 
 
 def test_digestibility_modulation_scales_metabolized_energy() -> None:
@@ -147,15 +148,21 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
     world.add_component(swarm_eid.entity_id, swarm)
     world.register_position(swarm_eid.entity_id, 2, 2)
 
+    trigger_schema = TriggerConditionSchema(
+        initiator=HerbivoreAttackInitiator(
+            herbivore_species_id=0,
+            min_herbivore_population=5,
+        ),
+        aftereffect_ticks=10,
+        action=ResourceWithdrawalAction(apparent_nutrition_factor=0.1, withdrawal_duration=2),
+    )
     trigger_conditions = {
         0: [
-            TriggerConditionSchema(
-                initiator=HerbivoreAttackInitiator(
-                    herbivore_species_id=0,
-                    min_herbivore_population=5,
-                ),
-                aftereffect_ticks=10,
-                action=ResourceWithdrawalAction(apparent_nutrition_factor=0.1, withdrawal_duration=2),
+            CompiledTrigger(
+                schema=trigger_schema,
+                activation_condition_dump=trigger_schema.activation_condition.model_dump(mode="json")
+                if trigger_schema.activation_condition
+                else None,
             )
         ]
     }

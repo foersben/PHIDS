@@ -5,9 +5,21 @@
 
 from __future__ import annotations
 
-from typing import TypedDict
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    from phids.api.schemas.triggers import TriggerConditionSchema
 
 type ActivationNode = dict[str, object]
+
+
+@dataclass(slots=True)
+class CompiledTrigger:
+    """Pre-evaluated trigger rule caching its JSON-serialised condition structure."""
+
+    schema: TriggerConditionSchema
+    activation_condition_dump: dict[str, object] | None
 
 
 class _ActiveToxinProps(TypedDict):

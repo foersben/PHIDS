@@ -42,15 +42,15 @@ from phids.engine.systems.signaling.synthesis import _phase_advance_synthesis
 from phids.engine.systems.signaling.triggers import _phase_evaluate_triggers
 
 if TYPE_CHECKING:
-    from phids.api.schemas.triggers import TriggerConditionSchema
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
+    from phids.engine.systems.signaling.types import CompiledTrigger
 
 
 def run_signaling(
     world: ECSWorld,
     env: GridEnvironment,
-    trigger_conditions: dict[int, list[TriggerConditionSchema]],
+    trigger_conditions: dict[int, list[CompiledTrigger]],
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
     tick: int,  # noqa: ARG001
