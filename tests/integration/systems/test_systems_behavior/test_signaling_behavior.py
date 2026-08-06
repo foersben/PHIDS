@@ -20,6 +20,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.signaling import run_signaling
+from phids.engine.systems.signaling.types import CompiledTrigger
 from phids.shared.constants import SUBSTANCE_EMIT_RATE
 
 if TYPE_CHECKING:
@@ -49,7 +50,21 @@ def test_signaling_spawns_configured_toxin_and_applies_properties(
         ),
     )
     run_signaling(
-        world, env, trigger_conditions={0: [trigger]}, mycorrhizal_inter_species=False, signal_velocity=1, tick=0
+        world,
+        env,
+        trigger_conditions={
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
     )
     subs = [e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent)]
     assert len(subs) == 1
@@ -77,7 +92,21 @@ def test_signaling_aggregates_co_located_swarm_population_for_trigger_threshold(
         action=SynthesizeSubstanceAction(substance_id=1, synthesis_duration=1, is_toxin=True),
     )
     run_signaling(
-        world, env, trigger_conditions={0: [trigger]}, mycorrhizal_inter_species=False, signal_velocity=1, tick=0
+        world,
+        env,
+        trigger_conditions={
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
     )
     subs = [e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent)]
     assert len(subs) == 1
@@ -99,12 +128,40 @@ def test_signaling_toxin_deactivates_when_trigger_species_is_gone(
         action=SynthesizeSubstanceAction(substance_id=1, synthesis_duration=1, is_toxin=True),
     )
     run_signaling(
-        world, env, trigger_conditions={0: [trigger]}, mycorrhizal_inter_species=False, signal_velocity=1, tick=0
+        world,
+        env,
+        trigger_conditions={
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=0,
     )
     world.unregister_position(triggering_swarm_id, 2, 2)
     world.collect_garbage([triggering_swarm_id])
     run_signaling(
-        world, env, trigger_conditions={0: [trigger]}, mycorrhizal_inter_species=False, signal_velocity=1, tick=1
+        world,
+        env,
+        trigger_conditions={
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        mycorrhizal_inter_species=False,
+        signal_velocity=1,
+        tick=1,
     )
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
@@ -124,13 +181,61 @@ def test_signaling_toxin_lingers_for_aftereffect_then_deactivates(
         aftereffect_ticks=2,
         action=SynthesizeSubstanceAction(substance_id=1, synthesis_duration=1, is_toxin=True),
     )
-    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        0,
+    )
     world.unregister_position(swarm_id, 2, 2)
     world.collect_garbage([swarm_id])
-    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        1,
+    )
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is True
-    run_signaling(world, env, {0: [trigger]}, False, 1, 2)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        2,
+    )
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
 
@@ -148,10 +253,42 @@ def test_signaling_irreversible_toxin_stays_active_after_trigger_loss(
         aftereffect_ticks=0,
         action=SynthesizeSubstanceAction(substance_id=1, synthesis_duration=1, is_toxin=True, irreversible=True),
     )
-    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        0,
+    )
     world.unregister_position(swarm_id, 2, 2)
     world.collect_garbage([swarm_id])
-    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        1,
+    )
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is True
     assert sub.triggered_this_tick is True
@@ -172,7 +309,23 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately(
             substance_id=1, synthesis_duration=1, is_toxin=True, lethal=True, lethality_rate=100.0
         ),
     )
-    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        0,
+    )
     assert list(world.query(SwarmComponent)) == []
     assert not world.has_entity(swarm_id)
 
@@ -195,7 +348,23 @@ async def test_signaling_relay_splits_fixed_budget_across_air_and_roots(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=1),
         action=SynthesizeSubstanceAction(substance_id=0, synthesis_duration=1, is_toxin=False),
     )
-    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        0,
+    )
     total_signal_mass = float(env.signal_layers[0].sum())
     assert total_signal_mass == pytest.approx(SUBSTANCE_EMIT_RATE)
 
@@ -217,7 +386,23 @@ def test_signaling_aborts_incomplete_synthesis_when_trigger_leaves(
     )
 
     # Tick 0: Trigger fires, synthesis starts (synthesis_remaining decrements from 3 to 2)
-    run_signaling(world, env, {0: [trigger]}, False, 1, 0)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        0,
+    )
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
     assert sub.synthesis_remaining == 2
@@ -228,7 +413,23 @@ def test_signaling_aborts_incomplete_synthesis_when_trigger_leaves(
     world.collect_garbage([swarm_id])
 
     # Tick 1: Threat is gone. Incomplete synthesis must be aborted and synthesis_remaining cleared.
-    run_signaling(world, env, {0: [trigger]}, False, 1, 1)
+    run_signaling(
+        world,
+        env,
+        {
+            0: [
+                CompiledTrigger(
+                    schema=trigger,
+                    activation_condition_dump=trigger.activation_condition.model_dump(mode="json")
+                    if trigger.activation_condition is not None
+                    else None,
+                )
+            ]
+        },
+        False,
+        1,
+        1,
+    )
     sub = next(e.get_component(SubstanceComponent) for e in world.query(SubstanceComponent))
     assert sub.active is False
     assert sub.synthesis_remaining == 0
