@@ -110,17 +110,38 @@ The naive continuous mathematical alternative assumes that a population splits p
 * **Kin Competition and Local Overgrazing:** In real-world plant-herbivore dynamics, reproducing insects or micro-pathogens do not occupy the exact same physical space as their parental colony without causing catastrophic local resource failure.
 * **Dispersal Phase:** Forcing an immediate step into an adjacent cell models an *active dispersal phase*. It ensures that offspring immediately attempt to exploit neighboring vegetation resources, realistically simulating the outward expansion of a foraging front across a plant canopy or meadow.
 
-## Numerical Example
+## 4. Formal Numerical Example of Mitosis
 
-Imagine a swarm of 10 herbivores with a baseline upkeep $m_i = 1.0$ and a reproduction cost $c_i = 5.0$.
+To concretize this metabolic calculus, consider a discrete swarm composed of 10 herbivore individuals characterized by a baseline baseline upkeep $m_i = 1.0$ and a reproduction cost $c_i = 5.0$. During the feeding phase, the swarm fully consumes a plant entity, elevating its total energy pool $E_i$ to 35.0 units.
 
-1. **Feeding Phase:** The swarm eats a plant, bringing its total energy $E_i$ to **35.0**.
-2. **Metabolism Phase:** The swarm pays its upkeep ($10 \times 1.0 = 10.0$).
-3. **Surplus Calculation:** The swarm has $35.0 - 10.0 = 25.0$ surplus energy.
-4. **Reproduction:** The swarm converts the surplus into $\lfloor 25.0 / 5.0 \rfloor = 5$ new offspring.
-5. **Tick Conclusion:** The swarm ends the tick with a population of **15** and $0.0$ surplus energy.
+In the subsequent metabolism phase, the swarm must pay its survival upkeep ($10 \times 1.0 = 10.0$), leaving a net surplus of 25.0 energy units ($35.0 - 10.0 = 25.0$). This surplus is routed strictly into reproductive synthesis, converting into exactly 5 new offspring ($\lfloor 25.0 / 5.0 \rfloor = 5$).
 
-If $N_{split} = 15$, the swarm will divide into two swarms of 7 and 8 individuals. One swarm retains the parent's coordinate, while the daughter swarm is stochastically displaced to an adjacent cell to begin active dispersal.
+The swarm concludes the integration tick with an updated population of 15 and 0.0 remaining surplus energy. Should the species configuration define a mitosis threshold $N_{split} = 15$, this population triggers immediate cellular division. The swarm bifurcates into two distinct cohorts of 7 and 8 individuals respectively. To prevent a catastrophic spatial re-merge, the primary swarm retains the parental coordinate while the daughter swarm undergoes stochastic displacement to an adjacent cell to initiate active spatial dispersal.
+
+```mermaid
+flowchart TD
+    %% Base Styling & Theme Definitions
+    classDef parent fill:#1E293B, stroke:#3B82F6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef process fill:#312E81, stroke:#8B5CF6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef daughter fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef anchor fill:#78350F, stroke:#F59E0B, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+
+    A["<b>Parent Swarm (Pop: 15)</b><br/>Coordinate: (X, Y)"]:::parent
+
+    B["<b>Mitosis Triggered</b><br/>N >= N_split"]:::process
+
+    A --> B
+
+    C["<b>Primary Cohort (Pop: 8)</b><br/>Anchors at (X, Y)"]:::anchor
+    D["<b>Daughter Cohort (Pop: 7)</b><br/>Stochastic Spatial Displacement"]:::process
+
+    B --> C
+    B --> D
+
+    E["<b>Dispersed Daughter</b><br/>Coordinate: (X+1, Y)"]:::daughter
+
+    D --> E
+```
 
 ## Alternatives & Omissions
 
