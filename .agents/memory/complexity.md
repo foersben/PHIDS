@@ -50,3 +50,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 70 vs. < 15 (Target function completely cleared).
 * **Performance Assessment:** The benchmark `test_flow_field_generation_benchmark` showed a mean execution time of ~240µs, matching the baseline of ~235µs well within the expected environmental jitter (StdDev ~33µs vs ~15µs baseline), confirming that extracting cleanly typed `@njit` kernels inside the JIT compiler successfully inlines the functions with zero runtime abstraction penalty.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2026-08-05 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/telemetry.py` -> `export_telemetry_format`
+* **Selection Rationale:** The function had a cognitive complexity of 15 due to deep nesting of export-format-specific branches containing inline helper functions (closures). As an API endpoint handler, extracting the format logic into top-level async helper functions carries no engine performance risk while greatly flattening and simplifying the handler.
+* **Before/After Score:** 15 vs. 11
+* **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
