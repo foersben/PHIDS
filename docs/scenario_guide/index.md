@@ -48,9 +48,9 @@ graph TD
 
 ## Future Prospects
 
-* **[AI Coevolution & Distributed EEDSE Engine](../speculative_research/ai_coevolution_dse.md)**: Architecture for Ray/Tune + OptunaSearch distributed multi-objective Pareto optimization, AITL governance, and reinforcement learning swarm coevolution under EEDSE.
-* **[Agentic Diagnostic Log Writer](../speculative_research/agentic_log_writer.md)**: Specification for the AITL diagnostic observer logging systemic integrity.
-* **[Parameter Scaling & Calibration Strategy](../speculative_research/parameter_calibration_strategy.md)**: Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
+* **[AI Coevolution & Distributed EEDSE Engine](../scenario_guide/future_prospects/ai_coevolution_dse.md)**: Architecture for Ray/Tune + OptunaSearch distributed multi-objective Pareto optimization, AITL governance, and reinforcement learning swarm coevolution under EEDSE.
+* **[Agentic Diagnostic Log Writer](../scenario_guide/future_prospects/agentic_log_writer.md)**: Specification for the AITL diagnostic observer logging systemic integrity.
+* **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**: Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
 
 ### 1. Scenario Authoring & Schema
 

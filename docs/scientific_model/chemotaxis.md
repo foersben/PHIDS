@@ -40,11 +40,7 @@ $$
 G_t(x,y) = \alpha E_t(x,y) - \beta \sum_k T_{k,t}(x,y)
 $$
 
-Where:
-
-* $E_t(x,y)$ is the total plant energy available at the coordinate.
-* $T_{k,t}(x,y)$ is the concentration of the $k$-th toxin channel.
-* $\alpha, \beta$ are non-negative weighting constants.
+Within this baseline calculation, $E_t(x,y)$ represents the total accumulated plant energy available at the spatial coordinate, providing the foundational attraction. This is countered by $T_{k,t}(x,y)$, tracking the concentration of the $k$-th toxin channel present at that coordinate. The influence of these forces is scaled by the non-negative weighting constants $\alpha$ and $\beta$, representing attractant and repellent sensitivities respectively.
 
 To create an "influence map" that swarms can detect from a short distance away, this baseline gradient undergoes a rapid, one-pass local propagation (spreading) with a steep decay coefficient $\delta$ (e.g., $0.5$).
 
@@ -62,16 +58,43 @@ Imagine a swarm at center coordinate `(1, 1)` evaluating its Von-Neumann neighbo
 
 ### Flow Field Segment (Orthogonal Only)
 
+Consider the Von-Neumann neighborhood evaluations for the swarm:
+
 * **North `(1, 0)`**: 1.2
 * **South `(1, 2)`**: 0.4
 * **East `(2, 1)`**: 1.5
 * **West `(0, 1)`**: 0.1
 * **Center `(1, 1)`**: 0.8
 
-1. The swarm extracts the 5 relevant scalars.
-2. It shifts the values relative to the local minimum (`0.1`) and applies a small epsilon (`1e-6`) to ensure non-zero weights for all valid moves.
-3. The adjusted weights formulate a discrete probability distribution. The East cell (`1.5`) holds the highest statistical probability of being selected, but the North cell (`1.2`) and Center cell (`0.8`) remain highly viable options.
-4. A random sample is drawn from the distribution, determining the transition.
+Upon extracting these five relevant scalars, the swarm shifts the values relative to the local minimum (in this case, 0.1) and applies a small computational epsilon (`1e-6`). This normalization guarantees non-zero weights for all valid transitional states. The adjusted weights coalesce into a discrete probability distribution. While the East cell (1.5) mathematically commands the highest statistical probability of selection, the North cell (1.2) and the stationary Center cell (0.8) remain highly viable options within the probabilistic draw. A random sample is then drawn from this normalized distribution to determine the actual transition.
+
+```mermaid
+flowchart TD
+    %% Base Styling & Theme Definitions
+    classDef base fill:#1E293B, stroke:#3B82F6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef reject fill:#3F2723, stroke:#E53935, stroke-width:2px, stroke-dasharray: 5 5, color:#F8FAFC, rx:8px, ry:8px
+    classDef accept fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+
+    A["<b>Swarm Evaluates Field</b><br/>Extract 5 Neighbors"]:::base
+
+    subgraph Deterministic ["Deterministic Convergence (Rejected)"]
+        D1["arg max F_t(u,v)"]:::reject
+        D2["Always chooses East (1.5)"]:::reject
+        D3["Result: Unnatural single-file 'conga lines'"]:::reject
+        D1 --> D2 --> D3
+    end
+
+    subgraph Probabilistic ["Probabilistic Taxis (Accepted)"]
+        P1["Normalize relative to min (0.1)"]:::accept
+        P2["Apply epsilon (1e-6)"]:::accept
+        P3["Stochastic draw from weighted distribution"]:::accept
+        P4["Result: Organic dispersion (klinokinesis)"]:::accept
+        P1 --> P2 --> P3 --> P4
+    end
+
+    A --> D1
+    A --> P1
+```
 
 If the center cell `(1,1)` had an overwhelmingly dominant value (e.g., the swarm is currently situated on a high-energy plant), the probability distribution collapses heavily onto the center cell, an act defined as **Anchoring**.
 

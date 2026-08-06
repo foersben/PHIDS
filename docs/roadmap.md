@@ -211,7 +211,7 @@ To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB)
 4. **Biologically Authenticated Cost Function**:
     * **Why**: To filter out optimization results that are mathematically optimal but biologically dead-ends.
     * **How**: Evaluate scenarios via multi-objective fitness $J_{\text{eco}} = w_1 S_{\text{LV}} + w_2 D_{\text{bio}} + w_3 P_{\text{thermo}}$, rewarding limit cycle stability while penalizing empirical parameter drift and thermodynamic violations.
-    * *Detailed Reference*: [Empirical Parameter Calibration Strategy](speculative_research/parameter_calibration_strategy.md).
+    * *Detailed Reference*: [Empirical Parameter Calibration Strategy](scientific_model/future_prospects/parameter_calibration_strategy.md).
 
 ### 5.3 Evolutionary Arms Race & Dynamic Gene Mutation Solvers
 
@@ -222,7 +222,7 @@ To bridge raw open-access databases (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB)
 
 * **Target**: Integrate an asynchronous, non-blocking telemetry observer agent (`dse-log-observer`) to audit active DSE trajectories and detect systemic simulator distortions under a high-precision ($\ge 0.95$ confidence) policy.
 * **Why**: Prevents developer warning fatigue while catching Buckingham $\Pi$ conversion errors, allometric scaling mismatches ($BMR \propto M^{0.75}$), and heuristic solver disconnects before unphysical local minima corrupt scenario discovery.
-* **Implementation & References**: Integrated via MCP tools (`query_diagnostic_logs`, `inspect_telemetry_schema`, `runtime_snapshot`). Detailed reference: [Agentic Log Writer Guide](speculative_research/agentic_log_writer.md).
+* **Implementation & References**: Integrated via MCP tools (`query_diagnostic_logs`, `inspect_telemetry_schema`, `runtime_snapshot`). Detailed reference: [Agentic Log Writer Guide](scenario_guide/future_prospects/agentic_log_writer.md).
 
 ### 5.5 Speculative Granularity & Reality Neglectables
 

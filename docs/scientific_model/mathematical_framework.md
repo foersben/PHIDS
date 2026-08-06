@@ -212,13 +212,7 @@ In analytical chemical ecology, an organism's sensory orientation field is model
 
 $$F(\mathbf{r}) = \alpha E(\mathbf{r}) - \beta \sum_{k} T_k(\mathbf{r})$$
 
-Where:
-
-* $F(\mathbf{r})$: The scalar potential field value at spatial coordinate vector $\mathbf{r} = (x,y)$.
-* $E(\mathbf{r})$: The continuous caloric attraction potential field derived from plant energy sources (resource biomass).
-* $T_k(\mathbf{r})$: The continuous chemical repulsion potential field (concentration) for defensive toxin layer $k$.
-* $\alpha$: The positive coupling weight scaling attraction toward food resources.
-* $\beta$: The positive coupling weight scaling repulsion away from active toxins.
+In this formulation, $F(\mathbf{r})$ represents the scalar potential field value evaluated at a continuous spatial coordinate vector $\mathbf{r} = (x,y)$. The field is driven by the superposition of $E(\mathbf{r})$, the continuous caloric attraction potential derived from plant biomass, and a summation over $T_k(\mathbf{r})$, which denotes the continuous chemical repulsion potential for the $k$-th defensive toxin layer. The relative influences of these forces are governed by $\alpha$, a positive coupling weight scaling the organism's attraction toward food resources, and $\beta$, the coupling weight that scales repulsion away from active, localized toxins.
 
 Summing the toxins mathematically prevents "sensory masking," ensuring that overlapping toxic plants create a stronger aggregate deterrent.
 
@@ -228,13 +222,7 @@ To execute this within the constraints of an $O(1)$ spatial hash without continu
 
 $$F_t[x, y] = \alpha E_t[x, y] - \beta \sum_{k=1}^{N_T} T_{k,t}[x, y]$$
 
-Where:
-
-* $F_t[x, y]$: The discrete potential field value at grid coordinate cell $[x, y]$ at tick $t$.
-* $E_t[x, y]$: The discrete aggregate plant energy present at coordinate $[x, y]$ at tick $t$.
-* $T_{k,t}[x, y]$: The discrete concentration of toxin type $k$ at coordinate $[x, y]$ at tick $t$.
-* $N_T$: The total number of unique defensive toxin types/species tracked in the simulation.
-* $\alpha, \beta$: The positive coupling weight scalars.
+Transitioning to a discrete domain, $F_t[x, y]$ dictates the potential field value at grid cell $[x, y]$ during tick $t$. It is computed using $E_t[x, y]$, representing the discrete aggregate plant energy present at that coordinate, minus the aggregated repulsion from $T_{k,t}[x, y]$, which tracks the discrete concentration of the $k$-th toxin type. This aggregation spans $N_T$, the total number of unique defensive toxin types active in the ecosystem, and is modulated by the same positive coupling weights, $\alpha$ and $\beta$.
 
 ##### Implementation Rules for Flow Fields
 
@@ -246,12 +234,7 @@ A swarm selects its target transition from its local Moore neighborhood $\mathca
 
 $$(x',y') = \operatorname*{arg\,max}_{(u,v) \in \mathcal{N}(x,y)} F_t(u,v)$$
 
-Where:
-
-* $(x', y')$: The discrete target coordinate chosen for the swarm's next position.
-* $(x, y)$: The current discrete coordinate of the swarm entity.
-* $\mathcal{N}(x, y)$: The local Moore neighborhood representing the 8 surrounding cells and the current cell.
-* $F_t(u,v)$: The potential field value at candidate neighbor tile $(u, v)$ at tick $t$.
+Here, $(x', y')$ defines the discrete target coordinate chosen for the swarm's subsequent position, determined relative to its current coordinate $(x, y)$. The organism evaluates candidate locations over $\mathcal{N}(x, y)$, representing the local Moore neighborhood (the adjacent eight cells plus the center). The function seeks the spatial maximum of $F_t(u,v)$, the potential field value evaluated at each candidate neighbor tile $(u, v)$ during tick $t$.
 
 This baseline gradient-ascent is overridden by biological responses:
 
@@ -271,13 +254,7 @@ Energy transferred from plant $j$ to swarm $i$ with population $N_i$ and velocit
 
 $$\Delta E_{i\leftarrow j} = \min\left( \frac{r_i}{\max(1, v_i)} N_i, \; E_j \right)$$
 
-Where:
-
-* $\Delta E_{i\leftarrow j}$: The total energy quantity transferred from plant entity $j$ to herbivore swarm $i$ during the grazing interaction.
-* $r_i$: The consumption rate parameter (base bites taken per individual) of herbivore species $i$.
-* $v_i$: The current movement velocity of swarm $i$ (acting as a penalty to grazing dwell-time when moving fast).
-* $N_i$: The current population count of individuals in swarm $i$.
-* $E_j$: The current energy reserve of plant entity $j$.
+In this intake model, $\Delta E_{i\leftarrow j}$ quantifies the total energy transferred from the target plant entity $j$ to the grazing herbivore swarm $i$. The transfer is bottlenecked by $r_i$, the biological consumption rate (base bites taken per individual), scaled over the total population $N_i$. Crucially, intake is inversely penalized by $v_i$, the current movement velocity of the swarm, representing the reduction in physical grazing dwell-time when the herd is highly mobile. The ultimate extraction is rigidly bounded by $E_j$, ensuring that the swarm cannot consume more energy than is physically present in the plant.
 
 The velocity denominator accounts for reduced feeding dwell-time when moving rapidly.
 
@@ -286,11 +263,7 @@ The velocity denominator accounts for reduced feeding dwell-time when moving rap
 Swarms continuously deplete energy proportional to $N_i$. Deficits manifest as immediate casualties rather than delayed starvation events.
 Conversely, if surplus energy exceeds baseline requirements ($E_i^t > N_i E_{\text{min},i}$), it is converted into new individuals based on reproductive cost $\rho_i$. If $N_i$ reaches the configured split threshold, the entity undergoes mitosis, bifurcating into two independent swarms.
 
-Where:
-
-* $E_i^t$: The current total energy reserve of herbivore swarm $i$ at tick $t$.
-* $E_{\text{min},i}$: The minimum survival energy threshold per individual for herbivore species $i$.
-* $\rho_i$: The energy cost required to produce one new individual of herbivore species $i$.
+During metabolic evaluation, the model compares $E_i^t$, the current total energy reserve of the swarm at tick $t$, against its absolute requirement. This requirement is defined by $N_i E_{\text{min},i}$, where $E_{\text{min},i}$ is the minimum survival threshold per individual. Any caloric surplus surpassing this boundary is converted into new progeny, governed by $\rho_i$, the specific energy cost required to synthesize one new individual of the species.
 
 > **Deep Dive:** See [Population Dynamics vs. Continuous ODEs](population_dynamics.md) for an analysis of discrete modeling vs. continuous Lotka-Volterra implementations.
 
@@ -312,14 +285,7 @@ The physics of volatile organic compound (VOC) transport across a canopy through
 
 $$\frac{\partial C_s}{\partial t} = D_s \nabla^2 C_s - \lambda_s C_s + Q_s$$
 
-Where:
-
-* $C_s$: Concentration of signaling substance $s$.
-* $t$: Continuous time.
-* $D_s$: Diffusion coefficient for signaling substance $s$.
-* $\nabla^2$: The continuous Laplacian operator modeling spatial diffusion (dispersion).
-* $\lambda_s$: The continuous infinitesimal decay rate governing atmospheric clearance of substance $s$.
-* $Q_s$: The continuous mass emission function (source term) from active plants.
+Within this classical continuous system, $C_s$ represents the spatial concentration of signaling substance $s$ as it evolves over continuous time $t$. The dispersion of the plume is directed by the substance-specific diffusion coefficient $D_s$ applied against the Laplacian operator $\nabla^2$. Atmospheric clearance is dictated by $\lambda_s$, the continuous infinitesimal decay rate, while $Q_s$ serves as the source term, injecting new chemical mass into the field from actively emitting plant entities.
 
 #### The Numerical Mapping for Airborne Signals (Discrete Realization)
 
@@ -327,14 +293,7 @@ Solving a continuous PDE over a vast spatial grid at 60 FPS is computationally p
 
 $$C_s^{t+1} = \gamma_s \cdot \left( \mathcal{K}_{\text{iso}} * C_s^t \right) + Q_s^t$$
 
-Where:
-
-* $C_s^{t+1}$: The discrete concentration field of signaling substance $s$ at time step $t+1$.
-* $C_s^t$: The discrete concentration field of signaling substance $s$ at time step $t$.
-* $\gamma_s$: The discrete multiplicative atmospheric decay factor.
-* $\mathcal{K}_{\text{iso}}$: The pre-computed isotropic Gaussian convolution kernel matrix.
-* $*$: The 2D spatial convolution operator.
-* $Q_s^t$: The discrete point source mass injection (emission) at time step $t$.
+In the discrete realization, the future concentration field $C_s^{t+1}$ is computed from the current state $C_s^t$. Instead of a continuous Laplacian, spatial diffusion is resolved via the 2D spatial convolution operator $(*)$ using $\mathcal{K}_{\text{iso}}$, a pre-computed isotropic Gaussian kernel matrix. Environmental dissipation is approximated by $\gamma_s$, a discrete multiplicative atmospheric decay factor. Finally, discrete emissions are added via $Q_s^t$, injecting point-source mass strictly after the diffusion operator.
 
 ##### Implementation Rules for Airborne Signals
 

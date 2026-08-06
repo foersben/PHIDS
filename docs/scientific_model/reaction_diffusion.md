@@ -30,12 +30,7 @@ The continuous parabolic PDE describing this phenomenon for a substance concentr
 
 $$\frac{\partial C}{\partial t} = D \nabla^2 C - \lambda C + Q$$
 
-Where:
-
-* $\frac{\partial C}{\partial t}$: The change in concentration over time.
-* $D \nabla^2 C$: The diffusion term (Laplacian operator), describing how the substance spreads from areas of high concentration to low concentration.
-* $\lambda C$: The decay term, representing the natural degradation of the chemical.
-* $Q$: The source term, representing actively emitting plants.
+In this mathematical formulation, $\frac{\partial C}{\partial t}$ defines the rate of change of the chemical concentration over time. This temporal evolution is driven primarily by the diffusion term $D \nabla^2 C$, where $D$ represents the substance-specific diffusion coefficient and $\nabla^2$ denotes the continuous Laplacian operator (the second spatial derivative). The Laplacian strictly dictates how the volatile substance expands outward from areas of high local concentration to regions of lower density. Environmental clearance is encapsulated by the decay term $\lambda C$, representing the natural, continuous degradation of the chemical profile over time. Finally, $Q$ serves as the discrete source term, injecting raw mass into the system from plant entities actively synthesizing and emitting the compound.
 
 ### Discretization for Cellular Automata
 
@@ -64,12 +59,7 @@ Let the advected 2D grid matrix of signal concentration at tick $t$ be $\tilde{C
 
 $$C^{t+1} = \gamma \cdot (\mathcal{K}_{iso} * \tilde{C}^t) + Q^t$$
 
-Where:
-
-* $\mathcal{K}_{iso}$ is an odd-sized Gaussian blur kernel (e.g., $3 \times 3$).
-* $*$ denotes the 2D discrete convolution.
-* $\gamma$ is the decay factor (e.g., $0.85$, meaning 15% dissipates per tick).
-* $Q^t$ is the matrix where cells containing active emitting plants have their concentration increased by a fixed emission rate.
+In the discrete algorithmic realization, $\mathcal{K}_{iso}$ represents an odd-sized Gaussian blur kernel (e.g., a $3 \times 3$ matrix) that ensures strictly symmetric spatial dispersion. The operator $*$ denotes the 2D discrete spatial convolution function across the grid. Environmental clearance is approximated by $\gamma$, the discrete decay factor (e.g., $0.85$, meaning 15% of the total mass dissipates per tick). Finally, $Q^t$ is the source matrix where cells containing active, emitting plants have their concentration algebraically increased by a fixed emission rate, completing the step integration.
 
 ```mermaid
 flowchart LR
