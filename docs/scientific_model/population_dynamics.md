@@ -86,24 +86,23 @@ $$
 
 Cellular division within a macroscopic swarm occurs when the cluster population reaches $N_i \ge N_{split}$, prompting a physical bifurcation into two discrete ECS entities that share the parent's accumulated energy.
 
-#### I. Implementation Mechanics
+#### I. Structural Bifurcation Mechanics
 
-During the interaction and lifecycle phase, if a swarm's population count violates the maximum threshold ($N_i \ge N_{split}$), a division event is triggered. The parent swarm splits its population array into two distinct entity segments (e.g., 7 and 8 individuals for a parent of 15).
+During the interaction and lifecycle phase, any swarm whose population strictly violates the biological carrying capacity threshold ($N_i \ge N_{\text{split}}$) triggers an immediate cellular division event. The parent swarm fractures its population array and energetic reserve into two distinct structural entities (e.g., bifurcating a parent of 15 into cohorts of 7 and 8 individuals).
 
-Instead of writing both daughter swarms to the exact coordinates $(x, y)$ of the parent, the engine passes the second daughter swarm through an internal stochastic displacement routine: `_random_walk_step(swarm.x, swarm.y)`. This translates the offspring's spatial coordinates to a stochastically sampled adjacent cell in the Moore or von Neumann neighborhood before appending it to the Entity Component System (ECS) world array.
+To prevent catastrophic spatial overlap, the engine subjects the daughter swarm to an immediate stochastic displacement routine ($\mathcal{W}_{\text{random}}(x_0, y_0)$). This operation translates the newly spawned offspring to a stochastically sampled adjacent coordinate within the local Von Neumann neighborhood prior to committing the entity to the ECS world matrix.
 
-#### II. Why It Is Solved This Way
+#### II. Avoiding Spatial Convergence Loops
 
-In a discrete, grid-based simulation engine utilizing an ECS paradigm, placing two distinct entities with overlapping spatial keys on the same frame introduces critical system conflicts. Without immediate dispersal, the engine would have to handle infinite immediate re-coalescence loops (where the two swarms instantly merge back together on the subsequent tick if local density rules dictate) or handle division calculations multiple times on a single spatial coordinate, stalling the pipeline.
+Within the strict confines of a discrete, grid-based Entity-Component-System (ECS), co-locating two distinct entities possessing identical spatial keys in the same temporal frame inevitably induces system conflicts. Absent immediate forced dispersal, the interaction loops would evaluate the swarms as independent entities occupying the same ecological niche, forcing the engine to resolve infinite re-coalescence cycles or recursively re-evaluate density constraints on a singular coordinate, rapidly stalling the execution pipeline.
 
-#### III. The Historical/Continuous Alternative
+#### III. The Failings of Continuous Repulsion
 
-The naive continuous mathematical alternative assumes that a population splits perfectly in-place, occupying a single infinitesimal point in space, with separation driven over time by continuous partial differential equations (PDEs) for repulsive movement.
+Naive continuous mathematical frameworks assume that a population splits perfectly in-place, temporarily occupying an infinitesimal singularity, with eventual separation governed by the slow integration of continuous repulsive Partial Differential Equations (PDEs). This approach is computationally devastating at scale and biologically inaccurate for macroscopic grazing herds.
 
-#### IV. Computational Improvement
+#### IV. Architectural and Array Optimization
 
-* **Complexity:** Reduces a multi-step path-finding or collision-avoidance routine down to an $O(1)$ stochastic computation.
-* **Array Efficiency:** By immediately assigning the daughter swarm to a vacant or adjacent cell index during the mutation pass, the engine avoids the need for an expensive post-split "entity un-stacking" pass, which would require an $O(N \log N)$ spatial sorting or an $O(N^2)$ distance cross-check of overlapping swarms. It also minimizes memory overhead by keeping the mutation local to the active entity buffer transformation loop.
+By enforcing immediate stochastic displacement, PHIDS reduces complex path-finding and collision-avoidance resolution down to a unified $O(1)$ computation. Consequently, the engine entirely bypasses the need for expensive post-split "entity un-stacking" passes, which traditionally demand $O(N \log N)$ spatial sorting or $O(N^2)$ Euclidean cross-checks to disentangle overlapping agents. This mutation is executed inline within the active transformation buffer, guaranteeing optimal memory coherency.
 
 #### V. Biological Modeling Realism
 

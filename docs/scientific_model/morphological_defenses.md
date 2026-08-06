@@ -45,10 +45,10 @@ $$n(t + \Delta t) = \max\left(0, n(t) - \Delta n\right)$$
 
 Where $\lfloor \cdot \rfloor$ denotes the floor function, enforcing discrete integer mortality within the herbivore population cohort.
 
-!!! info "Dual Perspectives: Mechanical Attrition"
+!!! info "Execution and Biological Rationale: Mechanical Attrition"
+    Rather than artificially altering the core biochemical caloric density of the plant tissue, mechanical defenses such as trichomes, thorns, and rigid spines act exclusively to inflict localized physical trauma upon the grazing apparatus of the herbivore. This mandates a strict, immediate integer population penalty for every unit of biomass extracted, establishing an evolutionary gradient that heavily favors herbivore phenotypes possessing morphological counter-adaptations ($\rho_{\text{morph}}$).
 
-    * **Biological Perspective**: Thorns and trichomes do not alter plant nutrient chemistry; instead, they inflict physical trauma on herbivore mouthparts. This enforces an immediate population penalty per bite, favoring herbivores with specialized morphological mouthpart adaptations ($\rho_{\text{morph}}$).
-    * **Computer Science & Mathematical Rationale**: Modeled as an in-place $O(1)$ integer subtraction during the feeding pass inside `feeding.py`. Enforcing $\lfloor \cdot \rfloor$ prevents floating-point "fractional individuals" from cluttering the ECS entity array, maintaining clean headcount integers and strict zero-allocation JIT execution.
+    Computationally, this dynamic is resolved as a non-allocating, $O(1)$ integer subtraction evaluated inline within the synchronous trophic interaction loop. The strict enforcement of the mathematical floor function $\lfloor \cdot \rfloor$ guarantees that fractional "ghost" casualties cannot propagate into the ECS state matrices, perfectly preserving integral population boundaries without triggering slow floating-point arithmetic traps.
 
 ---
 
@@ -62,10 +62,10 @@ $$\eta_{\text{net}} = \min\left(1.0, \max\left(0.0, \mu_{\text{digest}} \cdot \d
 
 $$E_{\text{metabolized}} = E_{\text{consumed}} \cdot \eta_{\text{net}}$$
 
-!!! info "Dual Perspectives: Caloric Attenuation"
+!!! info "Execution and Biological Rationale: Caloric Attenuation"
+    Integrating heavily cross-linked structural biopolymers, such as lignin and crystalline silica, directly into leaf cell walls drastically impairs the digestive mechanics of grazing swarms. While the raw biomass is successfully severed and ingested, the unyielding structural matrix prevents the herbivore's enzymatic pathways from extracting usable metabolic energy. This biological "Attrition Trap" effectively starves the herbivore cohort while their stomachs remain physically full, severely curtailing runaway reproductive cycles without requiring the plant to synthesize lethal, high-cost chemical toxins.
 
-    * **Biological Perspective**: High-lignin or silica-heavy foliage reduces the net energetic yield per gram consumed. Herbivores ingest biomass but fail to assimilate calories, slowing their reproductive rate and mitigating population explosions without killing swarms outright.
-    * **Computer Science & Mathematical Rationale**: Implemented as a scalar multiplication $\eta_{\text{net}} = \min(1.0, \max(0.0, \mu_{\text{digest}} \cdot \delta_{\text{eff}}))$ during consumption accumulation. Decouples raw biomass consumption from energy transfer in a single arithmetic operation, preserving $O(1)$ per-entity state updates.
+    Within the simulation architecture, this attenuation is implemented as a mathematically bounded scalar multiplier $\eta_{\text{net}} = \min(1.0, \max(0.0, \mu_{\text{digest}} \cdot \delta_{\text{eff}}))$. By intercepting the energy transfer pipeline immediately after gross biomass consumption is calculated, the engine decouples the physical removal of plant tissue from the actual caloric absorption of the swarm in a singular, vectorized arithmetic operation.
 
 ---
 
@@ -87,10 +87,10 @@ $$N^{t+1} = N^t - k_{\text{trans}} \cdot \left(N^t - N_{\text{target}}\right)$$
 
 $$N^{t+1} = N^t + k_{\text{trans}} \cdot \left(1.0 - N^t\right)$$
 
-!!! info "Dual Perspectives: Rate-Limited Phloem Translocation"
+!!! info "Execution and Biological Rationale: Rate-Limited Phloem Kinetics"
+    Biological realities dictate that an autotroph cannot instantaneously evacuate complex carbohydrates and nitrogenous compounds from its vulnerable canopy tissues. Active vascular translocation is strictly rate-limited by internal hydrostatic pressure gradients and the inherent viscosity of the phloem sap ($k_{\text{trans}}$). This immutable physiological bottleneck enforces a temporal "window of vulnerability," during which incoming herbivores can continue to extract high-yield nutrition while the plant frantically attempts to bury its resources below ground.
 
-    * **Biological Perspective**: Real plants cannot instantaneously empty their leaves of sugars. Vascular transport takes time ($k_{\text{trans}}$), creating an empirical "window of vulnerability" during which grazing herbivores continue feeding while translocation is underway.
-    * **Computer Science & Mathematical Rationale**: Approximated via an exponential relaxation recurrence step $N^{t+1} = N^t + k (N_{\text{target}} - N^t)$ evaluated in `lifecycle.py`. Prevents discontinuous step-function jumps in the flow-field potential matrix, ensuring smooth spatial gradient transitions for herbivore navigation.
+    To maintain continuous geometric stability within the environmental tensors, PHIDS approximates this fluid dynamic constraint via a discretized, first-order exponential relaxation recurrence: $N^{t+1} = N^t + k (N_{\text{target}} - N^t)$. If the engine employed a naive, instantaneous step-function to modify nutritional values, it would introduce violent, discontinuous tears into the global flow-field potential matrix, inducing pathological routing errors and completely shattering the continuous biological tracking behaviors of the simulated swarms.
 
 ---
 

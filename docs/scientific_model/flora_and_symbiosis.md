@@ -24,9 +24,9 @@ $$\Delta E_{\text{plant}} = E_{\text{base}} \times \left(\frac{g_j}{100}\right) 
 
 #### Biophysical & Mathematical Rationale
 
-* **Biological Reality**: Vegetative cell division and biomass expansion in real plants occur over diurnal and seasonal timescales, not hourly intervals.
-* **Floating-Point Precision (FPU Traps)**: Evaluated hourly, fractional plant growth increments (e.g. $0.00005$ energy units per tick) drop below the IEEE 754 single-precision floating-point epsilon threshold ($<10^{-4}$). This causes FPU hardware vector pipelines to fail back to ALU microcode traps, incurring an $8\times$ CPU cycle penalty.
-* **Hardware Cache Locality**: Accumulating growth into a weekly 168-tick stride ensures that contiguous ECS arrays are traversed with a $93.7\%$ L1/L3 cache hit rate.
+The decision to gate vegetative growth strictly to a coarse, periodic slow-loop execution stride ($168$ ticks, mapping to a diurnal/weekly simulation horizon) reconciles profound biophysical realities with strict hardware execution limits. Biologically, vegetative cell division, root extension, and carbohydrate accumulation are metabolically expensive processes governed by seasonal and daily actinic light availability; they do not unfold uniformly across instantaneous hourly bounds.
+
+From a mathematical and hardware optimization standpoint, calculating an hourly incremental expansion forces the calculation of infinitesimal floating-point quantities (e.g., fractional caloric increments of $\approx 0.00005$ units per tick). These infinitesimals frequently cross the IEEE 754 single-precision subnormal threshold. Operating within the subnormal floating-point regime causes vector processing units (FPUs) to stall, forcing the processor to trap into slow ALU microcode to prevent arithmetic underflow. By batching metabolic growth accumulation, PHIDS maintains operations well above the epsilon boundary, ensuring uninterrupted parallel vector execution. Furthermore, deferring these state modifications prevents cache line invalidation during the hot inner-loops of the spatial interaction phases, yielding deterministic scaling with over $93.7\%$ L1/L3 cache coherency.
 
 ---
 
@@ -40,22 +40,29 @@ A plant cannot self-starve to drop a seed. The plant's energy minus the seed cos
 
 ---
 
-### $O(1)$ Stochastic Raycasting Seed Dispersal
+### $O(1)$ Stochastic Polar Seed Dispersal
 
-Legacy simulation engines evaluated seed dispersal by executing an $O(N \times r^2)$ grid spatial matrix convolution that continuously integrated ballistic drag, drop height ($h$), and terminal velocity ($v_t$). This caused massive L3 cache invalidations and dynamic array allocations in hot JIT loops.
+Legacy computational models simulate reproductive dispersal by continuously integrating complex ballistic drag, computing drop height matrices, and calculating terminal velocity arrays using an $O(N \times r^2)$ grid spatial convolution. However, allocating dynamic mass arrays during just-in-time execution heavily fragments the L3 cache, severely degrading performance.
 
-PHIDS replaces continuous ballistic matrix convolution with an **$O(1)$ Stochastic Raycaster**:
+PHIDS resolves this computational bottleneck by projecting anemochorous dispersal via an **$O(1)$ Stochastic Polar Algorithm**, synthesizing advective aerodynamic drift with localized Gaussian turbulence directly into the discrete Cartesian lattice. The process is defined mathematically as follows:
 
-1. **Radial Dispersal Distance**: Sample distance $d \sim U(d_{\min}, d_{\max})$.
-2. **Advective Wind Unit Vector**: If local wind $\|\mathbf{w}\| > 10^{-9}$, compute normalized direction $\mathbf{u} = \frac{\mathbf{w}}{\|\mathbf{w}\|}$. Under calm air ($\|\mathbf{w}\| \le 10^{-9}$), pick isotropic polar angle $\theta \sim U(0, 2\pi)$.
-3. **Turbulent Perpendicular Scatter**: Sample single scalar offset $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$ where $\sigma_\perp = \max(0.15, 0.35 \cdot d)$.
-4. **Target Discrete Cell Calculation**:
-   $$x_{\text{target}} = \text{round}(x_0 + d \cdot u_x - \delta_\perp \cdot u_y), \quad y_{\text{target}} = \text{round}(y_0 + d \cdot u_y + \delta_\perp \cdot u_x)$$
-5. **Direct $O(1)$ Exclusion Check**: The seed checks the spatial hash at $(x_{\text{target}}, y_{\text{target}})$. Seeds *cannot* germinate if they land on an already occupied grid cell. If occupied, reproductive energy is spent, but no new entity is created.
+First, a discrete scalar radial distance $d$ is stochastically sampled from the configured genetic bounds:
+$$d \sim U(d_{\min}, d_{\max})$$
+
+Next, the mean advective atmospheric trajectory is resolved. If the local wind velocity matrix detects momentum ($\left\| \mathbf{w} \right\| > 10^{-9}$), the engine computes a normalized directional wind vector $\mathbf{u} = \frac{\mathbf{w}}{\left\| \mathbf{w} \right\|}$. During calm, isotropic conditions, the vector defaults to a uniformly distributed polar azimuth $\theta \sim U(0, 2\pi)$.
+
+To model the chaotic, non-linear atmospheric boundary layer, a turbulent perpendicular scatter factor is sampled from a zero-mean normal distribution scaled by the primary dispersal distance:
+$$\delta_{\perp} \sim \mathcal{N}(0, \sigma_{\perp}^2) \quad \text{where } \sigma_{\perp} = \max(0.15, 0.35 \cdot d)$$
+
+The final landing coordinate is computationally mapped back into discrete Cartesian space via rotation and integer truncation:
+$$x_{\text{target}} = \lfloor x_0 + d \cdot u_x - \delta_{\perp} \cdot u_y \rceil$$
+$$y_{\text{target}} = \lfloor y_0 + d \cdot u_y + \delta_{\perp} \cdot u_x \rceil$$
+
+Crucially, germination requires structural space. The dispersed seed evaluates a direct $O(1)$ spatial hash exclusion check at the target coordinate $(x_{\text{target}}, y_{\text{target}})$. If the lattice is already occupied by a mature canopy, the parent's `seed_cost` is irreversibly expended with zero return on investment, capturing the vicious realities of competition for sunlight and substrate.
 
 #### Aerodynamic & Computational Rationale
 
-In real atmospheric boundary layers, wind seed dispersal (anemochory) is governed by mean advective transport along the dominant wind vector combined with micro-scale atmospheric turbulence. $O(1)$ Stochastic Raycasting models this physics exactly in constant time without iterative grid scanning.
+In dense forest canopies, seed transport is dictated predominantly by the macroscopic atmospheric wind vector, constantly battered by erratic micro-scale eddy currents. The $O(1)$ Polar Dispersal model unifies this turbulent reality into a solitary computational bound, guaranteeing constant-time execution overhead regardless of simulation scale.
 
 ---
 
@@ -79,17 +86,13 @@ Establishing a fungal web requires significant carbohydrate expenditure. Plants 
 
 ---
 
-### Why Are They Used?
+### Symbiotic Network Transport Dynamics
 
-Mycorrhizal networks bypass the airborne Volatile Organic Compound (VOC) diffusion model.
+The paramount evolutionary advantage of establishing complex mycorrhizal infrastructure lies in its ability to circumvent the spatial and temporal limitations of atmospheric diffusion. Within the standard biotope, volatile organic compounds (VOCs) expand through the canopy via a classical isotropic reaction-diffusion partial differential equation. This process is inherently bounded by concentration decay and ambient wind dilution.
 
-1. If Plant A is attacked, it triggers a signaling substance (Section 5.1, Reaction-Diffusion).
-2. Plant A begins emitting VOCs into the air above it.
-3. Simultaneously, Plant A injects the exact same signal concentration *directly* into the connected root node of Plant B.
+Conversely, the hyphal web acts as an enclosed, highly targeted neurological relay. If a connected host experiences active herbivory and crosses a designated defense threshold, it simultaneously bleeds chemical distress signals directly into the root network.
 
-Because subterranean signals propagate over the Graph Structure of the Mycorrhiza at velocity $v_{\text{signal}} = \text{mycorrhizal\_signal\_velocity}$ (hops per tick), the network delivers an amplified per-tick concentration increment ($\Delta S = \text{per\_target\_amount} \times v_{\text{signal}}$) directly to connected neighbor root systems, bypassing airborne diffusion delays.
-
-Plant B receives the chemical warning of herbivory without having to wait for the Gaussian convolution kernel to disperse the signal through the air, allowing Plant B to synthesize its own localized Toxins preemptively.
+These subterranean warnings propagate efficiently across the graph geometry governed by the continuous integer velocity constant $v_{\text{signal}}$. Because the network delivers discrete mass packets ($\Delta S = \text{per\_target\_amount} \times v_{\text{signal}}$) exclusively to structurally bound nodes, the signal completely bypasses atmospheric scattering and dissipation gradients. This enables connected flora to receive immense, undiluted concentrations of preemptive defensive compounds, providing them the critical physiological lead-time required to synthesize metabolic toxins long before the grazing threat physically traverses the terrain.
 
 ## 3. Death & Telemetry Causation
 
