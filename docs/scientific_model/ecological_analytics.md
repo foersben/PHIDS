@@ -17,6 +17,14 @@ resources:
 
 PHIDS converts simulation ticks into comparable, analytical artifacts. The primary method for evaluating a scenario's success or failure is through longitudinal population and energy tracking.
 
+In addition to discrete physical entity transitions, PHIDS evaluates localized field dynamics governed generally by the reaction-diffusion partial differential equation:
+
+
+$$
+\frac{\partial \rho}{\partial t} = \nabla \cdot (D \nabla \rho) + f(\rho)
+$$
+
+
 ## 1. The Lotka-Volterra Paradigm
 
 The core engine tracks aggregate metrics-total flora energy, total flora population, and total herbivore population-at the conclusion of every tick.
@@ -66,25 +74,23 @@ The UI Control Center visualizes these metrics via several primary tools tailore
 
 ### Live Simulation Diagrams
 
-* **Live Dashboard Canvas:** Displays an immediate top-down 2D array representation of the `GridEnvironment` (the cellular automata).
-  * Green pixels denote Flora energy density.
-  * Red pixels denote Herbivore swarms.
-  * Overlays visualize airborne signal diffusion (blue) or localized toxins (fuchsia).
-* **Telemetry Chart:** A longitudinal line graph tracking the aggregate populations and energies over time. It visually maps the cyclic oscillations. If the red line (herbivores) spikes massively and then flatlines to zero while the green line (flora) continues to grow exponentially, the user immediately recognizes a $Z_5$ termination event (Herbivore Extinction).
+The immediate visual interface of the simulation relies on a real-time, top-down 2D array representation known as the Live Dashboard Canvas, which renders the state of the underlying `GridEnvironment` cellular automata. Within this Cartesian space, grid cell colorations are mapped strictly to physical energy states: verdant green intensities correspond to the localized caloric energy density of Flora, while red clusters denote the physical presence and size of Herbivore swarms. The canvas is further augmented by transparent overlays that visualize the dispersion of invisible chemical fields, such as the blue gradients of airborne signal diffusion or the fuchsia heatmaps of localized defensive toxins.
+
+Simultaneously, a longitudinal Telemetry Chart provides a continuous temporal narrative by tracking aggregate ecosystem populations and energy reserves over time. This line graph is essential for visually diagnosing the cyclic, oscillatory nature of the Lotka-Volterra dynamics. For example, if the red herbivore population line exhibits a massive, unsustainable spike followed by an immediate flatline to zero, while the green flora energy line subsequently enters unconstrained exponential growth, the operator can instantly classify the scenario trajectory as a $Z_5$ termination event, definitively indicating complete Herbivore Extinction.
 
 ### Batch Processing Diagnostics
 
-When running large Monte Carlo batches to evaluate scenario stability, tracking an average population line is insufficient. PHIDS offers robust statistical plotting presets:
+When orchestrating large-scale Monte Carlo batches to evaluate the probabilistic stability of a scenario, relying on a singular averaged population trajectory is analytically insufficient, as it masks critical bifurcations and localized extinction events. To resolve this, PHIDS outputs robust, high-dimensionality statistical artifacts designed for systemic diagnosis.
 
-* **Stacked Biomass Proxy:** A normalized area chart displaying the ratio of total ecosystem energy held by Flora versus Herbivores. It is crucial for visualizing the total carrying capacity of the ecosystem and whether energy is smoothly passing up the trophic chain or becoming trapped.
-* **Phase Space:** A scatter plot mapping Flora Population ($X$) against Herbivore Population ($Y$) across time. In a perfectly stable Lotka-Volterra ecosystem, this forms a closed, repeating orbital loop. If the ecosystem crashes, the path spirals into the origin $(0,0)$.
-* **Collapse Risk Focus:** A survival probability curve (Kaplan-Meier estimator). It measures the probability that a scenario reaches a specific tick $T$ without triggering an extinction or runaway termination ($Z_2 - Z_7$). This is the primary metric for proving scenario stability.
-* **Defense Economy Ratio:** A line chart isolating the specific plant deaths tagged as `death_defense_maintenance`. It visualizes the metabolic burden of synthesizing toxins; if this ratio spikes, the flora are over-producing defenses and starving themselves to death.
-* **Herbivore Pressure Focus:** Maps total herbivore population against specific flora fatalities tagged as `death_herbivore_feeding` and herbivore swarm deaths tagged as `death_starvation`. This proves definitively whether declining plant populations are due to active herbivory or simply poor baseline growth constraints, and when herbivore collapse is driven by a lack of food reserves.
+To evaluate total carrying capacity and trophic flow efficiency, the system utilizes a Stacked Biomass Proxy. This normalized area chart visualizes the ratio of the ecosystem's total Joules held by Flora versus the energy successfully assimilated by Herbivores, definitively showing whether caloric energy is smoothly propagating up the trophic chain or if it is bottlenecked at the primary producer level. The cyclical stability of these populations is further analyzed using Phase Space mapping, which plots Flora Population ($X$) against Herbivore Population ($Y$) across the temporal axis. In a perfectly balanced Lotka-Volterra ecosystem, this trajectory resolves into a closed, repeating orbital loop; conversely, if the ecosystem suffers a catastrophic collapse, the trajectory mathematically spirals into the origin $(0,0)$.
+
+To quantify the overarching resilience of a scenario configuration, the framework computes a Collapse Risk Focus using a survival probability curve (Kaplan-Meier estimator). This explicitly measures the statistical probability that a given scenario instantiation will successfully reach a specified temporal horizon $T$ without triggering an irreversible extinction or runaway termination state (defined as boundaries $Z_2$ through $Z_7$).
+
+Furthermore, diagnosing the exact *cause* of an ecosystem collapse requires isolating specific mortality vectors. The Defense Economy Ratio isolates plant fatalities explicitly tagged as `death_defense_maintenance`, visualizing the severe metabolic burden of synthesizing defensive compounds. A sudden spike in this ratio indicates an evolutionary failure where the flora are aggressively over-producing toxins, ultimately starving themselves to death despite surviving herbivore grazing. Conversely, the Herbivore Pressure Focus correlates the total herbivore population against specific flora deaths categorized as `death_herbivore_feeding` and herbivore casualties tagged as `death_starvation`. This multi-variate correlation definitively proves whether a declining plant population is the direct result of intense active herbivory, or merely an artifact of poor baseline abiotic growth constraints, while simultaneously pinpointing the exact moment an exploding herbivore population completely exhausts its available food reserves and initiates mass starvation.
 
 ### Tabular Ledger
 
-A data grid providing the exact numeric breakdown per tick. This is powered by `Polars` for extreme performance, separating the specific death causes so scientists can definitively prove *what* caused the population collapse at Tick 450.
+Complementing the visual diagnostics is the Tabular Ledger, a highly optimized, densely packed data grid that provides an exact, deterministic numeric breakdown of every state transition per tick. Powered by the highly concurrent `Polars` DataFrame library to ensure extreme execution performance and zero-copy memory management, this ledger meticulously segregates specific mortality vectors, energy fluxes, and spatial anomalies. By querying this tabular export, research scientists can move beyond visual correlation and definitively, mathematically prove the exact causal chain that triggered a population collapse at any specific point in the temporal sequence.
 
 ## 4. State Buffering and Commit Phases
 
@@ -93,6 +99,32 @@ The continuous narrative described above is executed within a strict determinist
 ### I. Implementation Mechanics
 
 The core execution loop in `src/phids/engine/loop.py` structures a strict, non-overlapping sequence of phase updates. The engine relies fundamentally on a double-buffering architectural pattern: all system updates read properties exclusively from the read-state state array ($State_t$) and write altered values exclusively to a disconnected write-state array ($State_{t+1}$).
+
+```mermaid
+sequenceDiagram
+    participant E as ECS Systems
+    participant R as Read Buffer (State_t)
+    participant W as Write Buffer (State_t+1)
+
+    Note over E,W: Tick Execution Begins
+
+    E->>R: Read Flora Energy at (x, y)
+    R-->>E: Return 45.0 Joules
+
+    E->>R: Read Swarm Population at (x, y)
+    R-->>E: Return 12 Entities
+
+    Note over E: Compute Local<br/>Interaction Kinetics
+
+    E->>W: Write Updated Energy: 38.0
+    E->>W: Write Updated Population: 13
+
+    Note over E,W: Tick Finalization
+
+    W->>R: Swap Pointers (Commit State)
+    Note over R: State_t now holds new values
+```
+
 
 Crucially, ecological events like plant biomass consumption or defensive synthesis occur during the middle phases, but the global navigation maps and environmental properties are not mutated on the fly. The method `self.env.rebuild_energy_layer()` is executed as an isolated operation near the end of the tick sequence (Phase 6), explicitly processing metabolic debt consolidations, plant mortality deletions, and defense synthesis allocations before swapping the buffers for the next tick.
 

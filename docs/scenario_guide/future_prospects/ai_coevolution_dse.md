@@ -14,7 +14,7 @@ tags:
 timestamp: "2026-07-26T18:30:00Z"
 resources:
 - docs/scenario_guide/design_space_exploration.md
-- docs/speculative_research/parameter_calibration_strategy.md
+- docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
 
 !!! warning "Status: WIP / CIP Construction Site"
@@ -28,7 +28,7 @@ This document details the planned framework for distributed multi-objective Evol
 
 While single-objective EEDSE (such as pymoo NSGA-III) successfully locates static Lotka-Volterra limit cycles, real-world ecosystems are driven by ongoing **coevolutionary arms races**. Flora species continuously adjust metabolic investment between morphological defenses (thorns) and induced volatile chemical signaling (VOCs), while herbivore species co-evolve specialized digestive efficiencies and chemical neutralization capabilities.
 
-For detailed touchpoints on human vs. AI intervention gates across the pipeline, see [DSE Governance & Interventions](../scenario_guide/design_space_exploration.md#5-governance-interventions-agentic-ai-in-the-loop-aitl-vs-human-in-the-loop-hitl).
+For detailed touchpoints on human vs. AI intervention gates across the pipeline, see [DSE Governance & Interventions](../design_space_exploration.md#5-governance-interventions-agentic-ai-in-the-loop-aitl-vs-human-in-the-loop-hitl).
 
 ```mermaid
 flowchart LR
