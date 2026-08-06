@@ -11,7 +11,7 @@ tags:
 - performance
 timestamp: "2026-07-25T10:52:00Z"
 resources:
-- cell_details.py
+- src/phids/api/presenters/dashboard/cell_details.py
 ---
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.

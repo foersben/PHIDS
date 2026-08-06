@@ -53,6 +53,78 @@ _SIGMA: float = 0.4
 
 
 @njit(parallel=True, cache=True)
+def _numba_advect_signal_layer(
+    width: int,
+    height: int,
+    layer: npt.NDArray[np.float64],
+    wind_x: npt.NDArray[np.float64],
+    wind_y: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+) -> None:
+    advected_scratch.fill(0.0)
+    # 1. Semi-Lagrangian Advection (backward interpolation with Toroidal wrap)
+    for x in prange(width):
+        for y in range(height):
+            cx = x - wind_x[x, y]
+            cy = y - wind_y[x, y]
+
+            floor_x = int(np.floor(cx))
+            floor_y = int(np.floor(cy))
+
+            x0 = floor_x % width
+            y0 = floor_y % height
+            x1 = (floor_x + 1) % width
+            y1 = (floor_y + 1) % height
+
+            dx = cx - floor_x
+            dy = cy - floor_y
+
+            v00 = layer[x0, y0]
+            v10 = layer[x1, y0]
+            v01 = layer[x0, y1]
+            v11 = layer[x1, y1]
+
+            val_y0 = v00 * (1.0 - dx) + v10 * dx
+            val_y1 = v01 * (1.0 - dx) + v11 * dx
+            val = val_y0 * (1.0 - dy) + val_y1 * dy
+
+            advected_scratch[x, y] = val
+
+
+@njit(parallel=True, cache=True)
+def _numba_convolve_signal_layer(
+    width: int,
+    height: int,
+    decay: float,
+    epsilon: float,
+    kernel: npt.NDArray[np.float64],
+    write_buffer: npt.NDArray[np.float64],
+    advected_scratch: npt.NDArray[np.float64],
+) -> None:
+    # 2. Toroidal Gaussian Diffusion (Convolution) & Decay
+    # Branchless stencil lookup across toroidal boundaries
+    k_w = kernel.shape[0]
+    k_h = kernel.shape[1]
+    k_w_half = k_w // 2
+    k_h_half = k_h // 2
+
+    for x in prange(width):
+        for y in range(height):
+            v = 0.0
+            for i in range(-k_w_half, k_w_half + 1):
+                ax = (x - i) % width
+                for j in range(-k_h_half, k_h_half + 1):
+                    ay = (y - j) % height
+                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
+
+            # Apply decay and zero-out subnormal floats
+            v *= decay
+            if v < epsilon:
+                v = 0.0
+            write_buffer[x, y] = v
+
+
+@njit(cache=True)
 def _numba_diffuse_signal_layer(
     width: int,
     height: int,
@@ -95,56 +167,8 @@ def _numba_diffuse_signal_layer(
         write_buffer: Pre-allocated output array (mutated in-place).
         advected_scratch: Pre-allocated intermediate array for the advection step (mutated in-place).
     """
-    advected_scratch.fill(0.0)
-
-    # 1. Semi-Lagrangian Advection (backward interpolation with Toroidal wrap)
-    for x in prange(width):
-        for y in range(height):
-            cx = x - wind_x[x, y]
-            cy = y - wind_y[x, y]
-
-            floor_x = int(np.floor(cx))
-            floor_y = int(np.floor(cy))
-
-            x0 = floor_x % width
-            y0 = floor_y % height
-            x1 = (floor_x + 1) % width
-            y1 = (floor_y + 1) % height
-
-            dx = cx - floor_x
-            dy = cy - floor_y
-
-            v00 = layer[x0, y0]
-            v10 = layer[x1, y0]
-            v01 = layer[x0, y1]
-            v11 = layer[x1, y1]
-
-            val_y0 = v00 * (1.0 - dx) + v10 * dx
-            val_y1 = v01 * (1.0 - dx) + v11 * dx
-            val = val_y0 * (1.0 - dy) + val_y1 * dy
-
-            advected_scratch[x, y] = val
-
-    # 2. Toroidal Gaussian Diffusion (Convolution) & Decay
-    # Branchless stencil lookup across toroidal boundaries
-    k_w = kernel.shape[0]
-    k_h = kernel.shape[1]
-    k_w_half = k_w // 2
-    k_h_half = k_h // 2
-
-    for x in prange(width):
-        for y in range(height):
-            v = 0.0
-            for i in range(-k_w_half, k_w_half + 1):
-                ax = (x - i) % width
-                for j in range(-k_h_half, k_h_half + 1):
-                    ay = (y - j) % height
-                    v += advected_scratch[ax, ay] * kernel[k_w_half + i, k_h_half + j]
-
-            v *= decay
-            if v < epsilon:
-                v = 0.0
-            write_buffer[x, y] = v
+    _numba_advect_signal_layer(width, height, layer, wind_x, wind_y, advected_scratch)
+    _numba_convolve_signal_layer(width, height, decay, epsilon, kernel, write_buffer, advected_scratch)
 
 
 def _make_gaussian_kernel(size: int = _KERNEL_SIZE, sigma: float = _SIGMA) -> npt.NDArray[np.float64]:

@@ -51,6 +51,38 @@ class _MycorrhizalLinkPayload(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 
 
+def _evaluate_draft_neighbor_pair(
+    draft: DraftState,
+    left_index: int,
+    left: Any,
+    right_index: int,
+    right: Any,
+    seen_pairs: set[tuple[int, int]],
+    links: list[_MycorrhizalLinkPayload],
+) -> None:
+    """Evaluate a pair of draft plants and append a link if valid."""
+    pair = (min(left_index, right_index), max(left_index, right_index))
+    if pair in seen_pairs:
+        return
+    seen_pairs.add(pair)
+    inter_species = left.species_id != right.species_id
+    if inter_species and not draft.mycorrhizal_inter_species:
+        return
+    links.append(
+        {
+            "plant_index_a": left_index,
+            "plant_index_b": right_index,
+            "x1": left.x,
+            "y1": left.y,
+            "x2": right.x,
+            "y2": right.y,
+            "inter_species": inter_species,
+            "crosses_x_boundary": abs(left.x - right.x) > 1,
+            "crosses_y_boundary": abs(left.y - right.y) > 1,
+        }
+    )
+
+
 def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPayload]:
     """Infer potential mycorrhizal root links from adjacent draft plant placements.
 
@@ -86,26 +118,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
             neighbor = plants_by_pos.get((nx, ny))
             if neighbor is not None:
                 right_index, right = neighbor
-                pair = (min(left_index, right_index), max(left_index, right_index))
-                if pair in seen_pairs:
-                    continue
-                seen_pairs.add(pair)
-                inter_species = left.species_id != right.species_id
-                if inter_species and not draft.mycorrhizal_inter_species:
-                    continue
-                links.append(
-                    {
-                        "plant_index_a": left_index,
-                        "plant_index_b": right_index,
-                        "x1": left.x,
-                        "y1": left.y,
-                        "x2": right.x,
-                        "y2": right.y,
-                        "inter_species": inter_species,
-                        "crosses_x_boundary": abs(left.x - right.x) > 1,
-                        "crosses_y_boundary": abs(left.y - right.y) > 1,
-                    }
-                )
+                _evaluate_draft_neighbor_pair(draft, left_index, left, right_index, right, seen_pairs, links)
 
     return links
 

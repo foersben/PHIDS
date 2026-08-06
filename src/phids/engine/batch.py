@@ -481,6 +481,7 @@ def _sanitize_for_json(value: object) -> object:
 # ---------------------------------------------------------------------------
 
 
+@dataclass
 class BatchRunner:
     """Orchestrate parallel Monte Carlo simulation runs using ProcessPoolExecutor.
 

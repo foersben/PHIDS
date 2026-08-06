@@ -15,16 +15,9 @@ timestamp: "2026-07-21T16:01:38Z"
 resources:
 - src/data_pipeline/transform.py
 - src/data_pipeline/archetype_extractor.py
-- src/data_pipeline/json_builder.py
-- json_builder.py
 - src/data_pipeline/run_all.py
-- ingest.py
-- transform.py
-- archetype_extractor.py
-- run_all.py
-- run_extended.py
-- __init__.py
-- scripts/check_no_extended_imports.py
+- src/data_pipeline/run_extended.py
+- src/data_pipeline/provenance.py
 ---
 
 !!! warning "Module Status: Work In Progress (WIP) / Under Construction"

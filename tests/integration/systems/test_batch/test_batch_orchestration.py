@@ -50,7 +50,7 @@ def test_execute_batch_handles_success_and_failure_and_writes_strict_json(
         - Summary file exists at tmp_path / "jobmix_summary.json".
         - persisted["flora_population_mean"] == [None] (NaN sanitized to null).
     """
-    from phids.engine import batch as batch_mod
+    from phids.engine.batch import orchestrator as batch_mod
 
     class _FakeFuture:
         def __init__(self, payload: list[dict] | None = None, exc: Exception | None = None) -> None:

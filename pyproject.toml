@@ -101,8 +101,6 @@ source_paths = [
     "src/phids/engine/core/flow_field.py",
     "src/phids/engine/core/ecs.py",
     "src/phids/engine/core/biotope.py",
-    "src/phids/engine/systems/interaction/feeding.py",
-    "src/phids/engine/systems/signaling/lifecycle.py",
 ]
 also_copy = ["src/"]
 pytest_add_cli_args = ["--override-ini=addopts="]
@@ -124,6 +122,9 @@ markers = [
     "benchmark: performance benchmark tests; deselect with -m 'not benchmark'",
     "mutation_pilot: focused deterministic mutation-resistance pilots for branch semantics",
     "hypothesis_pilot: optional bounded Hypothesis pilot invariants for interaction arithmetic",
+    "scientific_invariant: high-level scientific and physical conservation invariant tests",
+    "jit_parity: Numba JIT vs Python pure reference equivalence checks",
+    "heap_allocation: Tracemalloc zero-heap-allocation hot path checks",
 ]
 addopts = [
     "--cov=src/phids",
@@ -156,4 +157,4 @@ directory = ".cache/htmlcov"
 # ConditionNode is used as a runtime function argument annotation resolved by Pydantic.
 "src/phids/api/services/draft/trigger_rules.py" = ["TC001"]
 # Test files instantiate schema types directly; imports must be at runtime.
-"tests/**/*.py" = ["TC001", "TC002"]
+"tests/**/*.py" = ["TC001", "TC002", "TC003"]

@@ -12,7 +12,7 @@ timestamp: "2026-07-21T16:01:38Z"
 resources: []
 ---
 
-This page exposes the current PHIDS Python API using `zensical`.
+This page exposes the current PHIDS Python API using Zensical.
 
 ## Schemas and ingress
 

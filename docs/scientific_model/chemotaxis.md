@@ -10,7 +10,7 @@ tags:
 - chemotaxis
 timestamp: "2026-07-21T16:01:38Z"
 resources:
-- flow_field.py
+- src/phids/engine/core/flow_field.py
 ---
 
 Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field, simulating a sensory-driven process called **chemotaxis**.

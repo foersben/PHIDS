@@ -451,6 +451,16 @@ def _is_swarm_anchored(
     return False
 
 
+def _calculate_toroidal_delta(n_coord: int, old_coord: int, size: int) -> int:
+    """Calculate the shortest path delta across a toroidal boundary."""
+    delta = n_coord - old_coord
+    if delta > size // 2:
+        delta -= size
+    elif delta < -size // 2:
+        delta += size
+    return delta
+
+
 def _resolve_swarm_movement(
     swarm: SwarmComponent,
     entity: Entity,
@@ -538,20 +548,8 @@ def _resolve_swarm_movement(
         _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
         swarm.x, swarm.y = nx, ny
 
-        dx = nx - old_x
-        if dx > env.width // 2:
-            dx -= env.width
-        elif dx < -env.width // 2:
-            dx += env.width
-
-        dy = ny - old_y
-        if dy > env.height // 2:
-            dy -= env.height
-        elif dy < -env.height // 2:
-            dy += env.height
-
-        swarm.last_dx = dx
-        swarm.last_dy = dy
+        swarm.last_dx = _calculate_toroidal_delta(nx, old_x, env.width)
+        swarm.last_dy = _calculate_toroidal_delta(ny, old_y, env.height)
         has_moved = True
 
     swarm.move_cooldown = swarm.velocity - 1
