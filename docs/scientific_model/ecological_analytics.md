@@ -20,9 +20,7 @@ PHIDS converts simulation ticks into comparable, analytical artifacts. The prima
 In addition to discrete physical entity transitions, PHIDS evaluates localized field dynamics governed generally by the reaction-diffusion partial differential equation:
 
 
-$$
-\frac{\partial \rho}{\partial t} = \nabla \cdot (D \nabla \rho) + f(\rho)
-$$
+$$ \frac{\partial \rho}{\partial t} = \nabla \cdot (D \nabla \rho) + f(\rho) $$
 
 
 ## 1. The Lotka-Volterra Paradigm
