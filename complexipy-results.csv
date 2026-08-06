@@ -1,0 +1,9 @@
+Path,File Name,Function Name,Cognitive Complexity
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_grow,0
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_cull_plant_if_dead,4
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_should_attempt_mycorrhizal_growth,5
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_find_valid_mycorrhizal_neighbours,6
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_is_mycorrhizal_neighbour_eligible,7
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_attempt_reproduction,8
+src/phids/engine/systems/lifecycle.py,lifecycle.py,run_lifecycle,14
+src/phids/engine/systems/lifecycle.py,lifecycle.py,_establish_mycorrhizal_connections,15
