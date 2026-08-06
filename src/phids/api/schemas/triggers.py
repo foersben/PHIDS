@@ -45,10 +45,10 @@ class ResourceWithdrawalAction(StrictBaseModel):
 
     type: Literal["resource_withdrawal"] = "resource_withdrawal"
     apparent_nutrition_factor: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="[%] Multiplier for energy apparent to herbivores and flow field."
+        default=0.1, ge=0.0, le=1.0, description="[%] Multiplier for energy apparent to herbivores and flow field."
     )
     withdrawal_duration: int = Field(
-        default=10,
+        default=5,
         gt=0,
         description=(
             "[Ticks] Duration of the nutrition withdrawal. It determines how many ticks the apparent "
