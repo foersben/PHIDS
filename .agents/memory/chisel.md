@@ -78,3 +78,7 @@ Action: When dismantling ECS God classes, extract lookup/calculation utilities t
 Learning: The `src/phids/api/presenters/dashboard/cell_details.py` file grew to over 700 lines, mixing both live simulation state extraction and draft/preview state extraction into a single monolith. This created a structural bottleneck in the UI layer. By splitting it into `cell_details/live.py` and `cell_details/preview.py`, we maintained strict domain segregation without breaking any tests, as long as `__init__.py` properly exported the expected functions. The `ruff` linting and formatting successfully cleaned up the unused imports automatically.
 
 Action: When dealing with presentation layers that handle distinct application modes (e.g., live engine vs draft builder), extract them into isolated modules within a package, and rely on `__init__.py` to provide a unified public interface. This preserves backwards compatibility for importers while eliminating the monolith.
+
+## 2026-08-06 - Fixing Typing Any in Replay
+Learning: When refactoring the batch execution engine (e.g., removing typing.Any from replay backends), it is important to accurately identify the concrete type. In loop.py, self.replay was typed as Any, when a concrete protocol _ReplayBackend was already available. Replacing Any with _ReplayBackend strictly enforces the contract.
+Action: Look for local Protocol definitions in module scopes before falling back to Any, as this allows for strict typing even without importing full implementation classes.

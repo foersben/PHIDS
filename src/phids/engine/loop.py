@@ -22,7 +22,7 @@ import asyncio
 import logging
 import time
 import uuid
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
@@ -181,7 +181,7 @@ class SimulationLoop:
         if disable_replay:
             from phids.io.zarr_replay import NoOpReplayBuffer
 
-            self.replay: Any = NoOpReplayBuffer()
+            self.replay: _ReplayBackend = NoOpReplayBuffer()
             self._replay_supports_raw_arrays = True
             logger.info("Using NoOp replay backend (disabling disk storage)")
         else:
