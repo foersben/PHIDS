@@ -160,14 +160,7 @@ In classic individual-based ecological models (IBMs), each organism tracks an ex
 * **Data-Oriented Contiguity:** Tracking individual birth timestamps for $N$ organisms within a swarm breaks contiguous array memory layout in the Entity-Component-System (ECS). It would force $O(N)$ dynamic memory allocations inside Numba `@njit` JIT loops.
 * **Cache Efficiency:** Keeping `SwarmComponent` structs fixed-size ($O(\text{entities})$ instead of $O(\text{organisms})$) preserves SIMD vectorization and cache locality during spatial hashing and flow field evaluation.
 
-#### 3. Stage-Wise Phenology (v2.3) vs. Chronological Senescence
-
-PHIDS distinguishes between **continuous individual senescence** (omitted/averaged out) and **discrete stage-wise phenology** (planned in Sub-Stage 2.3: Trait-Based Herbivore Demographic State Machines):
-
-* **Senescence (Omitted):** Tracking continuous decline in vigor or health as an individual organism grows chronologically older.
-* **Phenology (Supported in v2.3):** Transitions between distinct developmental morphs (e.g., Egg Incubation $\to$ Larval Grazing $\to$ Adult Dispersal). These transitions are governed by accumulated Growing Degree-Days ($GDD = \sum \max(0, T - T_{\text{base}})$) at the cohort level, altering functional behaviors (sessile vs. mobile, grazing capacity) without requiring individual organism tracking.
-
-#### 4. How Aging Could Be Incorporated (Design Alternatives)
+#### 3. How Aging Could Be Incorporated (Design Alternatives)
 
 If a scientific scenario requires explicit age-dependent behavior (e.g., declining motility in aging adults or age-dependent mortality), PHIDS provides three architecturally compatible extension patterns:
 
@@ -179,9 +172,6 @@ If a scientific scenario requires explicit age-dependent behavior (e.g., declini
    This enables age-dependent speed or upkeep decay at zero allocation overhead.
 2. **Weibull Cohort Mortality Rate ($\mu_{\text{age}}$):**
    Model senescent mortality at the swarm level using a Weibull hazard function $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. The age-dependent casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without tracking individual entity instances.
-3. **Multi-Cohort Stage Partitioning (Matrix Model):**
-   Partition a single herbivore population on a tile into $K$ age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct parameter structs, maintaining vectorized execution while resolving fine-grained age demographics.
-
 ### Continuous-Time ODE Solvers (Lotka-Volterra)
 
 The classic Lotka-Volterra predator-prey (here: herbivore-plant) equations ($\frac{dx}{dt} = \alpha x - \beta xy$) model the rate of change of continuous populations.
