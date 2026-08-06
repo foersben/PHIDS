@@ -12,7 +12,7 @@ timestamp: "2026-07-26T18:31:00Z"
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/related_works.md
-- docs/scientific_model/future_prospects/parameter_calibration_strategy.md
+- docs/speculative_research/parameter_calibration_strategy.md
 ---
 
 This section formally details the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a rigorous, deterministic computational ecology model. The documentation here defines the theoretical foundations, the explicit mathematical representations of the biological mechanisms, and the bounded approximations underlying the execution of the system.
@@ -26,8 +26,8 @@ PHIDS operates as a coupled hybrid dynamical system. Discrete entity transitions
 
 ## Future Prospects
 
-- **[Empirical Parameter Scaling & Calibration Strategy](future_prospects/parameter_calibration_strategy.md)**: Detailed non-dimensionalization strategy and calibration framework bridging empirical database traits (TRY, PanTHERIA, GloBI, Pherobase) to discrete simulation grid parameters across present and Phase 2 features.
-- **[Unified Forest-Scale Architecture & Spatiotemporal Scaling](future_prospects/spatiotemporal_scaling.md)**: A unified roadmap for scaling PHIDS to large physical biomes, addressing memory limits, subloop computability, storage constraints, kinetic abstraction, and edge-case scaling horizons.
+- **[Empirical Parameter Scaling & Calibration Strategy](../speculative_research/parameter_calibration_strategy.md)**: Detailed non-dimensionalization strategy and calibration framework bridging empirical database traits (TRY, PanTHERIA, GloBI, Pherobase) to discrete simulation grid parameters across present and Phase 2 features.
+- **[Unified Forest-Scale Architecture & Spatiotemporal Scaling](../speculative_research/spatiotemporal_scaling.md)**: A unified roadmap for scaling PHIDS to large physical biomes, addressing memory limits, subloop computability, storage constraints, kinetic abstraction, and edge-case scaling horizons.
 
 By prioritizing formal exposition, explicit boundaries, and the rationale behind each numerical approximation, this section ensures that the output telemetry from PHIDS is mathematically traceable and experimentally reproducible.
 

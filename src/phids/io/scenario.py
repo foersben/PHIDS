@@ -30,7 +30,7 @@ from phids.api.schemas.simulation import SimulationConfig
 
 logger = logging.getLogger(__name__)
 
-type JSONScalar = None | bool | int | float | str
+type JSONScalar = bool | int | float | str | None
 type JSONValue = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
 type JSONMapping = Mapping[str, JSONValue]
 

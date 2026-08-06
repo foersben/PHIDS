@@ -102,7 +102,7 @@ still track the actual codebase.
 | --- | --- | --- | --- |
 | Ruff, mypy, pytest, MkDocs strict workflow | `pyproject.toml`, `.github/workflows/ci.yml`, `.pre-commit-config.yaml` | `docs/development_guide/contribution_workflow.md` | CI workflow, local `uv run ...` gates |
 | Google-style docstrings | `pyproject.toml`, source docstrings, repository writing guidance | `docs/development_guide/contribution_workflow.md` | contributor review, `pydocstyle` local audit |
-| Canonical docs with legacy provenance preserved | `docs/`, `docs/legacy/`, `mkdocs.yml` | `docs/technical_architecture/system_architecture.md`, `docs/development_guide/contribution_workflow.md` | `uv run mkdocs build --strict` |
+| Canonical docs with legacy provenance preserved | `docs/`, `docs/legacy/`, `mkdocs.yml` | `docs/technical_architecture/system_architecture.md`, `docs/development_guide/contribution_workflow.md` | `uv run zensical build --strict` |
 
 ## Relationship to Legacy Documents
 
