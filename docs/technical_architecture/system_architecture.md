@@ -12,16 +12,15 @@ tags:
 timestamp: "2026-07-21T16:01:38Z"
 resources:
 - src/phids/engine/loop.py
-- loop.py
-- biotope.py
-- ecs.py
-- lifecycle.py
-- flow_field.py
-- interaction.py
-- signaling.py
-- analytics.py
-- conditions.py
-- zarr_replay.py
+- src/phids/engine/core/biotope.py
+- src/phids/engine/core/ecs.py
+- src/phids/engine/systems/lifecycle.py
+- src/phids/engine/core/flow_field.py
+- src/phids/engine/systems/interaction/
+- src/phids/engine/systems/signaling/
+- src/phids/telemetry/analytics.py
+- src/phids/telemetry/conditions.py
+- src/phids/io/zarr_replay.py
 ---
 
 The PHIDS simulator is engineered as a headless, high-performance data-oriented system. It segregates logic from state to bypass the bottlenecks inherent in traditional Object-Oriented simulation frameworks. This document outlines the fundamental technical boundaries that ensure deterministic, reproducible simulation loops.

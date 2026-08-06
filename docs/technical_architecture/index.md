@@ -36,4 +36,4 @@ This section details the software engineering and high-performance computing (HP
 
 ## Future Prospects
 
-* **[GPU CUDA Acceleration Engine](future_prospects/gpu_cuda_acceleration.md)**: Architecture for offloading 2D/3D reaction-diffusion PDE stencil solvers and airborne VOC advection to PyTorch and CUDA C++ GPU kernels.
+* **[GPU CUDA Acceleration Engine](../speculative_research/gpu_cuda_acceleration.md)**: Architecture for offloading 2D/3D reaction-diffusion PDE stencil solvers and airborne VOC advection to PyTorch and CUDA C++ GPU kernels.
