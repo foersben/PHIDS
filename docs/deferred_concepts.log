@@ -1,0 +1,6 @@
+## WebGL and Meso-Lens Zarr Chunk Striding
+
+- **Meso Lens (Daily Trophic Shifts):** The UI utilizes Zarr's native chunk striding to fetch environment snapshots only on `tick % 24 == 0`. Client-side WebGL interpolates the 24-tick gaps, utilizing GPU shaders to smooth the visual transition without backend CPU cost.
+- **Micro Lens (Sparse Zarr Reads):** The UI fetches only the sparse swarm coordinate chunks from the Zarr store for every tick. For 1000 swarms, this is 12 KB per tick. At 60 TPS, this uses only 720 KB/s HTTP fetch bandwidth, making real-time foraging visually fluid and web-viable.
+- **Macro Lens (Evolutionary Time-Lapse):** The UI fetches Zarr snapshot chunks only on `tick % 168 == 0` (Weekly). Swarm positions are abstracted into density heatmaps.
+- **Binary WebSocket Streaming:** High-performance socket pushes `msgpack`-encoded, zlib-compressed buffers containing the biotope grid arrays at fixed intervals for immediate, 60fps front-end rendering of the continuous cellular automata fields.

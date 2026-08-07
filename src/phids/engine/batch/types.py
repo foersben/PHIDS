@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-type JSONScalar = None | bool | int | float | str
+type JSONScalar = bool | int | float | str | None
 type JSONValue = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
 type TelemetryRow = dict[str, object]
 type TelemetryRuns = list[list[TelemetryRow]]

@@ -91,8 +91,6 @@ If 1 tick = 1 hour, and the Web UI renders at 60 FPS, the user watches 60 hours 
 To resolve this, the UI completely bypasses the simulation engine and reads historical data directly from the Zarr replay buffers (`src/phids/io/zarr_replay.py`) using a **Temporal Lens Toggle**:
 
 - **Micro Lens (Sparse Zarr Reads):** The UI fetches only the sparse swarm coordinate chunks from the Zarr store for every tick. For $1000$ swarms, this is $12 \text{ KB}$ per tick. At 60 TPS, this uses only $720 \text{ KB/s}$ HTTP fetch bandwidth, making real-time foraging visually fluid and web-viable.
-- **Meso Lens (Daily Trophic Shifts):** The UI utilizes Zarr's native chunk striding to fetch environment snapshots only on `tick % 24 == 0`. Client-side WebGL interpolates the 24-tick gaps, utilizing GPU shaders to smooth the visual transition without backend CPU cost.
-- **Macro Lens (Evolutionary Time-Lapse):** The UI fetches Zarr snapshot chunks only on `tick % 168 == 0` (Weekly). Swarm positions are abstracted into density heatmaps.
 
 ## 5. Storage, Replay, and Telemetry (Zarr + Polars) [Realized]
 
@@ -107,7 +105,7 @@ The macroscopic Lotka-Volterra aggregates - total species populations, total eco
 ### B. Zarr (High-Density Spatial Replay)
 
 - **Storage Strategy:** Zarr chunks the $1024 \times 1024$ matrices into $256 \times 256$ blocks ($256 \text{ KB}$ each, aligning with L2 cache sizes). Zstd compression achieves $> 2 \text{ GB/s}$ compression throughput. Compressing the active VOC layers takes $< 2 \text{ ms}$.
-- **Temporal Striding & IOPS Reduction:** Storing snapshots only every 24 ticks (Meso Lens) reduces the 10,000-tick storage burden from $800 \text{ GB}$ to $33 \text{ GB}$. Sparse matrix compression reduces this further to $\sim 1.5 \text{ GB}$ per run.
+- **Temporal Striding & IOPS Reduction:** Storing snapshots at reduced frequencies reduces the storage burden significantly. Sparse matrix compression reduces this further to $\sim 1.5 \text{ GB}$ per run.
 
 ## 6. Allometric Scaling & Population Densities [Realized]
 

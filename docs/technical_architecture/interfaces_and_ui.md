@@ -60,12 +60,11 @@ flowchart LR
     REST -- "Renders HTML" --> JINJA
     JINJA -- "Returns HTML Snippet" --> HTMX
     HTMX -- "Swaps DOM Elements" --> UI
-
-    WS_MGR -- "Compressed Binary State (60FPS)" --> JS
+    WS_MGR -- "JSON State Updates" --> JS
     JS -- "Draws to Screen" --> UI
 ```
 
-This dual-channel architecture strictly isolates administrative interactions from ecological rendering. When an operator edits the `DraftState` (e.g., adding a new plant species), the interaction is handled by standard HTTP POST requests. HTMX intercepts the form submission, sends it to the FastAPI REST endpoint, and Jinja2 returns a tiny HTML snippet to seamlessly update the UI without reloading the page. Conversely, the live visual representation of the simulation bypasses HTTP entirely. The engine blasts compressed binary frames at 60 FPS over a WebSocket directly to the client's `<canvas>`, preventing the massive memory overhead that would occur if we tried to represent thousands of entities as HTML DOM elements.
+This dual-channel architecture strictly isolates administrative interactions from ecological rendering. When an operator edits the `DraftState` (e.g., adding a new plant species), the interaction is handled by standard HTTP POST requests. HTMX intercepts the form submission, sends it to the FastAPI REST endpoint, and Jinja2 returns a tiny HTML snippet to seamlessly update the UI without reloading the page. Conversely, the live visual representation of the simulation is updated via JSON payloads over a WebSocket directly to the client's `<canvas>`, preventing the massive memory overhead that would occur if we tried to represent thousands of entities as HTML DOM elements.
 
 ### Live Simulation Dashboard
 
@@ -87,12 +86,11 @@ When a user clicks a checkbox to update the Diet Compatibility Matrix, the backe
 
 ## WebSocket Streaming & State Decoupling
 
-For live visualizations and diagnostics, PHIDS emits binary simulation state matrices asynchronously. A critical constraint of this system is that the `UIStreamManager` must not block the core `SimulationLoop` during heavy JSON/MsgPack serialization.
+For live visualizations and diagnostics, PHIDS emits simulation state matrices asynchronously. A critical constraint of this system is that the `UIStreamManager` must not block the core `SimulationLoop` during heavy JSON serialization.
 
 To achieve this, the architecture employs the `extract_ui_snapshot` pattern. Instead of locking the engine for the entire payload generation phase, the backend performs a lightweight, synchronous, $O(N)$ thread-safe shallow copy of primitive state arrays (the snapshot). The heavy serialization and socket dispatch are then offloaded to a background thread (`asyncio.to_thread`), allowing the main engine loop to resume executing the physics simulation entirely unimpeded.
 
-- `/ws/simulation/stream`: This high-performance socket pushes `msgpack`-encoded, zlib-compressed buffers containing the biotope grid arrays at fixed intervals. It is designed to be consumed by Canvas or WebGL renderers for immediate, 60fps front-end rendering of the continuous cellular automata fields.
-- `/ws/ui/stream`: Operates alongside HTMX. It pushes low-payload JSON diagnostic updates, such as the live tick counter, aggregated dashboard metadata, and specific cell inspection tooltips.
+- `/ws/ui/stream`: Operates alongside HTMX. It pushes JSON diagnostic updates, such as the live tick counter, aggregated dashboard metadata, and specific cell inspection tooltips.
 
 ### `WS /ws/ui/stream` Diagnostics Payload
 
