@@ -21,3 +21,8 @@ Action: [Always perform a recursive `grep` for the old directory name (`grep -rn
 ## 2026-07-26 - [Documentation Escaping]
 
 Learning: When using multi-line Python strings to inject LaTeX code (e.g. `\approx`, `\%`, `\c`, `\g`) into markdown files, standard Python string parsing interprets backslash sequences as literal escape codes. This causes `SyntaxWarning: invalid escape sequence` and silent corruption of the text (e.g., `\a` becoming an ASCII bell character, breaking math rendering). Action: Always use raw string literals (`r"""..."""`) in Python scripts designed to edit or generate markdown containing LaTeX, or explicitly double-escape the backslashes to preserve macro integrity.
+
+## 2026-08-07 - [Documentation SciPy Hallucination Removal]
+
+Learning: [When searching for documentation hallucinations regarding implementations, mathematical frameworks can drift significantly from implementation. In this case, `scipy.signal.convolve2d` was falsely claimed to be used for Gaussian diffusion, when the codebase uses custom Numba JIT-compiled matrices for explicit cache and memory optimization. A thorough search across the full `docs/` suite is necessary to ensure the hallucination is completely eradicated, as it had spread to `glossary-and-concept-index.md`, `scenario_authoring.md`, `mathematical_framework.md`, and `reaction_diffusion.md`.]
+Action: [When eradicating hallucinated features or incorrect claims about dependencies, use a repository-wide grep for the offending term to ensure no residual mentions remain in overview, architectural, or glossary documentation.]

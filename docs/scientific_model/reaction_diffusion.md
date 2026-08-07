@@ -172,7 +172,7 @@ Where $\varepsilon$ is a configurable threshold (e.g., `1e-4`).
 
 An alternative approach would be to spawn individual ECS entities representing "scent particles" that move randomly. This accurately models Brownian motion but fails completely at ecological scale: simulating 10 million airborne molecules requires 10 million spatial hashes per tick, destroying the frame rate.
 
-* *Methodological Advantage:* By vectorizing the concentration into a continuous grid layer and applying `scipy.signal.convolve2d`, mathematically accurate macro-dispersion is achieved in bounded time, regardless of how much substance is emitted.
+* *Methodological Advantage:* By vectorizing the concentration into a continuous grid layer and applying custom Numba JIT-compiled convolution kernels, mathematically accurate macro-dispersion is achieved in bounded time, regardless of how much substance is emitted.
 
 ## Stress-Induced Resource Reallocation (Senescence)
 

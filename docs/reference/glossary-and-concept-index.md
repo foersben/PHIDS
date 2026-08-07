@@ -53,7 +53,7 @@ See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 ### Airborne Diffusion
 
 The spatial spreading of volatile signal concentrations across the grid, modeled as Gaussian
-diffusion via `scipy.signal.convolve2d` acting on signal layers. Diffusion is delegated to
+diffusion via custom Numba JIT-compiled arrays and convolution functions acting on signal layers. Diffusion is delegated to
 `GridEnvironment.diffuse_signals()` and executes once per tick at the end of the signaling phase.
 Toxin layers are intentionally excluded from diffusion; toxins are point-emitter defenses
 constrained to the emitting plant's cell.
