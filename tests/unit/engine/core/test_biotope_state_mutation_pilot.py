@@ -163,7 +163,14 @@ def test_grid_environment_init_bounds_inclusive() -> None:
     env_min = GridEnvironment(width=1, height=1, num_signals=1, num_toxins=1)
     assert env_min.width == 1
 
-    env_max = GridEnvironment(
-        width=GRID_W_MAX, height=GRID_H_MAX, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
-    )
-    assert env_max.width == GRID_W_MAX
+    # Mocking out the layers to avoid OutOfMemory in CI for grid limits
+    from unittest.mock import patch
+    import numpy as np
+
+    with patch("numpy.zeros", return_value=np.zeros((1, 1))), \
+         patch("numpy.ones", return_value=np.zeros((1, 1))), \
+         patch("numpy.zeros_like", return_value=np.zeros((1, 1))):
+        env_max = GridEnvironment(
+            width=GRID_W_MAX, height=GRID_H_MAX, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
+        )
+        assert env_max.width == GRID_W_MAX
