@@ -18,6 +18,16 @@ if TYPE_CHECKING:
     from phids.engine.systems.signaling.types import _ActiveToxinProps
 
 
+def _apply_lethal_toxin_effect(swarm: SwarmComponent, toxin_val: float, lethality_rate: float) -> None:
+    """Apply lethal casualties to a swarm based on toxin concentration."""
+    casualties = int(lethality_rate * toxin_val * swarm.population)
+    if casualties > 0:
+        swarm.population = max(0, swarm.population - casualties)
+        # Remove the energetic mass of dead individuals; survivors cannot inherit it.
+        energy_loss = casualties * swarm.energy_min
+        swarm.energy = max(0.0, swarm.energy - energy_loss)
+
+
 def _apply_toxin_to_swarms(
     sub_id: int,
     lethal: bool,
@@ -37,12 +47,7 @@ def _apply_toxin_to_swarms(
             continue
 
         if lethal and lethality_rate > 0.0:
-            casualties = int(lethality_rate * toxin_val * swarm.population)
-            if casualties > 0:
-                swarm.population = max(0, swarm.population - casualties)
-                # Remove the energetic mass of dead individuals; survivors cannot inherit it.
-                energy_loss = casualties * swarm.energy_min
-                swarm.energy = max(0.0, swarm.energy - energy_loss)
+            _apply_lethal_toxin_effect(swarm, toxin_val, lethality_rate)
 
         if repellent and not swarm.repelled:
             swarm.repelled = True

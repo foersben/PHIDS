@@ -1,0 +1,8 @@
+Path,File Name,Function Name,Cognitive Complexity
+src/phids/engine/systems/signaling/emission.py,emission.py,_apply_lethal_toxin_effect,1
+src/phids/engine/systems/signaling/emission.py,emission.py,_phase_emit_signals_and_toxins,2
+src/phids/engine/systems/signaling/emission.py,emission.py,_process_toxin_emission,6
+src/phids/engine/systems/signaling/emission.py,emission.py,_process_signal_emission,7
+src/phids/engine/systems/signaling/emission.py,emission.py,_process_substance_energy_maintenance,8
+src/phids/engine/systems/signaling/emission.py,emission.py,_process_single_emission,11
+src/phids/engine/systems/signaling/emission.py,emission.py,_apply_toxin_to_swarms,12

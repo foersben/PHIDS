@@ -56,3 +56,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/signaling/emission.py::_apply_toxin_to_swarms`
+* **Selection Rationale:** Selected due to a cognitive complexity score of 15. The function iterated over swarms, checking bounds, applying lethality (with nested `if`s), handling repellency, and garbage collection. Extracting the lethality logic into `_apply_lethal_toxin_effect` flattened the deep nesting cleanly. As it's standard Python and not inside a JIT-compiled critical loop, extracting a helper provides readability gains with extremely low performance risk.
+* **Before/After Score:** 15 vs. 12
+* **Performance Assessment:** Benchmark results show stability across simulation iterations. The extraction isolates purely mathematical assignments inside standard Python execution paths and doesn't introduce memory allocations or excessive call overhead in tight inner-loops.
+* **Test Verification:** Confirmed that all formatting, unit tests, and complexity checks pass.
