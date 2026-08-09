@@ -56,3 +56,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-05-24 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/config/trigger_rules.py` `_build_node_updates`
+* **Selection Rationale:** The function had a complexity score of 15 due to multi-level if/elif branches processing different condition kinds. By extracting `_update_herbivore_presence` and `_update_environmental_signal` and converting the main function to use guard clauses, we safely simplified it. It had very low coupling and primarily dealt with dict creation (standard API boundary logic), posing zero risk to hot-loop performance.
+* **Before/After Score:** 15 vs. 7
+* **Performance Assessment:** The refactoring involved standard dictionary operations and guard clauses outside the simulation loop (in configuration endpoints). There is no performance regression.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
