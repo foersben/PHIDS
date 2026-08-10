@@ -34,6 +34,30 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 
+def _build_herbivore_presence_updates(
+    herbivore_species_id: int | None,
+    min_herbivore_population: int | None,
+) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if herbivore_species_id is not None:
+        updates["herbivore_species_id"] = herbivore_species_id
+    if min_herbivore_population is not None:
+        updates["min_herbivore_population"] = max(1, min_herbivore_population)
+    return updates
+
+
+def _build_environmental_signal_updates(
+    signal_id: int | None,
+    min_concentration: float | None,
+) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if signal_id is not None:
+        updates["signal_id"] = signal_id
+    if min_concentration is not None:
+        updates["min_concentration"] = max(0.0, min_concentration)
+    return updates
+
+
 def _build_node_updates(
     current_kind: str,
     kind: str | None = None,
@@ -44,23 +68,19 @@ def _build_node_updates(
     min_concentration: float | None = None,
 ) -> dict[str, object]:
     """Build the dictionary of node updates based on the current node kind."""
-    updates: dict[str, object] = {}
     if current_kind == "herbivore_presence":
-        if herbivore_species_id is not None:
-            updates["herbivore_species_id"] = herbivore_species_id
-        if min_herbivore_population is not None:
-            updates["min_herbivore_population"] = max(1, min_herbivore_population)
-    elif current_kind == "substance_active":
-        if substance_id is not None:
-            updates["substance_id"] = substance_id
-    elif current_kind == "environmental_signal":
-        if signal_id is not None:
-            updates["signal_id"] = signal_id
-        if min_concentration is not None:
-            updates["min_concentration"] = max(0.0, min_concentration)
-    elif current_kind in {"all_of", "any_of"} and kind is not None:
-        updates["kind"] = kind
-    return updates
+        return _build_herbivore_presence_updates(herbivore_species_id, min_herbivore_population)
+
+    if current_kind == "substance_active":
+        return {"substance_id": substance_id} if substance_id is not None else {}
+
+    if current_kind == "environmental_signal":
+        return _build_environmental_signal_updates(signal_id, min_concentration)
+
+    if current_kind in {"all_of", "any_of"} and kind is not None:
+        return {"kind": kind}
+
+    return {}
 
 
 def _render_trigger_rules_partial(request: Request, draft: DraftState) -> Response:
