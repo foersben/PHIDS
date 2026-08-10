@@ -35,6 +35,7 @@ CURATED_EXAMPLE_STEMS = {
     "wind_tunnel_orchard",
     "eternal_canopy_blueprint",
     "ecosystem_equilibrium_benchmark_200x200",
+    "ecosystem_equilibrium_benchmark_256x256",
 }
 
 
