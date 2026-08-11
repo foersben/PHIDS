@@ -494,6 +494,62 @@ def _calculate_toroidal_delta(n_coord: int, old_coord: int, size: int) -> int:
     return delta
 
 
+def _update_swarm_aversion_memory(swarm: SwarmComponent) -> None:
+    """Decay aversion memory per movement tick."""
+    if getattr(swarm, "aversion_memory", 0.0) > 0.0:
+        swarm.aversion_memory *= 0.95
+        if swarm.aversion_memory < 0.01:
+            swarm.aversion_memory = 0.0
+
+
+def _check_crowding_and_repel(swarm: SwarmComponent, env: GridEnvironment, tile_populations: list[int]) -> None:
+    """Check for crowding and set repulsion flag if necessary."""
+    if (
+        not swarm.repelled
+        and 0 <= swarm.x < env.width
+        and 0 <= swarm.y < env.height
+        and tile_populations[swarm.y * env.width + swarm.x] > TILE_CARRYING_CAPACITY
+    ):
+        swarm.repelled = True
+        swarm.repelled_ticks_remaining = 1
+
+
+def _determine_next_position(
+    swarm: SwarmComponent,
+    env: GridEnvironment,
+    diet_matrix: list[list[bool]],
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
+    scratch_scores: npt.NDArray[np.float64],
+    scratch_adjusted: npt.NDArray[np.float64],
+    scratch_weights: npt.NDArray[np.float64],
+) -> tuple[int, int]:
+    """Determine the next position for the swarm based on state."""
+    if swarm.repelled and swarm.repelled_ticks_remaining > 0:
+        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
+        swarm.repelled_ticks_remaining -= 1
+        if swarm.repelled_ticks_remaining <= 0:
+            swarm.repelled = False
+        return nx, ny
+
+    # Fast O(1) check: are we already standing on valid, uneaten food?
+    if _is_swarm_anchored(swarm, env, diet_matrix):
+        return swarm.x, swarm.y
+
+    # Resume normal gradient tracking if no food is present.
+    return _choose_neighbour_by_flow_probability(
+        swarm,
+        env.flow_field,
+        env.width,
+        env.height,
+        scratch_cx,
+        scratch_cy,
+        scratch_scores,
+        scratch_adjusted,
+        scratch_weights,
+    )
+
+
 def _resolve_swarm_movement(
     swarm: SwarmComponent,
     entity: Entity,
@@ -533,46 +589,15 @@ def _resolve_swarm_movement(
         swarm.move_cooldown -= 1
         return False
 
-    # Decay aversion memory per movement tick
-    if getattr(swarm, "aversion_memory", 0.0) > 0.0:
-        swarm.aversion_memory *= 0.95
-        if swarm.aversion_memory < 0.01:
-            swarm.aversion_memory = 0.0
+    _update_swarm_aversion_memory(swarm)
 
     old_x, old_y = swarm.x, swarm.y
 
-    # 1. Crowding takes strict precedence (Physical Jostling)
-    if (
-        not swarm.repelled
-        and 0 <= swarm.x < env.width
-        and 0 <= swarm.y < env.height
-        and tile_populations[swarm.y * env.width + swarm.x] > TILE_CARRYING_CAPACITY
-    ):
-        swarm.repelled = True
-        swarm.repelled_ticks_remaining = 1
+    _check_crowding_and_repel(swarm, env, tile_populations)
 
-    if swarm.repelled and swarm.repelled_ticks_remaining > 0:
-        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
-        swarm.repelled_ticks_remaining -= 1
-        if swarm.repelled_ticks_remaining <= 0:
-            swarm.repelled = False
-    else:
-        # 2. Fast O(1) check: are we already standing on valid, uneaten food?
-        if _is_swarm_anchored(swarm, env, diet_matrix):
-            nx, ny = swarm.x, swarm.y
-        else:
-            # 3. Resume normal gradient tracking if no food is present.
-            nx, ny = _choose_neighbour_by_flow_probability(
-                swarm,
-                env.flow_field,
-                env.width,
-                env.height,
-                scratch_cx,
-                scratch_cy,
-                scratch_scores,
-                scratch_adjusted,
-                scratch_weights,
-            )
+    nx, ny = _determine_next_position(
+        swarm, env, diet_matrix, scratch_cx, scratch_cy, scratch_scores, scratch_adjusted, scratch_weights
+    )
 
     has_moved = False
     if (nx, ny) != (old_x, old_y):
