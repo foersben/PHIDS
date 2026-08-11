@@ -1088,12 +1088,16 @@ def test_parallel_jit_flow_field_parity() -> None:
     assert field_parallel[64, 64] > 0.0
 
 
-def test_batch_processing_thread_governance(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_batch_processing_thread_governance() -> None:
     """Verify batch worker thread pinning env configuration."""
-    import os
+    import subprocess
+    import sys
 
-    from phids.engine.batch.orchestrator import _init_batch_worker
-
-    monkeypatch.delenv("NUMBA_NUM_THREADS", raising=False)
-    _init_batch_worker()
-    assert os.environ.get("NUMBA_NUM_THREADS") == "1"
+    cmd = [
+        sys.executable,
+        "-c",
+        "import os; from phids.engine.batch.orchestrator import _init_batch_worker; "
+        "_init_batch_worker(); assert os.environ.get('NUMBA_NUM_THREADS') == '1'",
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    assert res.returncode == 0

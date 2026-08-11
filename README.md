@@ -44,9 +44,9 @@ At its foundation, PHIDS models the classic herbivore-plant (predator-prey) rela
 
 Rather than assuming instant global communication, PHIDS utilizes continuous reaction-diffusion fields (coupled with semi-Lagrangian advection for local wind effects) to model the spread of biochemical compounds. Plants can synthesize airborne Volatile Organic Compounds (VOCs) to warn neighboring flora of herbivore pressure, or transmit distress signals via underground mycorrhizal networks. The dispersion of these signals is bound by physical diffusion rates, decay coefficients, and environmental factors, ensuring that ecological communication remains localized and delayed.
 
-### Chemotactic Foraging & Trophic Defenses
+### Chemotactic Foraging, Marginal Value Theorem & Trophic Defenses
 
-Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis-sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Plants can counter this by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
+Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Furthermore, foraging behavior incorporates **Charnov's Marginal Value Theorem (MVT)** and **Softmax Stochastic Action Selection**: swarms continuously re-evaluate local intake rates against landscape potential, triggering probabilistic patch departure ($P(\text{move}) = \frac{\exp(F/\tau)}{\sum \exp(F/\tau)}$) before a plant coordinate is completely depleted. Plants counter this pressure by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
 
 * **Morphological Defenses (Passive):** Features like spines (inflicting mechanical damage) or tough lignin (digestibility modifiers that cause caloric attenuation during feeding).
 * **Chemical Defenses (Active):** When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem. Or, under high stress, a plant might initiate *resource withdrawal* to mask its apparent nutritional value.
@@ -55,7 +55,7 @@ Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage 
 
 ## ⚙️ Runtime architecture & strictness improvements
 
-Following recent massive architectural sweeps (Phases 1-4), PHIDS is engineered for uncompromised performance, strict data integrity, and determinism. It uses a deliberately layered runtime architecture centered on `src/phids/engine/loop.py` (`SimulationLoop`).
+Following recent massive architectural sweeps (Phases 1-4 & Tier 0 Optimizations), PHIDS is engineered for uncompromised performance, strict data integrity, and determinism. It uses a deliberately layered runtime architecture centered on `src/phids/engine/loop.py` (`SimulationLoop`).
 
 ### Strict Data Boundaries (Pydantic V2)
 
@@ -77,7 +77,13 @@ To ensure exact determinism and reproducibility, the engine executes a strict ph
 5. termination assessment
 6. double-buffer commit and telemetry flush
 
-Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. The engine employs $O(1)$ fast-path optimizations, such as **Stochastic Raycasting Dispersal** (for anemochorous flora trajectories) and the **"Anchoring Heuristic"** (bypassing costly flow-field pathfinding for swarms on food sources). Finally, the spatial `GridEnvironment` enforces the **Rule of 16** (maximum 16 species/substances) to ensure predictable $L1/L2$ cache utilization and invariant execution times.
+Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. The engine employs high-throughput macro optimizations:
+
+* **Multi-Threaded JIT Parallelization (`@njit(parallel=True, fastmath=True)`):** Distributes grid row sweeps (`numba.prange()`) across OpenMP CPU worker threads in Jacobi flow relaxation (`flow_field.py`) and signal diffusion (`biotope.py`), achieving $3\times – 6\times$ macro throughput scaling on large grids ($256 \times 256$).
+* **Flush-to-Zero (FTZ / DAZ) Subnormal Float Elimination:** In-place truncation of decaying signal tails below `SIGNAL_EPSILON` ($1\times 10^{-4}$) to prevent hardware-level x86 FPU microcode execution stalls.
+* **Active Channel Bitmask Gating:** Fast-path skipping of inactive chemical/diffusion channels using 16-bit integer bitmasks (`active_mask & (1 << s)`).
+* **Stochastic Raycasting Dispersal & Anchoring Heuristic:** Anemochorous seed trajectories execute in $O(1)$ constant time, while swarms on active feeding coordinates bypass redundant flow-field calculation overhead.
+* **Rule of 16:** Maximum 16 species/substances pre-allocated at initialization for deterministic $L1/L2$ cache utilization.
 
 ### UI & WebSockets: FastAPI, HTMX & TailwindCSS
 

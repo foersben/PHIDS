@@ -181,9 +181,6 @@ def _run_single_headless(
     random.seed(seed)
     np.random.seed(seed)
 
-    # Enforce single-threaded Numba execution per worker process to prevent thread oversubscription
-    os.environ["NUMBA_NUM_THREADS"] = "1"
-
     from phids.api.schemas.simulation import SimulationConfig
     from phids.engine.loop import SimulationLoop
 
