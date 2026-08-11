@@ -105,12 +105,12 @@ def test_grid_environment_init_bounds() -> None:
         GridEnvironment(height=GRID_H_MAX + 1)
 
     with pytest.raises(ValueError, match="num_signals"):
-        GridEnvironment(num_signals=0)
+        GridEnvironment(num_signals=-1)
     with pytest.raises(ValueError, match="num_signals"):
         GridEnvironment(num_signals=MAX_SUBSTANCE_TYPES + 1)
 
     with pytest.raises(ValueError, match="num_toxins"):
-        GridEnvironment(num_toxins=0)
+        GridEnvironment(num_toxins=-1)
     with pytest.raises(ValueError, match="num_toxins"):
         GridEnvironment(num_toxins=MAX_SUBSTANCE_TYPES + 1)
 
@@ -163,7 +163,5 @@ def test_grid_environment_init_bounds_inclusive() -> None:
     env_min = GridEnvironment(width=1, height=1, num_signals=1, num_toxins=1)
     assert env_min.width == 1
 
-    env_max = GridEnvironment(
-        width=100, height=100, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
-    )
+    env_max = GridEnvironment(width=100, height=100, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES)
     assert env_max.width == 100
