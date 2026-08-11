@@ -650,6 +650,9 @@
       animation: false,
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: { left: 8, right: 8, top: 4, bottom: 4 }
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -804,7 +807,7 @@
     });
 
     if (!_defenseChart) {
-      const opts = _baseLineChartOptions('Defense Economy Ratio', 'E_defense / E_plant');
+      const opts = _baseLineChartOptions('Defense Ratio', 'E_def / E_plant');
       opts.plugins = { legend: { labels: { font: { size: 10 } } } };
       opts.scales.y.suggestedMin = 0;
       _defenseChart = new Chart(ctx, {
@@ -845,7 +848,7 @@
     });
 
     if (!_biomassChart) {
-      const opts = _baseLineChartOptions('Stacked Biomass Proxy', 'Cumulative Count');
+      const opts = _baseLineChartOptions('Biomass Proxy', 'Cumulative');
       opts.plugins = { legend: { labels: { font: { size: 10 } } } };
       opts.scales.x.stacked = true;
       opts.scales.y.stacked = true;
