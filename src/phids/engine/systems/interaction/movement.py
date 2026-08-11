@@ -590,11 +590,9 @@ def _resolve_swarm_movement(
         return False
 
     _update_swarm_aversion_memory(swarm)
-
-    old_x, old_y = swarm.x, swarm.y
-
     _check_crowding_and_repel(swarm, env, tile_populations)
 
+    old_x, old_y = swarm.x, swarm.y
     nx, ny = _determine_next_position(
         swarm, env, diet_matrix, scratch_cx, scratch_cy, scratch_scores, scratch_adjusted, scratch_weights
     )

@@ -56,3 +56,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-20 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/interaction/movement.py` `_resolve_swarm_movement`
+* **Selection Rationale:** The function `_resolve_swarm_movement` had a complexity score of 15 due to complex nested conditionals handling aversion memory decay, physical jostling checks, anchoring checks, and flow field tracking. It was chosen because the logic was relatively easy to modularise into cohesive private helpers without risking significant overhead, provided we pass scalar arguments efficiently and rely on Python's JIT friendliness for mathematical components. Extracting the pure logic into helpers (`_update_swarm_aversion_memory`, `_check_crowding_and_repel`, `_determine_next_position`) immediately lowers complexity while maintaining clarity.
+* **Before/After Score:** 15 vs. 5
+* **Performance Assessment:** Ran simulation benchmark script `uv run python scripts/run_sim_benchmark.py --compare develop worktree examples/rectangular_crossfire_extended.json 100 --repeats 5 --warmup 5 --jit-only`. The results showed worktree was 1.23% faster. This demonstrates no performance regression.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.

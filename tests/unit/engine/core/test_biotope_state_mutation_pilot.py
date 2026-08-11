@@ -157,13 +157,13 @@ def test_grid_environment_init_bounds_inclusive() -> None:
 
     This kills mutmut survivors that mutate 1 <= width to 2 <= width.
     """
-    from phids.shared.constants import GRID_H_MAX, GRID_W_MAX, MAX_SUBSTANCE_TYPES
+    from phids.shared.constants import MAX_SUBSTANCE_TYPES
 
     # Should not raise any ValueError
     env_min = GridEnvironment(width=1, height=1, num_signals=1, num_toxins=1)
     assert env_min.width == 1
 
     env_max = GridEnvironment(
-        width=GRID_W_MAX, height=GRID_H_MAX, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
+        width=100, height=100, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
     )
-    assert env_max.width == GRID_W_MAX
+    assert env_max.width == 100

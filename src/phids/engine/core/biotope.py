@@ -323,11 +323,11 @@ class GridEnvironment:
             num_signals: Number of airborne signal layers.
             num_toxins: Number of toxin layers.
         """
-        if not (1 <= width <= GRID_W_MAX):
+        if not (0 < width <= GRID_W_MAX):
             raise ValueError(f"width {width} out of range [1, {GRID_W_MAX}].")
-        if not (1 <= height <= GRID_H_MAX):
+        if not (0 < height <= GRID_H_MAX):
             raise ValueError(f"height {height} out of range [1, {GRID_H_MAX}].")
-        if not (1 <= num_signals <= MAX_SUBSTANCE_TYPES):
+        if not (0 <= num_signals <= MAX_SUBSTANCE_TYPES):
             raise ValueError(f"num_signals {num_signals} out of range [1, {MAX_SUBSTANCE_TYPES}].")
         if not (1 <= num_toxins <= MAX_SUBSTANCE_TYPES):
             raise ValueError(f"num_toxins {num_toxins} out of range [1, {MAX_SUBSTANCE_TYPES}].")
