@@ -640,20 +640,49 @@
 
   function drawMycorrhizalLinks(links) {
     if (!Array.isArray(links) || links.length === 0) return;
-    const { cellW, cellH } = canvasLayout;
+    const { gW, gH, cellW, cellH } = canvasLayout;
     ctx.save();
     ctx.lineCap = 'round';
     for (const link of links) {
-      const x1 = (Number(link.x1) + 0.5) * cellW;
-      const y1 = (Number(link.y1) + 0.5) * cellH;
-      const x2 = (Number(link.x2) + 0.5) * cellW;
-      const y2 = (Number(link.y2) + 0.5) * cellH;
+      const nx1 = Number(link.x1);
+      const ny1 = Number(link.y1);
+      const nx2 = Number(link.x2);
+      const ny2 = Number(link.y2);
+
+      let dx = nx2 - nx1;
+      let dy = ny2 - ny1;
+      let isWrapped = false;
+
+      if (dx > gW / 2) { dx -= gW; isWrapped = true; }
+      else if (dx < -gW / 2) { dx += gW; isWrapped = true; }
+
+      if (dy > gH / 2) { dy -= gH; isWrapped = true; }
+      else if (dy < -gH / 2) { dy += gH; isWrapped = true; }
+
+      const x1 = (nx1 + 0.5) * cellW;
+      const y1 = (ny1 + 0.5) * cellH;
+      const x2 = (nx2 + 0.5) * cellW;
+      const y2 = (ny2 + 0.5) * cellH;
+
       ctx.strokeStyle = link.inter_species ? 'rgba(245, 158, 11, 0.78)' : 'rgba(96, 165, 250, 0.82)';
       ctx.lineWidth = Math.max(1.2, Math.min(3.2, Math.min(cellW, cellH) * 0.18));
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+
+      if (!isWrapped) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + dx * cellW, y1 + dy * cellH);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - dx * cellW, y2 - dy * cellH);
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }
@@ -1498,7 +1527,10 @@ function drawPlantActivity(plantsData) {
     positionTooltip();
   }
 
-  function handleAfterSwap() {
+  function handleAfterSwap(event) {
+    if (hasLiveSimData(simData)) return;
+    const path = event?.detail?.pathInfo?.requestPath || '';
+    if (path.startsWith('/api/simulation/')) return;
     fetchPlacementPreview().then(draw);
   }
 

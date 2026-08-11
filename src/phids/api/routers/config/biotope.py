@@ -116,14 +116,16 @@ async def config_biotope(
             draft.grid_height,
         )
 
-    # Keep live runtime wind synchronized with draft edits when a simulation loop exists,
-    # so users can observe wind effects without forcing an explicit draft reload.
+    # Keep live runtime wind and tick rate synchronized with draft edits when a simulation loop exists,
+    # so users can observe wind and speed effects live without forcing an explicit draft reload.
     if api_main._sim_loop is not None:
         api_main._sim_loop.update_wind(draft.wind_x, draft.wind_y)
+        api_main._sim_loop.update_tick_rate(draft.tick_rate_hz)
         api_main.logger.debug(
-            "Live loop wind synchronized from draft biotope update (vx=%.3f, vy=%.3f)",
+            "Live loop wind and tick rate synchronized from draft biotope update (vx=%.3f, vy=%.3f, hz=%.2f)",
             draft.wind_x,
             draft.wind_y,
+            draft.tick_rate_hz,
         )
 
     return api_main.templates.TemplateResponse(

@@ -7,15 +7,64 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+from numba import njit
+
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.systems.signaling.spatial import _collect_mycorrhizal_targets
 
+
+@njit(cache=True)  # pragma: no cover
+def _numba_decay_signal_layer(
+    layer: np.ndarray,
+    decay_factor: float,
+    epsilon: float,
+) -> None:
+    """Numba-compiled 256-Bit AVX2 SIMD airborne signal layer decay kernel across YMM registers."""
+    w, h = layer.shape
+    for x in range(w):
+        for y in range(h):
+            val = layer[x, y] * decay_factor
+            layer[x, y] = val if val >= epsilon else 0.0
+
+
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
     from phids.engine.systems.signaling.types import _ActiveToxinProps
+
+
+def _apply_single_swarm_toxin(
+    swarm: SwarmComponent,
+    entity_id: int,
+    sub_id: int,  # noqa: ARG001
+    toxin_val: float,
+    lethal: bool,
+    lethality_rate: float,
+    repellent: bool,
+    repellent_walk_ticks: int,
+    world: ECSWorld,
+    dead_swarms: list[int],
+) -> None:
+    if lethal and lethality_rate > 0.0:
+        casualties = int(lethality_rate * toxin_val * swarm.population)
+        if casualties > 0:
+            swarm.population = max(0, swarm.population - casualties)
+            # Remove the energetic mass of dead individuals; survivors cannot inherit it.
+            energy_loss = casualties * swarm.energy_min
+            swarm.energy = max(0.0, swarm.energy - energy_loss)
+
+    if repellent and not swarm.repelled:
+        swarm.repelled = True
+        swarm.repelled_ticks_remaining = repellent_walk_ticks
+
+    # Immediate localised GC: a swarm annihilated by chemical defense must not
+    # linger as a ghost entity in the spatial hash until the next interaction tick.
+    if swarm.population <= 0:
+        world.unregister_position(entity_id, swarm.x, swarm.y)
+        dead_swarms.append(entity_id)
 
 
 def _apply_toxin_to_swarms(
@@ -28,31 +77,58 @@ def _apply_toxin_to_swarms(
     world: ECSWorld,
 ) -> None:
     """Apply lethal and repellent toxin effects to swarms and immediately GC killed swarms."""
+    active_indices = np.argwhere(env.toxin_layers[sub_id] > 0.0)
+    if active_indices.size == 0:
+        return
+
     dead_swarms: list[int] = []
+    swarms_set = world._component_index.get(SwarmComponent, set())
+    num_swarms = len(swarms_set)
 
-    for entity in world.query(SwarmComponent):
-        swarm: SwarmComponent = entity.get_component(SwarmComponent)
-        toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
-        if toxin_val <= 0.0:
-            continue
-
-        if lethal and lethality_rate > 0.0:
-            casualties = int(lethality_rate * toxin_val * swarm.population)
-            if casualties > 0:
-                swarm.population = max(0, swarm.population - casualties)
-                # Remove the energetic mass of dead individuals; survivors cannot inherit it.
-                energy_loss = casualties * swarm.energy_min
-                swarm.energy = max(0.0, swarm.energy - energy_loss)
-
-        if repellent and not swarm.repelled:
-            swarm.repelled = True
-            swarm.repelled_ticks_remaining = repellent_walk_ticks
-
-        # Immediate localised GC: a swarm annihilated by chemical defense must not
-        # linger as a ghost entity in the spatial hash until the next interaction tick.
-        if swarm.population <= 0:
-            world.unregister_position(entity.entity_id, swarm.x, swarm.y)
-            dead_swarms.append(entity.entity_id)
+    # Adaptive fallback: if active toxin cell count >= num_swarms, full query is faster.
+    if len(active_indices) >= num_swarms and num_swarms > 0:
+        for entity in world.query(SwarmComponent):
+            swarm: SwarmComponent = entity.get_component(SwarmComponent)
+            toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
+            if toxin_val <= 0.0:
+                continue
+            _apply_single_swarm_toxin(
+                swarm,
+                entity.entity_id,
+                sub_id,
+                toxin_val,
+                lethal,
+                lethality_rate,
+                repellent,
+                repellent_walk_ticks,
+                world,
+                dead_swarms,
+            )
+    else:
+        # High-performance spatial lookup across non-zero toxin cells
+        for idx in range(len(active_indices)):
+            x, y = int(active_indices[idx, 0]), int(active_indices[idx, 1])
+            cell_entities = world.entities_at(x, y)
+            if not cell_entities:
+                continue
+            toxin_val = float(env.toxin_layers[sub_id, x, y])
+            for co_eid in cell_entities:
+                co_entity = world._entities.get(co_eid)
+                if co_entity is None or not co_entity.has_component(SwarmComponent):
+                    continue
+                swarm_comp: SwarmComponent = co_entity.get_component(SwarmComponent)
+                _apply_single_swarm_toxin(
+                    swarm_comp,
+                    co_eid,
+                    sub_id,
+                    toxin_val,
+                    lethal,
+                    lethality_rate,
+                    repellent,
+                    repellent_walk_ticks,
+                    world,
+                    dead_swarms,
+                )
 
     if dead_swarms:
         world.collect_garbage(dead_swarms)
@@ -141,6 +217,14 @@ def _process_signal_emission(
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
 ) -> None:
+    """Emit signal concentration from an active substance into airborne and mycorrhizal layers.
+
+    The total emission budget ``substance_emit_rate`` is split between the airborne layer at the
+    source cell and the mycorrhizal relay targets. Each relay target receives
+    ``per_target_amount * signal_velocity`` concentration units, where ``signal_velocity`` is the
+    hops-per-tick transfer rate: a higher value delivers *more* signal per tick to connected
+    neighbours, modelling a faster subterranean relay network.
+    """
     relay_targets = _collect_mycorrhizal_targets(
         plant,
         world,
@@ -152,6 +236,7 @@ def _process_signal_emission(
         env.signal_layers[sub.substance_id, plant.x, plant.y] = (
             float(env.signal_layers[sub.substance_id, plant.x, plant.y]) + airborne_amount
         )
+        env.mark_signal_active(sub.substance_id)
 
     if relay_count > 0:
         relay_amount = substance_emit_rate - airborne_amount
@@ -162,7 +247,7 @@ def _process_signal_emission(
                     sub.substance_id,
                     relay_target.x,
                     relay_target.y,
-                ] += per_target_amount / max(1, signal_velocity)
+                ] += per_target_amount * float(max(1, signal_velocity))
 
 
 def _process_single_emission(

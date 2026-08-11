@@ -1,21 +1,29 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Movement and pathfinding logic for swarms in the interaction system."""
+"""Movement and pathfinding logic for swarms in the interaction system.
+
+This module contains helper functions to move swarms from one tile to another, including flow-field based movement and
+neighbour-based movement.
+
+Numba `@njit`-compiled helper functions ensure high-performance execution of the critically-threaded movement routines,
+minimising CPU branch mispredictions through branchless SIMD-friendly arithmetic where feasible.
+
+"""
 
 from __future__ import annotations
 
 import random
 from typing import TYPE_CHECKING
 
+import numpy as np
+import numpy.typing as npt
 from numba import njit
 
 from phids.engine.systems.interaction.population import TILE_CARRYING_CAPACITY, _accumulate_tile_population
 
 if TYPE_CHECKING:
-    import numpy as np
-    import numpy.typing as npt
-
+    from phids.api.schemas.species import HerbivoreSpeciesParams
     from phids.engine.components.swarm import SwarmComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
@@ -50,22 +58,59 @@ def _gather_neighbours_jit(
     c_y[0] = y
     count = 1
 
-    if x > 0:
-        c_x[count] = x - 1
-        c_y[count] = y
-        count += 1
-    if x < width - 1:
-        c_x[count] = x + 1
-        c_y[count] = y
-        count += 1
-    if y > 0:
-        c_x[count] = x
-        c_y[count] = y - 1
-        count += 1
-    if y < height - 1:
-        c_x[count] = x
-        c_y[count] = y + 1
-        count += 1
+    c_x[count] = (x - 1) % width
+    c_y[count] = y
+    count += 1
+    c_x[count] = (x + 1) % width
+    c_y[count] = y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y - 1) % height
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y + 1) % height
+    count += 1
+    return count
+
+
+@njit(cache=True)
+def _gather_neighbours_jit_pow2(
+    x: int,
+    y: int,
+    mask_x: int,
+    mask_y: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+) -> int:
+    """Numba-compiled helper function to gather neighbours using bitwise AND masking.
+
+    Args:
+        x: The x coordinate of the cell.
+        y: The y coordinate of the cell.
+        mask_x: The x mask.
+        mask_y: The y mask.
+        c_x: Array to store the x coordinates of the neighbours.
+        c_y: Array to store the y coordinates of the neighbours.
+
+    Returns:
+        The number of neighbours.
+    """
+    c_x[0] = x
+    c_y[0] = y
+    count = 1
+
+    c_x[count] = (x - 1) & mask_x
+    c_y[count] = y
+    count += 1
+    c_x[count] = (x + 1) & mask_x
+    c_y[count] = y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y - 1) & mask_y
+    count += 1
+    c_x[count] = x
+    c_y[count] = (y + 1) & mask_y
+    count += 1
     return count
 
 
@@ -123,6 +168,50 @@ def _flat_field_choice_jit(
 
 
 @njit(cache=True)
+def _apply_branchless_capacity_mask_jit(
+    count: int,
+    x: int,
+    y: int,
+    width: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+    tile_populations: npt.NDArray[np.int32],
+    max_capacity: int,
+    weights: npt.NDArray[np.float64],
+) -> float:
+    """Branchlessly mask weights for candidate neighbours exceeding tile carrying capacity.
+
+    Calculates a floating-point multiplier for each candidate tile using branchless boolean arithmetic:
+    `mask = min(1.0, is_current + is_under_capacity)`. If a candidate cell exceeds maximum capacity
+    and is not the current cell, its weight is branchlessly multiplied by 0.0, preventing CPU
+    branch mispredictions in Numba `@njit` kernels.
+
+    Args:
+        count: The number of neighbours.
+        x: The x coordinate of the cell.
+        y: The y coordinate of the cell.
+        width: The width of the grid environment.
+        c_x: Array to store the x coordinates of the neighbours.
+        c_y: Array to store the y coordinates of the neighbours.
+        tile_populations: Array of tile population values.
+        max_capacity: The maximum capacity of a tile.
+        weights: Array to store the weights.
+
+    Returns:
+        The total weight.
+    """
+    total_w = 0.0
+    for i in range(count):
+        is_current = 1.0 if (c_x[i] == x and c_y[i] == y) else 0.0
+        pop = tile_populations[c_y[i] * width + c_x[i]]
+        under_capacity = 1.0 if (pop <= max_capacity) else 0.0
+        mask = 1.0 if (is_current > 0.0 or under_capacity > 0.0) else 0.0
+        weights[i] = weights[i] * mask
+        total_w += weights[i]
+    return total_w
+
+
+@njit(cache=True, fastmath=True)
 def _weighted_field_choice_jit(
     count: int,
     invert: bool,
@@ -132,6 +221,11 @@ def _weighted_field_choice_jit(
     adjusted_scores: npt.NDArray[np.float64],
     weights: npt.NDArray[np.float64],
     rand_val: float,
+    tile_populations: npt.NDArray[np.int32] | None = None,
+    width: int = 0,
+    max_capacity: int = 500,
+    current_x: int = -1,
+    current_y: int = -1,
 ) -> tuple[int, int]:
     """Numba-compiled helper function to select a neighbour based on flow-field gradient.
 
@@ -144,6 +238,11 @@ def _weighted_field_choice_jit(
         adjusted_scores: Pre-allocated array for adjusted scores.
         weights: Pre-allocated array for flow-field weights.
         rand_val: Random value for weighted choice.
+        tile_populations: Pre-allocated population array for capacity masking.
+        width: Grid width for population indexing.
+        max_capacity: Tile carrying capacity threshold.
+        current_x: Current x coordinate of the swarm.
+        current_y: Current y coordinate of the swarm.
 
     Returns:
         The selected neighbour coordinates.
@@ -159,7 +258,16 @@ def _weighted_field_choice_jit(
     total_w = 0.0
     for i in range(count):
         weights[i] = (adjusted_scores[i] - min_score) + 1e-6
+        if tile_populations is not None and width > 0 and current_x >= 0 and current_y >= 0:
+            is_current = 1.0 if (c_x[i] == current_x and c_y[i] == current_y) else 0.0
+            pop = tile_populations[c_y[i] * width + c_x[i]]
+            under_capacity = 1.0 if (pop <= max_capacity) else 0.0
+            mask = 1.0 if (is_current > 0.0 or under_capacity > 0.0) else 0.0
+            weights[i] *= mask
         total_w += weights[i]
+
+    if total_w <= 0.0:
+        return (current_x if current_x >= 0 else c_x[0]), (current_y if current_y >= 0 else c_y[0])
 
     r = rand_val * total_w
     cum = 0.0
@@ -170,7 +278,7 @@ def _weighted_field_choice_jit(
     return c_x[count - 1], c_y[count - 1]
 
 
-@njit(cache=True)
+@njit(cache=True, fastmath=True)
 def _choose_neighbour_by_flow_probability_jit(
     x: int,
     y: int,
@@ -186,34 +294,35 @@ def _choose_neighbour_by_flow_probability_jit(
     adjusted_scores: npt.NDArray[np.float64],
     weights: npt.NDArray[np.float64],
     rand_val: float,
+    tile_populations: npt.NDArray[np.int32] | None = None,
 ) -> tuple[int, int]:
-    """JIT-accelerated Von-Neumann coordinate selector using flow weights.
-
-    This function takes into account 4-connected Von-Neumann neighbours and selects a neighbour based on flow field
-    gradient scores. If the flow-field is flat, the function will select a neighbour based on the last delta. Else, the
-    function will select a neighbour based on the flow-field gradient scores, favouring higher gradient scores when
-    ``invert`` is False and lower gradient scores when ``invert`` is True.
+    """JIT-accelerated Von-Neumann coordinate selector using flow weights and branchless capacity masking.
 
     Args:
         x: The x coordinate of the cell.
         y: The y coordinate of the cell.
         last_dx: The last x delta.
         last_dy: The last y delta.
-        flow_field: Array of flow-field gradient values.
+        flow_field: Array of flow-field gradient scores.
         width: The width of the grid environment.
         height: The height of the grid environment.
         invert: Whether to invert the flow-field gradient scores.
-        c_x: Pre-allocated array for neighbour x coordinates.
-        c_y: Pre-allocated array for neighbour y coordinates.
+        c_x: Array to store the x coordinates of the neighbours.
+        c_y: Array to store the y coordinates of the neighbours.
         scores: Pre-allocated array for flow-field scores.
-        adjusted_scores: Pre-allocated array for adjusted scores.
-        weights: Pre-allocated array for flow-field weights.
+        adjusted_scores: Pre-allocated scratch array for adjusted scores.
+        weights: Pre-allocated scratch array for sampling weights.
         rand_val: Random value for weighted choice.
+        tile_populations: Tile population array for branchless capacity masking.
 
     Returns:
         The selected neighbour coordinates.
     """
-    count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
+    is_pow2 = (width > 0 and (width & (width - 1)) == 0) and (height > 0 and (height & (height - 1)) == 0)
+    if is_pow2:
+        count = _gather_neighbours_jit_pow2(x, y, width - 1, height - 1, c_x, c_y)
+    else:
+        count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
 
     for i in range(count):
         scores[i] = flow_field[c_x[i], c_y[i]]
@@ -230,7 +339,21 @@ def _choose_neighbour_by_flow_probability_jit(
     if max_score - min_score < 1e-6:
         return _flat_field_choice_jit(count, x, y, last_dx, last_dy, c_x, c_y, weights, rand_val)
 
-    return _weighted_field_choice_jit(count, invert, scores, c_x, c_y, adjusted_scores, weights, rand_val)
+    return _weighted_field_choice_jit(
+        count,
+        invert,
+        scores,
+        c_x,
+        c_y,
+        adjusted_scores,
+        weights,
+        rand_val,
+        tile_populations=tile_populations,
+        width=width,
+        max_capacity=TILE_CARRYING_CAPACITY,
+        current_x=x,
+        current_y=y,
+    )
 
 
 def _choose_neighbour_by_flow_probability(
@@ -244,8 +367,11 @@ def _choose_neighbour_by_flow_probability(
     adjusted_scores: npt.NDArray[np.float64],
     weights: npt.NDArray[np.float64],
     invert: bool = False,
+    tile_populations: npt.NDArray[np.int32] | list[int] | None = None,
 ) -> tuple[int, int]:
     """Select a 4-connected Von-Neumann neighbour via flow-field-weighted JIT selection.
+
+    Uses branchless capacity masking to prevent over-occupancy.
 
     Args:
         swarm: The swarm component.
@@ -258,12 +384,19 @@ def _choose_neighbour_by_flow_probability(
         adjusted_scores: Pre-allocated scratch array for adjusted scores.
         weights: Pre-allocated scratch array for sampling weights.
         invert: Whether to invert the flow-field gradient scores.
+        tile_populations: Tile population array for branchless capacity masking.
 
     Returns:
         The selected neighbour coordinates.
     """
     if random.choices is not _orig_choices or random.choice is not _orig_choice:
         return _choose_neighbour_by_flow_probability_python(swarm, flow_field, width, height, invert)
+
+    tile_pop_arr: npt.NDArray[np.int32] | None = None
+    if isinstance(tile_populations, np.ndarray):
+        tile_pop_arr = tile_populations
+    elif isinstance(tile_populations, list):
+        tile_pop_arr = np.array(tile_populations, dtype=np.int32)
 
     return _choose_neighbour_by_flow_probability_jit(
         swarm.x,
@@ -280,6 +413,7 @@ def _choose_neighbour_by_flow_probability(
         adjusted_scores,
         weights,
         random.random(),
+        tile_populations=tile_pop_arr,
     )
 
 
@@ -295,6 +429,10 @@ def _random_walk_step_jit(
 ) -> tuple[int, int]:
     """JIT-accelerated uniform random coordinate selector for undirected dispersal.
 
+    Dispatches to the bitwise power-of-two fast path when both grid dimensions are powers of two,
+    eliminating integer modulo division `%` from the hot movement loop. Falls back to the modulo
+    path for arbitrary grid sizes.
+
     Args:
         x: The x coordinate of the cell.
         y: The y coordinate of the cell.
@@ -307,27 +445,11 @@ def _random_walk_step_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    c_x[0] = x
-    c_y[0] = y
-    count = 1
-
-    if x > 0:
-        c_x[count] = x - 1
-        c_y[count] = y
-        count += 1
-    if x < width - 1:
-        c_x[count] = x + 1
-        c_y[count] = y
-        count += 1
-    if y > 0:
-        c_x[count] = x
-        c_y[count] = y - 1
-        count += 1
-    if y < height - 1:
-        c_x[count] = x
-        c_y[count] = y + 1
-        count += 1
-
+    is_pow2 = (width > 0 and (width & (width - 1)) == 0) and (height > 0 and (height & (height - 1)) == 0)
+    if is_pow2:
+        count = _gather_neighbours_jit_pow2(x, y, width - 1, height - 1, c_x, c_y)
+    else:
+        count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
     idx = int(rand_val * count)
     if idx >= count:
         idx = count - 1
@@ -357,14 +479,10 @@ def _random_walk_step(
     """
     if random.choice is not _orig_choice:
         candidates: list[tuple[int, int]] = [(x, y)]
-        if x > 0:
-            candidates.append((x - 1, y))
-        if x < width - 1:
-            candidates.append((x + 1, y))
-        if y > 0:
-            candidates.append((x, y - 1))
-        if y < height - 1:
-            candidates.append((x, y + 1))
+        candidates.append(((x - 1) % width, y))
+        candidates.append(((x + 1) % width, y))
+        candidates.append((x, (y - 1) % height))
+        candidates.append((x, (y + 1) % height))
         return random.choice(candidates)
 
     return _random_walk_step_jit(x, y, width, height, c_x, c_y, random.random())
@@ -433,15 +551,11 @@ def _choose_neighbour_by_flow_probability_python(
         The selected neighbour coordinates.
     """
     x, y = swarm.x, swarm.y
-    candidates = [(x, y)]
-    if x > 0:
-        candidates.append((x - 1, y))
-    if x < width - 1:
-        candidates.append((x + 1, y))
-    if y > 0:
-        candidates.append((x, y - 1))
-    if y < height - 1:
-        candidates.append((x, y + 1))
+    candidates: list[tuple[int, int]] = [(x, y)]
+    candidates.append(((x - 1) % width, y))
+    candidates.append(((x + 1) % width, y))
+    candidates.append((x, (y - 1) % height))
+    candidates.append((x, (y + 1) % height))
 
     scores = [float(flow_field[cx, cy]) for cx, cy in candidates]
     max_score = max(scores)
@@ -453,34 +567,103 @@ def _choose_neighbour_by_flow_probability_python(
     return _python_weighted_field_choice(scores, candidates, invert)
 
 
+@njit(cache=True)
+def _is_swarm_anchored_jit(
+    x: int,
+    y: int,
+    species_id: int,
+    apparent_nutrition_val: float,
+    plant_energy_by_species: npt.NDArray[np.float64],
+    diet_matrix: npt.NDArray[np.bool_],
+) -> bool:
+    """Numba-compiled fast collision check for swarm anchoring on compatible uneaten flora.
+
+    Evaluates co-located plant energy layers using a pre-compiled boolean diet matrix,
+    eliminating Python list iteration and NumPy `.item()` scalar conversion overhead.
+
+    Args:
+        x: X-coordinate of the swarm.
+        y: Y-coordinate of the swarm.
+        species_id: Species identifier of the swarm.
+        apparent_nutrition_val: Current apparent nutrition level at (x, y).
+        plant_energy_by_species: 3D array of plant energy levels [num_flora_species, W, H].
+        diet_matrix: 2D boolean array of diet compatibility [num_herbivore_species, num_flora_species].
+
+    Returns:
+        True if the swarm is co-located with compatible uneaten food; False otherwise.
+    """
+    if apparent_nutrition_val < 0.999:
+        return False
+    num_herbivores, num_flora = diet_matrix.shape
+    if species_id >= num_herbivores:
+        return False
+    for flora_species_id in range(num_flora):
+        if diet_matrix[species_id, flora_species_id]:
+            if plant_energy_by_species[flora_species_id, x, y] > 0.0:
+                return True
+    return False
+
+
 def _is_swarm_anchored(
     swarm: SwarmComponent,
     env: GridEnvironment,
-    diet_matrix: list[list[bool]],
+    diet_matrix: list[list[bool]] | npt.NDArray[np.bool_],
 ) -> bool:
     """Return True if swarm is currently co-located with compatible uneaten food.
 
-    This function implements a fast collision-detection routine to determine whether a herbivore
-    swarm is currently co-located with compatible uneaten food by directly checking the
-    environment's energy and nutrition layers, avoiding expensive ECS queries.
+    Numba JIT Anchoring Resolution & Array Scalar Extraction Avoidance:
+    ------------------------------------------------------------------
+    Evaluating herbivore anchoring via Python list iteration and dynamic NumPy `.item()` scalar calls
+    on every movement tick induces interpreter overhead. Dispatching to `_is_swarm_anchored_jit`
+    evaluates 3D species energy arrays and 2D boolean diet matrices in compiled C, eliminating
+    object creation and scalar extraction overhead in the movement hot path.
 
     Args:
         swarm: The swarm component.
         env: The grid environment.
-        diet_matrix: The diet matrix.
+        diet_matrix: The boolean diet matrix (2D NumPy array or list of lists).
 
     Returns:
         True if the swarm is anchored, False otherwise.
     """
-    if env.apparent_nutrition_layer[swarm.x, swarm.y] < 0.999:
-        return False
+    if isinstance(diet_matrix, np.ndarray):
+        return _is_swarm_anchored_jit(
+            swarm.x,
+            swarm.y,
+            swarm.species_id,
+            float(env.apparent_nutrition_layer[swarm.x, swarm.y]),
+            env.plant_energy_by_species,
+            diet_matrix,
+        )
 
-    herbivore_row = diet_matrix[swarm.species_id] if swarm.species_id < len(diet_matrix) else []
-    for flora_species_id, is_compatible in enumerate(herbivore_row):
-        if is_compatible and env.plant_energy_by_species.item(flora_species_id, swarm.x, swarm.y) > 0:
-            return True
+    diet_arr = np.array(diet_matrix, dtype=np.bool_)
+    return _is_swarm_anchored_jit(
+        swarm.x,
+        swarm.y,
+        swarm.species_id,
+        float(env.apparent_nutrition_layer[swarm.x, swarm.y]),
+        env.plant_energy_by_species,
+        diet_arr,
+    )
 
-    return False
+
+def _calculate_toroidal_delta(n_coord: int, old_coord: int, size: int) -> int:
+    """Calculate the shortest path delta across a toroidal boundary.
+
+    Args:
+        n_coord: The coordinate of the neighbour.
+        old_coord: The coordinate of the current cell.
+        size: The size of the grid environment.
+
+    Returns:
+        The shortest path delta across the toroidal boundary.
+    """
+    delta = n_coord - old_coord
+    if delta > size // 2:
+        delta -= size
+    elif delta < -size // 2:
+        delta += size
+    return delta
 
 
 def _resolve_swarm_movement(
@@ -488,8 +671,9 @@ def _resolve_swarm_movement(
     entity: Entity,
     env: GridEnvironment,
     world: ECSWorld,
-    diet_matrix: list[list[bool]],
-    tile_populations: list[int],
+    diet_matrix: list[list[bool]] | npt.NDArray[np.bool_],
+    tile_populations: npt.NDArray[np.int32] | list[int],
+    herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
     scratch_cx: npt.NDArray[np.int32],
     scratch_cy: npt.NDArray[np.int32],
     scratch_scores: npt.NDArray[np.float64],
@@ -507,16 +691,17 @@ def _resolve_swarm_movement(
         entity: The entity.
         env: The grid environment.
         world: The ECS world.
-        diet_matrix: The diet matrix.
-        tile_populations: The tile populations.
-        scratch_cx: Pre-allocated array for neighbour x coordinates.
-        scratch_cy: Pre-allocated array for neighbour y coordinates.
-        scratch_scores: Pre-allocated array for flow-field scores.
-        scratch_adjusted: Pre-allocated array for adjusted scores.
-        scratch_weights: Pre-allocated array for flow-field weights.
+        diet_matrix: The boolean diet compatibility matrix.
+        tile_populations: Array of current population counts per tile.
+        herbivore_params_dict: Dictionary mapping species config IDs to their parameters.
+        scratch_cx: Pre-allocated buffer for candidate X coordinates.
+        scratch_cy: Pre-allocated buffer for candidate Y coordinates.
+        scratch_scores: Pre-allocated buffer for unadjusted field scores.
+        scratch_adjusted: Pre-allocated buffer for exponentiated scores.
+        scratch_weights: Pre-allocated buffer for final normalized probabilities.
 
     Returns:
-        True if the swarm has moved, False otherwise.
+        True if the swarm physically changed (x,y) coordinates, False if anchored.
     """
     if swarm.move_cooldown > 0:
         swarm.move_cooldown -= 1
@@ -537,8 +722,11 @@ def _resolve_swarm_movement(
         and 0 <= swarm.y < env.height
         and tile_populations[swarm.y * env.width + swarm.x] > TILE_CARRYING_CAPACITY
     ):
+        from phids.engine.core.herbivore_params import get_herbivore_evasion_duration
+
+        k_ticks = get_herbivore_evasion_duration(herbivore_params_dict, swarm.species_id)
         swarm.repelled = True
-        swarm.repelled_ticks_remaining = 1
+        swarm.repelled_ticks_remaining = k_ticks
 
     if swarm.repelled and swarm.repelled_ticks_remaining > 0:
         nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
@@ -561,6 +749,7 @@ def _resolve_swarm_movement(
                 scratch_scores,
                 scratch_adjusted,
                 scratch_weights,
+                tile_populations=tile_populations,
             )
 
     has_moved = False
@@ -569,8 +758,9 @@ def _resolve_swarm_movement(
         _accumulate_tile_population(tile_populations, old_x, old_y, env.width, -swarm.population)
         _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
         swarm.x, swarm.y = nx, ny
-        swarm.last_dx = nx - old_x
-        swarm.last_dy = ny - old_y
+
+        swarm.last_dx = _calculate_toroidal_delta(nx, old_x, env.width)
+        swarm.last_dy = _calculate_toroidal_delta(ny, old_y, env.height)
         has_moved = True
 
     swarm.move_cooldown = swarm.velocity - 1

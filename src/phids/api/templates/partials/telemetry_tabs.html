@@ -253,7 +253,7 @@
   const FLORA_COLOURS   = ['#22c55e','#84cc16','#10b981','#4ade80','#a3e635'];
   const HERBIVORE_COLOURS = ['#ef4444','#f97316','#ec4899','#f43f5e','#fb923c'];
   const ENERGY_COLOUR    = '#60a5fa';
-  const MAX_TELEMETRY_POINTS = 300;
+  const MAX_TELEMETRY_POINTS = 10000;
 
   // Species visibility flags
   const _visible = {};
@@ -644,15 +644,42 @@
     chart.data.datasets = merged;
   }
 
-  function _baseLineChartOptions(yTitle) {
+  function _baseLineChartOptions(yTitle, yUnit) {
+    const yLabelText = yUnit ? `${yTitle} [${yUnit}]` : yTitle;
     return {
       animation: false,
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: function(ctx) {
+              let label = ctx.dataset.label || '';
+              if (label) label += ': ';
+              if (ctx.parsed.y !== null && ctx.parsed.y !== undefined) {
+                label += Number(ctx.parsed.y).toLocaleString(undefined, { maximumFractionDigits: 2 });
+              }
+              return label;
+            }
+          }
+        }
+      },
       scales: {
-        x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-        y: { ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' }, title: { display: true, text: yTitle, font: { size: 10 } } },
+        x: {
+          ticks: { maxTicksLimit: 10, font: { size: 10 } },
+          grid: { color: '#f1f5f9' },
+          title: { display: true, text: 'Simulation Time [Ticks]', font: { size: 10 } }
+        },
+        y: {
+          suggestedMin: 0,
+          ticks: { font: { size: 10 } },
+          grid: { color: '#f1f5f9' },
+          title: { display: true, text: yLabelText, font: { size: 10 } }
+        },
       },
     };
   }
@@ -723,12 +750,13 @@
     });
 
     if (!_tsChart) {
-      const opts = _baseLineChartOptions('Population');
+      const opts = _baseLineChartOptions('Population', 'Individuals');
       opts.scales.yEnergy = {
         position: 'right',
+        suggestedMin: 0,
         ticks: { font: { size: 10 } },
         grid: { display: false },
-        title: { display: true, text: 'Energy', font: { size: 10 } },
+        title: { display: true, text: 'Total Energy [Joules]', font: { size: 10 } },
       };
       _tsChart = new Chart(ctx, {
         type: 'line',
@@ -776,7 +804,7 @@
     });
 
     if (!_defenseChart) {
-      const opts = _baseLineChartOptions('Defense economy ratio');
+      const opts = _baseLineChartOptions('Defense Economy Ratio', 'E_defense / E_plant');
       opts.plugins = { legend: { labels: { font: { size: 10 } } } };
       opts.scales.y.suggestedMin = 0;
       _defenseChart = new Chart(ctx, {
@@ -817,7 +845,7 @@
     });
 
     if (!_biomassChart) {
-      const opts = _baseLineChartOptions('Stacked biomass proxy');
+      const opts = _baseLineChartOptions('Stacked Biomass Proxy', 'Cumulative Count');
       opts.plugins = { legend: { labels: { font: { size: 10 } } } };
       opts.scales.x.stacked = true;
       opts.scales.y.stacked = true;
@@ -975,8 +1003,9 @@
       borderWidth: hasExtinction ? 3 : 0,
       _key: 'end',
     }]);
-    _psChart.options.scales.x.title.text = plantName + ' population';
-    _psChart.options.scales.y.title.text = herbivoreName + ' population';
+    _psChart.options.scales.x.title.text = plantName + ' population [Individuals]';
+    _psChart.options.scales.y.title.text = herbivoreName + ' population [Individuals]';
+    _psChart.update('none');
     _psChart.update('none');
 
     _updateStabilityStatus(points);

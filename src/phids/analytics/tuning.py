@@ -17,7 +17,7 @@ from typing import Any, cast
 import numpy as np
 from scipy.optimize import differential_evolution  # type: ignore
 
-from phids.engine.batch import _run_and_save
+from phids.engine.batch.runner import _run_and_save
 
 logger = logging.getLogger(__name__)
 

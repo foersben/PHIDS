@@ -133,7 +133,7 @@ def test_crowding_precedes_anchor_when_edible_plant_present(
     swarm.energy_upkeep_per_individual = 0.0
     swarm.split_population_threshold = TILE_CARRYING_CAPACITY * 10
 
-    monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
+    monkeypatch.setattr(random, "choice", lambda _seq: (2, 0))
     monkeypatch.setattr(
         random,
         "choices",

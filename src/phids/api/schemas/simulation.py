@@ -28,8 +28,8 @@ from phids.shared.constants import MAX_FLORA_SPECIES, MAX_HERBIVORE_SPECIES, MAX
 class SimulationConfig(StrictBaseModel):
     """Complete simulation configuration payload (REST /api/scenario/load body)."""
 
-    grid_width: int = Field(default=40, ge=1, le=200)
-    grid_height: int = Field(default=40, ge=1, le=200)
+    grid_width: int = Field(default=40, ge=1)
+    grid_height: int = Field(default=40, ge=1)
     max_ticks: int = Field(default=1000, gt=0)
     tick_rate_hz: float = Field(default=10.0, gt=0.0, description="WebSocket stream tick rate.")
 
@@ -59,7 +59,7 @@ class SimulationConfig(StrictBaseModel):
         le=256,
         description=("Ticks between mycorrhizal growth attempts. At most one new root link is formed per interval."),
     )
-    mycorrhizal_signal_velocity: int = Field(default=1, gt=0, description="Signal transfer speed t_g (ticks per hop).")
+    mycorrhizal_signal_velocity: int = Field(default=1, gt=0, description="Signal transfer speed t_g (hops per tick).")
 
     # Termination conditions
     z2_flora_species_extinction: int = Field(

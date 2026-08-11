@@ -1,0 +1,58 @@
+# Deferred Concepts Log (HPC & Ecological Scaling Roadmap)
+
+This log tracks active architectural, algorithmic, and biological concepts evaluated for future development stages. Outdated or unnecessary concepts (such as `msgpack` serialization or WebGL dynamic frame interpolation) have been completely removed following architectural review. Completed CPU non-breaking optimizations have been fully realized and integrated into primary technical documentation ([engine_execution.md](file:///home/benni/Documents/antigravity_workspace/PHIDS/docs/technical_architecture/engine_execution.md)).
+
+The remaining concepts are ordered by development priority tier:
+
+## Tier 0: Immediate Non-Breaking CPU Performance & Macro Scaling Optimizations (Highest Priority)
+
+### 1. Multi-Threaded JIT Parallelization (`@njit(parallel=True)`) [Realized]
+* **The Concept**: Distributing grid row sweeps (`numba.prange()`) across all available OpenMP CPU worker threads in Jacobi flow relaxation (`flow_field.py`) and signal field diffusion (`biotope.py`). Double buffering (`_read` immutable, `_write` mutated) guarantees zero data race conditions across parallel rows. Adaptive dispatch threshold (`width * height >= 128 * 128`) prevents thread pool dispatch overhead on small grids, while Monte Carlo batch workers pin `NUMBA_NUM_THREADS=1` to prevent process-level oversubscription.
+* **Target Module**: [flow_field.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/core/flow_field.py), [biotope.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/core/biotope.py), & [batch.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/batch.py)
+* **Status**: **Completed**. Implements parallel OpenMP JIT propagation kernels with adaptive threshold dispatching and single-threaded batch process isolation.
+
+### 2. Subnormal Float Flushing & `fastmath=True` (FTZ/DAZ Flags) [Realized]
+* **The Concept**: Decorating hot PDE diffusion and Jacobi relaxation kernels with `fastmath=True` and enforcing Flush-To-Zero / Denormals-Are-Zero (FTZ/DAZ) subnormal float zeroing (`SIGNAL_EPSILON = 1e-4`), preventing Intel/AMD x86 CPU SIMD microcode exception stalls on decaying float tails ($< 10^{-15}$).
+* **Target Module**: [biotope.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/core/biotope.py) & [flow_field.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/core/flow_field.py)
+* **Status**: **Completed**. Decorates hot biotope, flow field, and movement kernels with `@njit(cache=True, fastmath=True)` and flushes subnormal tails to zero.
+
+### 3. Contiguous 3D Memory Layout (Structure of Arrays / SoA)
+* **The Concept**: Refactoring signal and toxin layers from Python lists of 2D arrays (`list[np.ndarray]`) into single, contiguous 3D C-ordered arrays (`np.ndarray` of shape `(num_substances, width, height)` with `np.float32`), maximizing L1/L2 cache line hits and AVX-256 SIMD vector utilization.
+* **Target Module**: [biotope.py](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/core/biotope.py) & [GridEnvironment](file:///home/benni/Documents/antigravity_workspace/PHIDS/src/phids/engine/core/biotope.py#L40-L100)
+* **Expected Gain**: **~30% – 60%** macro speedup via L1/L2 cache locality.
+* **Required Effort**: **High** (~2–3 hours implementation + refactoring).
+* **Impact & Risk Evaluation**: **Moderate Risk**. Refactoring footprint across `GridEnvironment`, system interfaces, HTMX renderers, and Zarr telemetry serialization.
+* **Pro**: Optimal CPU cache locality and SIMD vector alignment across multi-channel chemical layers.
+* **Contra**: Substantial refactoring footprint across multiple core/system modules.
+
+---
+
+## Tier 2: Ecological Fidelity & Entomological Models (v2.3 Milestones)
+
+### 1. Stage-Wise Phenology (Growing Degree-Day State Machine)
+* **The Concept**: Distinguishing between continuous individual senescence and discrete stage-wise phenology (e.g., Egg Incubation $\to$ Larval Grazing $\to$ Adult Dispersal), governed by accumulated Growing Degree-Days ($GDD$).
+* **Current Reality**: Swarms currently represent uniform populations without phenological state transitions.
+* **Priority & Rationale**: **High (Ecosystem Milestone v2.3)**. Critical for realistic entomological modeling where insect foraging behaviors, metabolic consumption, and mobility radically alter across life stages.
+
+### 2. Multi-Cohort Stage Partitioning (Matrix Population Model)
+* **The Concept**: Partitioning a single swarm on a tile into $K$ age-cohort sub-components (e.g., Young, Prime, Senescent), each evaluated with distinct metabolic rates and vulnerability coefficients.
+* **Current Reality**: Populations are uniform aggregations on each tile.
+* **Priority & Rationale**: **Medium-High (Ecosystem Milestone v2.3)**. Resolves fine-grained demographic mortality and age-stratified grazing dynamics while preserving vectorized array execution.
+
+---
+
+## Tier 3: Long-Horizon HPC Scaling (Phase 4/5 Speculative Research)
+
+### 3. Zero-Allocation ECS Arena Allocator & Immutable Memory Pools
+* **The Concept**: An ECS architecture operating strictly on pre-allocated static memory arenas, completely eliminating dynamic Python dictionary resizing and list allocations during steady-state ticks.
+* **Current Reality**: The core engine uses dynamic Python `dict` and `set` collections for entity registration, while Numba JIT hot-paths operate directly on pre-allocated NumPy array buffers.
+* **Priority & Rationale**: **Low (Phase 5 HPC)**. Python garbage collection pauses are negligible at current grid scales ($256 \times 256$) because the hot path is already unboxed in Numba. This allocator target is reserved for multi-million entity macro-grid deployments ($1024 \times 1024$).
+
+---
+
+## Tier 4: Documentation Quality-of-Life & Publication Refactoring
+
+### 4. Documentation Flowing Prose Refactoring
+* **The Concept**: Converting dense, list-heavy technical markdown files (e.g., `mathematical_framework.md`, `spatiotemporal_scaling.md`, `ecological_analytics.md`) into continuous, flowing scientific prose.
+* **Current Reality**: Technical documentation heavily utilizes bulleted lists for clarity and fast inspection.
+* **Priority & Rationale**: **Low (Ongoing)**. Continuous prose aligns better with academic publication standards, but bulleted lists remain advantageous during active feature iteration.

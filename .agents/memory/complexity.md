@@ -44,3 +44,15 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 24 vs. 9
 * **Performance Assessment:** Common-sense engineering determines this non-engine UI rendering function imposes no execution impact on the simulation engine or benchmark-critical loops. Existing `pytest-benchmark` payload JSON benchmarks continue passing perfectly.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-23 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/core/flow_field.py` - `_compute_flow_field_impl`
+* **Selection Rationale:** Selected due to its very high cognitive complexity (70) entirely driven by deeply nested boundary-checking loops (`for x in (0, width-1)` etc). The logic was purely spatial indexing, making it easy to untangle by safely extracting the boundary evaluation into helper functions (`_propagate_boundaries_jit`, `_update_boundary_x_jit`, and `_update_boundary_y_jit`), maintaining Numba compatibility with zero abstractions.
+* **Before/After Score:** 70 vs. < 15 (Target function completely cleared).
+* **Performance Assessment:** The benchmark `test_flow_field_generation_benchmark` showed a mean execution time of ~240µs, matching the baseline of ~235µs well within the expected environmental jitter (StdDev ~33µs vs ~15µs baseline), confirming that extracting cleanly typed `@njit` kernels inside the JIT compiler successfully inlines the functions with zero runtime abstraction penalty.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2026-08-05 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/telemetry.py` -> `export_telemetry_format`
+* **Selection Rationale:** The function had a cognitive complexity of 15 due to deep nesting of export-format-specific branches containing inline helper functions (closures). As an API endpoint handler, extracting the format logic into top-level async helper functions carries no engine performance risk while greatly flattening and simplifying the handler.
+* **Before/After Score:** 15 vs. 11
+* **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.

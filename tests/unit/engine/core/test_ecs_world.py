@@ -164,3 +164,35 @@ def test_ecs_unregister_position_guard(empty_world: ECSWorld) -> None:
     # Now legitimately unregister
     world.unregister_position(e1.entity_id, 1, 1)
     assert e1.entity_id not in world._entity_positions
+
+
+def test_ecs_world_query_caching_and_edge_branches(empty_world: ECSWorld) -> None:
+    """Verifies empty query, cached query hits, missing entity destruction, and duplicate position registration."""
+    world = empty_world
+
+    # Destroying non-existent entity should return safely
+    world.destroy_entity(999999)
+
+    e1 = world.create_entity()
+    world.add_component(e1.entity_id, Marker(42))
+
+    # Empty query should return all entities
+    all_entities = world.query()
+    assert len(all_entities) == 1
+
+    # Query non-existent component should return []
+    class NonExistentComponent:
+        pass
+
+    assert world.query(NonExistentComponent) == []
+
+    # First query populates cache
+    q1 = world.query(Marker)
+    # Second query hits query cache
+    q2 = world.query(Marker)
+    assert q1 is q2
+
+    # Duplicate position registration should short-circuit
+    world.register_position(e1.entity_id, 3, 3)
+    world.register_position(e1.entity_id, 3, 3)
+    assert e1.entity_id in world.entities_at(3, 3)

@@ -12,16 +12,15 @@ tags:
 timestamp: "2026-07-21T16:01:38Z"
 resources:
 - src/phids/engine/loop.py
-- loop.py
-- biotope.py
-- ecs.py
-- lifecycle.py
-- flow_field.py
-- interaction.py
-- signaling.py
-- analytics.py
-- conditions.py
-- zarr_replay.py
+- src/phids/engine/core/biotope.py
+- src/phids/engine/core/ecs.py
+- src/phids/engine/systems/lifecycle.py
+- src/phids/engine/core/flow_field.py
+- src/phids/engine/systems/interaction/
+- src/phids/engine/systems/signaling/
+- src/phids/telemetry/analytics.py
+- src/phids/telemetry/conditions.py
+- src/phids/io/zarr_replay.py
 ---
 
 The PHIDS simulator is engineered as a headless, high-performance data-oriented system. It segregates logic from state to bypass the bottlenecks inherent in traditional Object-Oriented simulation frameworks. This document outlines the fundamental technical boundaries that ensure deterministic, reproducible simulation loops.
@@ -46,9 +45,48 @@ The architectural nexus of the project is the `SimulationLoop` (`src/phids/engin
 To preclude race conditions during state mutation, PHIDS implements rigorous double-buffering for specific continuous fields (e.g., signal diffusion layers and plant energy arrays).
 When a system phase computes new values, it reads from the read-buffer (`State_Read`) and commits its mutations entirely to a write-buffer (`State_Write`). Only upon the conclusion of the phase are the buffer references swapped.
 
+```mermaid
+sequenceDiagram
+    participant E as ECS Systems
+    participant R as Read Buffer (State_t)
+    participant W as Write Buffer (State_t+1)
+    
+    Note over E,W: Tick Execution Begins
+    
+    E->>R: Read Flora Energy at (x, y)
+    R-->>E: Return 45.0 Joules
+    
+    E->>R: Read Swarm Population at (x, y)
+    R-->>E: Return 12 Entities
+    
+    Note over E: Compute Local<br/>Interaction Kinetics
+    
+    E->>W: Write Updated Energy: 38.0
+    E->>W: Write Updated Population: 13
+    
+    Note over E,W: Tick Finalization
+    
+    W->>R: Swap Pointers (Commit State)
+    Note over R: State_t now holds new values
+```
+
+As illustrated above, during the tick, the Engine relies strictly on the `State_t` read buffer to retrieve localized information (such as Flora Energy or Swarm Population). All calculations of grazing, metabolic drain, and movement are processed using this frozen snapshot of the world. The resulting state changes are written independently to the `State_t+1` write buffer. Only after the entire tick concludes are the pointers swapped, instantly committing the new state. This guarantees that the order in which entities are processed during a tick never affects the outcome, preserving perfect mathematical determinism.
+
 ## Memory Bounding: The "Rule of 16"
 
 Dynamic memory allocation during the hot simulation loop introduces prohibitive latency. The architecture imposes a strict upper bound constraint: the system accommodates a maximum of 16 distinct flora species, 16 herbivore species, and 16 substance mechanisms. Matrices (such as diet compatibility or trigger relationships) are pre-allocated at a fixed $(16 \times 16)$ scale during bootstrapping.
+
+## 256-Bit AVX2 SIMD & Numba JIT Accelerated Kernels
+
+To maximize CPU throughput across 256-bit AVX2 SIMD register architectures (YMM vector registers), hot-path simulation sub-routines are compiled into C via `@njit(cache=True)` or vectorized across contiguous memory blocks:
+
+- **Numba JIT Swarm Anchoring (`_is_swarm_anchored_jit`)**: Pre-compiled 2D boolean diet matrix check in [movement.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/movement.py).
+- **Vectorized Energy Layer Rebuild (`rebuild_energy_layer`)**: Single C-level 256-bit AVX2 reduction (`np.sum(..., axis=0)`) in [biotope.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/biotope.py).
+- **Photosynthetic Biomass Growth (`_grow_simd_jit`)**: Vectorized 168-hour stride growth scaling in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
+- **Mycorrhizal Link Tax Deduction (`_apply_mycorrhizal_tax_jit`)**: 256-bit SIMD vector subtractions across root links in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
+- **Airborne VOC Layer Decay (`_numba_decay_signal_layer`)**: In-place 256-bit YMM layer attenuation and epsilon clamping in [emission.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/emission.py).
+- **Spatial Hash Query Buffer Reuse (`EMPTY_SET`)**: Singleton `frozenset` reuse for unoccupied cells in [ecs.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/ecs.py) and [spatial.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/spatial.py).
+- **Pre-Compiled Foraging Parameter Caching (`CachedFloraForagingParams` / `CachedHerbivoreForagingParams`)**: O(1) slot parameter resolution in [feeding.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/feeding.py).
 
 ## Structural Flow & Data Pipelines
 
@@ -72,7 +110,7 @@ flowchart TD
     A["<b>🌐 1. Asynchronous Ingress Layer</b><br/><hr style='border:1px solid #3B82F6; margin: 4px 0;'/><br/><i>FastAPI REST Control Surface</i><br/>• POST /api/scenario/load<br/>• POST /api/simulation/start|pause<br/>• PUT /api/simulation/wind"]:::ingress
 
     %% 2. STRUCTURAL CONSTRAINTS
-    B["<b>🗃️ 2. Zero-Allocation Bootstrapping</b><br/><hr style='border:1px solid #94A3B8; margin: 4px 0;'/><br/><i>Strict Memory Bounding (Rule of 16)</i><br/>• [16x16] Diet Compatibility Matrix<br/>• [16x16] Substance Trigger Matrix<br/>• Pre-allocated NumPy Environment Arrays"]:::constraint
+    B["<b>🗃️ 2. Structural Memory Bounding</b><br/><hr style='border:1px solid #94A3B8; margin: 4px 0;'/><br/><i>Strict Memory Bounding (Rule of 16)</i><br/>• [16x16] Diet Compatibility Matrix<br/>• [16x16] Substance Trigger Matrix<br/>• Pre-allocated NumPy Environment Arrays"]:::constraint
 
     %% 3. ENGINE CORE
     C["<b>⚙️ 3. Headless Engine Core</b><br/><hr style='border:1px solid #8B5CF6; margin: 4px 0;'/><br/><i>SimulationLoop (loop.py)</i><br/>• <b>ECSWorld:</b> O(1) Spatial Hash Entity Indexing<br/>• <b>GridEnvironment:</b> Double-Buffered CA Layers"]:::core
@@ -88,7 +126,7 @@ flowchart TD
 
     %% The Central Pipeline Spine
     A == Validated Pydantic Schema ==> B
-    B == Immutable Memory Allocation ==> C
+    B == Structural Matrix Binding ==> C
     C == Trigger Continuous step() ==> D
     D == Commit Double-Buffer Swap ==> E
     E == Dispatch Frame Logs ==> F
@@ -97,8 +135,6 @@ flowchart TD
 ### Module Mapping & State Transit
 
 This diagram maps specific code modules (`loop.py`, `biotope.py`, `ecs.py`, `lifecycle.py`, etc.) and details how state, double-buffered writes, and telemetry frames traverse the operational system.
-
-<div align="center">
 
 ```mermaid
 flowchart TD
@@ -176,4 +212,23 @@ flowchart TD
     class A6 egressLayer;
 ```
 
-</div>
+In this detailed workflow: 
+
+* **Phase 1 (Ingress)** handles external control commands. 
+* **Phase 2 (Registry)** enforces the structural constraints (Rule of 16) and allocates the simulation world. 
+* **Phase 3 (Engine Core)** initializes the persistent state buffers and the high-performance spatial indexer. 
+* **Phase 4 (Pipeline)** represents the iterative tick. 
+* **Phase 5 (Data Analytics)** is where telemetry is lazily recorded and termination is checked. Crucially, the **Lifecycle** and **Interaction** systems modify the write buffer, which is then synchronized with the **Signaling** system and finally committed. 
+* **Phase 6 (Egress)** pushes the resulting visual state to the live dashboard.
+
+## Component State Management
+
+Component state is strictly partitioned into read and write buffers.
+The Interaction System reads from the active `read_buffer` and writes new kinematic and metabolic data to the `write_buffer`.
+The Signaling System reads from the active `read_buffer` and writes chemical concentrations to the `write_buffer`.
+
+## Numba JIT Array Access
+
+Spatial arrays rely on native 2D NumPy float arrays (e.g., `layer[x, y]`) inside Numba `@njit(parallel=True)` pre-compiled kernels. 
+
+Rather than relying on abstract multi-dimensional indices or object-oriented coordinate classes, the engine evaluates ecological phenomena-like flow-field diffusion and reaction kinetics-using explicit, parallelized `prange` loops over these pre-allocated 2D matrices. This ensures optimal memory access patterns and L1/L3 cache coherence across the double-buffered layers without the massive allocation overhead of creating intermediate objects per grid cell.

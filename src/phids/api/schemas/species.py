@@ -116,6 +116,11 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         gt=0,
         description="Explicit population threshold for mitosis.",
     )
+    evasion_duration_ticks: int = Field(
+        default=5,
+        ge=1,
+        description="Number of ticks to execute a repelled random walk when physically jostled due to overcrowding.",
+    )
 
 
 class DietCompatibilityMatrix(StrictBaseModel):

@@ -27,7 +27,9 @@ Instead of modeling the populations of foxes and rabbits continuously via Ordina
 
 ### 1. Metabolic Attrition
 
-Swarms continuously deplete their stored energy ($E_i$) proportional to their population size ($N_i$).
+In a natural ecosystem, starvation is not a delayed, all-or-nothing event. A swarm of 100 insects needs a strict number of calories every day just to keep their collective hearts beating and wings flapping. If they only find enough food to support 90 insects, 10 insects will immediately perish.
+
+To model this, swarms continuously deplete their stored energy ($E_i$) proportional to their population size ($N_i$).
 
 Let $m_i$ be the species-specific metabolic upkeep rate per individual per tick.
 
@@ -86,41 +88,61 @@ $$
 
 Cellular division within a macroscopic swarm occurs when the cluster population reaches $N_i \ge N_{split}$, prompting a physical bifurcation into two discrete ECS entities that share the parent's accumulated energy.
 
-#### I. Implementation Mechanics
+#### I. Structural Bifurcation Mechanics
 
-During the interaction and lifecycle phase, if a swarm's population count violates the maximum threshold ($N_i \ge N_{split}$), a division event is triggered. The parent swarm splits its population array into two distinct entity segments (e.g., 7 and 8 individuals for a parent of 15).
+During the interaction and lifecycle phase, any swarm whose population strictly violates the biological carrying capacity threshold ($N_i \ge N_{\text{split}}$) triggers an immediate cellular division event. The parent swarm fractures its population array and energetic reserve into two distinct structural entities (e.g., bifurcating a parent of 15 into cohorts of 7 and 8 individuals).
 
-Instead of writing both daughter swarms to the exact coordinates $(x, y)$ of the parent, the engine passes the second daughter swarm through an internal stochastic displacement routine: `_random_walk_step(swarm.x, swarm.y)`. This translates the offspring's spatial coordinates to a stochastically sampled adjacent cell in the Moore or von Neumann neighborhood before appending it to the Entity Component System (ECS) world array.
+To prevent catastrophic spatial overlap, the engine subjects the daughter swarm to an immediate stochastic displacement routine ($\mathcal{W}_{\text{random}}(x_0, y_0)$). This operation translates the newly spawned offspring to a stochastically sampled adjacent coordinate within the local Von Neumann neighborhood prior to committing the entity to the ECS world matrix.
 
-#### II. Why It Is Solved This Way
+#### II. Avoiding Spatial Convergence Loops
 
-In a discrete, grid-based simulation engine utilizing an ECS paradigm, placing two distinct entities with overlapping spatial keys on the same frame introduces critical system conflicts. Without immediate dispersal, the engine would have to handle infinite immediate re-coalescence loops (where the two swarms instantly merge back together on the subsequent tick if local density rules dictate) or handle division calculations multiple times on a single spatial coordinate, stalling the pipeline.
+Within the strict confines of a discrete, grid-based Entity-Component-System (ECS), co-locating two distinct entities possessing identical spatial keys in the same temporal frame inevitably induces system conflicts. Absent immediate forced dispersal, the interaction loops would evaluate the swarms as independent entities occupying the same ecological niche, forcing the engine to resolve infinite re-coalescence cycles or recursively re-evaluate density constraints on a singular coordinate, rapidly stalling the execution pipeline.
 
-#### III. The Historical/Continuous Alternative
+#### III. The Failings of Continuous Repulsion
 
-The naive continuous mathematical alternative assumes that a population splits perfectly in-place, occupying a single infinitesimal point in space, with separation driven over time by continuous partial differential equations (PDEs) for repulsive movement.
+Naive continuous mathematical frameworks assume that a population splits perfectly in-place, temporarily occupying an infinitesimal singularity, with eventual separation governed by the slow integration of continuous repulsive Partial Differential Equations (PDEs). This approach is computationally devastating at scale and biologically inaccurate for macroscopic grazing herds.
 
-#### IV. Computational Improvement
+#### IV. Architectural and Array Optimization
 
-* **Complexity:** Reduces a multi-step path-finding or collision-avoidance routine down to an $O(1)$ stochastic computation.
-* **Array Efficiency:** By immediately assigning the daughter swarm to a vacant or adjacent cell index during the mutation pass, the engine avoids the need for an expensive post-split "entity un-stacking" pass, which would require an $O(N \log N)$ spatial sorting or an $O(N^2)$ distance cross-check of overlapping swarms. It also minimizes memory overhead by keeping the mutation local to the active entity buffer transformation loop.
+By enforcing immediate stochastic displacement, PHIDS reduces complex path-finding and collision-avoidance resolution down to a unified $O(1)$ computation. Consequently, the engine entirely bypasses the need for expensive post-split "entity un-stacking" passes, which traditionally demand $O(N \log N)$ spatial sorting or $O(N^2)$ Euclidean cross-checks to disentangle overlapping agents. This mutation is executed inline within the active transformation buffer, guaranteeing optimal memory coherency.
 
 #### V. Biological Modeling Realism
 
 * **Kin Competition and Local Overgrazing:** In real-world plant-herbivore dynamics, reproducing insects or micro-pathogens do not occupy the exact same physical space as their parental colony without causing catastrophic local resource failure.
 * **Dispersal Phase:** Forcing an immediate step into an adjacent cell models an *active dispersal phase*. It ensures that offspring immediately attempt to exploit neighboring vegetation resources, realistically simulating the outward expansion of a foraging front across a plant canopy or meadow.
 
-## Numerical Example
+## 4. Formal Numerical Example of Mitosis
 
-Imagine a swarm of 10 herbivores with a baseline upkeep $m_i = 1.0$ and a reproduction cost $c_i = 5.0$.
+To concretize this metabolic calculus, consider a discrete swarm composed of 10 herbivore individuals characterized by a baseline baseline upkeep $m_i = 1.0$ and a reproduction cost $c_i = 5.0$. During the feeding phase, the swarm fully consumes a plant entity, elevating its total energy pool $E_i$ to 35.0 units.
 
-1. **Feeding Phase:** The swarm eats a plant, bringing its total energy $E_i$ to **35.0**.
-2. **Metabolism Phase:** The swarm pays its upkeep ($10 \times 1.0 = 10.0$).
-3. **Surplus Calculation:** The swarm has $35.0 - 10.0 = 25.0$ surplus energy.
-4. **Reproduction:** The swarm converts the surplus into $\lfloor 25.0 / 5.0 \rfloor = 5$ new offspring.
-5. **Tick Conclusion:** The swarm ends the tick with a population of **15** and $0.0$ surplus energy.
+In the subsequent metabolism phase, the swarm must pay its survival upkeep ($10 \times 1.0 = 10.0$), leaving a net surplus of 25.0 energy units ($35.0 - 10.0 = 25.0$). This surplus is routed strictly into reproductive synthesis, converting into exactly 5 new offspring ($\lfloor 25.0 / 5.0 \rfloor = 5$).
 
-If $N_{split} = 15$, the swarm will divide into two swarms of 7 and 8 individuals. One swarm retains the parent's coordinate, while the daughter swarm is stochastically displaced to an adjacent cell to begin active dispersal.
+The swarm concludes the integration tick with an updated population of 15 and 0.0 remaining surplus energy. Should the species configuration define a mitosis threshold $N_{split} = 15$, this population triggers immediate cellular division. The swarm bifurcates into two distinct cohorts of 7 and 8 individuals respectively. To prevent a catastrophic spatial re-merge, the primary swarm retains the parental coordinate while the daughter swarm undergoes stochastic displacement to an adjacent cell to initiate active spatial dispersal.
+
+```mermaid
+flowchart TD
+    %% Base Styling & Theme Definitions
+    classDef parent fill:#1E293B, stroke:#3B82F6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef process fill:#312E81, stroke:#8B5CF6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef daughter fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef anchor fill:#78350F, stroke:#F59E0B, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+
+    A["<b>Parent Swarm (Pop: 15)</b><br/>Coordinate: (X, Y)"]:::parent
+
+    B["<b>Mitosis Triggered</b><br/>N >= N_split"]:::process
+
+    A --> B
+
+    C["<b>Primary Cohort (Pop: 8)</b><br/>Anchors at (X, Y)"]:::anchor
+    D["<b>Daughter Cohort (Pop: 7)</b><br/>Stochastic Spatial Displacement"]:::process
+
+    B --> C
+    B --> D
+
+    E["<b>Dispersed Daughter</b><br/>Coordinate: (X+1, Y)"]:::daughter
+
+    D --> E
+```
 
 ## Alternatives & Omissions
 
@@ -138,14 +160,7 @@ In classic individual-based ecological models (IBMs), each organism tracks an ex
 * **Data-Oriented Contiguity:** Tracking individual birth timestamps for $N$ organisms within a swarm breaks contiguous array memory layout in the Entity-Component-System (ECS). It would force $O(N)$ dynamic memory allocations inside Numba `@njit` JIT loops.
 * **Cache Efficiency:** Keeping `SwarmComponent` structs fixed-size ($O(\text{entities})$ instead of $O(\text{organisms})$) preserves SIMD vectorization and cache locality during spatial hashing and flow field evaluation.
 
-#### 3. Stage-Wise Phenology (v2.3) vs. Chronological Senescence
-
-PHIDS distinguishes between **continuous individual senescence** (omitted/averaged out) and **discrete stage-wise phenology** (planned in Sub-Stage 2.3: Trait-Based Herbivore Demographic State Machines):
-
-* **Senescence (Omitted):** Tracking continuous decline in vigor or health as an individual organism grows chronologically older.
-* **Phenology (Supported in v2.3):** Transitions between distinct developmental morphs (e.g., Egg Incubation $\to$ Larval Grazing $\to$ Adult Dispersal). These transitions are governed by accumulated Growing Degree-Days ($GDD = \sum \max(0, T - T_{\text{base}})$) at the cohort level, altering functional behaviors (sessile vs. mobile, grazing capacity) without requiring individual organism tracking.
-
-#### 4. How Aging Could Be Incorporated (Design Alternatives)
+#### 3. How Aging Could Be Incorporated (Design Alternatives)
 
 If a scientific scenario requires explicit age-dependent behavior (e.g., declining motility in aging adults or age-dependent mortality), PHIDS provides three architecturally compatible extension patterns:
 
@@ -157,9 +172,6 @@ If a scientific scenario requires explicit age-dependent behavior (e.g., declini
    This enables age-dependent speed or upkeep decay at zero allocation overhead.
 2. **Weibull Cohort Mortality Rate ($\mu_{\text{age}}$):**
    Model senescent mortality at the swarm level using a Weibull hazard function $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. The age-dependent casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without tracking individual entity instances.
-3. **Multi-Cohort Stage Partitioning (Matrix Model):**
-   Partition a single herbivore population on a tile into $K$ age-cohort ECS entities (e.g., Young, Prime, Senescent). Each cohort acts as an independent entity with distinct parameter structs, maintaining vectorized execution while resolving fine-grained age demographics.
-
 ### Continuous-Time ODE Solvers (Lotka-Volterra)
 
 The classic Lotka-Volterra predator-prey (here: herbivore-plant) equations ($\frac{dx}{dt} = \alpha x - \beta xy$) model the rate of change of continuous populations.

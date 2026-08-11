@@ -56,3 +56,25 @@ Action: Use `TypeAdapter(ConditionNode)` to correctly validate the root of the r
 
 Learning: Extracting utility methods and Pydantic schemas out of a monolithic `phids.api.main` file cleans the module graph significantly but introduces severe import-ordering strictness under `ruff`. `from __future__ import annotations` must be the absolute first statement following the module docstring, overriding `typing.TYPE_CHECKING` blocks and standard library imports, otherwise `F404` and `E402` linting errors block PR validation.
 Action: Ensure script-based refactors explicitly locate and insert `from __future__ import annotations` precisely at `docstring_end + 1` before rearranging any other dependencies.
+
+## 2024-05-18 - Extraction of database compilation helpers from run_all.py
+
+Learning: Extracting functional helpers requires careful handling of multiline functions and docstrings when replacing code. While it's tempting to use string replacement or regex tools directly in shell scripts, Python AST parsing or simply rewriting cleaner functions with proper imports and manual formatting verification is safer to preserve Google-style docstrings, especially across heavily typed DataFrame builders.
+Action: Next time a monolith is identified, ensure that all extracted functions strictly inherit their full Google-style docstrings into the new modules to prevent CI or persona constraint failures for documentation debt.
+
+## 2026-08-03 - Extracting Multiprocessing Runners
+
+Learning: When extracting a `multiprocessing.spawn`-based runner function (like `_run_single_headless` or `_run_and_save`) from a monolith into a package submodule, the target functions must remain top-level module functions in their new locations to satisfy `pickle` serialization requirements. Wrapping them in classes or inner scopes will immediately break the `ProcessPoolExecutor` dispatcher.
+Action: Retain module-level runner functions in isolation (e.g. `runner.py`) when dismantling batch execution engines.
+
+## 2026-08-03 - Extracting Utility Methods from SimulationLoop
+
+Learning: Extracting parameter lookup utilities out of large ECS orchestrator classes (like `SimulationLoop`) into dedicated pure functional modules (`herbivore_params.py`) prevents the God class from acting as a centralized dictionary wrapper. When extracting these, ensure they take `dict` instances rather than object references to decouple state effectively.
+
+Action: When dismantling ECS God classes, extract lookup/calculation utilities that only access static or pre-computed data (`_herbivore_params`) into independent pure functional packages (`core/herbivore_params.py`) to reduce file length and increase testability.
+
+## 2025-05-15 - Splitting the Cell Details Monolith
+
+Learning: The `src/phids/api/presenters/dashboard/cell_details.py` file grew to over 700 lines, mixing both live simulation state extraction and draft/preview state extraction into a single monolith. This created a structural bottleneck in the UI layer. By splitting it into `cell_details/live.py` and `cell_details/preview.py`, we maintained strict domain segregation without breaking any tests, as long as `__init__.py` properly exported the expected functions. The `ruff` linting and formatting successfully cleaned up the unused imports automatically.
+
+Action: When dealing with presentation layers that handle distinct application modes (e.g., live engine vs draft builder), extract them into isolated modules within a package, and rely on `__init__.py` to provide a unified public interface. This preserves backwards compatibility for importers while eliminating the monolith.

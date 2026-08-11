@@ -17,9 +17,7 @@ from typing import TypeVar, cast
 C = TypeVar("C")
 
 
-# ---------------------------------------------------------------------------
-# Dataclass-based generic component storage
-# ---------------------------------------------------------------------------
+EMPTY_SET: frozenset[int] = frozenset()
 
 
 @dataclass(slots=True)
@@ -298,7 +296,7 @@ class ECSWorld:
         self.unregister_position(entity_id, old_x, old_y)
         self.register_position(entity_id, new_x, new_y)
 
-    def entities_at(self, x: int, y: int) -> set[int]:
+    def entities_at(self, x: int, y: int) -> set[int] | frozenset[int]:
         """Return the set of entity ids occupying a cell.
 
         Args:
@@ -306,10 +304,10 @@ class ECSWorld:
             y: The Y-axis spatial grid coordinate.
 
         Returns:
-            set[int]: Entity ids occupying the cell.
+            set[int] | frozenset[int]: Entity ids occupying the cell.
 
         """
-        return self._spatial_hash.get((x, y), set())
+        return self._spatial_hash.get((x, y), EMPTY_SET)
 
     def _remove_from_cell(self, entity_id: int, cell: tuple[int, int]) -> None:
         """Detach an entity from a cell and prune empty cell buckets."""

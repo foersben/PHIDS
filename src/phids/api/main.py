@@ -23,7 +23,7 @@ import logging
 import pathlib
 import time
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from fastapi import (
     FastAPI,
@@ -56,6 +56,7 @@ from phids.api.routers import (
 )
 from phids.api.ui_state.state import DraftState, get_draft
 from phids.api.websockets import SimulationStreamManager, UIStreamManager
+from phids.engine.core.grid_utils import is_power_of_two
 from phids.shared.logging_config import configure_logging
 
 if TYPE_CHECKING:
@@ -75,6 +76,7 @@ _TEMPLATE_DIR = pathlib.Path(__file__).parent / "templates"
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
 
 templates = Jinja2Templates(directory=str(_TEMPLATE_DIR))
+templates.env.globals["is_power_of_two"] = is_power_of_two
 
 app = FastAPI(
     title="PHIDS - Plant-Herbivore Interaction & Defense Simulator",
@@ -257,7 +259,7 @@ async def simulation_stream(websocket: WebSocket) -> None:
         websocket: Connected client socket endpoint.
 
     Notes:
-        The manager enforces msgpack+zlib encoding, tick-synchronous emission, and policy-close
+        The manager enforces json+zlib encoding, tick-synchronous emission, and policy-close
         semantics when no live scenario is loaded.
 
     """
@@ -312,6 +314,9 @@ async def ui_status_badge() -> HTMLResponse:
     return HTMLResponse(content=render_status_badge_html(_sim_loop))
 
 
+_CELL_DETAILS_TICK_TOLERANCE: Final[int] = 8
+
+
 @app.get("/api/ui/cell-details", summary="Detailed tooltip payload for one grid cell")
 async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> JSONResponse:
     """Return rich grid-cell details for dashboard tooltips.
@@ -332,7 +337,11 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
         HTTPException: Upstream presenter validation rejects out-of-bounds coordinates.
 
     """
-    if _sim_loop is not None and expected_tick is not None and expected_tick != _sim_loop.tick:
+    if (
+        _sim_loop is not None
+        and expected_tick is not None
+        and abs(expected_tick - _sim_loop.tick) > _CELL_DETAILS_TICK_TOLERANCE
+    ):
         return JSONResponse(
             status_code=409,
             content={
