@@ -31,3 +31,7 @@ Focuses on the `mycorrhizal_relay`. Displays how non-attacked flora adjacent to 
 ## Wind Tunnel Orchard (`examples/wind_tunnel_orchard.json`)
 
 Leverages dynamic meteorological configurations to demonstrate anisotropic signal diffusion and directional, anisotropic seed dispersion via continuous wind vectors.
+
+## Trophic Equilibrium Benchmark (`examples/ecosystem_equilibrium_benchmark_200x200.json`)
+
+A comprehensive, biologically grounded 200x200 baseline scenario representing a high-density, multi-species trophic network. This benchmark acts as the primary validation testbed for the engine's capability to sustain continuous equilibrium (1,000+ ticks). It actively exercises every configuration parameter, including multi-stage signal-relay cascades, active chemical defense triggers, repellents, lethal toxins, resource withdrawal, anemochorous seeds, visual camouflage, mycorrhizal networks, and strict Lotka-Volterra energetic thermodynamic balancing.

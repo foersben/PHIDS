@@ -99,7 +99,7 @@ flowchart TD
         H --> I{"Substance Type Classification"}
 
         %% Airborne Path
-        I -->|Atmospheric Signal| J["Emit Volatile Plume<br><i>SciPy convolve2d Diffusion</i>"]
+        I -->|Atmospheric Signal| J["Emit Volatile Plume<br><i>Numba JIT Diffusion</i>"]
         J --> K["Propagate via Mycorrhizal Graph<br><i>Fixed Network Velocity Bypass</i>"]
 
         %% Local Tissue Toxin Path

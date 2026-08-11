@@ -25,6 +25,15 @@ def test_generate_clustered() -> None:
     assert len(coords) > 0
 
 
+def test_generate_clustered_out_of_bounds_filtering() -> None:
+    """Test clustered placement when variance pushes points out of grid bounds."""
+    coords = generate_clustered(5, 5, cluster_count=5, variance=50.0)
+    assert isinstance(coords, list)
+    for x, y in coords:
+        assert 0 <= x < 5
+        assert 0 <= y < 5
+
+
 def test_generate_banded_horizontal() -> None:
     """Test horizontal banded entity placement."""
     coords = generate_banded(20, 20, band_count=2, orientation="horizontal")

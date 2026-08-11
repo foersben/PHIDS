@@ -245,6 +245,7 @@ def _move_swarm(
         world,
         diet_matrix,
         tile_populations,
+        {},
         scratch_cx,
         scratch_cy,
         scratch_scores,

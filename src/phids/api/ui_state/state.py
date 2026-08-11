@@ -19,7 +19,10 @@ from __future__ import annotations
 import dataclasses
 import logging
 from copy import deepcopy
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
+
+from phids.api.ui_state.triggers import TriggerRule
 
 if TYPE_CHECKING:
     from phids.api.schemas.placement import PlacementStrategy
@@ -32,15 +35,17 @@ if TYPE_CHECKING:
     from phids.api.schemas.triggers import TriggerConditionSchema
     from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
     from phids.api.ui_state.substances import SubstanceDefinition
-    from phids.api.ui_state.triggers import TriggerRule
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_SCENARIO_NAME: Final[str] = "Default Scenario"
 
-# Draft state
+
+# ---------------------------------------------------------------------------
+# Draft persistence path (outside src/ so watchfiles ignores it)
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SCENARIO_NAME: Final[str] = "Default Scenario"
+_DRAFT_AUTOSAVE_PATH: Final[Path] = Path("data") / "draft_autosave.json"
 
 
 def _build_triggers_by_flora(
@@ -116,8 +121,8 @@ class DraftState:
 
     Attributes:
         scenario_name: Human-readable label used in the UI header.
-        grid_width: Biotope width in cells (1-200).
-        grid_height: Biotope height in cells (1-200).
+        grid_width: Biotope width in cells (ge=1).
+        grid_height: Biotope height in cells (ge=1).
         max_ticks: Simulation tick budget.
         tick_rate_hz: WebSocket streaming rate in ticks per second.
         wind_x: Initial uniform wind x-component.
@@ -280,6 +285,123 @@ class DraftState:
         return config
 
     @classmethod
+    def from_sim_config(cls, config: SimulationConfig, scenario_name: str = "") -> DraftState:
+        """Reconstruct a ``DraftState`` from a validated :class:`SimulationConfig`.
+
+        This is the canonical round-trip inverse of :meth:`build_sim_config`.
+        It is used both by the scenario importer and the draft autosave restore path.
+
+        Args:
+            config: Validated simulation configuration to reconstruct from.
+            scenario_name: Human-readable label; defaults to the grid dimensions.
+
+        Returns:
+            DraftState: Reconstructed draft ready for use in the builder UI.
+        """
+        from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
+        from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
+        from phids.api.ui_state.substances import SubstanceDefinition
+
+        imported_trigger_rules: list[TriggerRule] = []
+        imported_substances: list[SubstanceDefinition] = []
+        seen_substance_ids: set[int] = set()
+
+        for flora_spec in config.flora_species:
+            for trig in flora_spec.triggers:
+                i_type: Literal["herbivore_attack", "environmental_signal"]
+                if isinstance(trig.initiator, HerbivoreAttackInitiator):
+                    i_type = "herbivore_attack"
+                    h_id = trig.initiator.herbivore_species_id
+                    min_pop = trig.initiator.min_herbivore_population
+                    sig_id = -1
+                    min_conc = 0.0
+                else:
+                    i_type = "environmental_signal"
+                    h_id = -1
+                    min_pop = 0
+                    sig_id = trig.initiator.signal_id
+                    min_conc = trig.initiator.min_concentration
+
+                imported_trigger_rules.append(
+                    TriggerRule(
+                        flora_species_id=flora_spec.species_id,
+                        initiator_type=i_type,
+                        herbivore_species_id=h_id,
+                        min_herbivore_population=min_pop,
+                        initiator_signal_id=sig_id,
+                        initiator_min_concentration=min_conc,
+                        substance_id=getattr(trig.action, "substance_id", -1),
+                        activation_condition=(
+                            trig.activation_condition.model_dump(mode="json")
+                            if trig.activation_condition is not None
+                            else None
+                        ),
+                    )
+                )
+
+                if isinstance(trig.action, SynthesizeSubstanceAction):
+                    if trig.action.substance_id not in seen_substance_ids:
+                        seen_substance_ids.add(trig.action.substance_id)
+                        imported_substances.append(
+                            SubstanceDefinition(
+                                substance_id=trig.action.substance_id,
+                                name=f"Substance {trig.action.substance_id}",
+                                is_toxin=trig.action.is_toxin,
+                                lethal=trig.action.lethal,
+                                repellent=trig.action.repellent,
+                                synthesis_duration=trig.action.synthesis_duration,
+                                aftereffect_ticks=trig.aftereffect_ticks,
+                                lethality_rate=trig.action.lethality_rate,
+                                repellent_walk_ticks=trig.action.repellent_walk_ticks,
+                                energy_cost_per_tick=trig.action.energy_cost_per_tick,
+                                irreversible=trig.action.irreversible,
+                            )
+                        )
+
+        return cls(
+            scenario_name=scenario_name or f"{config.grid_width}x{config.grid_height}",
+            grid_width=config.grid_width,
+            grid_height=config.grid_height,
+            max_ticks=config.max_ticks,
+            tick_rate_hz=config.tick_rate_hz,
+            wind_x=config.wind_x,
+            wind_y=config.wind_y,
+            num_signals=config.num_signals,
+            num_toxins=config.num_toxins,
+            z2_flora_species_extinction=config.z2_flora_species_extinction,
+            z4_herbivore_species_extinction=config.z4_herbivore_species_extinction,
+            z6_max_total_flora_energy=config.z6_max_total_flora_energy,
+            z7_max_total_herbivore_population=config.z7_max_total_herbivore_population,
+            signal_decay_factor=config.signal_decay_factor,
+            substance_emit_rate=config.substance_emit_rate,
+            mycorrhizal_inter_species=config.mycorrhizal_inter_species,
+            mycorrhizal_connection_cost=config.mycorrhizal_connection_cost,
+            mycorrhizal_growth_interval_ticks=config.mycorrhizal_growth_interval_ticks,
+            mycorrhizal_signal_velocity=config.mycorrhizal_signal_velocity,
+            placement_mode=config.placement_mode,
+            flora_placement_strategy=config.flora_placement_strategy,
+            herbivore_placement_strategy=config.herbivore_placement_strategy,
+            flora_species=list(config.flora_species),
+            herbivore_species=list(config.herbivore_species),
+            diet_matrix=[list(row) for row in config.diet_matrix.rows],
+            trigger_rules=imported_trigger_rules,
+            substance_definitions=imported_substances,
+            initial_plants=[
+                PlacedPlant(species_id=p.species_id, x=p.x, y=p.y, energy=p.energy) for p in config.initial_plants
+            ],
+            initial_swarms=[
+                PlacedSwarm(
+                    species_id=s.species_id,
+                    x=s.x,
+                    y=s.y,
+                    population=s.population,
+                    energy=s.energy,
+                )
+                for s in config.initial_swarms
+            ],
+        )
+
+    @classmethod
     def default(cls) -> DraftState:
         """Create the built-in default draft state.
 
@@ -326,6 +448,66 @@ class DraftState:
 
 
 # ---------------------------------------------------------------------------
+# Draft persistence helpers
+# ---------------------------------------------------------------------------
+
+
+def _persist_draft(state: DraftState) -> None:
+    """Write the draft to ``data/draft_autosave.json`` for hot-reload survival.
+
+    Silently skips if the draft cannot be serialized (e.g. incomplete species list).
+
+    Args:
+        state: The draft state to persist.
+    """
+    try:
+        config = state.build_sim_config()
+    except ValueError:
+        # Draft is incomplete (e.g. no species yet) - skip persistence.
+        return
+    try:
+        _DRAFT_AUTOSAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _DRAFT_AUTOSAVE_PATH.write_text(
+            config.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        logger.warning("Could not persist draft to %s: %s", _DRAFT_AUTOSAVE_PATH, exc)
+
+
+def _restore_draft() -> DraftState | None:
+    """Attempt to load a draft from ``data/draft_autosave.json``.
+
+    Returns:
+        Restored :class:`DraftState` if the file exists and is valid, otherwise ``None``.
+    """
+    from phids.api.schemas.simulation import SimulationConfig
+
+    if not _DRAFT_AUTOSAVE_PATH.exists():
+        return None
+    try:
+        raw = _DRAFT_AUTOSAVE_PATH.read_text(encoding="utf-8")
+        config = SimulationConfig.model_validate_json(raw)
+        state = DraftState.from_sim_config(config, scenario_name="autosaved")
+        logger.info(
+            "Draft state restored from autosave %s (grid=%dx%d, flora=%d, herbivores=%d)",
+            _DRAFT_AUTOSAVE_PATH,
+            config.grid_width,
+            config.grid_height,
+            len(config.flora_species),
+            len(config.herbivore_species),
+        )
+        return state
+    except Exception as exc:
+        logger.warning(
+            "Draft autosave at %s could not be loaded (%s) - falling back to default.",
+            _DRAFT_AUTOSAVE_PATH,
+            exc,
+        )
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Module-level singleton
 # ---------------------------------------------------------------------------
 
@@ -333,20 +515,27 @@ _draft: DraftState | None = None
 
 
 def get_draft() -> DraftState:
-    """Return the current draft state, initialising a default if needed.
+    """Return the current draft state, restoring from autosave or defaulting if needed.
+
+    On first access after a process restart, the function attempts to reload the
+    previously persisted draft from ``data/draft_autosave.json`` before falling
+    back to the built-in default scenario. This makes the draft survive uvicorn
+    hot-reloads triggered by source-file edits.
 
     Returns:
         DraftState: The active draft configuration.
     """
     global _draft
     if _draft is None:
-        _draft = DraftState.default()
-        logger.info("Draft state initialised with built-in default scenario")
+        _draft = _restore_draft()
+        if _draft is None:
+            _draft = DraftState.default()
+            logger.info("Draft state initialised with built-in default scenario")
     return _draft
 
 
 def set_draft(state: DraftState) -> None:
-    """Replace the active draft state.
+    """Replace the active draft state and persist it to disk.
 
     Args:
         state: New :class:`DraftState` to activate.
@@ -360,10 +549,16 @@ def set_draft(state: DraftState) -> None:
         len(state.herbivore_species),
         len(state.substance_definitions),
     )
+    _persist_draft(state)
 
 
 def reset_draft() -> None:
-    """Reset the draft state to the built-in default."""
+    """Reset the draft state to the built-in default and remove the autosave file."""
     global _draft
     _draft = DraftState.default()
     logger.info("Draft state reset to built-in default scenario")
+    if _DRAFT_AUTOSAVE_PATH.exists():
+        try:
+            _DRAFT_AUTOSAVE_PATH.unlink()
+        except OSError as exc:
+            logger.warning("Could not remove draft autosave %s: %s", _DRAFT_AUTOSAVE_PATH, exc)

@@ -53,7 +53,7 @@ See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 ### Airborne Diffusion
 
 The spatial spreading of volatile signal concentrations across the grid, modeled as Gaussian
-diffusion via `scipy.signal.convolve2d` acting on signal layers. Diffusion is delegated to
+diffusion via Numba-accelerated spatial convolution acting on signal layers. Diffusion is delegated to
 `GridEnvironment.diffuse_signals()` and executes once per tick at the end of the signaling phase.
 Toxin layers are intentionally excluded from diffusion; toxins are point-emitter defenses
 constrained to the emitting plant's cell.
@@ -488,12 +488,7 @@ See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
 
 ### WebSocket Streams
 
-PHIDS exposes two intentionally distinct WebSocket endpoints:
-
-- `/ws/simulation/stream` - emits full per-tick environment snapshots encoded as msgpack + zlib,
-  suitable for programmatic replay or external analysis,
-- `/ws/ui/stream` - emits lightweight JSON payloads optimized for canvas rendering in the browser
-  control center.
+- `/ws/ui/stream` - emits JSON biotope grid snapshots and diagnostic updates directly for HTML5 `<canvas>` rendering in the browser control center.
 
 See: [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)
 

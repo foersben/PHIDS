@@ -47,7 +47,7 @@ run_tests() {
   NUMBA_DISABLE_JIT=1 uv run pytest --cov=src/phids --cov-fail-under=80
 
   echo ">>> Pass 2: Numba Compilation Verification"
-  uv run pytest tests/integration/systems/test_full_numba_jit_compilation.py tests/integration/systems/test_interaction_property_invariants.py \
+  uv run pytest tests/integration/systems/test_full_numba_jit_compilation.py tests/integration/systems/test_interaction_invariants/ \
     -x -q -o "addopts="
 
 }

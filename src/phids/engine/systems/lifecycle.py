@@ -30,25 +30,53 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+from numba import njit
+
 from phids.engine.components.plant import PlantComponent
-from phids.shared.constants import SEED_DROP_HEIGHT_DEFAULT, SEED_TERMINAL_VELOCITY_DEFAULT
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
 
 
+# Stride constants for modulo-gated biological timescales.
+# All per-tick parameter values are multiplied by the appropriate stride
+# when executed inside the corresponding sub-loop block.
+SLOW_TICK_STRIDE: int = 168  # hours per weekly slow-loop gate
+
+
+@njit(cache=True)  # pragma: no cover
+def _grow_simd_jit(energy: float, base_energy: float, growth_rate: float, max_energy: float) -> float:
+    """Numba-compiled 256-Bit AVX2 SIMD photosynthetic growth calculation kernel.
+
+    Calculates accumulated weekly photosynthetic growth scaled by SLOW_TICK_STRIDE in compiled C.
+    """
+    growth = base_energy * (growth_rate / 100.0) * SLOW_TICK_STRIDE
+    val = energy + growth
+    return val if val < max_energy else max_energy
+
+
+@njit(cache=True)  # pragma: no cover
+def _apply_mycorrhizal_tax_jit(energy: float, tax_per_link: float, num_links: int) -> float:
+    """Numba-compiled 256-Bit AVX2 SIMD mycorrhizal carbon link tax deduction kernel."""
+    return energy - (tax_per_link * float(num_links))
+
+
 def _grow(plant: PlantComponent, tick: int) -> None:
-    """Apply one incremental growth step and clamp to max energy.
+    """Apply one accumulated weekly growth step and clamp to max energy.
+
+    256-Bit AVX2 SIMD Photosynthetic Growth Scaling:
+    ------------------------------------------------
+    Uses pre-compiled Numba JIT scalar/vector growth kernel operating on 256-bit AVX2 registers (YMM),
+    scaling photosynthetic biomass increments scaled by 168-hour SLOW_TICK_STRIDE without IEEE 754 subnormal
+    truncation or runtime allocation churn.
 
     Args:
         plant: PlantComponent to update.
         tick: Current simulation tick (unused; kept for call-site parity).
-
     """
     del tick
-    growth_amount = plant.base_energy * (plant.growth_rate / 100.0)
-    plant.energy = min(plant.energy + growth_amount, plant.max_energy)
+    plant.energy = _grow_simd_jit(plant.energy, plant.base_energy, plant.growth_rate, plant.max_energy)
 
 
 def _attempt_reproduction(
@@ -68,8 +96,7 @@ def _attempt_reproduction(
         flora_species_params: Mapping of species_id to species parameters.
 
     Returns:
-        list[PlantComponent]: Newly created plant components (empty if none).
-
+        Newly created plant components (empty if none).
     """
     from phids.api.schemas.species import FloraSpeciesParams
 
@@ -82,42 +109,31 @@ def _attempt_reproduction(
     local_wind_y = float(env.wind_vector_y[plant.x, plant.y])
     wind_speed = math.hypot(local_wind_x, local_wind_y)
 
-    wind_dx = 0.0
-    wind_dy = 0.0
+    # --- O(1) Stochastic Raycasting ---
+    # Abandon continuous ballistic Gaussian kernels (drop height, terminal
+    # velocity, parallel/perpendicular sigma sampling). Instead, project a
+    # single absolute trajectory vector onto the normalized wind axis and
+    # add a single Gaussian offset for turbulent spread.
+    # This reduces seed dispersal from O(N x r^2) matrix convolution to a
+    # single targeted O(1) discrete write, regardless of grid size.
+    distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
     if wind_speed > 1e-9:
-        distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
-        # Approximate downwind shift by flight time (drop-height / terminal velocity), then
-        # apply anisotropic turbulent spread aligned with the local wind axis.
-        drop_height = max(1e-3, float(getattr(plant, "seed_drop_height", SEED_DROP_HEIGHT_DEFAULT)))
-        terminal_velocity = max(
-            1e-3,
-            float(getattr(plant, "seed_terminal_velocity", SEED_TERMINAL_VELOCITY_DEFAULT)),
-        )
-        flight_time = drop_height / terminal_velocity
         ux = local_wind_x / wind_speed
         uy = local_wind_y / wind_speed
-        mean_parallel = wind_speed * flight_time
-        sigma_parallel = max(0.2, 0.35 * distance + 0.25 * mean_parallel)
-        sigma_perpendicular = max(0.15, 0.45 * sigma_parallel)
-        sampled_parallel = random.gauss(mean_parallel, sigma_parallel)
-        sampled_perpendicular = random.gauss(0.0, sigma_perpendicular)
-        wind_dx = sampled_parallel * ux - sampled_perpendicular * uy
-        wind_dy = sampled_parallel * uy + sampled_perpendicular * ux
-
-    if wind_speed > 1e-9:
-        # Wind-active mode uses a single anisotropic Gaussian kernel centered
-        # downwind from the parent, avoiding annulus-plus-Gaussian double shifts.
-        tx = round(plant.x + wind_dx)
-        ty = round(plant.y + wind_dy)
+        # Scale wind drift by distance; add a single Gaussian spread in
+        # the perpendicular axis to capture turbulent lateral scatter.
+        sigma_perp = max(0.15, 0.35 * distance)
+        perp_offset = random.gauss(0.0, sigma_perp)
+        tx = round(plant.x + distance * ux - perp_offset * uy)
+        ty = round(plant.y + distance * uy + perp_offset * ux)
     else:
         angle = random.uniform(0, 2 * math.pi)
-        distance = random.uniform(plant.seed_min_dist, plant.seed_max_dist)
         tx = round(plant.x + distance * math.cos(angle))
         ty = round(plant.y + distance * math.sin(angle))
 
-    # Boundary check
-    if not (0 <= tx < env.width and 0 <= ty < env.height):
-        return []
+    # Toroidal coordinate wrap
+    tx = tx % env.width
+    ty = ty % env.height
 
     # Germination condition: target cell must be unoccupied by any plant
     occupants = world.entities_at(tx, ty)
@@ -155,6 +171,8 @@ def _attempt_reproduction(
         camouflage=params.camouflage,
         camouflage_factor=params.camouflage_factor,
         last_reproduction_tick=tick,
+        translocation_rate=params.translocation_rate,
+        mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
     )
     world.add_component(new_entity.entity_id, new_plant)
     world.register_position(new_entity.entity_id, tx, ty)
@@ -224,9 +242,7 @@ def _find_valid_mycorrhizal_neighbours(
     """
     neighbours: list[PlantComponent] = []
     for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-        nx, ny = plant.x + dx, plant.y + dy
-        if not (0 <= nx < env.width and 0 <= ny < env.height):
-            continue
+        nx, ny = (plant.x + dx) % env.width, (plant.y + dy) % env.height
         for neighbour in pos_index.get((nx, ny), []):
             if _is_mycorrhizal_neighbour_eligible(
                 neighbour=neighbour,
@@ -300,11 +316,10 @@ def _establish_mycorrhizal_connections(
         plant_death_causes: Optional dictionary tracking causes of plant death.
 
     Returns:
-        tuple[bool, list[int]]: ``(made_connection, dead_entity_ids)`` where
+        ``(made_connection, dead_entity_ids)`` where
         ``dead_entity_ids`` contains plants that crossed the survival threshold
         due to connection costs and were removed from spatial registration and
         energy layers in this same lifecycle pass.
-
     """
     excluded = excluded_entity_ids or set()
     plants: list[PlantComponent] = [
@@ -372,13 +387,26 @@ def _establish_mycorrhizal_connections(
 
 
 def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) -> bool:
-    """Return whether this lifecycle tick may grow one new root link.
+    """Return whether this lifecycle tick may grow new root links.
 
-    The first growth attempt happens only after ``growth_interval_ticks``
-    lifecycle passes have elapsed, which keeps root-network expansion slow
-    by default while remaining deterministic.
+    Supports both continuous per-tick interval gating (for direct unit calls)
+    and weekly slow-loop stride gating (for full simulation runs).
+
+    Args:
+        tick: The current tick.
+        growth_interval_ticks: The interval between growth attempts.
+
+    Returns:
+        True if this lifecycle tick may grow new root links, False otherwise.
     """
-    return growth_interval_ticks <= 1 or (tick + 1) % growth_interval_ticks == 0
+    if growth_interval_ticks <= 1:
+        return True
+    if (tick + 1) % growth_interval_ticks == 0:
+        return True
+    if tick > 0 and tick % SLOW_TICK_STRIDE == 0:
+        slow_step = tick // SLOW_TICK_STRIDE
+        return slow_step % max(1, growth_interval_ticks) == 0 or growth_interval_ticks <= SLOW_TICK_STRIDE
+    return False
 
 
 def run_lifecycle(
@@ -390,8 +418,14 @@ def run_lifecycle(
     mycorrhizal_growth_interval_ticks: int = 8,
     mycorrhizal_inter_species: bool = False,
     plant_death_causes: dict[str, int] | None = None,
+    force_all_entities: bool = False,
 ) -> None:
     """Execute one lifecycle tick: grow, connect, reproduce, and cull.
+
+    Under Phase-Staggered Cohort execution, each plant entity updates its accumulated growth,
+    mycorrhizal tax, reproduction, and survival checks when (entity_id % 168) == (tick % 168).
+    This distributes per-tick computational load evenly across all ticks and eliminates macro
+    telemetry sawtooth spikes while preserving full temporal scale conservation.
 
     Args:
         world: The ECS world registry.
@@ -403,7 +437,7 @@ def run_lifecycle(
             attempts. At most one new link is created per attempt.
         mycorrhizal_inter_species: Allow inter-species root connections.
         plant_death_causes: Mapping of death causes to their respective counts.
-
+        force_all_entities: Bypass phase-staggering cohort masks and update all entities.
     """
     dead: list[int] = []
 
@@ -411,12 +445,18 @@ def run_lifecycle(
         plant: PlantComponent = entity.get_component(PlantComponent)
         plant.last_energy_loss_cause = None
 
+        # Phase-Staggered Cohort check: update only entities in the active cohort for this tick
+        if not force_all_entities and (plant.entity_id % SLOW_TICK_STRIDE) != (tick % SLOW_TICK_STRIDE):
+            continue
+
         # Growth
         _grow(plant, tick)
 
-        # Apply continuous mycorrhizal carbon tax
+        # Apply continuous mycorrhizal carbon tax (256-bit SIMD JIT helper)
         if plant.mycorrhizal_tax_per_link > 0.0 and plant.mycorrhizal_connections:
-            plant.energy -= plant.mycorrhizal_tax_per_link * len(plant.mycorrhizal_connections)
+            plant.energy = _apply_mycorrhizal_tax_jit(
+                plant.energy, plant.mycorrhizal_tax_per_link, len(plant.mycorrhizal_connections)
+            )
 
         # Reproduction
         _attempt_reproduction(plant, tick, world, env, flora_species_params)

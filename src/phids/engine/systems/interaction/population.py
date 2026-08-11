@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+import numpy.typing as npt
+from numba import njit
+
 from phids.engine.components.swarm import SwarmComponent
 
 if TYPE_CHECKING:
@@ -15,12 +19,27 @@ if TYPE_CHECKING:
 TILE_CARRYING_CAPACITY = 500
 
 
+@njit(cache=True)
+def _accumulate_tile_population_jit(
+    tile_populations: npt.NDArray[np.int32],
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    delta: int,
+) -> None:
+    """Numba-compiled helper to apply population delta in C without Python overhead."""
+    if 0 <= x < width and 0 <= y < height:
+        tile_populations[y * width + x] += delta
+
+
 def _accumulate_tile_population(
-    tile_populations: list[int],
+    tile_populations: npt.NDArray[np.int32] | list[int],
     x: int,
     y: int,
     width: int,
     delta: int,
+    height: int = 0,
 ) -> None:
     """Apply a signed population delta to one tile-population cache entry.
 
@@ -39,13 +58,13 @@ def _accumulate_tile_population(
         width: Grid width to compute the flat index.
         delta: Signed integer change in population count; positive for births or arrivals,
             negative for deaths or departures.
+        height: Optional grid height for JIT boundary checks.
 
     """
-    # Entities in PHIDS are constrained within grid boundaries by the movement systems,
-    # however, we enforce 0 <= x < width and y >= 0 to prevent negative indexing or
-    # horizontal row-bleeding. We avoid calculating height via integer division (len // width)
-    # as IndexError will natively catch out-of-bounds vertical indices (y >= height).
-    if 0 <= x < width and y >= 0:
+    if isinstance(tile_populations, np.ndarray):
+        h = height if height > 0 else (len(tile_populations) // width if width > 0 else 0)
+        _accumulate_tile_population_jit(tile_populations, x, y, width, h, delta)
+    elif 0 <= x < width and y >= 0:
         try:
             tile_populations[y * width + x] += delta
         except IndexError:

@@ -238,3 +238,24 @@ def test_flow_field_truncates_subnormals() -> None:
 
     flow = compute_flow_field(plant_energy, apparent, toxin_layers, width=3, height=3)
     assert np.allclose(flow, np.zeros((3, 3), dtype=np.float64))
+
+
+def test_propagate_iteration_jit_pow2_parity() -> None:
+    """Verify bitwise AND power-of-two propagation produces bit-exact results matching modulo propagation."""
+    from phids.engine.core.flow_field import _propagate_iteration_jit, _propagate_iteration_jit_pow2
+
+    width, height = 16, 16
+    mask_x, mask_y = width - 1, height - 1
+    decay = 0.65
+
+    np.random.seed(42)
+    base = np.random.randn(width, height)
+    current = np.random.randn(width, height)
+    nxt1 = np.zeros((width, height), dtype=np.float64)
+    nxt2 = np.zeros((width, height), dtype=np.float64)
+
+    diff1 = _propagate_iteration_jit(width, height, decay, base, current, nxt1)
+    diff2 = _propagate_iteration_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt2)
+
+    np.testing.assert_allclose(diff1, diff2, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(nxt1, nxt2, rtol=1e-12, atol=1e-12)

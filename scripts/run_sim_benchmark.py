@@ -623,7 +623,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    path = args.scenario
+    path = os.path.abspath(args.scenario)
     if os.path.isdir(path):
         scenarios = [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".json")]
         scenarios.sort()

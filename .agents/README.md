@@ -103,7 +103,7 @@ To prevent recursive loops or fragmented development, agents pass tasks via esta
 
 ### The Vertical Slice Development Workflow
 
-This pipeline ensures a new ecological feature is implemented securely across the entire stack. A concept moves from the Scientific Architect's models directly into the Engine Developer's JIT loops, gets wired to Telemetry, exposed via the API Developer's UI, and strictly verified by QA—simultaneously.
+This pipeline ensures a new ecological feature is implemented securely across the entire stack. A concept moves from the Scientific Architect's models directly into the Engine Developer's JIT loops, gets wired to Telemetry, exposed via the API Developer's UI, and strictly verified by QA-simultaneously.
 
 ### The Delegation Protocol
 

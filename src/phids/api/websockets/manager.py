@@ -5,7 +5,7 @@
 
 This module isolates asynchronous WebSocket stream orchestration from the FastAPI composition root.
 The managers preserve protocol-specific invariants while reducing route-level control flow in
-``phids.api.main``: the simulation stream emits msgpack+zlib binary snapshots keyed to simulation
+``phids.api.main``: the simulation stream emits json+zlib binary snapshots keyed to simulation
 ticks, and the UI stream emits compact JSON payloads keyed to rendered state signatures. By keeping
 loop progression checks, payload encoding, sleep cadence, and disconnect handling in dedicated
 classes, the runtime maintains strict draft-versus-live boundaries while exposing low-latency
@@ -119,7 +119,7 @@ class SimulationStreamManager:
                     await websocket.send_bytes(self._encoded_snapshot_bytes(loop))
                     last_tick = loop.tick
 
-                await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
+                await asyncio.sleep(1.0 / max(0.1, loop.config.tick_rate_hz))
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected from /ws/simulation/stream")
         finally:
@@ -256,7 +256,7 @@ class UIStreamManager:
                     continue
 
                 last_state_signature = await self._send_update_if_changed(websocket, loop, last_state_signature)
-                await asyncio.sleep(1.0 / max(1.0, loop.config.tick_rate_hz))
+                await asyncio.sleep(1.0 / max(0.1, loop.config.tick_rate_hz))
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected from /ws/ui/stream")
         finally:

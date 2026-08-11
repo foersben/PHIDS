@@ -148,7 +148,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
     scenario_dict = config.model_dump()
 
     async def _run_batch() -> None:
-        from phids.engine.batch import BatchRunner
+        from phids.engine.batch.orchestrator import BatchRunner
 
         job.status = "running"
         try:

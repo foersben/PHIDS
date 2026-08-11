@@ -10,7 +10,7 @@ tags:
 - chemotaxis
 timestamp: "2026-07-21T16:01:38Z"
 resources:
-- flow_field.py
+- src/phids/engine/core/flow_field.py
 ---
 
 Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field, simulating a sensory-driven process called **chemotaxis**.
@@ -19,7 +19,7 @@ Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field,
 
 **Chemotaxis** is the phenomenon whereby somatic cells, bacteria, and other single-cell or multicellular organisms direct their movements according to certain chemicals in their environment.
 
-In nature, organisms do not possess a top-down, global map of the world. They cannot calculate the most efficient Euclidean path to a food source three miles away while simultaneously avoiding a predator blocking a narrow mountain pass. Instead, they sense local chemical gradients—moving towards higher concentrations of attractants (food, mating pheromones) and away from repellents (toxins, predators).
+In nature, organisms do not possess a top-down, global map of the world. They cannot calculate the most efficient Euclidean path to a food source three miles away while simultaneously avoiding a predator blocking a narrow mountain pass. Instead, they sense local chemical gradients-moving towards higher concentrations of attractants (food, mating pheromones) and away from repellents (toxins, predators).
 
 By modeling chemotaxis, PHIDS ensures swarm navigation is inherently local, imperfect, and biologically plausible. Furthermore, real-world chemical plumes are subjected to wind, thermal eddies, and turbulent diffusion, making scent trails noisy and chaotic rather than perfectly smooth geometric cones.
 
@@ -34,44 +34,82 @@ This scalar lattice is a spatial superposition of two primary potentials:
 
 ### Mathematical Formulation
 
-The baseline gradient at cell $(x, y)$ before propagation is computed as:
+To calculate exactly how desirable a specific patch of land is for a grazing swarm, we need to mathematically weigh the rewards against the dangers. We take the total caloric value of all the food at that spot and subtract the total strength of all the defensive toxins present. This simple subtraction gives us a baseline "desirability score" for every single cell on the map.
+
+In formal terms, the baseline gradient at cell $(x, y)$ before propagation is computed as:
 
 $$
 G_t(x,y) = \alpha E_t(x,y) - \beta \sum_k T_{k,t}(x,y)
 $$
 
-Where:
+Within this baseline calculation, $E_t(x,y)$ represents the total accumulated plant energy available at the spatial coordinate, providing the foundational attraction. This is countered by $T_{k,t}(x,y)$, tracking the concentration of the $k$-th toxin channel present at that coordinate. The influence of these forces is scaled by the non-negative weighting constants $\alpha$ and $\beta$, representing attractant and repellent sensitivities respectively.
 
-* $E_t(x,y)$ is the total plant energy available at the coordinate.
-* $T_{k,t}(x,y)$ is the concentration of the $k$-th toxin channel.
-* $\alpha, \beta$ are non-negative weighting constants.
-
-To create an "influence map" that swarms can detect from a short distance away, this baseline gradient undergoes a rapid, one-pass local propagation (spreading) with a steep decay coefficient $\delta$ (e.g., $0.5$).
+To create an "influence map" that swarms can detect from a short distance away, this baseline gradient undergoes an iterative **Jacobi relaxation** propagation until the matrix converges or reaches a maximum step limit, spreading with a steep decay coefficient $\delta$ (e.g., $0.5$).
 
 ### The Gradient Ascent (Stochastic Taxis)
 
 A swarm located at $(x, y)$ determines its next position by evaluating the Flow Field $F_t$ in its immediate **Von-Neumann Neighborhood** $\mathcal{V}(x,y)$ (the current cell plus its 4 orthogonal adjacent cells: North, South, East, and West).
 
-Rather than deterministically selecting the absolute highest gradient (strict gradient ascent), the engine applies **probability-weighted sampling**. The probability $P(u,v)$ of transitioning to a neighbor $(u,v) \in \mathcal{V}(x,y)$ is strictly proportional to its normalized flow-field magnitude relative to the neighborhood minimum. 
+Rather than deterministically selecting the absolute highest gradient (strict gradient ascent), the engine applies **probability-weighted sampling**. The probability $P(u,v)$ of transitioning to a neighbor $(u,v) \in \mathcal{V}(x,y)$ is strictly proportional to its normalized flow-field magnitude relative to the neighborhood minimum.
 
 This stochastic approach mathematically models biological sensory noise, receptor saturation, and the physical turbulence of volatile organic compounds in a real ecosystem.
 
-## Numerical Example
+```mermaid
+flowchart TD
+    %% Base Styling & Theme Definitions
+    classDef base fill:#1E293B, stroke:#3B82F6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef process fill:#312E81, stroke:#8B5CF6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef decision fill:#78350F, stroke:#F59E0B, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef result fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
 
-Imagine a swarm at center coordinate `(1, 1)` evaluating its Von-Neumann neighborhood in a simplified subset of the Flow Field $F_t$:
+    A["<b>Swarm Location (x, y)</b><br/>Tick t"]:::base --> B
+    
+    B{"<b>Gradient Exists?</b><br/>max - min > 1e-6"}:::decision
+    
+    B -- Yes --> C["<b>Extract Neighborhood</b><br/>N, S, E, W, Center"]:::process
+    C --> D["<b>Normalize & Weight</b><br/>Apply epsilon"]:::process
+    D --> E["<b>Stochastic Draw</b><br/>Probability proportional to weight"]:::process
+    E --> F["<b>Transition Target</b><br/>(x', y')"]:::result
+    
+    B -- No --> G["<b>Zero-Gradient State</b>"]:::process
+    G --> H{"<b>Has Momentum?</b>"}:::decision
+    H -- Yes --> I["<b>Orthokinesis</b><br/>Weight previous heading"]:::process
+    H -- No --> J["<b>Isotropic Search</b><br/>Uniform random orthogonal step"]:::process
+    I --> F
+    J --> F
+```
 
-### Flow Field Segment (Orthogonal Only)
+## Neighborhood Gradient Normalization & Stochastic Selection
 
-* **North `(1, 0)`**: 1.2
-* **South `(1, 2)`**: 0.4
-* **East `(2, 1)`**: 1.5
-* **West `(0, 1)`**: 0.1
-* **Center `(1, 1)`**: 0.8
+When a swarm at coordinate $(x, y)$ evaluates candidate positions across its 5-cell Von-Neumann neighborhood (center cell plus North, South, East, and West), the raw scalar flow-field values are extracted from $F_t$. To convert raw scalar gradients into an operational probability distribution, the engine shifts all neighborhood values relative to the local neighborhood minimum and adds a computational epsilon ($\epsilon = 1 \times 10^{-6}$). This normalization guarantees non-zero selection probabilities for all valid adjacent tiles, ensuring that while high-gradient coordinates command the highest statistical likelihood of selection, alternative headings and stationary resting states remain viable options within the stochastic draw.
 
-1. The swarm extracts the 5 relevant scalars.
-2. It shifts the values relative to the local minimum (`0.1`) and applies a small epsilon (`1e-6`) to ensure non-zero weights for all valid moves.
-3. The adjusted weights formulate a discrete probability distribution. The East cell (`1.5`) holds the highest statistical probability of being selected, but the North cell (`1.2`) and Center cell (`0.8`) remain highly viable options.
-4. A random sample is drawn from the distribution, determining the transition.
+```mermaid
+flowchart TD
+    %% Base Styling & Theme Definitions
+    classDef base fill:#1E293B, stroke:#3B82F6, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+    classDef reject fill:#3F2723, stroke:#E53935, stroke-width:2px, stroke-dasharray: 5 5, color:#F8FAFC, rx:8px, ry:8px
+    classDef accept fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
+
+    A["<b>Swarm Evaluates Field</b><br/>Extract 5 Neighbors"]:::base
+
+    subgraph Deterministic ["Deterministic Convergence (Rejected)"]
+        D1["arg max F_t(u,v)"]:::reject
+        D2["Always chooses East (1.5)"]:::reject
+        D3["Result: Unnatural single-file 'conga lines'"]:::reject
+        D1 --> D2 --> D3
+    end
+
+    subgraph Probabilistic ["Probabilistic Taxis (Accepted)"]
+        P1["Normalize relative to min (0.1)"]:::accept
+        P2["Apply epsilon (1e-6)"]:::accept
+        P3["Stochastic draw from weighted distribution"]:::accept
+        P4["Result: Organic dispersion (klinokinesis)"]:::accept
+        P1 --> P2 --> P3 --> P4
+    end
+
+    A --> D1
+    A --> P1
+```
 
 If the center cell `(1,1)` had an overwhelmingly dominant value (e.g., the swarm is currently situated on a high-energy plant), the probability distribution collapses heavily onto the center cell, an act defined as **Anchoring**.
 

@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-type JSONScalar = None | bool | int | float | str
+type JSONScalar = bool | int | float | str | None
 type JSONValue = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
 type TelemetryRow = dict[str, object]
 type TelemetryRuns = list[list[TelemetryRow]]
@@ -180,6 +180,9 @@ def _run_single_headless(
     """
     random.seed(seed)
     np.random.seed(seed)
+
+    # Enforce single-threaded Numba execution per worker process to prevent thread oversubscription
+    os.environ["NUMBA_NUM_THREADS"] = "1"
 
     from phids.api.schemas.simulation import SimulationConfig
     from phids.engine.loop import SimulationLoop
@@ -481,6 +484,7 @@ def _sanitize_for_json(value: object) -> object:
 # ---------------------------------------------------------------------------
 
 
+@dataclass
 class BatchRunner:
     """Orchestrate parallel Monte Carlo simulation runs using ProcessPoolExecutor.
 

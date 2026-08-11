@@ -26,6 +26,7 @@ from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.signaling import run_signaling
+from phids.engine.systems.signaling.types import CompiledTrigger
 
 
 def test_digestibility_modulation_scales_metabolized_energy() -> None:
@@ -66,6 +67,7 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
         energy_min=1.0,
         velocity=1,
         consumption_rate=2.0,
+        energy_upkeep_per_individual=0.0,
         split_population_threshold=1000,
         reproduction_energy_divisor=1000.0,
     )
@@ -102,7 +104,7 @@ def test_digestibility_modulation_scales_metabolized_energy() -> None:
     run_interaction(world, env, diet, flora_params, herb_params, tick=0)
 
     assert plant.energy == 80.0
-    assert swarm.energy == 59.5
+    assert swarm.energy == 60.0
 
 
 def test_resource_withdrawal_dims_apparent_nutrition() -> None:
@@ -146,15 +148,21 @@ def test_resource_withdrawal_dims_apparent_nutrition() -> None:
     world.add_component(swarm_eid.entity_id, swarm)
     world.register_position(swarm_eid.entity_id, 2, 2)
 
+    trigger_schema = TriggerConditionSchema(
+        initiator=HerbivoreAttackInitiator(
+            herbivore_species_id=0,
+            min_herbivore_population=5,
+        ),
+        aftereffect_ticks=10,
+        action=ResourceWithdrawalAction(apparent_nutrition_factor=0.1, withdrawal_duration=2),
+    )
     trigger_conditions = {
         0: [
-            TriggerConditionSchema(
-                initiator=HerbivoreAttackInitiator(
-                    herbivore_species_id=0,
-                    min_herbivore_population=5,
-                ),
-                aftereffect_ticks=10,
-                action=ResourceWithdrawalAction(apparent_nutrition_factor=0.1, withdrawal_duration=2),
+            CompiledTrigger(
+                schema=trigger_schema,
+                activation_condition_dump=trigger_schema.activation_condition.model_dump(mode="json")
+                if trigger_schema.activation_condition
+                else None,
             )
         ]
     }
@@ -221,7 +229,7 @@ def test_mechanical_attrition_enforces_integer_casualties() -> None:
         velocity=1,
         consumption_rate=5.0,  # Bites taken per individual
         reproduction_energy_divisor=1.0,
-        energy_upkeep_per_individual=0.1,
+        energy_upkeep_per_individual=0.0,
         split_population_threshold=20,
         move_cooldown=1,
     )

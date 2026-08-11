@@ -37,7 +37,7 @@ from typing import Any, Protocol, TypedDict, cast
 
 import numpy as np
 
-type ReplayScalar = None | bool | int | float | str
+type ReplayScalar = bool | int | float | str | None
 type ReplayValue = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
 type ReplayState = dict[str, ReplayValue]
 
@@ -72,6 +72,67 @@ class _MetadataEntry(TypedDict):
     termination_reason: str | None
 
 
+class ReplaySlice:
+    """Immutable zero-copy view over a temporal slice of Zarr replay frames.
+
+    Provides high-performance NumPy array access across consecutive simulation ticks
+    without materializing Python list objects or triggering unnecessary copies.
+    """
+
+    def __init__(
+        self,
+        start_tick: int,
+        end_tick: int,
+        metadata: list[_MetadataEntry],
+        fields: dict[str, np.ndarray],
+    ) -> None:
+        """Initialize the ReplaySlice.
+
+        Args:
+            start_tick: Start index of the slice (inclusive, 0-based).
+            end_tick: End index of the slice (exclusive, 0-based).
+            metadata: Metadata records for the frames in the slice.
+            fields: Dictionary mapping field names to stacked or indexed NumPy arrays.
+        """
+        self.start_tick = start_tick
+        self.end_tick = end_tick
+        self.metadata = metadata
+        self.fields = fields
+
+    def __len__(self) -> int:
+        """Return the number of frames contained in this slice."""
+        return len(self.metadata)
+
+    def get_field(self, field_name: str) -> np.ndarray:
+        """Retrieve the zero-copy NumPy array for a specific field in this slice.
+
+        Args:
+            field_name: Name of the environment layer field.
+
+        Returns:
+            np.ndarray: The requested field data array.
+
+        Raises:
+            KeyError: If the field is not present in this slice.
+        """
+        if field_name not in self.fields:
+            raise KeyError(f"Field '{field_name}' not found in ReplaySlice.")
+        return self.fields[field_name]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert metadata and field arrays to a dictionary representation.
+
+        Returns:
+            dict[str, Any]: Mapping of metadata and NumPy array fields.
+        """
+        return {
+            "start_tick": self.start_tick,
+            "end_tick": self.end_tick,
+            "metadata": list(self.metadata),
+            "fields": self.fields,
+        }
+
+
 class NoOpReplayBuffer:
     """A no-op replay buffer that does not store or write any frames, preventing disk usage during tuning."""
 
@@ -104,6 +165,34 @@ class NoOpReplayBuffer:
     def __len__(self) -> int:
         """Return the number of frames in the buffer (always 0)."""
         return 0
+
+    def get_frame_arrays(self, tick: int) -> dict[str, np.ndarray]:
+        """Return raw NumPy arrays for the frame (no-op).
+
+        Args:
+            tick: Index of the frame.
+
+        Raises:
+            IndexError: Always raised since the no-op buffer holds no frames.
+        """
+        raise IndexError(f"Replay frame index out of range: {tick} (buffer is empty)")
+
+    def get_slice(self, start_tick: int, end_tick: int) -> ReplaySlice:
+        """Return a ReplaySlice for the specified range (no-op).
+
+        Args:
+            start_tick: Start index.
+            end_tick: End index.
+
+        Returns:
+            ReplaySlice: Empty slice container.
+        """
+        return ReplaySlice(
+            start_tick=start_tick,
+            end_tick=end_tick,
+            metadata=[],
+            fields={},
+        )
 
 
 class ReplayBuffer:
@@ -399,13 +488,16 @@ class ReplayBuffer:
                 frame_group.attrs[field_name] = field_data
             return
 
-        # Determine chunk size (aim for ~1 MB chunks)
-        total_elements = int(np.prod(field_data.shape))
-        chunk_elements = max(1, min(total_elements, 256_000))  # ~1 MB at float32
-        chunk_shape = tuple(
-            min(s, max(1, chunk_elements // int(np.prod(field_data.shape[1:])))) if i == 0 else s
-            for i, s in enumerate(field_data.shape)
-        )
+        # Dimensionality-based heuristic for optimal CPU L2 cache alignment (~256 KB)
+        chunk_shape: tuple[int, ...]
+        if field_data.ndim == 1:
+            chunk_shape = (min(field_data.shape[0], 256_000),)
+        elif field_data.ndim == 2:
+            chunk_shape = (min(field_data.shape[0], 256), min(field_data.shape[1], 256))
+        elif field_data.ndim == 3:
+            chunk_shape = (1, min(field_data.shape[1], 256), min(field_data.shape[2], 256))
+        else:
+            chunk_shape = tuple(field_data.shape)
 
         # Truncate subnormal signal tails
         if "signal" in field_name.lower():
@@ -482,6 +574,81 @@ class ReplayBuffer:
             pass
 
         return state
+
+    def get_frame_arrays(self, tick: int) -> dict[str, np.ndarray]:
+        """Return raw NumPy arrays for a single frame without converting to Python lists.
+
+        Args:
+            tick: Index of the frame to retrieve (0-based).
+
+        Returns:
+            dict[str, np.ndarray]: Dictionary mapping field names to NumPy float32 arrays.
+
+        Raises:
+            IndexError: If the tick is out of range.
+        """
+        if tick < 0 or tick >= len(self._metadata):
+            raise IndexError(f"Replay frame index out of range: {tick} (total frames={len(self._metadata)})")
+
+        root = self._ensure_store()
+        actual_frame_idx = self._frame_offset + tick
+        frame_key = f"frames/{actual_frame_idx:08d}"
+        if frame_key not in root:
+            raise IndexError(f"Frame {tick} not found in Zarr store (key: {frame_key})")
+
+        frame_group = cast("zarr.Group", root[frame_key])
+        arrays: dict[str, np.ndarray] = {}
+
+        try:
+            for field_name in frame_group.array_keys():
+                field_obj = frame_group[field_name]
+                if isinstance(field_obj, zarr.Array):
+                    arrays[field_name] = np.asarray(field_obj[:])
+        except (AttributeError, TypeError) as e:
+            logger.warning("Failed to extract array keys for frame %d: %s", tick, e)
+
+        return arrays
+
+    def get_slice(self, start_tick: int, end_tick: int) -> ReplaySlice:
+        """Retrieve a contiguous range of frames as a zero-copy ReplaySlice DTO.
+
+        Args:
+            start_tick: Starting frame index (inclusive, 0-based).
+            end_tick: Ending frame index (exclusive, 0-based).
+
+        Returns:
+            ReplaySlice: Zero-copy slice container holding frame metadata and NumPy arrays.
+
+        Raises:
+            IndexError: If start_tick or end_tick are out of range.
+        """
+        total = len(self._metadata)
+        if start_tick < 0 or start_tick > total or end_tick < 0 or end_tick > total:
+            raise IndexError(f"Replay slice range [{start_tick}:{end_tick}] out of bounds for buffer of size {total}")
+        if start_tick >= end_tick:
+            return ReplaySlice(start_tick=start_tick, end_tick=end_tick, metadata=[], fields={})
+
+        metadata_slice = self._metadata[start_tick:end_tick]
+        aggregated_fields: dict[str, list[np.ndarray]] = {}
+
+        for t in range(start_tick, end_tick):
+            frame_arrays = self.get_frame_arrays(t)
+            for field_name, arr in frame_arrays.items():
+                if field_name not in aggregated_fields:
+                    aggregated_fields[field_name] = []
+                aggregated_fields[field_name].append(arr)
+
+        stacked_fields: dict[str, np.ndarray] = {}
+        for field_name, arr_list in aggregated_fields.items():
+            if arr_list:
+                stacked_fields[field_name] = np.stack(arr_list, axis=0)
+
+        return ReplaySlice(
+            start_tick=start_tick,
+            end_tick=end_tick,
+            metadata=metadata_slice,
+            fields=stacked_fields,
+        )
 
     def save(self, path: str | Path) -> None:
         """Export the Zarr store to a standalone file for external storage.

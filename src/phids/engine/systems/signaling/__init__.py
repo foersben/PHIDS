@@ -42,15 +42,15 @@ from phids.engine.systems.signaling.synthesis import _phase_advance_synthesis
 from phids.engine.systems.signaling.triggers import _phase_evaluate_triggers
 
 if TYPE_CHECKING:
-    from phids.api.schemas.triggers import TriggerConditionSchema
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
+    from phids.engine.systems.signaling.types import CompiledTrigger
 
 
 def run_signaling(
     world: ECSWorld,
     env: GridEnvironment,
-    trigger_conditions: dict[int, list[TriggerConditionSchema]],
+    trigger_conditions: dict[int, list[CompiledTrigger]],
     mycorrhizal_inter_species: bool,
     signal_velocity: int,
     tick: int,  # noqa: ARG001
@@ -82,7 +82,7 @@ def run_signaling(
         world, dead_substances
     )
 
-    swarm_population_by_cell_species = _build_swarm_population_index(world)
+    swarm_population_by_cell_species = _build_swarm_population_index(world, env)
 
     env.toxin_layers[:] = 0.0
     env._toxin_layers_write[:] = 0.0

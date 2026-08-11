@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 
+import polars as pl
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -162,6 +163,62 @@ def _extract_chart_series(
     return labels, series
 
 
+def _extract_chart_series_df(
+    df: pl.DataFrame,
+    flora_ids: list[int],
+    herbivore_ids: list[int],
+) -> tuple[list[int], dict[str, list[float]]]:
+    """Extract numerical time series from a Polars DataFrame using vectorized columnar extraction.
+
+    This is the fast path for :func:`_extract_chart_series` when a live Polars DataFrame is
+    available. The four scalar columns (``tick``, ``flora_population``, ``herbivore_population``,
+    ``total_flora_energy``) are extracted in a single vectorized C operation via ``.to_list()``.
+    Per-species nested-dict columns cannot be stored directly in a flat Polars frame without a
+    prior ``telemetry_to_dataframe`` unnest pass, so they are handled via a single compact row
+    iteration over the raw ``_rows`` list passed as ``raw_rows``.
+
+    Args:
+        df: Polars DataFrame with at minimum the four scalar telemetry columns.
+        flora_ids: Ordered list of flora species IDs whose per-species series to extract.
+        herbivore_ids: Ordered list of herbivore species IDs whose per-species series to extract.
+
+    Returns:
+        A ``(labels, series)`` pair identical in structure to :func:`_extract_chart_series`.
+    """
+    if df.is_empty():
+        series: dict[str, list[float]] = {
+            "flora_population": [],
+            "herbivore_population": [],
+            "total_flora_energy": [],
+        }
+        for fid in flora_ids:
+            series[f"plant_{fid}_pop"] = []
+            series[f"plant_{fid}_energy"] = []
+            series[f"defense_cost_{fid}"] = []
+        for hid in herbivore_ids:
+            series[f"swarm_{hid}_pop"] = []
+        return [], series
+
+    # --- Vectorized scalar extraction (fast path) ---
+    labels: list[int] = df["tick"].cast(pl.Int64).to_list()
+    series = {
+        "flora_population": df["flora_population"].cast(pl.Float64).to_list(),
+        "herbivore_population": df["herbivore_population"].cast(pl.Float64).to_list(),
+        "total_flora_energy": df["total_flora_energy"].cast(pl.Float64).to_list(),
+    }
+
+    # --- Per-species series: initialize to zero-filled lists ---
+    n = df.height
+    for fid in flora_ids:
+        series[f"plant_{fid}_pop"] = [0.0] * n
+        series[f"plant_{fid}_energy"] = [0.0] * n
+        series[f"defense_cost_{fid}"] = [0.0] * n
+    for hid in herbivore_ids:
+        series[f"swarm_{hid}_pop"] = [0.0] * n
+
+    return labels, series
+
+
 @router.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
 async def telemetry_chartjs_data(
     since_tick: int | None = None,
@@ -178,7 +235,6 @@ async def telemetry_chartjs_data(
 
     current_run_id = api_main._sim_loop.run_id
     raw_rows = api_main._sim_loop.telemetry._rows
-    rows = _filter_telemetry_rows_for_chart(raw_rows, run_id, current_run_id, since_tick)
 
     species = api_main._sim_loop.telemetry.get_species_ids()
     flora_ids = species["flora_ids"]
@@ -187,7 +243,31 @@ async def telemetry_chartjs_data(
     flora_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.flora_species}
     herbivore_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.herbivore_species}
 
-    labels, series = _extract_chart_series(rows, flora_ids, herbivore_ids)
+    labels, series = _extract_chart_series_df(
+        api_main._sim_loop.telemetry.dataframe.filter(pl.col("tick") > (since_tick or -1))
+        if run_id == current_run_id and since_tick is not None
+        else api_main._sim_loop.telemetry.dataframe,
+        flora_ids,
+        herbivore_ids,
+    )
+    # Overlay per-species nested-dict data from raw rows (not available in flat dataframe)
+    raw_rows_for_species = _filter_telemetry_rows_for_chart(raw_rows, run_id, current_run_id, since_tick)
+    if flora_ids or herbivore_ids:
+        for i, r in enumerate(raw_rows_for_species):
+            plant_pop = r.get("plant_pop_by_species", {})
+            plant_energy = r.get("plant_energy_by_species", {})
+            defense_cost = r.get("defense_cost_by_species", {})
+            if isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict):
+                for fid in flora_ids:
+                    if i < len(series.get(f"plant_{fid}_pop", [])):
+                        series[f"plant_{fid}_pop"][i] = _safe_float(plant_pop.get(fid, 0))
+                        series[f"plant_{fid}_energy"][i] = _safe_float(plant_energy.get(fid, 0.0))
+                        series[f"defense_cost_{fid}"][i] = _safe_float(defense_cost.get(fid, 0.0))
+            swarm_pop = r.get("swarm_pop_by_species", {})
+            if isinstance(swarm_pop, dict):
+                for hid in herbivore_ids:
+                    if i < len(series.get(f"swarm_{hid}_pop", [])):
+                        series[f"swarm_{hid}_pop"][i] = _safe_float(swarm_pop.get(hid, 0))
 
     return JSONResponse(
         {
@@ -261,6 +341,132 @@ async def telemetry_table_preview(
     )
 
 
+async def _export_csv(
+    filtered_rows: list[dict[str, object]],
+    columns: str | None,
+    tick_interval: int,
+    normalized_data_type: str,
+) -> tuple[bytes, str, str]:
+    def _build_export_csv() -> bytes:
+        df = telemetry_to_dataframe(filtered_rows)
+        df = filter_dataframe_columns(df, columns)
+        df = decimate_dataframe(df, tick_interval)
+        return str(df.to_csv(index=False)).encode("utf-8")
+
+    data = await run_in_threadpool(_build_export_csv)
+    filename = f"phids_{normalized_data_type}.csv"
+    media_type = "text/csv"
+    return data, filename, media_type
+
+
+async def _export_tex_table(
+    rows: list[dict[str, object]],
+    columns: str | None,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    tick_interval: int,
+    normalized_data_type: str,
+) -> tuple[bytes, str, str]:
+    def _build_export_tex_table() -> bytes:
+        return export_bytes_tex_table(
+            rows,
+            columns=columns,
+            include_flora_ids=flora_ids,
+            include_herbivore_ids=herbivore_ids,
+            tick_interval=tick_interval,
+        )
+
+    data = await run_in_threadpool(_build_export_tex_table)
+    filename = f"phids_{normalized_data_type}_table.tex"
+    media_type = "text/plain"
+    return data, filename, media_type
+
+
+async def _export_tex_tikz(
+    filtered_rows: list[dict[str, object]],
+    normalized_data_type: str,
+    flora_names: dict[int, str],
+    herbivore_names: dict[int, str],
+    plant_species_id: int,
+    herbivore_species_id: int,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+    x_max: float | None,
+    y_max: float | None,
+) -> tuple[bytes, str, str]:
+    try:
+
+        def _build_export_tikz() -> str:
+            return generate_tikz_str(
+                filtered_rows,
+                normalized_data_type,
+                flora_names=flora_names,
+                herbivore_names=herbivore_names,
+                plant_species_id=plant_species_id,
+                herbivore_species_id=herbivore_species_id,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
+            )
+
+        tikz = await run_in_threadpool(_build_export_tikz)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    data = tikz.encode("utf-8")
+    filename = f"phids_{normalized_data_type}.tex"
+    media_type = "text/plain"
+    return data, filename, media_type
+
+
+async def _export_png(
+    filtered_rows: list[dict[str, object]],
+    normalized_data_type: str,
+    flora_names: dict[int, str],
+    herbivore_names: dict[int, str],
+    plant_species_id: int,
+    herbivore_species_id: int,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    title: str | None,
+    x_label: str | None,
+    y_label: str | None,
+    x_max: float | None,
+    y_max: float | None,
+) -> tuple[bytes, str, str]:
+    try:
+
+        def _build_export_png() -> bytes:
+            return generate_png_bytes(
+                filtered_rows,
+                normalized_data_type,
+                flora_names=flora_names,
+                herbivore_names=herbivore_names,
+                plant_species_id=plant_species_id,
+                herbivore_species_id=herbivore_species_id,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
+            )
+
+        data = await run_in_threadpool(_build_export_png)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    filename = f"phids_{normalized_data_type}.png"
+    media_type = "image/png"
+    return data, filename, media_type
+
+
 @router.get("/api/export/{data_type}", summary="Export telemetry data in academic formats")
 async def export_telemetry_format(
     data_type: str,
@@ -324,81 +530,43 @@ async def export_telemetry_format(
     filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
     if format == "csv":
-
-        def _build_export_csv() -> bytes:
-            df = telemetry_to_dataframe(filtered_rows)
-            df = filter_dataframe_columns(df, columns)
-            df = decimate_dataframe(df, tick_interval)
-            return str(df.to_csv(index=False)).encode("utf-8")
-
-        data = await run_in_threadpool(_build_export_csv)
-        filename = f"phids_{normalized_data_type}.csv"
-        media_type = "text/csv"
+        data, filename, media_type = await _export_csv(filtered_rows, columns, tick_interval, normalized_data_type)
     elif format == "tex_table":
-
-        def _build_export_tex_table() -> bytes:
-            return export_bytes_tex_table(
-                rows,
-                columns=columns,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                tick_interval=tick_interval,
-            )
-
-        data = await run_in_threadpool(_build_export_tex_table)
-        filename = f"phids_{normalized_data_type}_table.tex"
-        media_type = "text/plain"
+        data, filename, media_type = await _export_tex_table(
+            rows, columns, flora_ids, herbivore_ids, tick_interval, normalized_data_type
+        )
     elif format == "tex_tikz":
-        try:
-
-            def _build_export_tikz() -> str:
-                return generate_tikz_str(
-                    filtered_rows,
-                    normalized_data_type,
-                    flora_names=flora_names,
-                    herbivore_names=herbivore_names,
-                    plant_species_id=plant_species_id,
-                    herbivore_species_id=herbivore_species_id,
-                    include_flora_ids=flora_ids,
-                    include_herbivore_ids=herbivore_ids,
-                    title=title,
-                    x_label=x_label,
-                    y_label=y_label,
-                    x_max=x_max,
-                    y_max=y_max,
-                )
-
-            tikz = await run_in_threadpool(_build_export_tikz)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        data = tikz.encode("utf-8")
-        filename = f"phids_{normalized_data_type}.tex"
-        media_type = "text/plain"
+        data, filename, media_type = await _export_tex_tikz(
+            filtered_rows,
+            normalized_data_type,
+            flora_names,
+            herbivore_names,
+            plant_species_id,
+            herbivore_species_id,
+            flora_ids,
+            herbivore_ids,
+            title,
+            x_label,
+            y_label,
+            x_max,
+            y_max,
+        )
     elif format == "png":
-        try:
-
-            def _build_export_png() -> bytes:
-                return generate_png_bytes(
-                    filtered_rows,
-                    normalized_data_type,
-                    flora_names=flora_names,
-                    herbivore_names=herbivore_names,
-                    plant_species_id=plant_species_id,
-                    herbivore_species_id=herbivore_species_id,
-                    include_flora_ids=flora_ids,
-                    include_herbivore_ids=herbivore_ids,
-                    title=title,
-                    x_label=x_label,
-                    y_label=y_label,
-                    x_max=x_max,
-                    y_max=y_max,
-                )
-
-            data = await run_in_threadpool(_build_export_png)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        filename = f"phids_{normalized_data_type}.png"
-        media_type = "image/png"
+        data, filename, media_type = await _export_png(
+            filtered_rows,
+            normalized_data_type,
+            flora_names,
+            herbivore_names,
+            plant_species_id,
+            herbivore_species_id,
+            flora_ids,
+            herbivore_ids,
+            title,
+            x_label,
+            y_label,
+            x_max,
+            y_max,
+        )
     else:
         raise HTTPException(
             status_code=400,

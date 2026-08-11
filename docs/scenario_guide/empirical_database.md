@@ -15,16 +15,9 @@ timestamp: "2026-07-21T16:01:38Z"
 resources:
 - src/data_pipeline/transform.py
 - src/data_pipeline/archetype_extractor.py
-- src/data_pipeline/json_builder.py
-- json_builder.py
 - src/data_pipeline/run_all.py
-- ingest.py
-- transform.py
-- archetype_extractor.py
-- run_all.py
-- run_extended.py
-- __init__.py
-- scripts/check_no_extended_imports.py
+- src/data_pipeline/run_extended.py
+- src/data_pipeline/provenance.py
 ---
 
 !!! warning "Module Status: Work In Progress (WIP) / Under Construction"
@@ -190,7 +183,7 @@ A critical vulnerability in high-performance continuous-field simulations is the
 When floating-point units inside modern processors encounter these subnormal values, they often cannot process them directly in the fast-path hardware. Instead, the processor triggers a microcode exception or relies on a software assist mechanism to handle the extreme precision required. This software fallback causes the execution latency of a simple multiplication or convolution operation to spike dramatically, resulting in catastrophic performance degradation known as a computational stall. In a simulation calculating thousands of grid cells multiple times per second, the presence of subnormal floats can slow execution times by orders of magnitude, destroying the capability to stream live WebSocket telemetry to the client interfaces.
 
 **Normalization, Flush-to-Zero, and Signal Truncation**
-To protect the Just-In-Time compiled numerical kernels from these hardware penalties, the entire empirical data pipeline is meticulously designed to map real-world measurements into strict, normalized float bounds ranging from $10^{-4}$ to $1.0$. By compressing vast physical disparities—such as the molecular weights of volatile organic compounds and the absolute dry mass of tree trunks—into this tight, unitless domain, the pipeline ensures that the starting parameters never flirt with the subnormal threshold.
+To protect the Just-In-Time compiled numerical kernels from these hardware penalties, the entire empirical data pipeline is meticulously designed to map real-world measurements into strict, normalized float bounds ranging from $10^{-4}$ to $1.0$. By compressing vast physical disparities-such as the molecular weights of volatile organic compounds and the absolute dry mass of tree trunks-into this tight, unitless domain, the pipeline ensures that the starting parameters never flirt with the subnormal threshold.
 
 Furthermore, to handle the inevitable decay of chemical gradients during the reaction-diffusion phase, the system implements a strict subnormal truncation threshold. Any continuous variable, particularly diffusing signal concentrations and residual plant energy, that decays below the $10^{-4}$ boundary is immediately and forcefully clamped to absolute zero. While clamping to zero introduces a microscopic loss of mathematical continuity, it allows the processor to evaluate the arrays at maximum hardware speed using flush-to-zero operational modes. Modern numerical environments frequently rely on this flush-to-zero methodology and employ additive summation models rather than maximal polling to prevent spatial navigation vulnerabilities and maintain deterministic execution rates.
 
@@ -210,23 +203,23 @@ To respect these absolute memory bounds while maintaining maximum biological div
 
 ---
 
-## Phase 5: Synthesis, Trigger Logic Compiler & DSE
+## Phase 5: Synthesis, Trigger Logic Compiler & EEDSE
 
 **Target File:** `src/data_pipeline/json_builder.py`
 
 ### Design Space Exploration: Generative vs. Constrained Search
 
-The ultimate objective of parameterizing the simulation engine with empirical data is to execute an evolutionary Design Space Exploration (DSE) to discover stable, self-sustaining Lotka-Volterra dynamics. Finding a multi-species equilibrium is a highly complex Mixed-Integer Non-Linear Programming (MINLP) problem that suffers from the curse of dimensionality. The integration of the compiled empirical database provides two distinct operational paradigms for navigating this mathematical landscape: the Generative Mode and the Constrained Mode.
+The ultimate objective of parameterizing the simulation engine with empirical data is to execute an Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) to discover stable, self-sustaining Lotka-Volterra dynamics. Finding a multi-species equilibrium is a highly complex Mixed-Integer Non-Linear Programming (MINLP) problem that suffers from the curse of dimensionality. The integration of the compiled empirical database provides two distinct operational paradigms for navigating this mathematical landscape: the Generative Mode and the Constrained Mode.
 
 #### Mode A: Generative Tabula Rasa and Post-Processing
 
 In the fully generative mode, the design space exploration algorithm is granted total mathematical freedom to invent continuous parameters, structural matrices, and spatial topologies to force a cyclical ecosystem equilibrium. The algorithm operates independently of specific biological constraints, navigating the parameter space using multi-objective Non-dominated Sorting Genetic Algorithm II (NSGA-II) techniques to balance population volatility, total biomass accumulation, and spatial dispersion.
 
-While this approach is mathematically efficient, the resulting parameters often represent theoretical, abstract entities devoid of biological context. To bridge this gap, the empirical database acts as a post-processing translator. Once the algorithm identifies a stable parameter vector that yields a sustainable equilibrium, a K-Nearest Neighbors or Cosine Similarity search is executed against the compiled empirical database. The dynamically generated abstract entity is compared across multiple dimensions—such as its synthesized growth rate, maximum energetic capacity, and metabolic upkeep—against the empirical records. The system then automatically renames the abstract entity to the closest matching real-world archetype, providing researchers with a tangible biological equivalent for the mathematically discovered optimum.
+While this approach is mathematically efficient, the resulting parameters often represent theoretical, abstract entities devoid of biological context. To bridge this gap, the empirical database acts as a post-processing translator. Once the algorithm identifies a stable parameter vector that yields a sustainable equilibrium, a K-Nearest Neighbors or Cosine Similarity search is executed against the compiled empirical database. The dynamically generated abstract entity is compared across multiple dimensions-such as its synthesized growth rate, maximum energetic capacity, and metabolic upkeep-against the empirical records. The system then automatically renames the abstract entity to the closest matching real-world archetype, providing researchers with a tangible biological equivalent for the mathematically discovered optimum.
 
 #### Mode B: Constrained Archetype Anchoring
 
-Conversely, the constrained mode prioritizes strict biological realism by anchoring the design space exploration directly to the empirical database before execution begins. In this paradigm, researchers utilize a Human-In-The-Loop web interface to preselect exact biological profiles—such as specific conifer species and large ungulate herbivores—directly from the curated database. These selections lock the structural configuration, carrying over their authentic diet compatibility matrices, trigger rules, and constitutive defense traits.
+Conversely, the constrained mode prioritizes strict biological realism by anchoring the design space exploration directly to the empirical database before execution begins. In this paradigm, researchers utilize a Human-In-The-Loop web interface to preselect exact biological profiles-such as specific conifer species and large ungulate herbivores-directly from the curated database. These selections lock the structural configuration, carrying over their authentic diet compatibility matrices, trigger rules, and constitutive defense traits.
 
 To allow the evolutionary algorithm to find an equilibrium, the system introduces the concept of constrained parametric variance. Instead of allowing parameters to mutate infinitely, the optimizer is strictly bound to a tight tolerance surrounding the empirical baseline. If a selected archetype possesses a basal metabolic rate of 0.25, the algorithm is permitted to adjust this value slightly to satisfy the thermodynamic requirements of the simulation, but it is heavily penalized or outright forbidden from mutating the parameter beyond a predefined percentage bound. This forces the structural optimizer to resolve ecological bottlenecks through spatial placement strategies and interaction topologies rather than by simply inventing biologically impossible super-organisms.
 
@@ -266,7 +259,7 @@ To resolve this, the pipeline leverages the **Hugging Face Hub** as the primary 
 Hugging Face datasets are inherently backed by Git infrastructure, meaning they natively support branching, tagging, and commit-based versioning. 
 
 * When the ETL pipeline executes and generates a mutated `bio_database.json`, the artifact is programmatically pushed to the Hugging Face Hub and tagged with a semantic version (e.g., `v1.2.0`).
-* Within the PHIDS application architecture, the `huggingface_hub` Python client can utilize the `revision` parameter to fetch a precise, immutable version of the database. This guarantees absolute reproducibility for Design Space Exploration (DSE) experiments; researchers can pin their simulations to a specific commit hash of the biological data, ensuring that future updates to the underlying trait databases do not retroactively invalidate their discovered Lotka-Volterra equilibria.
+* Within the PHIDS application architecture, the `huggingface_hub` Python client can utilize the `revision` parameter to fetch a precise, immutable version of the database. This guarantees absolute reproducibility for EEDSE experiments; researchers can pin their simulations to a specific commit hash of the biological data, ensuring that future updates to the underlying trait databases do not retroactively invalidate their discovered Lotka-Volterra equilibria.
 
 ### Programmatic Upload Pipeline
 

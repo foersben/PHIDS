@@ -14,6 +14,7 @@ from phids.engine.systems.signaling.conditions import _check_activation_conditio
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
+    from phids.engine.systems.signaling.spatial import SwarmPopulationIndex
 
 
 def _process_advance_single_synthesis(
@@ -21,7 +22,7 @@ def _process_advance_single_synthesis(
     entity_id: int,
     world: ECSWorld,
     env: GridEnvironment,
-    swarm_population_by_cell_species: dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_substances: list[int],
 ) -> None:
@@ -31,6 +32,8 @@ def _process_advance_single_synthesis(
     if sub.active:
         return
     if not sub.triggered_this_tick:
+        if sub.synthesis_remaining > 0:
+            sub.synthesis_remaining = 0
         return
     owner_entity = world.get_entity(sub.owner_plant_id) if world.has_entity(sub.owner_plant_id) else None
     if owner_entity is None:
@@ -58,7 +61,7 @@ def _phase_advance_synthesis(
     world: ECSWorld,
     substance_entities: list[Entity],
     env: GridEnvironment,
-    swarm_population_by_cell_species: dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_substances: list[int],
 ) -> None:

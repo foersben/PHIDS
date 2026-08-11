@@ -17,9 +17,9 @@ resources:
 - docs/scientific_model/reaction_diffusion.md
 ---
 
-# GPU CUDA Acceleration Engine (v3.1 Future Prospect)
+## GPU CUDA Acceleration Engine (Future Prospect)
 
-This document details the technical architecture for offloading continuous spatial field solvers—such as 2D/3D reaction-diffusion PDEs and airborne VOC advection—from CPU Numba JIT loops to dedicated GPU hardware via PyTorch tensor operators and custom CUDA C++ kernels.
+This document details the technical architecture for offloading continuous spatial field solvers-such as 2D/3D reaction-diffusion PDEs and airborne VOC advection-from CPU Numba JIT loops to dedicated GPU hardware via PyTorch tensor operators and custom CUDA C++ kernels.
 
 ---
 

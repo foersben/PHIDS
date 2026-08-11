@@ -12,7 +12,16 @@ install:
     @just setup
 
 test:
-    uv run pytest
+    uv run --all-groups pytest
+
+test-scientific:
+    uv run --all-groups pytest -m scientific_invariant
+
+test-parity:
+    uv run --all-groups pytest -m jit_parity
+
+test-replay:
+    uv run --all-groups pytest tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
 
 mutate:
     uv run mutmut run
