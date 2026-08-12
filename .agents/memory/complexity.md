@@ -56,3 +56,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-21 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/telemetry.py` -> `telemetry_chartjs_data`
+* **Selection Rationale:** This function had a complexity score of 37, driven by deep nested `for` loops conditionally indexing telemetry rows and species IDs. As it is a presentation-tier data formatter, extracting its core dictionary transformation into helper functions (`_overlay_species_data`, `_overlay_flora_data`, `_overlay_herbivore_data`) flattens logic drastically without affecting engine performance or requiring changes to the mathematical state.
+* **Before/After Score:** 37 vs. 8 (The extracted `_overlay_species_data` scored 22 initially, but was then safely factored further into flora/herbivore components). Final scores for all parts are well below 15.
+* **Performance Assessment:** Common sense: the refactor purely shifted dictionary access to separate helper functions. Python function call overhead here is negligible as this is not a hot loop (only used for occasional UI polling updates). Engine benchmarks confirm no regressions (e.g. flow field generation remains >3.7 Kops/s).
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
