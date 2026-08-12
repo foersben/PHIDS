@@ -145,7 +145,7 @@ def run_interaction(
         )
 
     # Main interaction loop
-    for eid in tuple(world._component_index.get(SwarmComponent, set())):
+    for eid in list(world._component_index.get(SwarmComponent, set())):
         # We must keep the defensive .get() here because entities can be destroyed mid-loop.
         entity = world._entities.get(eid)
         if entity is None:
