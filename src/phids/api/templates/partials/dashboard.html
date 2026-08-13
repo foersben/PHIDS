@@ -1097,9 +1097,7 @@
       drawPlantActivity(simPlantsColumnar);
     }
     if (showMycorrhiza) {
-      const liveLinks = data.mycorrhizal_links || [];
-      const linksToDraw = liveLinks.length > 0 ? liveLinks : (placementData ? placementData.mycorrhizal_links : []);
-      drawMycorrhizalLinks(linksToDraw || []);
+      drawMycorrhizalLinks(data.mycorrhizal_links || []);
     }
     if (showChemicals) {
       drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
