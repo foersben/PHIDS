@@ -20,6 +20,7 @@ The PHIDS testing rig is architected around mathematical rigor, physical conserv
   * `scientific_invariants/`:
     * `pde_conservation/`: Reaction-diffusion-advection PDE conservation laws. Validates Semi-Lagrangian mass conservation ($\nabla \cdot \vec{v} = 0$), divergent wind mass drift upper bounds ($\le 2.0\%$), chemical non-negativity ($c \ge 0.0$), and Flush-to-Zero subnormal float tail clamping below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
     * `thermodynamics/`: First Law of Thermodynamics energy balance ($\Delta E_{\text{herbivore}} + E_{\text{digestive\_loss}} = \Delta E_{\text{plant\_consumed}}$), Holling Type II functional response asymptotic upper bounds ($I(N) \le 1/T_h$), and monotone Hill kinetics ($c_1 \le c_2 \implies S(c_1) \le S(c_2)$).
+    * `test_causal_data_flow_matrices.py`: Multi-tick time-series trace tests asserting exact column-shift invariants, SIMD float mask gates, and synthesis delays against documented OKF Data-Flow Matrix tables.
 * `tests/e2e/` — End-to-end scenario execution and data persistence.
   * `scenarios/`: Curated scenario fixture execution and full-loop integration checks.
   * `replay_and_io/`: Zarr telemetry buffer persistence, float64 matrix round-trips, and bit-exact playback verification.
