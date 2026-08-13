@@ -980,27 +980,38 @@
       return;
     }
     const liveSpeciesById = new Map((speciesEnergy || []).map(sp => [sp.species_id, sp]));
+    const totalsBySpecies = new Map();
+    const countsBySpecies = new Map();
+    if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
+      for (let i = 0; i < simPlantsColumnar.species_id.length; i++) {
+        const spId = simPlantsColumnar.species_id[i];
+        const energy = Number(simPlantsColumnar.energy[i] || 0);
+        totalsBySpecies.set(spId, (totalsBySpecies.get(spId) || 0) + energy);
+        countsBySpecies.set(spId, (countsBySpecies.get(spId) || 0) + 1);
+      }
+    }
+
     speciesBarsEl.classList.remove('hidden');
     speciesBarsEl.innerHTML = allFloraSpecies.map(species => {
       const liveSpecies = liveSpeciesById.get(species.species_id);
       const isExtinct = !!species.extinct;
-      const layer = liveSpecies ? liveSpecies.layer : [];
-      const total = liveSpecies ? layer.flat().reduce((sum, value) => sum + value, 0) : 0;
-      const width = layer.length || 1;
-      const height = (layer[0] || []).length || 1;
-      const pct = liveSpecies
-        ? Math.min(100, (total / (maxE * width * height || 1)) * 100 * 10)
-        : 0;
+      let total = 0;
+      if (liveSpecies && Array.isArray(liveSpecies.layer)) {
+        total = liveSpecies.layer.flat().reduce((sum, value) => sum + value, 0);
+      } else {
+        total = totalsBySpecies.get(species.species_id) || 0;
+      }
+      const count = countsBySpecies.get(species.species_id) || 0;
       const color = FLORA_COLORS[species.species_id % FLORA_COLORS.length];
       const nameHtml = isExtinct
         ? `<span class="line-through text-slate-400">${escapeHtml(species.name)}</span><span class="ml-1 text-[10px] text-rose-400 font-semibold" title="Extinct">†</span>`
         : `<span>${escapeHtml(species.name)}</span>`;
       const valueHtml = isExtinct
         ? `<span class="font-mono text-slate-400">0</span>`
-        : `<span class="font-mono">${total.toFixed(0)}</span>`;
+        : `<span class="font-mono">${total.toFixed(0)} <span class="text-[10px] text-slate-400 font-sans">(${count})</span></span>`;
       const barStyle = isExtinct
         ? `width:0%;background:${color};opacity:0.25`
-        : `width:${pct}%;background:${color}`;
+        : `width:${Math.min(100, (count / 500) * 100)}%;background:${color}`;
       return `<div class="bg-slate-50 rounded p-2${isExtinct ? ' opacity-55' : ''}">
         <div class="flex justify-between text-slate-600 mb-1">
           ${nameHtml}
@@ -1054,7 +1065,6 @@
           }
         }
       }
-      updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
     } else if (showFlora && simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
       for (let i = 0; i < simPlantsColumnar.x.length; i++) {
         const px = simPlantsColumnar.x[i];
@@ -1070,7 +1080,6 @@
           ctx.fillRect(px * cellW + (cellW - coreW) / 2, py * cellH + (cellH - coreH) / 2, coreW, coreH);
         }
       }
-      speciesBarsEl.classList.add('hidden');
     } else if (showFlora && data.plant_energy) {
       for (let x = 0; x < gW; x++) {
         for (let y = 0; y < gH; y++) {
@@ -1080,7 +1089,9 @@
           ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
         }
       }
-      speciesBarsEl.classList.add('hidden');
+    }
+    if (showFlora) {
+      updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
     }
 
     if (showMycorrhiza) {

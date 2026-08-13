@@ -48,8 +48,6 @@ def _collect_live_plants(
     # plant in the live WebSocket stream payload causes 2.5MB payload sizes and client latency.
     # We serialize all plants when count < 1000, and for dense scenes we filter to active plant nodes
     # (emitting signals, toxins, or connected via mycorrhiza).
-    is_dense_scene = len(plants_data) >= 1000
-
     for p in plants_data:
         plant_substances = owned_substances.get(p["entity_id"], [])
         local_signal_ids = (
@@ -71,13 +69,6 @@ def _collect_live_plants(
         visible_toxin_ids = sorted(
             local_toxin_ids | {sub["substance_id"] for sub in plant_substances if sub["is_toxin"] and sub["is_visible"]}
         )
-
-        has_active_signals = bool(visible_signal_ids)
-        has_active_toxins = bool(visible_toxin_ids)
-        has_roots = p["root_link_count"] > 0
-
-        if is_dense_scene and not (has_active_signals or has_active_toxins or has_roots):
-            continue
 
         plants["entity_id"].append(p["entity_id"])
         plants["species_id"].append(p["species_id"])
@@ -141,6 +132,7 @@ def _collect_flora_species(
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []
+    is_large_grid = width * height >= 10000
     for species in config_flora_species:
         species_id = species.species_id
         is_extinct = species_id not in live_flora_species_ids
@@ -151,7 +143,7 @@ def _collect_flora_species(
                 "extinct": is_extinct,
             }
         )
-        if is_extinct:
+        if is_extinct or is_large_grid:
             continue
         if species_id < plant_energy_by_species.shape[0]:
             species_energy.append(
