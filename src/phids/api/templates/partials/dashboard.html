@@ -822,9 +822,10 @@
           const maxEnergy = (simPlantsColumnar.max_energy && Number(simPlantsColumnar.max_energy[i]) > 0)
             ? Number(simPlantsColumnar.max_energy[i])
             : (speciesParams ? Number(speciesParams.max_energy || 100) : 100);
-          const maxStruct = (simPlantsColumnar.max_structural_mass && Number(simPlantsColumnar.max_structural_mass[i]) > 0)
+          const rawMaxStruct = (simPlantsColumnar.max_structural_mass && Number(simPlantsColumnar.max_structural_mass[i]) > 0)
             ? Number(simPlantsColumnar.max_structural_mass[i])
             : (speciesParams ? Number(speciesParams.structural_mass_max || speciesParams.max_structural_mass || 0) : 0);
+          const maxStruct = rawMaxStruct > 0 ? rawMaxStruct : maxEnergy;
           const structMass = simPlantsColumnar.structural_mass ? Number(simPlantsColumnar.structural_mass[i] || 0) : 0;
 
           const structRatio = maxStruct > 0 ? structMass / maxStruct : 0;

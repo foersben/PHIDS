@@ -261,7 +261,7 @@ def _attempt_reproduction(
         # structural_mass_max is sourced directly from FloraSpeciesParams (Plan 2+).
         # Falls back to max_energy if 0.0 (Plan 1 compatibility for scenarios without the field).
         structural_mass=M_STRUCTURAL_SEED_VALUE,
-        max_structural_mass=params.structural_mass_max,
+        max_structural_mass=params.structural_mass_max if params.structural_mass_max > 0.0 else params.max_energy,
         growth_rate_structural=params.structural_growth_rate,
     )
     world.add_component(new_entity.entity_id, new_plant)
