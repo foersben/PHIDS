@@ -2,14 +2,18 @@
 type: scientific_model
 title: Flora Lifecycle and Symbiotic Networks
 status: active
-version: 0.1
-description: Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS
-  framework.
+version: 0.2
+description: Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS framework.
 tags:
 - phids
 - ecs
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+- dual-proxy
+timestamp: "2026-08-13T00:27:00Z"
+resources:
+- src/phids/engine/components/plant.py
+- src/phids/engine/core/biotope.py
+- src/phids/engine/systems/lifecycle.py
+- src/phids/shared/constants.py
 ---
 
 Flora within PHIDS are stationary entities on the grid that produce the resources driving the herbivore ecosystem. While stationary, their behavior governs resource distribution, secondary defenses, and spatial networks.
@@ -163,3 +167,45 @@ Constitutive defenses directly modify the trophic interaction loop without requi
 Constitutive defenses act strictly as quantitative or structural barriers during the feeding phase (e.g., lignin, thorns, silica). Rather than relying on discrete spatial collision volumes, these traits directly penalize the herbivore's metabolic intake and population count during the synchronous interaction loop.
 
 > **Deep Dive:** For the explicit continuous-to-discrete mathematical mapping detailing how quantitative digestibility reduces gross intake into net energy, and how physical damage scales to integer swarm casualties via the *Attrition Trap*, see **[Feeding & Attrition Dynamics in Herbivore Behavior](herbivore_behavior.md#feeding-attrition-dynamics)**.
+
+---
+
+## 4. Dual-Proxy ECS Component Fields (`PlantComponent`)
+
+As of **Implementation Plan 1 (Core ECS Array Expansion)**, `PlantComponent` carries two structural
+mass fields alongside the established caloric energy fields. These fields are the ECS-level runtime
+reflection of the **Decoupled Dual-Proxy Architecture** described in
+[`biological_abstractions_and_grid_mechanics.md`](future_prospects/biological_abstractions_and_grid_mechanics.md).
+
+| Field | Type | Default | Semantics |
+|---|---|---|---|
+| `energy` | `float` | from schema | Current caloric health ($E_{current}$). Decreases from herbivory and mycorrhizal taxes. |
+| `max_energy` | `float` | from schema | Species ceiling for caloric storage. |
+| `structural_mass` | `float` | `0.0` | Permanent lignin / woodiness ($M_{structural}$). Never decreased by herbivory. |
+| `max_structural_mass` | `float` | `0.0` | Species ceiling for structural mass (populated from DB in Plan 2). |
+
+### Initialization Contract
+
+- New seeds spawned by `_attempt_reproduction()` in `lifecycle.py` initialize with
+  `structural_mass = M_STRUCTURAL_SEED_VALUE` (`0.0`) - reflecting biological reality that a
+  freshly germinated seed has zero lignified tissue.
+- Both `structural_mass` and `energy` are cleared to `0.0` via `clear_structural_mass()` and
+  `clear_plant_energy()` on the `GridEnvironment` write buffer when a plant dies, ensuring
+  coordinate reuse does not carry ghost state.
+
+### `GridEnvironment` Buffer Layout
+
+The new fields are backed by four double-buffered arrays in `GridEnvironment`:
+
+- `structural_mass_layer` - `[W, H]` float32 aggregated read layer (accessible by flow-field and interaction systems)
+- `_structural_mass_layer_write` - `[W, H]` float32 write buffer
+- `structural_mass_by_species` - `[MAX_FLORA_SPECIES, W, H]` float32 read layer
+- `_structural_mass_by_species_write` - `[MAX_FLORA_SPECIES, W, H]` float32 write buffer
+
+All four are pre-allocated at simulation bootstrap under the **Rule of 16** constraint and swapped
+atomically within `rebuild_energy_layer()` alongside the caloric energy layers.
+
+### Forward Compatibility
+
+The Zarr replay store records `structural_mass_layer` per tick from Plan 1 onwards. All historical
+replay files produced after this commit are forward-compatible with Plan 2 behavior analytics.

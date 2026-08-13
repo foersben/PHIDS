@@ -2,13 +2,14 @@
 type: reference
 title: Module Map and Symbol Guide
 status: active
-version: 0.1
+version: 0.2
 description: Documentation for Module Map and Symbol Guide in the PHIDS framework.
 tags:
 - phids
 - ecs
 - chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
+- dual-proxy
+timestamp: "2026-08-13T00:27:00Z"
 resources:
 - api.md
 - ../development_guide/contribution_workflow.md
@@ -134,9 +135,9 @@ Primary responsibility:
 
 Modules and symbols:
 
-* `phids.engine.components.plant` → `PlantComponent`
-* `phids.engine.components.swarm` → `SwarmComponent`
-* `phids.engine.components.substances` → `SubstanceComponent`
+* `phids.engine.components.plant` - `PlantComponent` (includes `structural_mass` and `max_structural_mass` dual-proxy fields as of Plan 1)
+* `phids.engine.components.swarm` - `SwarmComponent`
+* `phids.engine.components.substances` - `SubstanceComponent`
 
 Narrative docs:
 
@@ -192,11 +193,11 @@ Narrative docs:
 
 Primary responsibility:
 
-- Phase-Staggered Cohort (`(entity_id % 168) == (tick % 168)`) plant photosynthetic growth, $O(1)$ stochastic raycasting seed dispersal, mycorrhizal network establishment, and threshold culling.
+* Phase-Staggered Cohort (`(entity_id % 168) == (tick % 168)`) plant photosynthetic growth, $O(1)$ stochastic raycasting seed dispersal, mycorrhizal network establishment, and threshold culling.
 
 Key symbol:
 
-- `run_lifecycle`
+* `run_lifecycle`
 
 Narrative docs:
 
@@ -287,6 +288,8 @@ Key constants:
 * `SIGNAL_EPSILON`
 * `SUBSTANCE_EMIT_RATE`
 * `TOXIN_CASUALTY_FACTOR`
+* `M_STRUCTURAL_SEED_VALUE` (dual-proxy: initial structural mass for new seeds; `0.0`)
+* `M_STRUCTURAL_GROWTH_RATE` (dual-proxy: placeholder per-slow-tick growth fraction; replaced by DB values in Plan 2)
 
 Narrative docs:
 

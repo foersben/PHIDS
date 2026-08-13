@@ -1,20 +1,26 @@
 ---
 type: concept
 title: Biological Abstractions & Grid Mechanics
-status: draft
-version: 1.2
-description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine.
+status: active
+version: 1.3
+description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes implementation status tracking for the Decoupled Dual-Proxy Architecture.
 tags:
 - phids
 - ecs
 - biological-modeling
 - spatial-dynamics
 - performance
-timestamp: "2026-08-12T11:27:00Z"
+- dual-proxy
+timestamp: "2026-08-13T00:27:00Z"
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/flora_and_symbiosis.md
 - docs/roadmap.md
+- src/phids/engine/components/plant.py
+- src/phids/engine/core/biotope.py
+- src/phids/engine/systems/lifecycle.py
+- src/phids/io/zarr_replay.py
+- src/phids/shared/constants.py
 ---
 
 !!! warning "Status: Draft / Future Prospects"
@@ -188,10 +194,33 @@ By splitting the biological state across these two vectors, the entire ecosystem
 * **Collateral Trampling & Defenses:** A passing swarm's ability to crush a plant is tested against $M_{structural}$, not $E_{current}$. A heavily grazed adult bush ($M_{structural} = \text{High}$, $E_{current} = \text{Low}$) survives trampling perfectly, while a new seed is crushed.
 * **The Zombie Forest & Symbiosis:** A plant's baseline metabolic upkeep scales with its $M_{structural}$ (big trees need more baseline energy). If it is grazed so heavily that its remaining $E_{current}$ cannot meet this high structural upkeep, it starves. It automatically drops its mycorrhizal connections (saving itself from the fungal tax) but eventually dies, organically clearing the coordinate for new seeds and solving grid stagnation.
 
-### Next Steps (Stage 1B Implementation)
+### Implementation Status
 
-1. Expand the `phids.engine.core.biotope` underlying float arrays to include `E_current` and `M_structural`.
-2. Refactor the `flow_field.py` movement kernels to utilize the "Full Belly Override" mask (locking movement if intake $\ge$ upkeep).
-3. Implement the FMA probability check for trampling based on $M_{structural}$ during coordinate transitions.
+> [!NOTE]
+> The **Decoupled Dual-Proxy Architecture** is being realized across three separate
+> implementation plans. Each plan is a vertically isolated data-structure or behavior
+> expansion on the `feature/decoupled-dual-proxy` branch.
 
-This architecture offers a pristine balance: achieving deep, realistic ecological dynamics (Handling Time, Patch Departure, Lignin Defenses, and Trophic Symbiosis) while fully respecting the rigid, high-speed constraints of discrete ECS parallel execution.
+| Plan | Title | Status | Branch Commit |
+|---|---|---|---|
+| **Plan 1** | Core ECS Array Expansion (Foundation) | **DONE** - commit `4f8cdb6` | `feature/decoupled-dual-proxy` |
+| **Plan 2** | Structural Growth Kernel & Trampling FMA | Planned | - |
+| **Plan 3** | MVT Foraging Integration & DSE Calibration | Planned | - |
+
+#### Plan 1 - What Was Delivered (commit `4f8cdb6`)
+
+- `shared/constants.py`: `M_STRUCTURAL_SEED_VALUE = 0.0`, `M_STRUCTURAL_GROWTH_RATE = 0.01`
+- `engine/components/plant.py`: `structural_mass: float = 0.0`, `max_structural_mass: float = 0.0`
+- `engine/core/biotope.py`: Four double-buffered `float32` arrays (`structural_mass_layer`, `_structural_mass_layer_write`, `structural_mass_by_species`, `_structural_mass_by_species_write`); `set_structural_mass()` / `clear_structural_mass()` helpers; dual-proxy `rebuild_energy_layer()` swap; `to_dict()` serialization.
+- `engine/systems/lifecycle.py`: `structural_mass = 0.0` on seed spawn; `clear_structural_mass()` on both death paths.
+- `io/zarr_replay.py`: `structural_mass_layer` added to `_ReplayEnvLike` Protocol and `append_raw_arrays()` - Zarr replays are forward-compatible from day one.
+- `tests/`: 6 new unit tests, 3 new benchmarks (256x256 rebuild at 2.6 ms median).
+
+#### Plan 2 - Scope (Next)
+
+1. Implement the slow-loop `M_structural` growth kernel in `lifecycle.py`: $M_{next} = \min(M_{max}, M_{current} + g_M \times \text{SLOW\_TICK\_STRIDE})$ as a Numba `@njit` function.
+2. Load `max_structural_mass` from the empirical DB (`bio_database.duckdb`) via `FloraSpeciesParams` schema and populate at seed spawn.
+3. Implement the FMA trampling probability check in the interaction movement phase: $P(\text{destroy}) = f(\text{swarm\_biomass}, M_{structural})$.
+4. Wire `M_structural` threshold into the "Full Belly Override" movement lock for MVT foraging kinetics.
+5. Add DB schema columns for `structural_mass_max` and `structural_growth_rate` per flora species.
+6. Extend benchmark gates and add integration tests covering the trampling FMA path.
