@@ -33,6 +33,7 @@ from typing import TYPE_CHECKING
 from numba import njit
 
 from phids.engine.components.plant import PlantComponent
+from phids.shared.constants import M_STRUCTURAL_SEED_VALUE
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
@@ -173,10 +174,16 @@ def _attempt_reproduction(
         last_reproduction_tick=tick,
         translocation_rate=params.translocation_rate,
         mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
+        # M_structural: seeds start with zero lignin/woodiness (fully vulnerable to trampling).
+        # max_structural_mass uses max_energy as a species ceiling placeholder until Plan 2
+        # adds a dedicated DB column and EEDSE tuning for structural mass capacity.
+        structural_mass=M_STRUCTURAL_SEED_VALUE,
+        max_structural_mass=params.max_energy,
     )
     world.add_component(new_entity.entity_id, new_plant)
     world.register_position(new_entity.entity_id, tx, ty)
     env.set_plant_energy(tx, ty, plant.species_id, params.base_energy)
+    env.set_structural_mass(tx, ty, plant.species_id, M_STRUCTURAL_SEED_VALUE)
     env.set_apparent_nutrition(tx, ty, plant.apparent_nutrition_factor)
     return [new_plant]
 
@@ -283,6 +290,7 @@ def _cull_plant_if_dead(
     if plant_death_causes is not None:
         plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
     env.clear_plant_energy(plant.x, plant.y, plant.species_id)
+    env.clear_structural_mass(plant.x, plant.y, plant.species_id)
     world.unregister_position(plant.entity_id, plant.x, plant.y)
     dead_entity_ids.add(plant.entity_id)
     dead_entities.append(plant.entity_id)
@@ -474,6 +482,7 @@ def run_lifecycle(
             if plant_death_causes is not None:
                 plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
             env.clear_plant_energy(plant.x, plant.y, plant.species_id)
+            env.clear_structural_mass(plant.x, plant.y, plant.species_id)
             world.unregister_position(entity.entity_id, plant.x, plant.y)
             dead.append(entity.entity_id)
 

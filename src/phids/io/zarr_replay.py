@@ -57,6 +57,7 @@ class _ReplayEnvLike(Protocol):
     """Structural contract for environment layers consumed by append_raw_arrays."""
 
     plant_energy_layer: np.ndarray
+    structural_mass_layer: np.ndarray
     signal_layers: np.ndarray
     toxin_layers: np.ndarray
     flow_field: np.ndarray
@@ -408,6 +409,7 @@ class ReplayBuffer:
             termination_reason=termination_reason,
             fields={
                 "plant_energy_layer": env.plant_energy_layer,
+                "structural_mass_layer": env.structural_mass_layer,
                 "signal_layers": env.signal_layers,
                 "toxin_layers": env.toxin_layers,
                 "flow_field": env.flow_field,
