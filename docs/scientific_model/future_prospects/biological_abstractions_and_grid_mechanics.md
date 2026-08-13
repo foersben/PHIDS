@@ -2,8 +2,8 @@
 type: concept
 title: Biological Abstractions & Grid Mechanics
 status: active
-version: 1.3
-description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes implementation status tracking for the Decoupled Dual-Proxy Architecture.
+version: 1.4
+description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes full implementation status tracking for the Decoupled Dual-Proxy Architecture (Plans 1, 2, & 3).
 tags:
 - phids
 - ecs
@@ -11,26 +11,31 @@ tags:
 - spatial-dynamics
 - performance
 - dual-proxy
-timestamp: "2026-08-13T00:27:00Z"
+timestamp: "2026-08-13T10:30:00Z"
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/flora_and_symbiosis.md
 - docs/roadmap.md
+- src/phids/api/schemas/species.py
 - src/phids/engine/components/plant.py
+- src/phids/engine/components/swarm.py
 - src/phids/engine/core/biotope.py
+- src/phids/engine/systems/interaction/movement.py
 - src/phids/engine/systems/lifecycle.py
 - src/phids/io/zarr_replay.py
 - src/phids/shared/constants.py
+- src/phids/telemetry/analytics.py
+- tests/integration/systems/test_dual_proxy_integration.py
 ---
 
-!!! warning "Status: Draft / Future Prospects"
-    This document outlines theoretical architectural solutions for upcoming roadmap milestones. It serves as a design space discussion comparing biological accuracy against the rigid computational constraints of the PHIDS Numba JIT ECS engine.
+!!! note "Status: Active Architecture Specifications"
+    This document outlines theoretical architectural solutions and production implementation specifications for spatial grid mechanics in PHIDS. It compares biological fidelity against the performance constraints of the PHIDS Numba JIT ECS engine.
 
 In an idealized ecological simulation, every individual organism, developmental stage, and decision-making process would be modeled with infinite precision. In PHIDS, the absolute primary constraints are **computability and simulation speed**.
 
-The engine relies on double-buffered, contiguous memory arrays and stateless, memory-decoupled Markovian execution (via Numba `@njit(parallel=True)`). To maintain real-time performance across massive grid topologies (e.g., $256 \times 256$), the **hot paths** (the inner loops executed millions of times per second) must be heavily optimized for SIMD (Single Instruction, Multiple Data) vectorization. This means strictly avoiding CPU branch prediction penalties (e.g., `if/else` statements, enums, or state machines) and relying entirely on branchless float arithmetic.
+The engine relies on double-buffered, contiguous memory arrays and stateless, memory-decoupled Markovian execution (via Numba `@njit`). To maintain real-time performance across massive grid topologies (e.g., $256 \times 256$), the **hot paths** (the inner loops executed millions of times per second) must be heavily optimized for SIMD (Single Instruction, Multiple Data) vectorization. This means strictly avoiding CPU branch prediction penalties (e.g., `if/else` statements, enums, or state machines) and relying entirely on branchless float arithmetic.
 
-This document explores the fundamental contradictions between deep biological modeling and high-performance ECS constraints, outlining the proposed architectural solutions. We structure each section by starting with the simple biological concept, exploring the computational contradiction, and detailing the complex, engine-native mathematical solution.
+This document explores the fundamental contradictions between deep biological modeling and high-performance ECS constraints, outlining the implemented architectural solutions. We structure each section by starting with the simple biological concept, exploring the computational contradiction, and detailing the complex, engine-native mathematical solution.
 
 ---
 
@@ -38,19 +43,19 @@ This document explores the fundamental contradictions between deep biological mo
 
 ### The Core Concept (Simple)
 
-When an animal (like a deer) finds a bush, it doesn't instantly eat the whole bush and run away. It stays, eats until its stomach is full, rests to digest, and only leaves to find a better bush when the current one is mostly stripped bare.
+When an animal (like a deer) finds a bush, it does not instantly eat the whole bush and run away. It stays, eats until its stomach is full, rests to digest, and only leaves to find a better bush when the current one is mostly stripped bare.
 
 ### The Contradiction (The Problem)
 
-Ecological theory models this using **Charnov's Marginal Value Theorem (MVT)**, which states a forager leaves when the local food drops below the "landscape average." But in our computer simulation, calculating the "landscape average" requires global memory. Swarms in PHIDS are memoryless - they only know what is in their exact coordinate right now. Giving them global memory ruins the engine's speed.
+Ecological theory models this using **Charnov's Marginal Value Theorem (MVT)**, which states a forager leaves when the local food drops below the landscape average. But in our computer simulation, calculating the landscape average requires global memory. Swarms in PHIDS are memoryless - they only know what is in their exact coordinate right now. Giving them global memory ruins the engine's speed.
 
 ### The Implementation (Complex / Hot Path)
 
-We simulate handling time and patch departure using $O(1)$ branchless math:
+We simulate handling time and patch departure using $O(1)$ branchless math in `src/phids/engine/systems/interaction/movement.py`:
 
-- **Holling Type II Constraints:** Swarms evaluate their energetic intake every tick. If caloric intake meets or exceeds metabolic upkeep ($Intake \ge Upkeep$), we mathematically scale their movement probability to `0.0`. They stay and feed (resolving "jitter").
-- **The Deficit Unlock:** As the plant's biomass drops, Holling Type II limits throttle the swarm's intake. Once $Intake < Upkeep$, the swarm operates at a deficit. It "unlocks" and resumes evaluating the local chemical gradient via random walk/chemotaxis.
-- **Hot Path Impact:** This requires zero new state tracking. It relies purely on the existing intake float comparison, preserving SIMD vectorization while perfectly mimicking optimal MVT departure.
+- **Holling Type II & MVT Full Belly Override:** Swarms evaluate their energetic intake every tick. If caloric intake meets or exceeds metabolic upkeep ($Intake \ge Upkeep > 0.0$) or apparent nutrition $\ge 0.999$, `_is_swarm_anchored_jit` evaluates to `True` and movement probability drops to `0.0`. They stay and feed (resolving jitter).
+- **The Deficit Unlock:** As the plant's biomass drops, Holling Type II limits throttle the swarm's intake. Once $Intake < Upkeep$, the swarm operates at a deficit. It unlocks and resumes evaluating the local chemical gradient via random walk/chemotaxis.
+- **Hot Path Impact:** This requires zero new state tracking. It relies purely on scalar comparisons in `@njit` kernels, preserving SIMD vectorization while perfectly mimicking optimal MVT departure.
 
 ---
 
@@ -62,14 +67,14 @@ If a deer eats 90% of a plant, the plant might survive as a tiny, stunted stubbl
 
 ### The Contradiction (The Problem)
 
-To keep the simulation incredibly fast, a grid coordinate can only hold exactly one plant (Occupied or Empty). We cannot calculate complex sub-grid densities where a seed and a stubble share the same millimeter of dirt. If we don't clear the stubble, the ecosystem stagnates in a "zombie forest."
+To keep the simulation incredibly fast, a grid coordinate can only hold exactly one plant (Occupied or Empty). We cannot calculate complex sub-grid densities where a seed and a stubble share the same millimeter of dirt. If we do not clear the stubble, the ecosystem stagnates in a "zombie forest."
 
 ### The Implementation (Complex / Hot Path)
 
 We require lightweight mechanics to force **coordinate turnover** without breaking the binary occupancy rule:
 
-1. **Crippled Photosynthesis & Baseline Upkeep:** Biologically, maintaining root systems requires baseline caloric upkeep. If grazed down to 10%, a plant's reduced leaf area fails to generate enough photosynthetic energy to meet this baseline. It slowly starves, automatically zeroing out the coordinate.
-2. **Competitive Overwriting (Seed Dominance):** Biologically, an established canopy suppresses saplings via shade and allelopathy. However, if the canopy is destroyed (stubble), a healthy seed can outcompete it. Computably, seeds are permitted to overwrite occupied coordinates *if* the occupying plant's energy is below a critical "stubble" threshold ($E < 20\%$).
+1. **Crippled Photosynthesis & Structural Upkeep Tax:** Biologically, maintaining root and stem structures requires baseline caloric upkeep. In Plan 3, plants pay a per-tick maintenance fee proportional to structural mass ($E_{upkeep} = E_{survival} \times \text{STRUCTURAL\_UPKEEP\_SCALAR} \times \frac{M_{structural}}{M_{max}}$). If grazed down to 10%, a plant's reduced leaf area fails to generate enough photosynthetic energy to meet this baseline. It starves, automatically zeroing out the coordinate.
+2. **Competitive Overwriting (Seed Dominance):** Biologically, an established canopy suppresses saplings via shade and allelopathy. However, if the canopy is destroyed (stubble), a healthy seed can outcompete it. Computably, seeds are permitted to overwrite occupied coordinates *if* the occupying plant's energy is below a critical stubble threshold ($E < 20\%$).
 3. **Background Mortality (Max Lifespan):** A universal age limit acts as an ecological garbage collector, ensuring rolling coordinate turnover.
 
 ---
@@ -90,16 +95,16 @@ In botany, plants transition through seven distinct phenological phases:
 
 ### The Contradiction (The Problem)
 
-In traditional programming, we would use an explicit State Machine (`enum State { SEED, GERMINATION, SEEDLING... }`). But `if/else` branching on enums inside the core simulation loop causes CPU branch mispredictions, absolutely destroying Numba SIMD vectorization. Furthermore, hard transitions between discrete states fail to capture the continuous nature of biological growth.
+In traditional programming, we would use an explicit State Machine (`enum State { SEED, GERMINATION, SEEDLING... }`). But `if/else` branching on enums inside the core simulation loop causes CPU branch mispredictions, destroying Numba SIMD vectorization. Furthermore, hard transitions between discrete states fail to capture the continuous nature of biological growth.
 
 ### The Implementation (Complex / Hot Path)
 
 Instead of discrete enums, PHIDS abstracts these seven phases mathematically across our **Dual-Proxy Architecture** ($E_{current}$ for caloric health, and $M_{structural}$ for permanent woodiness). We map the phases entirely through branchless threshold masks:
 
-- **Seed:** $M_{structural} \approx 0$. Plant has zero structural defense and is instantly crushed by trampling.
-- **Germination:** *Implicitly Abstracted.* There is no "awakening" state. Germination is simply the continuous phase where $E_{current}$ begins to increase from its initial seed value.
-- **Seedling & Sapling:** Governed by $M_{structural}$ thresholds. As $M_{structural}$ crosses $M_{sapling}$, a float mask automatically scales down trampling vulnerability (e.g., $Vulnerability = \max(0, 1.0 - (M_{structural} / M_{adult}))$).
-- **Vegetative:** Governed by $M_{structural} \ge M_{adult}$. The plant has maximum structural defense. Photosynthesis maximizes $E_{current}$.
+- **Seed:** $M_{structural} \approx 0$. Plant has zero structural defense and is vulnerable to incidental seedling destruction.
+- **Germination:** *Implicitly Abstracted.* There is no awakening state. Germination is simply the continuous phase where $E_{current}$ begins to increase from its initial seed value.
+- **Seedling & Sapling:** Governed by $M_{structural}$ thresholds. As $M_{structural}$ increases, `_compute_trample_probability_jit` scales down destruction probability: $P(\text{destroy}) = \min(P_{max}, \text{pop} \times k_{\text{incidental}} \times \max(0, 1 - \frac{M_{structural}}{M_{max}}))$.
+- **Vegetative:** Governed by $M_{structural} \ge M_{adult}$. The plant has maximum structural defense ($P_{\text{destroy}} = 0.0$). Photosynthesis maximizes $E_{current}$.
 - **Reproductive:** Governed by $E_{current} > E_{reproductive}$. It is not a rigid state, but a metabolic overflow phase. A branchless mask `(E_current > E_rep) * 1.0` activates seed dispersion, draining the excess $E_{current}$ back down to baseline.
 - **Senescence:** Governed by the universal `Age` counter or when $E_{current} < \text{Upkeep}(M_{structural})$.
 
@@ -111,19 +116,19 @@ Instead of discrete enums, PHIDS abstracts these seven phases mathematically acr
 
 ### The Core Concept (Simple)
 
-If a massive herd of elephants runs across a field, they don't just eat the tall grass—they accidentally crush and trample all the tiny seeds and saplings under their feet.
+If a massive herd of herbivores moves across a field, they do not just eat targeted flora - they accidentally crush, trample, or clip fragile seeds and saplings underfoot or during indiscriminate foraging.
 
 ### The Contradiction (The Problem)
 
-Calculating hit-box collisions (checking exactly where every elephant's foot lands relative to every seed) is standard in video games, but computationally prohibitive for large-scale ecological grids. It requires nested loops that ruin spatial grid alignment.
+Calculating hit-box collisions (checking exactly where every animal's foot lands relative to every seed) is standard in video games, but computationally prohibitive for large-scale ecological grids. It requires nested loops that ruin spatial grid alignment.
 
 ### The Implementation (Complex / Hot Path)
 
-Rather than a collision engine, collateral damage is evaluated probabilistically during the standard movement phase.
+Rather than a collision engine, collateral damage is evaluated probabilistically during coordinate transition in `_resolve_incidental_mortality` in `movement.py`:
 
-- When a swarm translates into a new coordinate `(x, y)`, the engine checks the resident plant's energy proxy.
-- If $E_{plant} < E_{sapling}$, the engine computes a probabilistic **trample event**: $P(\text{destroy}) = f(\text{swarm\_biomass}, E_{plant})$.
-- **Hot Path Impact:** Massive herds act as natural "plows" through early-succession biomes. The heavier the swarm, the higher the likelihood of destroying fragile seeds. This adds exactly one fused multiply-add (FMA) operation to the movement hot path, avoiding collision loops entirely.
+- When a swarm moves to a new coordinate $(nx, ny)$, the engine calculates the destruction probability $P(\text{destroy}) = \min(P_{max}, \text{population} \times k_{\text{incidental}} \times \max(0, 1 - \frac{M_{structural}}{M_{max}}))$. Default $P_{max} = 0.50$.
+- If `random.random() < P`, the seedling is culled, cleared from GridEnvironment write layers, unregistered from the spatial hash, and queued for garbage collection under death cause `"death_collateral_trampling"` or `"death_incidental_consumption"`.
+- **Hot Path Impact:** Heavy herds act as natural plows through early-succession biomes. The heavier the swarm and the smaller the plant's $M_{structural}$, the higher the likelihood of seedling mortality.
 
 ---
 
@@ -133,22 +138,22 @@ When integrating these new computable abstractions with existing, heavily docume
 
 ### Contradiction A: Mycorrhizal Subsidies vs. The Zombie Forest
 
-**The Core Concept (Simple):** Trees talk to each other using underground fungal networks, but the fungi demand a sugar tax in return. If a tree is eaten down to a stubble, it can't pay the tax. The fungus will cut off the tree to protect itself.
+**The Core Concept (Simple):** Trees talk to each other using underground fungal networks, but the fungi demand a sugar tax in return. If a tree is eaten down to a stubble, it cannot pay the tax. The fungus will cut off the tree to protect itself.
 
-**The Implementation (Complex / Hot Path):** According to `flora_and_symbiosis.md`, plants pay an obligate `mycorrhizal_tax_per_link`. If a plant is grazed to "stubble" (10%), its photosynthesis drops. If the tax remains static, the fungal network instantly kills the plant by draining its remaining energy.
+**The Implementation (Complex / Hot Path):** According to `flora_and_symbiosis.md`, plants pay an obligate `mycorrhizal_tax_per_link`. If a plant is grazed to stubble (10%), its photosynthesis drops. If the tax remains static, the fungal network instantly kills the plant by draining its remaining energy.
 Arbuscular mycorrhizal fungi are obligate biotrophs. If the host plant stops providing carbohydrates, the fungi actively wall off the hyphal connection to prevent parasitism. Computably, if $E_{plant}$ drops below upkeep, the plant automatically drops all `mycorrhizal_connections`. It becomes isolated from the network to avoid the tax. If it recovers, it must pay the `connection_cost` again to re-join. This mirrors biological fungal selfish-routing while keeping the math $O(1)$.
 
 ### Contradiction B: Continuous Energy Proxy vs. Morphological Defenses
 
-**The Core Concept (Simple):** A massive, old thorn-bush has thick, woody roots and sharp spikes. Even if a deer eats all its leaves, the woody skeleton remains. A passing herd can't just trample it like a tiny, fragile sapling.
+**The Core Concept (Simple):** A massive, old thorn-bush has thick, woody roots and sharp spikes. Even if a deer eats all its leaves, the woody skeleton remains. A passing herd cannot just trample it like a tiny, fragile sapling.
 
-**The Implementation (Complex / Hot Path):** According to `morphological_defenses.md`, plants utilize structural defenses requiring heavy lignin investment. We proposed using a single Continuous Energy Proxy ($E$) to represent developmental states. However, this conflates *Current Health* with *Structural Age*. If a mature thorn-bush ($E_{adult}$) is grazed to 15% energy, the continuous proxy implies it reverted to a defenseless "Sapling" and would be trampled.
-A single proxy is biologically insufficient. The ECS array must be expanded to include two continuous float proxies: **$E_{current}$ (Current Caloric Health)** and **$M_{structural}$ (Maximum Reached Woodiness/Lignin)**.
+**The Implementation (Complex / Hot Path):** According to `morphological_defenses.md`, plants utilize structural defenses requiring heavy lignin investment. We proposed using a single Continuous Energy Proxy ($E$) to represent developmental states. However, this conflates *Current Health* with *Structural Age*. If a mature thorn-bush ($E_{adult}$) is grazed to 15% energy, the continuous proxy implies it reverted to a defenseless sapling and would be trampled.
+A single proxy is biologically insufficient. The ECS array is expanded to include two continuous float proxies: **$E_{current}$ (Current Caloric Health)** and **$M_{structural}$ (Permanent Woodiness/Lignin)**.
 
 - Grazing reduces $E_{current}$ but *never* reduces $M_{structural}$.
 - Trampling vulnerability and Morphological Defenses are calculated strictly against $M_{structural}$.
 - Starvation/Death is calculated strictly against $E_{current}$.
-- **Hot Path Impact:** This adds exactly one contiguous float array (`structural_mass`) to the ECS engine. It preserves branchless memory execution while cleanly decoupling a plant's age/structure from its current grazing damage, solving the trampling paradox.
+- **Hot Path Impact:** Adds contiguous float32 arrays (`structural_mass_layer`, `_structural_mass_layer_write`, `structural_mass_by_species`, `_structural_mass_by_species_write`) to `GridEnvironment`. It preserves branchless memory execution while cleanly decoupling a plant's age/structure from its current grazing damage, solving the trampling paradox.
 
 ---
 
@@ -156,7 +161,7 @@ A single proxy is biologically insufficient. The ECS array must be expanded to i
 
 ### The Core Concept (Simple)
 
-We have these robust mathematical proxies ($E_{current}$ and $M_{structural}$), but where do the starting numbers come from? How do we know if a simulated plant should have a maximum energy of 50 or 500? And how do we ensure the simulation doesn't just instantly crash because the herbivores eat too fast?
+We have these robust mathematical proxies ($E_{current}$ and $M_{structural}$), but where do the starting numbers come from? How do we know if a simulated plant should have a maximum energy of 50 or 500? And how do we ensure the simulation does not just instantly crash because the herbivores eat too fast?
 
 ### The Contradiction (The Problem)
 
@@ -167,60 +172,45 @@ Manually guessing these parameters leads to fragile ecosystems that collapse. Ho
 This is entirely solved by separating the **Parameter Discovery** from the **Runtime Simulation**. We achieve this via our **Empirical Bio-Database** and the **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)**.
 
 1. **Empirical Constraints (Database):** 
-   Our DuckDB database (`bio_database.duckdb`) is already populated with empirical, real-world data (sourced from GBIF, TRY, DrDuke). The schema contains critical scalar parameters such as `max_energy`, `growth_rate`, `survival_threshold`, and `mechanical_damage_per_bite`. These raw data points serve as the *hard bounding boxes* for our dual proxies. We have sufficient empirical data reconstructed across multiple sources to define the absolute limits of $E_{current}$ and $M_{structural}$ for both flora and fauna.
+   Our DuckDB database (`bio_database.json` / `bio_database.py`) is populated with empirical, real-world dry-mass data across 16 flora species (sourced from GBIF, TRY, DrDuke). The schema contains critical scalar parameters such as `max_energy`, `growth_rate`, `survival_threshold`, `structural_mass_max`, and `structural_growth_rate`. These raw data points serve as the *hard bounding boxes* for our dual proxies.
 2. **EEDSE Parameter Tuning (Offline Optimization):** 
-   Before the simulation ever starts, our DSE optimizer (`src/phids/analytics/dse_optimizer.py`) takes these database constraints and runs a distributed NSGA-II multi-objective optimization. It rapidly tests millions of parameter permutations *within the empirical database bounds*, filtering out unbalanced topologies using Analytical Pre-Pruning.
+   Before the simulation starts, our DSE optimizer (`src/phids/analytics/dse_optimizer.py`) takes these database constraints and runs a distributed NSGA-II multi-objective optimization. It tests parameter permutations within empirical database bounds, filtering out unbalanced topologies using Analytical Pre-Pruning.
 3. **Hot Path Impact:** 
-   The result of the DSE is a perfectly tuned, highly realistic Lotka-Volterra configuration that is biologically grounded in database facts. When the actual simulation starts, the engine simply loads these pre-computed constants into the `E_current` and `M_structural` Numba arrays. The runtime engine does zero heavy lifting for parameter tuning, preserving pure $O(1)$ execution speed while benefiting from complex evolutionary modeling.
+   The result of the DSE is a perfectly tuned, highly realistic Lotka-Volterra configuration. When the simulation starts, the engine loads these pre-computed constants into `E_current` and `M_structural` Numba arrays. The runtime engine does zero heavy lifting for parameter tuning, preserving pure $O(1)$ execution speed.
 
 ---
 
-## 7. Conclusion & Path Forward: The Decoupled Dual-Proxy Architecture
+## 7. Implementation Status: The Decoupled Dual-Proxy Architecture
 
-To resolve all the biological contradictions while strictly adhering to Numba's SIMD vectorization and $O(1)$ hot-path constraints, we must unify these isolated fixes into one comprehensive architectural concept: **The Decoupled Dual-Proxy Architecture**.
-
-### The Comprehensive Concept
-
-Instead of relying on single variables or discrete state enums, every plant entity in the ECS spatial hash will be defined by exactly two contiguous, branchless floats:
-
-1. **$E_{current}$ (Energetic Health):** Represents short-term, volatile caloric storage (leaves, accessible sugars, phloem). It increases through daily photosynthesis and decreases instantly from grazing or mycorrhizal taxes.
-2. **$M_{structural}$ (Structural Mass):** Represents long-term, permanent physical growth (lignin, woodiness, deep roots). It only ever increases as the plant ages, up to a maximum species limit. It never decreases from herbivory.
-
-### How it Solves Everything Natively
-
-By splitting the biological state across these two vectors, the entire ecosystem naturally balances itself without a single `if/else` statement in the execution loop:
-
-* **Foraging & Patch Departure:** Herbivore intake is gated by $E_{current}$. When the leaves are gone, intake drops below upkeep, and the swarm departs (Emergent MVT).
-* **Collateral Trampling & Defenses:** A passing swarm's ability to crush a plant is tested against $M_{structural}$, not $E_{current}$. A heavily grazed adult bush ($M_{structural} = \text{High}$, $E_{current} = \text{Low}$) survives trampling perfectly, while a new seed is crushed.
-* **The Zombie Forest & Symbiosis:** A plant's baseline metabolic upkeep scales with its $M_{structural}$ (big trees need more baseline energy). If it is grazed so heavily that its remaining $E_{current}$ cannot meet this high structural upkeep, it starves. It automatically drops its mycorrhizal connections (saving itself from the fungal tax) but eventually dies, organically clearing the coordinate for new seeds and solving grid stagnation.
-
-### Implementation Status
-
-> [!NOTE]
-> The **Decoupled Dual-Proxy Architecture** is being realized across three separate
-> implementation plans. Each plan is a vertically isolated data-structure or behavior
-> expansion on the `feature/decoupled-dual-proxy` branch.
+The **Decoupled Dual-Proxy Architecture** is fully implemented across three production milestones on the `feature/decoupled-dual-proxy` branch.
 
 | Plan | Title | Status | Branch Commit |
 |---|---|---|---|
-| **Plan 1** | Core ECS Array Expansion (Foundation) | **DONE** - commit `4f8cdb6` | `feature/decoupled-dual-proxy` |
-| **Plan 2** | Structural Growth Kernel & Trampling FMA | **DONE** | `feature/decoupled-dual-proxy` |
-| **Plan 3** | MVT Foraging Integration & DSE Calibration | Planned | - |
+| **Plan 1** | Core ECS Array Expansion (Foundation) | **DONE** | `4f8cdb6` |
+| **Plan 2** | Structural Growth Kernel & Trampling FMA | **DONE** | `08456a8`, `f1800de`, `43fccc6` |
+| **Plan 3** | Movement Resolution Incidental Mortality & Upkeep Tax | **DONE** | `92d3e08` |
 
-#### Plan 1 - What Was Delivered (commit `4f8cdb6`)
+### Plan 1 - Core ECS Array Expansion (Delivered in commit `4f8cdb6`)
 
-- `shared/constants.py`: `M_STRUCTURAL_SEED_VALUE = 0.0`, `M_STRUCTURAL_GROWTH_RATE = 0.01`
-- `engine/components/plant.py`: `structural_mass: float = 0.0`, `max_structural_mass: float = 0.0`
-- `engine/core/biotope.py`: Four double-buffered `float32` arrays (`structural_mass_layer`, `_structural_mass_layer_write`, `structural_mass_by_species`, `_structural_mass_by_species_write`); `set_structural_mass()` / `clear_structural_mass()` helpers; dual-proxy `rebuild_energy_layer()` swap; `to_dict()` serialization.
-- `engine/systems/lifecycle.py`: `structural_mass = 0.0` on seed spawn; `clear_structural_mass()` on both death paths.
-- `io/zarr_replay.py`: `structural_mass_layer` added to `_ReplayEnvLike` Protocol and `append_raw_arrays()` - Zarr replays are forward-compatible from day one.
-- `tests/`: 6 new unit tests, 3 new benchmarks (256x256 rebuild at 2.6 ms median).
+- `src/phids/shared/constants.py`: Declared `M_STRUCTURAL_SEED_VALUE = 0.0` and `M_STRUCTURAL_GROWTH_RATE = 0.01`.
+- `src/phids/engine/components/plant.py`: Added `structural_mass: float = 0.0` and `max_structural_mass: float = 0.0`.
+- `src/phids/engine/core/biotope.py`: Added double-buffered `float32` arrays (`structural_mass_layer`, `_structural_mass_layer_write`, `structural_mass_by_species`, `_structural_mass_by_species_write`); `set_structural_mass()` and `clear_structural_mass()` helpers; dual-proxy `rebuild_energy_layer()` swap; `to_dict()` state serialization.
+- `src/phids/engine/systems/lifecycle.py`: Initialized `structural_mass = 0.0` on seed spawn; wired `clear_structural_mass()` on both death paths.
+- `src/phids/io/zarr_replay.py`: Added `structural_mass_layer` to `_ReplayEnvLike` protocol and `append_raw_arrays()` for tick-by-tick Zarr logging.
+- `tests/`: Added unit tests and benchmarks verifying < 2.6 ms 256x256 layer rebuild limits.
 
-#### Plan 2 - Scope (Next)
+### Plan 2 - Structural Growth Kernel & Trampling FMA (Delivered in commits `08456a8`, `f1800de`, `43fccc6`)
 
-1. Implement the slow-loop `M_structural` growth kernel in `lifecycle.py`: $M_{next} = \min(M_{max}, M_{current} + g_M \times \text{SLOW\_TICK\_STRIDE})$ as a Numba `@njit` function.
-2. Load `max_structural_mass` from the empirical DB (`bio_database.duckdb`) via `FloraSpeciesParams` schema and populate at seed spawn.
-3. Implement the FMA trampling probability check in the interaction movement phase: $P(\text{destroy}) = f(\text{swarm\_biomass}, M_{structural})$.
-4. Wire `M_structural` threshold into the "Full Belly Override" movement lock for MVT foraging kinetics.
-5. Add DB schema columns for `structural_mass_max` and `structural_growth_rate` per flora species.
-6. Extend benchmark gates and add integration tests covering the trampling FMA path.
+- `src/phids/analytics/bio_database.json` & `bio_database.py`: Populated `structural_mass_max` and `structural_growth_rate` for all 16 flora species based on empirical dry-mass data.
+- `src/phids/api/schemas/species.py`: Extended `FloraSpeciesParams` and `FloraProfile` dataclasses.
+- `src/phids/engine/systems/lifecycle.py`: Implemented Numba `@njit` kernel `_grow_structural_mass_jit` on the 168-tick slow loop stride ($M_{next} = \min(M_{max}, M + g_M \times 168)$).
+- `src/phids/engine/systems/interaction/movement.py`: Implemented Numba `@njit` kernel `_compute_trample_probability_jit` and MVT Full Belly patch departure lock in `_is_swarm_anchored_jit`.
+- `tests/`: Added unit tests in `test_biotope_state_mutation_pilot.py` and `test_trampling_fma.py`, benchmark in `test_dual_proxy_memory_benchmark.py`.
+
+### Plan 3 - Movement Resolution Incidental Mortality & Upkeep Tax (Delivered in commit `92d3e08`)
+
+- `src/phids/api/schemas/species.py`: Extended `HerbivoreSpeciesParams` with `incidental_mortality_factor: float = 0.0` and `incidental_mortality_mode: Literal["trampling", "consumption"] = "trampling"`.
+- `src/phids/engine/systems/interaction/movement.py`: Integrated `_resolve_incidental_mortality` on coordinate entry, culling co-located seedlings probabilistically ($P \le P_{max} = 0.50$) and logging death causes `"death_collateral_trampling"` or `"death_incidental_consumption"`.
+- `src/phids/engine/systems/lifecycle.py`: Implemented `_calculate_structural_upkeep_jit` kernel and deducted maintenance tax ($E_{upkeep} = E_{survival} \times \text{STRUCTURAL\_UPKEEP\_SCALAR} \times \frac{M_{structural}}{M_{max}}$) per lifecycle tick.
+- `src/phids/telemetry/analytics.py`: Added `calculate_mean_structural_mass_by_species` and `calculate_incidental_mortality_rate`.
+- `tests/`: Created `tests/integration/systems/test_dual_proxy_integration.py` with 4 end-to-end scenario tests. Full test suite: **1212 passed, 0 failed**.
