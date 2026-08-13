@@ -658,7 +658,12 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(swarm.population), cx, cy);
-       function drawMycorrhizalLinks(links) {
+        }
+      });
+    }
+  }
+
+  function drawMycorrhizalLinks(links) {
     if (!Array.isArray(links) || links.length === 0) return;
     const { gW, gH, cellW, cellH } = canvasLayout;
     ctx.save();
