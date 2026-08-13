@@ -28,11 +28,36 @@
     </div>
 
     <div id="canvas-frame" class="w-full overflow-x-auto">
-      <div id="canvas-stage"
-        class="relative inline-block rounded border border-slate-300 bg-slate-950 p-2 shadow-sm">
-        <canvas id="biotope-canvas" width="800" height="800"
-          style="image-rendering:pixelated;background:#0f172a;cursor:crosshair;"
-          class="rounded block shrink-0"></canvas>
+      <div id="canvas-stage" class="relative rounded border border-slate-700 bg-slate-900 p-2 shadow-inner inline-block">
+        <div id="canvas-layer-toolbar" class="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg border border-slate-700/80 bg-slate-950/85 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-slate-300 shadow-md">
+          <label class="flex items-center gap-1 cursor-pointer hover:text-white transition">
+            <input type="checkbox" id="layer-toggle-flora" checked class="rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-0 accent-emerald-500 w-3 h-3">
+            <span>Flora</span>
+          </label>
+          <span class="text-slate-700">|</span>
+          <label class="flex items-center gap-1 cursor-pointer hover:text-white transition">
+            <input type="checkbox" id="layer-toggle-swarms" checked class="rounded border-slate-600 bg-slate-800 text-rose-500 focus:ring-0 accent-rose-500 w-3 h-3">
+            <span>Swarms</span>
+          </label>
+          <span class="text-slate-700">|</span>
+          <label class="flex items-center gap-1 cursor-pointer hover:text-white transition">
+            <input type="checkbox" id="layer-toggle-mycorrhiza" checked class="rounded border-slate-600 bg-slate-800 text-sky-400 focus:ring-0 accent-sky-400 w-3 h-3">
+            <span>Mycorrhiza</span>
+          </label>
+          <span class="text-slate-700">|</span>
+          <label class="flex items-center gap-1 cursor-pointer hover:text-white transition">
+            <input type="checkbox" id="layer-toggle-woodiness" class="rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-0 accent-amber-500 w-3 h-3">
+            <span>Woodiness</span>
+          </label>
+          <span class="text-slate-700">|</span>
+          <label class="flex items-center gap-1 cursor-pointer hover:text-white transition">
+            <input type="checkbox" id="layer-toggle-chemicals" checked class="rounded border-slate-600 bg-slate-800 text-indigo-400 focus:ring-0 accent-indigo-400 w-3 h-3">
+            <span>Chemicals</span>
+          </label>
+        </div>
+
+        <canvas id="sim-canvas" width="600" height="600"
+          class="rounded block shrink-0 cursor-crosshair"></canvas>
 
         <div id="canvas-overlay"
           class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none"
@@ -44,7 +69,7 @@
         </div>
 
         <div id="cell-tooltip"
-          class="hidden absolute z-20 max-w-sm rounded-xl border border-slate-700 bg-slate-950/95 text-slate-100 shadow-2xl backdrop-blur px-3 py-2 text-xs pointer-events-none">
+          class="hidden absolute z-20 max-w-xs sm:max-w-sm rounded-xl border border-slate-700/80 bg-slate-950/95 text-slate-100 shadow-2xl backdrop-blur px-3.5 py-3 text-xs pointer-events-none transition-all duration-75">
         </div>
       </div>
     </div>
@@ -633,12 +658,7 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(swarm.population), cx, cy);
-        }
-      });
-    }
-  }
-
-  function drawMycorrhizalLinks(links) {
+       function drawMycorrhizalLinks(links) {
     if (!Array.isArray(links) || links.length === 0) return;
     const { gW, gH, cellW, cellH } = canvasLayout;
     ctx.save();
@@ -664,8 +684,8 @@
       const x2 = (nx2 + 0.5) * cellW;
       const y2 = (ny2 + 0.5) * cellH;
 
-      ctx.strokeStyle = link.inter_species ? 'rgba(245, 158, 11, 0.78)' : 'rgba(96, 165, 250, 0.82)';
-      ctx.lineWidth = Math.max(1.2, Math.min(3.2, Math.min(cellW, cellH) * 0.18));
+      ctx.strokeStyle = link.inter_species ? 'rgba(245, 158, 11, 0.45)' : 'rgba(56, 189, 248, 0.38)';
+      ctx.lineWidth = Math.max(0.75, Math.min(1.5, Math.min(cellW, cellH) * 0.10));
 
       if (!isWrapped) {
         ctx.beginPath();
@@ -687,12 +707,12 @@
     ctx.restore();
   }
 
-function drawPlantActivity(plantsData) {
+  function drawPlantActivity(plantsData) {
     if (!plantsData) return;
 
     const base = Math.min(canvasLayout.cellW, canvasLayout.cellH);
-    const centerRadius = Math.max(1.8, Math.min(base * 0.18, 6));
-    const ringRadius = Math.max(centerRadius + 1.8, Math.min(base * 0.34, base / 2 - 1));
+    const centerRadius = Math.max(1.2, Math.min(base * 0.12, 4));
+    const ringRadius = Math.max(centerRadius + 1.2, Math.min(base * 0.30, base / 2 - 1));
 
     if (isColumnarEntityTable(plantsData)) {
       const count = plantsData.x.length;
@@ -722,24 +742,47 @@ function drawPlantActivity(plantsData) {
 
   function drawPlantActivityItem(cx, cy, hasRoots, hasSignal, hasToxin, centerRadius, ringRadius, base) {
     if (hasRoots) {
-      ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
+      ctx.fillStyle = "rgba(56, 189, 248, 0.40)";
       ctx.beginPath();
       ctx.arc(cx, cy, centerRadius, 0, 2 * Math.PI);
       ctx.fill();
     }
     if (hasSignal) {
       ctx.strokeStyle = "rgba(56, 189, 248, 0.95)";
-      ctx.lineWidth = Math.max(1.2, Math.min(2.6, base * 0.12));
+      ctx.lineWidth = Math.max(1.0, Math.min(2.2, base * 0.10));
       ctx.beginPath();
       ctx.arc(cx, cy, ringRadius, 0, 2 * Math.PI);
       ctx.stroke();
     }
     if (hasToxin) {
-      const side = Math.max(4, Math.min(base * 0.34, base - 4));
+      const side = Math.max(3.5, Math.min(base * 0.30, base - 4));
       ctx.strokeStyle = "rgba(192, 38, 211, 0.95)";
-      ctx.lineWidth = Math.max(1.1, Math.min(2.4, base * 0.1));
+      ctx.lineWidth = Math.max(1.0, Math.min(2.0, base * 0.08));
       ctx.strokeRect(cx - side / 2, cy - side / 2, side, side);
     }
+  }
+
+  function drawHoverCrosshair(cell) {
+    if (!cell) return;
+    const { cellW, cellH } = canvasLayout;
+    const x = cell.x * cellW;
+    const y = cell.y * cellH;
+    const len = Math.max(3, Math.min(6, cellW * 0.35));
+
+    ctx.save();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = Math.max(1, Math.min(2, cellW * 0.15));
+
+    // Top-Left corner
+    ctx.beginPath(); ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y); ctx.stroke();
+    // Top-Right corner
+    ctx.beginPath(); ctx.moveTo(x + cellW - len, y); ctx.lineTo(x + cellW, y); ctx.lineTo(x + cellW, y + len); ctx.stroke();
+    // Bottom-Left corner
+    ctx.beginPath(); ctx.moveTo(x, y + cellH - len); ctx.lineTo(x, y + cellH); ctx.lineTo(x + len, y + cellH); ctx.stroke();
+    // Bottom-Right corner
+    ctx.beginPath(); ctx.moveTo(x + cellW - len, y + cellH); ctx.lineTo(x + cellW, y + cellH); ctx.lineTo(x + cellW, y + cellH - len); ctx.stroke();
+
+    ctx.restore();
   }
 
   function cellOverlayValue(layer, x, y) {
@@ -965,14 +1008,24 @@ function drawPlantActivity(plantsData) {
     }).join('');
   }
 
+  function isLayerActive(id) {
+    const el = document.getElementById(id);
+    return el ? el.checked : true;
+  }
+
   function drawSim(data) {
     const { gW, gH, cellW, cellH } = syncCanvasLayout(data);
     clearCanvas();
 
     const swarmRows = simSwarmRows;
+    const showFlora = isLayerActive('layer-toggle-flora');
+    const showSwarms = isLayerActive('layer-toggle-swarms');
+    const showMycorrhiza = isLayerActive('layer-toggle-mycorrhiza');
+    const showWoodiness = isLayerActive('layer-toggle-woodiness');
+    const showChemicals = isLayerActive('layer-toggle-chemicals');
 
     const maxE = data.max_energy || 1;
-    if (data.species_energy && data.species_energy.length > 0) {
+    if (showFlora && data.species_energy && data.species_energy.length > 0) {
       for (const sp of data.species_energy) {
         const layer = sp.layer;
         const color = FLORA_COLORS[sp.species_id % FLORA_COLORS.length];
@@ -983,17 +1036,21 @@ function drawPlantActivity(plantsData) {
           for (let y = 0; y < gH; y++) {
             const energy = layer[x] ? Number(layer[x][y] || 0) : 0;
             if (energy <= 0.01) continue;
-            // Keep species hue stable; energy magnitude is presented in species bars and tooltips.
             const alpha = 0.78;
             ctx.fillStyle = `rgba(${red},${green},${blue},${alpha})`;
             ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+
+            if (showWoodiness && cellW >= 3) {
+              ctx.fillStyle = 'rgba(217, 119, 6, 0.45)';
+              const coreW = Math.max(1, cellW * 0.4);
+              const coreH = Math.max(1, cellH * 0.4);
+              ctx.fillRect(x * cellW + (cellW - coreW) / 2, y * cellH + (cellH - coreH) / 2, coreW, coreH);
+            }
           }
         }
       }
       updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
-    } else if (Array.isArray(data.all_flora_species) && data.all_flora_species.length > 0) {
-      updateSpeciesBars(data.all_flora_species, data.species_energy || [], maxE);
-    } else if (data.plant_energy) {
+    } else if (showFlora && data.plant_energy) {
       for (let x = 0; x < gW; x++) {
         for (let y = 0; y < gH; y++) {
           const energy = data.plant_energy[x] ? Number(data.plant_energy[x][y] || 0) : 0;
@@ -1006,13 +1063,25 @@ function drawPlantActivity(plantsData) {
       speciesBarsEl.classList.add('hidden');
     }
 
-    drawMycorrhizalLinks(data.mycorrhizal_links || []);
-    drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
-    drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
-    drawPlantActivity(simPlantsColumnar);
+    if (showMycorrhiza) {
+      drawMycorrhizalLinks(data.mycorrhizal_links || []);
+    }
+    if (showChemicals) {
+      drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
+      drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
+    }
+    if (showFlora) {
+      drawPlantActivity(simPlantsColumnar);
+    }
     drawGridLines();
 
-    drawSwarmMarkers(swarmRows);
+    if (showSwarms) {
+      drawSwarmMarkers(swarmRows);
+    }
+
+    if (hoveredCell) {
+      drawHoverCrosshair(hoveredCell);
+    }
 
     const floraLegend = (data.all_flora_species || data.species_energy || []).map(species => ({
       name: species.extinct ? `${species.name} (†)` : species.name,
@@ -1023,27 +1092,10 @@ function drawPlantActivity(plantsData) {
       color: SWARM_COLORS[swarm.species_id % SWARM_COLORS.length],
     }));
     const extras = [];
-    if ((data.max_signal || 0) > 0) extras.push({ name: 'Signal cloud', color: SIGNAL_COLOR });
-    if ((data.max_toxin || 0) > 0) extras.push({ name: 'Toxin cloud', color: TOXIN_COLOR });
-    if ((data.mycorrhizal_links || []).length > 0) extras.push({ name: 'Root link', color: '#60a5fa' });
+    if (showChemicals && (data.max_signal || 0) > 0) extras.push({ name: 'Signal cloud', color: SIGNAL_COLOR });
+    if (showChemicals && (data.max_toxin || 0) > 0) extras.push({ name: 'Toxin cloud', color: TOXIN_COLOR });
+    if (showMycorrhiza && (data.mycorrhizal_links || []).length > 0) extras.push({ name: 'Root link', color: '#38bdf8' });
 
-    let hasAnySignal = false;
-    let hasAnyToxin = false;
-    if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
-      if (simPlantsColumnar.active_signal_ids) {
-        hasAnySignal = simPlantsColumnar.active_signal_ids.some(sigs => Array.isArray(sigs) && sigs.length > 0);
-      }
-      if (simPlantsColumnar.active_toxin_ids) {
-        hasAnyToxin = simPlantsColumnar.active_toxin_ids.some(toxs => Array.isArray(toxs) && toxs.length > 0);
-      }
-    }
-    if (hasAnySignal) {
-
-      extras.push({ name: 'Signal emitter', color: SIGNAL_COLOR });
-    }
-    if (hasAnyToxin) {
-      extras.push({ name: 'Toxin emitter', color: TOXIN_COLOR });
-    }
     updateLegend(floraLegend, swarmLegend, extras);
 
     const status = data.terminated ? 'Terminated' : data.paused ? 'Paused' : data.running ? 'Running' : 'Loaded';
@@ -1182,7 +1234,7 @@ function drawPlantActivity(plantsData) {
   }
 
   function renderPlantList(plants) {
-    if (!plants || plants.length === 0) return '<div class="text-slate-400">No plants in this field.</div>';
+    if (!plants || plants.length === 0) return '';
     return plants.map(plant => {
       const substances = (plant.active_substances || []).map(substance => {
         const flags = [substance.state_label || substance.state || 'configured'];
@@ -1191,32 +1243,75 @@ function drawPlantActivity(plantsData) {
         if (substance.synthesis_remaining > 0) flags.push(`synth:${substance.synthesis_remaining}`);
         if (substance.aftereffect_remaining_ticks > 0) flags.push(`linger:${substance.aftereffect_remaining_ticks}`);
         return `
-          <li class="rounded bg-slate-900/60 px-2 py-1 mt-1">
-            <div class="flex justify-between gap-2">
-              <span>${escapeHtml(substance.name)}</span>
-              <span class="uppercase text-[10px] tracking-wide text-slate-400">${escapeHtml(substance.kind)}</span>
+          <li class="rounded bg-slate-900/80 px-2 py-1 mt-1 border border-slate-800">
+            <div class="flex justify-between gap-2 text-[11px]">
+              <span class="font-medium text-slate-200">${escapeHtml(substance.name)}</span>
+              <span class="uppercase text-[9px] font-mono tracking-wide text-indigo-300">${escapeHtml(substance.kind)}</span>
             </div>
-            <div class="text-[10px] text-slate-400 mt-1">${escapeHtml(flags.join(' · ') || 'configured')}</div>
-            <div class="text-[10px] text-slate-500 mt-1">gate ${escapeHtml(substance.activation_condition_summary || 'unconditional')}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(flags.join(' · ') || 'configured')}</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">gate ${escapeHtml(substance.activation_condition_summary || 'unconditional')}</div>
           </li>`;
       }).join('');
+
       const rootDetails = (plant.mycorrhizal_neighbours || []).map(neighbour => `
-        <li class="flex justify-between gap-3">
-          <span>${escapeHtml(neighbour.name)}</span>
-          <span class="font-mono text-slate-400">(${escapeHtml(neighbour.x)}, ${escapeHtml(neighbour.y)})${neighbour.inter_species ? ' *' : ''}</span>
+        <li class="flex justify-between gap-3 text-[10px]">
+          <span class="text-slate-300">${escapeHtml(neighbour.name)}</span>
+          <span class="font-mono text-sky-400">(${escapeHtml(neighbour.x)}, ${escapeHtml(neighbour.y)})${neighbour.inter_species ? ' *' : ''}</span>
         </li>`).join('');
 
+      const energyPct = Math.min(100, Math.max(0, plant.energy_ratio ? plant.energy_ratio * 100 : 0));
+      const structPct = Math.min(100, Math.max(0, plant.structural_mass_pct || 0));
+      const isWoody = plant.is_woody_mature;
+      const upkeepFee = plant.structural_upkeep_fee || 0;
+
+      const fragilityBadge = isWoody
+        ? `<span class="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-500/30">🛡️ Woody Structure</span>`
+        : `<span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/30">⚠️ ${formatNumber(plant.fragility_pct || 100, 0)}% Fragile (${escapeHtml(plant.incidental_risk_level || 'High Risk')})</span>`;
+
       return `
-        <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-2 mt-2">
-          <div class="flex items-center justify-between gap-3">
-            <span class="font-semibold text-emerald-200">${escapeHtml(plant.name)}</span>
-            <span class="font-mono">${escapeHtml(plant.energy_label || (formatNumber(plant.energy, 1) + ' / ' + formatNumber(plant.max_energy, 1)))}</span>
+        <div class="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-2.5 py-2 mt-2 space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-semibold text-emerald-300 text-xs flex items-center gap-1">
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+              ${escapeHtml(plant.name)}
+            </span>
+            <span class="font-mono text-[11px] text-slate-300">${escapeHtml(plant.energy_label || (formatNumber(plant.energy, 1) + ' J'))}</span>
           </div>
-          <div class="text-[10px] text-slate-300 mt-1">
-            growth ${formatNumber(plant.growth_rate, 1)}% · camouflage ${plant.camouflage ? formatNumber(plant.camouflage_factor, 2) : 'off'} · root links ${plant.mycorrhizal_connections}
+
+          <!-- Dual Proxy Bars -->
+          <div class="space-y-1 pt-0.5">
+            <div>
+              <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                <span>Caloric Health (E)</span>
+                <span class="font-mono">${formatNumber(plant.energy, 1)} / ${formatNumber(plant.max_energy, 1)}</span>
+              </div>
+              <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all" style="width:${energyPct}%"></div>
+              </div>
+            </div>
+
+            ${plant.max_structural_mass > 0 ? `
+            <div>
+              <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                <span>Structural Biomass (M)</span>
+                <span class="font-mono">${formatNumber(plant.structural_mass, 2)} / ${formatNumber(plant.max_structural_mass, 1)}</span>
+              </div>
+              <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                <div class="h-full bg-gradient-to-r from-amber-600 to-yellow-500 transition-all" style="width:${structPct}%"></div>
+              </div>
+            </div>` : ''}
           </div>
-          ${rootDetails ? `<div class="mt-1 text-[10px] text-slate-300"><div class="text-slate-400 mb-0.5">mycorrhiza</div><ul class="space-y-0.5">${rootDetails}</ul></div>` : ''}
-          ${substances ? `<ul class="mt-1">${substances}</ul>` : '<div class="text-[10px] text-slate-400 mt-1">No owned substances.</div>'}
+
+          <!-- Badges Row -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            ${fragilityBadge}
+            ${upkeepFee > 0 ? `<span class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-slate-300">⚡ ${formatNumber(upkeepFee, 3)} J/t</span>` : ''}
+            ${plant.mycorrhizal_connections ? `<span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] text-sky-300 border border-sky-500/30">🌿 ${plant.mycorrhizal_connections} root link(s)</span>` : ''}
+            ${plant.camouflage ? `<span class="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] text-indigo-300">👁️ Camo ${formatNumber(plant.camouflage_factor, 2)}</span>` : ''}
+          </div>
+
+          ${rootDetails ? `<div class="mt-1 pt-1 border-t border-slate-800/80"><div class="text-[10px] text-slate-400 mb-0.5 font-medium">Mycorrhizal Network</div><ul class="space-y-0.5">${rootDetails}</ul></div>` : ''}
+          ${substances ? `<div class="mt-1 pt-1 border-t border-slate-800/80"><div class="text-[10px] text-slate-400 mb-0.5 font-medium">Active Substances</div><ul class="space-y-1">${substances}</ul></div>` : ''}
         </div>`;
     }).join('');
   }
@@ -1235,98 +1330,175 @@ function drawPlantActivity(plantsData) {
   }
 
   function renderSwarmList(swarms, mode) {
-    if (!swarms || swarms.length === 0) return '<div class="text-slate-400">No swarms in this field.</div>';
+    if (!swarms || swarms.length === 0) return '';
     return swarms.map(swarm => {
       if (mode === 'draft') {
         return `
-          <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-2 mt-2">
+          <div class="rounded-lg border border-rose-500/30 bg-rose-950/20 px-2.5 py-2 mt-2">
             <div class="flex items-center justify-between gap-3">
-              <span class="font-semibold text-rose-200">${escapeHtml(swarm.name)}</span>
-              <span class="font-mono">pop ${escapeHtml(swarm.population)}</span>
+              <span class="font-semibold text-rose-300 text-xs">${escapeHtml(swarm.name)}</span>
+              <span class="font-mono text-xs">pop ${escapeHtml(swarm.population)}</span>
             </div>
-            <div class="text-[10px] text-slate-300 mt-1">energy ${formatNumber(swarm.energy, 1)}</div>
+            <div class="text-[10px] text-slate-400 mt-1">Energy ${formatNumber(swarm.energy, 1)}</div>
           </div>`;
       }
+
+      const isAnchored = swarm.is_anchored_feeding;
+      const hasDeficit = (swarm.energy_deficit || 0) > 0;
+      let mvtBadge = `<span class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300">⚪ Active Walking</span>`;
+      if (isAnchored) {
+        mvtBadge = `<span class="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-500/30">🟢 Feeding (MVT Lock)</span>`;
+      } else if (hasDeficit) {
+        mvtBadge = `<span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/30">🟡 Deficit Foraging</span>`;
+      }
+
       const statusBits = [];
-      if (swarm.intoxicated) statusBits.push(`intoxicated ${formatNumber(swarm.toxin_level, 3)}`);
-      if (swarm.repelled) statusBits.push(`repelled ${swarm.repelled_ticks_remaining}t`);
-      if ((swarm.energy_deficit || 0) > 0) statusBits.push(`deficit ${formatNumber(swarm.energy_deficit, 2)}`);
-      const metrics = [`energy ${formatNumber(swarm.energy, 1)}`];
-      if (swarm.initial_population != null) metrics.push(`baseline ${escapeHtml(swarm.initial_population)}`);
-      if (swarm.signal_level != null) metrics.push(`signal ${formatNumber(swarm.signal_level, 3)}`);
+      if (swarm.intoxicated) statusBits.push(`<span class="text-fuchsia-300">🧪 Intoxicated (${formatNumber(swarm.toxin_level, 3)})</span>`);
+      if (swarm.repelled) statusBits.push(`<span class="text-yellow-300">🔄 Repelled (${swarm.repelled_ticks_remaining}t)</span>`);
+      if (hasDeficit) statusBits.push(`<span class="text-rose-300">⚠️ Deficit ${formatNumber(swarm.energy_deficit, 1)}</span>`);
+
+      const energyPct = Math.min(100, Math.max(0, swarm.starvation_threshold > 0 ? (swarm.energy / (swarm.starvation_threshold * 2)) * 100 : 100));
+
       return `
-        <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-2 mt-2">
+        <div class="rounded-lg border border-rose-500/30 bg-rose-950/20 px-2.5 py-2 mt-2 space-y-1.5">
           <div class="flex items-center justify-between gap-3">
-            <span class="font-semibold text-rose-200">${escapeHtml(swarm.name)}</span>
-            <span class="font-mono" title="${escapeHtml(swarm.mitosis_label || '')}">pop ${escapeHtml(swarm.population)}</span>
+            <span class="font-semibold text-rose-300 text-xs flex items-center gap-1">
+              <span class="inline-block w-2 h-2 rounded-full bg-rose-400"></span>
+              ${escapeHtml(swarm.name)}
+            </span>
+            <span class="font-mono text-xs text-slate-200" title="${escapeHtml(swarm.mitosis_label || '')}">Pop ${escapeHtml(swarm.population)}</span>
           </div>
-          <div class="text-[10px] text-slate-300 mt-1">
-            energy ${escapeHtml(swarm.energy_label || formatNumber(swarm.energy, 1))}
-            ${metrics.filter(m => !m.startsWith('energy')).length ? ' · ' + metrics.filter(m => !m.startsWith('energy')).join(' · ') : ''}
+
+          <!-- Energy Bar -->
+          <div>
+            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+              <span>Energy State</span>
+              <span class="font-mono">${escapeHtml(swarm.energy_label || formatNumber(swarm.energy, 1))}</span>
+            </div>
+            <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+              <div class="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all" style="width:${energyPct}%"></div>
+            </div>
           </div>
-          <div class="text-[10px] text-slate-400 mt-1">${escapeHtml(statusBits.join(' · ') || 'healthy / tracking')}</div>
+
+          <!-- MVT & Status Badges -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+            ${mvtBadge}
+            ${swarm.total_metabolic_upkeep ? `<span class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-slate-300">⚡ ${formatNumber(swarm.total_metabolic_upkeep, 2)} J/t</span>` : ''}
+            ${swarm.incidental_mortality_factor > 0 ? `<span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-300">🐾 Incidental ${escapeHtml(swarm.incidental_mortality_mode)}</span>` : ''}
+          </div>
+
+          ${statusBits.length ? `<div class="text-[10px] pt-1 border-t border-slate-800/80 flex flex-wrap gap-2">${statusBits.join('')}</div>` : ''}
         </div>`;
     }).join('');
   }
 
   function renderMycorrhiza(mycorrhiza) {
-    if (!mycorrhiza) return '';
+    if (!mycorrhiza || !mycorrhiza.link_count) return '';
     const links = mycorrhiza.links || [];
     const settings = [];
     if (mycorrhiza.inter_species_enabled != null) settings.push(`inter-species ${mycorrhiza.inter_species_enabled ? 'on' : 'off'}`);
     if (mycorrhiza.connection_cost != null) settings.push(`cost ${formatNumber(mycorrhiza.connection_cost, 2)}`);
-    if (mycorrhiza.signal_velocity != null) settings.push(`velocity ${escapeHtml(mycorrhiza.signal_velocity)}`);
     return `
-      <div class="mt-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-2 py-2">
-        <div class="font-semibold text-sky-200 mb-1">Mycorrhiza</div>
-        <div class="text-[10px] text-slate-300">
-          ${mycorrhiza.link_count > 0 ? `${escapeHtml(mycorrhiza.link_count)} root link(s) touch this cell` : 'No root link touches this cell.'}
+      <div class="mt-2 rounded-lg border border-sky-500/30 bg-sky-950/20 px-2.5 py-2 space-y-1">
+        <div class="flex items-center justify-between text-xs font-semibold text-sky-300">
+          <span class="flex items-center gap-1">🕸️ Mycorrhizal Network</span>
+          <span class="font-mono text-[10px] text-sky-400">${escapeHtml(mycorrhiza.link_count)} link(s)</span>
         </div>
-        ${settings.length ? `<div class="text-[10px] text-slate-400 mt-1">${escapeHtml(settings.join(' · '))}</div>` : ''}
-        ${links.length ? `<ul class="mt-1 space-y-1 text-[10px] text-slate-300">${links.map(link => `
-          <li>(${escapeHtml(link.from.x)}, ${escapeHtml(link.from.y)}) ↔ (${escapeHtml(link.to.x)}, ${escapeHtml(link.to.y)})${link.inter_species ? ' · inter-species' : ''}</li>`).join('')}</ul>` : ''}
+        ${settings.length ? `<div class="text-[10px] text-slate-400">${escapeHtml(settings.join(' · '))}</div>` : ''}
+        ${links.length ? `<ul class="mt-1 space-y-1 text-[10px] border-t border-slate-800/80 pt-1">${links.map(link => `
+          <li class="flex justify-between font-mono text-slate-300">
+            <span>(${escapeHtml(link.from.x)}, ${escapeHtml(link.from.y)}) ↔ (${escapeHtml(link.to.x)}, ${escapeHtml(link.to.y)})</span>
+            <span class="text-slate-400">${link.inter_species ? 'inter-species' : 'intra-species'}</span>
+          </li>`).join('')}</ul>` : ''}
       </div>`;
   }
 
   function renderTooltip(data) {
     if (!data) return;
+
     const liveBadge = data.mode === 'live'
-      ? `<span class="rounded bg-emerald-500/20 px-2 py-0.5 text-emerald-200">tick ${escapeHtml(data.tick)}</span>`
-      : '<span class="rounded bg-blue-500/20 px-2 py-0.5 text-blue-200">draft preview</span>';
+      ? `<span class="rounded bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-emerald-300 font-mono text-[10px]">tick ${escapeHtml(data.tick)}</span>`
+      : '<span class="rounded bg-blue-500/20 border border-blue-500/30 px-2 py-0.5 text-blue-300 font-mono text-[10px]">draft preview</span>';
+
+    const hasPlants = Array.isArray(data.plants) && data.plants.length > 0;
+    const hasSwarms = Array.isArray(data.swarms) && data.swarms.length > 0;
+    const hasMycorrhiza = data.mycorrhiza && Boolean(data.mycorrhiza.link_count);
+
+    let classificationPill = '<span class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">⛰️ Terrain</span>';
+    if (hasPlants && hasSwarms) {
+      classificationPill = '<span class="rounded bg-teal-500/20 px-1.5 py-0.5 text-[10px] font-medium text-teal-300 border border-teal-500/30">🌿 Flora & 🐇 Swarm</span>';
+    } else if (hasPlants) {
+      classificationPill = '<span class="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-500/30">🌿 Flora Field</span>';
+    } else if (hasSwarms) {
+      classificationPill = '<span class="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-medium text-rose-300 border border-rose-500/30">🐇 Swarm Field</span>';
+    } else if (hasMycorrhiza) {
+      classificationPill = '<span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-medium text-sky-300 border border-sky-500/30">🕸️ Root Node</span>';
+    }
 
     const plantHtml = data.mode === 'live'
       ? renderPlantList(data.plants || [])
       : (data.plants || []).map(plant => `
-          <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-2 mt-2">
+          <div class="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-2.5 py-2 mt-2">
             <div class="flex items-center justify-between gap-3">
-              <span class="font-semibold text-emerald-200">${escapeHtml(plant.name)}</span>
-              <span class="font-mono">${formatNumber(plant.energy, 1)}</span>
+              <span class="font-semibold text-emerald-300 text-xs">${escapeHtml(plant.name)}</span>
+              <span class="font-mono text-xs">${formatNumber(plant.energy, 1)}</span>
             </div>
             ${renderPreviewRules(plant)}
-          </div>`).join('') || '<div class="text-slate-400">No plants in this field.</div>';
+          </div>`).join('');
+
+    const swarmHtml = renderSwarmList(data.swarms || [], data.mode);
+    const mycorrhizaHtml = renderMycorrhiza(data.mycorrhiza);
+
+    const isDraft = data.mode === 'draft';
+    const envCard = isDraft
+      ? `<div class="text-[10px] text-slate-400 italic">Pre-runtime (Grid offline)</div>`
+      : `
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-300 font-mono">
+          <div class="flex justify-between">
+            <span class="text-slate-400 font-sans">flow</span>
+            <span>${data.flow_field != null ? formatNumber(data.flow_field, 3) : 'syncing...'}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400 font-sans">wind</span>
+            <span>${data.wind?.x != null ? `${formatNumber(data.wind.x, 1)}, ${formatNumber(data.wind.y, 1)}` : 'syncing...'}</span>
+          </div>
+          ${data.signal_peak > 0 ? `
+          <div class="flex justify-between">
+            <span class="text-slate-400 font-sans">signal peak</span>
+            <span class="text-sky-300">${formatNumber(data.signal_peak, 3)}</span>
+          </div>` : ''}
+          ${data.toxin_peak > 0 ? `
+          <div class="flex justify-between">
+            <span class="text-slate-400 font-sans">toxin peak</span>
+            <span class="text-fuchsia-300">${formatNumber(data.toxin_peak, 3)}</span>
+          </div>` : ''}
+        </div>`;
 
     tooltip.innerHTML = `
-      <div class="flex items-center justify-between gap-3 mb-2">
-        <div class="font-semibold text-sm">Cell (${escapeHtml(data.x)}, ${escapeHtml(data.y)})</div>
+      <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm text-white">Cell (${escapeHtml(data.x)}, ${escapeHtml(data.y)})</span>
+          ${classificationPill}
+        </div>
         ${liveBadge}
       </div>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-300">
-        <div>flow</div><div class="font-mono text-right">${formatNumber(data.flow_field, 3)}</div>
-        <div>wind</div><div class="font-mono text-right">${formatNumber(data.wind?.x, 2)}, ${formatNumber(data.wind?.y, 2)}</div>
-        <div>signal peak</div><div class="font-mono text-right">${formatNumber(data.signal_peak, 3)}</div>
-        <div>toxin peak</div><div class="font-mono text-right">${formatNumber(data.toxin_peak, 3)}</div>
-      </div>
-      ${renderConcentrationList('Signals here', data.signal_concentrations || [], 'text-sky-200')}
-      ${renderConcentrationList('Toxins here', data.toxin_concentrations || [], 'text-fuchsia-200')}
-      ${renderMycorrhiza(data.mycorrhiza)}
-      <div class="mt-2">
-        <div class="font-semibold text-emerald-200 mb-1">Plants</div>
-        ${plantHtml}
-      </div>
-      <div class="mt-2">
-        <div class="font-semibold text-rose-200 mb-1">Swarms</div>
-        ${renderSwarmList(data.swarms || [], data.mode)}
-      </div>`;
+
+      <!-- Environment Card -->
+      ${envCard}
+
+      <!-- Progressive Chemical Lists -->
+      ${renderConcentrationList('Signals here', data.signal_concentrations || [], 'text-sky-300')}
+      ${renderConcentrationList('Toxins here', data.toxin_concentrations || [], 'text-fuchsia-300')}
+
+      <!-- Mycorrhizal Topology (Progressive) -->
+      ${mycorrhizaHtml}
+
+      <!-- Plants List (Progressive) -->
+      ${plantHtml ? `<div class="mt-2 pt-1 border-t border-slate-800/60"><div class="font-semibold text-emerald-300 text-xs">Plants</div>${plantHtml}</div>` : ''}
+
+      <!-- Swarms List (Progressive) -->
+      ${swarmHtml ? `<div class="mt-2 pt-1 border-t border-slate-800/60"><div class="font-semibold text-rose-300 text-xs">Swarms</div>${swarmHtml}</div>` : ''}
+    `;
     tooltip.classList.remove('hidden');
     positionTooltip();
     frontendDiagnosticsUpdate({
