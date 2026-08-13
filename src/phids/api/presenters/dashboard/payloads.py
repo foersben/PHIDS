@@ -43,6 +43,13 @@ def _collect_live_plants(
         "active_signal_ids": [],
         "active_toxin_ids": [],
     }
+
+    # For dense grid scenes (e.g. 256x256 benchmark with 19,663 plants), serializing every silent
+    # plant in the live WebSocket stream payload causes 2.5MB payload sizes and client latency.
+    # We serialize all plants when count < 1000, and for dense scenes we filter to active plant nodes
+    # (emitting signals, toxins, or connected via mycorrhiza).
+    is_dense_scene = len(plants_data) >= 1000
+
     for p in plants_data:
         plant_substances = owned_substances.get(p["entity_id"], [])
         local_signal_ids = (
@@ -64,6 +71,14 @@ def _collect_live_plants(
         visible_toxin_ids = sorted(
             local_toxin_ids | {sub["substance_id"] for sub in plant_substances if sub["is_toxin"] and sub["is_visible"]}
         )
+
+        has_active_signals = bool(visible_signal_ids)
+        has_active_toxins = bool(visible_toxin_ids)
+        has_roots = p["root_link_count"] > 0
+
+        if is_dense_scene and not (has_active_signals or has_active_toxins or has_roots):
+            continue
+
         plants["entity_id"].append(p["entity_id"])
         plants["species_id"].append(p["species_id"])
         plants["name"].append(flora_names.get(p["species_id"], f"Flora {p['species_id']}"))
