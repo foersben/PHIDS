@@ -689,8 +689,8 @@
       const x2 = (nx2 + 0.5) * cellW;
       const y2 = (ny2 + 0.5) * cellH;
 
-      ctx.strokeStyle = link.inter_species ? 'rgba(245, 158, 11, 0.45)' : 'rgba(56, 189, 248, 0.38)';
-      ctx.lineWidth = Math.max(0.75, Math.min(1.5, Math.min(cellW, cellH) * 0.10));
+      ctx.strokeStyle = link.inter_species ? 'rgba(245, 158, 11, 0.85)' : 'rgba(56, 189, 248, 0.85)';
+      ctx.lineWidth = Math.max(1.25, Math.min(2.5, Math.min(cellW, cellH) * 0.35));
 
       if (!isWrapped) {
         ctx.beginPath();
@@ -1093,16 +1093,17 @@
     if (showFlora) {
       updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
     }
-
+    if (showFlora) {
+      drawPlantActivity(simPlantsColumnar);
+    }
     if (showMycorrhiza) {
-      drawMycorrhizalLinks(data.mycorrhizal_links || []);
+      const liveLinks = data.mycorrhizal_links || [];
+      const linksToDraw = liveLinks.length > 0 ? liveLinks : (placementData ? placementData.mycorrhizal_links : []);
+      drawMycorrhizalLinks(linksToDraw || []);
     }
     if (showChemicals) {
       drawChemicalOverlay(data.signal_overlay, SIGNAL_COLOR, data.max_signal || 0);
       drawChemicalOverlay(data.toxin_overlay, TOXIN_COLOR, data.max_toxin || 0);
-    }
-    if (showFlora) {
-      drawPlantActivity(simPlantsColumnar);
     }
     drawGridLines();
 
@@ -1150,10 +1151,6 @@
     const showWoodiness = isLayerActive('layer-toggle-woodiness');
     const showChemicals = isLayerActive('layer-toggle-chemicals');
 
-    if (showMycorrhiza) {
-      drawMycorrhizalLinks(preview.mycorrhizal_links || []);
-    }
-
     if (showFlora) {
       for (const plant of (preview.plants || [])) {
         ctx.fillStyle = FLORA_COLORS[plant.species_id % FLORA_COLORS.length];
@@ -1166,6 +1163,10 @@
           ctx.fillRect(plant.x * cellW + (cellW - coreW) / 2, plant.y * cellH + (cellH - coreH) / 2, coreW, coreH);
         }
       }
+    }
+
+    if (showMycorrhiza) {
+      drawMycorrhizalLinks(preview.mycorrhizal_links || []);
     }
 
     drawGridLines();
