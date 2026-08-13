@@ -204,7 +204,7 @@ By splitting the biological state across these two vectors, the entire ecosystem
 | Plan | Title | Status | Branch Commit |
 |---|---|---|---|
 | **Plan 1** | Core ECS Array Expansion (Foundation) | **DONE** - commit `4f8cdb6` | `feature/decoupled-dual-proxy` |
-| **Plan 2** | Structural Growth Kernel & Trampling FMA | Planned | - |
+| **Plan 2** | Structural Growth Kernel & Trampling FMA | **DONE** | `feature/decoupled-dual-proxy` |
 | **Plan 3** | MVT Foraging Integration & DSE Calibration | Planned | - |
 
 #### Plan 1 - What Was Delivered (commit `4f8cdb6`)

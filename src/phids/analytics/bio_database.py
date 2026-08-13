@@ -11,7 +11,9 @@ import json
 import math
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+M_STRUCTURAL_GROWTH_RATE_DEFAULT: float = 0.01  # fraction/week growth - matches shared/constants.py
 
 
 class FloraProfile(BaseModel):
@@ -33,6 +35,10 @@ class FloraProfile(BaseModel):
     seed_cost: float
     seed_dispersion_radius: float
     passive_defenses: dict[str, float]
+    structural_mass_max: float = Field(default=0.0, ge=0.0)
+    """Species ceiling for M_structural (grams dry mass). 0.0 = use max_energy as placeholder."""
+    structural_growth_rate: float = Field(default=M_STRUCTURAL_GROWTH_RATE_DEFAULT, ge=0.0, le=1.0)
+    """Fractional M_structural growth per slow-loop gate (168-tick weekly stride)."""
 
 
 class HerbivoreProfile(BaseModel):
@@ -126,6 +132,8 @@ class BioDatabase:
                     "mechanical_damage_per_bite": mech,
                     "digestibility_modifier": digest,
                 },
+                structural_mass_max=row[8] if len(row) > 8 else 0.0,
+                structural_growth_rate=row[9] if len(row) > 9 else M_STRUCTURAL_GROWTH_RATE_DEFAULT,
             )
 
         herb_dict: dict[str, HerbivoreProfile] = {}

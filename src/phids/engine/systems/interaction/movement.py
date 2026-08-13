@@ -568,6 +568,35 @@ def _choose_neighbour_by_flow_probability_python(
 
 
 @njit(cache=True)
+def _compute_trample_probability_jit(
+    swarm_population: int,
+    trample_factor: float,
+    structural_mass: float,
+    max_structural_mass: float,
+) -> float:
+    """Numba-compiled single FMA branchless trampling vulnerability probability gate (Option A - linear).
+
+    Calculates the probability P(destroy) of a seedling or low-structural-mass plant entity
+    being trampled into culling by a moving herbivore swarm.
+
+    Args:
+        swarm_population: Population count of the entering herbivore swarm.
+        trample_factor: Scaling sensitivity coefficient for physical trampling.
+        structural_mass: Current M_structural of the co-located plant entity.
+        max_structural_mass: Species structural mass ceiling (from FloraSpeciesParams).
+
+    Returns:
+        Probability P(destroy) in range [0.0, 1.0].
+    """
+    if max_structural_mass <= 0.0:
+        vulnerability = 1.0
+    else:
+        vulnerability = max(0.0, 1.0 - (structural_mass / max_structural_mass))
+    prob = float(swarm_population) * trample_factor * vulnerability
+    return min(1.0, max(0.0, prob))
+
+
+@njit(cache=True)
 def _is_swarm_anchored_jit(
     x: int,
     y: int,
@@ -575,11 +604,15 @@ def _is_swarm_anchored_jit(
     apparent_nutrition_val: float,
     plant_energy_by_species: npt.NDArray[np.float64],
     diet_matrix: npt.NDArray[np.bool_],
+    caloric_intake: float = 0.0,
+    metabolic_upkeep: float = 0.0,
 ) -> bool:
     """Numba-compiled fast collision check for swarm anchoring on compatible uneaten flora.
 
     Evaluates co-located plant energy layers using a pre-compiled boolean diet matrix,
     eliminating Python list iteration and NumPy `.item()` scalar conversion overhead.
+    Includes Marginal Value Theorem (MVT) "Full Belly Override": if current caloric intake
+    equals or exceeds metabolic upkeep, the swarm anchors regardless of apparent nutrition.
 
     Args:
         x: X-coordinate of the swarm.
@@ -588,10 +621,16 @@ def _is_swarm_anchored_jit(
         apparent_nutrition_val: Current apparent nutrition level at (x, y).
         plant_energy_by_species: 3D array of plant energy levels [num_flora_species, W, H].
         diet_matrix: 2D boolean array of diet compatibility [num_herbivore_species, num_flora_species].
+        caloric_intake: Current caloric intake rate of the swarm (for MVT Full Belly Override).
+        metabolic_upkeep: Baseline metabolic upkeep of the swarm (for MVT Full Belly Override).
 
     Returns:
-        True if the swarm is co-located with compatible uneaten food; False otherwise.
+        True if the swarm is co-located with compatible uneaten food or full belly; False otherwise.
     """
+    # MVT Full Belly Override: if intake >= upkeep > 0, lock movement (swarm is anchored)
+    if metabolic_upkeep > 0.0 and caloric_intake >= metabolic_upkeep:
+        return True
+
     if apparent_nutrition_val < 0.999:
         return False
     num_herbivores, num_flora = diet_matrix.shape
@@ -609,7 +648,7 @@ def _is_swarm_anchored(
     env: GridEnvironment,
     diet_matrix: list[list[bool]] | npt.NDArray[np.bool_],
 ) -> bool:
-    """Return True if swarm is currently co-located with compatible uneaten food.
+    """Return True if swarm is currently co-located with compatible uneaten food or full belly.
 
     Numba JIT Anchoring Resolution & Array Scalar Extraction Avoidance:
     ------------------------------------------------------------------
@@ -626,6 +665,9 @@ def _is_swarm_anchored(
     Returns:
         True if the swarm is anchored, False otherwise.
     """
+    intake = float(getattr(swarm, "last_caloric_intake", 0.0))
+    upkeep = float(getattr(swarm, "metabolism_upkeep", 0.0))
+
     if isinstance(diet_matrix, np.ndarray):
         return _is_swarm_anchored_jit(
             swarm.x,
@@ -634,6 +676,8 @@ def _is_swarm_anchored(
             float(env.apparent_nutrition_layer[swarm.x, swarm.y]),
             env.plant_energy_by_species,
             diet_matrix,
+            caloric_intake=intake,
+            metabolic_upkeep=upkeep,
         )
 
     diet_arr = np.array(diet_matrix, dtype=np.bool_)
@@ -644,6 +688,8 @@ def _is_swarm_anchored(
         float(env.apparent_nutrition_layer[swarm.x, swarm.y]),
         env.plant_energy_by_species,
         diet_arr,
+        caloric_intake=intake,
+        metabolic_upkeep=upkeep,
     )
 
 
