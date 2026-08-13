@@ -78,6 +78,7 @@ Home = "index.md"
         { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
     ] },
     { "Future Prospects" = [
+        { "Biological Abstractions & Grid Mechanics" = "scientific_model/future_prospects/biological_abstractions.md" },
         { "Parameter Calibration Strategy" = "scientific_model/future_prospects/parameter_calibration_strategy.md" },
         { "Spatiotemporal Scaling Architecture" = "scientific_model/future_prospects/spatiotemporal_scaling.md" },
     ] },
@@ -91,6 +92,7 @@ Home = "index.md"
     { "Interfaces & UI" = "technical_architecture/interfaces_and_ui.md" },
     { "Telemetry" = "technical_architecture/telemetry.md" },
     { "Testing Architecture" = "technical_architecture/testing_architecture.md" },
+    { "Signaling Trigger Invariants" = "technical_architecture/signaling_triggers.md" },
     { "Future Prospects" = [
         { "GPU CUDA Acceleration Engine" = "technical_architecture/future_prospects/gpu_cuda_acceleration.md" },
     ] },
@@ -115,9 +117,10 @@ Scenarios = [
 [[project.nav]]
 "Development & Reference" = [
     { "Overview" = "reference/index.md" },
-    { "Strategic Roadmap" = "roadmap.md" },
+    { "Strategic Roadmap" = "development_guide/development_guide/roadmap.md" },
     { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
     { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
+    { "Data-Flow Matrix Architecture" = "development_guide/okf_data_flow_matrices.md" },
     { "Module Map" = "reference/module-map.md" },
     { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
     { "Requirements Traceability" = "reference/requirements-traceability.md" },

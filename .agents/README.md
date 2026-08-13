@@ -24,7 +24,7 @@ Our philosophy relies on **strict discipline and separation of concerns**. By di
 
 ## 2. Team Directory: Roles & Jurisdictions
 
-The PHIDS workspace is governed by 8 distinct specialist roles. When you submit a request, it is intercepted, deconstructed, and routed to the appropriate domain expert.
+The PHIDS workspace is governed by 10 distinct specialist roles. When you submit a request, it is intercepted, deconstructed, and routed to the appropriate domain expert.
 
 ```mermaid
 graph TD
@@ -38,6 +38,8 @@ graph TD
         Orch --> Git[06: Git Operator]
         Orch --> API[07: API & UI Developer]
         Orch --> Tel[08: Telemetry Engineer]
+        Orch --> Aud[09: Matrix Auditor]
+        Orch --> Caus[10: Causal Verifier]
     end
 
     Sci -.->|Handoff Models| Eng
@@ -45,6 +47,8 @@ graph TD
     Eng -.->|Handoff Schema| Tel
     API -.->|Handoff Features| QA
     QA -.->|Coverage/Tests| Git
+    Aud -.->|Audit Matrix Tables| Docs
+    Caus -.->|Verify SIMD Masks| Eng
     Git -.->|Release| User
 ```
 
@@ -82,6 +86,14 @@ graph TD
   * **Role:** Manages Zarr serialization schemas and out-of-core Polars analytics.
   * **Jurisdiction:** `src/phids/telemetry/`.
   * **Dependencies:** Ingests tick outcomes from the Engine Developer.
+* **09. Matrix Auditor**
+  * **Role:** Scans `docs/scientific_model/` for Data-Flow Matrix table coverage and cross-checks Markdown tables against live Pytest traces.
+  * **Jurisdiction:** `docs/scientific_model/` and `tests/integration/scientific_invariants/`.
+  * **Dependencies:** Issues diff tasks to QA Automator and Docs Librarian.
+* **10. Causal Verifier**
+  * **Role:** Monitors engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates.
+  * **Jurisdiction:** `src/phids/engine/systems/`.
+  * **Dependencies:** Asserts float mask gates (`alive_mask`, `capacity_mask`) in Numba kernels.
 
 ---
 
@@ -91,8 +103,9 @@ Agents operate within an ironclad set of core invariants located in `.agents/rul
 
 * **Python Modernization (`00`)**: Prevents the use of legacy tools. Agents must strictly use `uv run` and `just`, enforce `mypy` typings, and validate code via `ruff`.
 * **Stochastic Engine & Replay (`01`)**: Ensures absolute determinism. All tick outcomes are written to the `_write` layer (double-buffering) and logged to Zarr replay buffers to guarantee flawless serialization.
-* **Numba Constraints (`02`)**: Maintains the execution speed of our JIT hot-paths. It bans Python objects (like lists or dicts) inside `@njit` boundaries and enforces pre-allocation to eliminate dynamic allocations inside simulation loops.
+* **Numba Constraints (`02`)**: Maintains the execution speed of our JIT hot-paths. It bans Python objects inside `@njit` boundaries, enforces pre-allocation, and mandates float masking for state transitions.
 * **Git Security & Signing (`03`)**: Mandates cryptographic GPG/SSH signatures on all commits. Agents are instructed to halt and escalate to a human operator rather than bypass failed signatures.
+* **Data-Flow Invariants (`05`)**: Enforces Table-to-Trace Parity (Rule 05-A), Branchless SIMD Float Masks (Rule 05-B), and Bilateral OKF Resource Mapping (Rule 05-C).
 
 ---
 
@@ -103,6 +116,14 @@ To prevent recursive loops or fragmented development, agents pass tasks via esta
 ### The Vertical Slice Development Workflow
 
 This pipeline ensures a new ecological feature is implemented securely across the entire stack. A concept moves from the Scientific Architect's models directly into the Engine Developer's JIT loops, gets wired to Telemetry, exposed via the API Developer's UI, and strictly verified by QA-simultaneously.
+
+### Matrix-Driven TDD Refactoring
+
+Coordinated 4-stage pipeline translating conceptual behavior into formal Data-Flow Matrix tables, failing Pytest trace fixtures, branchless Numba array kernels, and verified OKF resource mappings.
+
+### Automated Matrix Drift Reconciliation
+
+Automated recovery workflow detecting numerical drift between telemetry traces and documented matrix tables, generating candidate markdown diffs for one-click operator approval.
 
 ### The Delegation Protocol
 
@@ -141,6 +162,9 @@ Our repository does not rely on agent promises; it relies on automated enforceme
 * **Run Benchmarks (`run-benchmarks`):** Evaluates `pytest-benchmark` execution speeds to reject any code that degrades the performance of the spatial hashing loops.
 * **Analyze Zarr (`analyze-zarr`):** Inspects Zarr schemas to guarantee telemetry replays match active loop data.
 * **Validate OKF (`validate-okf`):** A critical gate enforcing our implementation of the Open Knowledge Format (OKF v0.1).
+* **Verify Matrix Trace Parity (`verify-matrix-trace-parity`):** Parses Markdown Data-Flow Matrix tables and asserts point-by-point numerical parity against Pytest traces.
+* **Audit OKF Matrix Coverage (`audit-okf-matrix-coverage`):** Scans concept documents in `docs/scientific_model/` and reports state shifts missing matrix tables.
+* **Auto Reconcile Matrix Drift (`auto-reconcile-matrix-drift`):** Captures runtime traces and auto-updates Markdown table rows when parameters drift.
 
 ### The OKF Validation Pipeline
 

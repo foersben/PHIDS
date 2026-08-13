@@ -48,6 +48,12 @@ This page exposes the current PHIDS Python API using Zensical.
 
 ::: phids.api.presenters.dashboard.payloads
 
+::: phids.api.presenters.dashboard.mycorrhizal
+
+::: phids.api.presenters.dashboard.cell_details.live
+
+::: phids.api.presenters.dashboard.cell_details.preview
+
 ::: phids.api.presenters.diagnostics.model
 
 ::: phids.api.presenters.diagnostics.badge

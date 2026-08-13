@@ -2,16 +2,22 @@
 type: technical_architecture
 title: Interfaces & UI
 status: active
-version: 0.1
-description: Documentation for Interfaces & UI in the PHIDS framework.
+version: 1.1
+description: Technical documentation for administrative UI surfaces, HTMX controls, WebSocket streaming, and live dual-proxy cell inspection tooltips in PHIDS.
 tags:
 - phids
 - ecs
 - numba
 - performance
-timestamp: "2026-07-25T10:52:00Z"
+- dashboard-ui
+- dual-proxy
+timestamp: "2026-08-13T19:30:00Z"
 resources:
 - src/phids/api/presenters/dashboard/cell_details.py
+- src/phids/api/presenters/dashboard/payloads.py
+- src/phids/api/templates/base.html
+- src/phids/api/templates/partials/dashboard.html
+- src/phids/api/routers/simulation.py
 ---
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.
@@ -21,7 +27,7 @@ PHIDS operates as a headless FastAPI backend, equipped with RESTful configuratio
 The simulator exposes operational boundaries required to drive experiments programmatically without relying on the browser UI. The primary simulation controls include:
 
 - `POST /api/scenario/load`: Ingests a validated `SimulationConfig`, destroying any running execution loops and staging the system for initialization.
-- `POST /api/simulation/start|pause`: Toggles execution state of the live simulation.
+- `POST /api/simulation/start|pause`: Toggles execution state of the live simulation loop.
 - `PUT /api/simulation/wind`: Injects meteorological forcing dynamics into the environment layers while the simulation runs.
 
 ## Draft vs Live State
@@ -66,9 +72,19 @@ flowchart LR
 
 This dual-channel architecture strictly isolates administrative interactions from ecological rendering. When an operator edits the `DraftState` (e.g., adding a new plant species), the interaction is handled by standard HTTP POST requests. HTMX intercepts the form submission, sends it to the FastAPI REST endpoint, and Jinja2 returns a tiny HTML snippet to seamlessly update the UI without reloading the page. Conversely, the live visual representation of the simulation is updated via JSON payloads over a WebSocket directly to the client's `<canvas>`, preventing the massive memory overhead that would occur if we tried to represent thousands of entities as HTML DOM elements.
 
+### Unified Primary Action Control Button
+
+Execution controls in the dashboard toolbar are consolidated into a single primary action button (`#sim-main-action-btn`) driven by `window.phidsSyncMainActionButton(running, paused)`:
+
+- **▶ Start (Emerald `bg-emerald-500`):** Displayed when the simulation is stopped, loaded, or reset. Triggers `POST /api/simulation/start`.
+- **⏸ Pause (Amber `bg-amber-500`):** Displayed when the simulation is actively running. Triggers `POST /api/simulation/pause`.
+- **▶ Resume (Indigo `bg-indigo-500`):** Displayed when the simulation is paused. Triggers `POST /api/simulation/pause` (or `start`) to resume background task execution.
+
+The backend endpoint `/api/simulation/pause` safely handles pause, resume, and background task recovery without orphaned processes or 400 errors on terminated loops.
+
 ### Live Simulation Dashboard
 
-The live dashboard is the primary workspace for observing an actively running simulation. It features a real-time rendered `<canvas>` grid depicting spatial entities (Flora, Swarms, signals, toxins).
+The live dashboard is the primary workspace for observing an actively running simulation. It features a real-time rendered `<canvas>` grid depicting spatial entities (Flora, Swarms, signals, toxins, mycorrhizal links).
 
 #### Live Grid vs Placement Preview
 
@@ -88,12 +104,17 @@ Operators can dynamically adjust the simulation execution speed using the `Speed
 
 To accommodate varying screen sizes and grid dimensions, the dashboard provides a "Resize" toggle. When enabled, a slider allows the operator to dynamically adjust the canvas height as a percentage of the viewport (30% to 100%). This preference is persisted locally in the browser via `localStorage` (key: `phids.canvas.heightPct` and `phids.canvas.resizeEnabled`), ensuring the grid layout remains consistent across sessions.
 
-#### Hover Cell Inspection & Tooltip Pipeline
+#### Hover Cell Inspection & Dual-Proxy Tooltip Pipeline
 
 When hovering over any cell in the live grid:
 
-1. **Instant Live Snapshot**: The canvas script immediately constructs a zero-latency tooltip from the active streaming snapshot (`simData`), displaying local flora species, plant energy, swarm populations, flow-field gradient, signal/toxin peaks, and wind vectors.
-2. **Asynchronous Backend Enrichment**: If the pointer rests on a cell for $>60\text{ ms}$, the browser asynchronously fetches detailed entity genetics and condition-rule triggers via `GET /ui/dashboard/cell-details?x=X&y=Y&expected_tick=T`. If the live simulation advances to a new tick before the response arrives, the client rejects the stale response to ensure inspectable telemetry never desynchronizes from the live grid.
+1. **Dual-Proxy Live Snapshot Rendering**: The tooltip renders zero-latency dual-proxy health bars and structural parameters extracted from the columnar stream payload (`simPlantsColumnar`):
+   - **Caloric Health ($E$) Bar:** Visualizes active caloric energy vs maximum energy ($E / E_{\text{max}}$) with an emerald-to-teal gradient.
+   - **Structural Biomass ($M$) Bar:** Visualizes permanent structural mass vs maximum ceiling ($M_{\text{structural}} / M_{\text{max}}$) with an amber-to-yellow gradient.
+   - **Plan 1 Compatibility Fallback:** If `structural_mass_max` is unspecified (`0.0`), $M_{\text{max}} = E_{\text{max}}$ and initial structural mass is populated proportional to placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
+   - **Dynamic Fragility Badges:** Displays `🛡️ Woody Structure` ($M_{\text{structural}} \ge M_{\text{max}}$) or `⚠️ Fragility % (High/Medium/Low Risk)`.
+2. **Mycorrhizal Overlay Disambiguation**: Root links render on top of plant tiles (`drawMycorrhizalLinks()` after `drawFlora()`), displaying explicit `<span class="text-amber-400"> (inter-species)</span>` vs `<span class="text-sky-400/70"> (intra-species)</span>` badges.
+3. **Asynchronous Backend Enrichment**: If the pointer rests on a cell for $>60\text{ ms}$, the browser asynchronously fetches detailed entity genetics and condition-rule triggers via `GET /ui/dashboard/cell-details?x=X&y=Y&expected_tick=T`. If the live simulation advances to a new tick before the response arrives, the client rejects the stale response to ensure inspectable telemetry never desynchronizes from the live grid.
 
 ### Placement Editor & Auto-Assignment
 

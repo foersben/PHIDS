@@ -2,16 +2,20 @@
 type: reference
 title: Module Map and Symbol Guide
 status: active
-version: 0.1
-description: Documentation for Module Map and Symbol Guide in the PHIDS framework.
+version: 0.3
+description: Whole-project inventory of active phids.* runtime packages, presenters, UI templates, and symbol responsibilities.
 tags:
 - phids
 - ecs
 - chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
+- dual-proxy
+- dashboard-ui
+timestamp: "2026-08-13T19:30:00Z"
 resources:
 - api.md
 - ../development_guide/contribution_workflow.md
+- ../technical_architecture/interfaces_and_ui.md
+- ../scientific_model/future_prospects/biological_abstractions.md
 ---
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended
@@ -134,9 +138,9 @@ Primary responsibility:
 
 Modules and symbols:
 
-* `phids.engine.components.plant` → `PlantComponent`
-* `phids.engine.components.swarm` → `SwarmComponent`
-* `phids.engine.components.substances` → `SubstanceComponent`
+* `phids.engine.components.plant` - `PlantComponent` (includes `structural_mass`, `max_structural_mass`, and `growth_rate_structural` dual-proxy fields)
+* `phids.engine.components.swarm` - `SwarmComponent` (includes `last_caloric_intake` and `metabolism_upkeep` MVT fields)
+* `phids.engine.components.substances` - `SubstanceComponent`
 
 Narrative docs:
 
@@ -192,11 +196,11 @@ Narrative docs:
 
 Primary responsibility:
 
-- Phase-Staggered Cohort (`(entity_id % 168) == (tick % 168)`) plant photosynthetic growth, $O(1)$ stochastic raycasting seed dispersal, mycorrhizal network establishment, and threshold culling.
+* Phase-Staggered Cohort (`(entity_id % 168) == (tick % 168)`) plant photosynthetic growth, $O(1)$ stochastic raycasting seed dispersal, mycorrhizal network establishment, and threshold culling.
 
 Key symbol:
 
-- `run_lifecycle`
+* `run_lifecycle`
 
 Narrative docs:
 
@@ -287,6 +291,8 @@ Key constants:
 * `SIGNAL_EPSILON`
 * `SUBSTANCE_EMIT_RATE`
 * `TOXIN_CASUALTY_FACTOR`
+* `M_STRUCTURAL_SEED_VALUE` (dual-proxy: initial structural mass for new seeds; `0.0`)
+* `M_STRUCTURAL_GROWTH_RATE` (dual-proxy: placeholder per-slow-tick growth fraction; replaced by DB values in Plan 2)
 
 Narrative docs:
 
@@ -357,13 +363,12 @@ Narrative docs:
 
 If you know the symbol but not the page, start here:
 
-* `SimulationLoop` → `docs/technical_architecture/engine_execution.md`
-* `DraftState` → `docs/technical_architecture/interfaces_and_ui.md`
-If the symbol is known but the corresponding page is not, start here:
+* `SimulationLoop` - [`docs/technical_architecture/engine_execution.md`](../technical_architecture/engine_execution.md)
+* `DraftState` - [`docs/technical_architecture/interfaces_and_ui.md`](../technical_architecture/interfaces_and_ui.md)
+* `PlantComponent` - [`docs/scientific_model/flora_and_symbiosis.md`](../scientific_model/flora_and_symbiosis.md)
+* `GridEnvironment` - [`docs/technical_architecture/engine_execution.md`](../technical_architecture/engine_execution.md)
 
-* `module-map.md` (this file) - to find which module the symbol belongs to.
-
-### 2. Narrative vs. API Reference
+### Narrative vs. API Reference
 
 Use the narrative chapters for resolving:
 
@@ -381,4 +386,4 @@ Use the API reference for resolving:
 
 * For rendered symbol-level API docs: [`api.md`](api.md)
 * For contributor-facing documentation rules: [`../development_guide/contribution_workflow.md`](../development_guide/contribution_workflow.md)
-* For the repository-facing summary:
+* For the overall project overview: [`index.md`](../index.md)

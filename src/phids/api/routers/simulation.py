@@ -301,12 +301,32 @@ async def pause_simulation(request: Request) -> Response:
         Status payload or status-badge fragment with updated pause state.
     """
     loop = api_main._get_loop()
-    loop.pause()
-    state = "paused" if loop.paused else "resumed"
+    if loop.terminated:
+        api_main.logger.info("Pause requested on terminated simulation loop")
+        if api_main._is_htmx_request(request):
+            return _status_badge_fragment()
+        return JSONResponse({"message": "Simulation terminated.", "paused": loop.paused, "running": loop.running})
+
+    if not loop.running:
+        loop.pause()
+        state = "paused"
+    elif loop.paused:
+        loop.start()
+        if api_main._sim_task is None or api_main._sim_task.done():
+
+            async def _bg() -> None:
+                await loop.run()
+
+            api_main._sim_task = asyncio.create_task(_bg())
+        state = "resumed"
+    else:
+        loop.pause()
+        state = "paused"
+
     api_main.logger.info("Simulation %s via API", state)
     if api_main._is_htmx_request(request):
         return _status_badge_fragment()
-    return JSONResponse({"message": f"Simulation {state}."})
+    return JSONResponse({"message": f"Simulation {state}.", "paused": loop.paused, "running": loop.running})
 
 
 @router.post("/api/simulation/step", summary="Advance simulation by one tick")

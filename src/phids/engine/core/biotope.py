@@ -345,7 +345,7 @@ class GridEnvironment:
         shape: tuple[int, int] = (width, height)
 
         # ------------------------------------------------------------------
-        # Plant energy layers (read/write buffers)
+        # Plant energy layers (read/write buffers) - E_current proxy
         # ------------------------------------------------------------------
         self.plant_energy_layer: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
         self._plant_energy_layer_write: npt.NDArray[np.float64] = np.zeros(shape, dtype=np.float64)  # pragma: no mutate
@@ -361,6 +361,25 @@ class GridEnvironment:
             (MAX_FLORA_SPECIES, width, height), dtype=np.float64
         )
         self._plant_energy_by_species_write: npt.NDArray[np.float64] = np.zeros_like(self.plant_energy_by_species)
+
+        # ------------------------------------------------------------------
+        # Structural mass layers (read/write buffers) - M_structural proxy
+        # ------------------------------------------------------------------
+        # float32: M_structural is a threshold-only quantity (no PDE/convolution).
+        # Halves memory bandwidth vs float64 with no loss of biological precision.
+        # Aggregate 2D read layer: sum across all species structural mass.
+        self.structural_mass_layer: npt.NDArray[np.float32] = np.zeros(shape, dtype=np.float32)  # pragma: no mutate
+        self._structural_mass_layer_write: npt.NDArray[np.float32] = np.zeros(  # pragma: no mutate
+            shape, dtype=np.float32
+        )
+
+        # Per-species structural mass (Rule of 16 pre-allocation - mirrors energy pattern)
+        self.structural_mass_by_species: npt.NDArray[np.float32] = np.zeros(
+            (MAX_FLORA_SPECIES, width, height), dtype=np.float32
+        )  # pragma: no mutate
+        self._structural_mass_by_species_write: npt.NDArray[np.float32] = np.zeros_like(
+            self.structural_mass_by_species
+        )  # pragma: no mutate
 
         # ------------------------------------------------------------------
         # Wind layers (dynamic, updated via REST API)
@@ -540,17 +559,20 @@ class GridEnvironment:
     # ------------------------------------------------------------------
 
     def rebuild_energy_layer(self) -> None:
-        """Recompute aggregate plant energy layer and swap double-buffered matrices.
+        """Recompute aggregate plant energy and structural mass layers; swap all double-buffered matrices.
 
         256-Bit AVX2 SIMD Matrix Reduction & Zero-Allocation Buffer Swap:
         ------------------------------------------------------------------
-        Aggregates per-species write buffers `[num_species, W, H]` into the aggregate 2D write buffer `[W, H]`
-        using a single C-level vector reduction `np.sum(..., axis=0, out=...)`. This operation compiles into
-        256-bit AVX2 vector instructions (e.g. `vaddpd` across YMM registers), processing four 64-bit float64
-        values concurrently per clock cycle without temporary array allocations or Python loop overhead.
+        Aggregates per-species write buffers `[num_species, W, H]` into aggregate 2D write buffers `[W, H]`
+        using single C-level vector reductions `np.sum(..., axis=0, out=...)`. Each operation compiles into
+        256-bit AVX2 vector instructions (e.g. `vaddpd` / `vaddps` across YMM registers), processing four
+        float64 or eight float32 values concurrently per clock cycle without temporary array allocations
+        or Python loop overhead.
 
-        Swaps read/write buffers so that subsequent systems observe post-herbivory energy states deterministically.
+        Swaps both E_current (energy) and M_structural (structural_mass) read/write buffers so that
+        subsequent systems observe post-herbivory states deterministically.
         """
+        # --- E_current (plant energy) ---
         np.sum(self._plant_energy_by_species_write, axis=0, out=self._plant_energy_layer_write)
         self.plant_energy_by_species, self._plant_energy_by_species_write = (
             self._plant_energy_by_species_write,
@@ -562,6 +584,19 @@ class GridEnvironment:
         )
         self._plant_energy_by_species_write[:] = self.plant_energy_by_species
         self._plant_energy_layer_write[:] = self.plant_energy_layer
+
+        # --- M_structural (structural mass) ---
+        np.sum(self._structural_mass_by_species_write, axis=0, out=self._structural_mass_layer_write)
+        self.structural_mass_by_species, self._structural_mass_by_species_write = (
+            self._structural_mass_by_species_write,
+            self.structural_mass_by_species,
+        )
+        self.structural_mass_layer, self._structural_mass_layer_write = (
+            self._structural_mass_layer_write,
+            self.structural_mass_layer,
+        )
+        self._structural_mass_by_species_write[:] = self.structural_mass_by_species
+        self._structural_mass_layer_write[:] = self.structural_mass_layer
 
         self.apparent_nutrition_layer, self._apparent_nutrition_layer_write = (
             self._apparent_nutrition_layer_write,
@@ -601,6 +636,38 @@ class GridEnvironment:
         self._plant_energy_by_species_write[species_id, x, y] = 0.0
 
     # ------------------------------------------------------------------
+    # Structural mass helpers (M_structural proxy)
+    # ------------------------------------------------------------------
+
+    def set_structural_mass(self, x: int, y: int, species_id: int, value: float) -> None:
+        """Write structural mass into the per-species write buffer.
+
+        M_structural is monotonically non-decreasing. Callers must never pass a value
+        lower than the current read-buffer value (except on plant death via
+        ``clear_structural_mass``).
+
+        Args:
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
+            species_id: The integer index representing the specific phylogenetic species associated with this operation.
+            value: New structural mass value (clamped to 0.0 floor).
+        """
+        self._structural_mass_by_species_write[species_id, x, y] = np.float32(max(0.0, value))
+
+    def clear_structural_mass(self, x: int, y: int, species_id: int) -> None:
+        """Zero structural mass in the write buffer for a dying or cleared plant.
+
+        Called exclusively from the lifecycle death path. Zeroing M_structural on
+        death allows new seeds to germinate at the coordinate with a clean slate.
+
+        Args:
+            x: The X-axis spatial grid coordinate.
+            y: The Y-axis spatial grid coordinate.
+            species_id: The integer index representing the specific phylogenetic species associated with this operation.
+        """
+        self._structural_mass_by_species_write[species_id, x, y] = np.float32(0.0)
+
+    # ------------------------------------------------------------------
     # State snapshot (for serialisation / streaming)
     # ------------------------------------------------------------------
 
@@ -615,6 +682,7 @@ class GridEnvironment:
         """
         return {
             "plant_energy_layer": self.plant_energy_layer.tolist(),
+            "structural_mass_layer": self.structural_mass_layer.tolist(),
             "signal_layers": self.signal_layers.tolist(),
             "toxin_layers": self.toxin_layers.tolist(),
             "flow_field": self.flow_field.tolist(),

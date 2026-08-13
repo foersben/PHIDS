@@ -25,7 +25,7 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 ## AI Role Registry
 
 | Role | Description | Trigger |
-|---|---|---|
+| --- | --- | --- |
 | `@orchestrator` | PM. Delegates tasks; enforces OKF structure. | Planning, refactoring, workflows. |
 | `@scientific-architect` | Translates reaction-diffusion PDEs/chemotaxis. | Mathematical/biological models. |
 | `@engine-developer` | ECS & Numba developer. Handles double-buffering. | Core performance, ECS arrays, loops. |
@@ -33,7 +33,9 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | `@docs-librarian` | Maintains docs, Zensical. | Documentation, diagrams, LaTeX. |
 | `@git-operator` | Manages branches, commits, releases. | Git actions, commits, release tags. |
 | `@api-and-ui-developer` | HTMX, Jinja2, and FastAPI developer. | Dashboard UI, endpoints, websockets. |
-| `@telemetry-and-data-engineer`| Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |
+| `@telemetry-and-data-engineer` | Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |
+| `@matrix-auditor` | Audits Data-Flow Matrix coverage & trace parity. | Matrix audits, doc trace validation. |
+| `@causal-verifier` | Verifies branchless SIMD masks & causal invariants. | State leaks, unmasked JIT loops. |
 
 ## Documentation Formatting Rules
 

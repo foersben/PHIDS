@@ -38,6 +38,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import polars as pl
 
 from phids.shared.constants import MAX_TELEMETRY_TICKS
@@ -323,3 +324,48 @@ class TelemetryRecorder:
         logger.info("Resetting telemetry recorder with %d buffered rows", len(self._rows))
         self._rows = []
         self._df = None
+
+
+def calculate_mean_structural_mass_by_species(
+    structural_mass_by_species: np.ndarray,
+) -> dict[int, float]:
+    """Calculate mean M_structural per flora species across non-zero grid cells.
+
+    Args:
+        structural_mass_by_species: 3D array of structural mass [num_species, W, H].
+
+    Returns:
+        Mapping of species_id to spatial mean structural mass (grams dry mass).
+    """
+    means: dict[int, float] = {}
+    num_species = structural_mass_by_species.shape[0]
+    for s_id in range(num_species):
+        layer = structural_mass_by_species[s_id]
+        mask = layer > 0.0
+        if np.any(mask):
+            means[s_id] = float(np.mean(layer[mask]))
+        else:
+            means[s_id] = 0.0
+    return means
+
+
+def calculate_incidental_mortality_rate(
+    plant_death_causes: dict[str, int],
+) -> float:
+    """Calculate ratio of incidental mortality (trampling or clipping) vs total plant mortality.
+
+    Args:
+        plant_death_causes: Mapping of death cause keys to counts.
+
+    Returns:
+        Incidental mortality fraction in range [0.0, 1.0].
+    """
+    total_deaths = sum(plant_death_causes.values())
+    if total_deaths == 0:
+        return 0.0
+    incidental_deaths = (
+        plant_death_causes.get("death_incidental_mortality", 0)
+        + plant_death_causes.get("death_collateral_trampling", 0)
+        + plant_death_causes.get("death_incidental_consumption", 0)
+    )
+    return incidental_deaths / total_deaths
