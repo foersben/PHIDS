@@ -1308,7 +1308,7 @@
       const rootDetails = (plant.mycorrhizal_neighbours || []).map(neighbour => `
         <li class="flex justify-between gap-3 text-[10px]">
           <span class="text-slate-300">${escapeHtml(neighbour.name)}</span>
-          <span class="font-mono text-sky-400">(${escapeHtml(neighbour.x)}, ${escapeHtml(neighbour.y)})${neighbour.inter_species ? ' *' : ''}</span>
+          <span class="font-mono text-sky-400">(${escapeHtml(neighbour.x)}, ${escapeHtml(neighbour.y)}) <span class="text-[9px] font-sans ${neighbour.inter_species ? 'text-amber-400' : 'text-sky-400/70'}">${neighbour.inter_species ? ' (inter-species)' : ' (intra-species)'}</span></span>
         </li>`).join('');
 
       const energyPct = Math.min(100, Math.max(0, plant.energy_ratio ? plant.energy_ratio * 100 : 0));
