@@ -101,4 +101,5 @@ class PlantComponent:
     # Dual-Proxy Architecture fields (M_structural)
     # ------------------------------------------------------------------
     structural_mass: float = 0.0  # M_structural: permanent lignin/woodiness
-    max_structural_mass: float = 0.0  # Species ceiling; uses max_energy as placeholder
+    max_structural_mass: float = 0.0  # Species ceiling for M_structural (sourced from DB via FloraSpeciesParams)
+    growth_rate_structural: float = 0.01  # Fractional M_structural growth per slow-loop gate

@@ -72,3 +72,5 @@ class SwarmComponent:
     last_dy: int = 0
     behavior_paradigm: str = "macro_swarm"
     aversion_memory: float = 0.0
+    last_caloric_intake: float = 0.0
+    metabolism_upkeep: float = 0.0

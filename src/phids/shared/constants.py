@@ -69,3 +69,7 @@ M_STRUCTURAL_SEED_VALUE: float = 0.0
 # This is a global placeholder default. Plan 2 will replace it with a per-species
 # value sourced from the empirical bio-database via the EEDSE optimizer.
 M_STRUCTURAL_GROWTH_RATE: float = 0.01
+
+# Multiplier for M_structural-scaled maintenance cost deduction per tick.
+# Upkeep_fee = survival_threshold * STRUCTURAL_UPKEEP_SCALAR * (M_structural / max_M_structural).
+STRUCTURAL_UPKEEP_SCALAR: float = 0.5

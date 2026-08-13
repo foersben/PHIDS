@@ -209,6 +209,55 @@ def test_set_and_clear_structural_mass() -> None:
     assert env._structural_mass_by_species_write[0, 2, 3] == np.float32(0.0)  # type: ignore[attr-defined]
 
 
+def test_structural_mass_grows_on_slow_loop() -> None:
+    """Validate that _grow_structural_mass_jit monotonically increases M_structural per slow-loop gate."""
+    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+
+    initial_mass = 0.0
+    growth_rate = 0.01  # 1% per slow-loop tick stride
+    max_mass = 100.0
+
+    step1 = _grow_structural_mass_jit(initial_mass, growth_rate, max_mass, SLOW_TICK_STRIDE)
+    expected_step1 = 0.0 + 0.01 * 168.0  # 1.68
+    assert np.isclose(step1, expected_step1)
+    assert step1 > initial_mass
+
+    step2 = _grow_structural_mass_jit(step1, growth_rate, max_mass, SLOW_TICK_STRIDE)
+    assert step2 > step1
+
+
+def test_structural_mass_clamped_at_max() -> None:
+    """Validate that _grow_structural_mass_jit clamps at max_structural_mass without overshooting."""
+    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+
+    initial_mass = 99.5
+    growth_rate = 0.05
+    max_mass = 100.0
+
+    # 99.5 + 0.05 * 168 = 107.9 -> clamped to 100.0
+    result = _grow_structural_mass_jit(initial_mass, growth_rate, max_mass, SLOW_TICK_STRIDE)
+    assert result == 100.0
+
+
+def test_structural_mass_seed_init_from_schema() -> None:
+    """Validate that FloraSpeciesParams structural_mass_max and structural_growth_rate populate correctly."""
+    from phids.api.schemas.species import FloraSpeciesParams
+
+    params = FloraSpeciesParams(
+        species_id=1,
+        name="Test Oak",
+        base_energy=10.0,
+        max_energy=50.0,
+        growth_rate=0.1,
+        survival_threshold=1.0,
+        reproduction_interval=5,
+        structural_mass_max=1800.0,
+        structural_growth_rate=0.002,
+    )
+    assert params.structural_mass_max == 1800.0
+    assert params.structural_growth_rate == 0.002
+
+
 def test_set_structural_mass_clamps_negative() -> None:
     """Validate that set_structural_mass clamps negative values to 0.0 (M_structural floor)."""
     env = GridEnvironment(width=5, height=5)

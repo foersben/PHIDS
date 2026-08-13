@@ -17,6 +17,7 @@ from pydantic import AliasChoices, Field, model_validator
 from phids.api.schemas.base import HerbivoreId, SpeciesId, StrictBaseModel
 from phids.api.schemas.triggers import PassiveDefensesSchema, TriggerConditionSchema
 from phids.shared.constants import (
+    M_STRUCTURAL_GROWTH_RATE,
     MAX_FLORA_SPECIES,
     MAX_HERBIVORE_SPECIES,
     MAX_SUBSTANCE_TYPES,
@@ -58,6 +59,20 @@ class FloraSpeciesParams(StrictBaseModel):
     )
     passive_defenses: PassiveDefensesSchema = Field(default_factory=PassiveDefensesSchema)
     triggers: list[TriggerConditionSchema] = Field(default_factory=list, max_length=MAX_SUBSTANCE_TYPES)
+    structural_mass_max: float = Field(
+        default=0.0,
+        ge=0.0,
+        description=(
+            "Species ceiling for M_structural (grams dry mass). "
+            "0.0 = engine uses max_energy as placeholder (Plan 1 compatibility)."
+        ),
+    )
+    structural_growth_rate: float = Field(
+        default=M_STRUCTURAL_GROWTH_RATE,
+        ge=0.0,
+        le=1.0,
+        description="Fractional M_structural growth per slow-loop gate (168-tick weekly stride).",
+    )
 
 
 class HerbivoreResistancesSchema(StrictBaseModel):
@@ -120,6 +135,16 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         default=5,
         ge=1,
         description="Number of ticks to execute a repelled random walk when physically jostled due to overcrowding.",
+    )
+    incidental_mortality_factor: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Sensitivity factor for incidental seedling destruction per coordinate entry.",
+    )
+    incidental_mortality_mode: Literal["trampling", "consumption"] = Field(
+        default="trampling",
+        description="Incidental mortality mechanism: 'trampling' (crush) or 'consumption' (clipping).",
     )
 
 

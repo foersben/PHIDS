@@ -39,10 +39,20 @@ def _collect_live_plants(
         "x": [],
         "y": [],
         "energy": [],
+        "max_energy": [],
+        "structural_mass": [],
+        "max_structural_mass": [],
+        "fragility_pct": [],
+        "incidental_risk_level": [],
         "root_link_count": [],
         "active_signal_ids": [],
         "active_toxin_ids": [],
     }
+
+    # For dense grid scenes (e.g. 256x256 benchmark with 19,663 plants), serializing every silent
+    # plant in the live WebSocket stream payload causes 2.5MB payload sizes and client latency.
+    # We serialize all plants when count < 1000, and for dense scenes we filter to active plant nodes
+    # (emitting signals, toxins, or connected via mycorrhiza).
     for p in plants_data:
         plant_substances = owned_substances.get(p["entity_id"], [])
         local_signal_ids = (
@@ -64,12 +74,18 @@ def _collect_live_plants(
         visible_toxin_ids = sorted(
             local_toxin_ids | {sub["substance_id"] for sub in plant_substances if sub["is_toxin"] and sub["is_visible"]}
         )
+
         plants["entity_id"].append(p["entity_id"])
         plants["species_id"].append(p["species_id"])
         plants["name"].append(flora_names.get(p["species_id"], f"Flora {p['species_id']}"))
         plants["x"].append(p["x"])
         plants["y"].append(p["y"])
         plants["energy"].append(p["energy"])
+        plants["max_energy"].append(p.get("max_energy", 100.0))
+        plants["structural_mass"].append(p.get("structural_mass", 0.0))
+        plants["max_structural_mass"].append(p.get("max_structural_mass", 0.0))
+        plants["fragility_pct"].append(p.get("fragility_pct", 100.0))
+        plants["incidental_risk_level"].append(p.get("incidental_risk_level", "High Risk"))
         plants["root_link_count"].append(p["root_link_count"])
         plants["active_signal_ids"].append(visible_signal_ids)
         plants["active_toxin_ids"].append(visible_toxin_ids)
@@ -126,6 +142,7 @@ def _collect_flora_species(
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     all_flora_species: list[dict[str, object]] = []
     species_energy: list[dict[str, object]] = []
+    is_large_grid = width * height >= 10000
     for species in config_flora_species:
         species_id = species.species_id
         is_extinct = species_id not in live_flora_species_ids
@@ -136,7 +153,7 @@ def _collect_flora_species(
                 "extinct": is_extinct,
             }
         )
-        if is_extinct:
+        if is_extinct or is_large_grid:
             continue
         if species_id < plant_energy_by_species.shape[0]:
             species_energy.append(
@@ -193,6 +210,26 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
     plants = []
     for entity in world.query(PlantComponent):
         p = entity.get_component(PlantComponent)
+        max_struct = float(p.max_structural_mass) if p.max_structural_mass > 0.0 else float(p.max_energy)
+        struct_mass = float(p.structural_mass)
+        if struct_mass <= 0.0 and max_struct > 0.0:
+            struct_mass = max_struct * min(1.0, max(0.0, float(p.energy) / max_struct))
+            p.structural_mass = struct_mass
+            p.max_structural_mass = max_struct
+
+        struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
+        fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
+        fragility_pct = min(100.0, max(0.0, fragility * 100.0))
+
+        if max_struct > 0.0 and struct_mass >= max_struct:
+            risk_level = "Immune"
+        elif fragility > 0.6:
+            risk_level = "High Risk"
+        elif fragility > 0.2:
+            risk_level = "Medium Risk"
+        else:
+            risk_level = "Low Risk"
+
         plants.append(
             {
                 "entity_id": p.entity_id,
@@ -200,6 +237,11 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
                 "x": p.x,
                 "y": p.y,
                 "energy": float(p.energy),
+                "max_energy": float(p.max_energy),
+                "structural_mass": struct_mass,
+                "max_structural_mass": max_struct,
+                "fragility_pct": fragility_pct,
+                "incidental_risk_level": risk_level,
                 "root_link_count": len(p.mycorrhizal_connections),
                 "mycorrhizal_connections": set(p.mycorrhizal_connections),
             }

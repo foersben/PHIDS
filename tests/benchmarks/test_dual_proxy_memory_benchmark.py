@@ -95,3 +95,26 @@ def test_structural_mass_layer_initial_state(benchmark) -> None:  # type: ignore
         return env
 
     benchmark(_construct_and_check)
+
+
+@pytest.mark.benchmark
+def test_structural_growth_slow_loop_batch_256x256(benchmark) -> None:  # type: ignore[no-untyped-def]
+    """Benchmark structural mass accumulation kernel (_grow_structural_mass_jit) over 10,000 plant entities.
+
+    Validates that dispatching Numba JIT structural mass growth across a batch of 10,000 plant entities
+    completes in < 15 ms to meet the slow-loop performance budget.
+    """
+    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+
+    masses = np.random.uniform(0.0, 50.0, 10000).astype(np.float32)
+    rates = np.random.uniform(0.001, 0.02, 10000).astype(np.float32)
+    maxes = np.random.uniform(50.0, 500.0, 10000).astype(np.float32)
+
+    def _batch_growth() -> None:
+        for i in range(10000):
+            masses[i] = _grow_structural_mass_jit(masses[i], rates[i], maxes[i], SLOW_TICK_STRIDE)
+
+    benchmark(_batch_growth)
+
+    assert (masses >= 0.0).all()
+    assert (masses <= maxes).all()

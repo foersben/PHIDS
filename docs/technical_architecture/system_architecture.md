@@ -2,14 +2,15 @@
 type: technical_architecture
 title: System Architecture
 status: active
-version: 0.1
+version: 0.2
 description: Documentation for System Architecture in the PHIDS framework.
 tags:
 - phids
 - ecs
 - performance
 - chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
+- dual-proxy
+timestamp: "2026-08-13T00:27:00Z"
 resources:
 - src/phids/engine/loop.py
 - src/phids/engine/core/biotope.py
@@ -29,9 +30,9 @@ The PHIDS simulator is engineered as a headless, high-performance data-oriented 
 
 The architectural nexus of the project is the `SimulationLoop` (`src/phids/engine/loop.py`). It coordinates the following independent stateful subsystems:
 
-- **`GridEnvironment`**: Manages all vectorized 2D cellular automata fields using pre-allocated NumPy arrays.
-- **`ECSWorld`**: Maintains the discrete biological entities and manages spatial locality indexing.
-- **`TelemetryRecorder` & `ReplayBuffer`**: Handle data serialization and analytics observation at the conclusion of every tick.
+* **`GridEnvironment`**: Manages all vectorized 2D cellular automata fields using pre-allocated NumPy arrays.
+* **`ECSWorld`**: Maintains the discrete biological entities and manages spatial locality indexing.
+* **`TelemetryRecorder` & `ReplayBuffer`**: Handle data serialization and analytics observation at the conclusion of every tick.
 
 ## Layered Decomposition
 
@@ -42,7 +43,7 @@ The architectural nexus of the project is the `SimulationLoop` (`src/phids/engin
 
 ## Double-Buffering Mechanics
 
-To preclude race conditions during state mutation, PHIDS implements rigorous double-buffering for specific continuous fields (e.g., signal diffusion layers and plant energy arrays).
+To preclude race conditions during state mutation, PHIDS implements rigorous double-buffering for specific continuous fields (e.g., signal diffusion layers, plant energy arrays, and structural mass arrays).
 When a system phase computes new values, it reads from the read-buffer (`State_Read`) and commits its mutations entirely to a write-buffer (`State_Write`). Only upon the conclusion of the phase are the buffer references swapped.
 
 ```mermaid
@@ -80,13 +81,13 @@ Dynamic memory allocation during the hot simulation loop introduces prohibitive 
 
 To maximize CPU throughput across 256-bit AVX2 SIMD register architectures (YMM vector registers), hot-path simulation sub-routines are compiled into C via `@njit(cache=True)` or vectorized across contiguous memory blocks:
 
-- **Numba JIT Swarm Anchoring (`_is_swarm_anchored_jit`)**: Pre-compiled 2D boolean diet matrix check in [movement.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/movement.py).
-- **Vectorized Energy Layer Rebuild (`rebuild_energy_layer`)**: Single C-level 256-bit AVX2 reduction (`np.sum(..., axis=0)`) in [biotope.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/biotope.py).
-- **Photosynthetic Biomass Growth (`_grow_simd_jit`)**: Vectorized 168-hour stride growth scaling in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
-- **Mycorrhizal Link Tax Deduction (`_apply_mycorrhizal_tax_jit`)**: 256-bit SIMD vector subtractions across root links in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
-- **Airborne VOC Layer Decay (`_numba_decay_signal_layer`)**: In-place 256-bit YMM layer attenuation and epsilon clamping in [emission.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/emission.py).
-- **Spatial Hash Query Buffer Reuse (`EMPTY_SET`)**: Singleton `frozenset` reuse for unoccupied cells in [ecs.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/ecs.py) and [spatial.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/spatial.py).
-- **Pre-Compiled Foraging Parameter Caching (`CachedFloraForagingParams` / `CachedHerbivoreForagingParams`)**: O(1) slot parameter resolution in [feeding.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/feeding.py).
+* **Numba JIT Swarm Anchoring (`_is_swarm_anchored_jit`)**: Pre-compiled 2D boolean diet matrix check in [movement.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/movement.py).
+* **Dual-Proxy Layer Rebuild (`rebuild_energy_layer`)**: Two sequential C-level 256-bit AVX2 reductions in [biotope.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/biotope.py): `vaddpd` (float64) for `E_current` and `vaddps` (float32, 2x throughput) for `M_structural`.
+* **Photosynthetic Biomass Growth (`_grow_simd_jit`)**: Vectorized 168-hour stride growth scaling in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
+* **Mycorrhizal Link Tax Deduction (`_apply_mycorrhizal_tax_jit`)**: 256-bit SIMD vector subtractions across root links in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
+* **Airborne VOC Layer Decay (`_numba_decay_signal_layer`)**: In-place 256-bit YMM layer attenuation and epsilon clamping in [emission.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/emission.py).
+* **Spatial Hash Query Buffer Reuse (`EMPTY_SET`)**: Singleton `frozenset` reuse for unoccupied cells in [ecs.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/ecs.py) and [spatial.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/spatial.py).
+* **Pre-Compiled Foraging Parameter Caching (`CachedFloraForagingParams` / `CachedHerbivoreForagingParams`)**: O(1) slot parameter resolution in [feeding.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/feeding.py).
 
 ## Structural Flow & Data Pipelines
 
@@ -212,13 +213,13 @@ flowchart TD
     class A6 egressLayer;
 ```
 
-In this detailed workflow: 
+In this detailed workflow:
 
-* **Phase 1 (Ingress)** handles external control commands. 
-* **Phase 2 (Registry)** enforces the structural constraints (Rule of 16) and allocates the simulation world. 
-* **Phase 3 (Engine Core)** initializes the persistent state buffers and the high-performance spatial indexer. 
-* **Phase 4 (Pipeline)** represents the iterative tick. 
-* **Phase 5 (Data Analytics)** is where telemetry is lazily recorded and termination is checked. Crucially, the **Lifecycle** and **Interaction** systems modify the write buffer, which is then synchronized with the **Signaling** system and finally committed. 
+* **Phase 1 (Ingress)** handles external control commands.
+* **Phase 2 (Registry)** enforces the structural constraints (Rule of 16) and allocates the simulation world.
+* **Phase 3 (Engine Core)** initializes the persistent state buffers and the high-performance spatial indexer.
+* **Phase 4 (Pipeline)** represents the iterative tick.
+* **Phase 5 (Data Analytics)** is where telemetry is lazily recorded and termination is checked. Crucially, the **Lifecycle** and **Interaction** systems modify the write buffer, which is then synchronized with the **Signaling** system and finally committed.
 * **Phase 6 (Egress)** pushes the resulting visual state to the live dashboard.
 
 ## Component State Management

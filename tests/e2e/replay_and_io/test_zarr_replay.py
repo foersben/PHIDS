@@ -191,6 +191,7 @@ class TestReplayBuffer:
                 self.flow_field = np.full((3, 3), 0.5, dtype=np.float64)
                 self.wind_vector_x = np.zeros((3, 3), dtype=np.float64)
                 self.wind_vector_y = np.zeros((3, 3), dtype=np.float64)
+                self.structural_mass_layer = np.zeros((3, 3), dtype=np.float32)
 
         env = _Env()
         buf.append_raw_arrays(tick=7, env=env, termination_state=(False, None))

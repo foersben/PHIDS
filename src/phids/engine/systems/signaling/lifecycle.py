@@ -37,6 +37,7 @@ def _phase_index_and_clean_substances(
         owner_substance_by_key[(sub.owner_plant_id, sub.substance_id)] = sub
         if sub.active:
             active_substance_ids_by_owner.setdefault(sub.owner_plant_id, set()).add(sub.substance_id)
+        sub.triggered_last_tick = sub.triggered_this_tick
         sub.triggered_this_tick = False
 
     return owner_substance_by_key, active_substance_ids_by_owner, substance_entities
