@@ -21,3 +21,13 @@ Action: [Always perform a recursive `grep` for the old directory name (`grep -rn
 ## 2026-07-26 - [Documentation Escaping]
 
 Learning: When using multi-line Python strings to inject LaTeX code (e.g. `\approx`, `\%`, `\c`, `\g`) into markdown files, standard Python string parsing interprets backslash sequences as literal escape codes. This causes `SyntaxWarning: invalid escape sequence` and silent corruption of the text (e.g., `\a` becoming an ASCII bell character, breaking math rendering). Action: Always use raw string literals (`r"""..."""`) in Python scripts designed to edit or generate markdown containing LaTeX, or explicitly double-escape the backslashes to preserve macro integrity.
+
+## 2024-05-24 - Explicit State Machines over Implicit Array Timers
+
+Learning: The test suite fails to catch Temporal Causality and Sequential State Machine violations when using implicit array-based state tracking (e.g., dead plants synthesizing toxins, emission skipping synthesis delay).
+Action: All complex entities must use explicit Numba-compatible state enums, not implicit float array timers. This enforces strict causal chains that can be verified via Temporal Trace Testing.
+
+## 2024-05-24 - Explicit State Machines over Implicit Array Timers
+
+Learning: The test suite fails to catch Temporal Causality and Sequential State Machine violations when using implicit array-based state tracking (e.g., dead plants synthesizing toxins, emission skipping synthesis delay).
+Action: All complex entities must use explicit Numba-compatible state enums, not implicit float array timers. This enforces strict causal chains that can be verified via Temporal Trace Testing.
