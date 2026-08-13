@@ -1330,8 +1330,12 @@
           <span class="font-mono text-sky-400">(${escapeHtml(neighbour.x)}, ${escapeHtml(neighbour.y)}) <span class="text-[9px] font-sans ${neighbour.inter_species ? 'text-amber-400' : 'text-sky-400/70'}">${neighbour.inter_species ? ' (inter-species)' : ' (intra-species)'}</span></span>
         </li>`).join('');
 
-      const energyPct = Math.min(100, Math.max(0, plant.energy_ratio ? plant.energy_ratio * 100 : 0));
-      const structPct = Math.min(100, Math.max(0, plant.structural_mass_pct || 0));
+      const maxEnergyVal = Number(plant.max_energy || 100);
+      const energyRatioVal = maxEnergyVal > 0 ? (Number(plant.energy || 0) / maxEnergyVal) : (plant.energy_ratio || 0);
+      const energyPct = Math.min(100, Math.max(0, energyRatioVal * 100));
+      const maxStructVal = Number(plant.max_structural_mass || 0);
+      const structMassVal = Number(plant.structural_mass || 0);
+      const structPct = maxStructVal > 0 ? Math.min(100, Math.max(0, (structMassVal / maxStructVal) * 100)) : (plant.structural_mass_pct || 0);
       const isWoody = plant.is_woody_mature;
       const upkeepFee = plant.structural_upkeep_fee || 0;
 

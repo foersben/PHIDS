@@ -249,6 +249,9 @@ class SimulationLoop:
                 )
                 continue
             entity = self.world.create_entity()
+            initial_energy_ratio = min(1.0, max(0.0, plant_placement.energy / max(1.0, params.max_energy)))
+            initial_struct_mass = params.structural_mass_max * initial_energy_ratio
+
             plant = PlantComponent(
                 entity_id=entity.entity_id,
                 species_id=plant_placement.species_id,
@@ -269,6 +272,7 @@ class SimulationLoop:
                 camouflage_factor=params.camouflage_factor,
                 translocation_rate=params.translocation_rate,
                 mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
+                structural_mass=initial_struct_mass,
                 max_structural_mass=params.structural_mass_max,
                 growth_rate_structural=params.structural_growth_rate,
             )
@@ -279,6 +283,12 @@ class SimulationLoop:
                 plant_placement.y,
                 plant_placement.species_id,
                 plant_placement.energy,
+            )
+            self.env.set_structural_mass(
+                plant_placement.x,
+                plant_placement.y,
+                plant_placement.species_id,
+                initial_struct_mass,
             )
             spawned_plants += 1
 
