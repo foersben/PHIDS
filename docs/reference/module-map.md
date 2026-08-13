@@ -2,17 +2,20 @@
 type: reference
 title: Module Map and Symbol Guide
 status: active
-version: 0.2
-description: Documentation for Module Map and Symbol Guide in the PHIDS framework.
+version: 0.3
+description: Whole-project inventory of active phids.* runtime packages, presenters, UI templates, and symbol responsibilities.
 tags:
 - phids
 - ecs
 - chemotaxis
 - dual-proxy
-timestamp: "2026-08-13T00:27:00Z"
+- dashboard-ui
+timestamp: "2026-08-13T19:30:00Z"
 resources:
 - api.md
 - ../development_guide/contribution_workflow.md
+- ../technical_architecture/interfaces_and_ui.md
+- ../scientific_model/future_prospects/biological_abstractions_and_grid_mechanics.md
 ---
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended

@@ -2,15 +2,16 @@
 type: reference
 title: Glossary and Concept Index
 status: active
-version: 0.2
-description: Documentation for Glossary and Concept Index in the PHIDS framework.
+version: 0.3
+description: Canonical glossary definitions for PHIDS concepts including Dual-Proxy proxies, Unified Action Buttons, and Live Cell Inspection Tooltips.
 tags:
 - phids
 - ecs
 - numba
 - python
 - dual-proxy
-timestamp: "2026-08-13T00:27:00Z"
+- dashboard-ui
+timestamp: "2026-08-13T19:30:00Z"
 resources:
 - ../scientific_model/mathematical_framework.md
 - ../technical_architecture/system_architecture.md
@@ -20,7 +21,7 @@ resources:
 - ../technical_architecture/telemetry.md
 - ../scientific_model/index.md
 - ../scenario_guide/scenario_authoring.md
-- interaction.py
+- ../scientific_model/future_prospects/biological_abstractions_and_grid_mechanics.md
 ---
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary

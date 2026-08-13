@@ -2,8 +2,8 @@
 type: concept
 title: Biological Abstractions & Grid Mechanics
 status: active
-version: 1.4
-description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes full implementation status tracking for the Decoupled Dual-Proxy Architecture (Plans 1, 2, & 3).
+version: 1.5
+description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes full implementation status tracking for the Decoupled Dual-Proxy Architecture (Plans 1, 2, 3, & 4).
 tags:
 - phids
 - ecs
@@ -11,7 +11,8 @@ tags:
 - spatial-dynamics
 - performance
 - dual-proxy
-timestamp: "2026-08-13T10:30:00Z"
+- dashboard-ui
+timestamp: "2026-08-13T19:30:00Z"
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/flora_and_symbiosis.md
@@ -22,6 +23,10 @@ resources:
 - src/phids/engine/core/biotope.py
 - src/phids/engine/systems/interaction/movement.py
 - src/phids/engine/systems/lifecycle.py
+- src/phids/api/presenters/dashboard/payloads.py
+- src/phids/api/templates/base.html
+- src/phids/api/templates/partials/dashboard.html
+- src/phids/api/routers/simulation.py
 - src/phids/io/zarr_replay.py
 - src/phids/shared/constants.py
 - src/phids/telemetry/analytics.py
@@ -182,13 +187,14 @@ This is entirely solved by separating the **Parameter Discovery** from the **Run
 
 ## 7. Implementation Status: The Decoupled Dual-Proxy Architecture
 
-The **Decoupled Dual-Proxy Architecture** is fully implemented across three production milestones on the `feature/decoupled-dual-proxy` branch.
+The **Decoupled Dual-Proxy Architecture** is fully implemented across four production milestones on the `feature/grid-visuals-and-tooltips` and `feature/decoupled-dual-proxy` branches.
 
-| Plan | Title | Status | Branch Commit |
+| Plan | Title | Status | Branch Commits |
 |---|---|---|---|
 | **Plan 1** | Core ECS Array Expansion (Foundation) | **DONE** | `4f8cdb6` |
 | **Plan 2** | Structural Growth Kernel & Trampling FMA | **DONE** | `08456a8`, `f1800de`, `43fccc6` |
 | **Plan 3** | Movement Resolution Incidental Mortality & Upkeep Tax | **DONE** | `92d3e08` |
+| **Plan 4** | Dashboard UI Telemetry & Dual-Proxy Tooltip Pipeline | **DONE** | `ffd0ddc`, `a6203fa`, `47efe6b`, `4f5b6af`, `d4ca1ea`, `53fadd1`, `fb53b35`, `0980aed`, `27f6204`, `1cae166` |
 
 ### Plan 1 - Core ECS Array Expansion (Delivered in commit `4f8cdb6`)
 
@@ -214,3 +220,68 @@ The **Decoupled Dual-Proxy Architecture** is fully implemented across three prod
 - `src/phids/engine/systems/lifecycle.py`: Implemented `_calculate_structural_upkeep_jit` kernel and deducted maintenance tax ($E_{upkeep} = E_{survival} \times \text{STRUCTURAL\_UPKEEP\_SCALAR} \times \frac{M_{structural}}{M_{max}}$) per lifecycle tick.
 - `src/phids/telemetry/analytics.py`: Added `calculate_mean_structural_mass_by_species` and `calculate_incidental_mortality_rate`.
 - `tests/`: Created `tests/integration/systems/test_dual_proxy_integration.py` with 4 end-to-end scenario tests. Full test suite: **1212 passed, 0 failed**.
+
+### Plan 4 - Dashboard UI Telemetry & Dual-Proxy Tooltip Pipeline (Delivered in commits `ffd0ddc`, `a6203fa`, `47efe6b`, `4f5b6af`, `d4ca1ea`, `53fadd1`, `fb53b35`, `0980aed`, `27f6204`, `1cae166`)
+
+- `src/phids/api/presenters/dashboard/payloads.py`: Serialized dual-proxy fields (`structural_mass`, `max_structural_mass`, `fragility_pct`, `incidental_risk_level`, `max_energy`) across columnar entity tables and `extract_ui_snapshot`. Implemented dynamic in-memory self-healing for active loop entities.
+- `src/phids/engine/loop.py` & `src/phids/engine/systems/lifecycle.py`: Initialized placement structural mass proportional to initial placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$) and enforced the **Plan 1 Compatibility Fallback Rule** ($M_{\text{max}} = E_{\text{max}}$ when `structural_mass_max == 0.0`).
+- `src/phids/api/templates/base.html`: Unified primary simulation action button (`#sim-main-action-btn`), global HTMX sync bridge (`window.phidsSyncMainActionButton`), and robust `/api/simulation/pause` task recovery.
+- `src/phids/api/templates/partials/dashboard.html`: Integrated dual-proxy health/biomass bars, energy ratio formatting, live-only mycorrhizal link layer rendering, and explicit `(inter-species)` vs `(intra-species)` badges.
+
+---
+
+## 8. Frontend UI Realization & Telemetry Integration (Plan 4)
+
+To bridge the backend Numba JIT N-dimensional array engine with the user interface, the **Plan 4 Dashboard Telemetry Pipeline** translates continuous spatial arrays into real-time visual controls and hover tooltips.
+
+### 8.1 Dual-Proxy Tooltip & Health Bar Invariants
+
+When hovering over any cell containing plant entities:
+
+1. **Caloric Health ($E$) Bar**:
+   - Displays current caloric energy vs. species maximum energy ($E / E_{\text{max}}$).
+   - Rendered with an emerald-to-teal gradient (`bg-gradient-to-r from-emerald-500 to-teal-400`).
+   - Percentage formula: $\text{Energy \%} = \min\left(100, \max\left(0, \frac{E}{E_{\text{max}}} \times 100\right)\right)$.
+2. **Structural Biomass ($M$) Bar**:
+   - Displays permanent structural mass vs. species ceiling ($M_{\text{structural}} / M_{\text{max}}$).
+   - Rendered with an amber-to-yellow gradient (`bg-gradient-to-r from-amber-600 to-yellow-500`).
+   - Percentage formula: $\text{Biomass \%} = \min\left(100, \max\left(0, \frac{M_{\text{structural}}}{M_{\text{max}}} \times 100\right)\right)$.
+3. **Dynamic Fragility ($\mathcal{F}$) & Risk Badges**:
+   - **Woody Maturity Structure:** If $M_{\text{max}} > 0$ and $M_{\text{structural}} \ge M_{\text{max}}$, badge displays `🛡️ Woody Structure` (`bg-emerald-500/20 text-emerald-300`).
+   - **Fragility Percentage:** If $M_{\text{structural}} < M_{\text{max}}$, badge displays `⚠️ Fragility % (Risk Level)`:
+     - **High Risk:** Fragility $> 60\%$ (`bg-amber-500/20 text-amber-300`).
+     - **Medium Risk:** $20\% < \text{Fragility} \le 60\%$.
+     - **Low Risk:** $\text{Fragility} \le 20\%$.
+
+### 8.2 Plan 1 Compatibility Fallback Rule ($M_{\text{max}} = E_{\text{max}}$)
+
+In legacy scenarios or built-in benchmarks where `structural_mass_max` is zero or unspecified (`0.0`), the system strictly enforces the **Plan 1 Compatibility Rule**:
+- The engine and presenter pipeline set $M_{\text{max}} = E_{\text{max}}$ (e.g. $100.0\text{ J}$ or $60.0\text{ J}$).
+- Placed initial plants receive initial structural mass proportional to their starting placement energy ratio ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
+- This prevents mature initial plants in benchmark scenarios from incorrectly spawning as $100\%$ fragile stubs.
+
+### 8.3 Unified Primary Action Control Button State Machine
+
+The dashboard unifies simulation execution controls into a single primary action button (`#sim-main-action-btn`) driven by `window.phidsSyncMainActionButton(running, paused)`:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Stopped: Scenario Loaded / Reset
+    Stopped --> Running: Click ▶ Start (Emerald)
+    Running --> Paused: Click ⏸ Pause (Amber)
+    Paused --> Running: Click ▶ Resume (Indigo)
+    Running --> Stopped: Click ↺ Reset
+    Paused --> Stopped: Click ↺ Reset
+```
+
+- **▶ Start (Emerald `bg-emerald-500`):** Simulation stopped/loaded/reset. Triggers `POST /api/simulation/start`.
+- **⏸ Pause (Amber `bg-amber-500`):** Simulation actively running. Triggers `POST /api/simulation/pause`.
+- **▶ Resume (Indigo `bg-indigo-500`):** Simulation paused. Triggers `POST /api/simulation/pause` (or `start`) to resume.
+
+### 8.4 Mycorrhizal Overlay Invariants
+
+- **Render Layer Order:** `drawMycorrhizalLinks()` executes *after* `drawFlora()` in `dashboard.html` to guarantee root links render clearly on top of plant tiles.
+- **Engine Link Validation:** Live canvas rendering strictly displays real engine-established connections (`data.mycorrhizal_links`).
+- **Tooltip Disambiguation:** Tooltip entries replace ambiguous `*` asterisks with explicit badges:
+  - **Inter-species link:** `<span class="text-amber-400"> (inter-species)</span>`
+  - **Intra-species link:** `<span class="text-sky-400/70"> (intra-species)</span>`
