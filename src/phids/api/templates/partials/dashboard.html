@@ -1151,18 +1151,8 @@
     modeBadge.textContent = status;
     modeBadge.className = `px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap ${statusColors[status] || 'bg-slate-100 text-slate-500'}`;
 
-    updatePauseButtonUI(Boolean(data.paused));
-  }
-
-  function updatePauseButtonUI(isPaused) {
-    const pauseBtn = document.getElementById('sim-pause-btn');
-    if (!pauseBtn) return;
-    if (isPaused) {
-      pauseBtn.innerHTML = '▶ Resume';
-      pauseBtn.className = 'px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow';
-    } else {
-      pauseBtn.innerHTML = '⏸ Pause';
-      pauseBtn.className = 'px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all shadow';
+    if (typeof window.phidsSyncMainActionButton === 'function') {
+      window.phidsSyncMainActionButton(Boolean(data.running), Boolean(data.paused));
     }
   }
 

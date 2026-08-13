@@ -169,16 +169,11 @@
               class="w-20 border border-slate-300 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               title="Live simulation tick rate in ticks per second. Adjusts background run speed without reloading the scenario.">
           </form>
-          <button hx-post="/api/simulation/start"
+          <button id="sim-main-action-btn" hx-post="/api/simulation/start"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
-            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all">
+            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow">
             ▶ Start
-          </button>
-          <button id="sim-pause-btn" hx-post="/api/simulation/pause"
-            hx-target="#sim-status" hx-swap="outerHTML"
-            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all">
-            ⏸ Pause
           </button>
           <button hx-post="/api/simulation/step"
             hx-include="#biotope-config-view form"
@@ -336,7 +331,7 @@
         el.textContent = message || 'Draft save failed';
       }
 
-      document.body.addEventListener('htmx:beforeRequest', function (event) {
+      document.body.addEventListener('htmx:configRequest', function (event) {
         const path = event?.detail?.pathInfo?.requestPath || '';
         if (path.startsWith('/api/config/')) {
           setDraftIndicator('saving');
@@ -349,28 +344,19 @@
           setDraftIndicator(event?.detail?.successful ? 'saved' : 'error');
           return;
         }
-        if (path === '/api/scenario/load-draft' || path === '/api/simulation/start' || path === '/api/simulation/reset') {
+        if (path === '/api/scenario/load-draft' || path === '/api/simulation/reset') {
           if (event?.detail?.successful) {
             setDraftIndicator('saved', 'Draft applied to live loop');
-            const pauseBtn = document.getElementById('sim-pause-btn');
-            if (pauseBtn) {
-              pauseBtn.innerHTML = '⏸ Pause';
-              pauseBtn.className = 'px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all';
-            }
+            phidsSyncMainActionButton(false, false);
           }
         }
+        if (path === '/api/simulation/start' && event?.detail?.successful) {
+          phidsSyncMainActionButton(true, false);
+        }
         if (path === '/api/simulation/pause' && event?.detail?.successful) {
-          const pauseBtn = document.getElementById('sim-pause-btn');
-          if (pauseBtn) {
-            const isPaused = pauseBtn.textContent.includes('Pause');
-            if (isPaused) {
-              pauseBtn.innerHTML = '▶ Resume';
-              pauseBtn.className = 'px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all';
-            } else {
-              pauseBtn.innerHTML = '⏸ Pause';
-              pauseBtn.className = 'px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all';
-            }
-          }
+          const btn = document.getElementById('sim-main-action-btn');
+          const isPausedNow = btn ? btn.textContent.includes('Pause') : false;
+          phidsSyncMainActionButton(true, isPausedNow);
         }
       });
     })();

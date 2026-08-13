@@ -269,6 +269,8 @@ class SimulationLoop:
                 camouflage_factor=params.camouflage_factor,
                 translocation_rate=params.translocation_rate,
                 mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
+                max_structural_mass=params.structural_mass_max,
+                growth_rate_structural=params.structural_growth_rate,
             )
             self.world.add_component(entity.entity_id, plant)
             self.world.register_position(entity.entity_id, plant_placement.x, plant_placement.y)
