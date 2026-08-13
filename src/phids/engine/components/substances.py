@@ -74,3 +74,4 @@ class SubstanceComponent:
     energy_cost_per_tick: float = 0.0
     irreversible: bool = False
     triggered_this_tick: bool = False
+    triggered_last_tick: bool = False
