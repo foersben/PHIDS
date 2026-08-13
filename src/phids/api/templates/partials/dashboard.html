@@ -817,6 +817,12 @@
     if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
       for (let i = 0; i < simPlantsColumnar.x.length; i++) {
         if (simPlantsColumnar.x[i] === x && simPlantsColumnar.y[i] === y) {
+          const structMass = simPlantsColumnar.structural_mass ? Number(simPlantsColumnar.structural_mass[i] || 0) : 0;
+          const maxStruct = simPlantsColumnar.max_structural_mass ? Number(simPlantsColumnar.max_structural_mass[i] || 0) : 0;
+          const maxEnergy = simPlantsColumnar.max_energy ? Number(simPlantsColumnar.max_energy[i] || 100) : 100;
+          const fragilityPct = simPlantsColumnar.fragility_pct ? Number(simPlantsColumnar.fragility_pct[i] ?? 100) : 100;
+          const riskLevel = simPlantsColumnar.incidental_risk_level ? simPlantsColumnar.incidental_risk_level[i] : 'High Risk';
+
           plantsAtCell.push({
             entity_id: simPlantsColumnar.entity_id[i],
             species_id: simPlantsColumnar.species_id[i],
@@ -824,6 +830,13 @@
             x: simPlantsColumnar.x[i],
             y: simPlantsColumnar.y[i],
             energy: simPlantsColumnar.energy[i],
+            max_energy: maxEnergy,
+            structural_mass: structMass,
+            max_structural_mass: maxStruct,
+            structural_mass_pct: maxStruct > 0 ? (structMass / maxStruct) * 100 : 0,
+            fragility_pct: fragilityPct,
+            incidental_risk_level: riskLevel,
+            is_woody_mature: maxStruct > 0 && structMass >= maxStruct,
             root_link_count: simPlantsColumnar.root_link_count ? simPlantsColumnar.root_link_count[i] : 0,
             active_signal_ids: simPlantsColumnar.active_signal_ids ? simPlantsColumnar.active_signal_ids[i] : [],
             active_toxin_ids: simPlantsColumnar.active_toxin_ids ? simPlantsColumnar.active_toxin_ids[i] : [],

@@ -39,6 +39,11 @@ def _collect_live_plants(
         "x": [],
         "y": [],
         "energy": [],
+        "max_energy": [],
+        "structural_mass": [],
+        "max_structural_mass": [],
+        "fragility_pct": [],
+        "incidental_risk_level": [],
         "root_link_count": [],
         "active_signal_ids": [],
         "active_toxin_ids": [],
@@ -76,6 +81,11 @@ def _collect_live_plants(
         plants["x"].append(p["x"])
         plants["y"].append(p["y"])
         plants["energy"].append(p["energy"])
+        plants["max_energy"].append(p.get("max_energy", 100.0))
+        plants["structural_mass"].append(p.get("structural_mass", 0.0))
+        plants["max_structural_mass"].append(p.get("max_structural_mass", 0.0))
+        plants["fragility_pct"].append(p.get("fragility_pct", 100.0))
+        plants["incidental_risk_level"].append(p.get("incidental_risk_level", "High Risk"))
         plants["root_link_count"].append(p["root_link_count"])
         plants["active_signal_ids"].append(visible_signal_ids)
         plants["active_toxin_ids"].append(visible_toxin_ids)
