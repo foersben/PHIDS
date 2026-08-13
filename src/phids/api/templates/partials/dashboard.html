@@ -1055,13 +1055,28 @@
         }
       }
       updateSpeciesBars(data.all_flora_species || data.species_energy, data.species_energy, maxE);
+    } else if (showFlora && simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
+      for (let i = 0; i < simPlantsColumnar.x.length; i++) {
+        const px = simPlantsColumnar.x[i];
+        const py = simPlantsColumnar.y[i];
+        const spId = simPlantsColumnar.species_id[i];
+        const color = FLORA_COLORS[spId % FLORA_COLORS.length];
+        ctx.fillStyle = color;
+        ctx.fillRect(px * cellW, py * cellH, cellW, cellH);
+        if (showWoodiness && cellW >= 3) {
+          ctx.fillStyle = 'rgba(217, 119, 6, 0.45)';
+          const coreW = Math.max(1, cellW * 0.4);
+          const coreH = Math.max(1, cellH * 0.4);
+          ctx.fillRect(px * cellW + (cellW - coreW) / 2, py * cellH + (cellH - coreH) / 2, coreW, coreH);
+        }
+      }
+      speciesBarsEl.classList.add('hidden');
     } else if (showFlora && data.plant_energy) {
       for (let x = 0; x < gW; x++) {
         for (let y = 0; y < gH; y++) {
           const energy = data.plant_energy[x] ? Number(data.plant_energy[x][y] || 0) : 0;
           if (energy <= 0) continue;
-          const value = Math.min(255, Math.round((energy / maxE) * 220) + 35);
-          ctx.fillStyle = `rgb(0,${value},0)`;
+          ctx.fillStyle = '#10b981';
           ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
         }
       }
@@ -1118,50 +1133,58 @@
     const { cellW, cellH } = syncCanvasLayout(preview);
     clearCanvas();
 
-    drawMycorrhizalLinks(preview.mycorrhizal_links || []);
+    const showFlora = isLayerActive('layer-toggle-flora');
+    const showSwarms = isLayerActive('layer-toggle-swarms');
+    const showMycorrhiza = isLayerActive('layer-toggle-mycorrhiza');
+    const showWoodiness = isLayerActive('layer-toggle-woodiness');
+    const showChemicals = isLayerActive('layer-toggle-chemicals');
 
-    for (const plant of (preview.plants || [])) {
-      ctx.fillStyle = FLORA_COLORS[plant.species_id % FLORA_COLORS.length];
-      ctx.fillRect(plant.x * cellW + 1, plant.y * cellH + 1, cellW - 2, cellH - 2);
-      if (cellW >= 10) {
-        ctx.fillStyle = '#fff';
-        ctx.font = `${Math.max(7, Math.min(11, cellW * 0.45))}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('P', plant.x * cellW + cellW / 2, plant.y * cellH + cellH / 2);
+    if (showMycorrhiza) {
+      drawMycorrhizalLinks(preview.mycorrhizal_links || []);
+    }
+
+    if (showFlora) {
+      for (const plant of (preview.plants || [])) {
+        ctx.fillStyle = FLORA_COLORS[plant.species_id % FLORA_COLORS.length];
+        ctx.fillRect(plant.x * cellW, plant.y * cellH, cellW, cellH);
+
+        if (showWoodiness && cellW >= 3) {
+          ctx.fillStyle = 'rgba(217, 119, 6, 0.45)';
+          const coreW = Math.max(1, cellW * 0.4);
+          const coreH = Math.max(1, cellH * 0.4);
+          ctx.fillRect(plant.x * cellW + (cellW - coreW) / 2, plant.y * cellH + (cellH - coreH) / 2, coreW, coreH);
+        }
       }
     }
 
     drawGridLines();
-    drawSwarmMarkers(preview.swarms || [], { preview: true });
 
-    updateLegend(
-      (preview.flora_species || []).map(flora => ({
-        name: flora.name,
-        color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
-      })),
-      (preview.herbivore_species || []).map(herbivore => ({
-        name: herbivore.name,
-        color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
-      }))
-    );
-    if ((preview.mycorrhizal_links || []).length > 0) {
-      updateLegend(
-        (preview.flora_species || []).map(flora => ({
-          name: flora.name,
-          color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
-        })),
-        (preview.herbivore_species || []).map(herbivore => ({
-          name: herbivore.name,
-          color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
-        })),
-        [{ name: 'Potential root link', color: '#60a5fa' }]
-      );
+    if (showSwarms) {
+      drawSwarmMarkers(preview.swarms || [], { preview: true });
     }
+
+    if (hoveredCell) {
+      drawHoverCrosshair(hoveredCell);
+    }
+
+    const floraLegend = (preview.flora_species || []).map(flora => ({
+      name: flora.name,
+      color: FLORA_COLORS[flora.species_id % FLORA_COLORS.length],
+    }));
+    const swarmLegend = (preview.herbivore_species || []).map(herbivore => ({
+      name: herbivore.name,
+      color: SWARM_COLORS[herbivore.species_id % SWARM_COLORS.length],
+    }));
+    const extras = [];
+    if (showMycorrhiza && (preview.mycorrhizal_links || []).length > 0) {
+      extras.push({ name: 'Potential root link', color: '#60a5fa' });
+    }
+
+    updateLegend(floraLegend, swarmLegend, extras);
 
     const plants = (preview.plants || []).length;
     const swarms = (preview.swarms || []).length;
-    modeBadge.textContent = plants + swarms > 0 ? `Preview (${plants}🌿 ${swarms}🐛)` : 'Draft - No placements';
+    modeBadge.textContent = plants + swarms > 0 ? `Step 0 (${plants}🌿 ${swarms}🐛)` : 'Draft - No placements';
     modeBadge.className = plants + swarms > 0
       ? 'px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap bg-blue-100 text-blue-700'
       : 'px-2 py-0.5 rounded-full font-medium text-xs whitespace-nowrap bg-amber-100 text-amber-700';
@@ -1714,5 +1737,9 @@
   window.addEventListener('resize', handleResize);
 
   document.body.addEventListener('htmx:afterSwap', handleAfterSwap);
+
+  document.querySelectorAll('[id^="layer-toggle-"]').forEach(el => {
+    el.addEventListener('change', draw);
+  });
 })();
 </script>
