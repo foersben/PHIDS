@@ -136,6 +136,16 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         ge=1,
         description="Number of ticks to execute a repelled random walk when physically jostled due to overcrowding.",
     )
+    incidental_mortality_factor: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Sensitivity factor for incidental seedling destruction per coordinate entry.",
+    )
+    incidental_mortality_mode: Literal["trampling", "consumption"] = Field(
+        default="trampling",
+        description="Incidental mortality mechanism: 'trampling' (crush) or 'consumption' (clipping).",
+    )
 
 
 class DietCompatibilityMatrix(StrictBaseModel):

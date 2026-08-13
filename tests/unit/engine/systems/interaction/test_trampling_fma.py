@@ -17,13 +17,14 @@ from phids.engine.systems.interaction.movement import (
 
 
 def test_zero_mass_full_vulnerability() -> None:
-    """Validate that zero structural mass (seedling) yields maximum vulnerability (1.0)."""
+    """Validate that zero structural mass (seedling) yields maximum vulnerability (1.0) when p_max=1.0."""
     # max_structural_mass = 0.0 -> fallback vulnerability = 1.0
     prob = _compute_trample_probability_jit(
         swarm_population=100,
         trample_factor=0.01,
         structural_mass=0.0,
         max_structural_mass=0.0,
+        p_max=1.0,
     )
     # 100 * 0.01 * 1.0 = 1.0
     assert prob == 1.0

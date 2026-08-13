@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING
 from numba import njit
 
 from phids.engine.components.plant import PlantComponent
-from phids.shared.constants import M_STRUCTURAL_SEED_VALUE
+from phids.shared.constants import M_STRUCTURAL_SEED_VALUE, STRUCTURAL_UPKEEP_SCALAR
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
@@ -89,6 +89,33 @@ def _grow_structural_mass_jit(
     return new_mass if new_mass < max_mass else max_mass
 
 
+@njit(cache=True)  # pragma: no cover
+def _calculate_structural_upkeep_jit(
+    survival_threshold: float,
+    structural_mass: float,
+    max_structural_mass: float,
+    upkeep_scalar: float,
+) -> float:
+    """Numba-compiled M_structural-scaled maintenance cost calculation kernel.
+
+    Calculates the maintenance cost required to maintain lignified structural tissue.
+    Fee scales linearly with structural_mass / max_structural_mass ratio.
+
+    Args:
+        survival_threshold: Plant survival threshold energy.
+        structural_mass: Current M_structural value.
+        max_structural_mass: Species ceiling for M_structural.
+        upkeep_scalar: Maintenance scaling multiplier (from shared/constants.py).
+
+    Returns:
+        Energy maintenance fee to deduct per lifecycle tick.
+    """
+    if max_structural_mass <= 0.0:
+        return 0.0
+    mass_ratio = min(1.0, max(0.0, structural_mass / max_structural_mass))
+    return survival_threshold * upkeep_scalar * mass_ratio
+
+
 def _grow(
     plant: PlantComponent,
     tick: int,
@@ -123,11 +150,13 @@ def _grow_structural(
         plant: PlantComponent whose M_structural should grow.
         env: GridEnvironment to update the structural_mass write layer.
     """
-    effective_max = plant.max_structural_mass if plant.max_structural_mass > 0.0 else plant.max_energy
+    if plant.max_structural_mass <= 0.0:
+        return
+
     new_mass = _grow_structural_mass_jit(
         plant.structural_mass,
         plant.growth_rate_structural,
-        effective_max,
+        plant.max_structural_mass,
         SLOW_TICK_STRIDE,
     )
     plant.structural_mass = new_mass
@@ -515,6 +544,13 @@ def run_lifecycle(
         # Growth (Caloric Energy & Permanent Structural Mass)
         _grow(plant, tick)
         _grow_structural(plant, env)
+
+        # Plan 3: Deduct M_structural-scaled maintenance cost
+        upkeep_fee = _calculate_structural_upkeep_jit(
+            plant.survival_threshold, plant.structural_mass, plant.max_structural_mass, STRUCTURAL_UPKEEP_SCALAR
+        )
+        if upkeep_fee > 0.0:
+            plant.energy = max(0.0, plant.energy - upkeep_fee)
 
         # Apply continuous mycorrhizal carbon tax (256-bit SIMD JIT helper)
         if plant.mycorrhizal_tax_per_link > 0.0 and plant.mycorrhizal_connections:
