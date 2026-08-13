@@ -163,6 +163,46 @@ def _extract_chart_series(
     return labels, series
 
 
+def _overlay_flora_data(
+    row: dict[str, object],
+    series: dict[str, list[float]],
+    flora_ids: list[int],
+    i: int,
+) -> None:
+    """Overlay a single row of flora data onto the chart series arrays."""
+    if not flora_ids:
+        return
+    plant_pop = row.get("plant_pop_by_species", {})
+    plant_energy = row.get("plant_energy_by_species", {})
+    defense_cost = row.get("defense_cost_by_species", {})
+
+    if not (isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict)):
+        return
+
+    for fid in flora_ids:
+        if i < len(series.get(f"plant_{fid}_pop", [])):
+            series[f"plant_{fid}_pop"][i] = _safe_float(plant_pop.get(fid, 0))
+            series[f"plant_{fid}_energy"][i] = _safe_float(plant_energy.get(fid, 0.0))
+            series[f"defense_cost_{fid}"][i] = _safe_float(defense_cost.get(fid, 0.0))
+
+
+def _overlay_herbivore_data(
+    row: dict[str, object],
+    series: dict[str, list[float]],
+    herbivore_ids: list[int],
+    i: int,
+) -> None:
+    """Overlay a single row of herbivore data onto the chart series arrays."""
+    if not herbivore_ids:
+        return
+    swarm_pop = row.get("swarm_pop_by_species", {})
+    if not isinstance(swarm_pop, dict):
+        return
+    for hid in herbivore_ids:
+        if i < len(series.get(f"swarm_{hid}_pop", [])):
+            series[f"swarm_{hid}_pop"][i] = _safe_float(swarm_pop.get(hid, 0))
+
+
 def _extract_chart_series_df(
     df: pl.DataFrame,
     flora_ids: list[int],
@@ -254,20 +294,8 @@ async def telemetry_chartjs_data(
     raw_rows_for_species = _filter_telemetry_rows_for_chart(raw_rows, run_id, current_run_id, since_tick)
     if flora_ids or herbivore_ids:
         for i, r in enumerate(raw_rows_for_species):
-            plant_pop = r.get("plant_pop_by_species", {})
-            plant_energy = r.get("plant_energy_by_species", {})
-            defense_cost = r.get("defense_cost_by_species", {})
-            if isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict):
-                for fid in flora_ids:
-                    if i < len(series.get(f"plant_{fid}_pop", [])):
-                        series[f"plant_{fid}_pop"][i] = _safe_float(plant_pop.get(fid, 0))
-                        series[f"plant_{fid}_energy"][i] = _safe_float(plant_energy.get(fid, 0.0))
-                        series[f"defense_cost_{fid}"][i] = _safe_float(defense_cost.get(fid, 0.0))
-            swarm_pop = r.get("swarm_pop_by_species", {})
-            if isinstance(swarm_pop, dict):
-                for hid in herbivore_ids:
-                    if i < len(series.get(f"swarm_{hid}_pop", [])):
-                        series[f"swarm_{hid}_pop"][i] = _safe_float(swarm_pop.get(hid, 0))
+            _overlay_flora_data(r, series, flora_ids, i)
+            _overlay_herbivore_data(r, series, herbivore_ids, i)
 
     return JSONResponse(
         {
