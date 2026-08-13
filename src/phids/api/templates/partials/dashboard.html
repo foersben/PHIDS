@@ -817,11 +817,27 @@
     if (simPlantsColumnar && isColumnarEntityTable(simPlantsColumnar)) {
       for (let i = 0; i < simPlantsColumnar.x.length; i++) {
         if (simPlantsColumnar.x[i] === x && simPlantsColumnar.y[i] === y) {
+          const speciesParams = (simData.all_flora_species || []).find(s => s.species_id === simPlantsColumnar.species_id[i])
+                             || (simData.flora_species || []).find(s => s.species_id === simPlantsColumnar.species_id[i]);
+          const maxEnergy = (simPlantsColumnar.max_energy && Number(simPlantsColumnar.max_energy[i]) > 0)
+            ? Number(simPlantsColumnar.max_energy[i])
+            : (speciesParams ? Number(speciesParams.max_energy || 100) : 100);
+          const maxStruct = (simPlantsColumnar.max_structural_mass && Number(simPlantsColumnar.max_structural_mass[i]) > 0)
+            ? Number(simPlantsColumnar.max_structural_mass[i])
+            : (speciesParams ? Number(speciesParams.structural_mass_max || speciesParams.max_structural_mass || 0) : 0);
           const structMass = simPlantsColumnar.structural_mass ? Number(simPlantsColumnar.structural_mass[i] || 0) : 0;
-          const maxStruct = simPlantsColumnar.max_structural_mass ? Number(simPlantsColumnar.max_structural_mass[i] || 0) : 0;
-          const maxEnergy = simPlantsColumnar.max_energy ? Number(simPlantsColumnar.max_energy[i] || 100) : 100;
-          const fragilityPct = simPlantsColumnar.fragility_pct ? Number(simPlantsColumnar.fragility_pct[i] ?? 100) : 100;
-          const riskLevel = simPlantsColumnar.incidental_risk_level ? simPlantsColumnar.incidental_risk_level[i] : 'High Risk';
+
+          const structRatio = maxStruct > 0 ? structMass / maxStruct : 0;
+          const calculatedFragility = maxStruct > 0 ? Math.max(0, (1 - structRatio) * 100) : 100;
+          const fragilityPct = (simPlantsColumnar.fragility_pct && simPlantsColumnar.fragility_pct[i] != null)
+            ? Number(simPlantsColumnar.fragility_pct[i])
+            : calculatedFragility;
+
+          let riskLevel = 'High Risk';
+          if (maxStruct > 0 && structMass >= maxStruct) riskLevel = 'Immune';
+          else if (fragilityPct > 60) riskLevel = 'High Risk';
+          else if (fragilityPct > 20) riskLevel = 'Medium Risk';
+          else riskLevel = 'Low Risk';
 
           plantsAtCell.push({
             entity_id: simPlantsColumnar.entity_id[i],
@@ -871,7 +887,7 @@
       });
       return {
         ...plant,
-        max_energy: null,
+        max_energy: plant.max_energy || 100,
         growth_rate: null,
         camouflage: false,
         camouflage_factor: null,

@@ -210,6 +210,21 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
     plants = []
     for entity in world.query(PlantComponent):
         p = entity.get_component(PlantComponent)
+        struct_mass = float(p.structural_mass)
+        max_struct = float(p.max_structural_mass)
+        struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
+        fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
+        fragility_pct = min(100.0, max(0.0, fragility * 100.0))
+
+        if max_struct > 0.0 and struct_mass >= max_struct:
+            risk_level = "Immune"
+        elif fragility > 0.6:
+            risk_level = "High Risk"
+        elif fragility > 0.2:
+            risk_level = "Medium Risk"
+        else:
+            risk_level = "Low Risk"
+
         plants.append(
             {
                 "entity_id": p.entity_id,
@@ -217,6 +232,11 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
                 "x": p.x,
                 "y": p.y,
                 "energy": float(p.energy),
+                "max_energy": float(p.max_energy),
+                "structural_mass": struct_mass,
+                "max_structural_mass": max_struct,
+                "fragility_pct": fragility_pct,
+                "incidental_risk_level": risk_level,
                 "root_link_count": len(p.mycorrhizal_connections),
                 "mycorrhizal_connections": set(p.mycorrhizal_connections),
             }
