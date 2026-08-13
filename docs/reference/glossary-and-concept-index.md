@@ -21,7 +21,7 @@ resources:
 - ../technical_architecture/telemetry.md
 - ../scientific_model/index.md
 - ../scenario_guide/scenario_authoring.md
-- ../scientific_model/future_prospects/biological_abstractions_and_grid_mechanics.md
+- ../scientific_model/future_prospects/biological_abstractions.md
 ---
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary
@@ -146,7 +146,7 @@ than a single energy scalar:
 The separation eliminates the need for discrete state enums (which cause CPU branch mispredictions
 in Numba SIMD loops) by expressing all seven phenological phases as branchless float threshold masks.
 
-See: [`biological_abstractions_and_grid_mechanics.md`](../scientific_model/future_prospects/biological_abstractions_and_grid_mechanics.md),
+See: [`biological_abstractions.md`](../scientific_model/future_prospects/biological_abstractions.md),
 [`engine_execution.md`](../technical_architecture/engine_execution.md)
 
 ### Double Buffering

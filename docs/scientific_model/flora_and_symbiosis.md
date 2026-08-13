@@ -175,7 +175,7 @@ Constitutive defenses act strictly as quantitative or structural barriers during
 As of **Implementation Plan 1 (Core ECS Array Expansion)**, `PlantComponent` carries two structural
 mass fields alongside the established caloric energy fields. These fields are the ECS-level runtime
 reflection of the **Decoupled Dual-Proxy Architecture** described in
-[`biological_abstractions_and_grid_mechanics.md`](future_prospects/biological_abstractions_and_grid_mechanics.md).
+[`biological_abstractions.md`](future_prospects/biological_abstractions.md).
 
 | Field | Type | Default | Semantics |
 |---|---|---|---|

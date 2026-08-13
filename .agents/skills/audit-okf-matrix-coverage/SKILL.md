@@ -11,7 +11,7 @@ tags:
 - data-flow-matrix
 timestamp: "2026-08-14T00:30:00Z"
 resources:
-- docs/development_guide/okf_data_flow_matrix_architecture.md
+- docs/development_guide/okf_data_flow_matrices.md
 name: Audit OKF Matrix Coverage
 ---
 

@@ -34,7 +34,7 @@ This document aggregates PHIDS test suite topography, taxonomy, scientific invar
 
 The PHIDS testing rig is architecturally partitioned into distinct domain-focused layers mapping data flow from pure component contracts and physical conservation laws to live transport streams and bit-exact Zarr replay buffers.
 
-```
+```text
 tests/
 ├── integration/
 │   └── scientific_invariants/
@@ -147,7 +147,7 @@ where $\vec{v}(x,y)$ is the wind velocity field, $D$ is the isotropic diffusion 
     * **Implementation:** Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/main/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L17-L49).
 
 3. **Subnormal Float Clamping (`SIGNAL_EPSILON`):**
-    * **Mechanism:** As chemical signals decay exponentially, concentration values drop into IEEE 754 subnormal (denormalized) floating-point ranges ($< 10^{-308}$). On x86_64 CPUs, processing subnormal floats in Numba FPU pipelines triggers microcode fallbacks, causing a 10x–100x performance penalty.
+    * **Mechanism:** As chemical signals decay exponentially, concentration values drop into IEEE 754 subnormal (denormalized) floating-point ranges ($< 10^{-308}$). On x86_64 CPUs, processing subnormal floats in Numba FPU pipelines triggers microcode fallbacks, causing a 10x-100x performance penalty.
     * **Implementation:** `_numba_diffuse_signal_layer` explicitly zeroes out any concentration falling below `SIGNAL_EPSILON` ($1\times 10^{-4}$). Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/main/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L52-L80) to prove zero tail leakage.
 
 #### Thermodynamic First Law & Non-Linear Kinetics
@@ -183,7 +183,7 @@ where $\vec{v}(x,y)$ is the wind velocity field, $D$ is the isotropic diffusion 
 
 ### 2. Rationale: Why and How We Implemented Scientific Invariant Tests
 
-* **Why We Chose This Approach:** Standard software unit tests only check if a function returns an expected scalar given static inputs. In complex multi-agent reaction-diffusion ecosystems, functional correctness is insufficient—the engine must satisfy fundamental physical conservation laws and asymptotic mathematical bounds. Without these invariants, hidden numerical drift can invalidate scientific simulation findings.
+* **Why We Chose This Approach:** Standard software unit tests only check if a function returns an expected scalar given static inputs. In complex multi-agent reaction-diffusion ecosystems, functional correctness is insufficient - the engine must satisfy fundamental physical conservation laws and asymptotic mathematical bounds. Without these invariants, hidden numerical drift can invalidate scientific simulation findings.
 * **How We Implemented It:** We isolated all conservation checks into dedicated subpackages ([pde_conservation/](https://github.com/foersben/PHIDS/tree/main/tests/integration/scientific_invariants/pde_conservation) and [thermodynamics/](https://github.com/foersben/PHIDS/tree/main/tests/integration/scientific_invariants/thermodynamics)), tagged them with `@pytest.mark.scientific_invariant`, and coupled them with exact floating-point tolerance assertions (`np.testing.assert_allclose`, `math.isclose`).
 
 ## Deep-Dive: Property-Based Testing with Hypothesis

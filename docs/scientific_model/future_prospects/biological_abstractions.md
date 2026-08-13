@@ -16,7 +16,7 @@ timestamp: "2026-08-13T19:30:00Z"
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/flora_and_symbiosis.md
-- docs/roadmap.md
+- docs/development_guide/development_guide/roadmap.md
 - src/phids/api/schemas/species.py
 - src/phids/engine/components/plant.py
 - src/phids/engine/components/swarm.py

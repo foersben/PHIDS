@@ -15,7 +15,7 @@ resources:
 - api.md
 - ../development_guide/contribution_workflow.md
 - ../technical_architecture/interfaces_and_ui.md
-- ../scientific_model/future_prospects/biological_abstractions_and_grid_mechanics.md
+- ../scientific_model/future_prospects/biological_abstractions.md
 ---
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended
@@ -363,13 +363,12 @@ Narrative docs:
 
 If you know the symbol but not the page, start here:
 
-* `SimulationLoop` → `docs/technical_architecture/engine_execution.md`
-* `DraftState` → `docs/technical_architecture/interfaces_and_ui.md`
-If the symbol is known but the corresponding page is not, start here:
+* `SimulationLoop` - [`docs/technical_architecture/engine_execution.md`](../technical_architecture/engine_execution.md)
+* `DraftState` - [`docs/technical_architecture/interfaces_and_ui.md`](../technical_architecture/interfaces_and_ui.md)
+* `PlantComponent` - [`docs/scientific_model/flora_and_symbiosis.md`](../scientific_model/flora_and_symbiosis.md)
+* `GridEnvironment` - [`docs/technical_architecture/engine_execution.md`](../technical_architecture/engine_execution.md)
 
-* `module-map.md` (this file) - to find which module the symbol belongs to.
-
-### 2. Narrative vs. API Reference
+### Narrative vs. API Reference
 
 Use the narrative chapters for resolving:
 
@@ -387,4 +386,4 @@ Use the API reference for resolving:
 
 * For rendered symbol-level API docs: [`api.md`](api.md)
 * For contributor-facing documentation rules: [`../development_guide/contribution_workflow.md`](../development_guide/contribution_workflow.md)
-* For the repository-facing summary:
+* For the overall project overview: [`index.md`](../index.md)
