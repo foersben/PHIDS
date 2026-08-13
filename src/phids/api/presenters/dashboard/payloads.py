@@ -210,8 +210,13 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
     plants = []
     for entity in world.query(PlantComponent):
         p = entity.get_component(PlantComponent)
+        max_struct = float(p.max_structural_mass) if p.max_structural_mass > 0.0 else float(p.max_energy)
         struct_mass = float(p.structural_mass)
-        max_struct = float(p.max_structural_mass)
+        if struct_mass <= 0.0 and max_struct > 0.0:
+            struct_mass = max_struct * min(1.0, max(0.0, float(p.energy) / max_struct))
+            p.structural_mass = struct_mass
+            p.max_structural_mass = max_struct
+
         struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
         fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
         fragility_pct = min(100.0, max(0.0, fragility * 100.0))
