@@ -73,6 +73,26 @@ As depicted in the flowchart, the engine does not evaluate every biological proc
 5. **Telemetry**: Records a metrics snapshot of the current tick, and appends raw arrays to the Zarr replay buffer and Polars telemetry exporter.
 6. **Termination Check**: Evaluates configured extinction ($Z_2, Z_4$), max energy ($Z_6$), max tick, and population ($Z_7$) threshold limits.
 
+### Time and Causality: The Temporal Window ($\Delta t$)
+
+A common source of confusion when analyzing discrete-event simulators is the concept of "instantaneous" propagation. When observing the simulation advance from **Tick 0 to Tick 1**, it may appear as though triggers fire, chemicals are produced, emissions occur, and dispersion spreads across the grid all in "0 time."
+
+In reality, **a single tick represents a specific duration of biological time ($\Delta t$)**, configured as 1 Hour of simulated time. The sequence of phases within a tick represents what happens *during* that temporal window.
+
+When the CPU executes `SimulationLoop.step()`, it is not processing a single instant, but evaluating the integral of causality over that 1-hour window. The mathematical sequence guarantees that cause-and-effect hold true within the duration of the tick.
+
+| Tick | Phase | Biological Event (Simulated Time = 1 Hour per Tick) |
+| :--- | :--- | :--- |
+| **Tick 0** | **Initialization** | Scenario is loaded. Initial plants are placed with full energy. No herbivory has occurred yet. Signal layers are uniformly zero. |
+| **Tick 1** | **Phase 1: Flow-Field** | The global guidance gradient is computed based on initial plant placements. Herbivores detect where food is located. |
+| **Tick 1** | **Phase 3a: Movement** | Herbivore swarms follow the gradient and move onto plant cells. |
+| **Tick 1** | **Phase 3b: Foraging** | *(Executes only if tick % 24 == 0)*: Herbivore bites the plant. The plant's energy is deducted in its `_write` layer. |
+| **Tick 1** | **Phase 4: Signaling** | The plant's condition trigger evaluates the newly applied grazing load. The threshold is crossed, and a VOC is emitted into the air. |
+| **Tick 1** | **Phase 4: Dispersion** | The advection-diffusion stencil calculates how far the gas spreads. **Crucially, the gas only disperses as far as physics dictates it can travel in exactly 1 hour ($\Delta t$).** It does not instantly cross the map. |
+| **Tick 2** | **Phase 1: Flow-Field** | The simulation clock advances by another hour. The flow-field now incorporates the partially spread VOC from Tick 1. The cloud will continue to diffuse further during Tick 2's Phase 4. |
+
+Because the simulator is *discrete* (calculating in chunks rather than continuously), the CPU must process events sequentially to determine the final state at the end of the hour. **Double-buffering** ensures that Phase 4 can "see" the bite that occurred in Phase 3b, allowing the entire causal chain (bite $\rightarrow$ trigger $\rightarrow$ emission $\rightarrow$ 1-hour of dispersion) to resolve physically correctly within the same tick step.
+
 ## Entity Component System (ECS) & Spatial Hashing
 
 Entities in PHIDS are lightweight, data-only records lacking encapsulated logic. System functions iterate over specific intersections of component types, separating memory allocation from logic execution. This ensures maximum cache coherence and rapid loop traversal.
@@ -277,7 +297,7 @@ At the conclusion of the herbivory interaction phase, `GridEnvironment.rebuild_e
 This method now implements the **Decoupled Dual-Proxy Architecture** by processing two distinct physical quantities in a single coordinated buffer-swap:
 
 | Proxy | Dtype | Array shape | Buffer pairs |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `E_current` (caloric energy) | `float64` | `(MAX_FLORA_SPECIES, W, H)` | `plant_energy_by_species` / `_write` |
 | `M_structural` (lignin mass) | `float32` | `(MAX_FLORA_SPECIES, W, H)` | `structural_mass_by_species` / `_write` |
 
@@ -348,7 +368,7 @@ def _numba_decay_signal_layer(layer: np.ndarray, decay_factor: float, epsilon: f
     layer[layer < epsilon] = 0.0
 ```
 
-By executing array scaling in-place across 256-bit YMM vector registers and zeroing out values below `SIGNAL_EPSILON`, airborne VOC decay achieves a **~10% – 15% speedup** without temporary array allocations.
+By executing array scaling in-place across 256-bit YMM vector registers and zeroing out values below `SIGNAL_EPSILON`, airborne VOC decay achieves a **~10% - 15% speedup** without temporary array allocations.
 
 ### 10. Spatial Hash Entity Query Buffer Reuse (`ecs.py` & `spatial.py`)
 
@@ -356,7 +376,7 @@ Spatial grid lookups (`ECSWorld.entities_at(x, y)`) return occupant entity IDs a
 
 #### Singleton Set Reuse Architecture
 
-Unoccupied grid cells return a module-level `EMPTY_SET = frozenset[int]()` singleton instead of instantiating fresh `set()` objects on the heap per query. This eliminates **~8% – 12%** of Python garbage collector allocation churn in spatial interaction passes (`_co_located_swarm_population` in `spatial.py`).
+Unoccupied grid cells return a module-level `EMPTY_SET = frozenset[int]()` singleton instead of instantiating fresh `set()` objects on the heap per query. This eliminates **~8% - 12%** of Python garbage collector allocation churn in spatial interaction passes (`_co_located_swarm_population` in `spatial.py`).
 
 ### 11. Pre-Compiled Foraging Parameter Caching (`feeding.py`)
 
@@ -380,7 +400,7 @@ class CachedHerbivoreForagingParams:
     morphological_adaptation: float
 ```
 
-Bypassing dynamic `getattr` and double-nested Pydantic property lookups yields a **~10% – 15%** faster feeding interaction resolution on medium-tick foraging steps.
+Bypassing dynamic `getattr` and double-nested Pydantic property lookups yields a **~10% - 15%** faster feeding interaction resolution on medium-tick foraging steps.
 
 ### 12. Spatial-Hash Mediated Toxin Exposure (`emission.py`)
 
@@ -393,7 +413,7 @@ To avoid iterating over all swarms in the ECS world during localized chemical de
 - **Localized Toxin Exposure (`num_active_cells < num_swarms`)**: Evaluates Spatial Hash occupancy (`world.entities_at(x, y)`) restricted strictly to grid cells with non-zero toxin concentration, bypassing $O(N_\text{swarms})$ iteration across un-exposed regions.
 - **Saturated Toxin Exposure Fallback (`num_active_cells >= num_swarms`)**: Automatically falls back to direct `world.query(SwarmComponent)` when toxin plumes are fully saturated across the grid, preventing spatial cell iteration overhead.
 
-This optimization yields a **~15% – 25%** speedup in signaling phase execution for localized chemical defense emissions while guaranteeing zero performance degradation during global plume saturation.
+This optimization yields a **~15% - 25%** speedup in signaling phase execution for localized chemical defense emissions while guaranteeing zero performance degradation during global plume saturation.
 
 ### 13. Tile Population Grid Lookup & JIT-Accelerated Accumulation (`population.py` & `movement.py`)
 
@@ -417,7 +437,7 @@ def _accumulate_tile_population_jit(
         tile_populations[y * width + x] += delta
 ```
 
-Bypassing per-swarm spatial hash traversals and Python list allocations yields a **~10% – 18%** reduction in movement resolution latency under high swarm density scenarios.
+Bypassing per-swarm spatial hash traversals and Python list allocations yields a **~10% - 18%** reduction in movement resolution latency under high swarm density scenarios.
 
 ### 14. Power-of-2 Bitwise Neighbor Masking in Jacobi Flow Relaxation (`flow_field.py`)
 
@@ -456,7 +476,7 @@ def _propagate_iteration_jit_pow2(
     return max_diff
 ```
 
-Replacing modulo division `% width` with single-cycle bitwise AND `& mask_x` and consolidating boundary and inner passes into a single contiguous 2D loop pass yields a **~8% – 14%** speedup in flow field propagation passes.
+Replacing modulo division `% width` with single-cycle bitwise AND `& mask_x` and consolidating boundary and inner passes into a single contiguous 2D loop pass yields a **~8% - 14%** speedup in flow field propagation passes.
 
 ### 15. Subnormal Float Flushing & `fastmath=True` Hardware Optimization (`biotope.py`, `flow_field.py`, `movement.py`)
 
@@ -485,7 +505,7 @@ def _numba_convolve_signal_layer(
     write_buffer[x, y] = v
 ```
 
-Enabling `fastmath=True` allows LLVM to generate Fused Multiply-Add (`vfmadd213pd`) instructions across 256-bit AVX2 registers while eliminating hardware denormal microcode traps (**~20% – 40%** throughput improvement on long simulation runs).
+Enabling `fastmath=True` allows LLVM to generate Fused Multiply-Add (`vfmadd213pd`) instructions across 256-bit AVX2 registers while eliminating hardware denormal microcode traps (**~20% - 40%** throughput improvement on long simulation runs).
 
 ### 16. Multi-Threaded JIT Parallelization & Adaptive Dispatch Thresholds (`flow_field.py`, `biotope.py`, `batch.py`)
 
@@ -500,7 +520,7 @@ NUMBA_PARALLEL_THRESHOLD_CELLS: Final[int] = 128 * 128  # 16,384 cells
 use_parallel = width * height >= NUMBA_PARALLEL_THRESHOLD_CELLS
 ```
 
-Grids exceeding 16,384 cells dispatch directly to OpenMP multi-threaded row partitioning, yielding a **300% – 600% (3x – 6x)** macro throughput scaling on multi-core workstations.
+Grids exceeding 16,384 cells dispatch directly to OpenMP multi-threaded row partitioning, yielding a **300% - 600% (3x - 6x)** macro throughput scaling on multi-core workstations.
 
 #### Monte Carlo Batch Processing Thread Isolation
 

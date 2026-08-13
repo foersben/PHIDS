@@ -77,7 +77,11 @@ Home = "index.md"
     { "Part V: Ecosystem Synthesis" = [
         { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
     ] },
+    { "Part VI: Scientific Invariants" = [
+        { "Signaling Triggers" = "invariants/signaling_triggers.md" },
+    ] },
     { "Future Prospects" = [
+        { "Biological Abstractions & Grid Mechanics" = "scientific_model/future_prospects/biological_abstractions_and_grid_mechanics.md" },
         { "Parameter Calibration Strategy" = "scientific_model/future_prospects/parameter_calibration_strategy.md" },
         { "Spatiotemporal Scaling Architecture" = "scientific_model/future_prospects/spatiotemporal_scaling.md" },
     ] },
@@ -118,6 +122,7 @@ Scenarios = [
     { "Strategic Roadmap" = "roadmap.md" },
     { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
     { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
+    { "Data-Flow Matrix Architecture" = "development_guide/okf_data_flow_matrix_architecture.md" },
     { "Module Map" = "reference/module-map.md" },
     { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
     { "Requirements Traceability" = "reference/requirements-traceability.md" },

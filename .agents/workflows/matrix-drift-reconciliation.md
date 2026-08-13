@@ -1,0 +1,22 @@
+---
+type: workflow
+title: Automated Matrix Drift Reconciliation
+status: active
+version: 1.0
+description: Automated workflow for detecting, reconciling, and updating documented Data-Flow Matrices when engine parameters or telemetry drift.
+tags:
+- workflow
+- data-flow-matrix
+- drift
+- reconciliation
+timestamp: "2026-08-14T00:30:00Z"
+resources:
+- docs/development_guide/okf_data_flow_matrix_architecture.md
+---
+
+# Sequence
+
+1. **Drift Detection (`@causal-verifier`):** Detect numerical drift between simulation telemetry trace and documented Markdown matrix tables during background CI or DSE runs.
+2. **Candidate Diff Generation (`@matrix-auditor`):** Execute skill `auto-reconcile-matrix-drift` to capture the new trace output and generate an updated Markdown table diff.
+3. **Review & Alignment (`@orchestrator`):** Present the reconciled table diff to the user for explicit approval.
+4. **Git Sign & Commit (`@git-operator`):** Commit and push the approved specification update with a GPG-signed commit.
