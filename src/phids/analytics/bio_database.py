@@ -109,7 +109,7 @@ class BioDatabase:
             ImportError: If duckdb is not installed.
         """
         try:
-            import duckdb
+            import duckdb  # type: ignore[import-not-found]
         except ImportError:
             raise ImportError("duckdb is required to use from_duckdb()") from None
 

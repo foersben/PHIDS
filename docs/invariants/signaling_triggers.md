@@ -1,4 +1,19 @@
-# PHIDS Signaling Trigger Invariants
+---
+type: reference
+title: PHIDS Signaling Trigger Invariants
+status: active
+version: 1.0
+description: Core architectural and behavioral invariants governing plant signaling trigger synthesis, activation gates, and re-arming state machines.
+tags:
+  - signaling
+  - triggers
+  - engine
+  - invariants
+timestamp: "2026-08-13T17:58:00Z"
+resources: []
+---
+
+## Overview
 
 ## Core Mechanism
 
@@ -14,7 +29,7 @@ However, this identical state vector (`active=False`, `synthesis_remaining=0`) w
 
 Additionally, `_process_single_trigger` bypassed the `activation_condition` check entirely for `SynthesizeSubstanceAction`, resulting in synthesis commencing regardless of the activation condition's satisfaction.
 
-## Extracted Trigger Lifecyle Invariants
+## Extracted Trigger Lifecycle Invariants
 
 The rigorous testing and refactoring process identified the following core behavioral invariants that must hold true for all signaling triggers:
 
