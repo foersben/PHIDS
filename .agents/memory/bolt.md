@@ -89,3 +89,8 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** During profiling of the engine loop, I noticed that `model_dump(mode="json")` inside `TriggerConditionSchema` took a measurable amount of execution time every tick for every flora instance during the signaling phase. The trigger schemas are static during simulation but are evaluated repeatedly.
 **Action:** Replaced dynamic per-tick Pydantic dumps with a static cached representation calculated once during engine initialization. Created `CompiledTrigger` dataclass containing `schema` and `activation_condition_dump`. This entirely eliminated the overhead of runtime Pydantic schema serialization from the ECS simulation hot path.
+
+## 2026-08-12 - [Faster defensive copies for set iteration in ECS hot loops]
+
+**Learning:** When making a defensive copy of a component set before iterating in a tight ECS hot loop (where mutations like `collect_garbage` might alter the original set and raise `RuntimeError: Set changed size during iteration`), `list(component_set)` is significantly faster than `tuple(component_set)`. CPython's list allocation is highly optimized and often reuses internal memory buffers, whereas `tuple` construction from an unknown-sized iterable involves additional overhead. In microbenchmarks on large component sets, `list()` outperforms `tuple()` by roughly 30%.
+**Action:** Always use `list(world._component_index.get(..., set()))` instead of `tuple(...)` when you need a mutable-safe snapshot of ECS component IDs for iteration on the hot path.

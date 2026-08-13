@@ -260,13 +260,12 @@ def _weighted_field_choice_jit(
     total_w = 0.0
     for i in range(count):
         weights[i] = (adjusted_scores[i] - min_score) + 1e-6
-        if tile_populations is not None and width > 0 and current_x >= 0 and current_y >= 0:
-            is_current = 1.0 if (c_x[i] == current_x and c_y[i] == current_y) else 0.0
-            pop = tile_populations[c_y[i] * width + c_x[i]]
-            under_capacity = 1.0 if (pop <= max_capacity) else 0.0
-            mask = 1.0 if (is_current > 0.0 or under_capacity > 0.0) else 0.0
-            weights[i] *= mask
         total_w += weights[i]
+
+    if tile_populations is not None and width > 0 and current_x >= 0 and current_y >= 0:
+        total_w = _apply_branchless_capacity_mask_jit(
+            count, current_x, current_y, width, c_x, c_y, tile_populations, max_capacity, weights
+        )
 
     if total_w <= 0.0:
         return (current_x if current_x >= 0 else c_x[0]), (current_y if current_y >= 0 else c_y[0])
