@@ -135,8 +135,8 @@ Primary responsibility:
 
 Modules and symbols:
 
-* `phids.engine.components.plant` - `PlantComponent` (includes `structural_mass` and `max_structural_mass` dual-proxy fields as of Plan 1)
-* `phids.engine.components.swarm` - `SwarmComponent`
+* `phids.engine.components.plant` - `PlantComponent` (includes `structural_mass`, `max_structural_mass`, and `growth_rate_structural` dual-proxy fields)
+* `phids.engine.components.swarm` - `SwarmComponent` (includes `last_caloric_intake` and `metabolism_upkeep` MVT fields)
 * `phids.engine.components.substances` - `SubstanceComponent`
 
 Narrative docs:

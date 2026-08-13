@@ -2,7 +2,7 @@
 type: scientific_model
 title: Flora Lifecycle and Symbiotic Networks
 status: active
-version: 0.2
+version: 0.3
 description: Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS framework.
 tags:
 - phids
@@ -182,7 +182,16 @@ reflection of the **Decoupled Dual-Proxy Architecture** described in
 | `energy` | `float` | from schema | Current caloric health ($E_{current}$). Decreases from herbivory and mycorrhizal taxes. |
 | `max_energy` | `float` | from schema | Species ceiling for caloric storage. |
 | `structural_mass` | `float` | `0.0` | Permanent lignin / woodiness ($M_{structural}$). Never decreased by herbivory. |
-| `max_structural_mass` | `float` | `0.0` | Species ceiling for structural mass (populated from DB in Plan 2). |
+| `max_structural_mass` | `float` | from DB schema | Species ceiling for structural mass (sourced from `FloraSpeciesParams.structural_mass_max`). |
+| `growth_rate_structural` | `float` | `0.01` | Fractional $M_{structural}$ growth per slow-loop gate (168-tick weekly stride). |
+
+### Structural Mass Growth Dynamics (Plan 2)
+
+As of **Implementation Plan 2 (Structural Growth Kernel & Trampling FMA)**, $M_{structural}$ grows monotonically on the phase-staggered slow-loop gate (every 168 ticks) via the Numba `@njit` kernel `_grow_structural_mass_jit`:
+
+$$M_{next} = \min\!\left(M_{max},\, M_{current} + g_{M} \times \text{SLOW\_TICK\_STRIDE}\right)$$
+
+where $g_M$ is `growth_rate_structural` (from `FloraSpeciesParams.structural_growth_rate`) and $M_{max}$ is `max_structural_mass` (from `FloraSpeciesParams.structural_mass_max`). Because woodiness is permanent, $M_{structural}$ is never reduced by herbivory or starvation.
 
 ### Initialization Contract
 
