@@ -140,18 +140,18 @@ def _process_single_trigger(
     if not initiator_met:
         return
 
-    if trig.schema.activation_condition is not None:
-        condition_met = _check_activation_condition(
-            plant,
-            plant.entity_id,
-            trig.activation_condition_dump,
-            env,
-            swarm_population_by_cell_species,
-            active_substance_ids_by_owner,
-        )
-        if not condition_met:
-            return
     if isinstance(trig.schema.action, ResourceWithdrawalAction):
+        if trig.schema.activation_condition is not None:
+            condition_met = _check_activation_condition(
+                plant,
+                plant.entity_id,
+                trig.activation_condition_dump,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+            )
+            if not condition_met:
+                return
         plant.target_nutrition_factor = trig.schema.action.apparent_nutrition_factor
         plant.withdrawal_ticks_remaining = trig.schema.action.withdrawal_duration
         return
