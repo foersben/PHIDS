@@ -1,22 +1,34 @@
 ---
 type: Architecture Document
 title: System Architecture
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.2
 description: Documentation for System Architecture in the PHIDS framework.
 tags: [phids, ecs, performance, chemotaxis, dual-proxy]
 generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: src/phids/engine/loop.py
-- resource: src/phids/engine/core/biotope.py
-- resource: src/phids/engine/core/ecs.py
-- resource: src/phids/engine/systems/lifecycle.py
-- resource: src/phids/engine/core/flow_field.py
-- resource: src/phids/engine/systems/interaction/
-- resource: src/phids/engine/systems/signaling/
-- resource: src/phids/telemetry/analytics.py
-- resource: src/phids/telemetry/conditions.py
-- resource: src/phids/io/zarr_replay.py
+- id: loop
+  resource: src/phids/engine/loop.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: ecs
+  resource: src/phids/engine/core/ecs.py
+- id: lifecycle
+  resource: src/phids/engine/systems/lifecycle.py
+- id: flow_field
+  resource: src/phids/engine/core/flow_field.py
+- id: source
+  resource: src/phids/engine/systems/interaction/
+- id: source
+  resource: src/phids/engine/systems/signaling/
+- id: analytics
+  resource: src/phids/telemetry/analytics.py
+- id: conditions
+  resource: src/phids/telemetry/conditions.py
+- id: zarr_replay
+  resource: src/phids/io/zarr_replay.py
 ---
 
 The PHIDS simulator is engineered as a headless, high-performance data-oriented system. It segregates logic from state to bypass the bottlenecks inherent in traditional Object-Oriented simulation frameworks. This document outlines the fundamental technical boundaries that ensure deterministic, reproducible simulation loops.

@@ -1,7 +1,8 @@
 ---
 type: Concept
 title: Biological Abstractions & Grid Mechanics
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.5
 description: Analysis of computational trade-offs for foraging mechanics, plant
   lifecycle states, grid saturation, and collateral trophic interactions in a
@@ -10,24 +11,42 @@ description: Analysis of computational trade-offs for foraging mechanics, plant
 tags: [phids, ecs, biological-modeling, spatial-dynamics, performance,
     dual-proxy, dashboard-ui]
 generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: docs/scientific_model/mathematical_framework.md
-- resource: docs/scientific_model/flora_and_symbiosis.md
-- resource: docs/development_guide/development_guide/roadmap.md
-- resource: src/phids/api/schemas/species.py
-- resource: src/phids/engine/components/plant.py
-- resource: src/phids/engine/components/swarm.py
-- resource: src/phids/engine/core/biotope.py
-- resource: src/phids/engine/systems/interaction/movement.py
-- resource: src/phids/engine/systems/lifecycle.py
-- resource: src/phids/api/presenters/dashboard/payloads.py
-- resource: src/phids/api/templates/base.html
-- resource: src/phids/api/templates/partials/dashboard.html
-- resource: src/phids/api/routers/simulation.py
-- resource: src/phids/io/zarr_replay.py
-- resource: src/phids/shared/constants.py
-- resource: src/phids/telemetry/analytics.py
-- resource: tests/integration/systems/test_dual_proxy_integration.py
+- id: mathematical_framework
+  resource: docs/scientific_model/mathematical_framework.md
+- id: flora_and_symbiosis
+  resource: docs/scientific_model/flora_and_symbiosis.md
+- id: roadmap
+  resource: docs/development_guide/development_guide/roadmap.md
+- id: species
+  resource: src/phids/api/schemas/species.py
+- id: plant
+  resource: src/phids/engine/components/plant.py
+- id: swarm
+  resource: src/phids/engine/components/swarm.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: movement
+  resource: src/phids/engine/systems/interaction/movement.py
+- id: lifecycle
+  resource: src/phids/engine/systems/lifecycle.py
+- id: payloads
+  resource: src/phids/api/presenters/dashboard/payloads.py
+- id: base
+  resource: src/phids/api/templates/base.html
+- id: dashboard
+  resource: src/phids/api/templates/partials/dashboard.html
+- id: simulation
+  resource: src/phids/api/routers/simulation.py
+- id: zarr_replay
+  resource: src/phids/io/zarr_replay.py
+- id: constants
+  resource: src/phids/shared/constants.py
+- id: analytics
+  resource: src/phids/telemetry/analytics.py
+- id: test_dual_proxy_integration
+  resource: tests/integration/systems/test_dual_proxy_integration.py
 ---
 
 !!! note "Status: Active Architecture Specifications"

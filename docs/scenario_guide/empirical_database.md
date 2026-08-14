@@ -1,18 +1,25 @@
 ---
 type: Concept
 title: Empirical Database Pipeline
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
 description: Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline,
   generating the empirical DuckDB database.
 tags: [phids, ecs, performance, chemotaxis, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: src/data_pipeline/transform.py
-- resource: src/data_pipeline/archetype_extractor.py
-- resource: src/data_pipeline/run_all.py
-- resource: src/data_pipeline/run_extended.py
-- resource: src/data_pipeline/provenance.py
+- id: transform
+  resource: src/data_pipeline/transform.py
+- id: archetype_extractor
+  resource: src/data_pipeline/archetype_extractor.py
+- id: run_all
+  resource: src/data_pipeline/run_all.py
+- id: run_extended
+  resource: src/data_pipeline/run_extended.py
+- id: provenance
+  resource: src/data_pipeline/provenance.py
 ---
 
 !!! warning "Module Status: Work In Progress (WIP) / Under Construction"

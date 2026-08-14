@@ -1,16 +1,21 @@
 ---
 type: Guide
 title: Contribution Workflow
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
 description: Quality gates, two-pass Numba testing strategy, and Zensical
   documentation build policy in PHIDS.
 tags: [phids, ecs, numba, performance, zensical]
 generated: {by: process:okf-updater, at: "2026-07-26T18:53:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: src/phids/engine/core/flow_field.py
-- resource: src/phids/engine/core/biotope.py
-- resource: src/phids/engine/core/ecs.py
+- id: flow_field
+  resource: src/phids/engine/core/flow_field.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: ecs
+  resource: src/phids/engine/core/ecs.py
 ---
 
 Modifying the Plant-Herbivore Interaction & Defense Simulator requires strict adherence to scientific computing constraints. The engine is deliberately deterministic; introducing stochastic or unoptimized logic can violate the reproducibility of the entire ecosystem.

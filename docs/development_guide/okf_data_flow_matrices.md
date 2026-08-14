@@ -1,7 +1,8 @@
 ---
 type: Guide
 title: OKF Data-Flow Matrix Architecture & Verification Workflow
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.1
 description: Complete specification, agentic governance extensions (roles,
   rules, skills, workflows), and operational pipeline for modeling complex
@@ -9,12 +10,18 @@ description: Complete specification, agentic governance extensions (roles,
   OKF Data-Flow Matrices in PHIDS.
 tags: [phids, okf, numba, ecs, testing, architecture, agentic-governance]
 generated: {by: process:okf-updater, at: "2026-08-13T20:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: ../scientific_model/future_prospects/biological_abstractions.md
-- resource: ../technical_architecture/engine_execution.md
-- resource: ../../src/phids/engine/loop.py
-- resource: ../../src/phids/engine/systems/signaling/emission.py
-- resource:
+- id: biological_abstractions
+  resource: ../scientific_model/future_prospects/biological_abstractions.md
+- id: engine_execution
+  resource: ../technical_architecture/engine_execution.md
+- id: loop
+  resource: ../../src/phids/engine/loop.py
+- id: emission
+  resource: ../../src/phids/engine/systems/signaling/emission.py
+- id: source
+  resource: 
     ../../tests/integration/scientific_invariants/test_double_buffering_isolation.py
 ---
 

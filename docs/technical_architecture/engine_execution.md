@@ -1,26 +1,41 @@
 ---
 type: Architecture Document
 title: Engine Execution
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.1
 description: Core execution loop, phase ordering, ECS architecture, and
   low-level CPU performance optimizations in the PHIDS simulation framework.
 tags: [phids, ecs, numba, simd, optimization, dual-proxy]
 generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: src/phids/engine/loop.py
-- resource: src/phids/engine/core/flow_field.py
-- resource: src/phids/engine/core/ecs.py
-- resource: src/phids/engine/core/biotope.py
-- resource: src/phids/engine/components/plant.py
-- resource: src/phids/engine/systems/signaling/spatial.py
-- resource: src/phids/engine/systems/signaling/emission.py
-- resource: src/phids/engine/systems/signaling/triggers.py
-- resource: src/phids/engine/systems/interaction/feeding.py
-- resource: src/phids/engine/systems/interaction/movement.py
-- resource: src/phids/engine/systems/lifecycle.py
-- resource: src/phids/engine/systems/signaling/lifecycle.py
-- resource: src/phids/shared/constants.py
+- id: loop
+  resource: src/phids/engine/loop.py
+- id: flow_field
+  resource: src/phids/engine/core/flow_field.py
+- id: ecs
+  resource: src/phids/engine/core/ecs.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: plant
+  resource: src/phids/engine/components/plant.py
+- id: spatial
+  resource: src/phids/engine/systems/signaling/spatial.py
+- id: emission
+  resource: src/phids/engine/systems/signaling/emission.py
+- id: triggers
+  resource: src/phids/engine/systems/signaling/triggers.py
+- id: feeding
+  resource: src/phids/engine/systems/interaction/feeding.py
+- id: movement
+  resource: src/phids/engine/systems/interaction/movement.py
+- id: lifecycle
+  resource: src/phids/engine/systems/lifecycle.py
+- id: lifecycle
+  resource: src/phids/engine/systems/signaling/lifecycle.py
+- id: constants
+  resource: src/phids/shared/constants.py
 ---
 
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.

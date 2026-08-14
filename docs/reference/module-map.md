@@ -1,17 +1,23 @@
 ---
 type: Reference
 title: Module Map and Symbol Guide
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.3
 description: Whole-project inventory of active phids.* runtime packages,
   presenters, UI templates, and symbol responsibilities.
 tags: [phids, ecs, chemotaxis, dual-proxy, dashboard-ui]
 generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: api.md
-- resource: ../development_guide/contribution_workflow.md
-- resource: ../technical_architecture/interfaces_and_ui.md
-- resource: ../scientific_model/future_prospects/biological_abstractions.md
+- id: api
+  resource: api.md
+- id: contribution_workflow
+  resource: ../development_guide/contribution_workflow.md
+- id: interfaces_and_ui
+  resource: ../technical_architecture/interfaces_and_ui.md
+- id: biological_abstractions
+  resource: ../scientific_model/future_prospects/biological_abstractions.md
 ---
 
 This page provides a whole-project inventory of the active `phids.*` runtime package. It is intended

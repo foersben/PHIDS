@@ -9,13 +9,20 @@ description: "A unified specification for scaling PHIDS to large physical biomes
 tags: [phids, spatiotemporal-scaling, ecs, performance, ui, zarr, polars,
     realized]
 generated: {by: process:okf-updater, at: "2026-08-03T21:20:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: src/phids/engine/loop.py
-- resource: src/phids/engine/core/biotope.py
-- resource: src/phids/engine/systems/interaction/movement.py
-- resource: src/phids/engine/systems/lifecycle.py
-- resource: src/phids/io/zarr_replay.py
-- resource: src/phids/telemetry/analytics.py
+- id: loop
+  resource: src/phids/engine/loop.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: movement
+  resource: src/phids/engine/systems/interaction/movement.py
+- id: lifecycle
+  resource: src/phids/engine/systems/lifecycle.py
+- id: zarr_replay
+  resource: src/phids/io/zarr_replay.py
+- id: analytics
+  resource: src/phids/telemetry/analytics.py
 ---
 
 !!! success "Status: Fully Realized Engine Architecture"

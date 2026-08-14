@@ -1,22 +1,33 @@
 ---
 type: Reference
 title: Glossary and Concept Index
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.3
 description: Canonical glossary definitions for PHIDS concepts including
   Dual-Proxy proxies, Unified Action Buttons, and Live Cell Inspection Tooltips.
 tags: [phids, ecs, numba, python, dual-proxy, dashboard-ui]
 generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: ../scientific_model/mathematical_framework.md
-- resource: ../technical_architecture/system_architecture.md
-- resource: ../technical_architecture/engine_execution.md
-- resource: ../scenario_guide/curated_examples.md
-- resource: ../technical_architecture/interfaces_and_ui.md
-- resource: ../technical_architecture/telemetry.md
-- resource: ../scientific_model/index.md
-- resource: ../scenario_guide/scenario_authoring.md
-- resource: ../scientific_model/future_prospects/biological_abstractions.md
+- id: mathematical_framework
+  resource: ../scientific_model/mathematical_framework.md
+- id: system_architecture
+  resource: ../technical_architecture/system_architecture.md
+- id: engine_execution
+  resource: ../technical_architecture/engine_execution.md
+- id: curated_examples
+  resource: ../scenario_guide/curated_examples.md
+- id: interfaces_and_ui
+  resource: ../technical_architecture/interfaces_and_ui.md
+- id: telemetry
+  resource: ../technical_architecture/telemetry.md
+- id: index
+  resource: ../scientific_model/index.md
+- id: scenario_authoring
+  resource: ../scenario_guide/scenario_authoring.md
+- id: biological_abstractions
+  resource: ../scientific_model/future_prospects/biological_abstractions.md
 ---
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary

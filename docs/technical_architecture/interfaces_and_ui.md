@@ -1,19 +1,26 @@
 ---
 type: Architecture Document
 title: Interfaces & UI
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.1
 description: Technical documentation for administrative UI surfaces, HTMX
   controls, WebSocket streaming, and live dual-proxy cell inspection tooltips in
   PHIDS.
 tags: [phids, ecs, numba, performance, dashboard-ui, dual-proxy]
 generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: src/phids/api/presenters/dashboard/cell_details.py
-- resource: src/phids/api/presenters/dashboard/payloads.py
-- resource: src/phids/api/templates/base.html
-- resource: src/phids/api/templates/partials/dashboard.html
-- resource: src/phids/api/routers/simulation.py
+- id: cell_details
+  resource: src/phids/api/presenters/dashboard/cell_details.py
+- id: payloads
+  resource: src/phids/api/presenters/dashboard/payloads.py
+- id: base
+  resource: src/phids/api/templates/base.html
+- id: dashboard
+  resource: src/phids/api/templates/partials/dashboard.html
+- id: simulation
+  resource: src/phids/api/routers/simulation.py
 ---
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.
