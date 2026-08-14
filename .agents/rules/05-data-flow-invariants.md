@@ -1,18 +1,22 @@
 ---
 type: Agent Rule
 title: Mandates
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
 description: "- **Table-to-Trace Parity:** Every Markdown Data-Flow Matrix table MUST
   have a corresponding Pytest trace test."
 tags: [ecs, numba, testing, data-flow-matrix]
 generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 trigger: always_on
 rule_id: data-flow-invariants
 severity: critical
 sources:
-- resource: docs/development_guide/okf_data_flow_matrices.md
-- resource: tests/integration/scientific_invariants/
+- id: okf_data_flow_matrices
+  resource: docs/development_guide/okf_data_flow_matrices.md
+- id: source
+  resource: tests/integration/scientific_invariants/
 ---
 
 # Mandates

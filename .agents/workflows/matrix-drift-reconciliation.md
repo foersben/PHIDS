@@ -1,14 +1,17 @@
 ---
 type: Agent Workflow
 title: Automated Matrix Drift Reconciliation
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
 description: Automated workflow for detecting, reconciling, and updating
   documented Data-Flow Matrices when engine parameters or telemetry drift.
 tags: [workflow, data-flow-matrix, drift, reconciliation]
 generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- resource: docs/development_guide/okf_data_flow_matrices.md
+- id: okf_data_flow_matrices
+  resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
 # Sequence

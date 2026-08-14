@@ -1,15 +1,18 @@
 ---
 type: Agent Skill
 title: Trigger
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
 description: Runs a trace session, captures exact numerical output, and
   automatically updates the Markdown table rows when parameters drift.
 tags: [automation, reconciliation, data-flow-matrix]
 generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 name: Auto Reconcile Matrix Drift
 sources:
-- resource: docs/development_guide/okf_data_flow_matrices.md
+- id: okf_data_flow_matrices
+  resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
 # Trigger
