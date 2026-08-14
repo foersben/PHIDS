@@ -14,19 +14,19 @@ sources:
 - id: source
   resource: 
     tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py
-- id: source
+- id: source_2
   resource: 
     tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py
-- id: source
+- id: source_3
   resource: 
     tests/integration/scientific_invariants/pde_conservation/test_convolution_exponential_decay.py
-- id: source
+- id: source_4
   resource: 
     tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py
-- id: source
+- id: source_5
   resource: 
     tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py
-- id: source
+- id: source_6
   resource: 
     tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py
 - id: test_read_layer_immutability

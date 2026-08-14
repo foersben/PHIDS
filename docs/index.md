@@ -13,11 +13,11 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: index
   resource: docs/scientific_model/index.md
-- id: index
+- id: technical_architecture_index
   resource: docs/technical_architecture/index.md
-- id: index
+- id: scenario_guide_index
   resource: docs/scenario_guide/index.md
-- id: index
+- id: reference_index
   resource: docs/reference/index.md
 ---
 

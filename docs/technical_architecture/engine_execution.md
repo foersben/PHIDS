@@ -32,7 +32,7 @@ sources:
   resource: src/phids/engine/systems/interaction/movement.py
 - id: lifecycle
   resource: src/phids/engine/systems/lifecycle.py
-- id: lifecycle
+- id: signaling_lifecycle
   resource: src/phids/engine/systems/signaling/lifecycle.py
 - id: constants
   resource: src/phids/shared/constants.py

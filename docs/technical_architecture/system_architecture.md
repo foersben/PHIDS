@@ -21,7 +21,7 @@ sources:
   resource: src/phids/engine/core/flow_field.py
 - id: source
   resource: src/phids/engine/systems/interaction/
-- id: source
+- id: signaling_
   resource: src/phids/engine/systems/signaling/
 - id: analytics
   resource: src/phids/telemetry/analytics.py
