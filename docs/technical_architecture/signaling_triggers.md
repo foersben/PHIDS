@@ -1,12 +1,14 @@
 ---
-type: reference
+type: Reference
 title: PHIDS Signaling Trigger Invariants
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: Core architectural and behavioral invariants governing plant signaling trigger synthesis, activation gates, and re-arming state machines.
+description: Core architectural and behavioral invariants governing plant
+  signaling trigger synthesis, activation gates, and re-arming state machines.
 tags: [signaling, triggers, engine, invariants]
-generated: { by: process:okf-updater, at: "2026-08-13T17:58:00Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-08-13T17:58:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
 ## Overview

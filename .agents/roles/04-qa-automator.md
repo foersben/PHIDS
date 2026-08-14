@@ -1,13 +1,14 @@
 ---
-type: role
+type: Agent Role
 title: Directives
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
-description: "- **Verification:** Assert deterministic execution, isolate failures,\
-  \ triage coverage gaps."
+description: "- **Verification:** Assert deterministic execution, isolate failures,
+  triage coverage gaps."
 tags: [performance]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: QA Automator
 ---
 

@@ -1,12 +1,14 @@
 ---
-type: role
+type: Agent Role
 title: Directives
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: "- **Causal Trace Monitoring:** Monitor engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates."
+description: "- **Causal Trace Monitoring:** Monitor engine execution traces for implicit
+  state leaks, zero-division hazards, and unmasked dead-entity updates."
 tags: [ecs, numba, verification, causal-invariants]
-generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: Causal Verifier
 ---
 

@@ -1,33 +1,56 @@
 ---
-type: reference
+type: Reference
 title: Requirements Traceability
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
 description: Documentation for Requirements Traceability in the PHIDS framework.
 tags: [phids, ecs, numba, chemotaxis]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources:
-- module-map.md
-- ../development_guide/contribution_workflow.md
-- ../technical_architecture/system_architecture.md
-- tests/unit/engine/core/test_ecs_world.py
-- tests/unit/api/test_schemas_and_invariants.py
-- tests/unit/engine/core/test_biotope_diffusion.py
-- tests/e2e/scenarios/test_example_scenarios.py
-- tests/unit/engine/core/test_flow_field.py
-- tests/benchmarks/test_flow_field_benchmark.py
-- tests/benchmarks/test_spatial_hash_benchmark.py
-- tests/unit/io/test_scenario_io.py
-- tests/integration/api/test_api_simulation_and_scenario_routes.py
-- tests/integration/api/test_api_routes.py
-- tests/unit/api/test_ui_state.py
-- tests/integration/api/test_ui_routes.py
-- tests/integration/api/test_api_builder_and_helpers.py
-- tests/integration/systems/test_systems_behavior.py
-- tests/integration/systems/test_termination_and_loop.py
-- tests/unit/telemetry/test_telemetry_per_species.py
-- tests/unit/telemetry/test_export_helpers.py
-- tests/e2e/replay_and_io/test_zarr_replay.py
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: module-map
+  resource: module-map.md
+- id: contribution_workflow
+  resource: ../development_guide/contribution_workflow.md
+- id: system_architecture
+  resource: ../technical_architecture/system_architecture.md
+- id: test_ecs_world
+  resource: tests/unit/engine/core/test_ecs_world.py
+- id: test_schemas_and_invariants
+  resource: tests/unit/api/test_schemas_and_invariants.py
+- id: test_biotope_diffusion
+  resource: tests/unit/engine/core/test_biotope_diffusion.py
+- id: test_example_scenarios
+  resource: tests/e2e/scenarios/test_example_scenarios.py
+- id: test_flow_field
+  resource: tests/unit/engine/core/test_flow_field.py
+- id: test_flow_field_benchmark
+  resource: tests/benchmarks/test_flow_field_benchmark.py
+- id: test_spatial_hash_benchmark
+  resource: tests/benchmarks/test_spatial_hash_benchmark.py
+- id: test_scenario_io
+  resource: tests/unit/io/test_scenario_io.py
+- id: test_api_simulation_and_scenario_routes
+  resource: tests/integration/api/test_api_simulation_and_scenario_routes.py
+- id: test_api_routes
+  resource: tests/integration/api/test_api_routes.py
+- id: test_ui_state
+  resource: tests/unit/api/test_ui_state.py
+- id: test_ui_routes
+  resource: tests/integration/api/test_ui_routes.py
+- id: test_api_builder_and_helpers
+  resource: tests/integration/api/test_api_builder_and_helpers.py
+- id: test_systems_behavior
+  resource: tests/integration/systems/test_systems_behavior.py
+- id: test_termination_and_loop
+  resource: tests/integration/systems/test_termination_and_loop.py
+- id: test_telemetry_per_species
+  resource: tests/unit/telemetry/test_telemetry_per_species.py
+- id: test_export_helpers
+  resource: tests/unit/telemetry/test_export_helpers.py
+- id: test_zarr_replay
+  resource: tests/e2e/replay_and_io/test_zarr_replay.py
 ---
 
 This page is the canonical current-state successor to the legacy requirements coverage notes. It maps major PHIDS requirements to:

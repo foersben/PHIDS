@@ -1,5 +1,5 @@
 ---
-type: rule
+type: Agent Rule
 trigger: always_on
 description: Commit signing and git security mandates
 ---

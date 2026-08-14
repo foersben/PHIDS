@@ -1,13 +1,14 @@
 ---
-type: role
+type: Agent Role
 title: Directives
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
-description: "- **Delegation:** Deconstruct user requests; delegate tasks to specialized\
-  \ agents per `AGENTS.md`. Do not write math/kernels."
+description: "- **Delegation:** Deconstruct user requests; delegate tasks to specialized
+  agents per `AGENTS.md`. Do not write math/kernels."
 tags: [ecs, python]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: Orchestrator
 ---
 

@@ -1,12 +1,14 @@
 ---
-type: role
+type: Agent Role
 title: Directives
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: "- **Coverage Auditing:** Periodically scan all Markdown files in `docs/scientific_model/` to verify Data-Flow Matrix coverage."
+description: "- **Coverage Auditing:** Periodically scan all Markdown files in `docs/scientific_model/`
+  to verify Data-Flow Matrix coverage."
 tags: [ecs, testing, okf, data-flow-matrix]
-generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: Matrix Auditor
 ---
 

@@ -1,5 +1,5 @@
 ---
-type: memory
+type: Agent Memory
 title: "Canon Memory"
 ---
 

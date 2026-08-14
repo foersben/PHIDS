@@ -1,14 +1,19 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Ecological Analytics & Evaluation
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
-description: Documentation for Ecological Analytics & Evaluation in the PHIDS framework.
+description: Documentation for Ecological Analytics & Evaluation in the PHIDS
+  framework.
 tags: [phids, ecs, numba, performance]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources:
-- population_dynamics.md
-- src/phids/engine/loop.py
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: population_dynamics
+  resource: population_dynamics.md
+- id: loop
+  resource: src/phids/engine/loop.py
 ---
 
 PHIDS converts simulation ticks into comparable, analytical artifacts. The primary method for evaluating a scenario's success or failure is through longitudinal population and energy tracking.

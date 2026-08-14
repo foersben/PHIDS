@@ -1,25 +1,48 @@
 ---
-type: concept
+type: Concept
 title: Testing Architecture & Scientific Invariant Rigor
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.1
-description: Comprehensive testing architecture, taxonomy, scientific invariant verification, double-buffering isolation, Hypothesis property testing, and performance benchmarking for PHIDS.
+description: Comprehensive testing architecture, taxonomy, scientific invariant
+  verification, double-buffering isolation, Hypothesis property testing, and
+  performance benchmarking for PHIDS.
 tags: [phids, testing, numba, hypothesis, conservation-laws, zarr]
-generated: { by: process:okf-updater, at: "2026-08-10T19:23:45Z" }
-resources:
-- tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py
-- tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py
-- tests/integration/scientific_invariants/pde_conservation/test_convolution_exponential_decay.py
-- tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py
-- tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py
-- tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py
-- tests/unit/engine/invariants/test_read_layer_immutability.py
-- tests/unit/engine/invariants/test_jit_neighbour_gathering_parity.py
-- tests/unit/engine/invariants/test_jit_capacity_masking_parity.py
-- tests/unit/engine/systems/test_seed_dispersal_isotropy.py
-- tests/unit/engine/systems/test_phase_staggered_cohorts.py
-- tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
-- scripts/run_sim_benchmark.py
+generated: {by: process:okf-updater, at: "2026-08-10T19:23:45Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: source
+  resource: 
+    tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py
+- id: source_2
+  resource: 
+    tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py
+- id: source_3
+  resource: 
+    tests/integration/scientific_invariants/pde_conservation/test_convolution_exponential_decay.py
+- id: source_4
+  resource: 
+    tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py
+- id: source_5
+  resource: 
+    tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py
+- id: source_6
+  resource: 
+    tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py
+- id: test_read_layer_immutability
+  resource: tests/unit/engine/invariants/test_read_layer_immutability.py
+- id: test_jit_neighbour_gathering_parity
+  resource: tests/unit/engine/invariants/test_jit_neighbour_gathering_parity.py
+- id: test_jit_capacity_masking_parity
+  resource: tests/unit/engine/invariants/test_jit_capacity_masking_parity.py
+- id: test_seed_dispersal_isotropy
+  resource: tests/unit/engine/systems/test_seed_dispersal_isotropy.py
+- id: test_phase_staggered_cohorts
+  resource: tests/unit/engine/systems/test_phase_staggered_cohorts.py
+- id: test_zarr_replay_bit_exactness
+  resource: tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
+- id: run_sim_benchmark
+  resource: scripts/run_sim_benchmark.py
 ---
 
 This document aggregates PHIDS test suite topography, taxonomy, scientific invariant verification, system mapping, quality analysis, and governance rules.
