@@ -214,6 +214,55 @@ def _apply_branchless_capacity_mask_jit(
 
 
 @njit(cache=True, fastmath=True)
+def _compute_adjusted_scores_and_weights_jit(
+    count: int,
+    invert: bool,
+    scores: npt.NDArray[np.float64],
+    adjusted_scores: npt.NDArray[np.float64],
+    weights: npt.NDArray[np.float64],
+) -> float:
+    """Helper to compute adjusted scores and total weight."""
+    for i in range(count):
+        adjusted_scores[i] = -scores[i] if invert else scores[i]
+
+    min_score = adjusted_scores[0]
+    for i in range(1, count):
+        if adjusted_scores[i] < min_score:
+            min_score = adjusted_scores[i]
+
+    total_w = 0.0
+    for i in range(count):
+        weights[i] = (adjusted_scores[i] - min_score) + 1e-6
+        total_w += weights[i]
+
+    return total_w
+
+
+@njit(cache=True, fastmath=True)
+def _select_weighted_neighbour_jit(
+    count: int,
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+    weights: npt.NDArray[np.float64],
+    rand_val: float,
+    total_w: float,
+    current_x: int,
+    current_y: int,
+) -> tuple[int, int]:
+    """Helper to perform the weighted random choice."""
+    if total_w <= 0.0:
+        return (current_x if current_x >= 0 else c_x[0]), (current_y if current_y >= 0 else c_y[0])
+
+    r = rand_val * total_w
+    cum = 0.0
+    for i in range(count):
+        cum += weights[i]
+        if r <= cum:
+            return c_x[i], c_y[i]
+    return c_x[count - 1], c_y[count - 1]
+
+
+@njit(cache=True, fastmath=True)
 def _weighted_field_choice_jit(
     count: int,
     invert: bool,
@@ -249,34 +298,14 @@ def _weighted_field_choice_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    for i in range(count):
-        adjusted_scores[i] = -scores[i] if invert else scores[i]
-
-    min_score = adjusted_scores[0]
-    for i in range(1, count):
-        if adjusted_scores[i] < min_score:
-            min_score = adjusted_scores[i]
-
-    total_w = 0.0
-    for i in range(count):
-        weights[i] = (adjusted_scores[i] - min_score) + 1e-6
-        total_w += weights[i]
+    total_w = _compute_adjusted_scores_and_weights_jit(count, invert, scores, adjusted_scores, weights)
 
     if tile_populations is not None and width > 0 and current_x >= 0 and current_y >= 0:
         total_w = _apply_branchless_capacity_mask_jit(
             count, current_x, current_y, width, c_x, c_y, tile_populations, max_capacity, weights
         )
 
-    if total_w <= 0.0:
-        return (current_x if current_x >= 0 else c_x[0]), (current_y if current_y >= 0 else c_y[0])
-
-    r = rand_val * total_w
-    cum = 0.0
-    for i in range(count):
-        cum += weights[i]
-        if r <= cum:
-            return c_x[i], c_y[i]
-    return c_x[count - 1], c_y[count - 1]
+    return _select_weighted_neighbour_jit(count, c_x, c_y, weights, rand_val, total_w, current_x, current_y)
 
 
 @njit(cache=True, fastmath=True)

@@ -56,3 +56,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2025-02-27 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/interaction/movement.py` -> `_weighted_field_choice_jit`
+* **Selection Rationale:** Selected due to its score of 17 (> 15). The logic involves extracting sub-routines from within a computationally intensive Numba JIT loop without adding any uncompiled function-call overhead, so the change maintains all high-performance traits.
+* **Before/After Score:** 17 vs. 10
+* **Performance Assessment:** The benchmark tests for grid and swarm processing showed results directly comparable to original runs, confirming zero overhead added by extracting functions (Numba automatically inlined the helper).
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
