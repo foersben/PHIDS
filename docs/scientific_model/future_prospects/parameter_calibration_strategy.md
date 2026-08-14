@@ -4,14 +4,8 @@ title: Empirical Parameter Scaling & Calibration Strategy
 status: active
 version: 1.0
 description: Detailed non-dimensionalization and calibration strategy bridging empirical database traits to discrete PHIDS simulation parameters.
-tags:
-- phids
-- scientific-model
-- calibration
-- non-dimensionalization
-- dse
-- future-prospects
-timestamp: "2026-07-26T18:10:00Z"
+tags: [phids, scientific-model, calibration, non-dimensionalization, dse, future-prospects]
+generated: { by: process:okf-updater, at: "2026-07-26T18:10:00Z" }
 resources:
 - docs/scientific_model/population_dynamics.md
 - docs/scenario_guide/empirical_database.md

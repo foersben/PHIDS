@@ -4,14 +4,8 @@ title: Engine Execution
 status: active
 version: 1.1
 description: Core execution loop, phase ordering, ECS architecture, and low-level CPU performance optimizations in the PHIDS simulation framework.
-tags:
-- phids
-- ecs
-- numba
-- simd
-- optimization
-- dual-proxy
-timestamp: "2026-08-13T00:27:00Z"
+tags: [phids, ecs, numba, simd, optimization, dual-proxy]
+generated: { by: process:okf-updater, at: "2026-08-13T00:27:00Z" }
 resources:
 - src/phids/engine/loop.py
 - src/phids/engine/core/flow_field.py

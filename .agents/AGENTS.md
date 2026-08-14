@@ -4,10 +4,8 @@ title: PHIDS Routing & Capabilities
 status: active
 version: 1.0
 description: Primary routing table for AI IDEs defining roles and core constraints.
-tags:
-- agents
-- guidelines
-timestamp: "2026-07-25T17:06:00Z"
+tags: [agents, guidelines]
+generated: { by: process:okf-updater, at: "2026-07-25T17:06:00Z" }
 resources: []
 ---
 
@@ -44,8 +42,8 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 ## OKF (Open Knowledge Format) Metadata Rule
 
 - **Mandatory Parsing:** All AI agents (Jules, Antigravity, etc.) MUST actively parse the YAML frontmatter (OKF headers) in `docs/` and `.agents/` files before answering architectural or design questions.
-- **Utilization:** Use OKF `tags`, `timestamps`, and `resources` fields to gauge the relevance and contextual scope of the document. If an OKF `status` is `deprecated`, actively warn the user.
-- **Enrichment:** When creating or modifying documentation, always populate or update the OKF frontmatter exhaustively (including `type`, `title`, `status`, `version`, `description`, `tags`, `timestamp`, `resources`).
+- **Utilization:** Use OKF `tags`, `generated.at`, and `resources` fields to gauge the relevance and contextual scope of the document. If an OKF `status` is `deprecated`, actively warn the user.
+- **Enrichment:** When creating or modifying documentation, always populate or update the OKF frontmatter exhaustively (including `type`, `title`, `status`, `version`, `description`, `tags`, `generated`, `resources`).
 
 ## MCP Server Usage
 

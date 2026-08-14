@@ -5,12 +5,8 @@ status: active
 version: 0.1
 description: PHIDS (Plant-Herbivore Interaction & Defense Simulator) is developed
   in collaboration with the University of Jena. It is engineered to model comple...
-tags:
-- phids
-- ecs
-- numba
-- performance
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, ecs, numba, performance]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources: []
 ---
 

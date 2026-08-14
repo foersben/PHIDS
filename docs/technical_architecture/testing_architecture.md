@@ -4,14 +4,8 @@ title: Testing Architecture & Scientific Invariant Rigor
 status: active
 version: 1.1
 description: Comprehensive testing architecture, taxonomy, scientific invariant verification, double-buffering isolation, Hypothesis property testing, and performance benchmarking for PHIDS.
-tags:
-- phids
-- testing
-- numba
-- hypothesis
-- conservation-laws
-- zarr
-timestamp: "2026-08-10T19:23:45Z"
+tags: [phids, testing, numba, hypothesis, conservation-laws, zarr]
+generated: { by: process:okf-updater, at: "2026-08-10T19:23:45Z" }
 resources:
 - tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py
 - tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py

@@ -5,13 +5,8 @@ status: active
 version: 1.0
 description: Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline, generating
   the empirical DuckDB database.
-tags:
-- phids
-- ecs
-- performance
-- chemotaxis
-- python
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, ecs, performance, chemotaxis, python]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources:
 - src/data_pipeline/transform.py
 - src/data_pipeline/archetype_extractor.py

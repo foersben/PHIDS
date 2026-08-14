@@ -4,11 +4,8 @@ title: Telemetry & Export
 status: active
 version: 0.1
 description: Documentation for Telemetry & Export in the PHIDS framework.
-tags:
-- phids
-- performance
-- python
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, performance, python]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources: []
 ---
 

@@ -4,11 +4,8 @@ title: Numba Constraints
 status: active
 version: 1.1
 description: Constraints for Numba JIT compilation in PHIDS.
-tags:
-- numba
-- performance
-- simd
-timestamp: "2026-08-14T00:30:00Z"
+tags: [numba, performance, simd]
+generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
 resources: []
 trigger: always_on
 rule_id: numba-constraints

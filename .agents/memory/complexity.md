@@ -4,11 +4,8 @@ title: Complexity
 status: active
 version: 0.1
 description: Refactoring cognitive complexity from telemetry module and learnings
-tags:
-- phids
-- refactor
-- complexity
-timestamp: "2026-07-22T13:00:00Z"
+tags: [phids, refactor, complexity]
+generated: { by: process:okf-updater, at: "2026-07-22T13:00:00Z" }
 resources:
 - telemetry.py
 name: complexity

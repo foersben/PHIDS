@@ -4,12 +4,8 @@ title: Directives
 status: active
 version: 1.0
 description: "- **Causal Trace Monitoring:** Monitor engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates."
-tags:
-- ecs
-- numba
-- verification
-- causal-invariants
-timestamp: "2026-08-14T00:30:00Z"
+tags: [ecs, numba, verification, causal-invariants]
+generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
 resources: []
 role: Causal Verifier
 ---

@@ -4,11 +4,8 @@ title: Scientific Model Overview
 status: active
 version: 2.0
 description: High-level overview of theoretical foundations and mathematical chapters in the PHIDS scientific model.
-tags:
-- phids
-- scientific-model
-- theoretical-foundations
-timestamp: "2026-07-26T18:31:00Z"
+tags: [phids, scientific-model, theoretical-foundations]
+generated: { by: process:okf-updater, at: "2026-07-26T18:31:00Z" }
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/related_works.md

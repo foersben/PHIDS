@@ -4,11 +4,8 @@ title: Chemotaxis & Flow Fields
 status: active
 version: 0.2
 description: Documentation for Chemotaxis & Flow Fields in the PHIDS framework.
-tags:
-- phids
-- numba
-- chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, numba, chemotaxis]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources:
 - src/phids/engine/core/flow_field.py
 ---

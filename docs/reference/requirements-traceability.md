@@ -4,12 +4,8 @@ title: Requirements Traceability
 status: active
 version: 0.1
 description: Documentation for Requirements Traceability in the PHIDS framework.
-tags:
-- phids
-- ecs
-- numba
-- chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, ecs, numba, chemotaxis]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources:
 - module-map.md
 - ../development_guide/contribution_workflow.md

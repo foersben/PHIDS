@@ -4,13 +4,8 @@ title: Morphological Defenses and Dynamic Resource Reallocation
 status: active
 version: 1.1
 description: Mathematical and biological formulation of constitutive morphological defenses, digestibility modulation, and rate-limited phloem translocation in PHIDS.
-tags:
-- phids
-- ecs
-- defenses
-- phloem
-- mathematical-biology
-timestamp: "2026-07-25T18:40:00Z"
+tags: [phids, ecs, defenses, phloem, mathematical-biology]
+generated: { by: process:okf-updater, at: "2026-07-25T18:40:00Z" }
 resources:
 - src/phids/api/schemas/species.py
 - src/phids/api/schemas/triggers.py

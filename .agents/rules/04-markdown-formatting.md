@@ -4,9 +4,8 @@ title: Markdown Formatting Rules
 status: active
 version: 0.1
 description: Rules for formatting markdown files.
-tags:
-- documentation
-timestamp: "2026-07-21T16:01:38Z"
+tags: [documentation]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources: []
 ---
 
