@@ -73,10 +73,17 @@ def _init_base_and_current_jit(
         alpha: Weight for botanical attractants.
         beta: Weight for toxic repellents.
     """
-    _ = (width, height)
-    toxin_sum = np.sum(toxin_layers, axis=0)
-    base[:, :] = (alpha * plant_energy * apparent_nutrition_layer) - (beta * toxin_sum)
-    current[:, :] = base[:, :]
+    num_toxins = toxin_layers.shape[0]
+    for x in range(width):
+        for y in range(height):
+            t_sum = 0.0
+            for t in range(num_toxins):
+                t_sum += toxin_layers[t, x, y]
+
+            # ⚡ Bolt Optimization: Compute scalar inline to eliminate np.sum allocation
+            val = (alpha * plant_energy[x, y] * apparent_nutrition_layer[x, y]) - (beta * t_sum)
+            base[x, y] = val
+            current[x, y] = val
 
 
 @njit(cache=True, fastmath=True)
