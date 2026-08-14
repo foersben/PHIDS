@@ -1,16 +1,17 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Flora Lifecycle and Symbiotic Networks
 status: active
 version: 0.3
-description: Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS framework.
+description: Documentation for Flora Lifecycle and Symbiotic Networks in the
+  PHIDS framework.
 tags: [phids, ecs, dual-proxy]
-generated: { by: process:okf-updater, at: "2026-08-13T00:27:00Z" }
-resources:
-- src/phids/engine/components/plant.py
-- src/phids/engine/core/biotope.py
-- src/phids/engine/systems/lifecycle.py
-- src/phids/shared/constants.py
+generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
+sources:
+- resource: src/phids/engine/components/plant.py
+- resource: src/phids/engine/core/biotope.py
+- resource: src/phids/engine/systems/lifecycle.py
+- resource: src/phids/shared/constants.py
 ---
 
 Flora within PHIDS are stationary entities on the grid that produce the resources driving the herbivore ecosystem. While stationary, their behavior governs resource distribution, secondary defenses, and spatial networks.

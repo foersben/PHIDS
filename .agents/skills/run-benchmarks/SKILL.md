@@ -1,12 +1,11 @@
 ---
-type: skill
+type: Agent Skill
 title: Trigger
 status: active
 version: 0.1
 description: Execute and analyze pytest-benchmark performance gates.
 tags: [documentation]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 name: Run Benchmarks
 ---
 

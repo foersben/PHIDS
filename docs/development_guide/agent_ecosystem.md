@@ -1,12 +1,11 @@
 ---
-type: guide
+type: Guide
 title: Agent Ecosystem & MCP
 status: active
 version: 0.1
 description: Documentation for Agent Ecosystem & MCP in the PHIDS framework.
 tags: [phids]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 ---
 
 To manage documentation, testing, and lifecycle operations reproducibly, PHIDS integrates an explicit human-and-agent governance model based on the Model Context Protocol (MCP).

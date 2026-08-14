@@ -1,16 +1,17 @@
 ---
-type: concept
+type: Concept
 title: Scenarios Module Overview
 status: active
 version: 1.0
-description: Overview of scenario authoring, curated example blueprints, and DSE optimization pipelines.
+description: Overview of scenario authoring, curated example blueprints, and DSE
+  optimization pipelines.
 tags: [phids, scenarios, dse, blueprints]
-generated: { by: process:okf-updater, at: "2026-07-26T18:31:00Z" }
-resources:
-- docs/scenario_guide/scenario_authoring.md
-- docs/scenario_guide/curated_examples.md
-- docs/scenario_guide/design_space_exploration.md
-- docs/scenario_guide/empirical_database.md
+generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
+sources:
+- resource: docs/scenario_guide/scenario_authoring.md
+- resource: docs/scenario_guide/curated_examples.md
+- resource: docs/scenario_guide/design_space_exploration.md
+- resource: docs/scenario_guide/empirical_database.md
 ---
 
 In the study of computational ecology, the greatest challenge is managing the sheer volatility of natural systems. The parameter space of a spatial ecosystem is a chaotic, highly non-linear landscape. A minor $1\%$ tweak to a single herbivore's metabolic rate or a plant's regeneration speed can be the absolute boundary between eternal multi-species balance and immediate, cascading trophic collapse.

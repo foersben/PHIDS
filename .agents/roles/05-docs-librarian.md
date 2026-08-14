@@ -1,13 +1,12 @@
 ---
-type: role
+type: Agent Role
 title: Directives
 status: active
 version: 0.1
-description: "- **Docs Sync:** Synchronize documentation tree, scientific models,\
-  \ and API references."
+description: "- **Docs Sync:** Synchronize documentation tree, scientific models,
+  and API references."
 tags: [documentation]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 role: Docs Librarian
 ---
 

@@ -1,14 +1,15 @@
 ---
-type: skill
+type: Agent Skill
 title: Trigger
 status: active
 version: 1.0
-description: Scans docs/scientific_model/ files and reports any concept document that describes temporal state shifts without a Data-Flow Matrix Table.
+description: Scans docs/scientific_model/ files and reports any concept document
+  that describes temporal state shifts without a Data-Flow Matrix Table.
 tags: [docs, okf, audit, data-flow-matrix]
-generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
-resources:
-- docs/development_guide/okf_data_flow_matrices.md
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
 name: Audit OKF Matrix Coverage
+sources:
+- resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
 # Trigger

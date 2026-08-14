@@ -1,5 +1,5 @@
 ---
-type: workflow
+type: Agent Workflow
 description: Coordinated pipeline for building full-stack simulation features.
 ---
 

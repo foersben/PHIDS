@@ -1,13 +1,12 @@
 ---
-type: rule
+type: Agent Rule
 title: Mandates
 status: active
 version: 0.1
-description: "- **Execution:** Ban `pip`, `poetry`, `python`. Execute ALL commands\
-  \ via `uv run` or `just`."
+description: "- **Execution:** Ban `pip`, `poetry`, `python`. Execute ALL commands
+  via `uv run` or `just`."
 tags: [python]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 trigger: always_on
 rule_id: python-modernization
 severity: critical

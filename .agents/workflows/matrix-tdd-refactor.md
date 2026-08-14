@@ -1,13 +1,15 @@
 ---
-type: workflow
+type: Agent Workflow
 title: Matrix-Driven TDD Refactoring
 status: active
 version: 1.0
-description: Coordinated pipeline for translating conceptual behavior to Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba kernels, and verified audits.
+description: Coordinated pipeline for translating conceptual behavior to
+  Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba
+  kernels, and verified audits.
 tags: [workflow, data-flow-matrix, tdd, refactoring]
-generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
-resources:
-- docs/development_guide/okf_data_flow_matrices.md
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+sources:
+- resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
 # Sequence

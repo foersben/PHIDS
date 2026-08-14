@@ -1,14 +1,14 @@
 ---
-type: skill
+type: Agent Skill
 title: Trigger
 status: active
 version: 0.1
 description: Inspect and validate Zarr replay buffers to verify state recording.
 tags: [python]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources:
-- scripts/inspect_zarr.py
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 name: Analyze Zarr Telemetry
+sources:
+- resource: scripts/inspect_zarr.py
 ---
 
 # Trigger

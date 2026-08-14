@@ -1,13 +1,12 @@
 ---
-type: memory
+type: Agent Memory
 title: Palette
 status: active
 version: 0.1
-description: "**Learning:** When styling file upload inputs inside `<label>` wrappers\
-  \ with Tailwind, using `hidden` on the `<input>` removes it from the browser ..."
+description: "**Learning:** When styling file upload inputs inside `<label>` wrappers
+  with Tailwind, using `hidden` on the `<input>` removes it from the browser ..."
 tags: [documentation]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 ---
 
 ## 2024-06-26 - [File Input A11y]

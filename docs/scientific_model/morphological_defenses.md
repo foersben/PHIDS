@@ -1,18 +1,20 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Morphological Defenses and Dynamic Resource Reallocation
 status: active
 version: 1.1
-description: Mathematical and biological formulation of constitutive morphological defenses, digestibility modulation, and rate-limited phloem translocation in PHIDS.
+description: Mathematical and biological formulation of constitutive
+  morphological defenses, digestibility modulation, and rate-limited phloem
+  translocation in PHIDS.
 tags: [phids, ecs, defenses, phloem, mathematical-biology]
-generated: { by: process:okf-updater, at: "2026-07-25T18:40:00Z" }
-resources:
-- src/phids/api/schemas/species.py
-- src/phids/api/schemas/triggers.py
-- src/phids/engine/components/plant.py
-- src/phids/engine/systems/lifecycle.py
-- src/phids/engine/systems/interaction/feeding.py
-- src/phids/engine/core/flow_field.py
+generated: {by: process:okf-updater, at: "2026-07-25T18:40:00Z"}
+sources:
+- resource: src/phids/api/schemas/species.py
+- resource: src/phids/api/schemas/triggers.py
+- resource: src/phids/engine/components/plant.py
+- resource: src/phids/engine/systems/lifecycle.py
+- resource: src/phids/engine/systems/interaction/feeding.py
+- resource: src/phids/engine/core/flow_field.py
 ---
 
 This document provides the formal mathematical and biological formulation for plant morphological (constitutive) defenses and dynamic resource reallocation (apparent nutrition withdrawal) in the PHIDS ecosystem simulation model.

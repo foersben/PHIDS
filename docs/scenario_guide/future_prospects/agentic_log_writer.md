@@ -1,14 +1,16 @@
 ---
-type: concept
+type: Concept
 title: Agentic Diagnostic Log Writer & Systemic Integrity Observer
 status: active
 version: 1.0
-description: Specifications for the asynchronous dse-log-observer agent that performs telemetry logging, systemic anomaly detection, and high-confidence distortion diagnostics in PHIDS.
+description: Specifications for the asynchronous dse-log-observer agent that
+  performs telemetry logging, systemic anomaly detection, and high-confidence
+  distortion diagnostics in PHIDS.
 tags: [phids, dse, telemetry, diagnostics, mcp, agentic-ai]
-generated: { by: process:okf-updater, at: "2026-08-03T15:00:00Z" }
-resources:
-- docs/scenario_guide/design_space_exploration.md
-- docs/development_guide/agent_ecosystem.md
+generated: {by: process:okf-updater, at: "2026-08-03T15:00:00Z"}
+sources:
+- resource: docs/scenario_guide/design_space_exploration.md
+- resource: docs/development_guide/agent_ecosystem.md
 ---
 
 !!! warning "Status: Work In Progress (WIP / CIP) Construction Site"

@@ -1,5 +1,5 @@
 ---
-type: rule
+type: Agent Rule
 trigger: always_on
 description: Stochastic engine and telemetry replay mandates
 ---

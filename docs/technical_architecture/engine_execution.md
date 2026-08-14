@@ -1,25 +1,26 @@
 ---
-type: technical_architecture
+type: Architecture Document
 title: Engine Execution
 status: active
 version: 1.1
-description: Core execution loop, phase ordering, ECS architecture, and low-level CPU performance optimizations in the PHIDS simulation framework.
+description: Core execution loop, phase ordering, ECS architecture, and
+  low-level CPU performance optimizations in the PHIDS simulation framework.
 tags: [phids, ecs, numba, simd, optimization, dual-proxy]
-generated: { by: process:okf-updater, at: "2026-08-13T00:27:00Z" }
-resources:
-- src/phids/engine/loop.py
-- src/phids/engine/core/flow_field.py
-- src/phids/engine/core/ecs.py
-- src/phids/engine/core/biotope.py
-- src/phids/engine/components/plant.py
-- src/phids/engine/systems/signaling/spatial.py
-- src/phids/engine/systems/signaling/emission.py
-- src/phids/engine/systems/signaling/triggers.py
-- src/phids/engine/systems/interaction/feeding.py
-- src/phids/engine/systems/interaction/movement.py
-- src/phids/engine/systems/lifecycle.py
-- src/phids/engine/systems/signaling/lifecycle.py
-- src/phids/shared/constants.py
+generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
+sources:
+- resource: src/phids/engine/loop.py
+- resource: src/phids/engine/core/flow_field.py
+- resource: src/phids/engine/core/ecs.py
+- resource: src/phids/engine/core/biotope.py
+- resource: src/phids/engine/components/plant.py
+- resource: src/phids/engine/systems/signaling/spatial.py
+- resource: src/phids/engine/systems/signaling/emission.py
+- resource: src/phids/engine/systems/signaling/triggers.py
+- resource: src/phids/engine/systems/interaction/feeding.py
+- resource: src/phids/engine/systems/interaction/movement.py
+- resource: src/phids/engine/systems/lifecycle.py
+- resource: src/phids/engine/systems/signaling/lifecycle.py
+- resource: src/phids/shared/constants.py
 ---
 
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.

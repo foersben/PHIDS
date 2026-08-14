@@ -1,14 +1,16 @@
 ---
-type: concept
+type: Concept
 title: AI Coevolution & Distributed EEDSE Engine (v3.2 Future Prospect)
 status: active
 version: 1.0
-description: Future framework for distributed Ray/Tune multi-objective evolutionary algorithms and AI agent coevolution in PHIDS.
+description: Future framework for distributed Ray/Tune multi-objective
+  evolutionary algorithms and AI agent coevolution in PHIDS.
 tags: [phids, dse, ai, coevolution, ray-tune, future-prospects]
-generated: { by: process:okf-updater, at: "2026-07-26T18:30:00Z" }
-resources:
-- docs/scenario_guide/design_space_exploration.md
-- docs/scientific_model/future_prospects/parameter_calibration_strategy.md
+generated: {by: process:okf-updater, at: "2026-07-26T18:30:00Z"}
+sources:
+- resource: docs/scenario_guide/design_space_exploration.md
+- resource:
+    docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
 
 !!! warning "Status: WIP / CIP Construction Site"

@@ -1,12 +1,13 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Related Works and Methodological Comparison
 status: active
 version: 1.1
-description: A methodological comparison of PHIDS against other established simulation frameworks across macro-ecology, agent-based landscape modeling, and hybrid biophysics.
+description: A methodological comparison of PHIDS against other established
+  simulation frameworks across macro-ecology, agent-based landscape modeling,
+  and hybrid biophysics.
 tags: [phids, scientific-model, methodological-comparison, related-works]
-generated: { by: process:okf-updater, at: "2026-08-11T18:30:00Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-08-11T18:30:00Z"}
 ---
 
 The modeling of ecological systems generally bifurcates into two distinct methodological paradigms: continuous-time differential equation models (e.g., Lotka-Volterra formulations) and discrete Agent-Based Models (ABMs). While continuous models excel at describing macro-level cyclical oscillations in perfectly mixed, homogeneous populations, they fundamentally abstract away spatial heterogeneity, localized foraging, and spatial chemical communication. Conversely, traditional ABMs capture spatial behavior but frequently struggle with the computational overhead required to integrate high-frequency continuous field dynamics (such as gas diffusion).

@@ -1,18 +1,18 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Mathematical Framework
 status: active
 version: 0.1
 description: Documentation for Mathematical Framework in the PHIDS framework.
 tags: [phids, ecs, numba, chemotaxis]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources:
-- chemotaxis.md
-- population_dynamics.md
-- reaction_diffusion.md
-- herbivore_behavior.md
-- flora_and_symbiosis.md
-- ecological_analytics.md
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+sources:
+- resource: chemotaxis.md
+- resource: population_dynamics.md
+- resource: reaction_diffusion.md
+- resource: herbivore_behavior.md
+- resource: flora_and_symbiosis.md
+- resource: ecological_analytics.md
 ---
 
 This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a coupled hybrid dynamical system. In this model, discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers.

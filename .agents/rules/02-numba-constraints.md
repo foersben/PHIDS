@@ -1,12 +1,11 @@
 ---
-type: rule
+type: Agent Rule
 title: Numba Constraints
 status: active
 version: 1.1
 description: Constraints for Numba JIT compilation in PHIDS.
 tags: [numba, performance, simd]
-generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
 trigger: always_on
 rule_id: numba-constraints
 severity: critical

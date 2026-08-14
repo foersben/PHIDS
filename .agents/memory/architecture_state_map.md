@@ -1,12 +1,11 @@
 ---
-type: memory
+type: Agent Memory
 title: Current Architecture State (June 2026)
 status: active
 version: 0.1
 description: "- **Python:** Migrating to 3.13."
 tags: [chemotaxis, python]
-generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
-resources: []
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 ---
 
 ## Infrastructure Upgrade in Progress

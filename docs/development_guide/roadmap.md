@@ -1,16 +1,19 @@
 ---
-type: roadmap
+type: Roadmap
 title: Strategic Multi-Stage Development Roadmap
 status: active
 version: 0.9
-description: Strategic development roadmap for PHIDS detailing pre-v1.0 base milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization engine, spatial extensions) and post-v1.0 research horizons.
-tags: [phids, roadmap, architecture, biological-fidelity, hpc, ecs, htmx, dse, zarr, pyinstaller]
-generated: { by: process:okf-updater, at: "2026-08-10T18:35:00Z" }
-resources:
-- docs/scientific_model/index.md
-- docs/technical_architecture/system_architecture.md
-- docs/scenario_guide/design_space_exploration.md
-- docs/scenario_guide/empirical_database.md
+description: Strategic development roadmap for PHIDS detailing pre-v1.0 base
+  milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization
+  engine, spatial extensions) and post-v1.0 research horizons.
+tags: [phids, roadmap, architecture, biological-fidelity, hpc, ecs, htmx, dse,
+    zarr, pyinstaller]
+generated: {by: process:okf-updater, at: "2026-08-10T18:35:00Z"}
+sources:
+- resource: docs/scientific_model/index.md
+- resource: docs/technical_architecture/system_architecture.md
+- resource: docs/scenario_guide/design_space_exploration.md
+- resource: docs/scenario_guide/empirical_database.md
 ---
 
 This document defines the strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details implemented foundations, active pre-v1.0 base milestones, and future research horizons across **biological fidelity**, **full-stack software architecture**, **spatiotemporal scaling**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)**.
