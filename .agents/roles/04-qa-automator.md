@@ -5,9 +5,8 @@ status: active
 version: 0.1
 description: "- **Verification:** Assert deterministic execution, isolate failures,\
   \ triage coverage gaps."
-tags:
-- performance
-timestamp: "2026-07-21T16:01:38Z"
+tags: [performance]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources: []
 role: QA Automator
 ---

@@ -4,12 +4,8 @@ title: Related Works and Methodological Comparison
 status: active
 version: 1.1
 description: A methodological comparison of PHIDS against other established simulation frameworks across macro-ecology, agent-based landscape modeling, and hybrid biophysics.
-tags:
-- phids
-- scientific-model
-- methodological-comparison
-- related-works
-timestamp: "2026-08-11T18:30:00Z"
+tags: [phids, scientific-model, methodological-comparison, related-works]
+generated: { by: process:okf-updater, at: "2026-08-11T18:30:00Z" }
 resources: []
 ---
 

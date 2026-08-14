@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hardened validation engine enforcing Google's Open Knowledge Format (OKF v0.1)."""
+"""Hardened validation engine enforcing Google's Open Knowledge Format (OKF v0.2)."""
 
 from pathlib import Path
 from re import findall

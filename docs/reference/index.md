@@ -4,12 +4,8 @@ title: API & Package Reference Overview
 status: active
 version: 1.0
 description: High-level entry point for package module maps, symbol definitions, glossary index, and Python API reference.
-tags:
-- phids
-- reference
-- api
-- module-map
-timestamp: "2026-07-26T18:31:00Z"
+tags: [phids, reference, api, module-map]
+generated: { by: process:okf-updater, at: "2026-07-26T18:31:00Z" }
 resources:
 - docs/reference/module-map.md
 - docs/reference/glossary-and-concept-index.md

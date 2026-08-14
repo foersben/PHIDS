@@ -5,11 +5,8 @@ status: active
 version: 0.1
 description: Documentation for Population Dynamics vs. Continuous Solvers in the PHIDS
   framework.
-tags:
-- phids
-- ecs
-- python
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, ecs, python]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources: []
 ---
 

@@ -4,15 +4,8 @@ title: Biological Abstractions & Grid Mechanics
 status: active
 version: 1.5
 description: Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes full implementation status tracking for the Decoupled Dual-Proxy Architecture (Plans 1, 2, 3, & 4).
-tags:
-- phids
-- ecs
-- biological-modeling
-- spatial-dynamics
-- performance
-- dual-proxy
-- dashboard-ui
-timestamp: "2026-08-13T19:30:00Z"
+tags: [phids, ecs, biological-modeling, spatial-dynamics, performance, dual-proxy, dashboard-ui]
+generated: { by: process:okf-updater, at: "2026-08-13T19:30:00Z" }
 resources:
 - docs/scientific_model/mathematical_framework.md
 - docs/scientific_model/flora_and_symbiosis.md

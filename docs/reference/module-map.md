@@ -4,13 +4,8 @@ title: Module Map and Symbol Guide
 status: active
 version: 0.3
 description: Whole-project inventory of active phids.* runtime packages, presenters, UI templates, and symbol responsibilities.
-tags:
-- phids
-- ecs
-- chemotaxis
-- dual-proxy
-- dashboard-ui
-timestamp: "2026-08-13T19:30:00Z"
+tags: [phids, ecs, chemotaxis, dual-proxy, dashboard-ui]
+generated: { by: process:okf-updater, at: "2026-08-13T19:30:00Z" }
 resources:
 - api.md
 - ../development_guide/contribution_workflow.md

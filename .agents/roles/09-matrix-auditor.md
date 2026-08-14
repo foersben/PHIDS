@@ -4,12 +4,8 @@ title: Directives
 status: active
 version: 1.0
 description: "- **Coverage Auditing:** Periodically scan all Markdown files in `docs/scientific_model/` to verify Data-Flow Matrix coverage."
-tags:
-- ecs
-- testing
-- okf
-- data-flow-matrix
-timestamp: "2026-08-14T00:30:00Z"
+tags: [ecs, testing, okf, data-flow-matrix]
+generated: { by: process:okf-updater, at: "2026-08-14T00:30:00Z" }
 resources: []
 role: Matrix Auditor
 ---

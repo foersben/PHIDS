@@ -4,18 +4,8 @@ title: Strategic Multi-Stage Development Roadmap
 status: active
 version: 0.9
 description: Strategic development roadmap for PHIDS detailing pre-v1.0 base milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization engine, spatial extensions) and post-v1.0 research horizons.
-tags:
-- phids
-- roadmap
-- architecture
-- biological-fidelity
-- hpc
-- ecs
-- htmx
-- dse
-- zarr
-- pyinstaller
-timestamp: "2026-08-10T18:35:00Z"
+tags: [phids, roadmap, architecture, biological-fidelity, hpc, ecs, htmx, dse, zarr, pyinstaller]
+generated: { by: process:okf-updater, at: "2026-08-10T18:35:00Z" }
 resources:
 - docs/scientific_model/index.md
 - docs/technical_architecture/system_architecture.md

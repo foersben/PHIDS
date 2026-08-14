@@ -4,11 +4,8 @@ title: Flora Lifecycle and Symbiotic Networks
 status: active
 version: 0.3
 description: Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS framework.
-tags:
-- phids
-- ecs
-- dual-proxy
-timestamp: "2026-08-13T00:27:00Z"
+tags: [phids, ecs, dual-proxy]
+generated: { by: process:okf-updater, at: "2026-08-13T00:27:00Z" }
 resources:
 - src/phids/engine/components/plant.py
 - src/phids/engine/core/biotope.py

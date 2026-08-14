@@ -4,14 +4,8 @@ title: GPU CUDA Acceleration Engine
 status: active
 version: 1.0
 description: Future architecture for GPU-accelerated reaction-diffusion PDE solvers and 3D cellular automata using PyTorch and CUDA C++ bindings.
-tags:
-- phids
-- hpc
-- gpu
-- cuda
-- pytorch
-- future-prospects
-timestamp: "2026-07-26T18:30:00Z"
+tags: [phids, hpc, gpu, cuda, pytorch, future-prospects]
+generated: { by: process:okf-updater, at: "2026-07-26T18:30:00Z" }
 resources:
 - docs/technical_architecture/engine_execution.md
 - docs/scientific_model/reaction_diffusion.md

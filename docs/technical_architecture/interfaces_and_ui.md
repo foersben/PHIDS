@@ -4,14 +4,8 @@ title: Interfaces & UI
 status: active
 version: 1.1
 description: Technical documentation for administrative UI surfaces, HTMX controls, WebSocket streaming, and live dual-proxy cell inspection tooltips in PHIDS.
-tags:
-- phids
-- ecs
-- numba
-- performance
-- dashboard-ui
-- dual-proxy
-timestamp: "2026-08-13T19:30:00Z"
+tags: [phids, ecs, numba, performance, dashboard-ui, dual-proxy]
+generated: { by: process:okf-updater, at: "2026-08-13T19:30:00Z" }
 resources:
 - src/phids/api/presenters/dashboard/cell_details.py
 - src/phids/api/presenters/dashboard/payloads.py

@@ -4,13 +4,8 @@ title: System Architecture
 status: active
 version: 0.2
 description: Documentation for System Architecture in the PHIDS framework.
-tags:
-- phids
-- ecs
-- performance
-- chemotaxis
-- dual-proxy
-timestamp: "2026-08-13T00:27:00Z"
+tags: [phids, ecs, performance, chemotaxis, dual-proxy]
+generated: { by: process:okf-updater, at: "2026-08-13T00:27:00Z" }
 resources:
 - src/phids/engine/loop.py
 - src/phids/engine/core/biotope.py

@@ -4,12 +4,8 @@ title: Scenarios Module Overview
 status: active
 version: 1.0
 description: Overview of scenario authoring, curated example blueprints, and DSE optimization pipelines.
-tags:
-- phids
-- scenarios
-- dse
-- blueprints
-timestamp: "2026-07-26T18:31:00Z"
+tags: [phids, scenarios, dse, blueprints]
+generated: { by: process:okf-updater, at: "2026-07-26T18:31:00Z" }
 resources:
 - docs/scenario_guide/scenario_authoring.md
 - docs/scenario_guide/curated_examples.md

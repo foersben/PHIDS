@@ -5,13 +5,8 @@ status: active
 version: 0.1
 description: Documentation for Reaction-Diffusion & Partial Differential Equations
   in the PHIDS framework.
-tags:
-- phids
-- ecs
-- performance
-- chemotaxis
-- python
-timestamp: "2026-07-25T10:52:00Z"
+tags: [phids, ecs, performance, chemotaxis, python]
+generated: { by: process:okf-updater, at: "2026-07-25T10:52:00Z" }
 resources:
 - src/phids/engine/core/biotope.py
 ---

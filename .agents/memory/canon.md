@@ -26,3 +26,4 @@ Learning: When using multi-line Python strings to inject LaTeX code (e.g. `\appr
 
 Learning: Modeling complex multi-tick causal behavioral cascades with scalar enums or if/else branches breaks SIMD vectorization and introduces hidden state drift.
 Action: All multi-tick behavioral cascades must be modeled as an OKF Data-Flow Matrix table in documentation before implementation, and verified with corresponding Pytest time-series trace tests.
+## 2026-08-15 - [Documentation Compliance] Learning: Mass OKF upgrades (v0.1 to v0.2) required automated script pipelines to handle widespread tag lists (`tags: [tag1, tag2]`) and replaced `timestamp:` with `generated: { by: process:okf-updater, at: <time> }` to conform precisely to the v0.2 specifications. Action: Use strict format regex when migrating documentation headers and rely on `.agents/` workflow compliance scripts (`scripts/validate_okf.py`) to systematically assert graph continuity and schema integrity.

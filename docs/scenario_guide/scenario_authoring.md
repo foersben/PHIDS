@@ -4,9 +4,8 @@ title: Scenario Authoring & Schema
 status: active
 version: 0.1
 description: Documentation for Scenario Authoring & Schema in the PHIDS framework.
-tags:
-- phids
-timestamp: "2026-07-25T10:52:00Z"
+tags: [phids]
+generated: { by: process:okf-updater, at: "2026-07-25T10:52:00Z" }
 resources: []
 ---
 

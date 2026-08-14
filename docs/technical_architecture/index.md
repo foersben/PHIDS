@@ -4,12 +4,8 @@ title: Technical Architecture Overview
 status: active
 version: 1.0
 description: High-level overview of PHIDS software architecture, data-oriented ECS execution loops, HTMX dashboard interfaces, Zarr telemetry, and testing gates.
-tags:
-- phids
-- ecs
-- architecture
-- hpc
-timestamp: "2026-07-26T18:30:00Z"
+tags: [phids, ecs, architecture, hpc]
+generated: { by: process:okf-updater, at: "2026-07-26T18:30:00Z" }
 resources:
 - docs/technical_architecture/system_architecture.md
 - docs/technical_architecture/engine_execution.md

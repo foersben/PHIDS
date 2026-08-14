@@ -4,12 +4,8 @@ title: Mathematical Framework
 status: active
 version: 0.1
 description: Documentation for Mathematical Framework in the PHIDS framework.
-tags:
-- phids
-- ecs
-- numba
-- chemotaxis
-timestamp: "2026-07-21T16:01:38Z"
+tags: [phids, ecs, numba, chemotaxis]
+generated: { by: process:okf-updater, at: "2026-07-21T16:01:38Z" }
 resources:
 - chemotaxis.md
 - population_dynamics.md

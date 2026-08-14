@@ -4,13 +4,8 @@ title: Contribution Workflow
 status: active
 version: 1.0
 description: Quality gates, two-pass Numba testing strategy, and Zensical documentation build policy in PHIDS.
-tags:
-- phids
-- ecs
-- numba
-- performance
-- zensical
-timestamp: "2026-07-26T18:53:00Z"
+tags: [phids, ecs, numba, performance, zensical]
+generated: { by: process:okf-updater, at: "2026-07-26T18:53:00Z" }
 resources:
 - src/phids/engine/core/flow_field.py
 - src/phids/engine/core/biotope.py

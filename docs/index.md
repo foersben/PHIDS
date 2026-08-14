@@ -1,15 +1,12 @@
 ---
+okf_version: "0.2"
 type: reference
 title: PHIDS Documentation Overview
 status: active
 version: 1.0
 description: Core landing page and abstract for the Plant-Herbivore Interaction & Defense Simulator (PHIDS) documentation.
-tags:
-- phids
-- abstract
-- biological-model
-- ecs
-timestamp: "2026-07-26T18:31:00Z"
+tags: [phids, abstract, biological-model, ecs]
+generated: { by: process:okf-updater, at: "2026-07-26T18:31:00Z" }
 resources:
 - docs/scientific_model/index.md
 - docs/technical_architecture/index.md

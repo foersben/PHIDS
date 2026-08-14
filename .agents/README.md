@@ -4,13 +4,8 @@ title: Welcome to the PHIDS Agent Ecosystem
 status: active
 version: 0.10.0
 description: Welcome to the autonomous nervous system of the Plant-Herbivore Interaction & Defense Simulator (PHIDS).
-tags:
-- phids
-- ecs
-- numba
-- performance
-- python
-timestamp: "2026-08-11T23:49:00Z"
+tags: [phids, ecs, numba, performance, python]
+generated: { by: process:okf-updater, at: "2026-08-11T23:49:00Z" }
 resources:
 - ../docs/technical_architecture/engine_execution.md
 - validate_okf.py
@@ -161,7 +156,7 @@ Our repository does not rely on agent promises; it relies on automated enforceme
 
 * **Run Benchmarks (`run-benchmarks`):** Evaluates `pytest-benchmark` execution speeds to reject any code that degrades the performance of the spatial hashing loops.
 * **Analyze Zarr (`analyze-zarr`):** Inspects Zarr schemas to guarantee telemetry replays match active loop data.
-* **Validate OKF (`validate-okf`):** A critical gate enforcing our implementation of the Open Knowledge Format (OKF v0.1).
+* **Validate OKF (`validate-okf`):** A critical gate enforcing our implementation of the Open Knowledge Format (OKF v0.2).
 * **Verify Matrix Trace Parity (`verify-matrix-trace-parity`):** Parses Markdown Data-Flow Matrix tables and asserts point-by-point numerical parity against Pytest traces.
 * **Audit OKF Matrix Coverage (`audit-okf-matrix-coverage`):** Scans concept documents in `docs/scientific_model/` and reports state shifts missing matrix tables.
 * **Auto Reconcile Matrix Drift (`auto-reconcile-matrix-drift`):** Captures runtime traces and auto-updates Markdown table rows when parameters drift.
