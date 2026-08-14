@@ -27,7 +27,8 @@ def _numba_decay_signal_layer(
     for x in range(w):
         for y in range(h):
             val = layer[x, y] * decay_factor
-            layer[x, y] = val if val >= epsilon else 0.0
+            mask = 1.0 if val >= epsilon else 0.0
+            layer[x, y] = val * mask
 
 
 if TYPE_CHECKING:
