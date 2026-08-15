@@ -57,3 +57,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2025-02-20 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/telemetry.py` and its function `telemetry_chartjs_data`
+* **Selection Rationale:** Selected due to its high cognitive complexity score (37) and untangling ease (standard Python API layer logic for overlaying species dicts without risk to simulation speed).
+* **Before/After Score:** 37 vs. 8
+* **Performance Assessment:** Common-sense reasoning confirms zero performance regression as the refactoring just extracts existing simple Python dictionary overlay logic into private helpers. Existing project benchmarks confirmed no performance regressions either.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
