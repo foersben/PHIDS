@@ -219,6 +219,60 @@ def _extract_chart_series_df(
     return labels, series
 
 
+def _overlay_plant_species_data(
+    series: dict[str, list[float]],
+    idx: int,
+    row: dict[str, object],
+    flora_ids: list[int],
+) -> None:
+    """Overlay plant species data from a raw row onto the series."""
+    plant_pop = row.get("plant_pop_by_species", {})
+    plant_energy = row.get("plant_energy_by_species", {})
+    defense_cost = row.get("defense_cost_by_species", {})
+
+    if not (isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict)):
+        return
+
+    for fid in flora_ids:
+        if idx < len(series.get(f"plant_{fid}_pop", [])):
+            series[f"plant_{fid}_pop"][idx] = _safe_float(plant_pop.get(fid, 0))
+            series[f"plant_{fid}_energy"][idx] = _safe_float(plant_energy.get(fid, 0.0))
+            series[f"defense_cost_{fid}"][idx] = _safe_float(defense_cost.get(fid, 0.0))
+
+
+def _overlay_swarm_species_data(
+    series: dict[str, list[float]],
+    idx: int,
+    row: dict[str, object],
+    herbivore_ids: list[int],
+) -> None:
+    """Overlay swarm species data from a raw row onto the series."""
+    swarm_pop = row.get("swarm_pop_by_species", {})
+    if not isinstance(swarm_pop, dict):
+        return
+
+    for hid in herbivore_ids:
+        if idx < len(series.get(f"swarm_{hid}_pop", [])):
+            series[f"swarm_{hid}_pop"][idx] = _safe_float(swarm_pop.get(hid, 0))
+
+
+def _overlay_raw_species_data(
+    series: dict[str, list[float]],
+    raw_rows: list[dict[str, object]],
+    flora_ids: list[int],
+    herbivore_ids: list[int],
+) -> None:
+    """Overlay per-species nested-dict data from raw rows onto existing series."""
+    if not (flora_ids or herbivore_ids):
+        return
+
+    for i, r in enumerate(raw_rows):
+        if flora_ids:
+            _overlay_plant_species_data(series, i, r, flora_ids)
+        if herbivore_ids:
+            _overlay_swarm_species_data(series, i, r, herbivore_ids)
+
+
 @router.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
 async def telemetry_chartjs_data(
     since_tick: int | None = None,
@@ -252,22 +306,7 @@ async def telemetry_chartjs_data(
     )
     # Overlay per-species nested-dict data from raw rows (not available in flat dataframe)
     raw_rows_for_species = _filter_telemetry_rows_for_chart(raw_rows, run_id, current_run_id, since_tick)
-    if flora_ids or herbivore_ids:
-        for i, r in enumerate(raw_rows_for_species):
-            plant_pop = r.get("plant_pop_by_species", {})
-            plant_energy = r.get("plant_energy_by_species", {})
-            defense_cost = r.get("defense_cost_by_species", {})
-            if isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict):
-                for fid in flora_ids:
-                    if i < len(series.get(f"plant_{fid}_pop", [])):
-                        series[f"plant_{fid}_pop"][i] = _safe_float(plant_pop.get(fid, 0))
-                        series[f"plant_{fid}_energy"][i] = _safe_float(plant_energy.get(fid, 0.0))
-                        series[f"defense_cost_{fid}"][i] = _safe_float(defense_cost.get(fid, 0.0))
-            swarm_pop = r.get("swarm_pop_by_species", {})
-            if isinstance(swarm_pop, dict):
-                for hid in herbivore_ids:
-                    if i < len(series.get(f"swarm_{hid}_pop", [])):
-                        series[f"swarm_{hid}_pop"][i] = _safe_float(swarm_pop.get(hid, 0))
+    _overlay_raw_species_data(series, raw_rows_for_species, flora_ids, herbivore_ids)
 
     return JSONResponse(
         {
