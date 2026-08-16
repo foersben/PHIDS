@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from phids.api.schemas.species import FloraSpeciesParams
+    from phids.engine.components.plant import PlantComponent
     from phids.engine.loop import SimulationLoop
 
 
@@ -175,7 +176,7 @@ def _collect_flora_species(
     return all_flora_species, species_energy
 
 
-def _compute_plant_structural_properties(p, max_struct):
+def _compute_plant_structural_properties(p: PlantComponent, max_struct: float) -> tuple[float, float, str]:
     struct_mass = float(p.structural_mass)
     if struct_mass <= 0.0 and max_struct > 0.0:
         struct_mass = max_struct * min(1.0, max(0.0, float(p.energy) / max_struct))
