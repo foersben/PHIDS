@@ -501,6 +501,46 @@ def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) ->
     return False
 
 
+def _process_plant_lifecycle(
+    plant: PlantComponent,
+    tick: int,
+    world: ECSWorld,
+    env: GridEnvironment,
+    flora_species_params: dict[int, object],
+    plant_death_causes: dict[str, int] | None,
+) -> bool:
+    """Process growth, upkeep, and reproduction for a single plant. Returns True if plant died."""
+    _grow(plant, tick)
+    _grow_structural(plant, env)
+
+    upkeep_fee = _calculate_structural_upkeep_jit(
+        plant.survival_threshold, plant.structural_mass, plant.max_structural_mass, STRUCTURAL_UPKEEP_SCALAR
+    )
+    if upkeep_fee > 0.0:
+        plant.energy = max(0.0, plant.energy - upkeep_fee)
+
+    if plant.mycorrhizal_tax_per_link > 0.0 and plant.mycorrhizal_connections:
+        plant.energy = _apply_mycorrhizal_tax_jit(
+            plant.energy, plant.mycorrhizal_tax_per_link, len(plant.mycorrhizal_connections)
+        )
+
+    _attempt_reproduction(plant, tick, world, env, flora_species_params)
+
+    env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+    env.set_apparent_nutrition(plant.x, plant.y, plant.apparent_nutrition_factor)
+
+    plant.mycorrhizal_connections = {eid for eid in plant.mycorrhizal_connections if world.has_entity(eid)}
+
+    if plant.energy < plant.survival_threshold:
+        cause_key = plant.last_energy_loss_cause or "death_background_deficit"
+        if plant_death_causes is not None:
+            plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
+        env.clear_plant_energy(plant.x, plant.y, plant.species_id)
+        env.clear_structural_mass(plant.x, plant.y, plant.species_id)
+        return True
+    return False
+
+
 def run_lifecycle(
     world: ECSWorld,
     env: GridEnvironment,
@@ -541,40 +581,7 @@ def run_lifecycle(
         if not force_all_entities and (plant.entity_id % SLOW_TICK_STRIDE) != (tick % SLOW_TICK_STRIDE):
             continue
 
-        # Growth (Caloric Energy & Permanent Structural Mass)
-        _grow(plant, tick)
-        _grow_structural(plant, env)
-
-        # Plan 3: Deduct M_structural-scaled maintenance cost
-        upkeep_fee = _calculate_structural_upkeep_jit(
-            plant.survival_threshold, plant.structural_mass, plant.max_structural_mass, STRUCTURAL_UPKEEP_SCALAR
-        )
-        if upkeep_fee > 0.0:
-            plant.energy = max(0.0, plant.energy - upkeep_fee)
-
-        # Apply continuous mycorrhizal carbon tax (256-bit SIMD JIT helper)
-        if plant.mycorrhizal_tax_per_link > 0.0 and plant.mycorrhizal_connections:
-            plant.energy = _apply_mycorrhizal_tax_jit(
-                plant.energy, plant.mycorrhizal_tax_per_link, len(plant.mycorrhizal_connections)
-            )
-
-        # Reproduction
-        _attempt_reproduction(plant, tick, world, env, flora_species_params)
-
-        # Update biotope energy
-        env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
-        env.set_apparent_nutrition(plant.x, plant.y, plant.apparent_nutrition_factor)
-
-        # Prune dead mycorrhizal links
-        plant.mycorrhizal_connections = {eid for eid in plant.mycorrhizal_connections if world.has_entity(eid)}
-
-        # Survival check
-        if plant.energy < plant.survival_threshold:
-            cause_key = plant.last_energy_loss_cause or "death_background_deficit"
-            if plant_death_causes is not None:
-                plant_death_causes[cause_key] = plant_death_causes.get(cause_key, 0) + 1
-            env.clear_plant_energy(plant.x, plant.y, plant.species_id)
-            env.clear_structural_mass(plant.x, plant.y, plant.species_id)
+        if _process_plant_lifecycle(plant, tick, world, env, flora_species_params, plant_death_causes):
             world.unregister_position(entity.entity_id, plant.x, plant.y)
             dead.append(entity.entity_id)
 

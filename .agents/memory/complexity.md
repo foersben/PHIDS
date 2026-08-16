@@ -57,3 +57,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/lifecycle.py` and function `run_lifecycle`
+* **Selection Rationale:** The complexity was originally `19`. It's part of the engine loop but easy to cleanly refactor since the actual plant lifecycle processing inside the loop was deep and could be easily abstracted to a `_process_plant_lifecycle` helper. This cleanly reduced complexity, and it doesn't incur significant performance regressions because it just abstracts out the loop logic without adding meaningful allocations or processing steps.
+* **Before/After Score:** 19 vs. 7
+* **Performance Assessment:** Ran benchmarks with pytest. Benchmark metrics for simulation tests remained well within acceptable variances (OPS essentially equivalent). No noticeable slowdown in simulation tests since no allocations were changed, and the function is just moving loop body to a helper function.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
