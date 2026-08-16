@@ -226,8 +226,8 @@ async def test_export_route_backend_failure_branches(
     def _raise_png(*_args: object, **_kwargs: object) -> bytes:
         raise ValueError("png failed")
 
-    monkeypatch.setattr("phids.api.routers.telemetry.generate_tikz_str", _raise_tikz)
-    monkeypatch.setattr("phids.api.routers.telemetry.generate_png_bytes", _raise_png)
+    monkeypatch.setattr("phids.api.routers.telemetry.exports.generate_tikz_str", _raise_tikz)
+    monkeypatch.setattr("phids.api.routers.telemetry.exports.generate_png_bytes", _raise_png)
 
     response = await api_client.get("/api/export/timeseries", params={"format": format_name})
 

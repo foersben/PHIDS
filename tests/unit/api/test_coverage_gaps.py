@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-from phids.api.routers.telemetry import _extract_chart_series, _extract_chart_series_df
+from phids.api.routers.telemetry.chartjs import _extract_chart_series, _extract_chart_series_df
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
