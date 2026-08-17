@@ -184,9 +184,9 @@ Instead of relying on single variables or discrete state enums, every plant enti
 
 By splitting the biological state across these two vectors, the entire ecosystem naturally balances itself without a single `if/else` statement in the execution loop:
 
-* **Foraging & Patch Departure:** Herbivore intake is gated by $E_{current}$. When the leaves are gone, intake drops below upkeep, and the swarm departs (Emergent MVT).
-* **Collateral Trampling & Defenses:** A passing swarm's ability to crush a plant is tested against $M_{structural}$, not $E_{current}$. A heavily grazed adult bush ($M_{structural} = \text{High}$, $E_{current} = \text{Low}$) survives trampling perfectly, while a new seed is crushed.
-* **The Zombie Forest & Symbiosis:** A plant's baseline metabolic upkeep scales with its $M_{structural}$ (big trees need more baseline energy). If it is grazed so heavily that its remaining $E_{current}$ cannot meet this high structural upkeep, it starves. It automatically drops its mycorrhizal connections (saving itself from the fungal tax) but eventually dies, organically clearing the coordinate for new seeds and solving grid stagnation.
+- **Foraging & Patch Departure:** Herbivore intake is gated by $E_{current}$. When the leaves are gone, intake drops below upkeep, and the swarm departs (Emergent MVT).
+- **Collateral Trampling & Defenses:** A passing swarm's ability to crush a plant is tested against $M_{structural}$, not $E_{current}$. A heavily grazed adult bush ($M_{structural} = \text{High}$, $E_{current} = \text{Low}$) survives trampling perfectly, while a new seed is crushed.
+- **The Zombie Forest & Symbiosis:** A plant's baseline metabolic upkeep scales with its $M_{structural}$ (big trees need more baseline energy). If it is grazed so heavily that its remaining $E_{current}$ cannot meet this high structural upkeep, it starves. It automatically drops its mycorrhizal connections (saving itself from the fungal tax) but eventually dies, organically clearing the coordinate for new seeds and solving grid stagnation.
 
 ### Next Steps (Stage 1B Implementation)
 
@@ -195,3 +195,14 @@ By splitting the biological state across these two vectors, the entire ecosystem
 3. Implement the FMA probability check for trampling based on $M_{structural}$ during coordinate transitions.
 
 This architecture offers a pristine balance: achieving deep, realistic ecological dynamics (Handling Time, Patch Departure, Lignin Defenses, and Trophic Symbiosis) while fully respecting the rigid, high-speed constraints of discrete ECS parallel execution.
+
+### Data-Flow Matrix: Dual-Proxy State Shifts
+
+| Event | Precondition | State Transformation | ECS Resolution |
+| :--- | :--- | :--- | :--- |
+| **Photosynthesis** | $E_{current} < E_{max}$ | $E_{current} = \min(E_{max}, E_{current} + \text{daily\_gain})$ | Daily Loop Update |
+| **Growth** | $E_{current} \ge \text{Cost}_{growth}$ AND $M_{structural} < M_{max}$ | $M_{structural} = \min(M_{max}, M_{structural} + \delta M)$; $E_{current} -= \text{Cost}_{growth}$ | Daily Loop Update |
+| **Grazing** | $E_{current} > 0$ | $E_{current} = \max(0, E_{current} - \text{Intake})$ | Medium Tick Interaction |
+| **Mycorrhizal Tax** | $E_{current} < \text{Upkeep}$ | Drop `mycorrhizal_connections` mask | Branchless float mask `E > Upkeep` |
+| **Trampling** | $M_{structural} < M_{adult}$ | $P(\text{destroy}) = f(SwarmBiomass, M_{structural})$ | Movement Hot Path |
+| **Starvation** | $E_{current} \le 0$ AND $M_{structural} > 0$ | Coordinate occupancy = 0 | Garbage Collection |
