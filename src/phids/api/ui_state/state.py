@@ -153,8 +153,8 @@ class DraftState:
     """
 
     scenario_name: str = _DEFAULT_SCENARIO_NAME
-    grid_width: int = 40
-    grid_height: int = 40
+    grid_width: int = 64
+    grid_height: int = 64
     max_ticks: int = 1000
     tick_rate_hz: float = 10.0
     wind_x: float = 0.0

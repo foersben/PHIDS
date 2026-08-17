@@ -864,7 +864,7 @@ def test_foraging_parameter_caching_parity() -> None:
             energy_min=1.0,
             velocity=1,
             consumption_rate=1.0,
-            reproduction_energy_divisor=1.0,
+            reproduction_energy_divisor=2.0,
             resistances=HerbivoreResistancesSchema(digestive_efficiency=0.9, morphological_adaptation=0.1),
         )
     ]

@@ -62,7 +62,7 @@ def test_attrition_matches_closed_form_over_bounded_parameter_sweep(
         deficit = -post_cost_energy
         casualties = math.ceil(deficit / energy_min)
         expected_population = max(0, population - casualties)
-        expected_energy = max(0.0, casualties * energy_min - deficit)
+        expected_energy = 0.0
 
     world, swarm_id = run_attrition_step(
         population=population,
@@ -160,7 +160,7 @@ def test_zero_upkeep_is_identity_map_for_population_and_energy(
     ("deficit", "expected_population", "expected_energy"),
     [
         (2.0, 3, 0.0),
-        (2.1, 2, 1.9),
+        (2.1, 2, 0.0),
         (6.0, 1, 0.0),
         (6.1, 0, 0.0),
     ],

@@ -31,8 +31,8 @@ async def test_simulation_loop_establishes_mycorrhizal_connections_on_slow_ticks
     bidirectional mycorrhizal connection once step 168 executes.
     """
     config = SimulationConfig(
-        grid_width=10,
-        grid_height=10,
+        grid_width=16,
+        grid_height=16,
         max_ticks=200,
         tick_rate_hz=1000.0,
         num_signals=1,
@@ -106,8 +106,8 @@ async def test_simulation_loop_mycorrhiza_network_expands_across_collinear_plant
     With 4 collinear plants (x=2, 3, 4, 5 at y=5), the network must connect (2-3), (3-4), (4-5).
     """
     config = SimulationConfig(
-        grid_width=12,
-        grid_height=12,
+        grid_width=16,
+        grid_height=16,
         max_ticks=600,
         tick_rate_hz=1000.0,
         num_signals=1,

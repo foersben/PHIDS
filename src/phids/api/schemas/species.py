@@ -52,7 +52,7 @@ class FloraSpeciesParams(StrictBaseModel):
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
     translocation_rate: float = Field(
-        default=0.2, ge=0.0, le=1.0, description="Rate of nutrient translocation during resource withdrawal."
+        default=0.2, gt=0.0, le=1.0, description="Rate of nutrient translocation during resource withdrawal."
     )
     mycorrhizal_tax_per_link: float = Field(
         default=0.0, ge=0.0, description="Continuous energy maintenance fee deducted per active root link per tick."
@@ -120,8 +120,8 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         description="Temperature (τ) for stochastic action selection. 0.0 defaults to linear weighted choice.",
     )
     reproduction_energy_divisor: float = Field(
-        default=1.0,
-        gt=0.0,
+        default=2.0,
+        ge=2.0,
         validation_alias=AliasChoices("reproduction_energy_divisor", "reproduction_divisor"),
         description="Denominator for φ(e_h,t) = floor(R(C_i,t) / E_min(e_h)).",
     )

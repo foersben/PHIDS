@@ -41,8 +41,8 @@ async def test_toroidal_mass_conservation_over_ticks() -> None:
     )
 
     config = SimulationConfig(
-        grid_width=20,
-        grid_height=20,
+        grid_width=32,
+        grid_height=32,
         flora_species=[flora],
         herbivore_species=[herbivore],
         diet_matrix={"rows": [[True]]},

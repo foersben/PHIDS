@@ -109,4 +109,4 @@ def test_dry_shrubland_cycles_preserves_herbivore_reproduction_divisors() -> Non
         for swarm in [entity.get_component(SwarmComponent)]
     )
 
-    assert divisors == [0.9, 0.9, 1.15]
+    assert divisors == [2.0, 2.0, 2.0]

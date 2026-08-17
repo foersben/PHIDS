@@ -36,8 +36,8 @@ def minimal_scenario() -> dict:
     from phids.api.schemas.triggers import PassiveDefensesSchema
 
     config = SimulationConfig(
-        grid_width=4,
-        grid_height=4,
+        grid_width=16,
+        grid_height=16,
         max_ticks=5,
         num_signals=1,
         num_toxins=1,
