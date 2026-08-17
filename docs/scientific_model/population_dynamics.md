@@ -1,16 +1,14 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Population Dynamics vs. Continuous Solvers
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
-description: Documentation for Population Dynamics vs. Continuous Solvers in the PHIDS
-  framework.
-tags:
-- phids
-- ecs
-- python
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+description: Documentation for Population Dynamics vs. Continuous Solvers in the
+  PHIDS framework.
+tags: [phids, ecs, python]
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
 Herbivore swarms within PHIDS consume resources, metabolize energy, reproduce, and undergo density-dependent population scaling. This deep dive explains how those behaviors are modeled as discrete events evaluated locally on the spatial hash.

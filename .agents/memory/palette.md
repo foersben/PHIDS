@@ -1,14 +1,14 @@
 ---
-type: memory
+type: Agent Memory
 title: Palette
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
-description: "**Learning:** When styling file upload inputs inside `<label>` wrappers\
-  \ with Tailwind, using `hidden` on the `<input>` removes it from the browser ..."
-tags:
-- documentation
-timestamp: "2026-07-21T16:01:38Z"
-resources: []
+description: "**Learning:** When styling file upload inputs inside `<label>` wrappers
+  with Tailwind, using `hidden` on the `<input>` removes it from the browser ..."
+tags: [documentation]
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
 ## 2024-06-26 - [File Input A11y]

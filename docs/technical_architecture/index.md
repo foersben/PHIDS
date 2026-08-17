@@ -1,21 +1,26 @@
 ---
-type: technical_architecture
+type: Architecture Document
 title: Technical Architecture Overview
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: High-level overview of PHIDS software architecture, data-oriented ECS execution loops, HTMX dashboard interfaces, Zarr telemetry, and testing gates.
-tags:
-- phids
-- ecs
-- architecture
-- hpc
-timestamp: "2026-07-26T18:30:00Z"
-resources:
-- docs/technical_architecture/system_architecture.md
-- docs/technical_architecture/engine_execution.md
-- docs/technical_architecture/interfaces_and_ui.md
-- docs/technical_architecture/telemetry.md
-- docs/technical_architecture/testing_architecture.md
+description: High-level overview of PHIDS software architecture, data-oriented
+  ECS execution loops, HTMX dashboard interfaces, Zarr telemetry, and testing
+  gates.
+tags: [phids, ecs, architecture, hpc]
+generated: {by: process:okf-updater, at: "2026-07-26T18:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: system_architecture
+  resource: docs/technical_architecture/system_architecture.md
+- id: engine_execution
+  resource: docs/technical_architecture/engine_execution.md
+- id: interfaces_and_ui
+  resource: docs/technical_architecture/interfaces_and_ui.md
+- id: telemetry
+  resource: docs/technical_architecture/telemetry.md
+- id: testing_architecture
+  resource: docs/technical_architecture/testing_architecture.md
 ---
 
 # Technical Architecture Overview

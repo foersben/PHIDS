@@ -1,17 +1,18 @@
 ---
-type: memory
+type: Agent Memory
 title: Complexity
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
-description: Refactoring cognitive complexity from telemetry module and learnings
-tags:
-- phids
-- refactor
-- complexity
-timestamp: "2026-07-22T13:00:00Z"
-resources:
-- telemetry.py
+description: Refactoring cognitive complexity from telemetry module and
+  learnings
+tags: [phids, refactor, complexity]
+generated: {by: process:okf-updater, at: "2026-07-22T13:00:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 name: complexity
+sources:
+- id: telemetry
+  resource: telemetry.py
 ---
 
 ## 2026-07-22 - Refactoring Telemetry API Monolith

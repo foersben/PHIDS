@@ -1,20 +1,23 @@
 ---
-type: reference
+type: Reference
 title: API & Package Reference Overview
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: High-level entry point for package module maps, symbol definitions, glossary index, and Python API reference.
-tags:
-- phids
-- reference
-- api
-- module-map
-timestamp: "2026-07-26T18:31:00Z"
-resources:
-- docs/reference/module-map.md
-- docs/reference/glossary-and-concept-index.md
-- docs/reference/requirements-traceability.md
-- docs/reference/api.md
+description: High-level entry point for package module maps, symbol definitions,
+  glossary index, and Python API reference.
+tags: [phids, reference, api, module-map]
+generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: module-map
+  resource: docs/reference/module-map.md
+- id: glossary-and-concept-index
+  resource: docs/reference/glossary-and-concept-index.md
+- id: requirements-traceability
+  resource: docs/reference/requirements-traceability.md
+- id: api
+  resource: docs/reference/api.md
 ---
 
 The reference section separates human-oriented explanation from symbol-oriented API detail.

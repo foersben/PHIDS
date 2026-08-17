@@ -1,5 +1,5 @@
 ---
-type: memory
+type: Agent Memory
 title: "Canon Memory"
 ---
 
@@ -21,3 +21,9 @@ Action: [Always perform a recursive `grep` for the old directory name (`grep -rn
 ## 2026-07-26 - [Documentation Escaping]
 
 Learning: When using multi-line Python strings to inject LaTeX code (e.g. `\approx`, `\%`, `\c`, `\g`) into markdown files, standard Python string parsing interprets backslash sequences as literal escape codes. This causes `SyntaxWarning: invalid escape sequence` and silent corruption of the text (e.g., `\a` becoming an ASCII bell character, breaking math rendering). Action: Always use raw string literals (`r"""..."""`) in Python scripts designed to edit or generate markdown containing LaTeX, or explicitly double-escape the backslashes to preserve macro integrity.
+
+## 2026-08-14 - [OKF Data-Flow Matrix Modeling Mandate]
+
+Learning: Modeling complex multi-tick causal behavioral cascades with scalar enums or if/else branches breaks SIMD vectorization and introduces hidden state drift.
+Action: All multi-tick behavioral cascades must be modeled as an OKF Data-Flow Matrix table in documentation before implementation, and verified with corresponding Pytest time-series trace tests.
+## 2026-08-15 - [Documentation Compliance] Learning: Mass OKF upgrades (v0.1 to v0.2) required automated script pipelines to handle widespread tag lists (`tags: [tag1, tag2]`) and replaced `timestamp:` with `generated: { by: process:okf-updater, at: <time> }` to conform precisely to the v0.2 specifications. Action: Use strict format regex when migrating documentation headers and rely on `.agents/` workflow compliance scripts (`scripts/validate_okf.py`) to systematically assert graph continuity and schema integrity.

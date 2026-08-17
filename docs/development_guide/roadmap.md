@@ -1,26 +1,25 @@
 ---
-type: roadmap
+type: Roadmap
 title: Strategic Multi-Stage Development Roadmap
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.9
-description: Strategic development roadmap for PHIDS detailing pre-v1.0 base milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization engine, spatial extensions) and post-v1.0 research horizons.
-tags:
-- phids
-- roadmap
-- architecture
-- biological-fidelity
-- hpc
-- ecs
-- htmx
-- dse
-- zarr
-- pyinstaller
-timestamp: "2026-08-10T18:35:00Z"
-resources:
-- docs/scientific_model/index.md
-- docs/technical_architecture/system_architecture.md
-- docs/scenario_guide/design_space_exploration.md
-- docs/scenario_guide/empirical_database.md
+description: Strategic development roadmap for PHIDS detailing pre-v1.0 base
+  milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization
+  engine, spatial extensions) and post-v1.0 research horizons.
+tags: [phids, roadmap, architecture, biological-fidelity, hpc, ecs, htmx, dse,
+    zarr, pyinstaller]
+generated: {by: process:okf-updater, at: "2026-08-10T18:35:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: index
+  resource: docs/scientific_model/index.md
+- id: system_architecture
+  resource: docs/technical_architecture/system_architecture.md
+- id: design_space_exploration
+  resource: docs/scenario_guide/design_space_exploration.md
+- id: empirical_database
+  resource: docs/scenario_guide/empirical_database.md
 ---
 
 This document defines the strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details implemented foundations, active pre-v1.0 base milestones, and future research horizons across **biological fidelity**, **full-stack software architecture**, **spatiotemporal scaling**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)**.
@@ -85,7 +84,7 @@ This document defines the strategic development roadmap for the Plant-Herbivore 
     * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize per-swarm foraging mode transitions and departure ticks. All scenario examples (`scenarios/*.yaml`) updated to match.
     * **QA & Verification Gates**: Unit tests for Boltzmann transition probabilities, MVT departure triggers, and partial herbivory recovery in `tests/unit/engine/systems/test_movement.py`; `mutmut` kill rate $>85\%$; benchmark regression gate $<5\%$ tick latency overhead.
     * **Documentation**: Update `docs/scientific_model/herbivore_behavior.md`, `docs/scientific_model/chemotaxis.md`, and `docs/technical_architecture/engine_execution.md`.
-    * **DSE Scope Extension**: Expose continuous gene `softmax_temperature` ($\tau$) in [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for evolutionary trajectory optimization.
+    * **DSE Scope Extension**: Expose continuous gene `softmax_temperature` ($\tau$) in [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for evolutionary trajectory optimization.
 
 ---
 
@@ -137,7 +136,7 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
     * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle.py`); benchmark regression gate ($<5\%$ tick overhead).
     * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
     * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
-    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
 
 ### Stage 3B: Soil Detritus & Biomass Recycling Loop
 
@@ -153,7 +152,7 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
     * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
     * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
     * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
-    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for soil mineralization continuous/discrete genes.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for soil mineralization continuous/discrete genes.
 
 ### Stage 3C: Macro-Patch Weather & Micro-Climate Profile
 
@@ -169,12 +168,12 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
     * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
     * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
     * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
-    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](scenario_guide/design_space_exploration.md) for climate amplitude and drought intensity genes.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for climate amplitude and drought intensity genes.
 
 ### Stage 3 Implementation Summary Matrix
 
 | Stage | Core Feature | Dev Complexity | Backend & API | UI & Scenario Import/Export | Empirical DB & ETL | Zarr Telemetry & QA Gates | Target Docs | DSE Parameters Added |
-|---|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Stage 3A** | Soil Seed Bank | Low-Mod ($\sim 250$ LOC) | `seed_bank_layer`, `lifecycle.py` GDD logic | HTMX Seed Bank toggle, GDD sliders, JSON buttons, live overlay | Ingest `gdd_threshold`, `seed_decay` in DuckDB | Direct `/seed_bank_density` Zarr update, `mutmut` $>85\%$ | `engine_execution.md` | `germination_gdd_threshold`, `seed_decay_rate` |
 | **Stage 3B** | Soil Detritus Recycling | Moderate ($\sim 350$ LOC) | `SoilModule` JIT mineralization kernels | Soil settings panel (Disabled/Dense/Patch), live N-map | Soil N baselines & tissue N:P decay ratios | Direct `/soil_nitrogen` Zarr array | `system_architecture.md` | `mineralization_rate`, `soil_nitrogen_baseline` |
 | **Stage 3C** | Weather Profiles | Low-Mod ($\sim 220$ LOC) | `WeatherModule`, `SimulationLoop` Phase 0 | Weather profile selector, dashboard temp badge | Species thermal limits ($T_{\text{min}}, T_{\text{max}}$) in JSON | Direct climate scalars in Zarr metadata | `mathematical_framework.md` | `seasonal_temp_amplitude`, `drought_factor` |

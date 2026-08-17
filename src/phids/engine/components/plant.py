@@ -30,14 +30,25 @@ from dataclasses import dataclass, field
 class PlantComponent:
     """Holds runtime state for a single plant entity.
 
+    Implements the Decoupled Dual-Proxy Architecture, where plant state is split across
+    two orthogonal biological quantities:
+
+    - ``energy`` (E_current): Short-term, volatile caloric health (leaves, accessible sugars,
+      phloem). Increased by photosynthesis; reduced by herbivory, mycorrhizal taxes, and
+      defense synthesis. A plant dies when this drops below ``survival_threshold``.
+    - ``structural_mass`` (M_structural): Long-term, permanent structural growth (lignin,
+      woodiness, root depth). Monotonically non-decreasing - it is never reduced by herbivory.
+      Trampling vulnerability and morphological defenses are evaluated against this proxy, not
+      against ``energy``, so a heavily grazed adult plant retains its structural resilience.
+
     Attributes:
         entity_id: ECS entity identifier.
         species_id: Flora species index.
         x, y: Current grid coordinates.
-        energy: Current energy reserve E_i,j(t).
-        max_energy: Species-specific energy capacity E_max.
-        base_energy: Initial energy used by growth formula.
-        growth_rate: Per-tick growth rate in percent.
+        energy: Current caloric energy reserve (E_current proxy). Alias for E_i,j(t).
+        max_energy: Species-specific caloric capacity E_max.
+        base_energy: Initial caloric energy used by growth formula.
+        growth_rate: Per-tick photosynthetic growth rate in percent.
         survival_threshold: Energy threshold below which the plant dies.
         reproduction_interval: Ticks between reproduction attempts.
         seed_min_dist: Minimum seed dispersal distance.
@@ -53,6 +64,11 @@ class PlantComponent:
         mycorrhizal_connections: Set of connected plant entity ids.
         apparent_nutrition_factor: Stress-induced nutrient discount modifier.
         withdrawal_ticks_remaining: Ticks until nutrition factor reverts to 1.0.
+        structural_mass: Permanent structural mass accumulation (M_structural proxy).
+            Represents lignin, woodiness, and root depth. Defaults to 0.0 (seed stage).
+            Never reduced by herbivory. Written by the lifecycle system each slow-tick.
+        max_structural_mass: Species-level ceiling for structural mass. Placeholder:
+            defaults to ``max_energy`` until Plan 2 adds a dedicated DB column.
 
     """
 
@@ -81,3 +97,9 @@ class PlantComponent:
     target_nutrition_factor: float = 1.0
     translocation_rate: float = 0.2
     withdrawal_ticks_remaining: int = 0
+    # ------------------------------------------------------------------
+    # Dual-Proxy Architecture fields (M_structural)
+    # ------------------------------------------------------------------
+    structural_mass: float = 0.0  # M_structural: permanent lignin/woodiness
+    max_structural_mass: float = 0.0  # Species ceiling for M_structural (sourced from DB via FloraSpeciesParams)
+    growth_rate_structural: float = 0.01  # Fractional M_structural growth per slow-loop gate

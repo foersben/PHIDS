@@ -1,31 +1,48 @@
 ---
-type: concept
+type: Concept
 title: Testing Architecture & Scientific Invariant Rigor
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.1
-description: Comprehensive testing architecture, taxonomy, scientific invariant verification, double-buffering isolation, Hypothesis property testing, and performance benchmarking for PHIDS.
-tags:
-- phids
-- testing
-- numba
-- hypothesis
-- conservation-laws
-- zarr
-timestamp: "2026-08-10T19:23:45Z"
-resources:
-- tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py
-- tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py
-- tests/integration/scientific_invariants/pde_conservation/test_convolution_exponential_decay.py
-- tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py
-- tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py
-- tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py
-- tests/unit/engine/invariants/test_read_layer_immutability.py
-- tests/unit/engine/invariants/test_jit_neighbour_gathering_parity.py
-- tests/unit/engine/invariants/test_jit_capacity_masking_parity.py
-- tests/unit/engine/systems/test_seed_dispersal_isotropy.py
-- tests/unit/engine/systems/test_phase_staggered_cohorts.py
-- tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
-- scripts/run_sim_benchmark.py
+description: Comprehensive testing architecture, taxonomy, scientific invariant
+  verification, double-buffering isolation, Hypothesis property testing, and
+  performance benchmarking for PHIDS.
+tags: [phids, testing, numba, hypothesis, conservation-laws, zarr]
+generated: {by: process:okf-updater, at: "2026-08-10T19:23:45Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: source
+  resource: 
+    tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py
+- id: source_2
+  resource: 
+    tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py
+- id: source_3
+  resource: 
+    tests/integration/scientific_invariants/pde_conservation/test_convolution_exponential_decay.py
+- id: source_4
+  resource: 
+    tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py
+- id: source_5
+  resource: 
+    tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py
+- id: source_6
+  resource: 
+    tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py
+- id: test_read_layer_immutability
+  resource: tests/unit/engine/invariants/test_read_layer_immutability.py
+- id: test_jit_neighbour_gathering_parity
+  resource: tests/unit/engine/invariants/test_jit_neighbour_gathering_parity.py
+- id: test_jit_capacity_masking_parity
+  resource: tests/unit/engine/invariants/test_jit_capacity_masking_parity.py
+- id: test_seed_dispersal_isotropy
+  resource: tests/unit/engine/systems/test_seed_dispersal_isotropy.py
+- id: test_phase_staggered_cohorts
+  resource: tests/unit/engine/systems/test_phase_staggered_cohorts.py
+- id: test_zarr_replay_bit_exactness
+  resource: tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
+- id: run_sim_benchmark
+  resource: scripts/run_sim_benchmark.py
 ---
 
 This document aggregates PHIDS test suite topography, taxonomy, scientific invariant verification, system mapping, quality analysis, and governance rules.
@@ -34,7 +51,7 @@ This document aggregates PHIDS test suite topography, taxonomy, scientific invar
 
 The PHIDS testing rig is architecturally partitioned into distinct domain-focused layers mapping data flow from pure component contracts and physical conservation laws to live transport streams and bit-exact Zarr replay buffers.
 
-```
+```text
 tests/
 ├── integration/
 │   └── scientific_invariants/
@@ -147,7 +164,7 @@ where $\vec{v}(x,y)$ is the wind velocity field, $D$ is the isotropic diffusion 
     * **Implementation:** Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/main/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L17-L49).
 
 3. **Subnormal Float Clamping (`SIGNAL_EPSILON`):**
-    * **Mechanism:** As chemical signals decay exponentially, concentration values drop into IEEE 754 subnormal (denormalized) floating-point ranges ($< 10^{-308}$). On x86_64 CPUs, processing subnormal floats in Numba FPU pipelines triggers microcode fallbacks, causing a 10x–100x performance penalty.
+    * **Mechanism:** As chemical signals decay exponentially, concentration values drop into IEEE 754 subnormal (denormalized) floating-point ranges ($< 10^{-308}$). On x86_64 CPUs, processing subnormal floats in Numba FPU pipelines triggers microcode fallbacks, causing a 10x-100x performance penalty.
     * **Implementation:** `_numba_diffuse_signal_layer` explicitly zeroes out any concentration falling below `SIGNAL_EPSILON` ($1\times 10^{-4}$). Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/main/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L52-L80) to prove zero tail leakage.
 
 #### Thermodynamic First Law & Non-Linear Kinetics
@@ -183,7 +200,7 @@ where $\vec{v}(x,y)$ is the wind velocity field, $D$ is the isotropic diffusion 
 
 ### 2. Rationale: Why and How We Implemented Scientific Invariant Tests
 
-* **Why We Chose This Approach:** Standard software unit tests only check if a function returns an expected scalar given static inputs. In complex multi-agent reaction-diffusion ecosystems, functional correctness is insufficient—the engine must satisfy fundamental physical conservation laws and asymptotic mathematical bounds. Without these invariants, hidden numerical drift can invalidate scientific simulation findings.
+* **Why We Chose This Approach:** Standard software unit tests only check if a function returns an expected scalar given static inputs. In complex multi-agent reaction-diffusion ecosystems, functional correctness is insufficient - the engine must satisfy fundamental physical conservation laws and asymptotic mathematical bounds. Without these invariants, hidden numerical drift can invalidate scientific simulation findings.
 * **How We Implemented It:** We isolated all conservation checks into dedicated subpackages ([pde_conservation/](https://github.com/foersben/PHIDS/tree/main/tests/integration/scientific_invariants/pde_conservation) and [thermodynamics/](https://github.com/foersben/PHIDS/tree/main/tests/integration/scientific_invariants/thermodynamics)), tagged them with `@pytest.mark.scientific_invariant`, and coupled them with exact floating-point tolerance assertions (`np.testing.assert_allclose`, `math.isclose`).
 
 ## Deep-Dive: Property-Based Testing with Hypothesis

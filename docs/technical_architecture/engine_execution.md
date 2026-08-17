@@ -1,28 +1,41 @@
 ---
-type: technical_architecture
+type: Architecture Document
 title: Engine Execution
-status: active
-version: 1.0
-description: Core execution loop, phase ordering, ECS architecture, and low-level CPU performance optimizations in the PHIDS simulation framework.
-tags:
-- phids
-- ecs
-- numba
-- simd
-- optimization
-timestamp: "2026-08-11T02:10:00Z"
-resources:
-- src/phids/engine/loop.py
-- src/phids/engine/core/flow_field.py
-- src/phids/engine/core/ecs.py
-- src/phids/engine/core/biotope.py
-- src/phids/engine/systems/signaling/spatial.py
-- src/phids/engine/systems/signaling/emission.py
-- src/phids/engine/systems/signaling/triggers.py
-- src/phids/engine/systems/interaction/feeding.py
-- src/phids/engine/systems/interaction/movement.py
-- src/phids/engine/systems/lifecycle.py
-- src/phids/engine/systems/signaling/lifecycle.py
+status: stable
+stale_after: "2027-01-01"
+version: 1.1
+description: Core execution loop, phase ordering, ECS architecture, and
+  low-level CPU performance optimizations in the PHIDS simulation framework.
+tags: [phids, ecs, numba, simd, optimization, dual-proxy]
+generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: loop
+  resource: src/phids/engine/loop.py
+- id: flow_field
+  resource: src/phids/engine/core/flow_field.py
+- id: ecs
+  resource: src/phids/engine/core/ecs.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: plant
+  resource: src/phids/engine/components/plant.py
+- id: spatial
+  resource: src/phids/engine/systems/signaling/spatial.py
+- id: emission
+  resource: src/phids/engine/systems/signaling/emission.py
+- id: triggers
+  resource: src/phids/engine/systems/signaling/triggers.py
+- id: feeding
+  resource: src/phids/engine/systems/interaction/feeding.py
+- id: movement
+  resource: src/phids/engine/systems/interaction/movement.py
+- id: lifecycle
+  resource: src/phids/engine/systems/lifecycle.py
+- id: signaling_lifecycle
+  resource: src/phids/engine/systems/signaling/lifecycle.py
+- id: constants
+  resource: src/phids/shared/constants.py
 ---
 
 The core execution loop of PHIDS updates ecological state deterministically. The progression of phases occurs in a fixed sequence, guaranteeing that later phases observe the finalized, double-buffered side effects of earlier computations.
@@ -69,6 +82,26 @@ As depicted in the flowchart, the engine does not evaluate every biological proc
 4. **Signaling (`run_signaling`) & Energy Rebuild (Fast Loop - Every Tick)**: Evaluates trigger rules via continuous dose-dependent Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$) or threshold predicates. Manages airborne advection-diffusion, mycorrhizal signal propagation, and lethal toxin casualties. Then immediately rebuilds the double-buffered energy layer (`rebuild_energy_layer()`) to commit all energy depletion from feeding and defense upkeep.
 5. **Telemetry**: Records a metrics snapshot of the current tick, and appends raw arrays to the Zarr replay buffer and Polars telemetry exporter.
 6. **Termination Check**: Evaluates configured extinction ($Z_2, Z_4$), max energy ($Z_6$), max tick, and population ($Z_7$) threshold limits.
+
+### Time and Causality: The Temporal Window ($\Delta t$)
+
+A common source of confusion when analyzing discrete-event simulators is the concept of "instantaneous" propagation. When observing the simulation advance from **Tick 0 to Tick 1**, it may appear as though triggers fire, chemicals are produced, emissions occur, and dispersion spreads across the grid all in "0 time."
+
+In reality, **a single tick represents a specific duration of biological time ($\Delta t$)**, configured as 1 Hour of simulated time. The sequence of phases within a tick represents what happens *during* that temporal window.
+
+When the CPU executes `SimulationLoop.step()`, it is not processing a single instant, but evaluating the integral of causality over that 1-hour window. The mathematical sequence guarantees that cause-and-effect hold true within the duration of the tick.
+
+| Tick | Phase | Biological Event (Simulated Time = 1 Hour per Tick) |
+| :--- | :--- | :--- |
+| **Tick 0** | **Initialization** | Scenario is loaded. Initial plants are placed with full energy. No herbivory has occurred yet. Signal layers are uniformly zero. |
+| **Tick 1** | **Phase 1: Flow-Field** | The global guidance gradient is computed based on initial plant placements. Herbivores detect where food is located. |
+| **Tick 1** | **Phase 3a: Movement** | Herbivore swarms follow the gradient and move onto plant cells. |
+| **Tick 1** | **Phase 3b: Foraging** | *(Executes only if tick % 24 == 0)*: Herbivore bites the plant. The plant's energy is deducted in its `_write` layer. |
+| **Tick 1** | **Phase 4: Signaling** | The plant's condition trigger evaluates the newly applied grazing load. The threshold is crossed, and a VOC is emitted into the air. |
+| **Tick 1** | **Phase 4: Dispersion** | The advection-diffusion stencil calculates how far the gas spreads. **Crucially, the gas only disperses as far as physics dictates it can travel in exactly 1 hour ($\Delta t$).** It does not instantly cross the map. |
+| **Tick 2** | **Phase 1: Flow-Field** | The simulation clock advances by another hour. The flow-field now incorporates the partially spread VOC from Tick 1. The cloud will continue to diffuse further during Tick 2's Phase 4. |
+
+Because the simulator is *discrete* (calculating in chunks rather than continuously), the CPU must process events sequentially to determine the final state at the end of the hour. **Double-buffering** ensures that Phase 4 can "see" the bite that occurred in Phase 3b, allowing the entire causal chain (bite $\rightarrow$ trigger $\rightarrow$ emission $\rightarrow$ 1-hour of dispersion) to resolve physically correctly within the same tick step.
 
 ## Entity Component System (ECS) & Spatial Hashing
 
@@ -265,26 +298,43 @@ def _is_swarm_anchored_jit(
     return False
 ```
 
-Operating directly on 3D C-contiguous plant energy arrays and 2D boolean diet matrices in compiled C eliminates Python object creation and `.item()` method invocations, achieving a **~15% – 25% speedup** in swarm movement phase resolution.
+Operating directly on 3D C-contiguous plant energy arrays and 2D boolean diet matrices in compiled C eliminates Python object creation and `.item()` method invocations, achieving a **~15% - 25% speedup** in swarm movement phase resolution.
 
-### 6. 256-Bit SIMD Matrix Reduction in Energy Layer Rebuild (`biotope.py`)
+### 6. 256-Bit SIMD Matrix Reduction in Dual-Proxy Layer Rebuild (`biotope.py`)
 
-At the conclusion of the herbivory interaction phase, `GridEnvironment.rebuild_energy_layer()` aggregates species-specific plant energy arrays into the master plant energy grid (`src/phids/engine/core/biotope.py`).
+At the conclusion of the herbivory interaction phase, `GridEnvironment.rebuild_energy_layer()` aggregates both proxy arrays into their respective master grid layers (`src/phids/engine/core/biotope.py`).
+
+This method now implements the **Decoupled Dual-Proxy Architecture** by processing two distinct physical quantities in a single coordinated buffer-swap:
+
+| Proxy | Dtype | Array shape | Buffer pairs |
+| --- | --- | --- | --- |
+| `E_current` (caloric energy) | `float64` | `(MAX_FLORA_SPECIES, W, H)` | `plant_energy_by_species` / `_write` |
+| `M_structural` (lignin mass) | `float32` | `(MAX_FLORA_SPECIES, W, H)` | `structural_mass_by_species` / `_write` |
 
 #### 256-Bit Vector Accumulation Across Species Layers
-Rather than looping over flora species in Python and performing sliced 2D additions, PHIDS executes a single C-level vector reduction:
+
+Rather than looping over flora species in Python and performing sliced 2D additions, PHIDS executes two sequential C-level vector reductions:
 
 ```python
+# E_current - float64, 4 values per AVX2 vaddpd cycle
 np.sum(self._plant_energy_by_species_write, axis=0, out=self._plant_energy_layer_write)
+
+# M_structural - float32, 8 values per AVX2 vaddps cycle (2x throughput vs float64)
+np.sum(self._structural_mass_by_species_write, axis=0, out=self._structural_mass_layer_write)
 ```
 
-Numba and NumPy dispatch this 3D array sum to 256-bit AVX2 SIMD instructions (e.g. `vaddpd` across 256-bit YMM vector registers), accumulating four 64-bit float64 values per clock cycle without temporary memory allocations, achieving a **~10% – 20% speedup** in post-herbivory energy layer aggregation.
+NumPy dispatches both 3D array sums to 256-bit AVX2 SIMD instructions (`vaddpd` for float64, `vaddps` for float32), achieving a **~10% - 20% speedup** in post-herbivory layer aggregation. The `float32` dtype for `M_structural` doubles SIMD throughput (8 values per cycle vs. 4) without loss of biological precision, since structural mass accumulation uses threshold comparisons only - not PDE-level arithmetic.
+
+#### Buffer Swap Ordering
+
+Both proxy buffer swaps execute atomically within a single `rebuild_energy_layer()` call. Read layers are updated together, ensuring that the flow-field generation phase on the next tick observes a fully consistent `(E_current, M_structural)` snapshot with no half-swapped state.
 
 ### 7. 256-Bit SIMD Photosynthetic Growth Scaling (`lifecycle.py`)
 
 Photosynthetic biomass growth during weekly slow-loop gates accumulates biomass increments scaled by the 168-hour `SLOW_TICK_STRIDE` (`src/phids/engine/systems/lifecycle.py`).
 
 #### Numba JIT Growth Kernel
+
 Rather than performing uncompiled Python float arithmetic and scalar clamping, PHIDS dispatches growth updates to a `@njit(cache=True)` compiled kernel `_grow_simd_jit`:
 
 ```python
@@ -302,6 +352,7 @@ LLVM auto-vectorizes memory passes into 256-bit AVX2 SIMD operations across 256-
 Subterranean mycorrhizal network upkeep deducts carbon maintenance taxes per established root link during lifecycle passes (`src/phids/engine/systems/lifecycle.py`).
 
 #### Numba JIT Tax Deduction Kernel
+
 PHIDS delegates carbon link tax subtractions to a `@njit(cache=True)` compiled kernel `_apply_mycorrhizal_tax_jit`:
 
 ```python
@@ -317,6 +368,7 @@ This operation compiles into 256-bit AVX2 SIMD subtractions (`vsubpd`), deductin
 Per-tick airborne signaling channel attenuation scales 2D volatile organic compound (VOC) concentration layers after spatial Gaussian advection-diffusion (`src/phids/engine/systems/signaling/emission.py`).
 
 #### Numba JIT In-Place Layer Decay Kernel
+
 PHIDS decays active signal layers via `@njit(cache=True)` compiled kernel `_numba_decay_signal_layer`:
 
 ```python
@@ -326,20 +378,22 @@ def _numba_decay_signal_layer(layer: np.ndarray, decay_factor: float, epsilon: f
     layer[layer < epsilon] = 0.0
 ```
 
-By executing array scaling in-place across 256-bit YMM vector registers and zeroing out values below `SIGNAL_EPSILON`, airborne VOC decay achieves a **~10% – 15% speedup** without temporary array allocations.
+By executing array scaling in-place across 256-bit YMM vector registers and zeroing out values below `SIGNAL_EPSILON`, airborne VOC decay achieves a **~10% - 15% speedup** without temporary array allocations.
 
 ### 10. Spatial Hash Entity Query Buffer Reuse (`ecs.py` & `spatial.py`)
 
 Spatial grid lookups (`ECSWorld.entities_at(x, y)`) return occupant entity IDs across grid cell coordinates (`src/phids/engine/core/ecs.py`).
 
 #### Singleton Set Reuse Architecture
-Unoccupied grid cells return a module-level `EMPTY_SET = frozenset[int]()` singleton instead of instantiating fresh `set()` objects on the heap per query. This eliminates **~8% – 12%** of Python garbage collector allocation churn in spatial interaction passes (`_co_located_swarm_population` in `spatial.py`).
+
+Unoccupied grid cells return a module-level `EMPTY_SET = frozenset[int]()` singleton instead of instantiating fresh `set()` objects on the heap per query. This eliminates **~8% - 12%** of Python garbage collector allocation churn in spatial interaction passes (`_co_located_swarm_population` in `spatial.py`).
 
 ### 11. Pre-Compiled Foraging Parameter Caching (`feeding.py`)
 
 Herbivory foraging interactions (`_feed_on_single_plant` in `src/phids/engine/systems/interaction/feeding.py`) evaluate digestibility modifiers, digestive efficiency, handling time, and mechanical damage per bite.
 
 #### Pre-Extracted Slot Parameter Containers
+
 PHIDS pre-extracts nested Pydantic model attributes into O(1) slot containers (`CachedFloraForagingParams` and `CachedHerbivoreForagingParams`) prior to interaction loops:
 
 ```python
@@ -356,25 +410,27 @@ class CachedHerbivoreForagingParams:
     morphological_adaptation: float
 ```
 
-Bypassing dynamic `getattr` and double-nested Pydantic property lookups yields a **~10% – 15%** faster feeding interaction resolution on medium-tick foraging steps.
+Bypassing dynamic `getattr` and double-nested Pydantic property lookups yields a **~10% - 15%** faster feeding interaction resolution on medium-tick foraging steps.
 
 ### 12. Spatial-Hash Mediated Toxin Exposure (`emission.py`)
 
 Chemical defense emission passes (`_apply_toxin_to_swarms` in `src/phids/engine/systems/signaling/emission.py`) apply lethal casualties and repellent walk ticks to swarms exposed to volatile botanical toxins.
 
 #### Adaptive Spatial Hash & Direct Query Fallback
+
 To avoid iterating over all swarms in the ECS world during localized chemical defense emissions, PHIDS extracts active non-zero toxin grid coordinates via `np.argwhere(env.toxin_layers[sub_id] > 0.0)`.
 
 - **Localized Toxin Exposure (`num_active_cells < num_swarms`)**: Evaluates Spatial Hash occupancy (`world.entities_at(x, y)`) restricted strictly to grid cells with non-zero toxin concentration, bypassing $O(N_\text{swarms})$ iteration across un-exposed regions.
 - **Saturated Toxin Exposure Fallback (`num_active_cells >= num_swarms`)**: Automatically falls back to direct `world.query(SwarmComponent)` when toxin plumes are fully saturated across the grid, preventing spatial cell iteration overhead.
 
-This optimization yields a **~15% – 25%** speedup in signaling phase execution for localized chemical defense emissions while guaranteeing zero performance degradation during global plume saturation.
+This optimization yields a **~15% - 25%** speedup in signaling phase execution for localized chemical defense emissions while guaranteeing zero performance degradation during global plume saturation.
 
 ### 13. Tile Population Grid Lookup & JIT-Accelerated Accumulation (`population.py` & `movement.py`)
 
 Physical jostling and carrying capacity checks (`TILE_CARRYING_CAPACITY = 500`) evaluate tile-local crowding pressure during swarm movement resolution (`_resolve_swarm_movement` in `src/phids/engine/systems/interaction/movement.py`).
 
 #### In-Place JIT Delta Accumulation Kernel
+
 PHIDS maintains a 1D pre-allocated int32 tile population array (`env.tile_populations`) populated via a Numba `@njit(cache=True)` compiled kernel `_accumulate_tile_population_jit`:
 
 ```python
@@ -391,13 +447,14 @@ def _accumulate_tile_population_jit(
         tile_populations[y * width + x] += delta
 ```
 
-Bypassing per-swarm spatial hash traversals and Python list allocations yields a **~10% – 18%** reduction in movement resolution latency under high swarm density scenarios.
+Bypassing per-swarm spatial hash traversals and Python list allocations yields a **~10% - 18%** reduction in movement resolution latency under high swarm density scenarios.
 
 ### 14. Power-of-2 Bitwise Neighbor Masking in Jacobi Flow Relaxation (`flow_field.py`)
 
 Global attraction flow fields converge via multi-iteration Jacobi relaxation passes in `_compute_flow_field_impl` (`src/phids/engine/core/flow_field.py`).
 
 #### Contiguous 2D Bitwise AND JIT Pass
+
 For power-of-2 grid dimensions (e.g. $256 \times 256$), PHIDS dispatches Jacobi relaxation directly to the `@njit(cache=True)` compiled kernel `_propagate_iteration_jit_pow2`:
 
 ```python
@@ -429,13 +486,14 @@ def _propagate_iteration_jit_pow2(
     return max_diff
 ```
 
-Replacing modulo division `% width` with single-cycle bitwise AND `& mask_x` and consolidating boundary and inner passes into a single contiguous 2D loop pass yields a **~8% – 14%** speedup in flow field propagation passes.
+Replacing modulo division `% width` with single-cycle bitwise AND `& mask_x` and consolidating boundary and inner passes into a single contiguous 2D loop pass yields a **~8% - 14%** speedup in flow field propagation passes.
 
 ### 15. Subnormal Float Flushing & `fastmath=True` Hardware Optimization (`biotope.py`, `flow_field.py`, `movement.py`)
 
 During continuous signal diffusion and Jacobi relaxation passes, concentration fields develop long exponential tails. Floating-point numbers smaller than $1 \times 10^{-38}$ (denormals/subnormals) trigger hardware microcode exception traps on x86 SIMD execution units, incurring a 100x instruction latency penalty.
 
 #### Subnormal Zeroing & FastMath Decorators
+
 PHIDS decorates all core grid diffusion, relaxation, and movement choice kernels with `@njit(cache=True, fastmath=True)` and enforces subnormal tail flushing below `SIGNAL_EPSILON` ($1 \times 10^{-4}$):
 
 ```python
@@ -457,13 +515,14 @@ def _numba_convolve_signal_layer(
     write_buffer[x, y] = v
 ```
 
-Enabling `fastmath=True` allows LLVM to generate Fused Multiply-Add (`vfmadd213pd`) instructions across 256-bit AVX2 registers while eliminating hardware denormal microcode traps (**~20% – 40%** throughput improvement on long simulation runs).
+Enabling `fastmath=True` allows LLVM to generate Fused Multiply-Add (`vfmadd213pd`) instructions across 256-bit AVX2 registers while eliminating hardware denormal microcode traps (**~20% - 40%** throughput improvement on long simulation runs).
 
 ### 16. Multi-Threaded JIT Parallelization & Adaptive Dispatch Thresholds (`flow_field.py`, `biotope.py`, `batch.py`)
 
 On large grid topologies ($256 \times 256 = 65,536$ cells), single-core execution becomes memory-bandwidth and CPU pipeline limited. PHIDS distributes row sweeps (`numba.prange()`) across OpenMP worker threads using `@njit(parallel=True, cache=True, fastmath=True)`.
 
 #### Adaptive Dispatching Threshold (`NUMBA_PARALLEL_THRESHOLD_CELLS`)
+
 To prevent thread pool dispatch and barrier synchronization latency penalties on small grid dimensions ($40 \times 40 = 1,600$ cells), PHIDS evaluates an adaptive grid size threshold:
 
 ```python
@@ -471,7 +530,8 @@ NUMBA_PARALLEL_THRESHOLD_CELLS: Final[int] = 128 * 128  # 16,384 cells
 use_parallel = width * height >= NUMBA_PARALLEL_THRESHOLD_CELLS
 ```
 
-Grids exceeding 16,384 cells dispatch directly to OpenMP multi-threaded row partitioning, yielding a **300% – 600% (3x – 6x)** macro throughput scaling on multi-core workstations.
+Grids exceeding 16,384 cells dispatch directly to OpenMP multi-threaded row partitioning, yielding a **300% - 600% (3x - 6x)** macro throughput scaling on multi-core workstations.
 
 #### Monte Carlo Batch Processing Thread Isolation
+
 When executing headless Monte Carlo ensembles across $N$ process pool workers (`batch.py`), each child process sets `NUMBA_NUM_THREADS = "1"`. This prevents CPU thread oversubscription (e.g. 8 worker processes attempting to spawn 8 OpenMP threads each = 64 thread thrashing), ensuring 1 dedicated physical CPU core per Monte Carlo worker process.

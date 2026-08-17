@@ -57,3 +57,19 @@ SEED_TERMINAL_VELOCITY_DEFAULT: float = 0.8
 # Substance emission / dissipation rates
 # ---------------------------------------------------------------------------
 SUBSTANCE_EMIT_RATE: float = 0.1  # concentration added per tick when active
+
+# ---------------------------------------------------------------------------
+# Dual-Proxy Architecture defaults (E_current / M_structural)
+# ---------------------------------------------------------------------------
+# Newly spawned seeds carry zero structural (lignin) mass - they are soft and
+# completely vulnerable to trampling. This matches the biological seed stage.
+M_STRUCTURAL_SEED_VALUE: float = 0.0
+
+# Fraction of max_energy added to M_structural per slow-tick (168-hour stride).
+# This is a global placeholder default. Plan 2 will replace it with a per-species
+# value sourced from the empirical bio-database via the EEDSE optimizer.
+M_STRUCTURAL_GROWTH_RATE: float = 0.01
+
+# Multiplier for M_structural-scaled maintenance cost deduction per tick.
+# Upkeep_fee = survival_threshold * STRUCTURAL_UPKEEP_SCALAR * (M_structural / max_M_structural).
+STRUCTURAL_UPKEEP_SCALAR: float = 0.5

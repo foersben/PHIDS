@@ -1,14 +1,14 @@
 ---
-type: reference
+type: Reference
 title: PHIDS Routing & Capabilities
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: Primary routing table for AI IDEs defining roles and core constraints.
-tags:
-- agents
-- guidelines
-timestamp: "2026-07-25T17:06:00Z"
-resources: []
+description: Primary routing table for AI IDEs defining roles and core
+  constraints.
+tags: [agents, guidelines]
+generated: {by: process:okf-updater, at: "2026-07-25T17:06:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
 Primary routing table for AI IDEs defining roles in `.agents/roles/` and core constraints.
@@ -25,7 +25,7 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 ## AI Role Registry
 
 | Role | Description | Trigger |
-|---|---|---|
+| --- | --- | --- |
 | `@orchestrator` | PM. Delegates tasks; enforces OKF structure. | Planning, refactoring, workflows. |
 | `@scientific-architect` | Translates reaction-diffusion PDEs/chemotaxis. | Mathematical/biological models. |
 | `@engine-developer` | ECS & Numba developer. Handles double-buffering. | Core performance, ECS arrays, loops. |
@@ -33,7 +33,9 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | `@docs-librarian` | Maintains docs, Zensical. | Documentation, diagrams, LaTeX. |
 | `@git-operator` | Manages branches, commits, releases. | Git actions, commits, release tags. |
 | `@api-and-ui-developer` | HTMX, Jinja2, and FastAPI developer. | Dashboard UI, endpoints, websockets. |
-| `@telemetry-and-data-engineer`| Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |
+| `@telemetry-and-data-engineer` | Polars & Zarr schemas. | Teleplay buffers, exports, metrics. |
+| `@matrix-auditor` | Audits Data-Flow Matrix coverage & trace parity. | Matrix audits, doc trace validation. |
+| `@causal-verifier` | Verifies branchless SIMD masks & causal invariants. | State leaks, unmasked JIT loops. |
 
 ## Documentation Formatting Rules
 
@@ -42,8 +44,8 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 ## OKF (Open Knowledge Format) Metadata Rule
 
 - **Mandatory Parsing:** All AI agents (Jules, Antigravity, etc.) MUST actively parse the YAML frontmatter (OKF headers) in `docs/` and `.agents/` files before answering architectural or design questions.
-- **Utilization:** Use OKF `tags`, `timestamps`, and `resources` fields to gauge the relevance and contextual scope of the document. If an OKF `status` is `deprecated`, actively warn the user.
-- **Enrichment:** When creating or modifying documentation, always populate or update the OKF frontmatter exhaustively (including `type`, `title`, `status`, `version`, `description`, `tags`, `timestamp`, `resources`).
+- **Utilization:** Use OKF `tags`, `generated.at`, and `resources` fields to gauge the relevance and contextual scope of the document. If an OKF `status` is `deprecated`, actively warn the user.
+- **Enrichment:** When creating or modifying documentation, always populate or update the OKF frontmatter exhaustively (including `type`, `title`, `status`, `version`, `description`, `tags`, `generated`, `resources`).
 
 ## MCP Server Usage
 

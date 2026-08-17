@@ -157,8 +157,8 @@ async def test_simulation_loop_mycorrhiza_network_expands_across_collinear_plant
 
     loop = SimulationLoop(config, disable_replay=True)
 
-    # Step for 3 slow-loop cycles (168 * 3 = 504 ticks)
-    for _ in range(505):
+    # Step for 3 slow-loop cycles (168 * 3 = 504 ticks + 4 offset for staggered cohorts 0..3)
+    for _ in range(508):
         await loop.step()
 
     plants_by_x = {

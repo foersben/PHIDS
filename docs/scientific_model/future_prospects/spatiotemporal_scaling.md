@@ -1,26 +1,28 @@
 ---
-type: concept
+type: Concept
 title: "Unified Forest-Scale Architecture & Spatiotemporal Scaling"
 status: realized
 version: 2.0
-description: "A unified specification for scaling PHIDS to large physical biomes, addressing memory limits, subloop computability, storage constraints, kinetic abstraction, and edge-case scaling horizons with precise computability metrics."
-tags:
-- phids
-- spatiotemporal-scaling
-- ecs
-- performance
-- ui
-- zarr
-- polars
-- realized
-timestamp: "2026-08-03T21:20:00Z"
-resources:
-- src/phids/engine/loop.py
-- src/phids/engine/core/biotope.py
-- src/phids/engine/systems/interaction/movement.py
-- src/phids/engine/systems/lifecycle.py
-- src/phids/io/zarr_replay.py
-- src/phids/telemetry/analytics.py
+description: "A unified specification for scaling PHIDS to large physical biomes,
+  addressing memory limits, subloop computability, storage constraints, kinetic abstraction,
+  and edge-case scaling horizons with precise computability metrics."
+tags: [phids, spatiotemporal-scaling, ecs, performance, ui, zarr, polars,
+    realized]
+generated: {by: process:okf-updater, at: "2026-08-03T21:20:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: loop
+  resource: src/phids/engine/loop.py
+- id: biotope
+  resource: src/phids/engine/core/biotope.py
+- id: movement
+  resource: src/phids/engine/systems/interaction/movement.py
+- id: lifecycle
+  resource: src/phids/engine/systems/lifecycle.py
+- id: zarr_replay
+  resource: src/phids/io/zarr_replay.py
+- id: analytics
+  resource: src/phids/telemetry/analytics.py
 ---
 
 !!! success "Status: Fully Realized Engine Architecture"

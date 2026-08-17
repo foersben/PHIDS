@@ -9,7 +9,7 @@ mycorrhizal links, and diffused concentrations at a specific grid coordinate.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from phids.api.presenters.dashboard.mycorrhizal import (
     _build_live_mycorrhizal_links,
@@ -153,7 +153,8 @@ def _build_live_plant_payload(
     """Helper to construct the detailed live plant presentation structure.
 
     This function builds the presentation structure for a live plant, including
-    its energy state, camouflage, mycorrhizal connections, and active substances.
+    its energy state, dual-proxy structural mass, fragility level, mycorrhizal connections,
+    and active substances.
 
     Args:
         plant: The plant component.
@@ -169,6 +170,23 @@ def _build_live_plant_payload(
     """
     visible_substances = _get_live_substances(plant, owned_substances, env, herbivore_names, substance_names)
     mycorrhizal_neighbours = _get_live_mycorrhizal_neighbours(plant, plant_lookup, flora_names)
+
+    struct_mass = float(plant.structural_mass)
+    max_struct = float(plant.max_structural_mass)
+    struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
+    struct_upkeep = float(plant.survival_threshold) * 0.5 * min(1.0, struct_ratio) if max_struct > 0.0 else 0.0
+    fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
+    fragility_pct = min(100.0, max(0.0, fragility * 100.0))
+
+    if max_struct > 0.0 and struct_mass >= max_struct:
+        risk_level = "Immune"
+    elif fragility > 0.6:
+        risk_level = "High Risk"
+    elif fragility > 0.2:
+        risk_level = "Medium Risk"
+    else:
+        risk_level = "Low Risk"
+
     return {
         "entity_id": plant.entity_id,
         "species_id": plant.species_id,
@@ -184,6 +202,14 @@ def _build_live_plant_payload(
             if float(plant.max_energy) > 0.0
             else "N/A"
         ),
+        "structural_mass": struct_mass,
+        "max_structural_mass": max_struct,
+        "structural_mass_pct": min(100.0, struct_ratio * 100.0),
+        "growth_rate_structural": float(plant.growth_rate_structural),
+        "structural_upkeep_fee": struct_upkeep,
+        "fragility_pct": fragility_pct,
+        "incidental_risk_level": risk_level,
+        "is_woody_mature": max_struct > 0.0 and struct_mass >= max_struct,
         "camouflage": plant.camouflage,
         "camouflage_factor": float(plant.camouflage_factor),
         "mycorrhizal_connections": len(plant.mycorrhizal_connections),
@@ -195,20 +221,33 @@ def _build_live_plant_payload(
 def _build_live_swarm_payload(
     swarm: SwarmComponent,
     herbivore_names: dict[int, str],
-    cell_toxin_peak: float,
-    cell_signal_peak: float,
+    herbivore_params: dict[int, Any] | None = None,
+    cell_toxin_peak: float = 0.0,
+    cell_signal_peak: float = 0.0,
+    cell_plant_energy: float = 0.0,
 ) -> dict[str, object]:
     """Helper to construct the detailed live swarm presentation structure.
 
     Args:
         swarm: The swarm component.
         herbivore_names: The herbivore names.
+        herbivore_params: Optional mapping of species_id to species params schema.
         cell_toxin_peak: The toxin peak in the cell.
         cell_signal_peak: The signal peak in the cell.
+        cell_plant_energy: Available plant energy in the cell.
 
     Returns:
         The presentation structure.
     """
+    sp_params = herbivore_params.get(swarm.species_id) if herbivore_params else None
+    inc_factor = float(getattr(sp_params, "incidental_mortality_factor", 0.0)) if sp_params else 0.0
+    inc_mode = str(getattr(sp_params, "incidental_mortality_mode", "trampling")) if sp_params else "trampling"
+    upkeep_per_ind = float(getattr(sp_params, "energy_upkeep_per_individual", 0.05)) if sp_params else 0.05
+    total_upkeep = float(swarm.population) * upkeep_per_ind
+
+    # MVT Full Belly lock heuristic
+    is_anchored = (cell_plant_energy >= total_upkeep and total_upkeep > 0.0) if cell_plant_energy > 0.0 else False
+
     return {
         "entity_id": swarm.entity_id,
         "species_id": swarm.species_id,
@@ -223,6 +262,10 @@ def _build_live_swarm_payload(
         ),
         "starvation_threshold": float(swarm.population) * float(swarm.energy_min),
         "energy_label": (f"{swarm.energy:.1f} (Min: {float(swarm.population) * float(swarm.energy_min):.1f})"),
+        "total_metabolic_upkeep": total_upkeep,
+        "is_anchored_feeding": is_anchored,
+        "incidental_mortality_factor": inc_factor,
+        "incidental_mortality_mode": inc_mode,
         "mitosis_progress": (
             float(swarm.population) / float(swarm.split_population_threshold)
             if swarm.split_population_threshold > 0
@@ -249,6 +292,7 @@ def _collect_live_plants_and_swarms(
     env: GridEnvironment,
     flora_names: dict[int, str],
     herbivore_names: dict[int, str],
+    herbivore_params: dict[int, Any],
     plant_lookup: dict[int, PlantComponent],
     owned_substances: dict[int, list[SubstanceComponent]],
     substance_names: dict[int, str],
@@ -264,6 +308,7 @@ def _collect_live_plants_and_swarms(
         env: The grid environment.
         flora_names: A dictionary mapping flora species IDs to their names.
         herbivore_names: A dictionary mapping herbivore species IDs to their names.
+        herbivore_params: A dictionary mapping herbivore species IDs to their params.
         plant_lookup: A dictionary mapping plant entity IDs to their plant components.
         owned_substances: A dictionary mapping herbivore entity IDs to their owned substances.
         substance_names: A dictionary mapping substance IDs to their names.
@@ -275,22 +320,36 @@ def _collect_live_plants_and_swarms(
     """
     plants = []
     swarms = []
+    cell_plant_energy = 0.0
     for entity_id in sorted(world.entities_at(x, y)):
         if not world.has_entity(entity_id):
             continue
         entity = world.get_entity(entity_id)
-
         if entity.has_component(PlantComponent):
             plant = entity.get_component(PlantComponent)
+            cell_plant_energy += float(plant.energy)
             plants.append(
                 _build_live_plant_payload(
                     plant, flora_names, plant_lookup, owned_substances, env, herbivore_names, substance_names
                 )
             )
 
+    for entity_id in sorted(world.entities_at(x, y)):
+        if not world.has_entity(entity_id):
+            continue
+        entity = world.get_entity(entity_id)
         if entity.has_component(SwarmComponent):
             swarm = entity.get_component(SwarmComponent)
-            swarms.append(_build_live_swarm_payload(swarm, herbivore_names, cell_toxin_peak, cell_signal_peak))
+            swarms.append(
+                _build_live_swarm_payload(
+                    swarm,
+                    herbivore_names,
+                    herbivore_params,
+                    cell_toxin_peak,
+                    cell_signal_peak,
+                    cell_plant_energy,
+                )
+            )
     return plants, swarms
 
 
@@ -341,6 +400,7 @@ def build_live_cell_details(
 
     flora_names = {species.species_id: species.name for species in loop.config.flora_species}
     herbivore_names = {species.species_id: species.name for species in loop.config.herbivore_species}
+    herbivore_params = {species.species_id: species for species in loop.config.herbivore_species}
 
     owned_substances: dict[int, list[SubstanceComponent]] = {}
     for entity in world.query(SubstanceComponent):
@@ -365,6 +425,7 @@ def build_live_cell_details(
         env,
         flora_names,
         herbivore_names,
+        herbivore_params,
         plant_lookup,
         owned_substances,
         substance_names,

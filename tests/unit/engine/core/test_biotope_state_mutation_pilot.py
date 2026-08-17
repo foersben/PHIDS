@@ -172,3 +172,125 @@ def test_grid_environment_init_bounds_inclusive() -> None:
             width=GRID_W_MAX, height=GRID_H_MAX, num_signals=MAX_SUBSTANCE_TYPES, num_toxins=MAX_SUBSTANCE_TYPES
         )
     assert env_max.width == GRID_W_MAX
+
+
+# ---------------------------------------------------------------------------
+# Dual-Proxy Architecture: structural_mass unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_structural_mass_layer_init_shape_and_dtype() -> None:
+    """Validate that structural_mass arrays are correctly shaped and typed on init."""
+    from phids.shared.constants import MAX_FLORA_SPECIES
+
+    env = GridEnvironment(width=10, height=20, num_signals=2, num_toxins=2)
+    assert env.structural_mass_layer.shape == (10, 20)
+    assert env._structural_mass_layer_write.shape == (10, 20)  # type: ignore[attr-defined]
+    assert env.structural_mass_by_species.shape == (MAX_FLORA_SPECIES, 10, 20)
+    assert env._structural_mass_by_species_write.shape == (MAX_FLORA_SPECIES, 10, 20)  # type: ignore[attr-defined]
+    assert env.structural_mass_layer.dtype == np.float32
+    assert env.structural_mass_by_species.dtype == np.float32
+
+
+def test_structural_mass_layer_zero_on_init() -> None:
+    """Validate that all structural mass buffers are zero-initialised (seed-stage default)."""
+    env = GridEnvironment(width=5, height=5)
+    assert np.all(env.structural_mass_layer == 0.0)
+    assert np.all(env._structural_mass_by_species_write == 0.0)  # type: ignore[attr-defined]
+
+
+def test_set_and_clear_structural_mass() -> None:
+    """Validate set_structural_mass writes to write buffer and clear_structural_mass zeroes it."""
+    env = GridEnvironment(width=5, height=5)
+    env.set_structural_mass(2, 3, 0, 12.5)
+    assert env._structural_mass_by_species_write[0, 2, 3] == np.float32(12.5)  # type: ignore[attr-defined]
+
+    env.clear_structural_mass(2, 3, 0)
+    assert env._structural_mass_by_species_write[0, 2, 3] == np.float32(0.0)  # type: ignore[attr-defined]
+
+
+def test_structural_mass_grows_on_slow_loop() -> None:
+    """Validate that _grow_structural_mass_jit monotonically increases M_structural per slow-loop gate."""
+    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+
+    initial_mass = 0.0
+    growth_rate = 0.01  # 1% per slow-loop tick stride
+    max_mass = 100.0
+
+    step1 = _grow_structural_mass_jit(initial_mass, growth_rate, max_mass, SLOW_TICK_STRIDE)
+    expected_step1 = 0.0 + 0.01 * 168.0  # 1.68
+    assert np.isclose(step1, expected_step1)
+    assert step1 > initial_mass
+
+    step2 = _grow_structural_mass_jit(step1, growth_rate, max_mass, SLOW_TICK_STRIDE)
+    assert step2 > step1
+
+
+def test_structural_mass_clamped_at_max() -> None:
+    """Validate that _grow_structural_mass_jit clamps at max_structural_mass without overshooting."""
+    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+
+    initial_mass = 99.5
+    growth_rate = 0.05
+    max_mass = 100.0
+
+    # 99.5 + 0.05 * 168 = 107.9 -> clamped to 100.0
+    result = _grow_structural_mass_jit(initial_mass, growth_rate, max_mass, SLOW_TICK_STRIDE)
+    assert result == 100.0
+
+
+def test_structural_mass_seed_init_from_schema() -> None:
+    """Validate that FloraSpeciesParams structural_mass_max and structural_growth_rate populate correctly."""
+    from phids.api.schemas.species import FloraSpeciesParams
+
+    params = FloraSpeciesParams(
+        species_id=1,
+        name="Test Oak",
+        base_energy=10.0,
+        max_energy=50.0,
+        growth_rate=0.1,
+        survival_threshold=1.0,
+        reproduction_interval=5,
+        structural_mass_max=1800.0,
+        structural_growth_rate=0.002,
+    )
+    assert params.structural_mass_max == 1800.0
+    assert params.structural_growth_rate == 0.002
+
+
+def test_set_structural_mass_clamps_negative() -> None:
+    """Validate that set_structural_mass clamps negative values to 0.0 (M_structural floor)."""
+    env = GridEnvironment(width=5, height=5)
+    env.set_structural_mass(1, 1, 0, -5.0)
+    assert env._structural_mass_by_species_write[0, 1, 1] == np.float32(0.0)  # type: ignore[attr-defined]
+
+
+def test_structural_mass_double_buffer_swap() -> None:
+    """Validate rebuild_energy_layer aggregates and swaps structural mass buffers correctly."""
+    env = GridEnvironment(width=5, height=5)
+
+    # Write mass to two different species at same coordinate
+    env.set_structural_mass(2, 2, 0, 10.0)
+    env.set_structural_mass(2, 2, 1, 5.0)
+
+    # Before rebuild: aggregate read layer is still zero
+    assert env.structural_mass_layer[2, 2] == 0.0
+
+    env.rebuild_energy_layer()
+
+    # After rebuild: aggregate layer must equal sum of per-species writes (15.0)
+    assert env.structural_mass_layer[2, 2] == pytest.approx(15.0, abs=1e-4)
+    assert env.structural_mass_layer.dtype == np.float32
+
+
+def test_structural_mass_in_to_dict() -> None:
+    """Validate that structural_mass_layer is serialised in the biotope snapshot dict."""
+    env = GridEnvironment(width=5, height=5)
+    env.set_structural_mass(1, 1, 0, 7.0)
+    env.rebuild_energy_layer()
+
+    snapshot = env.to_dict()
+    assert "structural_mass_layer" in snapshot
+    arr = np.array(snapshot["structural_mass_layer"])
+    assert arr.shape == (5, 5)
+    assert arr[1, 1] == pytest.approx(7.0, abs=1e-4)

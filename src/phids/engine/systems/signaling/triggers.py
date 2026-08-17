@@ -118,6 +118,7 @@ def _apply_synthesize_action(
     else:
         if (
             not existing_sub.active
+            and not existing_sub.triggered_last_tick
             and existing_sub.synthesis_remaining <= 0
             and existing_sub.aftereffect_remaining_ticks <= 0
         ):
@@ -137,21 +138,21 @@ def _process_single_trigger(
     substance_entities: list[Entity],
 ) -> None:
     initiator_met = _evaluate_initiator(trig, plant, env, swarm_population_by_cell_species)
-
-    condition_met = False
-    if trig.schema.activation_condition is not None:
-        condition_met = _check_activation_condition(
-            plant,
-            plant.entity_id,
-            trig.activation_condition_dump,
-            env,
-            swarm_population_by_cell_species,
-            active_substance_ids_by_owner,
-        )
-
-    if not (initiator_met or condition_met):
+    if not initiator_met:
         return
+
     if isinstance(trig.schema.action, ResourceWithdrawalAction):
+        if trig.schema.activation_condition is not None:
+            condition_met = _check_activation_condition(
+                plant,
+                plant.entity_id,
+                trig.activation_condition_dump,
+                env,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+            )
+            if not condition_met:
+                return
         plant.target_nutrition_factor = trig.schema.action.apparent_nutrition_factor
         plant.withdrawal_ticks_remaining = trig.schema.action.withdrawal_duration
         return

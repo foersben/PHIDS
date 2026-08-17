@@ -1,27 +1,37 @@
 ---
-type: memory
+type: Agent Memory
 title: Chisel
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 0.1
 description: Refactoring dashboard presenter monolithic logs and learnings
-tags:
-- phids
-- ecs
-- numba
-timestamp: "2026-07-21T16:01:38Z"
-resources:
-- dashboard.py
-- helpers.py
-- cell_details.py
-- payloads.py
-- mycorrhizal.py
-- substances.py
-- shared.py
-- interaction.py
-- draft/biotope.py
-- draft/species.py
-- __init__.py
+tags: [phids, ecs, numba]
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 name: chisel
+sources:
+- id: dashboard
+  resource: dashboard.py
+- id: helpers
+  resource: helpers.py
+- id: cell_details
+  resource: cell_details.py
+- id: payloads
+  resource: payloads.py
+- id: mycorrhizal
+  resource: mycorrhizal.py
+- id: substances
+  resource: substances.py
+- id: shared
+  resource: shared.py
+- id: interaction
+  resource: interaction.py
+- id: biotope
+  resource: draft/biotope.py
+- id: species
+  resource: draft/species.py
+- id: __init__
+  resource: __init__.py
 ---
 
 ## 2026-07-10 - Refactoring Dashboard Presenter Monolith
@@ -78,3 +88,7 @@ Action: When dismantling ECS God classes, extract lookup/calculation utilities t
 Learning: The `src/phids/api/presenters/dashboard/cell_details.py` file grew to over 700 lines, mixing both live simulation state extraction and draft/preview state extraction into a single monolith. This created a structural bottleneck in the UI layer. By splitting it into `cell_details/live.py` and `cell_details/preview.py`, we maintained strict domain segregation without breaking any tests, as long as `__init__.py` properly exported the expected functions. The `ruff` linting and formatting successfully cleaned up the unused imports automatically.
 
 Action: When dealing with presentation layers that handle distinct application modes (e.g., live engine vs draft builder), extract them into isolated modules within a package, and rely on `__init__.py` to provide a unified public interface. This preserves backwards compatibility for importers while eliminating the monolith.
+
+## 2026-10-27 - Trigger Re-arming State Coupling
+**Learning:** The `SubstanceComponent` lacked sufficient state memory to distinguish between a newly triggered synthesis event and a continuing synthesis event waiting for its activation condition. Both states appeared identical (`active=False`, `synthesis_remaining=0`). This led to premature resetting of `synthesis_remaining` in `_apply_synthesize_action`. Furthermore, `_process_single_trigger` incorrectly bypassed activation condition checks for `SynthesizeSubstanceAction`.
+**Action:** Introduced `triggered_last_tick` to `SubstanceComponent`, updated during `_phase_index_and_clean_substances`. This decouples the state and correctly identifies whether a synthesis trigger is a new event (where it should re-arm) versus an ongoing waiting phase. Never use zeroed countdowns (`synthesis_remaining <= 0`) as the sole proxy for state transitions in discrete simulation loops.

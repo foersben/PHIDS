@@ -1,19 +1,19 @@
 ---
-type: concept
-title: "Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master Architectural Specification"
-status: active
+type: Concept
+title: "Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master
+  Architectural Specification"
+status: stable
+stale_after: "2027-01-01"
 version: 3.0
-description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)** architecture.
-tags:
-- phids
-- ecs
-- numba
-- chemotaxis
-- eedse
-- optimization
-timestamp: "2026-08-03T12:00:00Z"
-resources:
-- future_prospects/agentic_log_writer.md
+description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS)
+  utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration
+  (EEDSE)** architecture.
+tags: [phids, ecs, numba, chemotaxis, eedse, optimization]
+generated: {by: process:okf-updater, at: "2026-08-03T12:00:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: agentic_log_writer
+  resource: future_prospects/agentic_log_writer.md
 ---
 
 !!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"

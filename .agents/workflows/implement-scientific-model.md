@@ -1,5 +1,5 @@
 ---
-type: workflow
+type: Agent Workflow
 description: Process for adding ecological/mathematical behaviors.
 ---
 

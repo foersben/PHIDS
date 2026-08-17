@@ -1,6 +1,7 @@
 ---
-type: workflow
-description: Checklist for human-escalated tasks when agents are structurally blocked.
+type: Agent Workflow
+description: Checklist for human-escalated tasks when agents are structurally
+  blocked.
 ---
 
 # Trigger

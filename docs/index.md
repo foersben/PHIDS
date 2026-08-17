@@ -1,20 +1,24 @@
 ---
-type: reference
+okf_version: "0.2"
+type: Reference
 title: PHIDS Documentation Overview
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 1.0
-description: Core landing page and abstract for the Plant-Herbivore Interaction & Defense Simulator (PHIDS) documentation.
-tags:
-- phids
-- abstract
-- biological-model
-- ecs
-timestamp: "2026-07-26T18:31:00Z"
-resources:
-- docs/scientific_model/index.md
-- docs/technical_architecture/index.md
-- docs/scenario_guide/index.md
-- docs/reference/index.md
+description: Core landing page and abstract for the Plant-Herbivore Interaction
+  & Defense Simulator (PHIDS) documentation.
+tags: [phids, abstract, biological-model, ecs]
+generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: index
+  resource: docs/scientific_model/index.md
+- id: technical_architecture_index
+  resource: docs/technical_architecture/index.md
+- id: scenario_guide_index
+  resource: docs/scenario_guide/index.md
+- id: reference_index
+  resource: docs/reference/index.md
 ---
 
 <img src="assets/logo.png" align="right" width="200" alt="PHIDS Logo">
@@ -51,7 +55,7 @@ By providing researchers with the ability to define distinct flora/herbivore spe
 
 PHIDS is engineered as a research-grade simulation backend. To ensure that ecological outputs are mathematically traceable and experimentally reproducible, the system adheres to strict architectural constraints:
 
-* **OpenMP Multi-Threaded JIT Parallelization & FTZ Flushing:** Distributes grid row sweeps (`numba.prange()`) across CPU worker threads in Jacobi flow relaxation and signal diffusion (`@njit(parallel=True, fastmath=True)`), delivering $3\times – 6\times$ macro throughput gains while enforcing Flush-to-Zero (FTZ / DAZ) subnormal float elimination below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
+* **OpenMP Multi-Threaded JIT Parallelization & FTZ Flushing:** Distributes grid row sweeps (`numba.prange()`) across CPU worker threads in Jacobi flow relaxation and signal diffusion (`@njit(parallel=True, fastmath=True)`), delivering $3\times - 6\times$ macro throughput gains while enforcing Flush-to-Zero (FTZ / DAZ) subnormal float elimination below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
 * **Charnov MVT Foraging Kinetics & Softmax Selection (Planned Stage 1B Specification):** Formal design specification for continuous spatial potential re-evaluation and Boltzmann stochastic action selection ($P(\text{move}) = \frac{\exp(F/\tau)}{\sum \exp(F/\tau)}$) to model patch departure prior to total resource depletion.
 * **Deterministic Multi-Scale Phase-Staggered Cohort Execution** through `SimulationLoop.step()`. Evaluates fast physical processes (VOC diffusion, micro-chemotaxis) on every tick, while daily metabolism ($24\times$ stride) and plant growth/mycorrhiza/reproduction ($168\times$ weekly stride) execute via phase-staggered entity cohorts (`(entity_id % S) == (tick % S)`). This eliminates subnormal IEEE 754 float truncation traps ($<10^{-4}$) and macro telemetry sawtooth spikes while preserving uniform L1/L2 cache locality.
 * **$O(1)$ Stochastic Raycasting Dispersal** replacing $O(N \times r^2)$ spatial matrix convolution. Seeds project along advective wind unit vectors $\mathbf{u}$ with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$ in constant time.

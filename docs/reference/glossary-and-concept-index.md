@@ -1,25 +1,33 @@
 ---
-type: reference
+type: Reference
 title: Glossary and Concept Index
-status: active
-version: 0.1
-description: Documentation for Glossary and Concept Index in the PHIDS framework.
-tags:
-- phids
-- ecs
-- numba
-- python
-timestamp: "2026-07-25T10:52:00Z"
-resources:
-- ../scientific_model/mathematical_framework.md
-- ../technical_architecture/system_architecture.md
-- ../technical_architecture/engine_execution.md
-- ../scenario_guide/curated_examples.md
-- ../technical_architecture/interfaces_and_ui.md
-- ../technical_architecture/telemetry.md
-- ../scientific_model/index.md
-- ../scenario_guide/scenario_authoring.md
-- interaction.py
+status: stable
+stale_after: "2027-01-01"
+version: 0.3
+description: Canonical glossary definitions for PHIDS concepts including
+  Dual-Proxy proxies, Unified Action Buttons, and Live Cell Inspection Tooltips.
+tags: [phids, ecs, numba, python, dual-proxy, dashboard-ui]
+generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: mathematical_framework
+  resource: ../scientific_model/mathematical_framework.md
+- id: system_architecture
+  resource: ../technical_architecture/system_architecture.md
+- id: engine_execution
+  resource: ../technical_architecture/engine_execution.md
+- id: curated_examples
+  resource: ../scenario_guide/curated_examples.md
+- id: interfaces_and_ui
+  resource: ../technical_architecture/interfaces_and_ui.md
+- id: telemetry
+  resource: ../technical_architecture/telemetry.md
+- id: index
+  resource: ../scientific_model/index.md
+- id: scenario_authoring
+  resource: ../scenario_guide/scenario_authoring.md
+- id: biological_abstractions
+  resource: ../scientific_model/future_prospects/biological_abstractions.md
 ---
 
 This page provides concise, current-state definitions for the scientific and engineering vocabulary
@@ -128,13 +136,32 @@ in `SimulationLoop._diet_matrix`.
 
 See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`scenarios/schema-and-curated-examples.md`](../scenario_guide/curated_examples.md)
 
+### Decoupled Dual-Proxy Architecture
+
+The core biological modeling pattern introduced in Plan 1 of the architectural roadmap. Every plant
+entity in the ECS spatial hash is defined by exactly two contiguous, branchless float arrays rather
+than a single energy scalar:
+
+- **`E_current` (Energetic Health, `float64`)** - short-term, volatile caloric storage (leaves,
+  accessible sugars, phloem). Increases through photosynthesis; decreases from grazing and
+  mycorrhizal taxes. Used for starvation and death decisions.
+- **`M_structural` (Structural Mass, `float32`)** - long-term, permanent physical growth (lignin,
+  woodiness, deep roots). Monotonically non-decreasing; never reduced by herbivory. Used for
+  trampling vulnerability and morphological defense calculations.
+
+The separation eliminates the need for discrete state enums (which cause CPU branch mispredictions
+in Numba SIMD loops) by expressing all seven phenological phases as branchless float threshold masks.
+
+See: [`biological_abstractions.md`](../scientific_model/future_prospects/biological_abstractions.md),
+[`engine_execution.md`](../technical_architecture/engine_execution.md)
+
 ### Double Buffering
 
 The technique of maintaining separate read and write copies of a mutable field layer so that updates
 during one phase do not corrupt the state being consumed by the same phase. In PHIDS,
-`GridEnvironment` double-buffers plant-energy-by-species layers and signal layers. Writes target the
-`_..._write` backing arrays; a swap call (`rebuild_energy_layer()` or end-of-diffusion swap) makes
-the new state read-visible.
+`GridEnvironment` double-buffers plant-energy-by-species layers, structural-mass-by-species layers,
+and signal layers. Writes target the `_..._write` backing arrays; a swap call
+(`rebuild_energy_layer()` or end-of-diffusion swap) makes both proxy states read-visible atomically.
 
 See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system_architecture.md)
 
@@ -151,6 +178,17 @@ See: [`ui/draft-state-and-load-workflow.md`](../technical_architecture/interface
 ---
 
 ## E
+
+### `E_current`
+
+The first of the two Dual-Proxy floats stored per plant entity. Represents short-term, volatile
+caloric health (accessible sugars, phloem). Stored as `float64` in the double-buffered
+`plant_energy_by_species` / `plant_energy_layer` arrays in `GridEnvironment`. Decreases from
+herbivory and mycorrhizal taxes; increases from photosynthesis. Drives starvation culling and
+reproductive overflow. Flow-field attraction is computed against the aggregated `plant_energy_layer`.
+
+See: [`Decoupled Dual-Proxy Architecture`](#decoupled-dual-proxy-architecture),
+[`PlantComponent`](../reference/module-map.md)
 
 ### ECS (Entity-Component-System)
 
@@ -501,3 +539,20 @@ directional atmospheric transport of volatile signals. The wind vector can be up
 
 See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md),
 [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)
+
+---
+
+## M (addendum)
+
+### `M_structural`
+
+The second of the two Dual-Proxy floats stored per plant entity. Represents permanent structural
+mass (lignin, woodiness, deep roots). Stored as `float32` in the double-buffered
+`structural_mass_by_species` / `structural_mass_layer` arrays in `GridEnvironment`. Monotonically
+non-decreasing: it grows via `M_STRUCTURAL_GROWTH_RATE` on slow-loop gates and is never decreased
+by herbivory. Used in Plan 2+ for trampling vulnerability (`Vulnerability = max(0, 1 - M / M_adult)`)
+and morphological defense scaling. The `float32` dtype doubles AVX2 SIMD throughput relative to
+`E_current` (`float64`) since threshold comparisons require no PDE-level precision.
+
+See: [`Decoupled Dual-Proxy Architecture`](#decoupled-dual-proxy-architecture),
+[`PlantComponent`](../reference/module-map.md)

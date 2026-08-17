@@ -1,18 +1,22 @@
 ---
-type: scientific_model
+type: Scientific Model
 title: Scientific Model Overview
-status: active
+status: stable
+stale_after: "2027-01-01"
 version: 2.0
-description: High-level overview of theoretical foundations and mathematical chapters in the PHIDS scientific model.
-tags:
-- phids
-- scientific-model
-- theoretical-foundations
-timestamp: "2026-07-26T18:31:00Z"
-resources:
-- docs/scientific_model/mathematical_framework.md
-- docs/scientific_model/related_works.md
-- docs/scientific_model/future_prospects/parameter_calibration_strategy.md
+description: High-level overview of theoretical foundations and mathematical
+  chapters in the PHIDS scientific model.
+tags: [phids, scientific-model, theoretical-foundations]
+generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: mathematical_framework
+  resource: docs/scientific_model/mathematical_framework.md
+- id: related_works
+  resource: docs/scientific_model/related_works.md
+- id: source
+  resource: 
+    docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
 
 This section formally details the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a rigorous, deterministic computational ecology model. The documentation here defines the theoretical foundations, the explicit mathematical representations of the biological mechanisms, and the bounded approximations underlying the execution of the system.
