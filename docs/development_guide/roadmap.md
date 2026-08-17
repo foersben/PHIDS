@@ -57,7 +57,7 @@ This document defines the strategic development roadmap for the Plant-Herbivore 
 * **Operator-Splitting PDE Solvers & Telemetry** `[Implemented]`: Combined semi-Lagrangian wind advection with $5\times 5$ Gaussian stencils, Zarr telemetry, and HTMX web visualization.
 * **Phase-Staggered Cohort Loops & Kinematics** `[Implemented]`: Multi-scale temporal decoupling (`(entity_id % S) == (tick % S)`), 4-way Von-Neumann kinematics, branchless capacity masking, and $O(1)$ stochastic seed dispersal.
 
-### Stage 1B: Charnov's Marginal Value Theorem (MVT) & Softmax Stochastic Foraging (Pre-v1.0 Base Milestone - Active Target)
+### Stage 1B: Charnov's Marginal Value Theorem (MVT) & Softmax Stochastic Foraging `[Implemented]`
 
 * **Biological Target**: Replace rigid binary feeding state locks (`is_feeding = True` until $E_{\text{plant}} = 0$) with optimal foraging theory governed by **Charnov's Marginal Value Theorem (MVT)**. Optimal foragers evaluate surrounding continuous spatial potentials $\nabla F(\mathbf{r})$ at **every tick** and abandon depleting patches as soon as local caloric intake drops below the expected average intake rate of the surrounding landscape.
 * **Theoretical & Architectural Foundations**:

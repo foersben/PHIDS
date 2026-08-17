@@ -111,6 +111,22 @@ def get_herbivore_energy_upkeep(params_dict: dict[int, HerbivoreSpeciesParams], 
     return 0.05
 
 
+def get_herbivore_softmax_temperature(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> float:
+    """Return the configured softmax temperature for stochastic foraging.
+
+    Args:
+        params_dict: Dictionary mapping species IDs to their parameters.
+        species_id: Herbivore species identifier to look up.
+
+    Returns:
+        Configured softmax temperature if found; otherwise 0.0 (deterministic max selection).
+    """
+    params = params_dict.get(species_id)
+    if params is not None:
+        return float(getattr(params, "softmax_temperature", 0.0))
+    return 0.0
+
+
 def get_herbivore_split_threshold(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> int:
     """Return the configured explicit mitosis population threshold for a herbivore species.
 

@@ -280,6 +280,75 @@ def _weighted_field_choice_jit(
 
 
 @njit(cache=True, fastmath=True)
+def _softmax_field_choice_jit(
+    count: int,
+    invert: bool,
+    scores: npt.NDArray[np.float64],
+    c_x: npt.NDArray[np.int32],
+    c_y: npt.NDArray[np.int32],
+    adjusted_scores: npt.NDArray[np.float64],
+    weights: npt.NDArray[np.float64],
+    rand_val: float,
+    tau: float,
+    tile_populations: npt.NDArray[np.int32] | None = None,
+    width: int = 0,
+    max_capacity: int = 500,
+    current_x: int = -1,
+    current_y: int = -1,
+) -> tuple[int, int]:
+    """Numba-compiled helper function to select a neighbour using Boltzmann/Softmax probabilities.
+
+    Args:
+        count: The number of neighbours.
+        invert: Whether to invert the scores.
+        scores: Array of flow-field gradient scores.
+        c_x: Array to store the x coordinates of the neighbours.
+        c_y: Array to store the y coordinates of the neighbours.
+        adjusted_scores: Pre-allocated array for adjusted scores.
+        weights: Pre-allocated array for flow-field weights.
+        rand_val: Random value for weighted choice.
+        tau: Softmax temperature parameter.
+        tile_populations: Pre-allocated population array for capacity masking.
+        width: Grid width for population indexing.
+        max_capacity: Tile carrying capacity threshold.
+        current_x: Current x coordinate of the swarm.
+        current_y: Current y coordinate of the swarm.
+
+    Returns:
+        The selected neighbour coordinates.
+    """
+    for i in range(count):
+        adjusted_scores[i] = -scores[i] if invert else scores[i]
+
+    max_score = adjusted_scores[0]
+    for i in range(1, count):
+        if adjusted_scores[i] > max_score:
+            max_score = adjusted_scores[i]
+
+    total_w = 0.0
+    for i in range(count):
+        # Max-subtraction prevents fastmath float overflow during exponentiation.
+        weights[i] = np.exp((adjusted_scores[i] - max_score) / tau)
+        total_w += weights[i]
+
+    if tile_populations is not None and width > 0 and current_x >= 0 and current_y >= 0:
+        total_w = _apply_branchless_capacity_mask_jit(
+            count, current_x, current_y, width, c_x, c_y, tile_populations, max_capacity, weights
+        )
+
+    if total_w <= 0.0:
+        return (current_x if current_x >= 0 else c_x[0]), (current_y if current_y >= 0 else c_y[0])
+
+    r = rand_val * total_w
+    cum = 0.0
+    for i in range(count):
+        cum += weights[i]
+        if r <= cum:
+            return c_x[i], c_y[i]
+    return c_x[count - 1], c_y[count - 1]
+
+
+@njit(cache=True, fastmath=True)
 def _choose_neighbour_by_flow_probability_jit(
     x: int,
     y: int,
@@ -296,6 +365,7 @@ def _choose_neighbour_by_flow_probability_jit(
     weights: npt.NDArray[np.float64],
     rand_val: float,
     tile_populations: npt.NDArray[np.int32] | None = None,
+    tau: float = 0.0,
 ) -> tuple[int, int]:
     """JIT-accelerated Von-Neumann coordinate selector using flow weights and branchless capacity masking.
 
@@ -315,6 +385,7 @@ def _choose_neighbour_by_flow_probability_jit(
         weights: Pre-allocated scratch array for sampling weights.
         rand_val: Random value for weighted choice.
         tile_populations: Tile population array for branchless capacity masking.
+        tau: Softmax temperature parameter. 0.0 uses legacy linear weighted selection.
 
     Returns:
         The selected neighbour coordinates.
@@ -339,6 +410,24 @@ def _choose_neighbour_by_flow_probability_jit(
     # Flat fields provide no directional signal; preserve prior heading as inertia.
     if max_score - min_score < 1e-6:
         return _flat_field_choice_jit(count, x, y, last_dx, last_dy, c_x, c_y, weights, rand_val)
+
+    if tau > 0.0:
+        return _softmax_field_choice_jit(
+            count,
+            invert,
+            scores,
+            c_x,
+            c_y,
+            adjusted_scores,
+            weights,
+            rand_val,
+            tau,
+            tile_populations=tile_populations,
+            width=width,
+            max_capacity=TILE_CARRYING_CAPACITY,
+            current_x=x,
+            current_y=y,
+        )
 
     return _weighted_field_choice_jit(
         count,
@@ -369,6 +458,7 @@ def _choose_neighbour_by_flow_probability(
     weights: npt.NDArray[np.float64],
     invert: bool = False,
     tile_populations: npt.NDArray[np.int32] | list[int] | None = None,
+    tau: float = 0.0,
 ) -> tuple[int, int]:
     """Select a 4-connected Von-Neumann neighbour via flow-field-weighted JIT selection.
 
@@ -386,6 +476,7 @@ def _choose_neighbour_by_flow_probability(
         weights: Pre-allocated scratch array for sampling weights.
         invert: Whether to invert the flow-field gradient scores.
         tile_populations: Tile population array for branchless capacity masking.
+        tau: Softmax temperature parameter. 0.0 uses legacy linear weighted selection.
 
     Returns:
         The selected neighbour coordinates.
@@ -415,6 +506,7 @@ def _choose_neighbour_by_flow_probability(
         weights,
         random.random(),
         tile_populations=tile_pop_arr,
+        tau=tau,
     )
 
 
@@ -788,6 +880,9 @@ def _resolve_swarm_movement(
         if _is_swarm_anchored(swarm, env, diet_matrix):
             nx, ny = swarm.x, swarm.y
         else:
+            from phids.engine.core.herbivore_params import get_herbivore_softmax_temperature
+
+            tau = get_herbivore_softmax_temperature(herbivore_params_dict, swarm.species_id)
             # 3. Resume normal gradient tracking if no food is present.
             nx, ny = _choose_neighbour_by_flow_probability(
                 swarm,
@@ -800,6 +895,7 @@ def _resolve_swarm_movement(
                 scratch_adjusted,
                 scratch_weights,
                 tile_populations=tile_populations,
+                tau=tau,
             )
 
     has_moved = False

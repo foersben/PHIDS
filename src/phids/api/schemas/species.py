@@ -114,6 +114,11 @@ class HerbivoreSpeciesParams(StrictBaseModel):
         default="macro_swarm",
         description="Behavioral paradigm governing movement and foraging kinetics.",
     )
+    softmax_temperature: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Temperature (τ) for stochastic action selection. 0.0 defaults to linear weighted choice.",
+    )
     reproduction_energy_divisor: float = Field(
         default=1.0,
         gt=0.0,
