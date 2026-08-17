@@ -329,7 +329,6 @@
         btn.innerHTML = '▶ Start';
         btn.className = 'px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow';
       }
-      if (window.htmx) window.htmx.process(btn);
     };
 
     (function () {
@@ -363,19 +362,32 @@
           setDraftIndicator(event?.detail?.successful ? 'saved' : 'error');
           return;
         }
-        if (path === '/api/scenario/load-draft' || path === '/api/simulation/reset') {
-          if (event?.detail?.successful) {
+
+        const simPaths = [
+          '/api/scenario/load-draft',
+          '/api/simulation/reset',
+          '/api/simulation/step',
+          '/api/simulation/start',
+          '/api/simulation/pause'
+        ];
+
+        if (simPaths.includes(path) && event?.detail?.successful) {
+          if (path === '/api/scenario/load-draft' || path === '/api/simulation/reset') {
             setDraftIndicator('saved', 'Draft applied to live loop');
-            window.phidsSyncMainActionButton(false, false);
           }
-        }
-        if (path === '/api/simulation/start' && event?.detail?.successful) {
-          window.phidsSyncMainActionButton(true, false);
-        }
-        if (path === '/api/simulation/pause' && event?.detail?.successful) {
-          const btn = document.getElementById('sim-main-action-btn');
-          const isPausedNow = btn ? btn.textContent.includes('Pause') : false;
-          window.phidsSyncMainActionButton(true, isPausedNow);
+
+          // Wait for HTMX to swap the status badge, then sync the button to the true server state
+          setTimeout(() => {
+            const statusEl = document.getElementById('sim-status');
+            const statusText = statusEl ? statusEl.textContent.trim() : '';
+            if (statusText === 'Running') {
+              window.phidsSyncMainActionButton(true, false);
+            } else if (statusText === 'Paused') {
+              window.phidsSyncMainActionButton(true, true);
+            } else {
+              window.phidsSyncMainActionButton(false, false);
+            }
+          }, 50);
         }
       });
     })();
