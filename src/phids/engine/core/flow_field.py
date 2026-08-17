@@ -48,19 +48,18 @@ def _init_base_and_current_jit(
 ) -> None:
     """Initialize base and current attraction flow fields using SIMD-vectorized matrix math.
 
-    256-Bit AVX2 SIMD Vectorization & Zero-Overhead Hardware Discovery:
-    --------------------------------------------------------------------
-    Modern CPU microarchitectures (including mobile workstation platforms e.g. ThinkPad P15/P16 series)
-    feature 256-bit AVX2 vector registers (YMM registers) capable of operating on four 64-bit double-precision
-    floating-point values concurrently per clock cycle. In scalar element-wise loops, the instruction pipeline
-    repeatedly fetches, decodes, and executes discrete instructions for each memory location, incurring
-    sequential loop overhead, instruction decoding latency, and potential branch mispredictions.
+    256-Bit AVX2 SIMD Vectorization & Zero-Allocation Memory Constraints:
+    ----------------------------------------------------------------------
+    While NumPy array operations like `np.sum(toxin_layers, axis=0)` implicitly utilize SIMD
+    instructions, they allocate temporary arrays in memory. Because this function is called on
+    the hot path every simulation tick, such dynamic allocations violate the engine's strict
+    zero-allocation mandate and introduce garbage collection latency.
 
-    By replacing scalar nested loops with contiguous C-array expressions (`np.sum(toxin_layers, axis=0)`
-    and in-place array operations), Numba's LLVM backend auto-vectorizes memory passes into 256-bit AVX2 vector
-    instructions (e.g. fused multiply-add `vfmadd213pd` across YMM registers). LLVM queries host CPU capabilities
-    (`cpuid`) once at initial compilation time with zero runtime tick cost, dynamically selecting AVX2 256-bit
-    vector paths without frequency downclocking penalties or hardware incompatibility traps.
+    Instead, we use explicit nested loops tailored for contiguous memory access (ensuring the
+    last array dimension `y` is the innermost loop). Numba's LLVM backend auto-vectorizes these
+    contiguous scalar operations into the exact same 256-bit AVX2 vector instructions (e.g.,
+    fused multiply-add `vfmadd213pd`) without ever allocating intermediate arrays. This achieves
+    maximum hardware performance while strictly adhering to ECS memory constraints.
 
     Args:
         width: Grid width.
@@ -73,10 +72,23 @@ def _init_base_and_current_jit(
         alpha: Weight for botanical attractants.
         beta: Weight for toxic repellents.
     """
-    _ = (width, height)
-    toxin_sum = np.sum(toxin_layers, axis=0)
-    base[:, :] = (alpha * plant_energy * apparent_nutrition_layer) - (beta * toxin_sum)
-    current[:, :] = base[:, :]
+    num_toxins = toxin_layers.shape[0]
+
+    # Pre-calculate base values (Perfectly contiguous, LLVM will AVX2 vectorize this)
+    for x in range(width):
+        for y in range(height):
+            base[x, y] = alpha * plant_energy[x, y] * apparent_nutrition_layer[x, y]
+
+    # Subtract toxins inline (Perfectly contiguous, LLVM will AVX2 vectorize this)
+    for t in range(num_toxins):
+        for x in range(width):
+            for y in range(height):
+                base[x, y] -= beta * toxin_layers[t, x, y]
+
+    # Copy to current buffer (LLVM will vectorize this into AVX2 block copies)
+    for x in range(width):
+        for y in range(height):
+            current[x, y] = base[x, y]
 
 
 @njit(cache=True, fastmath=True)

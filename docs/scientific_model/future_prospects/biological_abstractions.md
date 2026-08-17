@@ -301,3 +301,14 @@ stateDiagram-v2
 - **Tooltip Disambiguation:** Tooltip entries replace ambiguous `*` asterisks with explicit badges:
   - **Inter-species link:** `<span class="text-amber-400"> (inter-species)</span>`
   - **Intra-species link:** `<span class="text-sky-400/70"> (intra-species)</span>`
+
+### Data-Flow Matrix: Dual-Proxy State Shifts
+
+| Event | Precondition | State Transformation | ECS Resolution |
+| :--- | :--- | :--- | :--- |
+| **Photosynthesis** | $E_{current} < E_{max}$ | $E_{current} = \min(E_{max}, E_{current} + \text{daily\_gain})$ | Daily Loop Update |
+| **Growth** | $E_{current} \ge \text{Cost}_{growth}$ AND $M_{structural} < M_{max}$ | $M_{structural} = \min(M_{max}, M_{structural} + \delta M)$; $E_{current} -= \text{Cost}_{growth}$ | Daily Loop Update |
+| **Grazing** | $E_{current} > 0$ | $E_{current} = \max(0, E_{current} - \text{Intake})$ | Medium Tick Interaction |
+| **Mycorrhizal Tax** | $E_{current} < \text{Upkeep}$ | Drop `mycorrhizal_connections` mask | Branchless float mask `E > Upkeep` |
+| **Trampling** | $M_{structural} < M_{adult}$ | $P(\text{destroy}) = f(SwarmBiomass, M_{structural})$ | Movement Hot Path |
+| **Starvation** | $E_{current} \le 0$ AND $M_{structural} > 0$ | Coordinate occupancy = 0 | Garbage Collection |
