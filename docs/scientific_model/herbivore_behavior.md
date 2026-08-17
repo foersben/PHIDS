@@ -13,11 +13,27 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 
 Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
 
-## 1. Locomotion & Probabilistic Sampling
+## 1. Marginal Value Theorem (MVT) & Softmax Stochastic Foraging
 
-In real ecological systems, individuals in a herd do not possess perfect information. If 1,000 herbivores all determined that coordinate (5,5) had the absolutely perfect combination of food and safety, and all moved there simultaneously, they would form a physically impossible singularity. To model the "diffuse foraging fronts" observed in grazing animals or insects, the swarm as a whole moves *generally* toward the target, but individual entities exhibit slight, chaotic variations.
+In real ecological systems, individuals in a herd do not possess perfect information, nor do they perfectly converge on a single optimal point (which would create a physical singularity). Furthermore, animals do not stay on a resource patch until it is completely barren; they leave when the local intake rate drops below the expected average intake rate of the surrounding landscape. This concept is biologically known as **Charnov's Marginal Value Theorem (MVT)**.
 
-To achieve this computationally, swarms do not move in absolute straight lines toward a distant target. When sampling their 4-way orthogonal **Von-Neumann Neighborhood** $\mathcal{V}(x,y)$ (the current tile plus North, South, East, and West) against the unified Flow Field $F_t$, they utilize **probabilistic softmax-like weighting**. Sampling the 4-way Von-Neumann neighborhood strictly preserves a 1:1 ratio between simulation ticks and physical distance traversed, eliminating the diagonal Euclidean speed exploit ($\sqrt{2} \approx 1.414$) while keeping Numba JIT kernels lean and robust.
+To computationally model "diffuse foraging fronts" and MVT patch departure, PHIDS utilizes **Softmax Stochastic Action Selection** across a 4-way orthogonal **Von-Neumann Neighborhood** $\mathcal{V}(x,y)$.
+
+Instead of greedy, deterministic gradient ascent, transition probabilities are assigned to neighboring cells using the Boltzmann distribution:
+
+$$P(\text{move to } j) = \frac{\exp\left(\frac{F_j}{\tau}\right)}{\sum_{k \in \mathcal{V}} \exp\left(\frac{F_k}{\tau}\right)}$$
+
+Where:
+- $F_j$ is the combined chemotactic Flow Field potential of neighbor $j$.
+- $\tau$ (Temperature) is a tunable parameter controlling deterministic versus stochastic behavior.
+
+### The Biological Impact of Temperature ($\tau$)
+
+The $\tau$ parameter directly controls the swarm's foraging paradigm:
+- **Low Temperature ($\tau \to 0$):** Exploitation mode. The swarm moves almost deterministically to the cell with the highest potential. This mimics highly starved or strongly driven insects locked onto a rich pheromone trail.
+- **High Temperature ($\tau > 1.0$):** Exploration mode. The swarm moves more randomly, ignoring slight variations in the gradient. This simulates exploratory grazing or movement in an environment filled with noisy, conflicting scent profiles.
+
+By continuously evaluating the landscape via this stochastic weighting on every tick, swarms naturally exhibit density-dependent herd dispersion and realistic patch-abandonment kinetics without relying on artificial state-locking routines.
 
 ## 2. Inertial Persistence (The Orthokinetic Rule)
 

@@ -300,6 +300,26 @@ def _is_swarm_anchored_jit(
 
 Operating directly on 3D C-contiguous plant energy arrays and 2D boolean diet matrices in compiled C eliminates Python object creation and `.item()` method invocations, achieving a **~15% - 25% speedup** in swarm movement phase resolution.
 
+### 6. Zero-Allocation Softmax Stochastic Action Selection (`movement.py`)
+
+When an herbivore swarm departs a patch (following Charnov's Marginal Value Theorem), it evaluates transition probabilities for its 4-way Von-Neumann neighborhood via the Boltzmann distribution ($P(j) \propto \exp(F_j / \tau)$). 
+
+#### FastMath Max-Subtraction & Branchless Evaluation
+
+Direct evaluation of $\exp(F_j / \tau)$ in Numba `@njit(fastmath=True)` kernels often triggers `inf` (infinity) overflow exceptions when local potentials $F_j$ are high. 
+To guarantee mathematical safety without incurring the massive latency of dropping `fastmath`, PHIDS employs **Max-Subtraction**:
+
+$$P(j) = \frac{\exp\left(\frac{F_j - F_{max}}{\tau}\right)}{\sum \exp\left(\frac{F_k - F_{max}}{\tau}\right)}$$
+
+This guarantees the exponent never exceeds $0.0$, capping $\exp(x)$ at $1.0$ while strictly preserving the probability distribution.
+
+#### Zero Heap Allocation
+
+Computing these probabilities typically requires allocating temporary sum buffers and weight arrays for `np.random.choice`. PHIDS entirely bypasses Numba heap allocations (`np.empty`, `np.zeros`) by recycling two pre-allocated $O(1)$ ECS buffers (`scratch_adjusted` and `scratch_weights`) passed down from the engine's `resolve_movement` cycle. The result is a $0$-allocation stochastic choice loop.
+
+#### Deterministic $O(1)$ Override
+If the species temperature is configured to $\tau \le 0.0$, the Softmax kernel branchlessly bypasses the exponentiation loop entirely, dropping back to a pure greedy argmax. This guarantees that scenarios not utilizing stochastic foraging incur exactly zero computational overhead.
+
 ### 6. 256-Bit SIMD Matrix Reduction in Dual-Proxy Layer Rebuild (`biotope.py`)
 
 At the conclusion of the herbivory interaction phase, `GridEnvironment.rebuild_energy_layer()` aggregates both proxy arrays into their respective master grid layers (`src/phids/engine/core/biotope.py`).

@@ -164,7 +164,7 @@ def _flat_field_choice_jit(
     cum = 0.0
     for i in range(count):
         cum += weights[i]
-        if r <= cum:
+        if r < cum:
             return c_x[i], c_y[i]
     return c_x[count - 1], c_y[count - 1]
 
@@ -274,7 +274,7 @@ def _weighted_field_choice_jit(
     cum = 0.0
     for i in range(count):
         cum += weights[i]
-        if r <= cum:
+        if r < cum:
             return c_x[i], c_y[i]
     return c_x[count - 1], c_y[count - 1]
 
@@ -343,7 +343,7 @@ def _softmax_field_choice_jit(
     cum = 0.0
     for i in range(count):
         cum += weights[i]
-        if r <= cum:
+        if r < cum:
             return c_x[i], c_y[i]
     return c_x[count - 1], c_y[count - 1]
 

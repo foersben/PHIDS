@@ -46,7 +46,7 @@ Rather than assuming instant global communication, PHIDS utilizes continuous rea
 
 ### Chemotactic Foraging & Trophic Defenses
 
-Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. In upcoming release cycles, foraging behavior is planned to incorporate **Charnov's Marginal Value Theorem (MVT)** and **Softmax Stochastic Action Selection** (Stage 1B Roadmap milestone): swarms will continuously re-evaluate local intake rates against landscape potential to make stochastic, biologically plausible decisions about when to abandon a depleting resource patch. Plants counter grazing pressure by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
+Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Foraging behavior natively incorporates **Charnov's Marginal Value Theorem (MVT)** and **Softmax Stochastic Action Selection** (Stage 1B milestone complete). Swarms continuously re-evaluate local intake rates against landscape potential to make stochastic, biologically plausible decisions about when to abandon a depleting resource patch, controlled by a distinct temperature ($\tau$) parameter. Plants counter grazing pressure by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
 
 * **Morphological Defenses (Passive):** Features like spines (inflicting mechanical damage) or tough lignin (digestibility modifiers that cause caloric attenuation during feeding).
 * **Chemical Defenses (Active):** When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem. Or, under high stress, a plant might initiate *resource withdrawal* to mask its apparent nutritional value.
@@ -55,7 +55,12 @@ Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage 
 
 ## ⚙️ Runtime architecture & strictness improvements
 
-Following recent massive architectural sweeps (Phases 1-4 & Tier 0 Optimizations), PHIDS is engineered for uncompromised performance, strict data integrity, and determinism. It uses a deliberately layered runtime architecture centered on `src/phids/engine/loop.py` (`SimulationLoop`).
+Following recent massive architectural sweeps (Phases 1-4 & Tier 0 Optimizations), PHIDS is engineered for uncompromised performance, strict data integrity, and determinism.
+
+**What does this mean for non-programmers?**
+In complex ecological models, tiny calculation differences (like out-of-order events or microscopic rounding errors) can cause a "butterfly effect" where two identical starting scenarios produce completely different end results. To prevent this, PHIDS acts like a strict mathematical machine. It enforces rigid rules (who calculates what and when) and uses high-performance computing techniques to guarantee that every single simulation run is 100% predictable, reproducible, and extremely fast.
+
+At its core, the system uses a deliberately layered runtime architecture centered on `src/phids/engine/loop.py` (`SimulationLoop`).
 
 ### Strict Data Boundaries (Pydantic V2)
 
