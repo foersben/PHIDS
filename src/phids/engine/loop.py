@@ -213,6 +213,13 @@ class SimulationLoop:
         # here and pass to run_interaction to avoid array allocation in the hot path.
         self._diet_matrix: npt.NDArray[np.bool_] = np.array(config.diet_matrix.rows, dtype=np.bool_)
 
+        # Pre-allocate scratch buffers for zero-allocation Numba JIT movement
+        self._scratch_cx: npt.NDArray[np.int32] = np.empty(5, dtype=np.int32)
+        self._scratch_cy: npt.NDArray[np.int32] = np.empty(5, dtype=np.int32)
+        self._scratch_scores: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+        self._scratch_adjusted: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+        self._scratch_weights: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
+
         # Spawn initial entities
         self._spawn_initial_entities()
         logger.info(
@@ -546,6 +553,11 @@ class SimulationLoop:
                 list(self.config.flora_species),
                 list(self.config.herbivore_species),
                 self.tick,
+                self._scratch_cx,
+                self._scratch_cy,
+                self._scratch_scores,
+                self._scratch_adjusted,
+                self._scratch_weights,
                 plant_death_causes=plant_death_causes,
                 herbivore_death_causes=herbivore_death_causes,
                 is_medium_tick=is_medium_tick,
