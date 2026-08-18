@@ -173,18 +173,17 @@ def _get_target_plant(world: ECSWorld, co_eid: int) -> PlantComponent | None:
     return co_entity.get_component(PlantComponent)
 
 
-def _is_diet_compatible(herbivore_species_id: int, plant_species_id: int, diet_matrix: list[list[bool]]) -> bool:
-    if herbivore_species_id >= len(diet_matrix):
+def _is_diet_compatible(herbivore_species_id: int, plant_species_id: int, diet_matrix: npt.NDArray[np.bool_]) -> bool:
+    if herbivore_species_id >= diet_matrix.shape[0]:
         return False
-    herbivore_row = diet_matrix[herbivore_species_id]
-    return plant_species_id < len(herbivore_row) and herbivore_row[plant_species_id]
+    return plant_species_id < diet_matrix.shape[1] and bool(diet_matrix[herbivore_species_id, plant_species_id])
 
 
 def _resolve_swarm_feeding(
     swarm: SwarmComponent,
     world: ECSWorld,
     env: GridEnvironment,
-    diet_matrix: list[list[bool]],
+    diet_matrix: npt.NDArray[np.bool_],
     flora_species_params: list[FloraSpeciesParams] | list[CachedFloraForagingParams],
     herbivore_species_params: list[HerbivoreSpeciesParams] | list[CachedHerbivoreForagingParams],
     tile_populations: npt.NDArray[np.int32] | list[int],

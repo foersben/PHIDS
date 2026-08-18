@@ -33,7 +33,7 @@ def _resolve_swarm_movement(
     entity: Entity,
     env: GridEnvironment,
     world: ECSWorld,
-    diet_matrix: list[list[bool]] | npt.NDArray[np.bool_],
+    diet_matrix: npt.NDArray[np.bool_],
     tile_populations: npt.NDArray[np.int32] | list[int],
     herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
     scratch_cx: npt.NDArray[np.int32],

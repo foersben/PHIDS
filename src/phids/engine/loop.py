@@ -24,6 +24,9 @@ import time
 import uuid
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
+import numpy as np
+import numpy.typing as npt
+
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
@@ -206,9 +209,9 @@ class SimulationLoop:
             ]
             for sp in config.flora_species
         }
-        # TODO: Performance: Pre-compile config.diet_matrix.rows to np.array(dtype=np.bool_)
+        # Pre-compile config.diet_matrix.rows to np.array(dtype=np.bool_)
         # here and pass to run_interaction to avoid array allocation in the hot path.
-        self._diet_matrix: list[list[bool]] = config.diet_matrix.rows
+        self._diet_matrix: npt.NDArray[np.bool_] = np.array(config.diet_matrix.rows, dtype=np.bool_)
 
         # Spawn initial entities
         self._spawn_initial_entities()

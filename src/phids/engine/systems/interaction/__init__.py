@@ -77,7 +77,7 @@ import numpy.typing as npt
 def run_interaction(
     world: ECSWorld,
     env: GridEnvironment,
-    diet_matrix: list[list[bool]],
+    diet_matrix: npt.NDArray[np.bool_],
     flora_species_params: list[FloraSpeciesParams],
     herbivore_species_params: list[HerbivoreSpeciesParams],
     tick: int,  # noqa: ARG001
@@ -102,7 +102,7 @@ def run_interaction(
     Args:
         world: The ECS world.
         env: The grid environment.
-        diet_matrix: The diet matrix.
+        diet_matrix: The boolean diet matrix array.
         flora_species_params: The flora species parameters.
         herbivore_species_params: The herbivore species parameters.
         tick: The current simulation tick.
@@ -121,11 +121,6 @@ def run_interaction(
     scratch_scores: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
     scratch_adjusted: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
     scratch_weights: npt.NDArray[np.float64] = np.empty(5, dtype=np.float64)
-
-    # Pre-convert diet_matrix to 2D NumPy boolean array for zero-allocation JIT anchoring checks
-    diet_arr: npt.NDArray[np.bool_] = (
-        diet_matrix if isinstance(diet_matrix, np.ndarray) else np.array(diet_matrix, dtype=np.bool_)
-    )
 
     # Pre-build parameter caches for O(1) slot resolution in feeding loops
     cached_flora_params = cache_flora_foraging_params(flora_species_params) if is_medium_tick else []
@@ -159,7 +154,7 @@ def run_interaction(
             entity,
             env,
             world,
-            diet_arr,
+            diet_matrix,
             tile_populations,
             herbivore_params_dict,
             scratch_cx,
