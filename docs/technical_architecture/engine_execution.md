@@ -29,7 +29,7 @@ sources:
 - id: feeding
   resource: src/phids/engine/systems/interaction/feeding.py
 - id: movement
-  resource: src/phids/engine/systems/interaction/movement.py
+  resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
   resource: src/phids/engine/systems/lifecycle.py
 - id: signaling_lifecycle
@@ -268,7 +268,7 @@ The resulting buffer is wrapped in a lightweight `SwarmPopulationIndex` accessor
 
 ### 5. Numba JIT-Compiled Swarm Anchoring Resolution (`movement.py`)
 
-During the interaction movement phase (`src/phids/engine/systems/interaction/movement.py`), each herbivore swarm evaluates whether it is co-located with uneaten, compatible flora to determine whether to anchor (stay put and feed) or resume gradient pathfinding.
+During the interaction movement phase (`src/phids/engine/systems/interaction/movement/__init__.py`), each herbivore swarm evaluates whether it is co-located with uneaten, compatible flora to determine whether to anchor (stay put and feed) or resume gradient pathfinding.
 
 #### Eliminating Scalar Method Calls & List Iteration
 
@@ -447,7 +447,7 @@ This optimization yields a **~15% - 25%** speedup in signaling phase execution f
 
 ### 13. Tile Population Grid Lookup & JIT-Accelerated Accumulation (`population.py` & `movement.py`)
 
-Physical jostling and carrying capacity checks (`TILE_CARRYING_CAPACITY = 500`) evaluate tile-local crowding pressure during swarm movement resolution (`_resolve_swarm_movement` in `src/phids/engine/systems/interaction/movement.py`).
+Physical jostling and carrying capacity checks (`TILE_CARRYING_CAPACITY = 500`) evaluate tile-local crowding pressure during swarm movement resolution (`_resolve_swarm_movement` in `src/phids/engine/systems/interaction/movement/__init__.py`).
 
 #### In-Place JIT Delta Accumulation Kernel
 

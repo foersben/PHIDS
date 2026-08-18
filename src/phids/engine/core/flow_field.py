@@ -540,6 +540,88 @@ def _propagate_inner_jit(
     return max_diff
 
 
+@njit(cache=True)
+def _run_pow2_parallel(
+    width: int,
+    height: int,
+    max_iterations: int,
+    mask_x: int,
+    mask_y: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+    truncate_threshold: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    for _ in range(max_iterations):
+        max_diff = _propagate_iteration_jit_pow2_parallel(width, height, mask_x, mask_y, decay, base, current, nxt)
+        current, nxt = nxt, current
+        if max_diff < truncate_threshold:
+            break
+    return current, nxt
+
+
+@njit(cache=True)
+def _run_pow2_serial(
+    width: int,
+    height: int,
+    max_iterations: int,
+    mask_x: int,
+    mask_y: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+    truncate_threshold: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    for _ in range(max_iterations):
+        max_diff = _propagate_iteration_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt)
+        current, nxt = nxt, current
+        if max_diff < truncate_threshold:
+            break
+    return current, nxt
+
+
+@njit(cache=True)
+def _run_standard_parallel(
+    width: int,
+    height: int,
+    max_iterations: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+    truncate_threshold: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    for _ in range(max_iterations):
+        max_diff = _propagate_iteration_jit_parallel(width, height, decay, base, current, nxt)
+        current, nxt = nxt, current
+        if max_diff < truncate_threshold:
+            break
+    return current, nxt
+
+
+@njit(cache=True)
+def _run_standard_serial(
+    width: int,
+    height: int,
+    max_iterations: int,
+    decay: float,
+    base: npt.NDArray[np.float64],
+    current: npt.NDArray[np.float64],
+    nxt: npt.NDArray[np.float64],
+    truncate_threshold: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    for _ in range(max_iterations):
+        diff_boundaries = _propagate_boundaries_jit(width, height, decay, base, current, nxt)
+        diff_inner = _propagate_inner_jit(width, height, decay, base, current, nxt)
+        max_diff = diff_boundaries if diff_boundaries > diff_inner else diff_inner
+        current, nxt = nxt, current
+        if max_diff < truncate_threshold:
+            break
+    return current, nxt
+
+
 # pragma: no mutate start
 def _compute_flow_field_impl(
     plant_energy: npt.NDArray[np.float64],
@@ -595,34 +677,22 @@ def _compute_flow_field_impl(
 
     if is_pow2:
         if use_parallel:
-            for _ in range(max_iterations):
-                max_diff = _propagate_iteration_jit_pow2_parallel(
-                    width, height, mask_x, mask_y, decay, base, current, nxt
-                )
-                current, nxt = nxt, current
-                if max_diff < truncate_threshold:
-                    break
+            current, nxt = _run_pow2_parallel(
+                width, height, max_iterations, mask_x, mask_y, decay, base, current, nxt, truncate_threshold
+            )
         else:
-            for _ in range(max_iterations):
-                max_diff = _propagate_iteration_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt)
-                current, nxt = nxt, current
-                if max_diff < truncate_threshold:
-                    break
+            current, nxt = _run_pow2_serial(
+                width, height, max_iterations, mask_x, mask_y, decay, base, current, nxt, truncate_threshold
+            )
     else:
         if use_parallel:
-            for _ in range(max_iterations):
-                max_diff = _propagate_iteration_jit_parallel(width, height, decay, base, current, nxt)
-                current, nxt = nxt, current
-                if max_diff < truncate_threshold:
-                    break
+            current, nxt = _run_standard_parallel(
+                width, height, max_iterations, decay, base, current, nxt, truncate_threshold
+            )
         else:
-            for _ in range(max_iterations):
-                diff_boundaries = _propagate_boundaries_jit(width, height, decay, base, current, nxt)
-                diff_inner = _propagate_inner_jit(width, height, decay, base, current, nxt)
-                max_diff = diff_boundaries if diff_boundaries > diff_inner else diff_inner
-                current, nxt = nxt, current
-                if max_diff < truncate_threshold:
-                    break
+            current, nxt = _run_standard_serial(
+                width, height, max_iterations, decay, base, current, nxt, truncate_threshold
+            )
 
     # Truncate subnormal floats to exactly zero
     _truncate_subnormals_jit(width, height, current, truncate_threshold)

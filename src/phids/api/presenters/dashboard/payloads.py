@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from phids.api.schemas.species import FloraSpeciesParams
+    from phids.engine.components.plant import PlantComponent
     from phids.engine.core.ecs import ECSWorld
     from phids.engine.loop import SimulationLoop
 
@@ -176,6 +177,30 @@ def _collect_flora_species(
     return all_flora_species, species_energy
 
 
+def _compute_plant_metrics(p: PlantComponent) -> tuple[float, float, float, str]:
+    max_struct = p.max_structural_mass if p.max_structural_mass > 0.0 else p.max_energy
+    struct_mass = p.structural_mass
+    if struct_mass <= 0.0 and max_struct > 0.0:
+        struct_mass = max_struct * min(1.0, max(0.0, p.energy / max_struct))
+        p.structural_mass = struct_mass
+        p.max_structural_mass = max_struct
+
+    struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
+    fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
+    fragility_pct = min(100.0, max(0.0, fragility * 100.0))
+
+    if max_struct > 0.0 and struct_mass >= max_struct:
+        risk_level = "Immune"
+    elif fragility > 0.6:
+        risk_level = "High Risk"
+    elif fragility > 0.2:
+        risk_level = "Medium Risk"
+    else:
+        risk_level = "Low Risk"
+
+    return struct_mass, max_struct, fragility_pct, risk_level
+
+
 def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
     """Extract plant component data into a list of dictionaries for UI serialisation.
 
@@ -190,25 +215,7 @@ def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
     plants = []
     for entity in world.query(PlantComponent):
         p = entity.get_component(PlantComponent)
-        max_struct = float(p.max_structural_mass) if p.max_structural_mass > 0.0 else float(p.max_energy)
-        struct_mass = float(p.structural_mass)
-        if struct_mass <= 0.0 and max_struct > 0.0:
-            struct_mass = max_struct * min(1.0, max(0.0, float(p.energy) / max_struct))
-            p.structural_mass = struct_mass
-            p.max_structural_mass = max_struct
-
-        struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
-        fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
-        fragility_pct = min(100.0, max(0.0, fragility * 100.0))
-
-        if max_struct > 0.0 and struct_mass >= max_struct:
-            risk_level = "Immune"
-        elif fragility > 0.6:
-            risk_level = "High Risk"
-        elif fragility > 0.2:
-            risk_level = "Medium Risk"
-        else:
-            risk_level = "Low Risk"
+        struct_mass, max_struct, fragility_pct, risk_level = _compute_plant_metrics(p)
 
         plants.append(
             {
@@ -216,8 +223,8 @@ def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
                 "species_id": p.species_id,
                 "x": p.x,
                 "y": p.y,
-                "energy": float(p.energy),
-                "max_energy": float(p.max_energy),
+                "energy": p.energy,
+                "max_energy": p.max_energy,
                 "structural_mass": struct_mass,
                 "max_structural_mass": max_struct,
                 "fragility_pct": fragility_pct,
@@ -249,7 +256,7 @@ def _extract_swarms(world: ECSWorld) -> list[dict[str, Any]]:
                 "x": s.x,
                 "y": s.y,
                 "population": s.population,
-                "energy": float(s.energy),
+                "energy": s.energy,
                 "energy_min": s.energy_min,
                 "repelled": s.repelled,
                 "repelled_ticks_remaining": s.repelled_ticks_remaining,

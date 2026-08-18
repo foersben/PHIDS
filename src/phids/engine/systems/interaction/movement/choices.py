@@ -83,6 +83,27 @@ def _flat_field_choice_jit(
 
 
 @njit(cache=True, fastmath=True)
+def _adjust_scores_and_find_extrema_jit(
+    count: int,
+    invert: bool,
+    scores: npt.NDArray[np.float64],
+    adjusted_scores: npt.NDArray[np.float64],
+) -> tuple[float, float]:
+    """Helper to adjust scores and find min/max values for field choices."""
+    base = -scores[0] if invert else scores[0]
+    min_score = base
+    max_score = base
+    for i in range(count):
+        adj = -scores[i] if invert else scores[i]
+        adjusted_scores[i] = adj
+        if adj < min_score:
+            min_score = adj
+        if adj > max_score:
+            max_score = adj
+    return min_score, max_score
+
+
+@njit(cache=True, fastmath=True)
 def _weighted_field_choice_jit(
     count: int,
     invert: bool,
@@ -118,12 +139,7 @@ def _weighted_field_choice_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    min_score = -scores[0] if invert else scores[0]
-    for i in range(count):
-        adj = -scores[i] if invert else scores[i]
-        adjusted_scores[i] = adj
-        if adj < min_score:
-            min_score = adj
+    min_score, _ = _adjust_scores_and_find_extrema_jit(count, invert, scores, adjusted_scores)
 
     total_w = 0.0
     for i in range(count):
@@ -185,12 +201,7 @@ def _softmax_field_choice_jit(
     Returns:
         The selected neighbour coordinates.
     """
-    max_score = -scores[0] if invert else scores[0]
-    for i in range(count):
-        adj = -scores[i] if invert else scores[i]
-        adjusted_scores[i] = adj
-        if adj > max_score:
-            max_score = adj
+    _, max_score = _adjust_scores_and_find_extrema_jit(count, invert, scores, adjusted_scores)
 
     total_w = 0.0
     for i in range(count):

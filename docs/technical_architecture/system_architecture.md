@@ -88,7 +88,7 @@ Dynamic memory allocation during the hot simulation loop introduces prohibitive 
 
 To maximize CPU throughput across 256-bit AVX2 SIMD register architectures (YMM vector registers), hot-path simulation sub-routines are compiled into C via `@njit(cache=True)` or vectorized across contiguous memory blocks:
 
-* **Numba JIT Swarm Anchoring (`_is_swarm_anchored_jit`)**: Pre-compiled 2D boolean diet matrix check in [movement.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/movement.py).
+* **Numba JIT Swarm Anchoring (`_is_swarm_anchored_jit`)**: Pre-compiled 2D boolean diet matrix check in [movement.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/movement/__init__.py).
 * **Dual-Proxy Layer Rebuild (`rebuild_energy_layer`)**: Two sequential C-level 256-bit AVX2 reductions in [biotope.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/biotope.py): `vaddpd` (float64) for `E_current` and `vaddps` (float32, 2x throughput) for `M_structural`.
 * **Photosynthetic Biomass Growth (`_grow_simd_jit`)**: Vectorized 168-hour stride growth scaling in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
 * **Mycorrhizal Link Tax Deduction (`_apply_mycorrhizal_tax_jit`)**: 256-bit SIMD vector subtractions across root links in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).

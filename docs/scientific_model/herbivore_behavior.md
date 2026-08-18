@@ -10,7 +10,7 @@ tags: [phids, ecs, numba, chemotaxis, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 resources:
-  - "src/phids/engine/systems/interaction/movement.py"
+  - "src/phids/engine/systems/interaction/movement/__init__.py"
 ---
 
 Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
