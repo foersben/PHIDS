@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import TypeVar, cast
+from typing import TypeVar
 
 C = TypeVar("C")
 
@@ -46,7 +46,7 @@ class Entity:
             The component instance for the entity.
 
         """
-        return cast("C", self._components[component_type])
+        return self._components[component_type]  # type: ignore[return-value]
 
     def has_component(self, component_type: type[object]) -> bool:
         """Return True if the entity has a component of the given type.
