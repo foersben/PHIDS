@@ -15,7 +15,7 @@ sources:
 - id: biotope
   resource: src/phids/engine/core/biotope.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle.py
+  resource: src/phids/engine/systems/lifecycle/
 - id: constants
   resource: src/phids/shared/constants.py
 ---
@@ -104,7 +104,7 @@ flowchart TD
 In dense forest canopies, seed transport is dictated predominantly by the macroscopic atmospheric wind vector, constantly battered by erratic micro-scale eddy currents. The $O(1)$ Polar Dispersal model unifies this turbulent reality into a solitary computational bound, guaranteeing constant-time execution overhead regardless of simulation scale.
 
 !!! note "Schema Parameters vs. Execution Model"
-    While `FloraSpeciesParams` and `PlantComponent` retain `seed_drop_height` and `seed_terminal_velocity` fields for schema completeness and empirical database mapping, explicit 3D ballistic fall integration (calculating drop duration from height and terminal velocity) was deliberately superseded in the engine (`lifecycle.py`) by this $O(1)$ stochastic polar algorithm to eliminate floating-point array iterations during reproduction.
+    While `FloraSpeciesParams` and `PlantComponent` retain `seed_drop_height` and `seed_terminal_velocity` fields for schema completeness and empirical database mapping, explicit 3D ballistic fall integration (calculating drop duration from height and terminal velocity) was deliberately superseded in the engine (`lifecycle/`) by this $O(1)$ stochastic polar algorithm to eliminate floating-point array iterations during reproduction.
 
 ---
 
@@ -199,7 +199,7 @@ where $g_M$ is `growth_rate_structural` (from `FloraSpeciesParams.structural_gro
 
 ### Initialization Contract
 
-- New seeds spawned by `_attempt_reproduction()` in `lifecycle.py` initialize with
+- New seeds spawned by `_attempt_reproduction()` in `lifecycle/` initialize with
   `structural_mass = M_STRUCTURAL_SEED_VALUE` (`0.0`) - reflecting biological reality that a
   freshly germinated seed has zero lignified tissue.
 - Both `structural_mass` and `energy` are cleared to `0.0` via `clear_structural_mass()` and

@@ -18,7 +18,7 @@ sources:
 - id: movement
   resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle.py
+  resource: src/phids/engine/systems/lifecycle/
 - id: zarr_replay
   resource: src/phids/io/zarr_replay.py
 - id: analytics

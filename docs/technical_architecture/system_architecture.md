@@ -16,7 +16,7 @@ sources:
 - id: ecs
   resource: src/phids/engine/core/ecs.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle.py
+  resource: src/phids/engine/systems/lifecycle/
 - id: flow_field
   resource: src/phids/engine/core/flow_field.py
 - id: source
@@ -90,8 +90,8 @@ To maximize CPU throughput across 256-bit AVX2 SIMD register architectures (YMM 
 
 * **Numba JIT Swarm Anchoring (`_is_swarm_anchored_jit`)**: Pre-compiled 2D boolean diet matrix check in [movement.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/movement/__init__.py).
 * **Dual-Proxy Layer Rebuild (`rebuild_energy_layer`)**: Two sequential C-level 256-bit AVX2 reductions in [biotope.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/biotope.py): `vaddpd` (float64) for `E_current` and `vaddps` (float32, 2x throughput) for `M_structural`.
-* **Photosynthetic Biomass Growth (`_grow_simd_jit`)**: Vectorized 168-hour stride growth scaling in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
-* **Mycorrhizal Link Tax Deduction (`_apply_mycorrhizal_tax_jit`)**: 256-bit SIMD vector subtractions across root links in [lifecycle.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle.py).
+* **Photosynthetic Biomass Growth (`_grow_simd_jit`)**: Vectorized 168-hour stride growth scaling in [lifecycle/](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle/).
+* **Mycorrhizal Link Tax Deduction (`_apply_mycorrhizal_tax_jit`)**: 256-bit SIMD vector subtractions across root links in [lifecycle/](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/lifecycle/).
 * **Airborne VOC Layer Decay (`_numba_decay_signal_layer`)**: In-place 256-bit YMM layer attenuation and epsilon clamping in [emission.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/emission.py).
 * **Spatial Hash Query Buffer Reuse (`EMPTY_SET`)**: Singleton `frozenset` reuse for unoccupied cells in [ecs.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/core/ecs.py) and [spatial.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/signaling/spatial.py).
 * **Pre-Compiled Foraging Parameter Caching (`CachedFloraForagingParams` / `CachedHerbivoreForagingParams`)**: O(1) slot parameter resolution in [feeding.py](https://github.com/foersben/PHIDS/blob/main/src/phids/engine/systems/interaction/feeding.py).
@@ -142,7 +142,7 @@ flowchart TD
 
 ### Module Mapping & State Transit
 
-This diagram maps specific code modules (`loop.py`, `biotope.py`, `ecs.py`, `lifecycle.py`, etc.) and details how state, double-buffered writes, and telemetry frames traverse the operational system.
+This diagram maps specific code modules (`loop.py`, `biotope.py`, `ecs.py`, `lifecycle/`, etc.) and details how state, double-buffered writes, and telemetry frames traverse the operational system.
 
 ```mermaid
 flowchart TD
@@ -180,7 +180,7 @@ flowchart TD
 
     %% 4. Execution Pipeline Sequence
     subgraph Pipeline_Systems ["🔄 4. Order of Phase Execution (Sequential Ticks)"]
-        LC["LifecycleSystem (lifecycle.py)"]
+        LC["LifecycleSystem (lifecycle/)"]
         INT["InteractionSystem (interaction.py)"]
         SIG["SignalingSystem (signaling.py)"]
         

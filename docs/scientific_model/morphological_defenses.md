@@ -18,7 +18,7 @@ sources:
 - id: plant
   resource: src/phids/engine/components/plant.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle.py
+  resource: src/phids/engine/systems/lifecycle/
 - id: feeding
   resource: src/phids/engine/systems/interaction/feeding.py
 - id: flow_field
@@ -150,7 +150,7 @@ For software engineers and data interface developers, this section maps the math
         withdrawal_ticks_remaining: int = 0
     ```
 
-### System Execution Pipeline (`src/phids/engine/systems/lifecycle.py`)
+### System Execution Pipeline (`src/phids/engine/systems/lifecycle/`)
 
     ```python
     # Phloem translocation update during lifecycle tick

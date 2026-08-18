@@ -30,7 +30,7 @@ sources:
 - id: movement
   resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle.py
+  resource: src/phids/engine/systems/lifecycle/
 - id: payloads
   resource: src/phids/api/presenters/dashboard/payloads.py
 - id: base
@@ -217,7 +217,7 @@ The **Decoupled Dual-Proxy Architecture** is fully implemented across four produ
 - `src/phids/shared/constants.py`: Declared `M_STRUCTURAL_SEED_VALUE = 0.0` and `M_STRUCTURAL_GROWTH_RATE = 0.01`.
 - `src/phids/engine/components/plant.py`: Added `structural_mass: float = 0.0` and `max_structural_mass: float = 0.0`.
 - `src/phids/engine/core/biotope.py`: Added double-buffered `float32` arrays (`structural_mass_layer`, `_structural_mass_layer_write`, `structural_mass_by_species`, `_structural_mass_by_species_write`); `set_structural_mass()` and `clear_structural_mass()` helpers; dual-proxy `rebuild_energy_layer()` swap; `to_dict()` state serialization.
-- `src/phids/engine/systems/lifecycle.py`: Initialized `structural_mass = 0.0` on seed spawn; wired `clear_structural_mass()` on both death paths.
+- `src/phids/engine/systems/lifecycle/`: Initialized `structural_mass = 0.0` on seed spawn; wired `clear_structural_mass()` on both death paths.
 - `src/phids/io/zarr_replay.py`: Added `structural_mass_layer` to `_ReplayEnvLike` protocol and `append_raw_arrays()` for tick-by-tick Zarr logging.
 - `tests/`: Added unit tests and benchmarks verifying < 2.6 ms 256x256 layer rebuild limits.
 
@@ -225,7 +225,7 @@ The **Decoupled Dual-Proxy Architecture** is fully implemented across four produ
 
 - `src/phids/analytics/bio_database.json` & `bio_database.py`: Populated `structural_mass_max` and `structural_growth_rate` for all 16 flora species based on empirical dry-mass data.
 - `src/phids/api/schemas/species.py`: Extended `FloraSpeciesParams` and `FloraProfile` dataclasses.
-- `src/phids/engine/systems/lifecycle.py`: Implemented Numba `@njit` kernel `_grow_structural_mass_jit` on the 168-tick slow loop stride ($M_{next} = \min(M_{max}, M + g_M \times 168)$).
+- `src/phids/engine/systems/lifecycle/`: Implemented Numba `@njit` kernel `_grow_structural_mass_jit` on the 168-tick slow loop stride ($M_{next} = \min(M_{max}, M + g_M \times 168)$).
 - `src/phids/engine/systems/interaction/movement/__init__.py`: Implemented Numba `@njit` kernel `_compute_trample_probability_jit` and MVT Full Belly patch departure lock in `_is_swarm_anchored_jit`.
 - `tests/`: Added unit tests in `test_biotope_state_mutation_pilot.py` and `test_trampling_fma.py`, benchmark in `test_dual_proxy_memory_benchmark.py`.
 
@@ -233,14 +233,14 @@ The **Decoupled Dual-Proxy Architecture** is fully implemented across four produ
 
 - `src/phids/api/schemas/species.py`: Extended `HerbivoreSpeciesParams` with `incidental_mortality_factor: float = 0.0` and `incidental_mortality_mode: Literal["trampling", "consumption"] = "trampling"`.
 - `src/phids/engine/systems/interaction/movement/__init__.py`: Integrated `_resolve_incidental_mortality` on coordinate entry, culling co-located seedlings probabilistically ($P \le P_{max} = 0.50$) and logging death causes `"death_collateral_trampling"` or `"death_incidental_consumption"`.
-- `src/phids/engine/systems/lifecycle.py`: Implemented `_calculate_structural_upkeep_jit` kernel and deducted maintenance tax ($E_{upkeep} = E_{survival} \times \text{STRUCTURAL\_UPKEEP\_SCALAR} \times \frac{M_{structural}}{M_{max}}$) per lifecycle tick.
+- `src/phids/engine/systems/lifecycle/`: Implemented `_calculate_structural_upkeep_jit` kernel and deducted maintenance tax ($E_{upkeep} = E_{survival} \times \text{STRUCTURAL\_UPKEEP\_SCALAR} \times \frac{M_{structural}}{M_{max}}$) per lifecycle tick.
 - `src/phids/telemetry/analytics.py`: Added `calculate_mean_structural_mass_by_species` and `calculate_incidental_mortality_rate`.
 - `tests/`: Created `tests/integration/systems/test_dual_proxy_integration.py` with 4 end-to-end scenario tests. Full test suite: **1212 passed, 0 failed**.
 
 ### Plan 4 - Dashboard UI Telemetry & Dual-Proxy Tooltip Pipeline (Delivered in commits `ffd0ddc`, `a6203fa`, `47efe6b`, `4f5b6af`, `d4ca1ea`, `53fadd1`, `fb53b35`, `0980aed`, `27f6204`, `1cae166`)
 
 - `src/phids/api/presenters/dashboard/payloads.py`: Serialized dual-proxy fields (`structural_mass`, `max_structural_mass`, `fragility_pct`, `incidental_risk_level`, `max_energy`) across columnar entity tables and `extract_ui_snapshot`. Implemented dynamic in-memory self-healing for active loop entities.
-- `src/phids/engine/loop.py` & `src/phids/engine/systems/lifecycle.py`: Initialized placement structural mass proportional to initial placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$) and enforced the **Plan 1 Compatibility Fallback Rule** ($M_{\text{max}} = E_{\text{max}}$ when `structural_mass_max == 0.0`).
+- `src/phids/engine/loop.py` & `src/phids/engine/systems/lifecycle/`: Initialized placement structural mass proportional to initial placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$) and enforced the **Plan 1 Compatibility Fallback Rule** ($M_{\text{max}} = E_{\text{max}}$ when `structural_mass_max == 0.0`).
 - `src/phids/api/templates/base.html`: Unified primary simulation action button (`#sim-main-action-btn`), global HTMX sync bridge (`window.phidsSyncMainActionButton`), and robust `/api/simulation/pause` task recovery.
 - `src/phids/api/templates/partials/dashboard.html`: Integrated dual-proxy health/biomass bars, energy ratio formatting, live-only mycorrhizal link layer rendering, and explicit `(inter-species)` vs `(intra-species)` badges.
 

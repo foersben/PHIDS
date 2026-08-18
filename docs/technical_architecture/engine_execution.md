@@ -31,9 +31,9 @@ sources:
 - id: movement
   resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle.py
+  resource: src/phids/engine/systems/lifecycle/
 - id: signaling_lifecycle
-  resource: src/phids/engine/systems/signaling/lifecycle.py
+  resource: src/phids/engine/systems/signaling/lifecycle/
 - id: constants
   resource: src/phids/shared/constants.py
 ---
@@ -349,9 +349,9 @@ NumPy dispatches both 3D array sums to 256-bit AVX2 SIMD instructions (`vaddpd` 
 
 Both proxy buffer swaps execute atomically within a single `rebuild_energy_layer()` call. Read layers are updated together, ensuring that the flow-field generation phase on the next tick observes a fully consistent `(E_current, M_structural)` snapshot with no half-swapped state.
 
-### 7. 256-Bit SIMD Photosynthetic Growth Scaling (`lifecycle.py`)
+### 7. 256-Bit SIMD Photosynthetic Growth Scaling (`lifecycle/`)
 
-Photosynthetic biomass growth during weekly slow-loop gates accumulates biomass increments scaled by the 168-hour `SLOW_TICK_STRIDE` (`src/phids/engine/systems/lifecycle.py`).
+Photosynthetic biomass growth during weekly slow-loop gates accumulates biomass increments scaled by the 168-hour `SLOW_TICK_STRIDE` (`src/phids/engine/systems/lifecycle/`).
 
 #### Numba JIT Growth Kernel
 
@@ -367,9 +367,9 @@ def _grow_simd_jit(energy: float, base_energy: float, growth_rate: float, max_en
 
 LLVM auto-vectorizes memory passes into 256-bit AVX2 SIMD operations across 256-bit YMM registers without IEEE 754 subnormal float truncation or Python heap object creation.
 
-### 8. 256-Bit SIMD Mycorrhizal Carbon Link Tax Deduction (`lifecycle.py`)
+### 8. 256-Bit SIMD Mycorrhizal Carbon Link Tax Deduction (`lifecycle/`)
 
-Subterranean mycorrhizal network upkeep deducts carbon maintenance taxes per established root link during lifecycle passes (`src/phids/engine/systems/lifecycle.py`).
+Subterranean mycorrhizal network upkeep deducts carbon maintenance taxes per established root link during lifecycle passes (`src/phids/engine/systems/lifecycle/`).
 
 #### Numba JIT Tax Deduction Kernel
 
