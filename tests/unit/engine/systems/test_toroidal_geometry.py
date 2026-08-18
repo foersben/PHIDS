@@ -13,7 +13,8 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction.movement import _resolve_swarm_movement
-from phids.engine.systems.lifecycle import _attempt_reproduction, _establish_mycorrhizal_connections
+from phids.engine.systems.lifecycle.mycorrhiza import _establish_mycorrhizal_connections
+from phids.engine.systems.lifecycle.reproduction import _attempt_reproduction
 from phids.engine.systems.signaling.spatial import toroidal_distance
 
 

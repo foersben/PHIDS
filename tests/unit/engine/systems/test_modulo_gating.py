@@ -27,7 +27,8 @@ if TYPE_CHECKING:
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction
-from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, run_lifecycle
+from phids.engine.systems.lifecycle import run_lifecycle
+from phids.engine.systems.lifecycle.growth import SLOW_TICK_STRIDE
 
 # ---------------------------------------------------------------------------
 # Helpers

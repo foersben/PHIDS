@@ -678,7 +678,7 @@ def test_rebuild_energy_layer_simd_parity() -> None:
 def test_simd_lifecycle_and_decay_kernels_parity() -> None:
     """Verify 256-bit SIMD JIT kernels for photosynthetic growth, mycorrhizal tax, and signal decay."""
     from phids.engine.components.substances import SubstanceComponent
-    from phids.engine.systems.lifecycle import _apply_mycorrhizal_tax_jit, _grow_simd_jit
+    from phids.engine.systems.lifecycle.growth import _apply_mycorrhizal_tax_jit, _grow_simd_jit
     from phids.engine.systems.signaling.emission import _numba_decay_signal_layer, _process_single_emission
 
     # 1. Photosynthetic growth scaling (clamped to max_energy=100.0)
@@ -802,7 +802,7 @@ def test_simd_lifecycle_and_decay_kernels_parity() -> None:
     assert 0 not in active_map[plant_ent.entity_id]
 
     # 5. Direct _grow function call (both unclamped and clamped branches)
-    from phids.engine.systems.lifecycle import _grow
+    from phids.engine.systems.lifecycle.growth import _grow
 
     plant_comp.energy = 10.0
     plant_comp.max_energy = 100.0

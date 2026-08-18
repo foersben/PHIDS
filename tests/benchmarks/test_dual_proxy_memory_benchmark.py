@@ -104,7 +104,7 @@ def test_structural_growth_slow_loop_batch_256x256(benchmark) -> None:  # type: 
     Validates that dispatching Numba JIT structural mass growth across a batch of 10,000 plant entities
     completes in < 15 ms to meet the slow-loop performance budget.
     """
-    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+    from phids.engine.systems.lifecycle.growth import SLOW_TICK_STRIDE, _grow_structural_mass_jit
 
     masses = np.random.uniform(0.0, 50.0, 10000).astype(np.float32)
     rates = np.random.uniform(0.001, 0.02, 10000).astype(np.float32)
