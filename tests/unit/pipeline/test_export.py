@@ -1,4 +1,5 @@
-# ruff: noqa: D100, D103
+"""Unit tests for the DuckDB pipeline JSON export logic."""
+
 import json
 import pathlib
 import tempfile
@@ -10,6 +11,13 @@ from data_pipeline.db.writer import write_all
 
 
 def test_export_json() -> None:
+    """Verify JSON export of biology databases and provenance manifests.
+
+    Creates multiple dummy DataFrames, ingests them into a temporary DuckDB database,
+    and executes the `export_bio_database_json` and `export_manifest_json` functions.
+    Verifies that the output JSON files are created and contain the correct nested
+    hierarchical structure.
+    """
     with tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False) as f:
         tmp_path = f.name
     try:

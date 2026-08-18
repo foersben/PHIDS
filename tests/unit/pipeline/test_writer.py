@@ -1,4 +1,5 @@
-# ruff: noqa: D100, D103
+"""Unit tests for the DuckDB pipeline data writer module."""
+
 import pathlib
 import tempfile
 
@@ -8,6 +9,12 @@ from data_pipeline.db.writer import _ensure_columns, write_all
 
 
 def test_ensure_columns() -> None:
+    """Verify that required columns are instantiated with default values if missing.
+
+    Tests the `_ensure_columns` helper function by passing a DataFrame missing a
+    required column, verifying that the column is added, populated with the scalar
+    default, and existing columns are preserved.
+    """
     df = pl.DataFrame({"a": [1], "b": ["x"]})
     required = {"a", "c"}
     defaults = {"c": 5}
@@ -19,6 +26,13 @@ def test_ensure_columns() -> None:
 
 
 def test_write_all() -> None:
+    """Verify full data pipeline ingestion into a DuckDB database.
+
+    Creates multiple dummy DataFrames representing flora, herbivores, substances,
+    trigger rules, diet matrices, and provenance. Executes `write_all` to ingest
+    the tables into a temporary DuckDB file and verifies that the data was safely
+    persisted via a row count assertion.
+    """
     with tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False) as f:
         tmp_path = f.name
     pathlib.Path(tmp_path).unlink()

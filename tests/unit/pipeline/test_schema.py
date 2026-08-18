@@ -1,4 +1,5 @@
-# ruff: noqa: D100, D103
+"""Unit tests for the DuckDB pipeline schema creation logic."""
+
 import pathlib
 import tempfile
 
@@ -9,6 +10,11 @@ from data_pipeline.db.schema import create_schema
 
 
 def test_create_schema() -> None:
+    """Verify that all required tables are successfully created in the schema.
+
+    Connects to a temporary DuckDB database in-memory and executes the `create_schema`
+    DDL script. Verifies the existence of all expected tables in the information schema.
+    """
     with tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False) as f:
         tmp_path = f.name
     pathlib.Path(tmp_path).unlink()
@@ -33,6 +39,12 @@ def test_create_schema() -> None:
 
 
 def test_schema_constraints() -> None:
+    """Verify that DuckDB strictly enforces column constraints.
+
+    Attempts to insert an invalid negative value into a column (`growth_rate`)
+    that has a CHECK constraint enforcing positivity. Asserts that DuckDB rejects
+    the transaction.
+    """
     with tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False) as f:
         tmp_path = f.name
     pathlib.Path(tmp_path).unlink()
