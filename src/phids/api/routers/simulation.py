@@ -19,11 +19,10 @@ import contextlib
 import json
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi.responses import JSONResponse
 
 import phids.api.main as api_main
-from phids.api.presenters.diagnostics import render_status_badge_html
 from phids.api.schemas.responses import (
     SimulationStatusResponse,
     WindUpdatePayload,
@@ -39,9 +38,17 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 
-def _status_badge_fragment() -> HTMLResponse:
-    """Return the canonical HTMX status-badge fragment response."""
-    return HTMLResponse(content=render_status_badge_html(api_main._sim_loop))
+def _status_badge_fragment() -> Response:
+    """Return a 204 No Content response that triggers UI updates.
+
+    Instead of rendering OOB swaps (which can cause DOM duplication if interrupted),
+    this canonical helper simply tells HTMX to trigger 'updateStatusBadge' and
+    'updateMainActionBtn' events on the client.
+    """
+    return Response(
+        status_code=204,
+        headers={"HX-Trigger": "updateStatusBadge, updateMainActionBtn"},
+    )
 
 
 def _form_scalar(form_data: FormData, key: str) -> str | None:
@@ -535,10 +542,10 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
 
 @router.post(
     "/api/scenario/load-draft",
-    response_class=HTMLResponse,
+    response_class=Response,
     summary="Load draft config into simulation engine",
 )
-async def scenario_load_draft(request: Request) -> HTMLResponse:
+async def scenario_load_draft(request: Request) -> Response:
     """Build a validated config from the draft and instantiate a new live loop.
 
     Args:

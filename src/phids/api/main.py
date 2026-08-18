@@ -314,6 +314,18 @@ async def ui_status_badge() -> HTMLResponse:
     return HTMLResponse(content=render_status_badge_html(_sim_loop))
 
 
+@app.get("/api/ui/main-action-btn", summary="Simulation main action button HTML")
+async def ui_main_action_btn() -> HTMLResponse:
+    """Return the Play/Pause button for HTMX outerHTML swap.
+
+    Returns:
+        Styled ``<button id="sim-main-action-btn">`` fragment.
+    """
+    from phids.api.presenters.diagnostics import render_main_action_btn_html
+
+    return HTMLResponse(content=render_main_action_btn_html(_sim_loop))
+
+
 _CELL_DETAILS_TICK_TOLERANCE: Final[int] = 8
 
 

@@ -162,8 +162,9 @@
           </span>
         </div>
         <div class="flex items-center gap-2">
+          <span id="sim-status" style="display:none!important"></span>
           <form hx-put="/api/simulation/tick-rate"
-            hx-target="#sim-status" hx-swap="outerHTML"
+            hx-swap="none"
             hx-trigger="change"
             class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
             <label for="live-tick-rate" class="text-xs text-slate-500">Speed (Hz)</label>
@@ -172,9 +173,12 @@
               class="w-20 border border-slate-300 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               title="Live simulation tick rate in ticks per second. Adjusts background run speed without reloading the scenario.">
           </form>
-          <button id="sim-main-action-btn" hx-post="/api/simulation/start"
+          <button id="sim-main-action-btn"
+            hx-post="/api/simulation/start"
+            hx-get="/api/ui/main-action-btn"
+            hx-trigger="updateMainActionBtn from:body"
+            hx-swap="outerHTML"
             hx-include="#biotope-config-view form"
-            hx-target="#sim-status" hx-swap="outerHTML"
             class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow flex items-center justify-center min-w-[5.5rem] relative">
             <span class="btn-text transition-opacity duration-200">▶ Start</span>
             <svg class="htmx-indicator absolute w-4 h-4 animate-spin opacity-0 transition-opacity duration-200 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -184,20 +188,20 @@
           </button>
           <button hx-post="/api/simulation/step"
             hx-include="#biotope-config-view form"
-            hx-target="#sim-status" hx-swap="outerHTML"
+            hx-swap="none"
             class="px-4 py-2 bg-sky-500 hover:bg-sky-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-500 text-white rounded-lg text-sm font-medium transition-all">
             ⏭ Step
           </button>
           <button hx-post="/api/simulation/reset"
             hx-include="#biotope-config-view form"
-            hx-target="#sim-status" hx-swap="outerHTML"
+            hx-swap="none"
             hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
             class="px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 text-white rounded-lg text-sm font-medium transition-all">
             ↺ Reset
           </button>
           <button hx-post="/api/scenario/load-draft"
             hx-include="#biotope-config-view form"
-            hx-target="#sim-status" hx-swap="outerHTML"
+            hx-swap="none"
             hx-on::after-request="if (event.detail.successful) phidsHandleScenarioLoaded();"
             class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all">
             🔄 Load Draft
@@ -207,7 +211,6 @@
             <div class="w-px h-4 bg-slate-300 mr-1"></div>
             <span id="canvas-mode-badge" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium whitespace-nowrap">Preview</span>
           </div>
-          <span id="sim-status" style="display:none!important"></span>
 
         </div>
       </header>

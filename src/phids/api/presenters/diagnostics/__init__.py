@@ -1,6 +1,6 @@
 """Diagnostics presenter package."""
 
-from phids.api.presenters.diagnostics.badge import render_status_badge_html
+from phids.api.presenters.diagnostics.badge import render_main_action_btn_html, render_status_badge_html
 from phids.api.presenters.diagnostics.model import (
     EnergyDeficitSwarmRow,
     LiveSummary,
@@ -13,5 +13,6 @@ __all__ = [
     "LiveSummary",
     "build_energy_deficit_swarms",
     "build_live_summary",
+    "render_main_action_btn_html",
     "render_status_badge_html",
 ]

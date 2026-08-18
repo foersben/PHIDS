@@ -54,8 +54,8 @@ async def test_api_simulation_start_pause_resume_flow(
     assert load_resp.status_code == 200, load_resp.text
 
     htmx_start_resp = await api_client.post("/api/simulation/start", headers={"HX-Request": "true"})
-    assert htmx_start_resp.status_code == 200, htmx_start_resp.text
-    assert "sim-status" in htmx_start_resp.text
+    assert htmx_start_resp.status_code == 204, htmx_start_resp.text
+    assert "updateStatusBadge" in htmx_start_resp.headers.get("HX-Trigger", "")
 
     reset_loaded_resp = await api_client.post("/api/simulation/reset")
     assert reset_loaded_resp.status_code == 200, reset_loaded_resp.text
@@ -212,7 +212,7 @@ async def test_api_simulation_start_htmx_when_already_running_returns_fragment(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify HTMX requests return HTML status badges when simulation is already running."""
+    """Verify HTMX requests trigger UI updates when simulation is already running."""
     load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
@@ -220,8 +220,8 @@ async def test_api_simulation_start_htmx_when_already_running_returns_fragment(
     api_main._sim_loop.start()
 
     start_resp = await api_client.post("/api/simulation/start", headers={"HX-Request": "true"})
-    assert start_resp.status_code == 200, start_resp.text
-    assert "Running" in start_resp.text
+    assert start_resp.status_code == 204, start_resp.text
+    assert "updateStatusBadge" in start_resp.headers.get("HX-Trigger", "")
 
 
 @pytest.mark.asyncio
@@ -262,7 +262,7 @@ async def test_api_simulation_control_routes_return_htmx_status_fragments(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
-    """Verify HTMX control requests return status-badge fragments across pause/step/reset/tick-rate."""
+    """Verify HTMX control requests trigger UI updates across pause/step/reset/tick-rate."""
     load_resp = await api_client.post("/api/scenario/load", json=config_builder().model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 
@@ -271,20 +271,20 @@ async def test_api_simulation_control_routes_return_htmx_status_fragments(
         data={"tick_rate_hz": 12.0},
         headers={"HX-Request": "true"},
     )
-    assert tick_rate_resp.status_code == 200, tick_rate_resp.text
-    assert "sim-status" in tick_rate_resp.text
+    assert tick_rate_resp.status_code == 204, tick_rate_resp.text
+    assert "updateStatusBadge" in tick_rate_resp.headers.get("HX-Trigger", "")
 
     pause_resp = await api_client.post("/api/simulation/pause", headers={"HX-Request": "true"})
-    assert pause_resp.status_code == 200, pause_resp.text
-    assert "sim-status" in pause_resp.text
+    assert pause_resp.status_code == 204, pause_resp.text
+    assert "updateStatusBadge" in pause_resp.headers.get("HX-Trigger", "")
 
     step_resp = await api_client.post("/api/simulation/step", headers={"HX-Request": "true"})
-    assert step_resp.status_code == 200, step_resp.text
-    assert "sim-status" in step_resp.text
+    assert step_resp.status_code == 204, step_resp.text
+    assert "updateStatusBadge" in step_resp.headers.get("HX-Trigger", "")
 
     reset_resp = await api_client.post("/api/simulation/reset", headers={"HX-Request": "true"})
-    assert reset_resp.status_code == 200, reset_resp.text
-    assert "sim-status" in reset_resp.text
+    assert reset_resp.status_code == 204, reset_resp.text
+    assert "updateStatusBadge" in reset_resp.headers.get("HX-Trigger", "")
 
 
 @pytest.mark.asyncio

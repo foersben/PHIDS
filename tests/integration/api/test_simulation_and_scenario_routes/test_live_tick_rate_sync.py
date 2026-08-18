@@ -18,7 +18,7 @@ async def test_live_tick_rate_update_endpoint() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Load draft into simulation
         load_resp = await client.post("/api/scenario/load-draft")
-        assert load_resp.status_code == 200
+        assert load_resp.status_code == 204
 
         # Update tick rate to 1.0 Hz
         resp = await client.put("/api/simulation/tick-rate", data={"tick_rate_hz": 1.0})

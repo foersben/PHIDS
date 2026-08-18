@@ -188,17 +188,19 @@ async def test_simulation_step_and_wind_routes(api_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_simulation_start_pause_reset_htmx_badges(api_client: AsyncClient) -> None:
-    """Verifies state badge HTMX partial responses on start, pause, and reset."""
+    """Verifies state badge HTMX triggers on start, pause, and reset."""
     await api_client.post("/api/scenario/load-draft")
     start_resp = await api_client.post("/api/simulation/start", headers={"HX-Request": "true"})
-    assert start_resp.status_code == 200
-    assert "Running" in start_resp.text or "Loaded" in start_resp.text or "Terminated" in start_resp.text
+    assert start_resp.status_code == 204
+    assert "updateStatusBadge" in start_resp.headers.get("HX-Trigger", "")
 
-    pause_resp = await api_client.post("/api/simulation/pause")
-    assert pause_resp.status_code == 200
+    pause_resp = await api_client.post("/api/simulation/pause", headers={"HX-Request": "true"})
+    assert pause_resp.status_code == 204
+    assert "updateStatusBadge" in pause_resp.headers.get("HX-Trigger", "")
 
-    reset_resp = await api_client.post("/api/simulation/reset")
-    assert reset_resp.status_code == 200
+    reset_resp = await api_client.post("/api/simulation/reset", headers={"HX-Request": "true"})
+    assert reset_resp.status_code == 204
+    assert "updateStatusBadge" in reset_resp.headers.get("HX-Trigger", "")
 
 
 @pytest.mark.asyncio

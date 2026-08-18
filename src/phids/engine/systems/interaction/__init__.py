@@ -70,8 +70,9 @@ if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
+
 if TYPE_CHECKING:
-    import numpy as np
     import numpy.typing as npt
 
 
@@ -82,11 +83,11 @@ def run_interaction(
     flora_species_params: list[FloraSpeciesParams],
     herbivore_species_params: list[HerbivoreSpeciesParams],
     tick: int,  # noqa: ARG001
-    scratch_cx: npt.NDArray[np.int32],
-    scratch_cy: npt.NDArray[np.int32],
-    scratch_scores: npt.NDArray[np.float64],
-    scratch_adjusted: npt.NDArray[np.float64],
-    scratch_weights: npt.NDArray[np.float64],
+    scratch_cx: npt.NDArray[np.int32] | None = None,
+    scratch_cy: npt.NDArray[np.int32] | None = None,
+    scratch_scores: npt.NDArray[np.float64] | None = None,
+    scratch_adjusted: npt.NDArray[np.float64] | None = None,
+    scratch_weights: npt.NDArray[np.float64] | None = None,
     plant_death_causes: dict[str, int] | None = None,
     herbivore_death_causes: dict[str, int] | None = None,
     is_medium_tick: bool = True,
@@ -125,6 +126,17 @@ def run_interaction(
     dead_swarms: list[int] = []
     tile_populations: npt.NDArray[np.int32] = env.reset_tile_populations()
     herbivore_params_dict: dict[int, HerbivoreSpeciesParams] = {p.species_id: p for p in herbivore_species_params}
+
+    if scratch_cx is None:
+        scratch_cx = np.empty(5, dtype=np.int32)
+    if scratch_cy is None:
+        scratch_cy = np.empty(5, dtype=np.int32)
+    if scratch_scores is None:
+        scratch_scores = np.empty(5, dtype=np.float64)
+    if scratch_adjusted is None:
+        scratch_adjusted = np.empty(5, dtype=np.float64)
+    if scratch_weights is None:
+        scratch_weights = np.empty(5, dtype=np.float64)
 
     # Pre-build parameter caches for O(1) slot resolution in feeding loops
     cached_flora_params = cache_flora_foraging_params(flora_species_params) if is_medium_tick else []

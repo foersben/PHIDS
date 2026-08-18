@@ -149,10 +149,10 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     add_trigger_rule(draft, 0, 0, 0, min_herbivore_population=5)
 
     load_resp = await api_client.post("/api/scenario/load-draft", headers={"HX-Request": "true"})
-    assert load_resp.status_code == 200, load_resp.text
+    assert load_resp.status_code == 204, load_resp.text
 
-    step_resp = await api_client.post("/api/simulation/step")
-    assert step_resp.status_code == 200, step_resp.text
+    step_resp = await api_client.post("/api/simulation/step", headers={"HX-Request": "true"})
+    assert step_resp.status_code == 204, step_resp.text
 
     snapshot = extract_ui_snapshot(api_main._sim_loop)
     dashboard_payload = build_live_dashboard_payload(
@@ -169,8 +169,8 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
     swarm.x = 0
     swarm.y = 0
 
-    second_step_resp = await api_client.post("/api/simulation/step")
-    assert second_step_resp.status_code == 200, second_step_resp.text
+    second_step_resp = await api_client.post("/api/simulation/step", headers={"HX-Request": "true"})
+    assert second_step_resp.status_code == 204, second_step_resp.text
     aftereffect_details_resp = await api_client.get("/api/ui/cell-details", params={"x": 2, "y": 2})
 
     assert dashboard_payload["tick"] == 1

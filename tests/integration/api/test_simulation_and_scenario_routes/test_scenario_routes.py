@@ -132,8 +132,8 @@ async def test_scenario_load_draft_cancels_running_background_task(
         headers={"HX-Request": "true"},
     )
 
-    assert draft_load_resp.status_code == 200, draft_load_resp.text
-    assert "sim-status" in draft_load_resp.text
+    assert draft_load_resp.status_code == 204, draft_load_resp.text
+    assert "updateStatusBadge" in draft_load_resp.headers.get("HX-Trigger", "")
     assert api_main._sim_task is None
     assert api_main._sim_loop is not None
 
