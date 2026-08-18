@@ -127,7 +127,7 @@ async def test_live_dashboard_payload_and_cell_details_include_signals_and_links
         monkeypatch: Monkeypatch fixture for asyncio.sleep.
     """
     monkeypatch.setattr(
-        "phids.engine.systems.interaction.movement._choose_neighbour_by_flow_probability",
+        "phids.engine.systems.interaction.movement.core._choose_neighbour_by_flow_probability",
         lambda swarm, _flow_field, _width, _height, *_, **__: (swarm.x, swarm.y),
     )
 

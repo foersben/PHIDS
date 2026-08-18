@@ -57,3 +57,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/interaction/movement.py`
+* **Selection Rationale:** The file was an 889-line monolithic block that mixed Numba JIT math helper kernels, fallback Python functions, and core ECS logic. Splitting the file into a `movement` package with `math.py` and `core.py` separated the heavy numerical loops from the ECS flow while maintaining deterministic behavior and high performance.
+* **Before/After Score:** Monolith removed.
+* **Performance Assessment:** The extracted logic maintained JIT capabilities exactly as before since the numba `@njit` wrapper handles inline function execution efficiently.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
