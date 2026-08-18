@@ -51,7 +51,7 @@ def render_main_action_btn_html(sim_loop: SimulationLoop | None) -> str:
         btn_color = "bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-500"
 
     spinner_svg = (
-        '<svg class="htmx-indicator absolute w-4 h-4 animate-spin opacity-0 transition-opacity '
+        '<svg class="sim-btn-spinner absolute w-4 h-4 animate-spin opacity-0 transition-opacity '
         'duration-200 pointer-events-none" '
         'xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">'
         '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>'
