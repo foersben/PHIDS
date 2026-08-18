@@ -6,7 +6,7 @@ stale_after: "2027-01-01"
 version: 0.1
 description: Documentation for Telemetry & Export in the PHIDS framework.
 tags: [phids, performance, python]
-generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+generated: {by: process:okf-updater, at: "2026-08-18T11:08:44Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
@@ -132,3 +132,9 @@ The engine integrates continuous mathematical checks against operational boundar
 * **Runaway Growth ($Z_6, Z_7$)**: Exceeding specified energy/population carrying capacities. The biological parameters were unbalanced, causing a trophic explosion that would otherwise freeze the CPU.
 
 Termination flags generated here provide vital context as to *why* a particular experimental model collapsed, allowing for deeper scientific comparison across scenario families and parameter sweeps.
+
+### Vectorized Telemetry Aggregation
+
+Historically, telemetry metrics collection iterated over thousands of entities using standard Python loops (e.g. `for entity in world.query(...)`), performing dictionary lookups and scalar math to aggregate population counts and energy totals.
+
+PHIDS replaces this overhead with **Vectorized Telemetry Aggregation** (`src/phids/engine/core/tick_metrics.py`). By extracting ECS component arrays directly and leveraging NumPy operations (`np.sum`, `np.bincount`), telemetry aggregation executes across contiguous C-arrays. This significantly reduces the overhead of the `signaling` phase conclusion, ensuring that the metric snapshot construction does not bottleneck macro-simulation throughput.

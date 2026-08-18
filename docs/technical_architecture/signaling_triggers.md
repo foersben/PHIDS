@@ -7,7 +7,7 @@ version: 1.0
 description: Core architectural and behavioral invariants governing plant
   signaling trigger synthesis, activation gates, and re-arming state machines.
 tags: [signaling, triggers, engine, invariants]
-generated: {by: process:okf-updater, at: "2026-08-13T17:58:00Z"}
+generated: {by: process:okf-updater, at: "2026-08-18T11:08:44Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
@@ -62,3 +62,10 @@ In the `Defense Bramble` species schema within this benchmark, the second trigge
 For the `Primary Grass` species, the first trigger attempts to synthesize `substance_id: 0` using a `HerbivoreAttackInitiator` and a matching `herbivore_presence` condition. Since `SynthesizeSubstanceAction` historically ignored its condition completely due to the bug, it always fired purely based on the initiator. Now that the engine properly enforces the `activation_condition` check *after* synthesis, this trigger will correctly wait until synthesis completes and *then* re-verify the presence of herbivores before emitting. Because the `initiator` and `activation_condition` share the exact same parameters (`herbivore_presence`, id=0, count=4), the effect will be functionally identical: it will synthesize, check if herbivores are still present, and activate.
 
 The critical difference emerges in compound defense alarm-chains (like the third trigger of `Defense Bramble`), which utilizes an `AllOf` condition containing a `substance_active` check. Previously, the synthesis duration countdown for the secondary substance would immediately begin regardless of the primary substance being active. Now, the `activation_condition` correctly acts as a gatekeeper *after* the synthesis duration elapses, and thanks to the `triggered_last_tick` fix, the synthesis countdown won't spuriously reset back to maximum just because the substance isn't active yet.
+
+### Numba JIT Vectorization of Trigger Evaluation
+
+Trigger evaluation ($O(N_{	ext{plants}} 	imes M_{	ext{triggers}})$) represents a massive computational workload during the signaling phase. Previously, triggers were evaluated via Python class method invocations, which suffered from severe interpreter overhead when evaluating thousands of flora entities against varying environmental and biological conditions.
+
+PHIDS dispatches all trigger evaluations to unified, branchless Numba `@njit(cache=True)` compiled kernels (e.g., `_evaluate_environmental_initiator_njit`).
+By passing 1D structural contiguous arrays containing threshold parameters, decay rates, and current environmental exposures into these kernels, PHIDS evaluates trigger conditions across entire species populations at near-native C speeds.

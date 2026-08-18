@@ -8,7 +8,7 @@ description: Technical documentation for administrative UI surfaces, HTMX
   controls, WebSocket streaming, and live dual-proxy cell inspection tooltips in
   PHIDS.
 tags: [phids, ecs, numba, performance, dashboard-ui, dual-proxy]
-generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
+generated: {by: process:okf-updater, at: "2026-08-18T11:08:44Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: cell_details
@@ -167,3 +167,11 @@ To solve this, the backend API presenter layer (e.g., `cell_details.py`) acts as
 - `value_pct` for chemical concentrations relative to local saturation caps.
 
 This architectural pattern guarantees that the heavy-lifting of percentage calculations, floating-point formatting, and tooltip string generation never pollutes the core simulation loop, while ensuring the UI is highly readable and "normalized" for scientists exploring the data.
+
+### HTMX State Synchronization and Dynamic Binding
+
+The Simulation Control Panel (Play/Pause/Resume) leverages HTMX for zero-refresh UI interactions. However, dynamically mutating HTMX control attributes (such as overriding `hx-post` via vanilla JavaScript to toggle between `/api/simulation/start` and `/api/simulation/pause`) bypasses the initial HTMX event listener bindings.
+
+To prevent infinite "ghost" state desynchronizations (where the UI displays "Pause" but fires a "Start" request), PHIDS explicitly forces HTMX to re-evaluate the DOM node by calling `htmx.process(btn)` after every state toggle.
+
+Furthermore, to guarantee immediate visual feedback during **delayed pauses** (when the server must finish executing a heavy Numba calculation tick before yielding), the UI injects a `.htmx-indicator` SVG spinner. HTMX automatically appends the `.htmx-request` class to the button during the network round-trip, CSS handles the visual fade-out of text and fade-in of the spinner, guaranteeing immediate user feedback without JavaScript-driven loading state management.

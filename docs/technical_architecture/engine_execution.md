@@ -7,7 +7,7 @@ version: 1.1
 description: Core execution loop, phase ordering, ECS architecture, and
   low-level CPU performance optimizations in the PHIDS simulation framework.
 tags: [phids, ecs, numba, simd, optimization, dual-proxy]
-generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
+generated: {by: process:okf-updater, at: "2026-08-18T11:08:44Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: loop
@@ -555,3 +555,21 @@ Grids exceeding 16,384 cells dispatch directly to OpenMP multi-threaded row part
 #### Monte Carlo Batch Processing Thread Isolation
 
 When executing headless Monte Carlo ensembles across $N$ process pool workers (`batch.py`), each child process sets `NUMBA_NUM_THREADS = "1"`. This prevents CPU thread oversubscription (e.g. 8 worker processes attempting to spawn 8 OpenMP threads each = 64 thread thrashing), ensuring 1 dedicated physical CPU core per Monte Carlo worker process.
+
+### 17. Elimination of `typing.cast` Overhead in Core Engine Loops (`ecs.py`)
+
+During high-frequency component queries (`ECSWorld.query(Component)`), the ECS framework previously relied on `typing.cast` to satisfy type checkers. While `typing.cast` is often assumed to be a zero-runtime-cost operation, the Python interpreter still evaluates the function call frame in tight inner loops. 
+
+PHIDS removes all `typing.cast` calls from the hot path (e.g. `get_component`), replacing them with static type assertions (`# type: ignore`) or implicit generic type bindings, resulting in an observable reduction in interpreter overhead across millions of component queries per tick.
+
+### 18. Pre-Compilation of Numba Boolean Diet Matrices (`loop.py` & `movement.py`)
+
+The interaction phase relies on a diet matrix to determine herbivore-flora compatibility. Previously, this matrix was constructed or evaluated dynamically as a standard Python structure. 
+
+PHIDS pre-compiles this into a dense 2D NumPy boolean array (`npt.NDArray[np.bool_]`) during `SimulationLoop` initialization. Passing a strongly-typed boolean matrix into Numba `@njit` kernels avoids Python object unboxing and permits optimal contiguous memory access during movement and foraging resolution.
+
+### 19. Interaction Loop Scratch Array Hoisting (`loop.py`)
+
+During stochastic action selection (MVT departure decisions), the movement resolution requires temporary arrays for neighbor coordinates, scores, and weights. Allocating these `scratch` arrays dynamically inside the interaction loop forces continuous Python heap churn and garbage collection pauses.
+
+PHIDS hoists these five scratch arrays (`cx`, `cy`, `scores`, `adjusted`, `weights`) to the top-level `SimulationLoop` initialization. They are passed by reference down into the Numba kernels and reused in-place (`out=` or direct indexing) on every tick, ensuring strict zero-allocation (0-alloc) memory guarantees during high-frequency stochastic foraging.
