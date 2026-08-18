@@ -126,7 +126,7 @@ def test_translocation_rate_inherited_by_seed_offspring() -> None:
     This test guards against that regression.
     """
     from phids.api.schemas.species import FloraSpeciesParams
-    from phids.engine.systems.lifecycle import _attempt_reproduction
+    from phids.engine.systems.lifecycle.reproduction import _attempt_reproduction
 
     species_translocation_rate = 0.65
 

@@ -211,7 +211,7 @@ def test_set_and_clear_structural_mass() -> None:
 
 def test_structural_mass_grows_on_slow_loop() -> None:
     """Validate that _grow_structural_mass_jit monotonically increases M_structural per slow-loop gate."""
-    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+    from phids.engine.systems.lifecycle.growth import SLOW_TICK_STRIDE, _grow_structural_mass_jit
 
     initial_mass = 0.0
     growth_rate = 0.01  # 1% per slow-loop tick stride
@@ -228,7 +228,7 @@ def test_structural_mass_grows_on_slow_loop() -> None:
 
 def test_structural_mass_clamped_at_max() -> None:
     """Validate that _grow_structural_mass_jit clamps at max_structural_mass without overshooting."""
-    from phids.engine.systems.lifecycle import SLOW_TICK_STRIDE, _grow_structural_mass_jit
+    from phids.engine.systems.lifecycle.growth import SLOW_TICK_STRIDE, _grow_structural_mass_jit
 
     initial_mass = 99.5
     growth_rate = 0.05

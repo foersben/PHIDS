@@ -10,7 +10,7 @@ import pytest
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
-from phids.engine.systems.lifecycle import _attempt_reproduction
+from phids.engine.systems.lifecycle.reproduction import _attempt_reproduction
 
 
 @pytest.mark.unit

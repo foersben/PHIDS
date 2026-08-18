@@ -12,7 +12,8 @@ import pytest
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
-from phids.engine.systems.lifecycle import _attempt_reproduction, run_lifecycle
+from phids.engine.systems.lifecycle import run_lifecycle
+from phids.engine.systems.lifecycle.reproduction import _attempt_reproduction
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -51,7 +52,7 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     success_world.register_position(parent_entity.entity_id, 2, 2)
 
     values = iter([1.0, 0.0])  # distance=1.0, angle=0.0 -> dx=+1, dy=0 -> (3,2)
-    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
+    monkeypatch.setattr("phids.engine.systems.lifecycle.reproduction.random.uniform", lambda _a, _b: next(values))
     offspring = _attempt_reproduction(parent, 5, success_world, env, flora_params)
     assert len(offspring) == 1
     assert offspring[0].x == 3
@@ -99,7 +100,7 @@ def test_attempt_reproduction_handles_success_and_blocking_cases(
     blocked_world.register_position(occupant_entity.entity_id, 3, 2)
 
     values = iter([1.0, 0.0])
-    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
+    monkeypatch.setattr("phids.engine.systems.lifecycle.reproduction.random.uniform", lambda _a, _b: next(values))
     blocked = _attempt_reproduction(blocked_parent, 5, blocked_world, env, flora_params)
     assert blocked == []
     assert blocked_parent.energy == pytest.approx(10.0)
@@ -177,7 +178,7 @@ def test_newborn_reproduction_respects_cooldown_and_energy_constraints(
     world.register_position(parent_entity.entity_id, parent.x, parent.y)
 
     values = iter([1.0, 0.0, 1.0, 0.0])
-    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: next(values))
+    monkeypatch.setattr("phids.engine.systems.lifecycle.reproduction.random.uniform", lambda _a, _b: next(values))
 
     birth_tick = 10
     newborn_list = _attempt_reproduction(parent, birth_tick, world, env, flora_params)
@@ -235,8 +236,8 @@ def test_attempt_reproduction_applies_downwind_bias_when_wind_is_present(
     world.add_component(parent_entity.entity_id, parent)
     world.register_position(parent_entity.entity_id, parent.x, parent.y)
 
-    monkeypatch.setattr("phids.engine.systems.lifecycle.random.uniform", lambda _a, _b: 1.0)
-    monkeypatch.setattr("phids.engine.systems.lifecycle.random.gauss", lambda mu, _sigma: mu)
+    monkeypatch.setattr("phids.engine.systems.lifecycle.reproduction.random.uniform", lambda _a, _b: 1.0)
+    monkeypatch.setattr("phids.engine.systems.lifecycle.reproduction.random.gauss", lambda mu, _sigma: mu)
 
     offspring = _attempt_reproduction(parent, 5, world, env, flora_params)
     assert len(offspring) == 1
