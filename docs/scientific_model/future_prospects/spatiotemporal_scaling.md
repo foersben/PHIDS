@@ -16,7 +16,7 @@ sources:
 - id: biotope
   resource: src/phids/engine/core/biotope.py
 - id: movement
-  resource: src/phids/engine/systems/interaction/movement.py
+  resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
   resource: src/phids/engine/systems/lifecycle.py
 - id: zarr_replay
@@ -83,7 +83,7 @@ Under Phase-Staggered Cohort Execution:
 
 At a $1 \text{ m}^2$ resolution, tracking the individual leg movements of insects or deer is biologically irrelevant and computationally disastrous. PHIDS abstracts physical movement using a probabilistic gradient ascent within a von Neumann neighborhood.
 
-* **The Von Neumann Neighborhood:** A swarm does not evaluate a 360-degree continuous radius (Moore 8-way). It only looks at its four adjacent orthogonal tiles: North, South, East, and West ($N, S, E, W$). This reduces DRAM fetches by $50\%$ compared to Moore neighborhoods (`_gather_neighbours_jit` in `src/phids/engine/systems/interaction/movement.py`).
+* **The Von Neumann Neighborhood:** A swarm does not evaluate a 360-degree continuous radius (Moore 8-way). It only looks at its four adjacent orthogonal tiles: North, South, East, and West ($N, S, E, W$). This reduces DRAM fetches by $50\%$ compared to Moore neighborhoods (`_gather_neighbours_jit` in `src/phids/engine/systems/interaction/movement/__init__.py`).
 * **Stochastic Choice (SIMD Vectorization):** Instead of deterministically snapping to the absolute highest value, the swarm applies a Softmax function to the four flow-field values. A Softmax operation across 4 neighbors fits perfectly into a single 128-bit XMM register (or batched across 4 swarms in a 512-bit ZMM register for AVX-512). This reduces the probabilistic gradient ascent calculation to just $\sim 20$ clock cycles per swarm.
 
 ## 4. Multi-Scale Phase-Staggered Loop Boundaries [Realized]
@@ -208,7 +208,7 @@ stateDiagram-v2
 
 Because 1 cell equals exactly $1 \text{ m}^2$, the ECS Spatial Hash faces entity stacking if unchecked.
 
-* **The Fix (Branchless Capacity Masking):** Preventing swarm stacking evaluates capacity as a branchless boolean mask (`mask = min(1.0, is_current + (pop <= max_capacity))`) inside Numba `@njit` kernels (`_apply_branchless_capacity_mask_jit` & `_weighted_field_choice_jit` in `src/phids/engine/systems/interaction/movement.py`). By multiplying candidate probabilities by this mask, overcrowded target cells have their weight instantly set to `0.0` without executing conditional `if` branches on population counts, eliminating CPU pipeline flushes from branch mispredictions.
+* **The Fix (Branchless Capacity Masking):** Preventing swarm stacking evaluates capacity as a branchless boolean mask (`mask = min(1.0, is_current + (pop <= max_capacity))`) inside Numba `@njit` kernels (`_apply_branchless_capacity_mask_jit` & `_weighted_field_choice_jit` in `src/phids/engine/systems/interaction/movement/__init__.py`). By multiplying candidate probabilities by this mask, overcrowded target cells have their weight instantly set to `0.0` without executing conditional `if` branches on population counts, eliminating CPU pipeline flushes from branch mispredictions.
 
 ## 8. Aspirational Scaling Goals [Planned]
 

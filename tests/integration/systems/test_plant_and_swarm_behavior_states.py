@@ -69,7 +69,7 @@ def _herbivore_params(species_id: int = 0) -> HerbivoreSpeciesParams:
         energy_min=1.0,
         velocity=2,
         consumption_rate=2.0,
-        reproduction_energy_divisor=1.0,
+        reproduction_energy_divisor=2.0,
         energy_upkeep_per_individual=0.05,
         split_population_threshold=10,
         resistances=HerbivoreResistancesSchema(),
@@ -300,11 +300,11 @@ def test_swarm_mitosis_and_upkeep_configuration() -> None:
         energy_min=1.0,
         velocity=1,
         consumption_rate=2.0,
-        reproduction_energy_divisor=1.5,
+        reproduction_energy_divisor=2.0,
         energy_upkeep_per_individual=0.08,
         split_population_threshold=20,
     )
 
     assert swarm.split_population_threshold == 20
-    assert swarm.reproduction_energy_divisor == 1.5
+    assert swarm.reproduction_energy_divisor == 2.0
     assert swarm.energy_upkeep_per_individual == 0.08

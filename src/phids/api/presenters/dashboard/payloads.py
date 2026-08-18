@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from typing import Any
 
     from phids.api.schemas.species import FloraSpeciesParams
+    from phids.engine.components.plant import PlantComponent
+    from phids.engine.core.ecs import ECSWorld
     from phids.engine.loop import SimulationLoop
 
 
@@ -175,6 +177,125 @@ def _collect_flora_species(
     return all_flora_species, species_energy
 
 
+def _compute_plant_metrics(p: PlantComponent) -> tuple[float, float, float, str]:
+    max_struct = p.max_structural_mass if p.max_structural_mass > 0.0 else p.max_energy
+    struct_mass = p.structural_mass
+    if struct_mass <= 0.0 and max_struct > 0.0:
+        struct_mass = max_struct * min(1.0, max(0.0, p.energy / max_struct))
+        p.structural_mass = struct_mass
+        p.max_structural_mass = max_struct
+
+    struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
+    fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
+    fragility_pct = min(100.0, max(0.0, fragility * 100.0))
+
+    if max_struct > 0.0 and struct_mass >= max_struct:
+        risk_level = "Immune"
+    elif fragility > 0.6:
+        risk_level = "High Risk"
+    elif fragility > 0.2:
+        risk_level = "Medium Risk"
+    else:
+        risk_level = "Low Risk"
+
+    return struct_mass, max_struct, fragility_pct, risk_level
+
+
+def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
+    """Extract plant component data into a list of dictionaries for UI serialisation.
+
+    Args:
+        world: The current ECSWorld instance containing plant entities.
+
+    Returns:
+        A list of dictionaries containing properties of each plant entity.
+    """
+    from phids.engine.components.plant import PlantComponent
+
+    plants = []
+    for entity in world.query(PlantComponent):
+        p = entity.get_component(PlantComponent)
+        struct_mass, max_struct, fragility_pct, risk_level = _compute_plant_metrics(p)
+
+        plants.append(
+            {
+                "entity_id": p.entity_id,
+                "species_id": p.species_id,
+                "x": p.x,
+                "y": p.y,
+                "energy": p.energy,
+                "max_energy": p.max_energy,
+                "structural_mass": struct_mass,
+                "max_structural_mass": max_struct,
+                "fragility_pct": fragility_pct,
+                "incidental_risk_level": risk_level,
+                "root_link_count": len(p.mycorrhizal_connections),
+                "mycorrhizal_connections": set(p.mycorrhizal_connections),
+            }
+        )
+    return plants
+
+
+def _extract_swarms(world: ECSWorld) -> list[dict[str, Any]]:
+    """Extract swarm component data into a list of dictionaries for UI serialisation.
+
+    Args:
+        world: The current ECSWorld instance containing swarm entities.
+
+    Returns:
+        A list of dictionaries containing properties of each swarm entity.
+    """
+    from phids.engine.components.swarm import SwarmComponent
+
+    swarms = []
+    for entity in world.query(SwarmComponent):
+        s = entity.get_component(SwarmComponent)
+        swarms.append(
+            {
+                "species_id": s.species_id,
+                "x": s.x,
+                "y": s.y,
+                "population": s.population,
+                "energy": s.energy,
+                "energy_min": s.energy_min,
+                "repelled": s.repelled,
+                "repelled_ticks_remaining": s.repelled_ticks_remaining,
+            }
+        )
+    return swarms
+
+
+def _extract_substances(world: ECSWorld) -> list[dict[str, Any]]:
+    """Extract substance component data into a list of dictionaries for UI serialisation.
+
+    Args:
+        world: The current ECSWorld instance containing substance entities.
+
+    Returns:
+        A list of dictionaries containing properties of each substance entity.
+    """
+    from phids.engine.components.substances import SubstanceComponent
+
+    substances = []
+    for entity in world.query(SubstanceComponent):
+        sub_comp = entity.get_component(SubstanceComponent)
+        is_visible = (
+            sub_comp.active
+            or sub_comp.synthesis_remaining > 0
+            or sub_comp.aftereffect_remaining_ticks > 0
+            or sub_comp.triggered_this_tick
+        )
+        substances.append(
+            {
+                "owner_plant_id": sub_comp.owner_plant_id,
+                "substance_id": sub_comp.substance_id,
+                "is_toxin": sub_comp.is_toxin,
+                "is_visible": is_visible,
+            }
+        )
+    return substances
+
+
 def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
     """Extract a fast, thread-safe shallow copy of UI-required state.
 
@@ -182,10 +303,6 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
     dictionary containing primitive values, copied NumPy arrays, and lightweight dicts
     representing the components needed for UI streaming.
     """
-    from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.substances import SubstanceComponent
-    from phids.engine.components.swarm import SwarmComponent
-
     env = loop.env
     world = loop.world
 
@@ -207,82 +324,9 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
         "plant_energy_by_species": env.plant_energy_by_species.copy(),
     }
 
-    plants = []
-    for entity in world.query(PlantComponent):
-        p = entity.get_component(PlantComponent)
-        max_struct = float(p.max_structural_mass) if p.max_structural_mass > 0.0 else float(p.max_energy)
-        struct_mass = float(p.structural_mass)
-        if struct_mass <= 0.0 and max_struct > 0.0:
-            struct_mass = max_struct * min(1.0, max(0.0, float(p.energy) / max_struct))
-            p.structural_mass = struct_mass
-            p.max_structural_mass = max_struct
-
-        struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
-        fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
-        fragility_pct = min(100.0, max(0.0, fragility * 100.0))
-
-        if max_struct > 0.0 and struct_mass >= max_struct:
-            risk_level = "Immune"
-        elif fragility > 0.6:
-            risk_level = "High Risk"
-        elif fragility > 0.2:
-            risk_level = "Medium Risk"
-        else:
-            risk_level = "Low Risk"
-
-        plants.append(
-            {
-                "entity_id": p.entity_id,
-                "species_id": p.species_id,
-                "x": p.x,
-                "y": p.y,
-                "energy": float(p.energy),
-                "max_energy": float(p.max_energy),
-                "structural_mass": struct_mass,
-                "max_structural_mass": max_struct,
-                "fragility_pct": fragility_pct,
-                "incidental_risk_level": risk_level,
-                "root_link_count": len(p.mycorrhizal_connections),
-                "mycorrhizal_connections": set(p.mycorrhizal_connections),
-            }
-        )
-    snapshot["plants"] = plants
-
-    swarms = []
-    for entity in world.query(SwarmComponent):
-        s = entity.get_component(SwarmComponent)
-        swarms.append(
-            {
-                "species_id": s.species_id,
-                "x": s.x,
-                "y": s.y,
-                "population": s.population,
-                "energy": float(s.energy),
-                "energy_min": s.energy_min,
-                "repelled": s.repelled,
-                "repelled_ticks_remaining": s.repelled_ticks_remaining,
-            }
-        )
-    snapshot["swarms"] = swarms
-
-    substances = []
-    for entity in world.query(SubstanceComponent):
-        sub_comp = entity.get_component(SubstanceComponent)
-        is_visible = (
-            sub_comp.active
-            or sub_comp.synthesis_remaining > 0
-            or sub_comp.aftereffect_remaining_ticks > 0
-            or sub_comp.triggered_this_tick
-        )
-        substances.append(
-            {
-                "owner_plant_id": sub_comp.owner_plant_id,
-                "substance_id": sub_comp.substance_id,
-                "is_toxin": sub_comp.is_toxin,
-                "is_visible": is_visible,
-            }
-        )
-    snapshot["substances"] = substances
+    snapshot["plants"] = _extract_plants(world)
+    snapshot["swarms"] = _extract_swarms(world)
+    snapshot["substances"] = _extract_substances(world)
 
     return snapshot
 

@@ -20,8 +20,8 @@ from phids.engine.loop import SimulationLoop
 def test_payload_contract_strictness() -> None:
     """Verify that the dashboard payload matches the required contract exactly to prevent visual breakages."""
     config = SimulationConfig(
-        grid_width=8,
-        grid_height=8,
+        grid_width=16,
+        grid_height=16,
         flora_species=[
             FloraSpeciesParams(
                 species_id=0,

@@ -9,15 +9,35 @@ description: Documentation for Herbivore Behavior & Kinematics in the PHIDS
 tags: [phids, ecs, numba, chemotaxis, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+resources:
+  - "src/phids/engine/systems/interaction/movement/__init__.py"
 ---
 
 Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
 
-## 1. Locomotion & Probabilistic Sampling
+## 1. Marginal Value Theorem (MVT) & Softmax Stochastic Foraging
 
-In real ecological systems, individuals in a herd do not possess perfect information. If 1,000 herbivores all determined that coordinate (5,5) had the absolutely perfect combination of food and safety, and all moved there simultaneously, they would form a physically impossible singularity. To model the "diffuse foraging fronts" observed in grazing animals or insects, the swarm as a whole moves *generally* toward the target, but individual entities exhibit slight, chaotic variations.
+In real ecological systems, individuals in a herd do not possess perfect information, nor do they perfectly converge on a single optimal point (which would create a physical singularity). Furthermore, animals do not stay on a resource patch until it is completely barren; they leave when the local intake rate drops below the expected average intake rate of the surrounding landscape. This concept is biologically known as **Charnov's Marginal Value Theorem (MVT)**.
 
-To achieve this computationally, swarms do not move in absolute straight lines toward a distant target. When sampling their 4-way orthogonal **Von-Neumann Neighborhood** $\mathcal{V}(x,y)$ (the current tile plus North, South, East, and West) against the unified Flow Field $F_t$, they utilize **probabilistic softmax-like weighting**. Sampling the 4-way Von-Neumann neighborhood strictly preserves a 1:1 ratio between simulation ticks and physical distance traversed, eliminating the diagonal Euclidean speed exploit ($\sqrt{2} \approx 1.414$) while keeping Numba JIT kernels lean and robust.
+To computationally model "diffuse foraging fronts" and MVT patch departure, PHIDS utilizes **Softmax Stochastic Action Selection** across a 4-way orthogonal **Von-Neumann Neighborhood** $\mathcal{V}(x,y)$.
+
+Instead of greedy, deterministic gradient ascent, transition probabilities are assigned to neighboring cells using the Boltzmann distribution:
+
+$$P(\text{move to } j) = \frac{\exp\left(\frac{F_j}{\tau}\right)}{\sum_{k \in \mathcal{V}} \exp\left(\frac{F_k}{\tau}\right)}$$
+
+Where:
+
+- $F_j$ is the combined chemotactic Flow Field potential of neighbor $j$.
+- $\tau$ (Temperature) is a tunable parameter controlling deterministic versus stochastic behavior.
+
+### The Biological Impact of Temperature ($\tau$)
+
+The $\tau$ parameter directly controls the swarm's foraging paradigm:
+
+- **Low Temperature ($\tau \to 0$):** Exploitation mode. The swarm moves almost deterministically to the cell with the highest potential. This mimics highly starved or strongly driven insects locked onto a rich pheromone trail.
+- **High Temperature ($\tau > 1.0$):** Exploration mode. The swarm moves more randomly, ignoring slight variations in the gradient. This simulates exploratory grazing or movement in an environment filled with noisy, conflicting scent profiles.
+
+By continuously evaluating the landscape via this stochastic weighting on every tick, swarms naturally exhibit density-dependent herd dispersion and realistic patch-abandonment kinetics without relying on artificial state-locking routines.
 
 ## 2. Inertial Persistence (The Orthokinetic Rule)
 
@@ -29,8 +49,8 @@ A critical edge case occurs in the engine when the entire gradient is mathematic
 
 To prevent unnatural paralysis when $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
 
-* A 10:1 preference weight is given to continue moving in the current heading.
-* If no previous heading exists, isotropic random dispersal (Random Walk) is applied until a new scent gradient is found.
+- A 10:1 preference weight is given to continue moving in the current heading.
+- If no previous heading exists, isotropic random dispersal (Random Walk) is applied until a new scent gradient is found.
 
 ## 3. Capacity Limits & Physical Repulsion
 
@@ -152,12 +172,12 @@ $$\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - 
 
 Where:
 
-* $\Delta e_{\text{raw}}$: Gross raw caloric intake extracted from the plant.
-* $\Delta e_{\text{real}}$: Net energy actually digested and absorbed by the swarm.
-* $\text{digestibility\_modifier}$: Scaler ($0.0 - 1.0$) representing constitutive defense reduction of calorie extraction.
-* $\text{Casualties}$: The exact integer count of swarm members killed by physical trauma.
-* $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
-* $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
+- $\Delta e_{\text{raw}}$: Gross raw caloric intake extracted from the plant.
+- $\Delta e_{\text{real}}$: Net energy actually digested and absorbed by the swarm.
+- $\text{digestibility\_modifier}$: Scaler ($0.0 - 1.0$) representing constitutive defense reduction of calorie extraction.
+- $\text{Casualties}$: The exact integer count of swarm members killed by physical trauma.
+- $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
+- $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
 
 ## Co-Evolutionary Adaptations & Resistance Matrices
 
@@ -171,8 +191,8 @@ In nature, herbivores do not passively accept plant defenses; they co-evolve spe
 
 These are represented by three primary parameters:
 
-* `morphological_adaptation`: Resistance to physical trauma.
-* `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
-* `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
+- `morphological_adaptation`: Resistance to physical trauma.
+- `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
+- `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
 
 The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.

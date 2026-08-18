@@ -47,7 +47,7 @@ def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
-        reproduction_energy_divisor=1.0,
+        reproduction_energy_divisor=2.0,
     )
 
 
@@ -63,8 +63,8 @@ def _config_with_trigger() -> SimulationConfig:
         ),
     )
     return SimulationConfig(
-        grid_width=8,
-        grid_height=8,
+        grid_width=16,
+        grid_height=16,
         max_ticks=20,
         tick_rate_hz=20.0,
         num_signals=2,
@@ -297,4 +297,4 @@ async def test_herbivore_routes_clamp_reproduction_divisor_to_physical_minimum(
     assert update_resp.status_code == 200, update_resp.text
     draft = get_draft()
     herbivore = next(p for p in draft.herbivore_species if isinstance(p, HerbivoreSpeciesParams) and p.species_id == 1)
-    assert herbivore.reproduction_energy_divisor == pytest.approx(1.0)
+    assert herbivore.reproduction_energy_divisor == pytest.approx(2.0)

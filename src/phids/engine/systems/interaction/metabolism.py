@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.systems.interaction.movement import _random_walk_step
+from phids.engine.systems.interaction.movement.random_walk import _random_walk_step
 from phids.engine.systems.interaction.population import _accumulate_tile_population
 
 if TYPE_CHECKING:
@@ -147,9 +147,10 @@ def _resolve_swarm_metabolism_and_reproduction(
             env.width,
             swarm.population - previous_population,
         )
-        total_casualty_energy = casualties * swarm.energy_min
-        leftover_energy = total_casualty_energy - deficit
-        swarm.energy = max(0.0, leftover_energy)
+        # The engine completely removes the need to track, store, or serialize sub-individual
+        # fractional states by dropping any leftover energy from the ceiling casualty calculation.
+        # This prevents swarms from surviving on "ghost energy" and enforces a sharp starvation curve.
+        swarm.energy = 0.0
 
     if swarm.population <= 0:
         world.unregister_position(entity.entity_id, swarm.x, swarm.y)

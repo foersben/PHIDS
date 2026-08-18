@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from phids.api.schemas.base import StrictBaseModel
 from phids.api.schemas.placement import (
@@ -117,7 +117,7 @@ class SimulationConfig(StrictBaseModel):
     )
     chemotaxis_truncate_threshold: float = Field(
         default=1e-4,
-        ge=0.0,
+        ge=1e-4,
         description="Subnormal truncation threshold.",
         json_schema_extra={
             "ui_category": "Chemotaxis & Navigation",
@@ -157,6 +157,13 @@ class SimulationConfig(StrictBaseModel):
         description="Replay storage backend.",
         pattern="^zarr$",
     )
+
+    @field_validator("grid_width", "grid_height")
+    @classmethod
+    def _validate_grid_power_of_two(cls, v: int) -> int:
+        if v not in {16, 32, 64, 128, 256, 512}:
+            raise ValueError(f"Grid dimension must be a power of two in {{16, 32, 64, 128, 256, 512}}, got {v}.")
+        return v
 
     @model_validator(mode="after")
     def _validate_species_ids(self) -> SimulationConfig:

@@ -53,7 +53,7 @@ def run_interaction(world: ECSWorld, env: GridEnvironment, diet_matrix: list[lis
             energy_min=1.0,
             velocity=1,
             consumption_rate=2.0,
-            reproduction_energy_divisor=1.0,
+            reproduction_energy_divisor=2.0,
             resistances=HerbivoreResistancesSchema(),
         )
 

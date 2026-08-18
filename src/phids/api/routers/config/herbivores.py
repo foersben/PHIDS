@@ -25,7 +25,7 @@ async def config_herbivore_add(
     energy_min: Annotated[float, Form()] = 5.0,
     velocity: Annotated[int, Form()] = 2,
     consumption_rate: Annotated[float, Form()] = 10.0,
-    reproduction_energy_divisor: Annotated[float, Form()] = 1.0,
+    reproduction_energy_divisor: Annotated[float, Form()] = 2.0,
     energy_upkeep_per_individual: Annotated[float, Form()] = 0.05,
     split_population_threshold: Annotated[int, Form()] = 10,
 ) -> Response:
@@ -55,7 +55,7 @@ async def config_herbivore_add(
         energy_min=energy_min,
         velocity=velocity,
         consumption_rate=consumption_rate,
-        reproduction_energy_divisor=max(1.0, reproduction_energy_divisor),
+        reproduction_energy_divisor=max(2.0, reproduction_energy_divisor),
         energy_upkeep_per_individual=energy_upkeep_per_individual,
         split_population_threshold=split_population_threshold,
     )
@@ -139,7 +139,7 @@ async def config_herbivore_update(
         if v is not None
     }
     if reproduction_energy_divisor is not None:
-        updates["reproduction_energy_divisor"] = max(1.0, reproduction_energy_divisor)
+        updates["reproduction_energy_divisor"] = max(2.0, reproduction_energy_divisor)
 
     # Handle nested resistances
     resistances_updates: dict[str, object] = {}

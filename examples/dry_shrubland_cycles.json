@@ -1,6 +1,6 @@
 {
-  "grid_width": 52,
-  "grid_height": 24,
+  "grid_width": 64,
+  "grid_height": 32,
   "max_ticks": 1900,
   "tick_rate_hz": 7.0,
   "num_signals": 4,
@@ -177,7 +177,7 @@
       "energy_min": 2.8,
       "velocity": 1,
       "consumption_rate": 5.4,
-      "reproduction_energy_divisor": 0.9,
+      "reproduction_energy_divisor": 2.0,
       "resistances": {
         "morphological_adaptation": 0.0,
         "chemical_neutralization": 0.0,
@@ -190,7 +190,7 @@
       "energy_min": 4.6,
       "velocity": 2,
       "consumption_rate": 5.6,
-      "reproduction_energy_divisor": 1.15,
+      "reproduction_energy_divisor": 2.0,
       "resistances": {
         "morphological_adaptation": 0.0,
         "chemical_neutralization": 0.0,

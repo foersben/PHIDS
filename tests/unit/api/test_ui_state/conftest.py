@@ -62,6 +62,6 @@ def _herbivore(species_id: int, name: str | None = None) -> HerbivoreSpeciesPara
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.5,
-        reproduction_energy_divisor=1.0,
+        reproduction_energy_divisor=2.0,
         resistances=HerbivoreResistancesSchema(),
     )

@@ -137,6 +137,7 @@ _DDL_STATEMENTS: list[str] = [
         action_irreversible       BOOLEAN,
         action_energy_cost_per_tick FLOAT,
         action_nutrition_factor   FLOAT,  -- resource_withdrawal only
+        action_withdrawal_duration INTEGER, -- resource_withdrawal only
         action_json               JSON    -- full action payload for JSON export
     )
     """,

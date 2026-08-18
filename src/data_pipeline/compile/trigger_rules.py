@@ -60,6 +60,7 @@ def _append_toxin_voc_stage1(
             0.1,
             None,
             act1,
+            None,
         )
     )
     return rule_id_counter + 1
@@ -121,6 +122,7 @@ def _append_toxin_voc_stage2(
             0.3,
             None,
             act2,
+            None,
         )
     )
     return rule_id_counter + 1
@@ -175,6 +177,7 @@ def _append_toxin_only(
             0.3,
             None,
             act,
+            None,
         )
     )
     return rule_id_counter + 1
@@ -226,6 +229,7 @@ def _append_voc_only(rows: list[dict[str, object]], rule_id_counter: int, fid: i
             0.1,
             None,
             act,
+            None,
         )
     )
     return rule_id_counter + 1
@@ -295,6 +299,7 @@ def _append_resource_withdrawal(rows: list[dict[str, object]], rule_id_counter: 
             None,
             0.2,
             act,
+            10,
         )
     )
     return rule_id_counter + 1
@@ -381,6 +386,7 @@ def _rule_row(
     act_energy_cost: float | None,
     act_nutrition_factor: float | None,
     act_json: dict[str, object],
+    act_withdrawal_duration: int | None,
 ) -> dict[str, object]:
     """Build a single trigger rule row dict.
 
@@ -404,6 +410,7 @@ def _rule_row(
         act_energy_cost: Energy cost per tick.
         act_nutrition_factor: Apparent nutrition factor (resource_withdrawal).
         act_json: Full action payload dict.
+        act_withdrawal_duration: Withdrawal duration in ticks (resource_withdrawal).
 
     Returns:
         Dict matching the DuckDB trigger_rules schema.
@@ -427,5 +434,6 @@ def _rule_row(
         "action_irreversible": act_irreversible,
         "action_energy_cost_per_tick": act_energy_cost,
         "action_nutrition_factor": act_nutrition_factor,
+        "action_withdrawal_duration": act_withdrawal_duration,
         "action_json": json.dumps(act_json),
     }

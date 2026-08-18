@@ -448,8 +448,8 @@ async def test_loop_lifecycle_only_fires_at_tick_168_multiples() -> None:
     from phids.engine.loop import SimulationLoop
 
     config = SimulationConfig(
-        grid_width=8,
-        grid_height=8,
+        grid_width=16,
+        grid_height=16,
         max_ticks=175,
         tick_rate_hz=1000.0,
         num_signals=1,
@@ -540,8 +540,8 @@ async def test_loop_metabolism_only_fires_at_tick_24_multiples() -> None:
     from phids.engine.loop import SimulationLoop
 
     config = SimulationConfig(
-        grid_width=8,
-        grid_height=8,
+        grid_width=16,
+        grid_height=16,
         max_ticks=30,
         tick_rate_hz=1000.0,
         num_signals=1,

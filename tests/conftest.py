@@ -127,8 +127,8 @@ def config_builder() -> Callable[..., SimulationConfig]:
             A SimulationConfig instance populated with test defaults.
         """
         return SimulationConfig(
-            grid_width=8,
-            grid_height=8,
+            grid_width=16,
+            grid_height=16,
             max_ticks=max_ticks,
             tick_rate_hz=20.0,
             num_signals=2,
@@ -187,8 +187,8 @@ def loop_config_builder() -> Callable[..., SimulationConfig]:
             A SimulationConfig instance populated with test defaults.
         """
         return SimulationConfig(
-            grid_width=8,
-            grid_height=8,
+            grid_width=16,
+            grid_height=16,
             max_ticks=max_ticks,
             tick_rate_hz=50.0,
             num_signals=2,

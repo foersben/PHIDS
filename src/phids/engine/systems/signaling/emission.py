@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+import numpy.typing as npt
 from numba import njit
 
 from phids.engine.components.plant import PlantComponent
@@ -88,14 +89,71 @@ def _apply_toxin_to_swarms(
 
     # Adaptive fallback: if active toxin cell count >= num_swarms, full query is faster.
     if len(active_indices) >= num_swarms and num_swarms > 0:
-        for entity in world.query(SwarmComponent):
-            swarm: SwarmComponent = entity.get_component(SwarmComponent)
-            toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
-            if toxin_val <= 0.0:
+        _apply_toxin_via_query(sub_id, lethal, lethality_rate, repellent, repellent_walk_ticks, env, world, dead_swarms)
+    else:
+        # High-performance spatial lookup across non-zero toxin cells
+        _apply_toxin_via_spatial(
+            active_indices, sub_id, lethal, lethality_rate, repellent, repellent_walk_ticks, env, world, dead_swarms
+        )
+
+    if dead_swarms:
+        world.collect_garbage(dead_swarms)
+
+
+def _apply_toxin_via_query(
+    sub_id: int,
+    lethal: bool,
+    lethality_rate: float,
+    repellent: bool,
+    repellent_walk_ticks: int,
+    env: GridEnvironment,
+    world: ECSWorld,
+    dead_swarms: list[int],
+) -> None:
+    for entity in world.query(SwarmComponent):
+        swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        toxin_val = float(env.toxin_layers[sub_id, swarm.x, swarm.y])
+        if toxin_val <= 0.0:
+            continue
+        _apply_single_swarm_toxin(
+            swarm,
+            entity.entity_id,
+            sub_id,
+            toxin_val,
+            lethal,
+            lethality_rate,
+            repellent,
+            repellent_walk_ticks,
+            world,
+            dead_swarms,
+        )
+
+
+def _apply_toxin_via_spatial(
+    active_indices: npt.NDArray[np.int64],
+    sub_id: int,
+    lethal: bool,
+    lethality_rate: float,
+    repellent: bool,
+    repellent_walk_ticks: int,
+    env: GridEnvironment,
+    world: ECSWorld,
+    dead_swarms: list[int],
+) -> None:
+    for idx in range(len(active_indices)):
+        x, y = int(active_indices[idx, 0]), int(active_indices[idx, 1])
+        cell_entities = world.entities_at(x, y)
+        if not cell_entities:
+            continue
+        toxin_val = float(env.toxin_layers[sub_id, x, y])
+        for co_eid in cell_entities:
+            co_entity = world._entities.get(co_eid)
+            if co_entity is None or not co_entity.has_component(SwarmComponent):
                 continue
+            swarm_comp: SwarmComponent = co_entity.get_component(SwarmComponent)
             _apply_single_swarm_toxin(
-                swarm,
-                entity.entity_id,
+                swarm_comp,
+                co_eid,
                 sub_id,
                 toxin_val,
                 lethal,
@@ -105,34 +163,6 @@ def _apply_toxin_to_swarms(
                 world,
                 dead_swarms,
             )
-    else:
-        # High-performance spatial lookup across non-zero toxin cells
-        for idx in range(len(active_indices)):
-            x, y = int(active_indices[idx, 0]), int(active_indices[idx, 1])
-            cell_entities = world.entities_at(x, y)
-            if not cell_entities:
-                continue
-            toxin_val = float(env.toxin_layers[sub_id, x, y])
-            for co_eid in cell_entities:
-                co_entity = world._entities.get(co_eid)
-                if co_entity is None or not co_entity.has_component(SwarmComponent):
-                    continue
-                swarm_comp: SwarmComponent = co_entity.get_component(SwarmComponent)
-                _apply_single_swarm_toxin(
-                    swarm_comp,
-                    co_eid,
-                    sub_id,
-                    toxin_val,
-                    lethal,
-                    lethality_rate,
-                    repellent,
-                    repellent_walk_ticks,
-                    world,
-                    dead_swarms,
-                )
-
-    if dead_swarms:
-        world.collect_garbage(dead_swarms)
 
 
 def _process_substance_energy_maintenance(

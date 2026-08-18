@@ -52,7 +52,7 @@ def _herbivore(species_id: int) -> HerbivoreSpeciesParams:
         energy_min=1.0,
         velocity=1,
         consumption_rate=1.0,
-        reproduction_energy_divisor=1.0,
+        reproduction_energy_divisor=2.0,
     )
 
 
@@ -68,8 +68,8 @@ def _config_with_trigger() -> SimulationConfig:
         ),
     )
     return SimulationConfig(
-        grid_width=8,
-        grid_height=8,
+        grid_width=16,
+        grid_height=16,
         max_ticks=20,
         tick_rate_hz=20.0,
         num_signals=2,

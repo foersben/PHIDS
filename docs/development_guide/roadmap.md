@@ -57,7 +57,7 @@ This document defines the strategic development roadmap for the Plant-Herbivore 
 * **Operator-Splitting PDE Solvers & Telemetry** `[Implemented]`: Combined semi-Lagrangian wind advection with $5\times 5$ Gaussian stencils, Zarr telemetry, and HTMX web visualization.
 * **Phase-Staggered Cohort Loops & Kinematics** `[Implemented]`: Multi-scale temporal decoupling (`(entity_id % S) == (tick % S)`), 4-way Von-Neumann kinematics, branchless capacity masking, and $O(1)$ stochastic seed dispersal.
 
-### Stage 1B: Charnov's Marginal Value Theorem (MVT) & Softmax Stochastic Foraging (Pre-v1.0 Base Milestone - Active Target)
+### Stage 1B: Charnov's Marginal Value Theorem (MVT) & Softmax Stochastic Foraging `[Implemented]`
 
 * **Biological Target**: Replace rigid binary feeding state locks (`is_feeding = True` until $E_{\text{plant}} = 0$) with optimal foraging theory governed by **Charnov's Marginal Value Theorem (MVT)**. Optimal foragers evaluate surrounding continuous spatial potentials $\nabla F(\mathbf{r})$ at **every tick** and abandon depleting patches as soon as local caloric intake drops below the expected average intake rate of the surrounding landscape.
 * **Theoretical & Architectural Foundations**:
@@ -78,7 +78,7 @@ This document defines the strategic development roadmap for the Plant-Herbivore 
     * **Memory**: $+8\text{ Bytes/swarm entity}$ for per-swarm temperature state $\tau$ ($\sim 0.08\text{ KB}$ for 100 swarms). Zero biotope array expansion.
     * **CPU Latency**: $\sim 0.04\text{ ms/tick}$ additional overhead per swarm batch. Softmax exponentiation $\exp(F/\tau)$ across 4 von Neumann neighbors is compiled via Numba `@njit(fastmath=True)` using SIMD vector instructions.
 * **Implementation Effort & Full-Stack Scope**:
-    * **Backend & API**: Remove movement bypass lock in `src/phids/engine/systems/interaction/movement.py`, implement `@njit(cache=True, fastmath=True)` Softmax probability sampler `_select_softmax_neighbour_jit`, and add `softmax_temperature` ($\tau$) parameter to `HerbivoreSpeciesParams` schema (`src/phids/api/schemas/species.py`) and `SimulationConfig` ($\sim 240$ LOC).
+    * **Backend & API**: Remove movement bypass lock in `src/phids/engine/systems/interaction/movement/__init__.py`, implement `@njit(cache=True, fastmath=True)` Softmax probability sampler `_select_softmax_neighbour_jit`, and add `softmax_temperature` ($\tau$) parameter to `HerbivoreSpeciesParams` schema (`src/phids/api/schemas/species.py`) and `SimulationConfig` ($\sim 240$ LOC).
     * **UI & Dashboard**: Add "Stochastic Foraging & MVT" settings card to config form (`src/phids/api/templates/index.html`), Softmax Temperature ($\tau$) slider, and live telemetry widgets tracking "Early Patch Departure Rate" and "Plant Recovery vs Extinction Ratio".
     * **Empirical Bio-Database Pipeline**: Extend DuckDB schema (`phids.analytics.bio_database`) and `src/data_pipeline/json_builder.py` to ingest species-specific MVT patch residence time thresholds and temperature parameters $\tau$ from PanTHERIA / empirical literature.
     * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize per-swarm foraging mode transitions and departure ticks. All scenario examples (`scenarios/*.yaml`) updated to match.

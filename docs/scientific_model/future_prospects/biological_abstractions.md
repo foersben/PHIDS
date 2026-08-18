@@ -28,7 +28,7 @@ sources:
 - id: biotope
   resource: src/phids/engine/core/biotope.py
 - id: movement
-  resource: src/phids/engine/systems/interaction/movement.py
+  resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
   resource: src/phids/engine/systems/lifecycle.py
 - id: payloads
@@ -72,7 +72,7 @@ Ecological theory models this using **Charnov's Marginal Value Theorem (MVT)**, 
 
 ### The Implementation (Complex / Hot Path)
 
-We simulate handling time and patch departure using $O(1)$ branchless math in `src/phids/engine/systems/interaction/movement.py`:
+We simulate handling time and patch departure using $O(1)$ branchless math in `src/phids/engine/systems/interaction/movement/__init__.py`:
 
 - **Holling Type II & MVT Full Belly Override:** Swarms evaluate their energetic intake every tick. If caloric intake meets or exceeds metabolic upkeep ($Intake \ge Upkeep > 0.0$) or apparent nutrition $\ge 0.999$, `_is_swarm_anchored_jit` evaluates to `True` and movement probability drops to `0.0`. They stay and feed (resolving jitter).
 - **The Deficit Unlock:** As the plant's biomass drops, Holling Type II limits throttle the swarm's intake. Once $Intake < Upkeep$, the swarm operates at a deficit. It unlocks and resumes evaluating the local chemical gradient via random walk/chemotaxis.
@@ -226,13 +226,13 @@ The **Decoupled Dual-Proxy Architecture** is fully implemented across four produ
 - `src/phids/analytics/bio_database.json` & `bio_database.py`: Populated `structural_mass_max` and `structural_growth_rate` for all 16 flora species based on empirical dry-mass data.
 - `src/phids/api/schemas/species.py`: Extended `FloraSpeciesParams` and `FloraProfile` dataclasses.
 - `src/phids/engine/systems/lifecycle.py`: Implemented Numba `@njit` kernel `_grow_structural_mass_jit` on the 168-tick slow loop stride ($M_{next} = \min(M_{max}, M + g_M \times 168)$).
-- `src/phids/engine/systems/interaction/movement.py`: Implemented Numba `@njit` kernel `_compute_trample_probability_jit` and MVT Full Belly patch departure lock in `_is_swarm_anchored_jit`.
+- `src/phids/engine/systems/interaction/movement/__init__.py`: Implemented Numba `@njit` kernel `_compute_trample_probability_jit` and MVT Full Belly patch departure lock in `_is_swarm_anchored_jit`.
 - `tests/`: Added unit tests in `test_biotope_state_mutation_pilot.py` and `test_trampling_fma.py`, benchmark in `test_dual_proxy_memory_benchmark.py`.
 
 ### Plan 3 - Movement Resolution Incidental Mortality & Upkeep Tax (Delivered in commit `92d3e08`)
 
 - `src/phids/api/schemas/species.py`: Extended `HerbivoreSpeciesParams` with `incidental_mortality_factor: float = 0.0` and `incidental_mortality_mode: Literal["trampling", "consumption"] = "trampling"`.
-- `src/phids/engine/systems/interaction/movement.py`: Integrated `_resolve_incidental_mortality` on coordinate entry, culling co-located seedlings probabilistically ($P \le P_{max} = 0.50$) and logging death causes `"death_collateral_trampling"` or `"death_incidental_consumption"`.
+- `src/phids/engine/systems/interaction/movement/__init__.py`: Integrated `_resolve_incidental_mortality` on coordinate entry, culling co-located seedlings probabilistically ($P \le P_{max} = 0.50$) and logging death causes `"death_collateral_trampling"` or `"death_incidental_consumption"`.
 - `src/phids/engine/systems/lifecycle.py`: Implemented `_calculate_structural_upkeep_jit` kernel and deducted maintenance tax ($E_{upkeep} = E_{survival} \times \text{STRUCTURAL\_UPKEEP\_SCALAR} \times \frac{M_{structural}}{M_{max}}$) per lifecycle tick.
 - `src/phids/telemetry/analytics.py`: Added `calculate_mean_structural_mass_by_species` and `calculate_incidental_mortality_rate`.
 - `tests/`: Created `tests/integration/systems/test_dual_proxy_integration.py` with 4 end-to-end scenario tests. Full test suite: **1212 passed, 0 failed**.
@@ -272,6 +272,7 @@ When hovering over any cell containing plant entities:
 ### 8.2 Plan 1 Compatibility Fallback Rule ($M_{\text{max}} = E_{\text{max}}$)
 
 In legacy scenarios or built-in benchmarks where `structural_mass_max` is zero or unspecified (`0.0`), the system strictly enforces the **Plan 1 Compatibility Rule**:
+
 - The engine and presenter pipeline set $M_{\text{max}} = E_{\text{max}}$ (e.g. $100.0\text{ J}$ or $60.0\text{ J}$).
 - Placed initial plants receive initial structural mass proportional to their starting placement energy ratio ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
 - This prevents mature initial plants in benchmark scenarios from incorrectly spawning as $100\%$ fragile stubs.
@@ -301,3 +302,14 @@ stateDiagram-v2
 - **Tooltip Disambiguation:** Tooltip entries replace ambiguous `*` asterisks with explicit badges:
   - **Inter-species link:** `<span class="text-amber-400"> (inter-species)</span>`
   - **Intra-species link:** `<span class="text-sky-400/70"> (intra-species)</span>`
+
+### Data-Flow Matrix: Dual-Proxy State Shifts
+
+| Event | Precondition | State Transformation | ECS Resolution |
+| :--- | :--- | :--- | :--- |
+| **Photosynthesis** | $E_{current} < E_{max}$ | $E_{current} = \min(E_{max}, E_{current} + \text{daily\_gain})$ | Daily Loop Update |
+| **Growth** | $E_{current} \ge \text{Cost}_{growth}$ AND $M_{structural} < M_{max}$ | $M_{structural} = \min(M_{max}, M_{structural} + \delta M)$; $E_{current} -= \text{Cost}_{growth}$ | Daily Loop Update |
+| **Grazing** | $E_{current} > 0$ | $E_{current} = \max(0, E_{current} - \text{Intake})$ | Medium Tick Interaction |
+| **Mycorrhizal Tax** | $E_{current} < \text{Upkeep}$ | Drop `mycorrhizal_connections` mask | Branchless float mask `E > Upkeep` |
+| **Trampling** | $M_{structural} < M_{adult}$ | $P(\text{destroy}) = f(SwarmBiomass, M_{structural})$ | Movement Hot Path |
+| **Starvation** | $E_{current} \le 0$ AND $M_{structural} > 0$ | Coordinate occupancy = 0 | Garbage Collection |
