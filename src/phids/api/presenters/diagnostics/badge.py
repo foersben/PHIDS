@@ -64,8 +64,6 @@ def render_main_action_btn_html(sim_loop: SimulationLoop | None) -> str:
     btn_html = (
         f'<button id="sim-main-action-btn" '
         f'hx-post="{btn_action}" '
-        f'hx-get="/api/ui/main-action-btn" '
-        f'hx-trigger="updateMainActionBtn from:body" '
         f'hx-swap="outerHTML" '
         f'hx-include="#biotope-config-view form" '
         f'class="px-4 py-2 {btn_color} active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 '
