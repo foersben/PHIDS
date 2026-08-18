@@ -15,6 +15,9 @@
     body {
       font-family: ui-sans-serif, system-ui, sans-serif, "Noto Color Emoji";
     }
+    .htmx-request .htmx-indicator { opacity: 1 !important; }
+    .htmx-request .btn-text { opacity: 0 !important; }
+    .htmx-request { pointer-events: none; }
   </style>
 </head>
 <body class="h-screen w-full flex bg-slate-50 text-slate-900 overflow-hidden">
@@ -172,8 +175,12 @@
           <button id="sim-main-action-btn" hx-post="/api/simulation/start"
             hx-include="#biotope-config-view form"
             hx-target="#sim-status" hx-swap="outerHTML"
-            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow">
-            ▶ Start
+            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow flex items-center justify-center min-w-[5.5rem] relative">
+            <span class="btn-text transition-opacity duration-200">▶ Start</span>
+            <svg class="htmx-indicator absolute w-4 h-4 animate-spin opacity-0 transition-opacity duration-200 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
           </button>
           <button hx-post="/api/simulation/step"
             hx-include="#biotope-config-view form"
@@ -316,18 +323,25 @@
     window.phidsSyncMainActionButton = function (running, paused) {
       const btn = document.getElementById('sim-main-action-btn');
       if (!btn) return;
+
+      const spinnerSvg = `<svg class="htmx-indicator absolute w-4 h-4 animate-spin opacity-0 transition-opacity duration-200 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
       if (running && !paused) {
         btn.setAttribute('hx-post', '/api/simulation/pause');
-        btn.innerHTML = '⏸ Pause';
-        btn.className = 'px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all shadow';
+        btn.innerHTML = `<span class="btn-text transition-opacity duration-200">⏸ Pause</span>` + spinnerSvg;
+        btn.className = 'px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 text-white rounded-lg text-sm font-medium transition-all shadow flex items-center justify-center min-w-[5.5rem] relative';
       } else if (running && paused) {
         btn.setAttribute('hx-post', '/api/simulation/start');
-        btn.innerHTML = '▶ Resume';
-        btn.className = 'px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow';
+        btn.innerHTML = `<span class="btn-text transition-opacity duration-200">▶ Resume</span>` + spinnerSvg;
+        btn.className = 'px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow flex items-center justify-center min-w-[5.5rem] relative';
       } else {
         btn.setAttribute('hx-post', '/api/simulation/start');
-        btn.innerHTML = '▶ Start';
-        btn.className = 'px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow';
+        btn.innerHTML = `<span class="btn-text transition-opacity duration-200">▶ Start</span>` + spinnerSvg;
+        btn.className = 'px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 active:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 text-white rounded-lg text-sm font-medium transition-all shadow flex items-center justify-center min-w-[5.5rem] relative';
+      }
+
+      if (typeof htmx !== 'undefined') {
+        htmx.process(btn);
       }
     };
 
