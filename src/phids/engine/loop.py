@@ -206,6 +206,8 @@ class SimulationLoop:
             ]
             for sp in config.flora_species
         }
+        # TODO: Performance: Pre-compile config.diet_matrix.rows to np.array(dtype=np.bool_)
+        # here and pass to run_interaction to avoid array allocation in the hot path.
         self._diet_matrix: list[list[bool]] = config.diet_matrix.rows
 
         # Spawn initial entities
@@ -295,6 +297,12 @@ class SimulationLoop:
 
         for swarm_placement in self.config.initial_swarms:
             entity = self.world.create_entity()
+            energy_min = get_herbivore_energy_min(self._herbivore_params, swarm_placement.species_id)
+            energy_upkeep_per_individual = get_herbivore_energy_upkeep(
+                self._herbivore_params, swarm_placement.species_id
+            )
+            initial_upkeep = swarm_placement.population * energy_min * energy_upkeep_per_individual
+
             swarm = SwarmComponent(
                 entity_id=entity.entity_id,
                 species_id=swarm_placement.species_id,
@@ -303,18 +311,18 @@ class SimulationLoop:
                 population=swarm_placement.population,
                 initial_population=swarm_placement.population,
                 energy=swarm_placement.energy,
-                energy_min=get_herbivore_energy_min(self._herbivore_params, swarm_placement.species_id),
+                energy_min=energy_min,
                 velocity=get_herbivore_velocity(self._herbivore_params, swarm_placement.species_id),
                 consumption_rate=get_herbivore_consumption_rate(self._herbivore_params, swarm_placement.species_id),
                 reproduction_energy_divisor=get_herbivore_reproduction_divisor(
                     self._herbivore_params, swarm_placement.species_id
                 ),
-                energy_upkeep_per_individual=get_herbivore_energy_upkeep(
-                    self._herbivore_params, swarm_placement.species_id
-                ),
+                energy_upkeep_per_individual=energy_upkeep_per_individual,
                 split_population_threshold=get_herbivore_split_threshold(
                     self._herbivore_params, swarm_placement.species_id
                 ),
+                last_caloric_intake=initial_upkeep,
+                metabolism_upkeep=initial_upkeep,
             )
             self.world.add_component(entity.entity_id, swarm)
             self.world.register_position(entity.entity_id, swarm_placement.x, swarm_placement.y)

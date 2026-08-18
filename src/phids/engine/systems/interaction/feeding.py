@@ -211,31 +211,41 @@ def _resolve_swarm_feeding(
     ate_anything = False
     on_incompatible_plant = False
     dead_plants: list[int] = []
+    total_metabolized = 0.0
 
     for co_eid in world.entities_at(swarm.x, swarm.y):
         target_plant = _get_target_plant(world, co_eid)
         if target_plant is None:
             continue
 
-        if not _is_diet_compatible(swarm.species_id, target_plant.species_id, diet_matrix):
+        if not diet_matrix[swarm.species_id][target_plant.species_id]:
             on_incompatible_plant = True
             continue
 
+        if target_plant.energy <= 0:
+            continue
+
         metabolized, plant_killed = _feed_on_single_plant(
-            swarm,
-            target_plant,
-            flora_species_params,
-            herbivore_species_params,
-            env,
-            tile_populations,
-            plant_death_causes,
+            swarm=swarm,
+            target_plant=target_plant,
+            flora_species_params=flora_species_params,
+            herbivore_species_params=herbivore_species_params,
+            env=env,
+            tile_populations=tile_populations,
+            plant_death_causes=plant_death_causes,
             stride_multiplier=stride_multiplier,
         )
+        total_metabolized += metabolized
         swarm.energy += metabolized
         if metabolized > 0:
             ate_anything = True
         if plant_killed:
             dead_plants.append(co_eid)
+
+    swarm.last_caloric_intake = total_metabolized / max(1e-9, stride_multiplier)
+
+    # Write back the updated swarm component to ECS
+    world.add_component(swarm.entity_id, swarm)
 
     for eid in dead_plants:
         world.unregister_position(eid, swarm.x, swarm.y)

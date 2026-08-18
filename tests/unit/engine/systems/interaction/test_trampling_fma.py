@@ -55,41 +55,61 @@ def test_trampling_probability_linear_scaling() -> None:
     assert np.isclose(prob, 0.25)
 
 
-def test_mvt_full_belly_override_locks_movement() -> None:
-    """Validate Marginal Value Theorem (MVT) Full Belly Override locks movement when intake >= upkeep."""
+def test_mvt_stochastic_departure_logic() -> None:
+    """Validate Marginal Value Theorem (MVT) Stochastic Departure logic."""
     plant_energy = np.zeros((1, 5, 5), dtype=np.float64)
+    plant_energy[0, 2, 2] = 10.0  # Valid food patch
     diet = np.ones((1, 1), dtype=np.bool_)
 
-    # Case 1: Low nutrition, no food co-located, zero intake -> not anchored
+    # Case 1: Low nutrition, empty grid -> not anchored
     anchored_empty = _is_swarm_anchored_jit(
-        x=2,
-        y=2,
+        x=0,
+        y=0,
         species_id=0,
-        apparent_nutrition_val=0.1,
+        apparent_nutrition_val=0.0,
         plant_energy_by_species=plant_energy,
         diet_matrix=diet,
         caloric_intake=0.0,
         metabolic_upkeep=5.0,
+        rand_val=0.5,
     )
     assert not anchored_empty
 
-    # Case 2: Full belly (caloric_intake=6.0 >= metabolic_upkeep=5.0) -> anchored!
-    anchored_full = _is_swarm_anchored_jit(
+    # Case 2: Excellent nutrition (ratio 2.0). p_depart is near 0. rand_val 0.5 > p_depart -> anchored.
+    anchored_good = _is_swarm_anchored_jit(
         x=2,
         y=2,
         species_id=0,
-        apparent_nutrition_val=0.1,
+        apparent_nutrition_val=10.0,
         plant_energy_by_species=plant_energy,
         diet_matrix=diet,
-        caloric_intake=6.0,
+        caloric_intake=10.0,
         metabolic_upkeep=5.0,
+        rand_val=0.5,
     )
-    assert anchored_full
+    assert anchored_good
+
+    # Case 3: Poor nutrition (ratio 0.2). p_depart is near 1. rand_val 0.5 < p_depart -> leaves (not anchored).
+    anchored_bad = _is_swarm_anchored_jit(
+        x=2,
+        y=2,
+        species_id=0,
+        apparent_nutrition_val=10.0,
+        plant_energy_by_species=plant_energy,
+        diet_matrix=diet,
+        caloric_intake=1.0,
+        metabolic_upkeep=5.0,
+        rand_val=0.5,
+    )
+    assert not anchored_bad
 
 
 def test_is_swarm_anchored_python_wrapper_extracts_mvt() -> None:
     """Validate that _is_swarm_anchored Python wrapper extracts last_caloric_intake and metabolism_upkeep."""
     env = GridEnvironment(width=5, height=5)
+    env.apparent_nutrition_layer[2, 2] = 10.0
+    env.plant_energy_by_species = np.zeros((1, 5, 5), dtype=np.float64)
+    env.plant_energy_by_species[0, 2, 2] = 10.0
     diet = [[True]]
 
     swarm = SwarmComponent(
@@ -107,5 +127,9 @@ def test_is_swarm_anchored_python_wrapper_extracts_mvt() -> None:
     swarm.last_caloric_intake = 10.0  # type: ignore[attr-defined]
     swarm.metabolism_upkeep = 5.0  # type: ignore[attr-defined]
 
-    # Full belly override should return True even on empty grid
-    assert _is_swarm_anchored(swarm, env, diet)
+    # Full belly override on food should return True because p_depart is low
+    assert _is_swarm_anchored(swarm, env, diet, rand_val=0.5)
+
+    # Empty belly on food should return False because p_depart is high
+    swarm.last_caloric_intake = 1.0  # type: ignore[attr-defined]
+    assert not _is_swarm_anchored(swarm, env, diet, rand_val=0.5)

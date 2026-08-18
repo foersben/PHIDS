@@ -70,6 +70,7 @@ def _resolve_swarm_movement(
         return False
 
     # Decay aversion memory per movement tick
+    # TODO: Performance: Replace getattr(swarm, "aversion_memory", 0.0) with direct field access swarm.aversion_memory
     if getattr(swarm, "aversion_memory", 0.0) > 0.0:
         swarm.aversion_memory *= 0.95
         if swarm.aversion_memory < 0.01:
@@ -97,7 +98,10 @@ def _resolve_swarm_movement(
             swarm.repelled = False
     else:
         # 2. Fast O(1) check: are we already standing on valid, uneaten food?
-        if _is_swarm_anchored(swarm, env, diet_matrix):
+        import numpy as np
+
+        anchor_rand = np.random.random()
+        if _is_swarm_anchored(swarm, env, diet_matrix, rand_val=anchor_rand):
             nx, ny = swarm.x, swarm.y
         else:
             from phids.engine.core.herbivore_params import get_herbivore_softmax_temperature
@@ -127,6 +131,8 @@ def _resolve_swarm_movement(
 
         swarm.last_dx = _calculate_toroidal_delta(nx, old_x, env.width)
         swarm.last_dy = _calculate_toroidal_delta(ny, old_y, env.height)
+        # Reset caloric intake when moving to a new patch to assume it's good until evaluated
+        swarm.last_caloric_intake = swarm.metabolism_upkeep
         has_moved = True
 
         # Plan 3: Evaluate probabilistic incidental mortality (trampling or clipping) on co-located flora

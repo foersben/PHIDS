@@ -131,6 +131,7 @@ def _resolve_swarm_metabolism_and_reproduction(
     # Metabolic cost: scaled by MEDIUM_TICK_STRIDE (24 hours) since this function
     # is only called on the daily medium-loop gate.
     metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual * 24
+    swarm.metabolism_upkeep = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual
     swarm.energy -= metabolic_cost
 
     if swarm.energy < 0.0 and swarm.population > 0:
