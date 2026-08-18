@@ -516,6 +516,38 @@ def query_telemetry_schema() -> dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
+def _export_csv(
+    filtered_rows: list[dict[str, Any]],
+    normalized_data_type: str,
+    tick_interval: int,
+    columns: str | None,
+) -> dict[str, Any]:
+    """Helper to export telemetry as CSV."""
+    from phids.telemetry.export.core import (
+        aggregate_to_dataframe,
+        decimate_dataframe,
+        filter_dataframe_columns,
+        telemetry_to_dataframe,
+    )
+
+    # Note: filter_telemetry_rows returns list[dict[str, Any]].
+    # For aggregate_to_dataframe, this is compatible enough at runtime,
+    # but we use type: ignore to bypass mypy's strictness.
+    if normalized_data_type in ("timeseries", "defense_economy", "biomass_stack"):
+        df = aggregate_to_dataframe(filtered_rows)  # type: ignore
+    else:
+        df = telemetry_to_dataframe(filtered_rows)
+
+    if tick_interval > 1:
+        df = decimate_dataframe(df, tick_interval)
+
+    if columns:
+        df = filter_dataframe_columns(df, columns)
+
+    bytes_data = df.to_csv(index=False).encode("utf-8")
+    return {"status": "success", "format": "csv", "data": bytes_data.decode("utf-8")}
+
+
 @mcp.tool()
 def export_telemetry_data(
     format: str,
@@ -580,29 +612,7 @@ def export_telemetry_data(
         filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
         if format == "csv":
-            from phids.telemetry.export.core import (
-                aggregate_to_dataframe,
-                decimate_dataframe,
-                filter_dataframe_columns,
-                telemetry_to_dataframe,
-            )
-
-            # Note: filter_telemetry_rows returns list[dict[str, Any]].
-            # For aggregate_to_dataframe, this is compatible enough at runtime,
-            # but we use type: ignore to bypass mypy's strictness.
-            if normalized_data_type in ("timeseries", "defense_economy", "biomass_stack"):
-                df = aggregate_to_dataframe(filtered_rows)  # type: ignore
-            else:
-                df = telemetry_to_dataframe(filtered_rows)
-
-            if tick_interval > 1:
-                df = decimate_dataframe(df, tick_interval)
-
-            if columns:
-                df = filter_dataframe_columns(df, columns)
-
-            bytes_data = df.to_csv(index=False).encode("utf-8")
-            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
+            return _export_csv(filtered_rows, normalized_data_type, tick_interval, columns)
 
         elif format == "tex_table":
             from phids.telemetry.export.latex import export_bytes_tex_table
