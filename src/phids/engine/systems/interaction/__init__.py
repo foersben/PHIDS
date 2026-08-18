@@ -52,11 +52,11 @@ from phids.engine.systems.interaction.feeding import (
     cache_herbivore_foraging_params,
 )
 from phids.engine.systems.interaction.metabolism import _resolve_swarm_metabolism_and_reproduction
-from phids.engine.systems.interaction.movement import (
+from phids.engine.systems.interaction.movement.choices import (
     _choose_neighbour_by_flow_probability as _choose_neighbour_by_flow_probability,
 )
-from phids.engine.systems.interaction.movement import _random_walk_step as _random_walk_step
-from phids.engine.systems.interaction.movement import _resolve_swarm_movement
+from phids.engine.systems.interaction.movement.core import _resolve_swarm_movement
+from phids.engine.systems.interaction.movement.random_walk import _random_walk_step as _random_walk_step
 from phids.engine.systems.interaction.population import TILE_CARRYING_CAPACITY as TILE_CARRYING_CAPACITY
 from phids.engine.systems.interaction.population import _accumulate_tile_population
 from phids.engine.systems.interaction.population import _co_located_swarm_population as _co_located_swarm_population

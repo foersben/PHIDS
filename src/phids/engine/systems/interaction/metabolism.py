@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.systems.interaction.movement import _random_walk_step
+from phids.engine.systems.interaction.movement.random_walk import _random_walk_step
 from phids.engine.systems.interaction.population import _accumulate_tile_population
 
 if TYPE_CHECKING:
