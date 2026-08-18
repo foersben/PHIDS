@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from phids.api.schemas.species import FloraSpeciesParams
+    from phids.engine.core.ecs import ECSWorld
     from phids.engine.loop import SimulationLoop
 
 
@@ -175,37 +176,16 @@ def _collect_flora_species(
     return all_flora_species, species_energy
 
 
-def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
-    """Extract a fast, thread-safe shallow copy of UI-required state.
+def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
+    """Extract plant component data into a list of dictionaries for UI serialisation.
 
-    This function runs synchronously while holding the simulation lock. It returns a
-    dictionary containing primitive values, copied NumPy arrays, and lightweight dicts
-    representing the components needed for UI streaming.
+    Args:
+        world: The current ECSWorld instance containing plant entities.
+
+    Returns:
+        A list of dictionaries containing properties of each plant entity.
     """
     from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.substances import SubstanceComponent
-    from phids.engine.components.swarm import SwarmComponent
-
-    env = loop.env
-    world = loop.world
-
-    snapshot: dict[str, Any] = {
-        "tick": loop.tick,
-        "width": env.width,
-        "height": env.height,
-        "terminated": loop.terminated,
-        "termination_reason": loop.termination_reason,
-        "running": loop.running,
-        "paused": loop.paused,
-        "num_signals": env.num_signals,
-        "num_toxins": env.num_toxins,
-        "flora_species": loop.config.flora_species,
-        "herbivore_species": loop.config.herbivore_species,
-        "plant_energy_layer": env.plant_energy_layer.copy(),
-        "signal_layers": env.signal_layers.copy() if env.num_signals > 0 else None,
-        "toxin_layers": env.toxin_layers.copy() if env.num_toxins > 0 else None,
-        "plant_energy_by_species": env.plant_energy_by_species.copy(),
-    }
 
     plants = []
     for entity in world.query(PlantComponent):
@@ -246,7 +226,19 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
                 "mycorrhizal_connections": set(p.mycorrhizal_connections),
             }
         )
-    snapshot["plants"] = plants
+    return plants
+
+
+def _extract_swarms(world: ECSWorld) -> list[dict[str, Any]]:
+    """Extract swarm component data into a list of dictionaries for UI serialisation.
+
+    Args:
+        world: The current ECSWorld instance containing swarm entities.
+
+    Returns:
+        A list of dictionaries containing properties of each swarm entity.
+    """
+    from phids.engine.components.swarm import SwarmComponent
 
     swarms = []
     for entity in world.query(SwarmComponent):
@@ -263,7 +255,19 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
                 "repelled_ticks_remaining": s.repelled_ticks_remaining,
             }
         )
-    snapshot["swarms"] = swarms
+    return swarms
+
+
+def _extract_substances(world: ECSWorld) -> list[dict[str, Any]]:
+    """Extract substance component data into a list of dictionaries for UI serialisation.
+
+    Args:
+        world: The current ECSWorld instance containing substance entities.
+
+    Returns:
+        A list of dictionaries containing properties of each substance entity.
+    """
+    from phids.engine.components.substances import SubstanceComponent
 
     substances = []
     for entity in world.query(SubstanceComponent):
@@ -282,7 +286,40 @@ def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
                 "is_visible": is_visible,
             }
         )
-    snapshot["substances"] = substances
+    return substances
+
+
+def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
+    """Extract a fast, thread-safe shallow copy of UI-required state.
+
+    This function runs synchronously while holding the simulation lock. It returns a
+    dictionary containing primitive values, copied NumPy arrays, and lightweight dicts
+    representing the components needed for UI streaming.
+    """
+    env = loop.env
+    world = loop.world
+
+    snapshot: dict[str, Any] = {
+        "tick": loop.tick,
+        "width": env.width,
+        "height": env.height,
+        "terminated": loop.terminated,
+        "termination_reason": loop.termination_reason,
+        "running": loop.running,
+        "paused": loop.paused,
+        "num_signals": env.num_signals,
+        "num_toxins": env.num_toxins,
+        "flora_species": loop.config.flora_species,
+        "herbivore_species": loop.config.herbivore_species,
+        "plant_energy_layer": env.plant_energy_layer.copy(),
+        "signal_layers": env.signal_layers.copy() if env.num_signals > 0 else None,
+        "toxin_layers": env.toxin_layers.copy() if env.num_toxins > 0 else None,
+        "plant_energy_by_species": env.plant_energy_by_species.copy(),
+    }
+
+    snapshot["plants"] = _extract_plants(world)
+    snapshot["swarms"] = _extract_swarms(world)
+    snapshot["substances"] = _extract_substances(world)
 
     return snapshot
 

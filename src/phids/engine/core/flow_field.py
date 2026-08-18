@@ -593,27 +593,36 @@ def _compute_flow_field_impl(
     mask_y = height - 1
     use_parallel = width * height >= NUMBA_PARALLEL_THRESHOLD_CELLS
 
-    for _ in range(max_iterations):
-        if is_pow2:
-            if use_parallel:
+    if is_pow2:
+        if use_parallel:
+            for _ in range(max_iterations):
                 max_diff = _propagate_iteration_jit_pow2_parallel(
                     width, height, mask_x, mask_y, decay, base, current, nxt
                 )
-            else:
-                max_diff = _propagate_iteration_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt)
+                current, nxt = nxt, current
+                if max_diff < truncate_threshold:
+                    break
         else:
-            if use_parallel:
+            for _ in range(max_iterations):
+                max_diff = _propagate_iteration_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt)
+                current, nxt = nxt, current
+                if max_diff < truncate_threshold:
+                    break
+    else:
+        if use_parallel:
+            for _ in range(max_iterations):
                 max_diff = _propagate_iteration_jit_parallel(width, height, decay, base, current, nxt)
-            else:
+                current, nxt = nxt, current
+                if max_diff < truncate_threshold:
+                    break
+        else:
+            for _ in range(max_iterations):
                 diff_boundaries = _propagate_boundaries_jit(width, height, decay, base, current, nxt)
                 diff_inner = _propagate_inner_jit(width, height, decay, base, current, nxt)
                 max_diff = diff_boundaries if diff_boundaries > diff_inner else diff_inner
-
-        current, nxt = nxt, current
-
-        # Early stopping if convergence is reached
-        if max_diff < truncate_threshold:
-            break
+                current, nxt = nxt, current
+                if max_diff < truncate_threshold:
+                    break
 
     # Truncate subnormal floats to exactly zero
     _truncate_subnormals_jit(width, height, current, truncate_threshold)

@@ -249,13 +249,12 @@ def _weighted_field_choice_jit(
     Returns:
         The selected neighbour coordinates.
     """
+    min_score = -scores[0] if invert else scores[0]
     for i in range(count):
-        adjusted_scores[i] = -scores[i] if invert else scores[i]
-
-    min_score = adjusted_scores[0]
-    for i in range(1, count):
-        if adjusted_scores[i] < min_score:
-            min_score = adjusted_scores[i]
+        adj = -scores[i] if invert else scores[i]
+        adjusted_scores[i] = adj
+        if adj < min_score:
+            min_score = adj
 
     total_w = 0.0
     for i in range(count):
@@ -317,13 +316,12 @@ def _softmax_field_choice_jit(
     Returns:
         The selected neighbour coordinates.
     """
+    max_score = -scores[0] if invert else scores[0]
     for i in range(count):
-        adjusted_scores[i] = -scores[i] if invert else scores[i]
-
-    max_score = adjusted_scores[0]
-    for i in range(1, count):
-        if adjusted_scores[i] > max_score:
-            max_score = adjusted_scores[i]
+        adj = -scores[i] if invert else scores[i]
+        adjusted_scores[i] = adj
+        if adj > max_score:
+            max_score = adj
 
     total_w = 0.0
     for i in range(count):
