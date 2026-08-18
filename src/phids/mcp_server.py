@@ -24,6 +24,7 @@ state are exposed.
 
 from __future__ import annotations
 
+import base64
 import dataclasses
 import json
 import shutil
@@ -32,7 +33,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import ValidationError
 
+from phids.api.schemas.simulation import SimulationConfig
 from phids.api.ui_state.state import get_draft
 from phids.shared.logging_config import get_recent_logs
 
@@ -462,6 +465,200 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
 # ===========================================================================
 # 3. PROMPTS - pre-baked agent guidance
 # ===========================================================================
+
+
+@mcp.tool()
+def validate_simulation_config(config_json: str) -> dict[str, Any]:
+    """Validate a JSON string against the strict PHIDS SimulationConfig schema.
+
+    Allows autonomous agents to verify that AI-generated configuration files
+    comply with all engine requirements (e.g., power-of-two grid bounds,
+    matching species IDs) before attempting to launch a simulation.
+
+    Args:
+        config_json: The JSON string payload to validate.
+
+    Returns:
+        dict[str, Any]: A dictionary with a ``valid`` boolean and a ``errors`` list.
+    """
+    try:
+        SimulationConfig.model_validate_json(config_json)
+        return {"valid": True, "errors": []}
+    except ValidationError as e:
+        return {"valid": False, "errors": [str(err["msg"]) for err in e.errors()]}
+    except Exception as e:
+        return {"valid": False, "errors": [str(e)]}
+
+
+@mcp.tool()
+def query_telemetry_schema() -> dict[str, Any]:
+    """Return the available telemetry metrics for the active simulation.
+
+    Agents can use this to determine which data columns are available to plot or export
+    using the export_telemetry_data tool.
+
+    Returns:
+        dict[str, Any]: Available columns and structural layout.
+    """
+    loop = _get_active_sim_loop()
+    if loop is None:
+        return {"status": "error", "message": "No active simulation loop loaded."}
+
+    try:
+        # Check if any telemetry is recorded
+        rows = loop.telemetry._rows
+        if not rows:
+            return {"status": "success", "columns": [], "message": "No telemetry recorded yet."}
+
+        columns = list(rows[0].keys())
+        return {"status": "success", "columns": columns}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@mcp.tool()
+def export_telemetry_data(
+    format: str,
+    data_type: str = "timeseries",
+    tick_interval: int = 1,
+    plant_species_id: int = 0,
+    herbivore_species_id: int = 0,
+    columns: str | None = None,
+    flora_ids: str | None = None,
+    herbivore_ids: str | None = None,
+    title: str | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
+    x_max: float | None = None,
+    y_max: float | None = None,
+) -> dict[str, Any]:
+    """Export telemetry from the active simulation as an encoded string.
+
+    Generates academic telemetry exports (CSV, PNG, TikZ, LaTeX) mirroring
+    the FastAPI endpoints but returning the payload directly for agent consumption.
+
+    Args:
+        format: 'csv', 'tex_table', 'tex_tikz', or 'png'.
+        data_type: 'timeseries', 'phasespace', 'defense_economy', 'biomass_stack', 'metabolic'.
+        tick_interval: Decimation factor for large datasets (e.g. 10 = every 10th tick).
+        plant_species_id: Flora species ID for phase-space axes.
+        herbivore_species_id: Herbivore species ID for phase-space axes.
+        columns: Comma-separated list of columns to include.
+        flora_ids: Comma-separated list of flora species to include.
+        herbivore_ids: Comma-separated list of herbivore species to include.
+        title: Chart title override.
+        x_label: X-axis label override.
+        y_label: Y-axis label override.
+        x_max: X-axis scale maximum.
+        y_max: Y-axis scale maximum.
+
+    Returns:
+        dict[str, Any]: A dictionary containing ``status``, ``format``, and ``data``.
+        For binary formats (png), ``data`` is a base64 encoded string.
+        For text formats (csv, tex_table, tex_tikz), ``data`` is a UTF-8 string.
+    """
+    loop = _get_active_sim_loop()
+    if loop is None:
+        return {"status": "error", "message": "No active simulation loop loaded."}
+
+    normalized_data_type = "defense_economy" if data_type == "metabolic" else data_type
+    valid_data_types = {"timeseries", "phasespace", "defense_economy", "biomass_stack"}
+
+    if normalized_data_type not in valid_data_types:
+        return {"status": "error", "message": f"Invalid data_type. Must be one of {valid_data_types}"}
+
+    if format not in {"csv", "tex_table", "tex_tikz", "png"}:
+        return {"status": "error", "message": "Invalid format. Must be csv, tex_table, tex_tikz, or png."}
+
+    try:
+        from phids.telemetry.export.core import filter_telemetry_rows
+
+        rows = loop.telemetry._rows
+        flora_names = {sp.species_id: sp.name for sp in loop.config.flora_species}
+        herbivore_names = {sp.species_id: sp.name for sp in loop.config.herbivore_species}
+
+        filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
+
+        if format == "csv":
+            from phids.telemetry.export.core import (
+                aggregate_to_dataframe,
+                decimate_dataframe,
+                filter_dataframe_columns,
+                telemetry_to_dataframe,
+            )
+
+            # Note: filter_telemetry_rows returns list[dict[str, Any]].
+            # For aggregate_to_dataframe, this is compatible enough at runtime,
+            # but we use type: ignore to bypass mypy's strictness.
+            if normalized_data_type in ("timeseries", "defense_economy", "biomass_stack"):
+                df = aggregate_to_dataframe(filtered_rows)  # type: ignore
+            else:
+                df = telemetry_to_dataframe(filtered_rows)
+
+            if tick_interval > 1:
+                df = decimate_dataframe(df, tick_interval)
+
+            if columns:
+                df = filter_dataframe_columns(df, columns)
+
+            bytes_data = df.to_csv(index=False).encode("utf-8")
+            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
+
+        elif format == "tex_table":
+            from phids.telemetry.export.latex import export_bytes_tex_table
+
+            bytes_data = export_bytes_tex_table(
+                rows,
+                columns=columns,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                tick_interval=tick_interval,
+            )
+            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
+
+        elif format == "tex_tikz":
+            from phids.telemetry.export.tikz import generate_tikz_str
+
+            tikz_str = generate_tikz_str(
+                filtered_rows,
+                normalized_data_type,
+                flora_names=flora_names,
+                herbivore_names=herbivore_names,
+                plant_species_id=plant_species_id,
+                herbivore_species_id=herbivore_species_id,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
+            )
+            return {"status": "success", "format": format, "data": tikz_str}
+
+        elif format == "png":
+            from phids.telemetry.export.png import generate_png_bytes
+
+            bytes_data = generate_png_bytes(
+                filtered_rows,
+                normalized_data_type,
+                flora_names=flora_names,
+                herbivore_names=herbivore_names,
+                plant_species_id=plant_species_id,
+                herbivore_species_id=herbivore_species_id,
+                include_flora_ids=flora_ids,
+                include_herbivore_ids=herbivore_ids,
+                title=title,
+                x_label=x_label,
+                y_label=y_label,
+                x_max=x_max,
+                y_max=y_max,
+            )
+            return {"status": "success", "format": format, "data": base64.b64encode(bytes_data).decode("utf-8")}
+
+    except Exception as e:
+        return {"status": "error", "message": f"Export generation failed: {e}"}
+    return {"status": "error", "message": "Unknown format"}
 
 
 @mcp.tool()

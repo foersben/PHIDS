@@ -100,7 +100,13 @@ Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS 
 
 ### Agentic Integration: MCP Server Support & Diagnostic Observers
 
-PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely execute diagnostic workflows, read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration), and query complex batch outcomes via `query_batch_jobs()`. This enables autonomous scenario tuning, diagnostic debugging, telemetry schema inspection, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
+PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely execute diagnostic workflows. Key capabilities include:
+
+* **Simulation & Diagnostics**: Read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration), inspect the active draft via `active_draft_resource`, and query complex batch outcomes via `query_batch_jobs()`.
+* **Configuration Validation**: Pre-verify AI-generated configurations via `validate_simulation_config()` to catch structural errors (e.g., non-power-of-two grid limits, unbound species IDs) before attempting to launch a backend loop.
+* **Telemetry & Plot Generation**: Use `query_telemetry_schema()` to explore available state metrics, and leverage `export_telemetry_data()` to generate headless academic artifact plots (PNGs, TikZ, DataFrames as CSV/JSON) directly returned as payload strings or base64 streams for agent context processing.
+
+This ensures comprehensive accessibility to the full application stack, enabling autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
 
 Furthermore, PHIDS introduces an **Agentic Diagnostic Log Writer & Systemic Integrity Observer** (`dse-log-observer`). This lightweight observer tracks scaling drift, structural violations (e.g., spatial physics vs. MILP disconnects), and execution anomalies without acting as an uninterpretable black box. EEDSE optimization pathways are governed by strict **Human-in-the-Loop (HITL) vs. AI-in-the-Loop (AITL) Intervention Gates**, ensuring algorithmic decisions remain interpretable.
 
