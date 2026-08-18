@@ -57,3 +57,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 11
 * **Performance Assessment:** The endpoint runs standard API workload out of the hot path of the core simulation engine. Moving closures to top-level async functions retains exact performance characteristics (they are still passed to `run_in_threadpool` and awaited) but avoids repeated closure instantiation. No performance regressions.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2026-10-27 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/telemetry.py` > `telemetry_chartjs_data`
+* **Selection Rationale:** This function was targeted because it failed complexity checks with a score of 37 due to deeply nested loop logic that overlaid per-species dictionary structures into flat Chart.js arrays. Given its position in the API routing layer, it posed zero performance risk to the core simulation engine. It was highly modular and ripe for untangling via extraction.
+* **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
+* **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
+* **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
