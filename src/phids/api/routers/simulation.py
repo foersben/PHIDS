@@ -254,6 +254,10 @@ async def load_scenario(config: SimulationConfig) -> dict[str, int | str]:
 async def start_simulation(request: Request) -> Response:
     """Start or resume asynchronous simulation advancement for the active loop.
 
+    Before starting the background task, this synchronizes any pending draft parameters
+    (such as tick rate and wind vectors) into the live engine to ensure execution
+    matches the latest UI configurations.
+
     Args:
         request: Incoming HTTP request used to select JSON or HTMX fragment responses.
 
@@ -339,6 +343,9 @@ async def pause_simulation(request: Request) -> Response:
 @router.post("/api/simulation/step", summary="Advance simulation by one tick")
 async def step_simulation(request: Request) -> Response:
     """Execute exactly one deterministic tick on the active simulation loop.
+
+    Before stepping, this synchronizes any pending draft parameters (such as tick rate
+    and wind vectors) into the live engine to ensure the step matches the latest UI configurations.
 
     Raises:
         HTTPException: If the simulation is currently running or has already terminated.
@@ -437,6 +444,9 @@ async def update_tick_rate(
 ) -> Response:
     """Update the active simulation tick-speed in the live grid view.
 
+    The new tick rate is immediately applied to the active `SimulationLoop` and also
+    synchronized back to the `DraftState` so it persists across scenario reloads.
+
     Args:
         request: Incoming HTTP request used to select JSON or HTMX fragment responses.
         tick_rate_hz: Requested simulation ticks per second.
@@ -456,6 +466,9 @@ async def update_tick_rate(
 @router.put("/api/simulation/wind", summary="Update wind vector")
 async def update_wind(payload: WindUpdatePayload) -> dict[str, float | str]:
     """Update the uniform wind vector field of the active environment.
+
+    The new wind vector is applied to the active `SimulationLoop` and also
+    synchronized back into the `DraftState` so it persists across scenario reloads.
 
     Args:
         payload: Requested wind components in simulation coordinate space.

@@ -11,7 +11,6 @@ required for live UI swaps (`#sim-status`, `#main-workspace`, `#status-badge`).
 from __future__ import annotations
 
 import pytest
-from conftest import assert_valid_htmx_target
 from httpx import AsyncClient
 
 
@@ -25,23 +24,25 @@ async def test_ui_status_badge_htmx_contract(api_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_scenario_load_draft_htmx_contract(api_client: AsyncClient) -> None:
-    """Verify loading draft returns sim-status target element for HTMX swap."""
+    """Verify loading draft returns 204 and HX-Trigger header for event-driven UI updates."""
     response = await api_client.post("/api/scenario/load-draft", headers={"HX-Request": "true"})
-    assert response.status_code == 200
-    assert_valid_htmx_target(response.text, "sim-status")
+    assert response.status_code == 204
+    assert "updateStatusBadge" in response.headers.get("HX-Trigger", "")
+    assert "updateMainActionBtn" in response.headers.get("HX-Trigger", "")
 
 
 @pytest.mark.asyncio
 async def test_simulation_pause_htmx_contract(api_client: AsyncClient) -> None:
-    """Verify pause simulation returns sim-status target after loading a draft scenario."""
+    """Verify pause simulation returns 204 and HX-Trigger header after loading a draft scenario."""
     # 1. Load draft scenario first
     load_resp = await api_client.post("/api/scenario/load-draft", headers={"HX-Request": "true"})
-    assert load_resp.status_code == 200
+    assert load_resp.status_code == 204
 
     # 2. Pause simulation
     pause_resp = await api_client.post("/api/simulation/pause", headers={"HX-Request": "true"})
-    assert pause_resp.status_code == 200
-    assert_valid_htmx_target(pause_resp.text, "sim-status")
+    assert pause_resp.status_code == 204
+    assert "updateStatusBadge" in pause_resp.headers.get("HX-Trigger", "")
+    assert "updateMainActionBtn" in pause_resp.headers.get("HX-Trigger", "")
 
 
 @pytest.mark.asyncio

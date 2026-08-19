@@ -285,8 +285,11 @@ def _is_swarm_anchored_jit(
     apparent_nutrition_val: float,
     plant_energy_by_species: npt.NDArray[np.float64],
     diet_matrix: npt.NDArray[np.bool_],
+    caloric_intake: float = 0.0,
+    metabolic_upkeep: float = 0.0,
+    rand_val: float = 0.0,
 ) -> bool:
-    if apparent_nutrition_val < 0.999:
+    if apparent_nutrition_val <= 0.0:
         return False
     num_herbivores, num_flora = diet_matrix.shape
     if species_id >= num_herbivores:
@@ -294,6 +297,12 @@ def _is_swarm_anchored_jit(
     for flora_species_id in range(num_flora):
         if diet_matrix[species_id, flora_species_id]:
             if plant_energy_by_species[flora_species_id, x, y] > 0.0:
+                # Stochastic MVT Departure
+                if metabolic_upkeep > 0.0:
+                    ratio = caloric_intake / metabolic_upkeep
+                    p_depart = 1.0 / (1.0 + np.exp(5.0 * (ratio - 1.0)))
+                    if rand_val < p_depart:
+                        return False
                 return True
     return False
 ```
@@ -315,12 +324,12 @@ This guarantees the exponent never exceeds $0.0$, capping $\exp(x)$ at $1.0$ whi
 
 #### Zero Heap Allocation
 
-Computing these probabilities typically requires allocating temporary sum buffers and weight arrays for `np.random.choice`. PHIDS entirely bypasses Numba heap allocations (`np.empty`, `np.zeros`) by recycling two pre-allocated $O(1)$ ECS buffers (`scratch_adjusted` and `scratch_weights`) passed down from the engine's `resolve_movement` cycle. The result is a $0$-allocation stochastic choice loop.
+Computing these probabilities typically requires allocating temporary sum buffers and weight arrays for `np.random.choice`. PHIDS entirely bypasses Numba heap allocations (`np.empty`, `np.zeros`) by recycling five pre-allocated $O(1)$ ECS buffers (`cx`, `cy`, `scores`, `adjusted`, and `weights`) passed down from the engine's `resolve_movement` cycle. The result is a $0$-allocation stochastic choice loop.
 
 #### Deterministic $O(1)$ Override
 If the species temperature is configured to $\tau \le 0.0$, the Softmax kernel branchlessly bypasses the exponentiation loop entirely, dropping back to a pure greedy argmax. This guarantees that scenarios not utilizing stochastic foraging incur exactly zero computational overhead.
 
-### 6. 256-Bit SIMD Matrix Reduction in Dual-Proxy Layer Rebuild (`biotope.py`)
+### 7. 256-Bit SIMD Matrix Reduction in Dual-Proxy Layer Rebuild (`biotope.py`)
 
 At the conclusion of the herbivory interaction phase, `GridEnvironment.rebuild_energy_layer()` aggregates both proxy arrays into their respective master grid layers (`src/phids/engine/core/biotope.py`).
 
@@ -349,7 +358,7 @@ NumPy dispatches both 3D array sums to 256-bit AVX2 SIMD instructions (`vaddpd` 
 
 Both proxy buffer swaps execute atomically within a single `rebuild_energy_layer()` call. Read layers are updated together, ensuring that the flow-field generation phase on the next tick observes a fully consistent `(E_current, M_structural)` snapshot with no half-swapped state.
 
-### 7. 256-Bit SIMD Photosynthetic Growth Scaling (`lifecycle/`)
+### 8. 256-Bit SIMD Photosynthetic Growth Scaling (`lifecycle/`)
 
 Photosynthetic biomass growth during weekly slow-loop gates accumulates biomass increments scaled by the 168-hour `SLOW_TICK_STRIDE` (`src/phids/engine/systems/lifecycle/`).
 
@@ -367,7 +376,7 @@ def _grow_simd_jit(energy: float, base_energy: float, growth_rate: float, max_en
 
 LLVM auto-vectorizes memory passes into 256-bit AVX2 SIMD operations across 256-bit YMM registers without IEEE 754 subnormal float truncation or Python heap object creation.
 
-### 8. 256-Bit SIMD Mycorrhizal Carbon Link Tax Deduction (`lifecycle/`)
+### 9. 256-Bit SIMD Mycorrhizal Carbon Link Tax Deduction (`lifecycle/`)
 
 Subterranean mycorrhizal network upkeep deducts carbon maintenance taxes per established root link during lifecycle passes (`src/phids/engine/systems/lifecycle/`).
 
@@ -383,7 +392,7 @@ def _apply_mycorrhizal_tax_jit(energy: float, tax_per_link: float, num_links: in
 
 This operation compiles into 256-bit AVX2 SIMD subtractions (`vsubpd`), deducting multi-link maintenance costs in compiled C without interpreter overhead.
 
-### 9. 256-Bit SIMD Airborne VOC Signal Channel Attenuation (`emission.py`)
+### 10. 256-Bit SIMD Airborne VOC Signal Channel Attenuation (`emission.py`)
 
 Per-tick airborne signaling channel attenuation scales 2D volatile organic compound (VOC) concentration layers after spatial Gaussian advection-diffusion (`src/phids/engine/systems/signaling/emission.py`).
 
@@ -400,7 +409,7 @@ def _numba_decay_signal_layer(layer: np.ndarray, decay_factor: float, epsilon: f
 
 By executing array scaling in-place across 256-bit YMM vector registers and zeroing out values below `SIGNAL_EPSILON`, airborne VOC decay achieves a **~10% - 15% speedup** without temporary array allocations.
 
-### 10. Spatial Hash Entity Query Buffer Reuse (`ecs.py` & `spatial.py`)
+### 11. Spatial Hash Entity Query Buffer Reuse (`ecs.py` & `spatial.py`)
 
 Spatial grid lookups (`ECSWorld.entities_at(x, y)`) return occupant entity IDs across grid cell coordinates (`src/phids/engine/core/ecs.py`).
 
@@ -408,7 +417,7 @@ Spatial grid lookups (`ECSWorld.entities_at(x, y)`) return occupant entity IDs a
 
 Unoccupied grid cells return a module-level `EMPTY_SET = frozenset[int]()` singleton instead of instantiating fresh `set()` objects on the heap per query. This eliminates **~8% - 12%** of Python garbage collector allocation churn in spatial interaction passes (`_co_located_swarm_population` in `spatial.py`).
 
-### 11. Pre-Compiled Foraging Parameter Caching (`feeding.py`)
+### 12. Pre-Compiled Foraging Parameter Caching (`feeding.py`)
 
 Herbivory foraging interactions (`_feed_on_single_plant` in `src/phids/engine/systems/interaction/feeding.py`) evaluate digestibility modifiers, digestive efficiency, handling time, and mechanical damage per bite.
 
@@ -432,7 +441,7 @@ class CachedHerbivoreForagingParams:
 
 Bypassing dynamic `getattr` and double-nested Pydantic property lookups yields a **~10% - 15%** faster feeding interaction resolution on medium-tick foraging steps.
 
-### 12. Spatial-Hash Mediated Toxin Exposure (`emission.py`)
+### 13. Spatial-Hash Mediated Toxin Exposure (`emission.py`)
 
 Chemical defense emission passes (`_apply_toxin_to_swarms` in `src/phids/engine/systems/signaling/emission.py`) apply lethal casualties and repellent walk ticks to swarms exposed to volatile botanical toxins.
 
@@ -445,7 +454,7 @@ To avoid iterating over all swarms in the ECS world during localized chemical de
 
 This optimization yields a **~15% - 25%** speedup in signaling phase execution for localized chemical defense emissions while guaranteeing zero performance degradation during global plume saturation.
 
-### 13. Tile Population Grid Lookup & JIT-Accelerated Accumulation (`population.py` & `movement.py`)
+### 14. Tile Population Grid Lookup & JIT-Accelerated Accumulation (`population.py` & `movement.py`)
 
 Physical jostling and carrying capacity checks (`TILE_CARRYING_CAPACITY = 500`) evaluate tile-local crowding pressure during swarm movement resolution (`_resolve_swarm_movement` in `src/phids/engine/systems/interaction/movement/__init__.py`).
 
@@ -469,7 +478,7 @@ def _accumulate_tile_population_jit(
 
 Bypassing per-swarm spatial hash traversals and Python list allocations yields a **~10% - 18%** reduction in movement resolution latency under high swarm density scenarios.
 
-### 14. Power-of-2 Bitwise Neighbor Masking in Jacobi Flow Relaxation (`flow_field.py`)
+### 15. Power-of-2 Bitwise Neighbor Masking in Jacobi Flow Relaxation (`flow_field.py`)
 
 Global attraction flow fields converge via multi-iteration Jacobi relaxation passes in `_compute_flow_field_impl` (`src/phids/engine/core/flow_field.py`).
 
@@ -508,7 +517,7 @@ def _propagate_iteration_jit_pow2(
 
 Replacing modulo division `% width` with single-cycle bitwise AND `& mask_x` and consolidating boundary and inner passes into a single contiguous 2D loop pass yields a **~8% - 14%** speedup in flow field propagation passes.
 
-### 15. Subnormal Float Flushing & `fastmath=True` Hardware Optimization (`biotope.py`, `flow_field.py`, `movement.py`)
+### 16. Subnormal Float Flushing & `fastmath=True` Hardware Optimization (`biotope.py`, `flow_field.py`, `movement.py`)
 
 During continuous signal diffusion and Jacobi relaxation passes, concentration fields develop long exponential tails. Floating-point numbers smaller than $1 \times 10^{-38}$ (denormals/subnormals) trigger hardware microcode exception traps on x86 SIMD execution units, incurring a 100x instruction latency penalty.
 
@@ -537,7 +546,7 @@ def _numba_convolve_signal_layer(
 
 Enabling `fastmath=True` allows LLVM to generate Fused Multiply-Add (`vfmadd213pd`) instructions across 256-bit AVX2 registers while eliminating hardware denormal microcode traps (**~20% - 40%** throughput improvement on long simulation runs).
 
-### 16. Multi-Threaded JIT Parallelization & Adaptive Dispatch Thresholds (`flow_field.py`, `biotope.py`, `batch.py`)
+### 17. Multi-Threaded JIT Parallelization & Adaptive Dispatch Thresholds (`flow_field.py`, `biotope.py`, `batch.py`)
 
 On large grid topologies ($256 \times 256 = 65,536$ cells), single-core execution becomes memory-bandwidth and CPU pipeline limited. PHIDS distributes row sweeps (`numba.prange()`) across OpenMP worker threads using `@njit(parallel=True, cache=True, fastmath=True)`.
 
@@ -556,19 +565,19 @@ Grids exceeding 16,384 cells dispatch directly to OpenMP multi-threaded row part
 
 When executing headless Monte Carlo ensembles across $N$ process pool workers (`batch.py`), each child process sets `NUMBA_NUM_THREADS = "1"`. This prevents CPU thread oversubscription (e.g. 8 worker processes attempting to spawn 8 OpenMP threads each = 64 thread thrashing), ensuring 1 dedicated physical CPU core per Monte Carlo worker process.
 
-### 17. Elimination of `typing.cast` Overhead in Core Engine Loops (`ecs.py`)
+### 18. Elimination of `typing.cast` Overhead in Core Engine Loops (`ecs.py`)
 
 During high-frequency component queries (`ECSWorld.query(Component)`), the ECS framework previously relied on `typing.cast` to satisfy type checkers. While `typing.cast` is often assumed to be a zero-runtime-cost operation, the Python interpreter still evaluates the function call frame in tight inner loops. 
 
 PHIDS removes all `typing.cast` calls from the hot path (e.g. `get_component`), replacing them with static type assertions (`# type: ignore`) or implicit generic type bindings, resulting in an observable reduction in interpreter overhead across millions of component queries per tick.
 
-### 18. Pre-Compilation of Numba Boolean Diet Matrices (`loop.py` & `movement.py`)
+### 19. Pre-Compilation of Numba Boolean Diet Matrices (`loop.py` & `movement.py`)
 
 The interaction phase relies on a diet matrix to determine herbivore-flora compatibility. Previously, this matrix was constructed or evaluated dynamically as a standard Python structure. 
 
 PHIDS pre-compiles this into a dense 2D NumPy boolean array (`npt.NDArray[np.bool_]`) during `SimulationLoop` initialization. Passing a strongly-typed boolean matrix into Numba `@njit` kernels avoids Python object unboxing and permits optimal contiguous memory access during movement and foraging resolution.
 
-### 19. Interaction Loop Scratch Array Hoisting (`loop.py`)
+### 20. Interaction Loop Scratch Array Hoisting (`loop.py`)
 
 During stochastic action selection (MVT departure decisions), the movement resolution requires temporary arrays for neighbor coordinates, scores, and weights. Allocating these `scratch` arrays dynamically inside the interaction loop forces continuous Python heap churn and garbage collection pauses.
 

@@ -109,7 +109,7 @@ Evaluating the chemotactic scalar field necessitates reading and interpolating d
 
 However, implementing stochastic processes within Numba's `@njit(cache=True)` kernels presents a severe challenge for simulation determinism (**Rule 01: Stochastic Replay Determinism**). If the JIT kernel calls internal PRNGs (e.g. `np.random.random()`), it desynchronizes the global seed state, breaking the ability to perfectly replay Zarr traces.
 
-To resolve this, the MVT evaluation is implemented as a **Pure Function**. A vectorized array of random floats `rand_val` is generated in the Python interpreter scope using the controlled, globally-seeded PRNG, and is passed into the JIT kernel as a scalar parameter. The probabilistic logistic math adds approximately ~1-3ms of overhead per 100,000 swarms, a cost rendered completely negligible against the memory access overhead it bypasses.
+To resolve this, the MVT evaluation is implemented as a **Pure Function**. A single random float `rand_val` is generated in the Python interpreter scope using the controlled, globally-seeded PRNG, and is passed into the JIT kernel as a scalar parameter. The probabilistic logistic math adds approximately ~1-3ms of overhead per 100,000 swarms, a cost rendered completely negligible against the memory access overhead it bypasses.
 
 ## 6. Mitosis & Clonal Bifurcation
 
