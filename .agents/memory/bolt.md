@@ -93,3 +93,7 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** When making a defensive copy of a component set before iterating in a tight ECS hot loop (where mutations like `collect_garbage` might alter the original set and raise `RuntimeError: Set changed size during iteration`), `list(component_set)` is significantly faster than `tuple(component_set)`. CPython's list allocation is highly optimized and often reuses internal memory buffers, whereas `tuple` construction from an unknown-sized iterable involves additional overhead. In microbenchmarks on large component sets, `list()` outperforms `tuple()` by roughly 30%.
 **Action:** Always use `list(world._component_index.get(..., set()))` instead of `tuple(...)` when you need a mutable-safe snapshot of ECS component IDs for iteration on the hot path.
+
+## 2024-10-24 - [Avoid absolute value function call overhead in tight Numba loops]
+Learning: In Numba `@njit` kernels within this engine, avoid absolute value function call overhead in tight loops. Replacing `abs(val) < threshold` with the inline logical equivalent (`val > -threshold and val < threshold`) directly translates to a faster LLVM IR layer and improves auto-vectorization, yielding a measurable throughput boost.
+Action: When writing tight mathematical loops in Numba, prefer explicit bound comparisons over `abs()` when checking magnitudes against thresholds to maximize LLVM optimization potential.
