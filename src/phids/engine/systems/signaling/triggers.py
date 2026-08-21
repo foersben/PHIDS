@@ -235,6 +235,218 @@ def _process_single_trigger(
     )
 
 
+def _process_trigger_with_njit(
+    trig: CompiledTrigger,
+    mask: npt.NDArray[np.bool_],
+    plants: list[PlantComponent],
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+) -> None:
+    """Processes a trigger for all plants using a pre-calculated NJIT boolean mask.
+
+    Args:
+        trig: The compiled trigger to evaluate and apply.
+        mask: A boolean array where True indicates the initiator condition is met.
+        plants: A list of plants matching the trigger's target species.
+        world: The ECS world instance.
+        env: The grid environment containing signal layers.
+        owner_substance_by_key: Mapping of plant and substance IDs to their corresponding substance components.
+        swarm_population_by_cell_species: Spatial index of swarm populations.
+        active_substance_ids_by_owner: Mapping of plant entity IDs to their active substance IDs.
+        substance_entities: A list to collect newly created substance entities.
+    """
+    for i in range(len(plants)):
+        if mask[i]:
+            _process_single_trigger_action(
+                trig,
+                plants[i],
+                world,
+                env,
+                owner_substance_by_key,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+                substance_entities,
+            )
+
+
+def _process_trigger_without_njit(
+    trig: CompiledTrigger,
+    plants: list[PlantComponent],
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+) -> None:
+    """Processes a trigger for all plants, falling back to pure Python evaluation for non-NJIT supported initiators.
+
+    Args:
+        trig: The compiled trigger to evaluate and apply.
+        plants: A list of plants matching the trigger's target species.
+        world: The ECS world instance.
+        env: The grid environment containing signal layers.
+        owner_substance_by_key: Mapping of plant and substance IDs to their corresponding substance components.
+        swarm_population_by_cell_species: Spatial index of swarm populations.
+        active_substance_ids_by_owner: Mapping of plant entity IDs to their active substance IDs.
+        substance_entities: A list to collect newly created substance entities.
+    """
+    for p in plants:
+        _process_single_trigger(
+            trig,
+            p,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+        )
+
+
+def _evaluate_single_trigger_on_plants(
+    trig: CompiledTrigger,
+    plants: list[PlantComponent],
+    xs: npt.NDArray[np.int32],
+    ys: npt.NDArray[np.int32],
+    mask: npt.NDArray[np.bool_],
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+    curve_map: dict[str, int],
+    swarm_grid: npt.NDArray[np.int32] | None,
+) -> None:
+    """Evaluates a single compiled trigger against a population of plants, dispatching to NJIT kernels where possible.
+
+    Args:
+        trig: The compiled trigger to evaluate.
+        plants: A list of plants to evaluate the trigger against.
+        xs: An array of the x-coordinates of the plants.
+        ys: An array of the y-coordinates of the plants.
+        mask: A pre-allocated boolean array used to store the NJIT evaluation results.
+        world: The ECS world instance.
+        env: The grid environment containing signal layers.
+        owner_substance_by_key: Mapping of plant and substance IDs to their corresponding substance components.
+        swarm_population_by_cell_species: Spatial index of swarm populations.
+        active_substance_ids_by_owner: Mapping of plant entity IDs to their active substance IDs.
+        substance_entities: A list to collect newly created substance entities.
+        curve_map: A mapping of string curve names to their integer representations for NJIT.
+        swarm_grid: A numpy array representing the spatial grid of swarm populations, if available.
+    """
+    initiator = trig.schema.initiator
+    use_njit = False
+
+    if isinstance(initiator, HerbivoreAttackInitiator):
+        if swarm_grid is not None:
+            _evaluate_herbivore_initiator_njit(
+                xs,
+                ys,
+                initiator.herbivore_species_id,
+                initiator.min_herbivore_population,
+                swarm_grid,
+                mask,
+            )
+            use_njit = True
+
+    elif isinstance(initiator, EnvironmentalSignalInitiator):
+        if 0 <= initiator.signal_id < env.num_signals:
+            _evaluate_environmental_initiator_njit(
+                xs,
+                ys,
+                env.signal_layers[initiator.signal_id],
+                curve_map.get(initiator.response_curve, -1),
+                initiator.min_concentration,
+                initiator.half_saturation,
+                initiator.hill_cooperativity,
+                mask,
+            )
+            use_njit = True
+
+    if use_njit:
+        _process_trigger_with_njit(
+            trig,
+            mask,
+            plants,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+        )
+    else:
+        _process_trigger_without_njit(
+            trig,
+            plants,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+        )
+
+
+def _evaluate_species_triggers(
+    plants: list[PlantComponent],
+    triggers: list[CompiledTrigger],
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+    curve_map: dict[str, int],
+    swarm_grid: npt.NDArray[np.int32] | None,
+) -> None:
+    """Evaluates all triggers applicable to a specific plant species population.
+
+    Args:
+        plants: A list of plants matching the target species.
+        triggers: A list of compiled triggers to evaluate for the species.
+        world: The ECS world instance.
+        env: The grid environment containing signal layers.
+        owner_substance_by_key: Mapping of plant and substance IDs to their corresponding substance components.
+        swarm_population_by_cell_species: Spatial index of swarm populations.
+        active_substance_ids_by_owner: Mapping of plant entity IDs to their active substance IDs.
+        substance_entities: A list to collect newly created substance entities.
+        curve_map: A mapping of string curve names to their integer representations for NJIT.
+        swarm_grid: A numpy array representing the spatial grid of swarm populations, if available.
+    """
+    num_plants = len(plants)
+    xs = np.empty(num_plants, dtype=np.int32)
+    ys = np.empty(num_plants, dtype=np.int32)
+    for i, p in enumerate(plants):
+        xs[i] = p.x
+        ys[i] = p.y
+
+    mask = np.empty(num_plants, dtype=np.bool_)
+
+    for trig in triggers:
+        _evaluate_single_trigger_on_plants(
+            trig,
+            plants,
+            xs,
+            ys,
+            mask,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+            curve_map,
+            swarm_grid,
+        )
+
+
 def _phase_evaluate_triggers(
     world: ECSWorld,
     env: GridEnvironment,
@@ -244,6 +456,17 @@ def _phase_evaluate_triggers(
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:
+    """Evaluates and applies all configured triggers for all plants in the ECS world.
+
+    Args:
+        world: The ECS world instance.
+        env: The grid environment containing signal layers.
+        trigger_conditions: A mapping of species IDs to their respective compiled triggers.
+        owner_substance_by_key: Mapping of plant and substance IDs to their corresponding substance components.
+        swarm_population_by_cell_species: Spatial index of swarm populations.
+        active_substance_ids_by_owner: Mapping of plant entity IDs to their active substance IDs.
+        substance_entities: A list to collect newly created substance entities.
+    """
     plants_by_species: dict[int, list[PlantComponent]] = {}
     for entity in world.query(PlantComponent):
         plant = entity.get_component(PlantComponent)
@@ -260,67 +483,15 @@ def _phase_evaluate_triggers(
         if not plants:
             continue
 
-        num_plants = len(plants)
-        xs = np.empty(num_plants, dtype=np.int32)
-        ys = np.empty(num_plants, dtype=np.int32)
-        for i, p in enumerate(plants):
-            xs[i] = p.x
-            ys[i] = p.y
-
-        mask = np.empty(num_plants, dtype=np.bool_)
-
-        for trig in triggers:
-            initiator = trig.schema.initiator
-            use_njit = False
-
-            if isinstance(initiator, HerbivoreAttackInitiator):
-                if swarm_grid is not None:
-                    _evaluate_herbivore_initiator_njit(
-                        xs,
-                        ys,
-                        initiator.herbivore_species_id,
-                        initiator.min_herbivore_population,
-                        swarm_grid,
-                        mask,
-                    )
-                    use_njit = True
-
-            elif isinstance(initiator, EnvironmentalSignalInitiator):
-                if 0 <= initiator.signal_id < env.num_signals:
-                    _evaluate_environmental_initiator_njit(
-                        xs,
-                        ys,
-                        env.signal_layers[initiator.signal_id],
-                        curve_map.get(initiator.response_curve, -1),
-                        initiator.min_concentration,
-                        initiator.half_saturation,
-                        initiator.hill_cooperativity,
-                        mask,
-                    )
-                    use_njit = True
-
-            if use_njit:
-                for i in range(num_plants):
-                    if mask[i]:
-                        _process_single_trigger_action(
-                            trig,
-                            plants[i],
-                            world,
-                            env,
-                            owner_substance_by_key,
-                            swarm_population_by_cell_species,
-                            active_substance_ids_by_owner,
-                            substance_entities,
-                        )
-            else:
-                for p in plants:
-                    _process_single_trigger(
-                        trig,
-                        p,
-                        world,
-                        env,
-                        owner_substance_by_key,
-                        swarm_population_by_cell_species,
-                        active_substance_ids_by_owner,
-                        substance_entities,
-                    )
+        _evaluate_species_triggers(
+            plants,
+            triggers,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+            curve_map,
+            swarm_grid,
+        )
