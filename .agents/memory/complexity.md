@@ -63,3 +63,17 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2024-05-18 - Complexity Refactoring Report
+* **Target Function:** `src/phids/mcp_server.py` `export_telemetry_data`
+* **Selection Rationale:** The function `export_telemetry_data` had a cognitive complexity of 18. It consisted mainly of a single large `if/elif` chain handling formatting blocks for telemetry formats (`"csv"`, `"tex_table"`, `"tex_tikz"`, and `"png"`). Being a high-level API wrapper rather than a hot-loop simulation engine kernel, refactoring this function carried zero risk of runtime performance degradation, making it an ideal target.
+* **Before/After Score:** 18 vs. < 15
+* **Performance Assessment:** The extracted logic is standard API wrapper code. No performance-sensitive arrays or numba jit logic was altered, resulting in zero performance regression.
+* **Test Verification:** Confirmed that all linting (ruff), unit tests, and complexity checks pass. The function was successfully removed from the `complexipy --failed` report.
+
+## 2026-08-21 - Complexity Refactoring Report
+* **Target Function:** `src/phids/mcp_server.py` `export_telemetry_data`
+* **Selection Rationale:** The function `export_telemetry_data` had a cognitive complexity of 18. It consisted mainly of a single large `if/elif` chain handling formatting blocks for telemetry formats (`"csv"`, `"tex_table"`, `"tex_tikz"`, and `"png"`). Being a high-level API wrapper rather than a hot-loop simulation engine kernel, refactoring this function carried zero risk of runtime performance degradation, making it an ideal target.
+* **Before/After Score:** 18 vs. < 15
+* **Performance Assessment:** The extracted logic is standard API wrapper code. No performance-sensitive arrays or numba jit logic was altered, resulting in zero performance regression.
+* **Test Verification:** Confirmed that all linting (ruff), unit tests, and complexity checks pass. The function was successfully removed from the `complexipy --failed` report.
