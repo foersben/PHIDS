@@ -70,3 +70,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 18 vs. < 15
 * **Performance Assessment:** The extracted logic is standard API wrapper code. No performance-sensitive arrays or numba jit logic was altered, resulting in zero performance regression.
 * **Test Verification:** Confirmed that all linting (ruff), unit tests, and complexity checks pass. The function was successfully removed from the `complexipy --failed` report.
+
+## 2026-08-21 - Complexity Refactoring Report
+* **Target Function:** `src/phids/mcp_server.py` `export_telemetry_data`
+* **Selection Rationale:** The function `export_telemetry_data` had a cognitive complexity of 18. It consisted mainly of a single large `if/elif` chain handling formatting blocks for telemetry formats (`"csv"`, `"tex_table"`, `"tex_tikz"`, and `"png"`). Being a high-level API wrapper rather than a hot-loop simulation engine kernel, refactoring this function carried zero risk of runtime performance degradation, making it an ideal target.
+* **Before/After Score:** 18 vs. < 15
+* **Performance Assessment:** The extracted logic is standard API wrapper code. No performance-sensitive arrays or numba jit logic was altered, resulting in zero performance regression.
+* **Test Verification:** Confirmed that all linting (ruff), unit tests, and complexity checks pass. The function was successfully removed from the `complexipy --failed` report.
