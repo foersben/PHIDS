@@ -293,9 +293,11 @@ def _truncate_subnormals_jit(
         current: The current flow field.
         threshold: Subnormal truncation threshold.
     """
+    neg_threshold = -threshold
     for x in range(width):
         for y in range(height):
-            if abs(current[x, y]) < threshold:
+            val = current[x, y]
+            if val > neg_threshold and val < threshold:
                 current[x, y] = 0.0
 
 
