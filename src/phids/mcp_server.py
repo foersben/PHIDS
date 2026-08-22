@@ -516,10 +516,9 @@ def query_telemetry_schema() -> dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-
-from typing import Any
-
-def _export_csv(filtered_rows: list[dict[str, Any]], normalized_data_type: str, tick_interval: int, columns: str | None) -> dict[str, Any]:
+def _export_csv(
+    filtered_rows: list[dict[str, Any]], normalized_data_type: str, tick_interval: int, columns: str | None
+) -> dict[str, Any]:
     from phids.telemetry.export.core import (
         aggregate_to_dataframe,
         decimate_dataframe,
@@ -541,7 +540,14 @@ def _export_csv(filtered_rows: list[dict[str, Any]], normalized_data_type: str, 
     bytes_data = df.to_csv(index=False).encode("utf-8")
     return {"status": "success", "format": "csv", "data": bytes_data.decode("utf-8")}
 
-def _export_tex_table(rows: list[dict[str, Any]], columns: str | None, flora_ids: str | None, herbivore_ids: str | None, tick_interval: int) -> dict[str, Any]:
+
+def _export_tex_table(
+    rows: list[dict[str, Any]],
+    columns: str | None,
+    flora_ids: str | None,
+    herbivore_ids: str | None,
+    tick_interval: int,
+) -> dict[str, Any]:
     from phids.telemetry.export.latex import export_bytes_tex_table
 
     bytes_data = export_bytes_tex_table(
@@ -552,6 +558,7 @@ def _export_tex_table(rows: list[dict[str, Any]], columns: str | None, flora_ids
         tick_interval=tick_interval,
     )
     return {"status": "success", "format": "tex_table", "data": bytes_data.decode("utf-8")}
+
 
 def _export_tex_tikz(
     filtered_rows: list[dict[str, Any]],
@@ -566,7 +573,7 @@ def _export_tex_tikz(
     x_label: str | None,
     y_label: str | None,
     x_max: float | None,
-    y_max: float | None
+    y_max: float | None,
 ) -> dict[str, Any]:
     from phids.telemetry.export.tikz import generate_tikz_str
 
@@ -587,6 +594,7 @@ def _export_tex_tikz(
     )
     return {"status": "success", "format": "tex_tikz", "data": tikz_str}
 
+
 def _export_png(
     filtered_rows: list[dict[str, Any]],
     normalized_data_type: str,
@@ -600,7 +608,7 @@ def _export_png(
     x_label: str | None,
     y_label: str | None,
     x_max: float | None,
-    y_max: float | None
+    y_max: float | None,
 ) -> dict[str, Any]:
     from phids.telemetry.export.png import generate_png_bytes
 
