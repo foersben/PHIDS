@@ -81,3 +81,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 39 vs. 13
 * **Performance Assessment:** No benchmark regressions, n-jit loop intact.
 * **Test Verification:** Tests, benchmarks, linting and complexity all passed.
+## 2025-05-18 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/signaling/triggers.py `_phase_evaluate_triggers`
+* **Selection Rationale:** Extracted logic into `_evaluate_triggers_for_species` and `_process_triggers_for_species` to fix score.
+* **Before/After Score:** 39 vs. 13
+* **Performance Assessment:** No benchmark regressions, n-jit loop intact.
+* **Test Verification:** Tests, benchmarks, linting and complexity all passed.
