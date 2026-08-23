@@ -63,3 +63,27 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-05-18 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/signaling/triggers.py `_phase_evaluate_triggers`
+* **Selection Rationale:** The function had a very high complexity score (39) due to deep nesting and multiple inner loops evaluating different initiator types. It was straightforward to untangle by extracting the loop over trigger species into a separate helper function (`_evaluate_triggers_for_species`) and then flattening the deepest inner loops inside it into a separate helper (`_process_triggers_for_species`), while cleanly preserving all array types, variables, and logic.
+* **Before/After Score:** 39 vs. 13 (score for `_evaluate_triggers_for_species` lowered further by extracting inner loop logic)
+* **Performance Assessment:** The benchmark results confirm zero performance regressions. We did not change any looping structures or data allocation in the Numba paths or tight loops, just extracted blocks of iteration logic to flat helpers.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-05-18 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/signaling/triggers.py `_phase_evaluate_triggers`
+* **Selection Rationale:** The function had a very high complexity score (39) due to deep nesting and multiple inner loops evaluating different initiator types. It was straightforward to untangle by extracting the loop over trigger species into a separate helper function (`_evaluate_triggers_for_species`) and then flattening the deepest inner loops inside it into a separate helper (`_process_triggers_for_species`), while cleanly preserving all array types, variables, and logic.
+* **Before/After Score:** 39 vs. 13 (score for `_evaluate_triggers_for_species` lowered further by extracting inner loop logic)
+* **Performance Assessment:** The benchmark results confirm zero performance regressions. We did not change any looping structures or data allocation in the Numba paths or tight loops, just extracted blocks of iteration logic to flat helpers.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+## 2025-05-18 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/signaling/triggers.py `_phase_evaluate_triggers`
+* **Selection Rationale:** Extracted logic into `_evaluate_triggers_for_species` and `_process_triggers_for_species` to fix score.
+* **Before/After Score:** 39 vs. 13
+* **Performance Assessment:** No benchmark regressions, n-jit loop intact.
+* **Test Verification:** Tests, benchmarks, linting and complexity all passed.
+## 2025-05-18 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/signaling/triggers.py `_phase_evaluate_triggers`
+* **Selection Rationale:** Extracted logic into `_evaluate_triggers_for_species` and `_process_triggers_for_species` to fix score.
+* **Before/After Score:** 39 vs. 13
+* **Performance Assessment:** No benchmark regressions, n-jit loop intact.
+* **Test Verification:** Tests, benchmarks, linting and complexity all passed.
