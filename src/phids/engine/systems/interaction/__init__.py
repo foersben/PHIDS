@@ -76,6 +76,41 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
+def _initialize_scratch_arrays(
+    scratch_cx: npt.NDArray[np.int32] | None,
+    scratch_cy: npt.NDArray[np.int32] | None,
+    scratch_scores: npt.NDArray[np.float64] | None,
+    scratch_adjusted: npt.NDArray[np.float64] | None,
+    scratch_weights: npt.NDArray[np.float64] | None,
+) -> tuple[
+    npt.NDArray[np.int32],
+    npt.NDArray[np.int32],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+]:
+    cx = scratch_cx if scratch_cx is not None else np.empty(5, dtype=np.int32)
+    cy = scratch_cy if scratch_cy is not None else np.empty(5, dtype=np.int32)
+    scores = scratch_scores if scratch_scores is not None else np.empty(5, dtype=np.float64)
+    adjusted = scratch_adjusted if scratch_adjusted is not None else np.empty(5, dtype=np.float64)
+    weights = scratch_weights if scratch_weights is not None else np.empty(5, dtype=np.float64)
+    return cx, cy, scores, adjusted, weights
+
+
+def _accumulate_initial_populations(
+    world: ECSWorld, env: GridEnvironment, tile_populations: npt.NDArray[np.int32]
+) -> None:
+    for eid in world._component_index.get(SwarmComponent, set()):
+        indexed_swarm = cast("SwarmComponent", world._entities[eid]._components[SwarmComponent])
+        _accumulate_tile_population(
+            tile_populations,
+            indexed_swarm.x,
+            indexed_swarm.y,
+            env.width,
+            indexed_swarm.population,
+        )
+
+
 def run_interaction(
     world: ECSWorld,
     env: GridEnvironment,
@@ -127,33 +162,16 @@ def run_interaction(
     tile_populations: npt.NDArray[np.int32] = env.reset_tile_populations()
     herbivore_params_dict: dict[int, HerbivoreSpeciesParams] = {p.species_id: p for p in herbivore_species_params}
 
-    if scratch_cx is None:
-        scratch_cx = np.empty(5, dtype=np.int32)
-    if scratch_cy is None:
-        scratch_cy = np.empty(5, dtype=np.int32)
-    if scratch_scores is None:
-        scratch_scores = np.empty(5, dtype=np.float64)
-    if scratch_adjusted is None:
-        scratch_adjusted = np.empty(5, dtype=np.float64)
-    if scratch_weights is None:
-        scratch_weights = np.empty(5, dtype=np.float64)
+    scratch_cx, scratch_cy, scratch_scores, scratch_adjusted, scratch_weights = _initialize_scratch_arrays(
+        scratch_cx, scratch_cy, scratch_scores, scratch_adjusted, scratch_weights
+    )
 
     # Pre-build parameter caches for O(1) slot resolution in feeding loops
     cached_flora_params = cache_flora_foraging_params(flora_species_params) if is_medium_tick else []
     cached_herbivore_params = cache_herbivore_foraging_params(herbivore_species_params) if is_medium_tick else []
 
     # Initial population accumulation pass
-    for eid in world._component_index.get(SwarmComponent, set()):
-        # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
-        # _component_index is strictly synchronized with _entities during this read-only pass.
-        indexed_swarm = cast("SwarmComponent", world._entities[eid]._components[SwarmComponent])
-        _accumulate_tile_population(
-            tile_populations,
-            indexed_swarm.x,
-            indexed_swarm.y,
-            env.width,
-            indexed_swarm.population,
-        )
+    _accumulate_initial_populations(world, env, tile_populations)
 
     # Main interaction loop
     for eid in list(world._component_index.get(SwarmComponent, set())):
