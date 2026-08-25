@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2026-08-25 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/interaction/__init__.py:run_interaction`
+* **Selection Rationale:** The function `run_interaction` had a cognitive complexity score of 18. It is straightforward to untangle by extracting the initialization of scratch arrays and the initial population accumulation loops into cohesive, private helper functions. This ensures low performance risk since the extracted logic is outside the main hot-loops.
+* **Before/After Score:** 18 vs. 12
+* **Performance Assessment:** Benchmark results run post-refactor demonstrated no performance regressions. The extraction targets setup code out of tight loops and maintains O(1) performance invariants.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
