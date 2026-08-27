@@ -24,7 +24,6 @@ state are exposed.
 
 from __future__ import annotations
 
-import base64
 import dataclasses
 import json
 import shutil
@@ -561,104 +560,24 @@ def export_telemetry_data(
     if loop is None:
         return {"status": "error", "message": "No active simulation loop loaded."}
 
-    normalized_data_type = "defense_economy" if data_type == "metabolic" else data_type
-    valid_data_types = {"timeseries", "phasespace", "defense_economy", "biomass_stack"}
+    from phids.mcp.export import execute_export_telemetry_data
 
-    if normalized_data_type not in valid_data_types:
-        return {"status": "error", "message": f"Invalid data_type. Must be one of {valid_data_types}"}
-
-    if format not in {"csv", "tex_table", "tex_tikz", "png"}:
-        return {"status": "error", "message": "Invalid format. Must be csv, tex_table, tex_tikz, or png."}
-
-    try:
-        from phids.telemetry.export.core import filter_telemetry_rows
-
-        rows = loop.telemetry._rows
-        flora_names = {sp.species_id: sp.name for sp in loop.config.flora_species}
-        herbivore_names = {sp.species_id: sp.name for sp in loop.config.herbivore_species}
-
-        filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
-
-        if format == "csv":
-            from phids.telemetry.export.core import (
-                aggregate_to_dataframe,
-                decimate_dataframe,
-                filter_dataframe_columns,
-                telemetry_to_dataframe,
-            )
-
-            # Note: filter_telemetry_rows returns list[dict[str, Any]].
-            # For aggregate_to_dataframe, this is compatible enough at runtime,
-            # but we use type: ignore to bypass mypy's strictness.
-            if normalized_data_type in ("timeseries", "defense_economy", "biomass_stack"):
-                df = aggregate_to_dataframe(filtered_rows)  # type: ignore
-            else:
-                df = telemetry_to_dataframe(filtered_rows)
-
-            if tick_interval > 1:
-                df = decimate_dataframe(df, tick_interval)
-
-            if columns:
-                df = filter_dataframe_columns(df, columns)
-
-            bytes_data = df.to_csv(index=False).encode("utf-8")
-            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
-
-        elif format == "tex_table":
-            from phids.telemetry.export.latex import export_bytes_tex_table
-
-            bytes_data = export_bytes_tex_table(
-                rows,
-                columns=columns,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                tick_interval=tick_interval,
-            )
-            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
-
-        elif format == "tex_tikz":
-            from phids.telemetry.export.tikz import generate_tikz_str
-
-            tikz_str = generate_tikz_str(
-                filtered_rows,
-                normalized_data_type,
-                flora_names=flora_names,
-                herbivore_names=herbivore_names,
-                plant_species_id=plant_species_id,
-                herbivore_species_id=herbivore_species_id,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                title=title,
-                x_label=x_label,
-                y_label=y_label,
-                x_max=x_max,
-                y_max=y_max,
-            )
-            return {"status": "success", "format": format, "data": tikz_str}
-
-        elif format == "png":
-            from phids.telemetry.export.png import generate_png_bytes
-
-            bytes_data = generate_png_bytes(
-                filtered_rows,
-                normalized_data_type,
-                flora_names=flora_names,
-                herbivore_names=herbivore_names,
-                plant_species_id=plant_species_id,
-                herbivore_species_id=herbivore_species_id,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                title=title,
-                x_label=x_label,
-                y_label=y_label,
-                x_max=x_max,
-                y_max=y_max,
-            )
-            return {"status": "success", "format": format, "data": base64.b64encode(bytes_data).decode("utf-8")}
-
-    except Exception as e:
-        return {"status": "error", "message": f"Export generation failed: {e}"}
-    return {"status": "error", "message": "Unknown format"}
+    return execute_export_telemetry_data(
+        loop=loop,
+        format_type=format,
+        data_type=data_type,
+        tick_interval=tick_interval,
+        plant_species_id=plant_species_id,
+        herbivore_species_id=herbivore_species_id,
+        columns=columns,
+        flora_ids=flora_ids,
+        herbivore_ids=herbivore_ids,
+        title=title,
+        x_label=x_label,
+        y_label=y_label,
+        x_max=x_max,
+        y_max=y_max,
+    )
 
 
 @mcp.tool()
