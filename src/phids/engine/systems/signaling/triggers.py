@@ -235,6 +235,121 @@ def _process_single_trigger(
     )
 
 
+def _evaluate_single_compiled_trigger(
+    trig: CompiledTrigger,
+    plants: list[PlantComponent],
+    num_plants: int,
+    xs: np.ndarray,
+    ys: np.ndarray,
+    mask: np.ndarray,
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+    curve_map: dict[str, int],
+    swarm_grid: np.ndarray | None,
+) -> None:
+    initiator = trig.schema.initiator
+    use_njit = False
+
+    if isinstance(initiator, HerbivoreAttackInitiator):
+        if swarm_grid is not None:
+            _evaluate_herbivore_initiator_njit(
+                xs,
+                ys,
+                initiator.herbivore_species_id,
+                initiator.min_herbivore_population,
+                swarm_grid,
+                mask,
+            )
+            use_njit = True
+
+    elif isinstance(initiator, EnvironmentalSignalInitiator):
+        if 0 <= initiator.signal_id < env.num_signals:
+            _evaluate_environmental_initiator_njit(
+                xs,
+                ys,
+                env.signal_layers[initiator.signal_id],
+                curve_map.get(initiator.response_curve, -1),
+                initiator.min_concentration,
+                initiator.half_saturation,
+                initiator.hill_cooperativity,
+                mask,
+            )
+            use_njit = True
+
+    if use_njit:
+        for i in range(num_plants):
+            if mask[i]:
+                _process_single_trigger_action(
+                    trig,
+                    plants[i],
+                    world,
+                    env,
+                    owner_substance_by_key,
+                    swarm_population_by_cell_species,
+                    active_substance_ids_by_owner,
+                    substance_entities,
+                )
+    else:
+        for p in plants:
+            _process_single_trigger(
+                trig,
+                p,
+                world,
+                env,
+                owner_substance_by_key,
+                swarm_population_by_cell_species,
+                active_substance_ids_by_owner,
+                substance_entities,
+            )
+
+
+def _evaluate_species_triggers(
+    triggers: list[CompiledTrigger],
+    plants: list[PlantComponent],
+    world: ECSWorld,
+    env: GridEnvironment,
+    owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
+    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    active_substance_ids_by_owner: dict[int, set[int]],
+    substance_entities: list[Entity],
+    curve_map: dict[str, int],
+    swarm_grid: np.ndarray | None,
+) -> None:
+    if not triggers or not plants:
+        return
+
+    num_plants = len(plants)
+    xs = np.empty(num_plants, dtype=np.int32)
+    ys = np.empty(num_plants, dtype=np.int32)
+    for i in range(num_plants):
+        xs[i] = plants[i].x
+        ys[i] = plants[i].y
+
+    mask = np.empty(num_plants, dtype=np.bool_)
+
+    for trig in triggers:
+        _evaluate_single_compiled_trigger(
+            trig,
+            plants,
+            num_plants,
+            xs,
+            ys,
+            mask,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+            curve_map,
+            swarm_grid,
+        )
+
+
 def _phase_evaluate_triggers(
     world: ECSWorld,
     env: GridEnvironment,
@@ -253,74 +368,16 @@ def _phase_evaluate_triggers(
     swarm_grid = getattr(swarm_population_by_cell_species, "_grid", None)
 
     for species_id, triggers in trigger_conditions.items():
-        if not triggers:
-            continue
-
         plants = plants_by_species.get(species_id, [])
-        if not plants:
-            continue
-
-        num_plants = len(plants)
-        xs = np.empty(num_plants, dtype=np.int32)
-        ys = np.empty(num_plants, dtype=np.int32)
-        for i, p in enumerate(plants):
-            xs[i] = p.x
-            ys[i] = p.y
-
-        mask = np.empty(num_plants, dtype=np.bool_)
-
-        for trig in triggers:
-            initiator = trig.schema.initiator
-            use_njit = False
-
-            if isinstance(initiator, HerbivoreAttackInitiator):
-                if swarm_grid is not None:
-                    _evaluate_herbivore_initiator_njit(
-                        xs,
-                        ys,
-                        initiator.herbivore_species_id,
-                        initiator.min_herbivore_population,
-                        swarm_grid,
-                        mask,
-                    )
-                    use_njit = True
-
-            elif isinstance(initiator, EnvironmentalSignalInitiator):
-                if 0 <= initiator.signal_id < env.num_signals:
-                    _evaluate_environmental_initiator_njit(
-                        xs,
-                        ys,
-                        env.signal_layers[initiator.signal_id],
-                        curve_map.get(initiator.response_curve, -1),
-                        initiator.min_concentration,
-                        initiator.half_saturation,
-                        initiator.hill_cooperativity,
-                        mask,
-                    )
-                    use_njit = True
-
-            if use_njit:
-                for i in range(num_plants):
-                    if mask[i]:
-                        _process_single_trigger_action(
-                            trig,
-                            plants[i],
-                            world,
-                            env,
-                            owner_substance_by_key,
-                            swarm_population_by_cell_species,
-                            active_substance_ids_by_owner,
-                            substance_entities,
-                        )
-            else:
-                for p in plants:
-                    _process_single_trigger(
-                        trig,
-                        p,
-                        world,
-                        env,
-                        owner_substance_by_key,
-                        swarm_population_by_cell_species,
-                        active_substance_ids_by_owner,
-                        substance_entities,
-                    )
+        _evaluate_species_triggers(
+            triggers,
+            plants,
+            world,
+            env,
+            owner_substance_by_key,
+            swarm_population_by_cell_species,
+            active_substance_ids_by_owner,
+            substance_entities,
+            curve_map,
+            swarm_grid,
+        )
