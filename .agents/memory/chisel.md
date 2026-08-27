@@ -96,3 +96,6 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+## 2024-05-18 - Type Strictness in Telemetry Exports
+Learning: When extracting export logic from `mcp_server.py` into smaller submodules, using `typing.Any` for telemetry data payloads violates the strict typing architectural principle.
+Action: Always use the concrete types `TelemetryRow`, `TelemetryRuns`, and `JSONValue` from `phids.engine.batch.types` instead of `typing.Any` when typing telemetry data rows and payloads.
