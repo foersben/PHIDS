@@ -83,8 +83,8 @@ def _resolve_incidental_mortality(
 
     if herbivore_params_dict is not None and swarm.species_id in herbivore_params_dict:
         hp_raw = herbivore_params_dict[swarm.species_id]
-        incidental_factor = float(getattr(hp_raw, "incidental_mortality_factor", 0.0))
-        mode = getattr(hp_raw, "incidental_mortality_mode", "trampling")
+        incidental_factor = float(hp_raw.incidental_mortality_factor)
+        mode = hp_raw.incidental_mortality_mode
         mode_cause = "death_collateral_trampling" if mode == "trampling" else "death_incidental_consumption"
 
     if incidental_factor <= 0.0:

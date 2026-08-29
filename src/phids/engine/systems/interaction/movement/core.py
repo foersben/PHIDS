@@ -70,8 +70,7 @@ def _resolve_swarm_movement(
         return False
 
     # Decay aversion memory per movement tick
-    # TODO: Performance: Replace getattr(swarm, "aversion_memory", 0.0) with direct field access swarm.aversion_memory
-    if getattr(swarm, "aversion_memory", 0.0) > 0.0:
+    if swarm.aversion_memory > 0.0:
         swarm.aversion_memory *= 0.95
         if swarm.aversion_memory < 0.01:
             swarm.aversion_memory = 0.0
