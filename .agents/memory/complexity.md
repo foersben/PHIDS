@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-02-23 - Complexity Refactoring Report
+* **Target Function:** `src/phids/mcp_server.py:export_telemetry_data`
+* **Selection Rationale:** The `export_telemetry_data` function in `src/phids/mcp_server.py` had a high cognitive complexity score (18) due to deeply nested branching logic for different export formats (`csv`, `tex_table`, `tex_tikz`, `png`) and processing options. It is an API layer function, so untangling it by extracting the specific format handlers into private helper functions (`_export_csv`, `_export_tex_table`, `_export_tex_tikz`, `_export_png`) is straightforward and low-risk compared to engine-critical Numba loops. There is no performance risk because this function deals with I/O and data formatting, outside of the hot simulation loop.
+* **Before/After Score:** 18 vs. Passing (Below threshold of 15).
+* **Performance Assessment:** The extracted logic simply modularizes the branches for different export formats. Since this is purely a server request handler and operates outside of the performance-critical engine loops, there is no performance regression. The benchmarks confirm zero performance regression for simulation engine logic.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
