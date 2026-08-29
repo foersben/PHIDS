@@ -96,3 +96,7 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+
+## 2026-10-27 - Trigger Evaluator Monolith Extraction
+Learning: Extracting logic that isolates deep loop nesting (e.g. `_phase_evaluate_triggers`) into smaller helpers (`_evaluate_single_trigger_for_species`) drastically improves cognitive complexity without sacrificing deterministic behavior.
+Action: When dismantling ECS God modules, extract nested `for` loop logic into private pure helpers.
