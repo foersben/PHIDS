@@ -5,6 +5,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pytest_mock.plugin import MockerFixture
+
+
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -198,3 +204,70 @@ def test_export_telemetry_data_png(mock_export: MagicMock) -> None:
             res = export_telemetry_data("png", data_type="timeseries")
             assert res["status"] == "success"
             assert res["data"] == expected_b64
+
+
+def test_export_telemetry_data_tex_table(mocker: MockerFixture) -> None:
+    """Test LaTeX table export from the MCP tool."""
+    mock_loop = mocker.Mock()
+    mock_loop.telemetry._rows = [{"tick": 0, "Flora_A_Pop": 10}, {"tick": 1, "Flora_A_Pop": 20}]
+    mock_loop.config.flora_species = []
+    mock_loop.config.herbivore_species = []
+
+    mocker.patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop)
+    mocker.patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=mock_loop.telemetry._rows)
+
+    mock_export = mocker.patch("phids.telemetry.export.latex.export_bytes_tex_table", return_value=b"test_tex")
+
+    from phids.mcp_server import export_telemetry_data
+
+    result = export_telemetry_data("tex_table", "timeseries", 2, columns="tick")
+    assert result["status"] == "success"
+    assert result["format"] == "tex_table"
+    assert result["data"] == "test_tex"
+    mock_export.assert_called_once()
+
+
+def test_export_telemetry_data_tex_tikz(mocker: MockerFixture) -> None:
+    """Test LaTeX TikZ export from the MCP tool."""
+    mock_loop = mocker.Mock()
+    mock_loop.telemetry._rows = [{"tick": 0, "Flora_A_Pop": 10}]
+    mock_loop.config.flora_species = []
+    mock_loop.config.herbivore_species = []
+
+    mocker.patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop)
+    mocker.patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=mock_loop.telemetry._rows)
+
+    mock_export = mocker.patch("phids.telemetry.export.tikz.generate_tikz_str", return_value="tikz_code")
+
+    from phids.mcp_server import export_telemetry_data
+
+    result = export_telemetry_data("tex_tikz", "timeseries")
+    assert result["status"] == "success"
+    assert result["format"] == "tex_tikz"
+    assert result["data"] == "tikz_code"
+    mock_export.assert_called_once()
+
+
+def test_export_telemetry_data_csv_phasespace(mocker: MockerFixture) -> None:
+    """Test CSV export with decimation from the MCP tool."""
+    mock_loop = mocker.Mock()
+    mock_loop.telemetry._rows = [{"tick": 0, "Flora_A_Pop": 10}, {"tick": 1, "Flora_A_Pop": 20}]
+    mock_loop.config.flora_species = []
+    mock_loop.config.herbivore_species = []
+
+    mocker.patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop)
+    mocker.patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=mock_loop.telemetry._rows)
+
+    import pandas as pd
+
+    mock_df = pd.DataFrame([{"tick": 0, "Flora_A_Pop": 10}, {"tick": 1, "Flora_A_Pop": 20}])
+    mocker.patch("phids.telemetry.export.core.telemetry_to_dataframe", return_value=mock_df)
+    mocker.patch("phids.telemetry.export.core.decimate_dataframe", return_value=mock_df)
+    mocker.patch("phids.telemetry.export.core.filter_dataframe_columns", return_value=mock_df)
+
+    from phids.mcp_server import export_telemetry_data
+
+    result = export_telemetry_data("csv", "phasespace", tick_interval=2, columns="tick")
+    assert result["status"] == "success"
+    assert result["format"] == "csv"
+    assert "tick" in result["data"]
