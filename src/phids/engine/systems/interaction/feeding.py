@@ -61,7 +61,7 @@ def cache_herbivore_foraging_params(
     """Pre-extract herbivore foraging parameters to bypass dynamic descriptor lookups."""
     return [
         CachedHerbivoreForagingParams(
-            handling_time=getattr(p, "handling_time", 0.0),
+            handling_time=p.handling_time,
             digestive_efficiency=p.resistances.digestive_efficiency,
             morphological_adaptation=p.resistances.morphological_adaptation,
         )
@@ -107,7 +107,7 @@ def _feed_on_single_plant(
         digestive_efficiency = swarm_p.digestive_efficiency
         morphological_adaptation = swarm_p.morphological_adaptation
     else:
-        handling_time = getattr(swarm_p, "handling_time", 0.0)
+        handling_time = swarm_p.handling_time
         digestive_efficiency = swarm_p.resistances.digestive_efficiency
         morphological_adaptation = swarm_p.resistances.morphological_adaptation
 

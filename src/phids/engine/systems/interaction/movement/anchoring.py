@@ -87,10 +87,8 @@ def _is_swarm_anchored(
     Returns:
         True if the swarm is anchored, False otherwise.
     """
-    # TODO: Performance: Replace getattr with direct field access on swarm
-    # (swarm.last_caloric_intake and swarm.metabolism_upkeep) to avoid overhead in the hot path.
-    intake = float(getattr(swarm, "last_caloric_intake", 0.0))
-    upkeep = float(getattr(swarm, "metabolism_upkeep", 0.0))
+    intake = float(swarm.last_caloric_intake)
+    upkeep = float(swarm.metabolism_upkeep)
 
     if isinstance(diet_matrix, np.ndarray):
         return _is_swarm_anchored_jit(

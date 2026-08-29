@@ -49,7 +49,7 @@ def _phase_manage_nutrition_recovery(world: ECSWorld) -> None:
         if plant.withdrawal_ticks_remaining > 0:
             plant.withdrawal_ticks_remaining -= 1
             # Rate-limited translocation toward target factor
-            target = getattr(plant, "target_nutrition_factor", 0.1)
+            target = plant.target_nutrition_factor
             rate = plant.translocation_rate
             plant.apparent_nutrition_factor += (target - plant.apparent_nutrition_factor) * rate
         else:
