@@ -160,7 +160,5 @@ For software engineers and data interface developers, this section maps the math
             plant.target_nutrition_factor - plant.apparent_nutrition_factor
         ) * plant.translocation_rate
     else:
-        plant.apparent_nutrition_factor += (
-            1.0 - plant.apparent_nutrition_factor
-        ) * plant.translocation_rate
+        plant.apparent_nutrition_factor += (1.0 - plant.apparent_nutrition_factor) * plant.translocation_rate
     ```
