@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-02-27 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/signaling/triggers.py` and `_phase_evaluate_triggers`
+* **Selection Rationale:** Selected `_phase_evaluate_triggers` because it had a very high cognitive complexity score (39), but the underlying logic was simply a heavily nested loop that processes triggers for each species in a deterministic fashion. Extracting the inner trigger-processing logic into a helper function `_evaluate_single_trigger_for_species` effectively reduced nesting levels without imposing new overhead on tight loops, satisfying both complexity and performance requirements.
+* **Before/After Score:** 39 vs. None (falling below threshold of 15)
+* **Performance Assessment:** The targeted benchmarks `uv run pytest tests/benchmarks/` showed stable operations per second and consistent execution means, avoiding overhead in the hot-path (no allocations inside tight loops).
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
