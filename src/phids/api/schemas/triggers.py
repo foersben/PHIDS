@@ -49,7 +49,7 @@ class ResourceWithdrawalAction(StrictBaseModel):
     )
     withdrawal_duration: int = Field(
         default=10,
-        gt=0,
+        ge=1,
         description=(
             "[Ticks] Duration of the nutrition withdrawal. It determines how many ticks the apparent "
             "nutrition factor will remain dimmed. Note that the duration is immediately decremented by 1 at the end "
