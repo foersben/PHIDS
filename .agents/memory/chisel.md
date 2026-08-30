@@ -96,3 +96,10 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+## 2025-03-01 - Extracted `_evaluate_single_trigger_for_species`
+Learning: Extracting deep nested logic inside `_phase_evaluate_triggers` significantly reduces cognitive complexity and keeps type context clear in ECS traversal.
+Action: Utilize local pure functions with `np.ndarray` and standard dicts passing state instead of refactoring entire files.
+
+## 2025-03-01 - Extracted `_evaluate_single_trigger_for_species` to a new module
+Learning: When dismantling ECS God modules to reduce cognitive complexity, deeply nested logic must be extracted into completely distinct files/packages (e.g., `evaluation/core.py`) to satisfy structural refactoring invariants, rather than simply moving functions within the same file.
+Action: For all future refactoring of "God modules", create a new directory or module in the package to house the separated logic, ensure full documentation is written for the newly extracted functions, update all repository-wide imports strictly and completely eliminate old backward-compatibility shims.
