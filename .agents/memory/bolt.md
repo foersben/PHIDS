@@ -93,3 +93,7 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** When making a defensive copy of a component set before iterating in a tight ECS hot loop (where mutations like `collect_garbage` might alter the original set and raise `RuntimeError: Set changed size during iteration`), `list(component_set)` is significantly faster than `tuple(component_set)`. CPython's list allocation is highly optimized and often reuses internal memory buffers, whereas `tuple` construction from an unknown-sized iterable involves additional overhead. In microbenchmarks on large component sets, `list()` outperforms `tuple()` by roughly 30%.
 **Action:** Always use `list(world._component_index.get(..., set()))` instead of `tuple(...)` when you need a mutable-safe snapshot of ECS component IDs for iteration on the hot path.
+
+## 2024-05-18 - [Optimize `getattr` in tight Python loops]
+**Learning:** Using `getattr` with a default value inside tight Python loops (e.g., ECS interaction routines) incurs significant interpreter overhead. Replace dynamic `getattr` attribute resolution with direct property access (e.g., `component.attribute`) on statically typed component classes in performance-critical hot paths to improve tick throughput.
+**Action:** Replaced `getattr(swarm, ...)` with direct attribute accesses (`swarm.last_caloric_intake`, `swarm.metabolism_upkeep`, and `swarm.aversion_memory`) in `src/phids/engine/systems/interaction/movement/anchoring.py` and `src/phids/engine/systems/interaction/movement/core.py`.
