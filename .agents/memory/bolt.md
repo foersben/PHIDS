@@ -97,3 +97,7 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 ## 2024-05-18 - [Optimize `getattr` in tight Python loops]
 **Learning:** Using `getattr` with a default value inside tight Python loops (e.g., ECS interaction routines) incurs significant interpreter overhead. Replace dynamic `getattr` attribute resolution with direct property access (e.g., `component.attribute`) on statically typed component classes in performance-critical hot paths to improve tick throughput.
 **Action:** Replaced `getattr(swarm, ...)` with direct attribute accesses (`swarm.last_caloric_intake`, `swarm.metabolism_upkeep`, and `swarm.aversion_memory`) in `src/phids/engine/systems/interaction/movement/anchoring.py` and `src/phids/engine/systems/interaction/movement/core.py`.
+
+## 2026-08-30 - [Avoid direct access to `.py_func` in Numba functions for parity testing]
+**Learning:** When testing Numba `@njit` functions for pure Python parity in CI (where `NUMBA_DISABLE_JIT=1` might be set), `_func.py_func` will raise an `AttributeError` because the function falls back to standard Python functions without the `.py_func` attribute.
+**Action:** Use `getattr(func, 'py_func', func)` to safely retrieve the pure Python fallback, ensuring parity tests pass both in JIT-enabled and JIT-disabled environments.
