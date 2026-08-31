@@ -33,6 +33,7 @@ from phids.engine.systems.signaling.conditions import (
     _check_activation_condition,
 )
 from phids.engine.systems.signaling.emission import _apply_toxin_to_swarms
+from phids.engine.systems.signaling.evaluation.core import _evaluate_initiator
 from phids.engine.systems.signaling.spatial import (
     _co_located_swarm_population as signaling_co_located,
 )
@@ -41,7 +42,6 @@ from phids.engine.systems.signaling.spatial import (
     toroidal_distance_jit,
     toroidal_manhattan_distance_jit,
 )
-from phids.engine.systems.signaling.triggers import _evaluate_initiator
 from phids.io.zarr_replay import ReplayBuffer
 from phids.shared.constants import SIGNAL_EPSILON
 

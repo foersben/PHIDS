@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-02-24 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/signaling/triggers.py` (`_phase_evaluate_triggers`)
+* **Selection Rationale:** This function had the highest cognitive complexity score (39) and was identified as a strong candidate for untangling. Its complexity primarily came from deep nesting (three loops iterating over species, triggers, and individual plants) inside a monolith file. Refactoring it by extracting the inner logic evaluating a single trigger for a specific species into a separate helper module (`evaluation/core.py`) allowed us to cleanly drop complexity without compromising the performance of the simulation loop, as we maintain the direct `numpy` array passing and zero-overhead Numba loop evaluation logic.
+* **Before/After Score:** 39 vs. 15 (max score for `_evaluate_single_trigger_for_species` in new module). `_phase_evaluate_triggers` is no longer flagged.
+* **Performance Assessment:** The benchmark execution completed with virtually identical performance profiles. Hotpath njit functions remain fully typed and performant. Engine tests pass successfully.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
