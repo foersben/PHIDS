@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2026-09-01 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/signaling/triggers.py _phase_evaluate_triggers
+* **Selection Rationale:** The `_phase_evaluate_triggers` function had a highly complex structure due to a deep iteration over triggers and plants (cognitive complexity 39). It was an ideal untangling target because it contained a distinct inner loop block that could easily be extracted into a cohesive helper function (`_evaluate_single_trigger_for_species`) without needing to touch high-performance `njit` kernels directly or add significant call overhead.
+* **Before/After Score:** 39 vs. Passing (< 15)
+* **Performance Assessment:** The extracted logic is a high-level outer Python loop over triggers; no extra objects are instantiated inside hot spots. Benchmarks ran identically post-refactoring confirming zero overhead.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
