@@ -238,7 +238,6 @@ def _process_single_trigger(
 
 
 def _phase_evaluate_triggers(
-
     world: ECSWorld,
     env: GridEnvironment,
     trigger_conditions: dict[int, list[CompiledTrigger]],

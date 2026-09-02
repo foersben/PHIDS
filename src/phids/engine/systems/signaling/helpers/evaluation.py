@@ -15,7 +15,6 @@ from phids.api.schemas.triggers import (
     HerbivoreAttackInitiator,
 )
 
-
 if TYPE_CHECKING:
     from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
@@ -40,7 +39,13 @@ def _evaluate_single_trigger_for_species(
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:
-    from phids.engine.systems.signaling.triggers import _evaluate_environmental_initiator_njit, _evaluate_herbivore_initiator_njit, _process_single_trigger, _process_single_trigger_action
+    from phids.engine.systems.signaling.triggers import (
+        _evaluate_environmental_initiator_njit,
+        _evaluate_herbivore_initiator_njit,
+        _process_single_trigger,
+        _process_single_trigger_action,
+    )
+
     """Evaluates a single compiled trigger for a population of plants.
 
     Args:
