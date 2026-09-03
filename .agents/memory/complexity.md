@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2024-11-20 - Complexity Refactoring Report
+* **Target Function:** `src/phids/mcp_server.py:export_telemetry_data`
+* **Selection Rationale:** This function was a large API handler orchestrating four distinct telemetry export formats. By extracting the specific data-processing logic into private helpers (`_export_csv`, `_export_tex_table`, etc.), cognitive complexity was greatly reduced without risking performance overhead, since these are off-path I/O export commands rather than tight simulation loops.
+* **Before/After Score:** 18 vs. 11
+* **Performance Assessment:** Common-sense reasoning confirms zero performance regression: the modifications merely shifted conditional branches into helper subroutines within a high-level API handler, entirely bypassing performance-critical core engine operations.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
