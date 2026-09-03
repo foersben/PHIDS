@@ -41,7 +41,7 @@ from phids.engine.systems.signaling.spatial import (
     toroidal_distance_jit,
     toroidal_manhattan_distance_jit,
 )
-from phids.engine.systems.signaling.triggers import _evaluate_initiator
+from phids.engine.systems.signaling.trigger_evaluation import _evaluate_initiator
 from phids.io.zarr_replay import ReplayBuffer
 from phids.shared.constants import SIGNAL_EPSILON
 
