@@ -96,3 +96,9 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+## 2024-09-03 - Extract trigger evaluation loops to reduce cognitive complexity
+Learning: Extracting nested Numba fallback conditions (use_njit) and entity interaction loops into separate modules requires careful handling of top-level imports to maintain JIT compilation potential without triggering circular dependencies.
+Action: Always hoist necessary type and schema imports to the module top-level in performance-critical paths when dismantling large signaling modules.
+## 2024-09-03 - Numba JIT Tests Parity
+Learning: When testing Numba `@njit` functions for parity, avoid accessing the `.py_func` attribute directly, as CI environments often run tests with `NUMBA_DISABLE_JIT=1` where functions fall back to standard Python functions.
+Action: Instead of `func.py_func`, use `getattr(func, 'py_func', func)` to prevent `AttributeError`.

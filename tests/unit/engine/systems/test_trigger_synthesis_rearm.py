@@ -13,7 +13,7 @@ from phids.api.schemas.triggers import SynthesizeSubstanceAction
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.core.ecs import ECSWorld
-from phids.engine.systems.signaling.triggers import _apply_synthesize_action
+from phids.engine.systems.signaling.trigger_evaluation import _apply_synthesize_action
 
 
 @pytest.mark.unit
