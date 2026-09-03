@@ -1101,3 +1101,207 @@ def test_batch_processing_thread_governance() -> None:
     ]
     res = subprocess.run(cmd, capture_output=True, text=True)
     assert res.returncode == 0
+
+
+def test_missing_trigger_evaluation_coverage() -> None:
+    from phids.engine.systems.signaling.trigger_evaluation import (
+        _evaluate_environmental_initiator_njit,
+        _evaluate_herbivore_initiator_njit,
+        _process_njit_triggers_for_species,
+        _process_standard_triggers_for_species,
+        _process_single_trigger,
+        _process_single_trigger_action
+    )
+    import numpy as np
+
+    # 1. test _evaluate_environmental_initiator_njit
+    xs = np.array([0, 1, 2, 3], dtype=np.int32)
+    ys = np.array([0, 0, 0, 0], dtype=np.int32)
+    signal_layer = np.zeros((10, 10), dtype=np.float64)
+    signal_layer[0, 0] = 5.0
+    signal_layer[1, 0] = 0.5
+    signal_layer[2, 0] = 10.0
+    signal_layer[3, 0] = 0.0
+
+    out_mask = np.zeros(4, dtype=np.bool_)
+
+    # Step curve (0)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 0, 2.0, 1.0, 1.0, out_mask)
+    assert out_mask[0] == True
+    assert out_mask[1] == False
+
+    # Hill curve (1)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 1, 2.0, 1.0, 2.0, out_mask)
+    assert out_mask[0] == True
+    assert out_mask[3] == False
+
+    # Logarithmic curve (2)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 2, 2.0, 1.0, 1.0, out_mask)
+    assert out_mask[0] == True
+    assert out_mask[1] == False
+
+    # Other curve (3)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 3, 2.0, 1.0, 1.0, out_mask)
+    assert out_mask[0] == False
+
+    # 2. test _evaluate_herbivore_initiator_njit
+    swarm_grid = np.zeros((2, 10, 10), dtype=np.int32)
+    swarm_grid[0, 0, 0] = 15
+    swarm_grid[0, 1, 0] = 5
+    out_mask = np.zeros(4, dtype=np.bool_)
+    getattr(_evaluate_herbivore_initiator_njit, 'py_func', _evaluate_herbivore_initiator_njit)(xs, ys, 0, 10, swarm_grid, out_mask)
+    assert out_mask[0] == True
+    assert out_mask[1] == False
+
+
+
+
+
+def test_missing_trigger_evaluation_coverage_standard() -> None:
+    from phids.engine.systems.signaling.trigger_evaluation import (
+        _process_single_trigger_action,
+        _apply_synthesize_action,
+        _process_njit_triggers_for_species,
+        _process_standard_triggers_for_species,
+        _evaluate_environmental_initiator_njit,
+        _evaluate_herbivore_initiator_njit
+    )
+    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.components.plant import PlantComponent
+    from phids.api.schemas.triggers import TriggerConditionSchema, ResourceWithdrawalAction, SynthesizeSubstanceAction, EnvironmentalSignalInitiator
+
+    class MockTrigger:
+        def __init__(self, action) -> None:
+            self.schema = TriggerConditionSchema(
+                initiator=EnvironmentalSignalInitiator(signal_id=0, min_concentration=1.0),
+                action=action,
+            )
+            self.activation_condition_dump = None
+
+    world = ECSWorld()
+    env = GridEnvironment(width=10, height=10, num_signals=2)
+    entity = world.create_entity()
+    plant = PlantComponent(entity_id=entity.entity_id, species_id=0, x=3, y=3, energy=100.0, max_energy=200.0, base_energy=100.0, growth_rate=1.0, survival_threshold=1.0, reproduction_interval=10, seed_min_dist=1, seed_max_dist=3, seed_energy_cost=10.0)
+    world.add_component(entity.entity_id, plant)
+
+    owner_substance_by_key = {}
+    substance_entities = []
+
+    # 1. ResourceWithdrawalAction
+    trig1 = MockTrigger(ResourceWithdrawalAction(apparent_nutrition_factor=0.5, withdrawal_duration=10))
+    _process_single_trigger_action(trig1, plant, world, env, owner_substance_by_key, {}, {}, substance_entities)
+    assert plant.target_nutrition_factor == 0.5
+    assert plant.withdrawal_ticks_remaining == 10
+
+    # 2. SynthesizeSubstanceAction
+    trig2 = MockTrigger(SynthesizeSubstanceAction(substance_id=1, synthesis_duration=5))
+    _process_single_trigger_action(trig2, plant, world, env, owner_substance_by_key, {}, {}, substance_entities)
+    assert (plant.entity_id, 1) in owner_substance_by_key
+    assert owner_substance_by_key[(plant.entity_id, 1)].synthesis_duration == 5
+
+    # Existing synthesis re-arm
+    _process_single_trigger_action(trig2, plant, world, env, owner_substance_by_key, {}, {}, substance_entities)
+    assert owner_substance_by_key[(plant.entity_id, 1)].triggered_this_tick == True
+
+    # 3. Test _process_njit_triggers_for_species
+    import numpy as np
+    mask = np.array([True], dtype=np.bool_)
+    _process_njit_triggers_for_species(trig2, [plant], 1, mask, world, env, owner_substance_by_key, {}, {}, substance_entities)
+
+    # 4. Test _process_standard_triggers_for_species
+    env.signal_layers[0, 3, 3] = 5.0 # Set high enough to trigger
+    _process_standard_triggers_for_species(trig2, [plant], world, env, owner_substance_by_key, {}, {}, substance_entities)
+
+    # 5. _evaluate_environmental_initiator_njit
+    xs = np.array([0, 1, 2, 3], dtype=np.int32)
+    ys = np.array([0, 0, 0, 0], dtype=np.int32)
+    signal_layer = np.zeros((10, 10), dtype=np.float64)
+    signal_layer[0, 0] = 5.0
+    signal_layer[1, 0] = 0.5
+    signal_layer[2, 0] = 10.0
+    signal_layer[3, 0] = 0.0
+
+    out_mask = np.zeros(4, dtype=np.bool_)
+
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 0, 2.0, 1.0, 1.0, out_mask)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 1, 2.0, 1.0, 2.0, out_mask)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 2, 2.0, 1.0, 1.0, out_mask)
+    getattr(_evaluate_environmental_initiator_njit, 'py_func', _evaluate_environmental_initiator_njit)(xs, ys, signal_layer, 3, 2.0, 1.0, 1.0, out_mask)
+
+    # 6. _evaluate_herbivore_initiator_njit
+    swarm_grid = np.zeros((2, 10, 10), dtype=np.int32)
+    swarm_grid[0, 0, 0] = 15
+    swarm_grid[0, 1, 0] = 5
+    out_mask = np.zeros(4, dtype=np.bool_)
+    getattr(_evaluate_herbivore_initiator_njit, 'py_func', _evaluate_herbivore_initiator_njit)(xs, ys, 0, 10, swarm_grid, out_mask)
+
+
+def test_missing_trigger_evaluation_coverage_standard2() -> None:
+    from phids.engine.systems.signaling.trigger_evaluation import (
+        _evaluate_environmental_signal,
+        _evaluate_initiator,
+        _evaluate_species_triggers
+    )
+    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.components.plant import PlantComponent
+    from phids.api.schemas.triggers import TriggerConditionSchema, ResourceWithdrawalAction, SynthesizeSubstanceAction, EnvironmentalSignalInitiator, HerbivoreAttackInitiator
+    from phids.engine.systems.signaling.types import CompiledTrigger
+    import numpy as np
+
+    class MockTrigger(CompiledTrigger):
+        def __init__(self, initiator) -> None:
+            self.schema = TriggerConditionSchema(
+                initiator=initiator,
+                action=ResourceWithdrawalAction(apparent_nutrition_factor=0.5, withdrawal_duration=10),
+            )
+            self.activation_condition_dump = None
+
+    env = GridEnvironment(width=10, height=10, num_signals=2)
+    env.signal_layers[0, 3, 3] = 5.0
+    plant = PlantComponent(entity_id=1, species_id=0, x=3, y=3, energy=100.0, max_energy=200.0, base_energy=100.0, growth_rate=1.0, survival_threshold=1.0, reproduction_interval=10, seed_min_dist=1, seed_max_dist=3, seed_energy_cost=10.0)
+
+    # 1. _evaluate_environmental_signal
+    init_step = EnvironmentalSignalInitiator(signal_id=0, min_concentration=1.0, response_curve="step")
+    init_hill = EnvironmentalSignalInitiator(signal_id=0, min_concentration=1.0, response_curve="hill", half_saturation=2.0, hill_cooperativity=1.0)
+    init_log = EnvironmentalSignalInitiator(signal_id=0, min_concentration=1.0, response_curve="logarithmic")
+    init_other = EnvironmentalSignalInitiator(signal_id=0, min_concentration=100.0, response_curve="step")
+    init_bad_id = EnvironmentalSignalInitiator(signal_id=5, min_concentration=1.0, response_curve="step")
+
+    assert _evaluate_environmental_signal(init_step, plant, env) == True
+    assert _evaluate_environmental_signal(init_hill, plant, env) == True
+    assert _evaluate_environmental_signal(init_log, plant, env) == True
+    assert _evaluate_environmental_signal(init_other, plant, env) == False
+    assert _evaluate_environmental_signal(init_bad_id, plant, env) == False
+
+    # 2. _evaluate_initiator
+    trig_env = MockTrigger(init_step)
+    trig_herb = MockTrigger(HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=10))
+
+    assert _evaluate_initiator(trig_env, plant, env, {}) == True
+    assert _evaluate_initiator(trig_herb, plant, env, {(3, 3, 0): 15}) == True
+    assert _evaluate_initiator(trig_herb, plant, env, {(3, 3, 0): 5}) == False
+
+    # 3. _evaluate_species_triggers
+    curve_map = {"step": 0, "hill": 1, "logarithmic": 2}
+    swarm_grid = np.zeros((1, 10, 10), dtype=np.int32)
+    swarm_grid[0, 3, 3] = 15
+
+    world = ECSWorld()
+    entity = world.create_entity()
+    plant.entity_id = entity.entity_id
+    world.add_component(entity.entity_id, plant)
+
+    _evaluate_species_triggers(
+        triggers=[trig_env, trig_herb],
+        plants=[plant],
+        world=world,
+        env=env,
+        owner_substance_by_key={},
+        swarm_population_by_cell_species={(3, 3, 0): 15},
+        active_substance_ids_by_owner={},
+        substance_entities=[],
+        curve_map=curve_map,
+        swarm_grid=swarm_grid
+    )
