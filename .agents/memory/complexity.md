@@ -65,7 +65,7 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
 ## 2024-05-14 - Complexity Refactoring Report
 * **Target Function:** `src/phids/mcp_server.py` and `export_telemetry_data`
-* **Selection Rationale:** The target function is a large API-level route hander (MCP tool) with many `if/elif` blocks and data manipulations logic making it perfect for untangling without affecting any core engine performance.
+* **Selection Rationale:** The target function is a large API-level route handler (MCP tool) with many `if/elif` blocks and data manipulations logic making it perfect for untangling without affecting any core engine performance.
 * **Before/After Score:** 18 vs. 11
 * **Performance Assessment:** Re-ran the benchmark suite with 13 tests. The benchmark results confirm zero performance regressions on engine-critical pathways (all engine throughput metrics remain consistent with pre-refactoring limits).
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
