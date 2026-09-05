@@ -100,3 +100,7 @@ Action: When extracting large route handlers with multi-layered dictionary acces
 ## 2026-09-06 - Telemetry Export Structural Decoupling
 Learning: When extracting deeply nested export formatting blocks (like those found in `export_telemetry_data` for CSV, TikZ, LaTeX, and PNG) from a monolithic router (such as `src/phids/mcp_server.py`), separating the specific dictionary/dataframe traversal logic into an isolated package (`src/phids/telemetry/api/export.py`) significantly reduces cognitive complexity. It prevents the router from acting as a bloated factory and maintains a clean boundary between HTTP-like tool presentation and data processing.
 Action: For future monolithic tool endpoints handling multiple formatting formats or nested conditionals based on string literals, extract the individual format handlers into private helper functions in a dedicated package layer.
+
+## 2026-09-06 - Numba JIT Fallback during CI Parity Testing
+Learning: When testing Numba `@njit` functions for parity, CI pipelines often run with `NUMBA_DISABLE_JIT=1` which causes the `@njit` decorated function to act as a standard Python function. Directly accessing the `.py_func` attribute inside tests will throw an `AttributeError` in this configuration.
+Action: To ensure resilient test execution under both JIT-enabled and JIT-disabled environments, always wrap calls to the inner Python function using `getattr(func, 'py_func', func)` instead of accessing `.py_func` directly.
