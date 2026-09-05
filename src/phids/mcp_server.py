@@ -24,7 +24,6 @@ state are exposed.
 
 from __future__ import annotations
 
-import base64
 import dataclasses
 import json
 import shutil
@@ -571,6 +570,12 @@ def export_telemetry_data(
         return {"status": "error", "message": "Invalid format. Must be csv, tex_table, tex_tikz, or png."}
 
     try:
+        from phids.telemetry.api.export import (
+            _generate_csv_export,
+            _generate_png_export,
+            _generate_tex_table_export,
+            _generate_tex_tikz_export,
+        )
         from phids.telemetry.export.core import filter_telemetry_rows
 
         rows = loop.telemetry._rows
@@ -580,81 +585,44 @@ def export_telemetry_data(
         filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
         if format == "csv":
-            from phids.telemetry.export.core import (
-                aggregate_to_dataframe,
-                decimate_dataframe,
-                filter_dataframe_columns,
-                telemetry_to_dataframe,
-            )
+            return _generate_csv_export(filtered_rows, normalized_data_type, tick_interval, columns)
 
-            # Note: filter_telemetry_rows returns list[dict[str, Any]].
-            # For aggregate_to_dataframe, this is compatible enough at runtime,
-            # but we use type: ignore to bypass mypy's strictness.
-            if normalized_data_type in ("timeseries", "defense_economy", "biomass_stack"):
-                df = aggregate_to_dataframe(filtered_rows)  # type: ignore
-            else:
-                df = telemetry_to_dataframe(filtered_rows)
+        if format == "tex_table":
+            return _generate_tex_table_export(rows, columns, flora_ids, herbivore_ids, tick_interval)
 
-            if tick_interval > 1:
-                df = decimate_dataframe(df, tick_interval)
-
-            if columns:
-                df = filter_dataframe_columns(df, columns)
-
-            bytes_data = df.to_csv(index=False).encode("utf-8")
-            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
-
-        elif format == "tex_table":
-            from phids.telemetry.export.latex import export_bytes_tex_table
-
-            bytes_data = export_bytes_tex_table(
-                rows,
-                columns=columns,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                tick_interval=tick_interval,
-            )
-            return {"status": "success", "format": format, "data": bytes_data.decode("utf-8")}
-
-        elif format == "tex_tikz":
-            from phids.telemetry.export.tikz import generate_tikz_str
-
-            tikz_str = generate_tikz_str(
+        if format == "tex_tikz":
+            return _generate_tex_tikz_export(
                 filtered_rows,
                 normalized_data_type,
-                flora_names=flora_names,
-                herbivore_names=herbivore_names,
-                plant_species_id=plant_species_id,
-                herbivore_species_id=herbivore_species_id,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                title=title,
-                x_label=x_label,
-                y_label=y_label,
-                x_max=x_max,
-                y_max=y_max,
+                flora_names,
+                herbivore_names,
+                plant_species_id,
+                herbivore_species_id,
+                flora_ids,
+                herbivore_ids,
+                title,
+                x_label,
+                y_label,
+                x_max,
+                y_max,
             )
-            return {"status": "success", "format": format, "data": tikz_str}
 
-        elif format == "png":
-            from phids.telemetry.export.png import generate_png_bytes
-
-            bytes_data = generate_png_bytes(
+        if format == "png":
+            return _generate_png_export(
                 filtered_rows,
                 normalized_data_type,
-                flora_names=flora_names,
-                herbivore_names=herbivore_names,
-                plant_species_id=plant_species_id,
-                herbivore_species_id=herbivore_species_id,
-                include_flora_ids=flora_ids,
-                include_herbivore_ids=herbivore_ids,
-                title=title,
-                x_label=x_label,
-                y_label=y_label,
-                x_max=x_max,
-                y_max=y_max,
+                flora_names,
+                herbivore_names,
+                plant_species_id,
+                herbivore_species_id,
+                flora_ids,
+                herbivore_ids,
+                title,
+                x_label,
+                y_label,
+                x_max,
+                y_max,
             )
-            return {"status": "success", "format": format, "data": base64.b64encode(bytes_data).decode("utf-8")}
 
     except Exception as e:
         return {"status": "error", "message": f"Export generation failed: {e}"}
