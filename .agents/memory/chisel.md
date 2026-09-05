@@ -104,3 +104,7 @@ Action: For future monolithic tool endpoints handling multiple formatting format
 ## 2026-09-06 - Numba JIT Fallback during CI Parity Testing
 Learning: When testing Numba `@njit` functions for parity, CI pipelines often run with `NUMBA_DISABLE_JIT=1` which causes the `@njit` decorated function to act as a standard Python function. Directly accessing the `.py_func` attribute inside tests will throw an `AttributeError` in this configuration.
 Action: To ensure resilient test execution under both JIT-enabled and JIT-disabled environments, always wrap calls to the inner Python function using `getattr(func, 'py_func', func)` instead of accessing `.py_func` directly.
+
+## 2026-09-06 - Test Coverage during Refactoring
+Learning: When extracting logic blocks into new modules (like `src/phids/telemetry/api/export.py`), CI utilizes `diff-cover` to mandate an 80% coverage threshold specifically on the modified diff. Existing tests that only cover the monolith's primary path might not adequately execute the extracted branch configurations (e.g., CSV formatting branches, `read_batch_summary` edge cases).
+Action: Always verify diff coverage explicitly using `pytest --cov` and augment unit tests (e.g., in `tests/unit/api/test_mcp_server_tools.py`) to hit all newly extracted branches before submitting refactoring PRs.

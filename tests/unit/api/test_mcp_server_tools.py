@@ -198,3 +198,127 @@ def test_export_telemetry_data_png(mock_export: MagicMock) -> None:
             res = export_telemetry_data("png", data_type="timeseries")
             assert res["status"] == "success"
             assert res["data"] == expected_b64
+
+
+@patch("phids.telemetry.export.latex.export_bytes_tex_table")
+def test_export_telemetry_data_tex_table(mock_export: MagicMock) -> None:
+    """Test export_telemetry_data tex_table output."""
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = MagicMock()
+    mock_loop.telemetry._rows = [{"test": 1}]
+    mock_export.return_value = b"test_tex_table_data"
+
+    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=[{"test": 1}]):
+            res = export_telemetry_data("tex_table", data_type="timeseries")
+            assert res["status"] == "success"
+            assert res["data"] == "test_tex_table_data"
+
+
+@patch("phids.telemetry.export.tikz.generate_tikz_str")
+def test_export_telemetry_data_tex_tikz(mock_export: MagicMock) -> None:
+    """Test export_telemetry_data tex_tikz output."""
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = MagicMock()
+    mock_loop.telemetry._rows = [{"test": 1}]
+    mock_export.return_value = "test_tikz_data"
+
+    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=[{"test": 1}]):
+            res = export_telemetry_data("tex_tikz", data_type="timeseries")
+            assert res["status"] == "success"
+            assert res["data"] == "test_tikz_data"
+
+
+def test_export_telemetry_data_csv_branches() -> None:
+    """Test export_telemetry_data csv output branches."""
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = MagicMock()
+    mock_loop.telemetry._rows = [{"test": 1}]
+
+    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=[{"test": 1}]):
+            mock_df = MagicMock()
+            mock_df.to_csv.return_value = "test_csv_data"
+            with patch("phids.telemetry.export.core.telemetry_to_dataframe", return_value=mock_df) as mock_tel_df:
+                with patch("phids.telemetry.export.core.decimate_dataframe", return_value=mock_df) as mock_dec:
+                    with patch("phids.telemetry.export.core.filter_dataframe_columns", return_value=mock_df) as m_filt:
+                        res = export_telemetry_data("csv", data_type="phasespace", tick_interval=2, columns="test")
+                        assert res["status"] == "success"
+                        mock_tel_df.assert_called_once()
+                        mock_dec.assert_called_once()
+                        m_filt.assert_called_once()
+
+
+def test_export_telemetry_data_csv_timeseries() -> None:
+    """Test export_telemetry_data csv output branches."""
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = MagicMock()
+    mock_loop.telemetry._rows = [{"test": 1}]
+
+    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=[{"test": 1}]):
+            mock_df = MagicMock()
+            mock_df.to_csv.return_value = "test_csv_data"
+            with patch("phids.telemetry.export.core.aggregate_to_dataframe", return_value=mock_df) as mock_agg_df:
+                with patch("phids.telemetry.export.core.decimate_dataframe", return_value=mock_df) as mock_dec:
+                    with patch("phids.telemetry.export.core.filter_dataframe_columns", return_value=mock_df) as m_filt:
+                        res = export_telemetry_data("csv", data_type="timeseries", tick_interval=2, columns="test")
+                        assert res["status"] == "success"
+                        mock_agg_df.assert_called_once()
+                        mock_dec.assert_called_once()
+                        m_filt.assert_called_once()
+
+
+def test_export_telemetry_data_invalid_format_fallback() -> None:
+    """Test export_telemetry_data unknown format branch."""
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = MagicMock()
+    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        res = export_telemetry_data("unknown")
+        assert res["status"] == "error"
+
+
+def test_read_batch_summary_success() -> None:
+    """Test read_batch_summary success branch."""
+    import json
+
+    from phids.mcp_server import read_batch_summary
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        with patch("phids.mcp_server._PROJECT_ROOT", tmp_path):
+            # Create the mocked path
+            batch_dir = tmp_path / "data" / "batches"
+            batch_dir.mkdir(parents=True, exist_ok=True)
+            summary_file = batch_dir / "test_job_summary.json"
+
+            with open(summary_file, "w") as f:
+                json.dump({"test": "data"}, f)
+
+            res = read_batch_summary("test_job")
+            assert res["status"] == "success"
+            assert res["data"] == {"test": "data"}
+
+
+def test_read_batch_summary_read_error() -> None:
+    """Test read_batch_summary read error branch."""
+    from phids.mcp_server import read_batch_summary
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        with patch("phids.mcp_server._PROJECT_ROOT", tmp_path):
+            batch_dir = tmp_path / "data" / "batches"
+            batch_dir.mkdir(parents=True, exist_ok=True)
+            summary_file = batch_dir / "test_job_error_summary.json"
+
+            # Create a directory instead of a file so read fails
+            summary_file.mkdir()
+
+            res = read_batch_summary("test_job_error")
+            assert res["status"] == "error"
