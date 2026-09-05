@@ -291,3 +291,66 @@ def test_inspect_telemetry_schema_import_error() -> None:
     with patch.dict(sys.modules, {"zarr": None}):
         result = inspect_telemetry_schema("test")
         assert result["status"] == "error"
+
+
+def test_export_telemetry_data_tex_table(mocker: MagicMock) -> None:
+    """Test export_telemetry_data tex_table output."""
+    from phids.engine.loop import SimulationLoop
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = mocker.Mock(spec=SimulationLoop)
+    mock_loop.telemetry = mocker.Mock()
+    mock_loop.telemetry._rows = [{"tick": 0, "energy": 10.0}]
+    mock_loop.config = mocker.Mock()
+    mock_loop.config.flora_species = []
+    mock_loop.config.herbivore_species = []
+
+    with mocker.patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with mocker.patch("phids.telemetry.export.latex.export_bytes_tex_table", return_value=b"mock_tex"):
+            res = export_telemetry_data("tex_table", data_type="timeseries")
+            assert res["status"] == "success"
+            assert res["format"] == "tex_table"
+            assert res["data"] == "mock_tex"
+
+
+def test_export_telemetry_data_tex_tikz(mocker: MagicMock) -> None:
+    """Test export_telemetry_data tex_tikz output."""
+    from phids.engine.loop import SimulationLoop
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = mocker.Mock(spec=SimulationLoop)
+    mock_loop.telemetry = mocker.Mock()
+    mock_loop.telemetry._rows = [{"tick": 0, "energy": 10.0}]
+    mock_loop.config = mocker.Mock()
+    mock_loop.config.flora_species = []
+    mock_loop.config.herbivore_species = []
+
+    with mocker.patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with mocker.patch("phids.telemetry.export.tikz.generate_tikz_str", return_value="mock_tikz"):
+            res = export_telemetry_data("tex_tikz", data_type="timeseries")
+            assert res["status"] == "success"
+            assert res["format"] == "tex_tikz"
+            assert res["data"] == "mock_tikz"
+
+
+def test_export_telemetry_data_csv_phasespace(mocker: MagicMock) -> None:
+    """Test export_telemetry_data csv phasespace output."""
+    import pandas as pd
+
+    from phids.engine.loop import SimulationLoop
+    from phids.mcp_server import export_telemetry_data
+
+    mock_loop = mocker.Mock(spec=SimulationLoop)
+    mock_loop.telemetry = mocker.Mock()
+    mock_loop.telemetry._rows = [{"tick": 0, "energy": 10.0}]
+    mock_loop.config = mocker.Mock()
+    mock_loop.config.flora_species = []
+    mock_loop.config.herbivore_species = []
+
+    with mocker.patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+        with mocker.patch(
+            "phids.telemetry.export.core.telemetry_to_dataframe", return_value=pd.DataFrame([{"tick": 0}])
+        ):
+            res = export_telemetry_data("csv", data_type="phasespace", tick_interval=2, columns="tick")
+            assert res["status"] == "success"
+            assert res["format"] == "csv"
