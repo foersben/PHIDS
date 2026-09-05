@@ -160,7 +160,9 @@ def test_flat_field_choice_jit_parity() -> None:
 
     x_jit, y_jit = _flat_field_choice_jit(count, 0, 0, 0, 0, c_x, c_y, np.zeros(4, dtype=np.float64), rand_val)
 
-    x_py, y_py = getattr(_flat_field_choice_jit, "py_func", _flat_field_choice_jit)(count, 0, 0, 0, 0, c_x, c_y, np.zeros(4, dtype=np.float64), rand_val)
+    x_py, y_py = getattr(_flat_field_choice_jit, "py_func", _flat_field_choice_jit)(
+        count, 0, 0, 0, 0, c_x, c_y, np.zeros(4, dtype=np.float64), rand_val
+    )
 
     assert x_jit == x_py
     assert y_jit == y_py
@@ -239,7 +241,9 @@ def test_choose_neighbour_by_flow_probability_jit_parity() -> None:
         1.0,
     )
 
-    x_py, y_py = getattr(_choose_neighbour_by_flow_probability_jit, "py_func", _choose_neighbour_by_flow_probability_jit)(
+    x_py, y_py = getattr(
+        _choose_neighbour_by_flow_probability_jit, "py_func", _choose_neighbour_by_flow_probability_jit
+    )(
         0,
         0,
         0,
