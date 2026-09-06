@@ -39,7 +39,7 @@ from phids.engine.systems.signaling.lifecycle import (
 )
 from phids.engine.systems.signaling.spatial import _build_swarm_population_index
 from phids.engine.systems.signaling.synthesis import _phase_advance_synthesis
-from phids.engine.systems.signaling.triggers import _phase_evaluate_triggers
+from phids.engine.systems.signaling.triggers.phase import _phase_evaluate_triggers
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
