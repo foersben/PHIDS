@@ -100,3 +100,8 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** In pure Python tight loops (e.g., ECS interaction routines), using `getattr(component, 'attribute', default)` incurs significant interpreter overhead compared to direct property access `component.attribute`. When properties are guaranteed to exist via statically typed component classes (like `SwarmComponent`), `getattr` is entirely unnecessary and causes measurable slowdowns during high-frequency execution.
 **Action:** Replace dynamic `getattr` attribute resolution with direct property access on statically typed component classes in performance-critical hot paths. This simple change avoids C-function call overhead and yields a measurable tick throughput boost (e.g., ~5% in the movement resolution phase).
+
+## 2026-09-06 - [Numba JIT fallback handling in tests]
+
+**Learning:** When testing Numba `@njit` functions for parity with their Python equivalents in CI environments, you cannot rely on the `.py_func` attribute being present. Environments running with `NUMBA_DISABLE_JIT=1` (like coverage checks) completely disable JIT compilation, meaning the imported function is just a standard Python function without the Numba wrapper attributes. Calling `.py_func` directly raises an `AttributeError`.
+**Action:** Always use `getattr(func, 'py_func', func)` when accessing the raw Python implementation of a Numba function. This safely falls back to the function itself when JIT is disabled globally.
