@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+#
+# Runs PHIDS continuous integration passes locally on the native host interpreter
+# without container overhead (Docker/act). Replicates CI quality, test, and doc builds.
+
 set -euo pipefail
 
 usage() {

@@ -79,6 +79,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
+      - name: Generate OKF Knowledge Graph Visualization
+        run: uv run python scripts/visualize_okf.py
+
       - name: Build Docs with Zensical
         run: uv run zensical build --strict
 

@@ -64,6 +64,14 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: verify-matrix-parity
+        name: Verify OKF Data-Flow Matrix Parity
+        entry: uv run python scripts/verify_matrix_trace_parity.py --all
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
       - id: nc-license-guard
         name: NC License Guard (no extended imports in core pipeline)
         entry: uv run python scripts/check_no_extended_imports.py

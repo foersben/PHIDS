@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+#
+# Rehearses GitHub Actions CI/CD workflows locally using nektos/act with Docker or Podman.
+# Manages rootless Podman sockets and container runtime detection.
+
 set -euo pipefail
 
 usage() {

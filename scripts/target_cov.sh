@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+#
+# Runs targeted pytest test-node execution with isolated module coverage gates.
+# Fast feedback loop for subsystem development and mutation testing without global test overhead.
+
 set -euo pipefail
 
 if [[ $# -lt 2 ]]; then

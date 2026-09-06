@@ -263,6 +263,11 @@ def main() -> int:
         "docs/scientific_model/flora_and_symbiosis.md": verify_mycorrhizal_matrix_parity,
         "docs/scientific_model/population_dynamics.md": verify_mitosis_matrix_parity,
         "docs/development_guide/okf_data_flow_matrices.md": verify_defense_matrix_parity,
+        "docs/scientific_model/computations/defense_signaling_cascade.md": verify_defense_matrix_parity,
+        "docs/scientific_model/computations/phloem_translocation.md": verify_phloem_matrix_parity,
+        "docs/scientific_model/computations/herbivore_starvation.md": verify_starvation_matrix_parity,
+        "docs/scientific_model/computations/mycorrhizal_propagation.md": verify_mycorrhizal_matrix_parity,
+        "docs/scientific_model/computations/clonal_mitosis.md": verify_mitosis_matrix_parity,
     }
 
     targets = []

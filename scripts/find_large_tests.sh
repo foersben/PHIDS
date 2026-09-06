@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+#
+# Diagnostic utility to identify oversized test modules (> 750 lines of code).
+# Helps maintain test suite modularity, isolation, and cognitive simplicity.
+#
+# Usage:
+#   ./scripts/find_large_tests.sh
+#   THRESHOLD=500 ./scripts/find_large_tests.sh
 
-THRESHOLD=750
+set -euo pipefail
+
+THRESHOLD="${THRESHOLD:-750}"
 
 echo "=== Individual Test Files > $THRESHOLD LOC ==="
 find tests -type f \( -name "test_*.py" -o -name "*_test.py" \) -exec wc -l {} + \

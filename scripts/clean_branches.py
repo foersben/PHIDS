@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
-"""Script to safely identify and clean up local git branches that have no remote counterpart."""
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
+"""Interactive housekeeping utility to prune stale local git branches.
+
+Safely discovers and removes local git branches whose remote tracking counterparts
+have been merged, deleted, or pruned on `origin`.
+
+Safety Invariants:
+- Protected branches (`main`, `develop`) are strictly exempt from pruning.
+- The currently checked-out branch is never considered for deletion.
+- Pruning requires interactive confirmation (`y/N`).
+- If an unmerged branch is encountered, prompts for explicit force deletion (`-D`).
+
+Usage:
+    python scripts/clean_branches.py
+    uv run python scripts/clean_branches.py
+"""
 
 from __future__ import annotations
 

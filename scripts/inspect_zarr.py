@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
-"""CLI utility to inspect and validate PHIDS Zarr replay stores."""
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+
+"""CLI inspection and validation utility for PHIDS Zarr replay stores.
+
+Provides developer and diagnostic introspection of serialized simulation replay buffers
+recorded under Rule 01 (Stochastic Engine & Replay):
+- Verifies root Zarr group layout and consolidated JSON metadata (`_metadata`).
+- Reports total recorded frame count, frame key sequence, and oldest/newest timestamps.
+- Inspects array shapes, dtypes, and chunk configurations across essential layers:
+  `plant_energy_layer`, `signal_layers`, `toxin_layers`, `flow_field`, `wind_vector_x`, `wind_vector_y`.
+- Flags missing layers or corrupted chunk structures.
+
+Usage:
+    python scripts/inspect_zarr.py <path_to_store.zarr>
+    uv run python scripts/inspect_zarr.py data/replays/sim_run_01.zarr
+"""
 
 from __future__ import annotations
 

@@ -1,8 +1,19 @@
-"""Operational utility for PHIDS diagnostics and request tracing.
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-This script provides reproducible instrumentation around API traffic and runtime interactions.
-It is used to observe interface-level behavior without altering simulation state transitions
-in the engine core.
+"""Operational diagnostic utility for PHIDS HTTP/HTMX API request tracing.
+
+Provides headless, in-process diagnostic instrumentation across the complete FastAPI
+endpoint lifecycle without browser overhead:
+- Probes root index (`GET /`) and simulation status (`GET /api/simulation/status`).
+- Tests scenario loading via `POST /api/scenario/load` with a minimal valid payload.
+- Initiates simulation execution via `POST /api/simulation/start` with HTMX headers.
+- Verifies real-time telemetry streaming response via `GET /api/telemetry`.
+
+Usage:
+    python scripts/phids_request_trace.py
+    uv run python scripts/phids_request_trace.py
 """
 
 from __future__ import annotations
