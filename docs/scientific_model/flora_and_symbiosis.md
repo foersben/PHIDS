@@ -18,6 +18,8 @@ sources:
   resource: src/phids/engine/systems/lifecycle/
 - id: constants
   resource: src/phids/shared/constants.py
+- id: trace_tests
+  resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---
 
 Flora within PHIDS are stationary entities on the grid that produce the resources driving the herbivore ecosystem. While stationary, their behavior governs resource distribution, secondary defenses, and spatial networks.
@@ -182,7 +184,7 @@ reflection of the **Decoupled Dual-Proxy Architecture** described in
 [`biological_abstractions.md`](future_prospects/biological_abstractions.md).
 
 | Field | Type | Default | Semantics |
-|---|---|---|---|
+| :--- | :--- | :--- | :--- |
 | `energy` | `float` | from schema | Current caloric health ($E_{current}$). Decreases from herbivory and mycorrhizal taxes. |
 | `max_energy` | `float` | from schema | Species ceiling for caloric storage. |
 | `structural_mass` | `float` | `0.0` | Permanent lignin / woodiness ($M_{structural}$). Never decreased by herbivory. |
@@ -199,10 +201,10 @@ where $g_M$ is `growth_rate_structural` (from `FloraSpeciesParams.structural_gro
 
 ### Initialization Contract
 
-- New seeds spawned by `_attempt_reproduction()` in `lifecycle/` initialize with
+* New seeds spawned by `_attempt_reproduction()` in `lifecycle/` initialize with
   `structural_mass = M_STRUCTURAL_SEED_VALUE` (`0.0`) - reflecting biological reality that a
   freshly germinated seed has zero lignified tissue.
-- Both `structural_mass` and `energy` are cleared to `0.0` via `clear_structural_mass()` and
+* Both `structural_mass` and `energy` are cleared to `0.0` via `clear_structural_mass()` and
   `clear_plant_energy()` on the `GridEnvironment` write buffer when a plant dies, ensuring
   coordinate reuse does not carry ghost state.
 
@@ -210,10 +212,10 @@ where $g_M$ is `growth_rate_structural` (from `FloraSpeciesParams.structural_gro
 
 The new fields are backed by four double-buffered arrays in `GridEnvironment`:
 
-- `structural_mass_layer` - `[W, H]` float32 aggregated read layer (accessible by flow-field and interaction systems)
-- `_structural_mass_layer_write` - `[W, H]` float32 write buffer
-- `structural_mass_by_species` - `[MAX_FLORA_SPECIES, W, H]` float32 read layer
-- `_structural_mass_by_species_write` - `[MAX_FLORA_SPECIES, W, H]` float32 write buffer
+* `structural_mass_layer` - `[W, H]` float32 aggregated read layer (accessible by flow-field and interaction systems)
+* `_structural_mass_layer_write` - `[W, H]` float32 write buffer
+* `structural_mass_by_species` - `[MAX_FLORA_SPECIES, W, H]` float32 read layer
+* `_structural_mass_by_species_write` - `[MAX_FLORA_SPECIES, W, H]` float32 write buffer
 
 All four are pre-allocated at simulation bootstrap under the **Rule of 16** constraint and swapped
 atomically within `rebuild_energy_layer()` alongside the caloric energy layers.
@@ -222,3 +224,17 @@ atomically within `rebuild_energy_layer()` alongside the caloric energy layers.
 
 The Zarr replay store records `structural_mass_layer` per tick from Plan 1 onwards. All historical
 replay files produced after this commit are forward-compatible with Plan 2 behavior analytics.
+
+---
+
+## Data-Flow Matrix Specifications
+
+### Mycorrhizal Root Network Multi-Hop Signal Propagation & Upkeep Tax
+
+Below is the verified Data-Flow Matrix for underground mycorrhizal signal propagation across consecutive conduits and plant nodes, showing signal transfer latency and daily carbon upkeep tax ($E_{\text{tax}} = 1.5$):
+
+| Tick $t$ | `source_signal` | `hop1_signal` | `hop2_signal` | `hop1_energy` | `upkeep_tax` | Applied Vectorized Operation & Gate Rule |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **$t_0$** | 1.0 | 0.0 | 0.0 | 50.0 | 0.0 | **Conduit Injection:** Attacked emitter releases signal into root network conduit. |
+| **$t_1$** | 0.8 | 0.9 | 0.0 | 48.5 | 1.5 | **Hop 1 Arrival:** Signal reaches primary neighbor; daily symbiosis maintenance tax deducted ($\Delta E = -1.5$). |
+| **$t_2$** | 0.6 | 0.7 | 0.81 | 47.0 | 1.5 | **Hop 2 Arrival:** Signal propagates to secondary node; Hop 1 maintains conduit connection. |

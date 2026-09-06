@@ -230,3 +230,6 @@ src/data_pipeline/manifest.json
 
 # Benchmarking Scenarios
 examples/benchmarking_*.json
+
+# Docs
+docs/latex/

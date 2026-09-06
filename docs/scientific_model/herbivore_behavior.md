@@ -9,8 +9,15 @@ description: Documentation for Herbivore Behavior & Kinematics in the PHIDS
 tags: [phids, ecs, numba, chemotaxis, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
-resources:
-  - "src/phids/engine/systems/interaction/movement/__init__.py"
+sources:
+  - id: herbivore_movement
+    resource: src/phids/engine/systems/interaction/movement/__init__.py
+  - id: feeding
+    resource: src/phids/engine/systems/interaction/feeding.py
+  - id: metabolism
+    resource: src/phids/engine/systems/interaction/metabolism.py
+  - id: trace_tests
+    resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---
 
 Herbivore swarms represent the primary consumer tier in the PHIDS simulation. Their behaviors-movement, feeding, population scaling, and division-are carefully bounded by biological rules that produce macroscopic swarm dynamics without relying on expensive global computation.
@@ -179,3 +186,17 @@ These are represented by three primary parameters:
 - `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
 
 The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.
+
+---
+
+## Data-Flow Matrix Specifications
+
+### Herbivore 24-Tick Metabolic Stride & Starvation Attrition
+
+Below is the verified Data-Flow Matrix for herbivore metabolic maintenance and starvation attrition over consecutive 24-tick daily stride cycles in an empty patch ($\text{pop} = 10, E_{\text{min}} = 1.0, \text{upkeep\_rate} = 0.05$, daily drain $= 10 \times 1.0 \times 0.05 \times 24 = 12.0$):
+
+| Tick $t$ | `population` | `energy` | `energy_min` | `upkeep_drain` | `alive_mask` | Applied Vectorized Operation & Gate Rule |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **$t_0$** | 10 | 20.0 | 1.0 | 0.0 | 1.0 | **Initial State:** Swarm occupies patch with caloric reserve above minimum threshold. |
+| **$t_{24}$** | 10 | 8.0 | 1.0 | 12.0 | 1.0 | **Daily Metabolic Drain:** Stride boundary evaluates $\Delta E = -12.0$. Caloric reserve drops to 8.0. |
+| **$t_{48}$** | 0 | 0.0 | 1.0 | 12.0 | 0.0 | **Starvation Collapse:** Second metabolic deduction exhausts reserve ($8.0 - 12.0 \le 0$). Swarm eradicated. |

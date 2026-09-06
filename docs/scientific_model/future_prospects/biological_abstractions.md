@@ -43,6 +43,8 @@ sources:
   resource: src/phids/io/zarr_replay.py
 - id: constants
   resource: src/phids/shared/constants.py
+- id: trace_tests
+  resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 - id: analytics
   resource: src/phids/telemetry/analytics.py
 - id: test_dual_proxy_integration
@@ -192,11 +194,11 @@ Manually guessing these parameters leads to fragile ecosystems that collapse. Ho
 
 This is entirely solved by separating the **Parameter Discovery** from the **Runtime Simulation**. We achieve this via our **Empirical Bio-Database** and the **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)**.
 
-1. **Empirical Constraints (Database):** 
+1. **Empirical Constraints (Database):**
    Our DuckDB database (`bio_database.json` / `bio_database.py`) is populated with empirical, real-world dry-mass data across 16 flora species (sourced from GBIF, TRY, DrDuke). The schema contains critical scalar parameters such as `max_energy`, `growth_rate`, `survival_threshold`, `structural_mass_max`, and `structural_growth_rate`. These raw data points serve as the *hard bounding boxes* for our dual proxies.
-2. **EEDSE Parameter Tuning (Offline Optimization):** 
+2. **EEDSE Parameter Tuning (Offline Optimization):**
    Before the simulation starts, our DSE optimizer (`src/phids/analytics/dse_optimizer.py`) takes these database constraints and runs a distributed NSGA-II multi-objective optimization. It tests parameter permutations within empirical database bounds, filtering out unbalanced topologies using Analytical Pre-Pruning.
-3. **Hot Path Impact:** 
+3. **Hot Path Impact:**
    The result of the DSE is a perfectly tuned, highly realistic Lotka-Volterra configuration. When the simulation starts, the engine loads these pre-computed constants into `E_current` and `M_structural` Numba arrays. The runtime engine does zero heavy lifting for parameter tuning, preserving pure $O(1)$ execution speed.
 
 ---
@@ -206,7 +208,7 @@ This is entirely solved by separating the **Parameter Discovery** from the **Run
 The **Decoupled Dual-Proxy Architecture** is fully implemented across four production milestones on the `feature/grid-visuals-and-tooltips` and `feature/decoupled-dual-proxy` branches.
 
 | Plan | Title | Status | Branch Commits |
-|---|---|---|---|
+| :--- | :--- | :--- | :--- |
 | **Plan 1** | Core ECS Array Expansion (Foundation) | **DONE** | `4f8cdb6` |
 | **Plan 2** | Structural Growth Kernel & Trampling FMA | **DONE** | `08456a8`, `f1800de`, `43fccc6` |
 | **Plan 3** | Movement Resolution Incidental Mortality & Upkeep Tax | **DONE** | `92d3e08` |
@@ -303,7 +305,9 @@ stateDiagram-v2
   - **Inter-species link:** `<span class="text-amber-400"> (inter-species)</span>`
   - **Intra-species link:** `<span class="text-sky-400/70"> (intra-species)</span>`
 
-### Data-Flow Matrix: Dual-Proxy State Shifts
+## Data-Flow Matrix Specifications
+
+### Dual-Proxy State Shifts
 
 | Event | Precondition | State Transformation | ECS Resolution |
 | :--- | :--- | :--- | :--- |

@@ -12,6 +12,10 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: biotope
   resource: src/phids/engine/core/biotope.py
+- id: signaling_emission
+  resource: src/phids/engine/systems/signaling/emission.py
+- id: trace_tests
+  resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---
 
 The dispersion of Volatile Organic Compounds (VOCs)-airborne signals used by flora to warn neighbors of herbivore attacks-is mathematically modeled in PHIDS using a discrete Reaction-Diffusion system.
@@ -168,3 +172,19 @@ This scalar directly alters the attraction landscape *before* the Gaussian convo
 ### Impact on Chemotaxis
 
 See `docs/scientific_model/chemotaxis.md` for the exact mathematical effects on swarm navigation.
+
+---
+
+## Data-Flow Matrix Specifications
+
+### Plant Defense Initiation, Synthesis Delay & Airborne Emission Cascade
+
+Below is the verified Data-Flow Matrix for plant defense signaling, showing initiation under attack, metabolic synthesis delay, active airborne emission, herbivore death interruption, and SIMD ghost guarding:
+
+| Tick $t$ | $E_{\text{current}}$ | `is_triggered` | `alive_mask` | $M_{\text{internal\_toxin}}$ | $L_{\text{external\_grid}}$ | Applied Vectorized Operation & Gate Rule |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **$t_0$** | 50.0 | 1.0 (Attack) | 1.0 | 0.0 | 0.0 | **Initiation:** Attack detected. `is_triggered` set to 1.0. |
+| **$t_1$** | 45.0 | 1.0 | 1.0 | 5.0 | 0.0 | **Synthesis Delay:** Metabolic investment ($\Delta E = -5.0, \Delta M = +5.0$). Zero grid emission during synthesis. |
+| **$t_2$** | 40.0 | 0.0 (Ceased) | 1.0 | 8.0 | 2.0 | **Active Emission:** Synthesis completes. Toxin emitted into external grid ($\Delta M = -2.0, \Delta L = +2.0$). |
+| **$t_3$** | 0.0 (Dead) | 0.0 | 0.0 | 8.0 | 2.0 | **Death Interruption:** Herbivore consumes remaining energy. `alive_mask` collapses to 0.0. |
+| **$t_4$** | 0.0 | 0.0 | 0.0 | 8.0 | 2.0 | **Ghost Guard:** `alive_mask == 0.0` halts emission and metabolism without conditional branches. |

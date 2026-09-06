@@ -23,6 +23,15 @@ test-parity:
 test-replay:
     uv run --all-groups pytest tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
 
+test-matrix:
+    uv run pytest --no-cov tests/integration/scientific_invariants/test_causal_data_flow_matrices.py -v
+
+audit-matrix:
+    uv run python scripts/audit_matrix_coverage.py
+
+verify-matrix:
+    uv run python scripts/verify_matrix_trace_parity.py --all
+
 mutate:
     uv run mutmut run
 

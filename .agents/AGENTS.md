@@ -50,3 +50,11 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 ## MCP Server Usage
 
 - **Introspection Tools:** All agents MUST prefer using the native `PHIDS-Orchestrator` MCP tools (e.g. `runtime_snapshot`, `query_batch_jobs`, `query_diagnostic_logs`, `inspect_telemetry_schema`) and resources (e.g. `phids://config/draft.json`) instead of manually parsing or grepping the codebase and data files when evaluating the simulation state, telemetry metrics, or drift anomalies.
+
+## Continuous Agentic Change & Data-Flow Matrix Synchronization Protocol
+
+- **Mandatory Synchronization Gate:** Whenever ANY AI agent modifies simulation equations, schemas, or engine systems in `src/phids/engine/systems/` or `src/phids/api/schemas/`, the agent MUST:
+  1. Run `uv run python scripts/audit_matrix_coverage.py` to assert that all behavioral cascades remain fully covered by documented Data-Flow Matrices.
+  2. Run `uv run python scripts/verify_matrix_trace_parity.py --all` (and `uv run pytest tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`) to verify 1:1 table-to-trace parity.
+  3. If simulation parameters, thresholds, or kinetics drift intentionally, update the documented Markdown table rows under `## Data-Flow Matrix Specifications` in the corresponding `docs/scientific_model/` files and update `tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`.
+- **Pre-Commit Enforcement:** Never bypass git hooks or commit code if `audit_matrix_coverage.py` or `validate_okf.py` report coverage or link structure violations.

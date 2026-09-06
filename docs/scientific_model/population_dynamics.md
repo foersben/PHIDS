@@ -8,7 +8,11 @@ description: Documentation for Population Dynamics vs. Continuous Solvers in the
   PHIDS framework.
 tags: [phids, ecs, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+sources:
+- id: population_system
+  resource: src/phids/engine/systems/interaction/population.py
+- id: trace_tests
+  resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---
 
 Herbivore swarms within PHIDS consume resources, metabolize energy, reproduce, and undergo density-dependent population scaling. This deep dive explains how those behaviors are modeled as discrete events evaluated locally on the spatial hash.
@@ -170,9 +174,23 @@ If a scientific scenario requires explicit age-dependent behavior (e.g., declini
    This enables age-dependent speed or upkeep decay at zero allocation overhead.
 2. **Weibull Cohort Mortality Rate ($\mu_{\text{age}}$):**
    Model senescent mortality at the swarm level using a Weibull hazard function $\mu(A) = \frac{k}{\lambda}\left(\frac{A}{\lambda}\right)^{k-1}$. The age-dependent casualties per tick are subtracted directly from population $N_i$ during metabolic attrition passes without tracking individual entity instances.
+
 ### Continuous-Time ODE Solvers (Lotka-Volterra)
 
 The classic Lotka-Volterra predator-prey (here: herbivore-plant) equations ($\frac{dx}{dt} = \alpha x - \beta xy$) model the rate of change of continuous populations.
 
 * *Why rejected:* ODEs treat populations as perfectly mixed, homogeneous continuous variables ($x = 42.5$ rabbits). They cannot capture discrete, localized spatial events, such as a specific herd of 10 herbivores navigating around a toxic plant at coordinate $(4, 12)$.
 * *Our advantage:* The discrete ECS formulation provides the spatial granularity required for physical movement, local chemical triggers, and density-dependent crowding (e.g., cell capacity repulsion) while preserving mathematical determinism.
+
+---
+
+## Data-Flow Matrix Specifications
+
+### 168-Tick Clonal Mitosis Bifurcation & Biomass Partitioning
+
+Below is the verified Data-Flow Matrix for 168-tick stride herbivore clonal bifurcation, showing biomass threshold gating and equal energy partitioning between parent and daughter swarms ($\text{pop}_{\text{parent}} = 20 \to 10, E = 50.0 \to 25.0$):
+
+| Tick $t$ | `parent_pop` | `parent_energy` | `daughter_pop` | `daughter_energy` | `split_occurred` | Applied Vectorized Operation & Gate Rule |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **$t_0$** | 20 | 50.0 | 0 | 0.0 | 0.0 | **Accumulation Phase:** Swarm forages and builds caloric surplus prior to weekly check. |
+| **$t_{168}$** | 10 | 25.0 | 10 | 25.0 | 1.0 | **Clonal Bifurcation:** 168-tick boundary reached; population and energy partition equally ($E_{\text{daughter}} = E/2$). |

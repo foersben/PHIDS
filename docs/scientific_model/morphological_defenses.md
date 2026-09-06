@@ -23,6 +23,8 @@ sources:
   resource: src/phids/engine/systems/interaction/feeding.py
 - id: flow_field
   resource: src/phids/engine/core/flow_field.py
+- id: trace_tests
+  resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---
 
 This document provides the formal mathematical and biological formulation for plant morphological (constitutive) defenses and dynamic resource reallocation (apparent nutrition withdrawal) in the PHIDS ecosystem simulation model.
@@ -164,3 +166,21 @@ For software engineers and data interface developers, this section maps the math
             1.0 - plant.apparent_nutrition_factor
         ) * plant.translocation_rate
     ```
+
+---
+
+## Data-Flow Matrix Specifications
+
+### Phloem Resource Translocation & Apparent Nutrition Recovery
+
+Below is the verified Data-Flow Matrix for rate-limited phloem nutrient translocation and post-withdrawal recovery ($N_{\text{initial}} = 0.5, N_{\text{target}} = 0.2, k_{\text{trans}} = 0.5, \tau_{\text{withdrawal}} = 2$ ticks):
+
+| Tick $t$ | $N_{\text{apparent}}$ | $N_{\text{target}}$ | $k_{\text{trans}}$ | `withdrawal_ticks_remaining` | Applied Vectorized Operation & Gate Rule |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **$t_0$** | 0.5000000 | 0.2 | 0.5 | 2 | **Initiation:** Trigger satisfies withdrawal condition. Countdown initialized to 2. |
+| **$t_1$** | 0.3500000 | 0.2 | 0.5 | 1 | **Withdrawal Phase:** $N^{t+1} = 0.5 + (0.2 - 0.5) \times 0.5 = 0.35$. Countdown decrements to 1. |
+| **$t_2$** | 0.2750000 | 0.2 | 0.5 | 0 | **Target Convergence:** $N^{t+1} = 0.35 + (0.2 - 0.35) \times 0.5 = 0.275$. Countdown reaches 0. |
+| **$t_3$** | 0.6375000 | 1.0 | 0.5 | 0 | **Recovery Initiation:** Countdown is 0; relaxation target reverts to 1.0 ($N^{t+1} = 0.275 + (1.0 - 0.275) \times 0.5 = 0.6375$). |
+| **$t_4$** | 0.8187500 | 1.0 | 0.5 | 0 | **Recovery Phase:** $N^{t+1} = 0.6375 + (1.0 - 0.6375) \times 0.5 = 0.81875$. |
+| **$t_5$** | 0.9093750 | 1.0 | 0.5 | 0 | **Asymptotic Approach:** $N^{t+1} = 0.81875 + (1.0 - 0.81875) \times 0.5 = 0.909375$. |
+| **$t_6$** | 0.9546875 | 1.0 | 0.5 | 0 | **Restored Nutrition:** $N^{t+1} = 0.909375 + (1.0 - 0.909375) \times 0.5 = 0.9546875$. |

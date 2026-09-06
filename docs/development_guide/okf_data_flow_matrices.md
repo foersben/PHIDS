@@ -54,7 +54,7 @@ Below is the canonical Data-Flow Matrix for plant defense initiation, synthesis,
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | $t_0$ | 50.0 | 1.0 (Attack) | 1.0 | 0.0 | 0.0 | **Initiation:** Attack detected. `is_triggered` set to 1.0. |
 | $t_1$ | 45.0 | 1.0 | 1.0 | 5.0 | 0.0 | **Synthesis:** Energy burned to build internal pool ($\Delta E = -5.0, \Delta M = +5.0$). Emission is $0.0$ because synthesis delay is active. |
-| $t_2$ | 40.0 | 0.0 (Ceased) | 1.0 | 10.0 | 2.0 | **Active Emission:** Synthesis completes. Toxin flows from internal pool to external grid ($\Delta M = -2.0, \Delta L = +2.0$). |
+| $t_2$ | 40.0 | 0.0 (Ceased) | 1.0 | 8.0 | 2.0 | **Active Emission:** Synthesis completes. Toxin flows from internal pool to external grid ($\Delta M = -2.0, \Delta L = +2.0$). |
 | $t_3$ | 0.0 (Dead) | 0.0 | 0.0 | 8.0 | 2.0 | **Death Interruption:** Herbivore consumes remaining energy. `alive_mask` drops to $0.0$. |
 | $t_4$ | 0.0 | 0.0 | 0.0 | 8.0 | 2.0 | **Ghost Guard:** `alive_mask == 0.0` forces $\Delta M = 0.0$ and $\Delta L = 0.0$. Toxin emission instantly halts without an `if` statement. |
 

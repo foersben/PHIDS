@@ -57,6 +57,13 @@ repos:
         files: ^(docs/|\.agents/).*\.md$
         pass_filenames: true
 
+      - id: audit-matrix-coverage
+        name: Audit OKF Data-Flow Matrix Coverage
+        entry: uv run python scripts/audit_matrix_coverage.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: nc-license-guard
         name: NC License Guard (no extended imports in core pipeline)
         entry: uv run python scripts/check_no_extended_imports.py
