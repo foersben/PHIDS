@@ -2,7 +2,7 @@
 type: Concept
 title: Testing Architecture & Scientific Invariant Rigor
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.1
 description: Comprehensive testing architecture, taxonomy, scientific invariant
   verification, double-buffering isolation, Hypothesis property testing, and

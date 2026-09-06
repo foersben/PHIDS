@@ -2,7 +2,7 @@
 type: Agent Workflow
 title: Matrix-Driven TDD Refactoring
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Coordinated pipeline for translating conceptual behavior to
   Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba

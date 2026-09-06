@@ -2,7 +2,7 @@
 type: Agent Role
 title: Directives
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: "- **HTMX Front-end:** Expose FastAPI services securely. Manage `ui/`
   templates favoring server-rendered HTMX and Jinja2. Keep JS minimal."
@@ -12,7 +12,7 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: API & UI Developer
 sources:
 - id: ui_state
-  resource: ui_state.py
+  resource: src/phids/api/ui_state/state.py
 ---
 
 # Directives

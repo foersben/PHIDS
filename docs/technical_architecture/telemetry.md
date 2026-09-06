@@ -2,7 +2,7 @@
 type: Architecture Document
 title: Telemetry & Export
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Documentation for Telemetry & Export in the PHIDS framework.
 tags: [phids, performance, python]

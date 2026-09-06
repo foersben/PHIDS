@@ -2,7 +2,7 @@
 type: Agent Memory
 title: Palette
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: "**Learning:** When styling file upload inputs inside `<label>` wrappers
   with Tailwind, using `hidden` on the `<input>` removes it from the browser ..."

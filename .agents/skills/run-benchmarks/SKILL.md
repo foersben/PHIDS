@@ -2,7 +2,7 @@
 type: Agent Skill
 title: Trigger
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Execute and analyze pytest-benchmark performance gates.
 tags: [documentation]

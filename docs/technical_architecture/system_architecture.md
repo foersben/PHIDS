@@ -2,7 +2,7 @@
 type: Architecture Document
 title: System Architecture
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.2
 description: Documentation for System Architecture in the PHIDS framework.
 tags: [phids, ecs, performance, chemotaxis, dual-proxy]

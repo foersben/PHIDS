@@ -2,7 +2,7 @@
 type: Roadmap
 title: Strategic Multi-Stage Development Roadmap
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.9
 description: Strategic development roadmap for PHIDS detailing pre-v1.0 base
   milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization

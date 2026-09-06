@@ -2,7 +2,7 @@
 type: Reference
 title: PHIDS Routing & Capabilities
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Primary routing table for AI IDEs defining roles and core
   constraints.
@@ -44,8 +44,19 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 ## OKF (Open Knowledge Format) Metadata Rule
 
 - **Mandatory Parsing:** All AI agents (Jules, Antigravity, etc.) MUST actively parse the YAML frontmatter (OKF headers) in `docs/` and `.agents/` files before answering architectural or design questions.
-- **Utilization:** Use OKF `tags`, `generated.at`, and `resources` fields to gauge the relevance and contextual scope of the document. If an OKF `status` is `deprecated`, actively warn the user.
-- **Enrichment:** When creating or modifying documentation, always populate or update the OKF frontmatter exhaustively (including `type`, `title`, `status`, `version`, `description`, `tags`, `generated`, `resources`).
+- **Utilization:** Use OKF `tags`, `generated.at`, and `sources` fields to gauge the relevance and contextual scope of the document. If an OKF `status` is `deprecated`, actively warn the user.
+- **Enrichment:** When creating or modifying documentation, always populate or update the OKF frontmatter exhaustively (including `type`, `title`, `status`, `version`, `description`, `tags`, `generated`, `sources`).
+
+## Documentation Style, Floating Text & Multi-Audience Precision Protocol
+
+- **Zero Truncation / Compression Policy:** Under no circumstances may AI agents compress, truncate, summarize away, or sanitize existing narrative scientific prose, biological rationales, historical context, or mathematical derivations into bare bullet outlines.
+- **Preservation of Floating Explanatory Text:** Explanatory prose (continuous floating paragraphs providing context, intuition, and biological/mechanistic reasoning between equations and data tables) must remain central to all concept documents and overviews.
+- **Multi-Audience Stratification:** Documentation must simultaneously cater to:
+  - *Theoretical Ecologists & Biologists:* Botanical defenses, semiochemical volatile kinetics, mycorrhizal resource allocations, and foraging kinetics.
+  - *Applied Mathematicians:* PDEs, continuous-discrete hybrid dynamical systems, isotropic Gaussian diffusion, and stability invariants.
+  - *Systems & HPC Engineers:* Data-oriented ECS arrays, branchless SIMD masks, Numba JIT constraints, double-buffering, and zero-allocation loops.
+  - *General Scientific Readers & Observers:* Accessible conceptual abstracts, intuitive biological metaphors, and clear flow diagrams.
+- **Footnote Attribution (`[^id]`):** When citing literature, empirical data, or underlying code declared in OKF `sources:` frontmatter, use inline markdown footnotes (`[^id]`) without breaking prose continuity.
 
 ## MCP Server Usage
 

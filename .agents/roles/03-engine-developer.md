@@ -2,7 +2,7 @@
 type: Agent Role
 title: Directives
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: "- **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays;
   Systems contain all logic and operate on component arrays. Ban classes with..."
@@ -12,7 +12,7 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: Engine Developer
 sources:
 - id: flow_field
-  resource: flow_field.py
+  resource: src/phids/engine/core/flow_field.py
 - id: constants
   resource: src/phids/shared/constants.py
 ---

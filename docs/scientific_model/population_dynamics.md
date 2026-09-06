@@ -2,7 +2,7 @@
 type: Scientific Model
 title: Population Dynamics vs. Continuous Solvers
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Documentation for Population Dynamics vs. Continuous Solvers in the
   PHIDS framework.

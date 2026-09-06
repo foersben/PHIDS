@@ -2,7 +2,7 @@
 type: Manifesto
 title: PHIDS Core Philosophy
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: PHIDS (Plant-Herbivore Interaction & Defense Simulator) is
   developed in collaboration with the University of Jena. It is engineered to

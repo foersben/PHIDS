@@ -2,7 +2,7 @@
 type: Agent Rule
 title: Mandates
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: "- **Table-to-Trace Parity:** Every Markdown Data-Flow Matrix table MUST
   have a corresponding Pytest trace test."

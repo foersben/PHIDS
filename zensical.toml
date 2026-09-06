@@ -77,6 +77,14 @@ Home = "index.md"
     { "Part V: Ecosystem Synthesis" = [
         { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
     ] },
+    { "Attested Computations" = [
+        { "Overview" = "scientific_model/computations/index.md" },
+        { "Defense Signaling Cascade" = "scientific_model/computations/defense_signaling_cascade.md" },
+        { "Phloem Translocation" = "scientific_model/computations/phloem_translocation.md" },
+        { "Herbivore Starvation" = "scientific_model/computations/herbivore_starvation.md" },
+        { "Mycorrhizal Propagation" = "scientific_model/computations/mycorrhizal_propagation.md" },
+        { "Clonal Mitosis" = "scientific_model/computations/clonal_mitosis.md" },
+    ] },
     { "Future Prospects" = [
         { "Biological Abstractions & Grid Mechanics" = "scientific_model/future_prospects/biological_abstractions.md" },
         { "Parameter Calibration Strategy" = "scientific_model/future_prospects/parameter_calibration_strategy.md" },

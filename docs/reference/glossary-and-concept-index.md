@@ -2,7 +2,7 @@
 type: Reference
 title: Glossary and Concept Index
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.3
 description: Canonical glossary definitions for PHIDS concepts including
   Dual-Proxy proxies, Unified Action Buttons, and Live Cell Inspection Tooltips.

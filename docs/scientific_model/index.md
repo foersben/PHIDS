@@ -1,23 +1,4 @@
----
-type: Scientific Model
-title: Scientific Model Overview
-status: stable
-stale_after: "2027-01-01"
-version: 2.0
-description: High-level overview of theoretical foundations and mathematical
-  chapters in the PHIDS scientific model.
-tags: [phids, scientific-model, theoretical-foundations]
-generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
-sources:
-- id: mathematical_framework
-  resource: docs/scientific_model/mathematical_framework.md
-- id: related_works
-  resource: docs/scientific_model/related_works.md
-- id: source
-  resource: 
-    docs/scientific_model/future_prospects/parameter_calibration_strategy.md
----
+# Scientific Model Overview
 
 This section formally details the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a rigorous, deterministic computational ecology model. The documentation here defines the theoretical foundations, the explicit mathematical representations of the biological mechanisms, and the bounded approximations underlying the execution of the system.
 
@@ -62,18 +43,31 @@ graph TD
 
 The theoretical and computational foundations of PHIDS are partitioned into specialized domains to provide rigorous clarity on both the *what* and the *why* of the engine's construction.
 
-**Part I: Foundations** establishes the overarching [Mathematical Framework](mathematical_framework.md) and deterministic execution cycles, followed by an analysis of [Related Works](related_works.md) framing PHIDS within the broader computational ecology landscape.
+### Part I: Foundations
+* [Mathematical Framework](mathematical_framework.md) - Formal PDEs, continuous-discrete coupling, deterministic operator chains, and state preservation invariants.
+* [Related Works](related_works.md) - Theoretical contextualization of PHIDS alongside classical Lotka-Volterra models, cellular automata, and IBM frameworks.
 
-**Part II: Autotrophic Dynamics** explores the sessile biosphere, detailing the metabolic economics of [Flora & Symbiosis](flora_and_symbiosis.md) alongside the structural constraints and deterrent mechanisms defined by [Morphological Defenses](morphological_defenses.md).
+### Part II: Autotrophic Dynamics
+* [Flora & Symbiosis](flora_and_symbiosis.md) - Autotrophic metabolic economics, underground mycorrhizal fungal networks, and nutrient exchange cascades.
+* [Morphological Defenses](morphological_defenses.md) - Physical deterrents, trichome density, structural barriers, and constitutive defense kinetics.
 
-**Part III: Signaling & Transport** governs the spatial movement of information and physical phenomena, providing mathematical clarity on [Reaction-Diffusion PDEs](reaction_diffusion.md) and the sensory navigation models underpinning [Chemotaxis & Flow Fields](chemotaxis.md).
+### Part III: Signaling & Transport
+* [Reaction-Diffusion PDEs](reaction_diffusion.md) - Isotropic Gaussian kernels, volatile organic compound (VOC) plume advection, and atmospheric dispersion physics.
+* [Chemotaxis & Flow Fields](chemotaxis.md) - Global sensory navigation gradients, sensory field sampling, and Charnov Marginal Value Theorem patch dynamics.
 
-**Part IV: Heterotrophic Kinematics** addresses the macroscopic behaviors of mobile agents, tracking decision loops and metabolic attrition in [Herbivore Behavior & Kinematics](herbivore_behavior.md) and addressing structural mitosis within [Population Dynamics](population_dynamics.md).
+### Part IV: Heterotrophic Kinematics
+* [Herbivore Behavior & Kinematics](herbivore_behavior.md) - Foraging decision state machines, kinetic movement models, and metabolic attrition budgets.
+* [Population Dynamics](population_dynamics.md) - Density-dependent mortality, swarm mitosis, biomass energy bifurcation, and carrying capacity constraints.
 
-Finally, **Part V: Ecosystem Synthesis** introduces the statistical lenses used to interpret systemic stability and failure cascades through [Ecological Analytics](ecological_analytics.md).
+### Part V: Ecosystem Synthesis
+* [Ecological Analytics](ecological_analytics.md) - Statistical metrics, trophic stability indicators, phase portraits, and emergence analysis.
 
 ## Speculative Research and Future Horizons
 
-Beyond the core deterministic mechanics, ongoing research pushes the boundaries of biological fidelity and execution scale. Strategic pathways include the formal non-dimensionalization required for empirical [Parameter Calibration Strategies](future_prospects/parameter_calibration_strategy.md) and the architectural milestones necessary for macroscopic [Spatiotemporal Scaling](future_prospects/spatiotemporal_scaling.md) across expansive virtual biomes.
+Beyond the core deterministic mechanics, ongoing research pushes the boundaries of biological fidelity and execution scale. Strategic pathways include:
+
+* [Biological Abstractions & Grid Mechanics](future_prospects/biological_abstractions.md) - Trade-off analysis of spatial discretizations and biological fidelity limits.
+* [Parameter Calibration Strategies](future_prospects/parameter_calibration_strategy.md) - Formal non-dimensionalization and empirical field parameter harmonization.
+* [Spatiotemporal Scaling](future_prospects/spatiotemporal_scaling.md) - Architectural roadmap for forest-scale biome simulation across distributed memory topologies.
 
 By prioritizing formal exposition, explicit boundaries, and the rationale behind each numerical approximation, this documentation ensures that the output telemetry from PHIDS is mathematically traceable and experimentally reproducible.

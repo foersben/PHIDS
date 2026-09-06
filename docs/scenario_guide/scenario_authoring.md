@@ -2,7 +2,7 @@
 type: Scenario
 title: Scenario Authoring & Schema
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Documentation for Scenario Authoring & Schema in the PHIDS
   framework.

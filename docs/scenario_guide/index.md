@@ -1,24 +1,4 @@
----
-type: Concept
-title: Scenarios Module Overview
-status: stable
-stale_after: "2027-01-01"
-version: 1.0
-description: Overview of scenario authoring, curated example blueprints, and DSE
-  optimization pipelines.
-tags: [phids, scenarios, dse, blueprints]
-generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
-sources:
-- id: scenario_authoring
-  resource: docs/scenario_guide/scenario_authoring.md
-- id: curated_examples
-  resource: docs/scenario_guide/curated_examples.md
-- id: design_space_exploration
-  resource: docs/scenario_guide/design_space_exploration.md
-- id: empirical_database
-  resource: docs/scenario_guide/empirical_database.md
----
+# Scenarios Module Overview
 
 In the study of computational ecology, the greatest challenge is managing the sheer volatility of natural systems. The parameter space of a spatial ecosystem is a chaotic, highly non-linear landscape. A minor $1\%$ tweak to a single herbivore's metabolic rate or a plant's regeneration speed can be the absolute boundary between eternal multi-species balance and immediate, cascading trophic collapse.
 
@@ -35,25 +15,27 @@ graph TD
 
 ---
 
-## Exploring the Scenarios Module
-
 ## Core Guides
 
-* **[Scenario Authoring](scenario_authoring.md)**: Documentation on the scenario `DraftState` pipeline and constraints.
-* **[Curated Examples](curated_examples.md)**: An overview of the built-in, chemically balanced default scenarios.
+* [Scenario Authoring](scenario_authoring.md) - Documentation on the scenario `DraftState` pipeline, Pydantic schemas, Rule of 16 constraints, and diet compatibility matrices.
+* [Curated Examples](curated_examples.md) - Built-in, chemically balanced default scenarios demonstrating stabilized Lotka-Volterra dynamics, volatile warning cascades, and trophic collapse.
 
 ## Work in Progress
 
-* **[Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](design_space_exploration.md)**: Guide on utilizing the EEDSE Optimizer to discover stable ecological configurations.
-* **[Empirical Database](empirical_database.md)**: Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
+* [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](design_space_exploration.md) - Guide on utilizing the EEDSE Optimizer to discover stable ecological configurations autonomously.
+* [Empirical Database](empirical_database.md) - Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
 
 ---
 
 ## Future Prospects
 
-* **[AI Coevolution & Distributed EEDSE Engine](future_prospects/ai_coevolution_dse.md)**: Architecture for Ray/Tune + OptunaSearch distributed multi-objective Pareto optimization, AITL governance, and reinforcement learning swarm coevolution under EEDSE.
-* **[Agentic Diagnostic Log Writer](future_prospects/agentic_log_writer.md)**: Specification for the AITL diagnostic observer logging systemic integrity.
-* **[Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md)**: Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
+* [AI Coevolution & Distributed EEDSE Engine](future_prospects/ai_coevolution_dse.md) - Architecture for Ray/Tune + OptunaSearch distributed multi-objective Pareto optimization, AITL governance, and reinforcement learning swarm coevolution under EEDSE.
+* [Agentic Diagnostic Log Writer](future_prospects/agentic_log_writer.md) - Specification for the AITL diagnostic observer logging systemic integrity.
+* [Parameter Scaling & Calibration Strategy](../scientific_model/future_prospects/parameter_calibration_strategy.md) - Exhaustive strategy for non-dimensionalizing and calibrating empirical traits to discrete simulation scales.
+
+---
+
+## Chapter Deep Dives
 
 ### 1. Scenario Authoring & Schema
 
@@ -67,7 +49,7 @@ Understand how to define your custom ecosystem configurations. This guide detail
 
 Inspect pre-configured blueprints designed to demonstrate specific ecological features:
 
-* **The Eternal Canopy:** An complex, balanced forest biotope showing stabilized Lotka-Volterra wave propagation.
+* **The Eternal Canopy:** A complex, balanced forest biotope showing stabilized Lotka-Volterra wave propagation.
 * **Trophic Collapse Scenario:** A demonstration of ecological breakdown when herbivore consumption rates breach flora regeneration thresholds.
 * **Volatile Warning Cascade:** A scenario highlighting chemical atmospheric warning diffusion across spatial grids.
 
@@ -78,6 +60,6 @@ Discover how the framework uses encapsulated parameter restriction and `pymoo` g
 * **Optimization Search:** Why genetic/evolutionary search beats Random Walk and Simulated Annealing in rugged biological landscapes.
 * **Cost Function Design:** How we penalize extinction events, reward survival time, and avoid "boring" stable states (e.g., $100\%$ flora, $0$ herbivores).
 
-### 4. [Empirical Database Pipeline](empirical_database.md)
+### 4. Empirical Database Pipeline
 
 Explore the structural decoupling of archetypes, visual rule building, and our migration path toward true database persistence.

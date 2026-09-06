@@ -2,7 +2,7 @@
 type: Reference
 title: PHIDS Signaling Trigger Invariants
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Core architectural and behavioral invariants governing plant
   signaling trigger synthesis, activation gates, and re-arming state machines.

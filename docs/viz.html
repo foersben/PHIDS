@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHIDS Knowledge Graph Explorer (OKF v0.2)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.85);
+      --border-color: rgba(255, 255, 255, 0.12);
+      --text-main: #f3f4f6;
+      --text-dim: #9ca3af;
+      --accent: #ff5722;
+      --accent-cyan: #00e5ff;
+      --accent-purple: #b388ff;
+      --accent-green: #00e676;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #cy {
+      flex: 1;
+      height: 100%;
+      background: radial-gradient(circle at center, #111827 0%, #030712 100%);
+    }
+
+    #sidebar {
+      width: 380px;
+      height: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      z-index: 10;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+    }
+
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .header-sub {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-badge {
+      flex: 1;
+      padding: 8px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.75rem;
+      border: 1px solid var(--border-color);
+    }
+    .stat-badge strong {
+      display: block;
+      font-size: 1.1rem;
+      color: var(--accent-cyan);
+    }
+
+    #details-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .concept-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 10px;
+    }
+
+    .concept-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+    }
+    .tag.tier {
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--accent-green);
+      border-color: rgba(0, 230, 118, 0.3);
+    }
+
+    .concept-desc {
+      font-size: 0.85rem;
+      line-height: 1.4;
+      color: #d1d5db;
+      margin-bottom: 14px;
+    }
+
+    .meta-item {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .meta-item b {
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div id="cy"></div>
+  <div id="sidebar">
+    <div class="header-title">PHIDS Knowledge Graph</div>
+    <div class="header-sub">Open Knowledge Format (OKF v0.2) Explorer</div>
+
+    <input type="text" id="search" class="search-box" placeholder="Search concepts, types, rules..." />
+
+    <div class="stats-row">
+      <div class="stat-badge"><strong id="node-count">0</strong>Nodes</div>
+      <div class="stat-badge"><strong id="edge-count">0</strong>Edges</div>
+    </div>
+
+    <div id="details-panel">
+      <div style="font-size:0.85rem; color: var(--text-dim); text-align: center; margin-top: 40px;">
+        Click any node in the graph to inspect its OKF frontmatter, trust tier, and cross-links.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const graphData = {"nodes": [{"data": {"id": "docs/development_guide/agent_ecosystem.md", "label": "Agent Ecosystem & MCP", "type": "Guide", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Agent Ecosystem & MCP in the PHIDS framework."}}, {"data": {"id": "docs/development_guide/contribution_workflow.md", "label": "Contribution Workflow", "type": "Guide", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Quality gates, two-pass Numba testing strategy, and Zensical documentation build policy in PHIDS."}}, {"data": {"id": "docs/development_guide/okf_data_flow_matrices.md", "label": "OKF Data-Flow Matrix Architecture & Verification Workflow", "type": "Guide", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Complete specification, agentic governance extensions (roles, rules, skills, workflows), and operational pipeline for modeling complex SIMD-compatible simulation behavior, trigger cascades, and invariants using OKF Data-Flow Matrices in PHIDS."}}, {"data": {"id": "docs/development_guide/roadmap.md", "label": "Strategic Multi-Stage Development Roadmap", "type": "Roadmap", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Strategic development roadmap for PHIDS detailing pre-v1.0 base milestones (ECS engine core, empirical DuckDB bio-database, DSE optimization engine, spatial extensions) and post-v1.0 research horizons."}}, {"data": {"id": "docs/index.md", "label": "PHIDS Documentation Overview", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Core landing page and abstract for the Plant-Herbivore Interaction & Defense Simulator (PHIDS) documentation."}}, {"data": {"id": "docs/log.md", "label": "Docs Log", "type": "Update Log", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": "docs/reference/api.md", "label": "Python API Reference", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Python API Reference in the PHIDS framework."}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md", "label": "Glossary and Concept Index", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Canonical glossary definitions for PHIDS concepts including Dual-Proxy proxies, Unified Action Buttons, and Live Cell Inspection Tooltips."}}, {"data": {"id": "docs/reference/index.md", "label": "API & Package Reference Overview", "type": "Directory Index", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": "docs/reference/module-map.md", "label": "Module Map and Symbol Guide", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Whole-project inventory of active phids.* runtime packages, presenters, UI templates, and symbol responsibilities."}}, {"data": {"id": "docs/reference/requirements-traceability.md", "label": "Requirements Traceability", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Requirements Traceability in the PHIDS framework."}}, {"data": {"id": "docs/scenario_guide/curated_examples.md", "label": "Curated Examples", "type": "Scenario", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Curated Examples in the PHIDS framework."}}, {"data": {"id": "docs/scenario_guide/design_space_exploration.md", "label": "Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master Architectural Specification", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "The Plant-Herbivore Interaction & Defense Simulator (PHIDS) utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)** architecture."}}, {"data": {"id": "docs/scenario_guide/empirical_database.md", "label": "Empirical Database Pipeline", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline, generating the empirical DuckDB database."}}, {"data": {"id": "docs/scenario_guide/future_prospects/agentic_log_writer.md", "label": "Agentic Diagnostic Log Writer & Systemic Integrity Observer", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Specifications for the asynchronous dse-log-observer agent that performs telemetry logging, systemic anomaly detection, and high-confidence distortion diagnostics in PHIDS."}}, {"data": {"id": "docs/scenario_guide/future_prospects/ai_coevolution_dse.md", "label": "AI Coevolution & Distributed EEDSE Engine (v3.2 Future Prospect)", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Future framework for distributed Ray/Tune multi-objective evolutionary algorithms and AI agent coevolution in PHIDS."}}, {"data": {"id": "docs/scenario_guide/index.md", "label": "Scenarios Module Overview", "type": "Directory Index", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": "docs/scenario_guide/scenario_authoring.md", "label": "Scenario Authoring & Schema", "type": "Scenario", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Scenario Authoring & Schema in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/chemotaxis.md", "label": "Chemotaxis & Flow Fields", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Chemotaxis & Flow Fields in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/computations/clonal_mitosis.md", "label": "Herbivore Clonal Mitosis & Biomass Bifurcation", "type": "Attested Computation", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Sanctioned deterministic computation for the 168-tick phase-staggered clonal mitosis bifurcation and biomass partitioning in foraging herbivore swarms."}}, {"data": {"id": "docs/scientific_model/computations/defense_signaling_cascade.md", "label": "Plant Defense Synthesis & Airborne Emission Cascade", "type": "Attested Computation", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Sanctioned deterministic computation for the temporal cascade of plant chemical defense synthesis, active VOC emission, and mortality boundary guards under sustained herbivory."}}, {"data": {"id": "docs/scientific_model/computations/herbivore_starvation.md", "label": "Herbivore Metabolic Tax & Starvation Attrition", "type": "Attested Computation", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Sanctioned deterministic computation for the 24-tick stride metabolic tax, caloric debt accumulation, and starvation mortality cascade."}}, {"data": {"id": "docs/scientific_model/computations/index.md", "label": "Attested Computations Suite", "type": "Directory Index", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": "docs/scientific_model/computations/mycorrhizal_propagation.md", "label": "Mycorrhizal Root Network Multi-Hop Signal Propagation", "type": "Attested Computation", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Sanctioned deterministic computation for underground fungal multi-hop signal propagation, transmission latency, and carbon maintenance tax."}}, {"data": {"id": "docs/scientific_model/computations/phloem_translocation.md", "label": "Rate-Limited Phloem Nutrient Translocation & Recovery", "type": "Attested Computation", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Sanctioned deterministic computation for rate-limited phloem nutrient translocation and post-grazing apparent nutrition recovery kinetics."}}, {"data": {"id": "docs/scientific_model/ecological_analytics.md", "label": "Ecological Analytics & Evaluation", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Ecological Analytics & Evaluation in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/flora_and_symbiosis.md", "label": "Flora Lifecycle and Symbiotic Networks", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Flora Lifecycle and Symbiotic Networks in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/future_prospects/biological_abstractions.md", "label": "Biological Abstractions & Grid Mechanics", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Analysis of computational trade-offs for foraging mechanics, plant lifecycle states, grid saturation, and collateral trophic interactions in a discrete ECS engine. Includes full implementation status tracking for the Decoupled Dual-Proxy Architecture (Plans 1, 2, 3, & 4)."}}, {"data": {"id": "docs/scientific_model/future_prospects/parameter_calibration_strategy.md", "label": "Empirical Parameter Scaling & Calibration Strategy", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Detailed non-dimensionalization and calibration strategy bridging empirical database traits to discrete PHIDS simulation parameters."}}, {"data": {"id": "docs/scientific_model/future_prospects/spatiotemporal_scaling.md", "label": "Unified Forest-Scale Architecture & Spatiotemporal Scaling", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "A unified specification for scaling PHIDS to large physical biomes, addressing memory limits, subloop computability, storage constraints, kinetic abstraction, and edge-case scaling horizons with precise computability metrics."}}, {"data": {"id": "docs/scientific_model/herbivore_behavior.md", "label": "Herbivore Behavior & Kinematics", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Herbivore Behavior & Kinematics in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/index.md", "label": "Scientific Model Overview", "type": "Directory Index", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md", "label": "Mathematical Framework", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Mathematical Framework in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/morphological_defenses.md", "label": "Morphological Defenses and Dynamic Resource Reallocation", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Mathematical and biological formulation of constitutive morphological defenses, digestibility modulation, and rate-limited phloem translocation in PHIDS."}}, {"data": {"id": "docs/scientific_model/population_dynamics.md", "label": "Population Dynamics vs. Continuous Solvers", "type": "Scientific Model", "status": "stable", "trust_tier": "Unverified", "description": "Documentation for Population Dynamics vs. Continuous Solvers in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/reaction_diffusion.md", "label": "Reaction-Diffusion & Partial Differential Equations", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Reaction-Diffusion & Partial Differential Equations in the PHIDS framework."}}, {"data": {"id": "docs/scientific_model/related_works.md", "label": "Related Works and Methodological Comparison", "type": "Scientific Model", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "A methodological comparison of PHIDS against other established simulation frameworks across macro-ecology, agent-based landscape modeling, and hybrid biophysics."}}, {"data": {"id": "docs/technical_architecture/engine_execution.md", "label": "Engine Execution", "type": "Architecture Document", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Core execution loop, phase ordering, ECS architecture, and low-level CPU performance optimizations in the PHIDS simulation framework."}}, {"data": {"id": "docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md", "label": "GPU CUDA Acceleration Engine", "type": "Architecture Document", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Future architecture for GPU-accelerated reaction-diffusion PDE solvers and 3D cellular automata using PyTorch and CUDA C++ bindings."}}, {"data": {"id": "docs/technical_architecture/index.md", "label": "Technical Architecture Overview", "type": "Directory Index", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": "docs/technical_architecture/interfaces_and_ui.md", "label": "Interfaces & UI", "type": "Architecture Document", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Technical documentation for administrative UI surfaces, HTMX controls, WebSocket streaming, and live dual-proxy cell inspection tooltips in PHIDS."}}, {"data": {"id": "docs/technical_architecture/signaling_triggers.md", "label": "PHIDS Signaling Trigger Invariants", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Core architectural and behavioral invariants governing plant signaling trigger synthesis, activation gates, and re-arming state machines."}}, {"data": {"id": "docs/technical_architecture/system_architecture.md", "label": "System Architecture", "type": "Architecture Document", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for System Architecture in the PHIDS framework."}}, {"data": {"id": "docs/technical_architecture/telemetry.md", "label": "Telemetry & Export", "type": "Architecture Document", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Documentation for Telemetry & Export in the PHIDS framework."}}, {"data": {"id": "docs/technical_architecture/testing_architecture.md", "label": "Testing Architecture & Scientific Invariant Rigor", "type": "Concept", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Comprehensive testing architecture, taxonomy, scientific invariant verification, double-buffering isolation, Hypothesis property testing, and performance benchmarking for PHIDS."}}, {"data": {"id": ".agents/AGENTS.md", "label": "PHIDS Routing & Capabilities", "type": "Reference", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Primary routing table for AI IDEs defining roles and core constraints."}}, {"data": {"id": ".agents/README.md", "label": "Welcome to the PHIDS Agent Ecosystem", "type": "Documentation", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Welcome to the autonomous nervous system of the Plant-Herbivore Interaction & Defense Simulator (PHIDS)."}}, {"data": {"id": ".agents/index.md", "label": "PHIDS Autonomous Agent Ecosystem Directory", "type": "Directory Index", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": ".agents/log.md", "label": ".Agents Log", "type": "Update Log", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": ".agents/manifesto/phids-core-philosophy.md", "label": "PHIDS Core Philosophy", "type": "Manifesto", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "PHIDS (Plant-Herbivore Interaction & Defense Simulator) is developed in collaboration with the University of Jena. It is engineered to model comple..."}}, {"data": {"id": ".agents/memory/architecture_state_map.md", "label": "Current Architecture State (June 2026)", "type": "Agent Memory", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Python:** Migrating to 3.13."}}, {"data": {"id": ".agents/memory/bolt.md", "label": "Bolt's Performance Journal", "type": "Agent Memory", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "**Learning:** The previous ECS design relied on an `Iterator[Entity]` for `query(...)`, forcing callers in hot paths to wrap it in a materialized `..."}}, {"data": {"id": ".agents/memory/canon.md", "label": "Canon Memory", "type": "Agent Memory", "status": "stable", "trust_tier": "Unverified", "description": ""}}, {"data": {"id": ".agents/memory/chisel.md", "label": "Chisel", "type": "Agent Memory", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Refactoring dashboard presenter monolithic logs and learnings"}}, {"data": {"id": ".agents/memory/complexity.md", "label": "Complexity", "type": "Agent Memory", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Refactoring cognitive complexity from telemetry module and learnings"}}, {"data": {"id": ".agents/memory/palette.md", "label": "Palette", "type": "Agent Memory", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "**Learning:** When styling file upload inputs inside `<label>` wrappers with Tailwind, using `hidden` on the `<input>` removes it from the browser ..."}}, {"data": {"id": ".agents/roles/01-orchestrator.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Delegation:** Deconstruct user requests; delegate tasks to specialized agents per `AGENTS.md`. Do not write math/kernels."}}, {"data": {"id": ".agents/roles/02-scientific-architect.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Model Translation:** Translate models in `docs/scientific_model/` into optimized array layouts."}}, {"data": {"id": ".agents/roles/03-engine-developer.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays; Systems contain all logic and operate on component arrays. Ban classes with..."}}, {"data": {"id": ".agents/roles/04-qa-automator.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Verification:** Assert deterministic execution, isolate failures, triage coverage gaps."}}, {"data": {"id": ".agents/roles/05-docs-librarian.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Docs Sync:** Synchronize documentation tree, scientific models, and API references."}}, {"data": {"id": ".agents/roles/06-git-operator.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Git Lifecycle:** Manage repository status, branch strategies, version bumps, and tagging."}}, {"data": {"id": ".agents/roles/07-api-and-ui-developer.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **HTMX Front-end:** Expose FastAPI services securely. Manage `ui/` templates favoring server-rendered HTMX and Jinja2. Keep JS minimal."}}, {"data": {"id": ".agents/roles/08-telemetry-and-data-engineer.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Zarr Serialization:** Define schema, chunking, and compression for N-dimensional arrays in Zarr replay buffers."}}, {"data": {"id": ".agents/roles/09-matrix-auditor.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Coverage Auditing:** Periodically scan all Markdown files in `docs/scientific_model/` to verify Data-Flow Matrix coverage."}}, {"data": {"id": ".agents/roles/10-causal-verifier.md", "label": "Directives", "type": "Agent Role", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Causal Trace Monitoring:** Monitor engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates."}}, {"data": {"id": ".agents/rules/00-python-modernization.md", "label": "Mandates", "type": "Agent Rule", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Execution:** Ban `pip`, `poetry`, `python`. Execute ALL commands via `uv run` or `just`."}}, {"data": {"id": ".agents/rules/01-stochastic-engine-and-replay.md", "label": "01 Stochastic Engine And Replay", "type": "Agent Rule", "status": "stable", "trust_tier": "Unverified", "description": "Stochastic engine and telemetry replay mandates"}}, {"data": {"id": ".agents/rules/02-numba-constraints.md", "label": "Numba Constraints", "type": "Agent Rule", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Constraints for Numba JIT compilation in PHIDS."}}, {"data": {"id": ".agents/rules/03-git-security-and-signing.md", "label": "03 Git Security And Signing", "type": "Agent Rule", "status": "stable", "trust_tier": "Unverified", "description": "Commit signing and git security mandates"}}, {"data": {"id": ".agents/rules/04-markdown-formatting.md", "label": "Markdown Formatting Rules", "type": "Agent Rule", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Rules for formatting markdown files."}}, {"data": {"id": ".agents/rules/05-data-flow-invariants.md", "label": "Mandates", "type": "Agent Rule", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "- **Table-to-Trace Parity:** Every Markdown Data-Flow Matrix table MUST have a corresponding Pytest trace test."}}, {"data": {"id": ".agents/skills/analyze-zarr/SKILL.md", "label": "Trigger", "type": "Agent Skill", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Inspect and validate Zarr replay buffers to verify state recording."}}, {"data": {"id": ".agents/skills/audit-okf-matrix-coverage/SKILL.md", "label": "Trigger", "type": "Agent Skill", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Scans docs/scientific_model/ files and reports any concept document that describes temporal state shifts without a Data-Flow Matrix Table."}}, {"data": {"id": ".agents/skills/auto-reconcile-matrix-drift/SKILL.md", "label": "Trigger", "type": "Agent Skill", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Runs a trace session, captures exact numerical output, and automatically updates the Markdown table rows when parameters drift."}}, {"data": {"id": ".agents/skills/run-benchmarks/SKILL.md", "label": "Trigger", "type": "Agent Skill", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Execute and analyze pytest-benchmark performance gates."}}, {"data": {"id": ".agents/skills/validate-okf/SKILL.md", "label": "Trigger", "type": "Agent Skill", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Skill to verify that markdown files contain correct frontmatter."}}, {"data": {"id": ".agents/skills/verify-matrix-trace-parity/SKILL.md", "label": "Trigger", "type": "Agent Skill", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Parses Markdown Data-Flow Matrix tables into dataframes and asserts point-by-point numerical parity against Pytest traces."}}, {"data": {"id": ".agents/workflows/delegation-protocol.md", "label": "Delegation Protocol", "type": "Agent Workflow", "status": "stable", "trust_tier": "Unverified", "description": "Checklist for human-escalated tasks when agents are structurally blocked."}}, {"data": {"id": ".agents/workflows/implement-scientific-model.md", "label": "Implement Scientific Model", "type": "Agent Workflow", "status": "stable", "trust_tier": "Unverified", "description": "Process for adding ecological/mathematical behaviors."}}, {"data": {"id": ".agents/workflows/matrix-drift-reconciliation.md", "label": "Automated Matrix Drift Reconciliation", "type": "Agent Workflow", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Automated workflow for detecting, reconciling, and updating documented Data-Flow Matrices when engine parameters or telemetry drift."}}, {"data": {"id": ".agents/workflows/matrix-tdd-refactor.md", "label": "Matrix-Driven TDD Refactoring", "type": "Agent Workflow", "status": "stable", "trust_tier": "Machine-Confirmed", "description": "Coordinated pipeline for translating conceptual behavior to Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba kernels, and verified audits."}}, {"data": {"id": ".agents/workflows/vertical-slice-development.md", "label": "Vertical Slice Development", "type": "Agent Workflow", "status": "stable", "trust_tier": "Unverified", "description": "Coordinated pipeline for building full-stack simulation features."}}], "edges": [{"data": {"id": "docs/development_guide/agent_ecosystem.md->docs/scenario_guide/future_prospects/agentic_log_writer.md", "source": "docs/development_guide/agent_ecosystem.md", "target": "docs/scenario_guide/future_prospects/agentic_log_writer.md"}}, {"data": {"id": "docs/development_guide/roadmap.md->docs/scenario_guide/design_space_exploration.md", "source": "docs/development_guide/roadmap.md", "target": "docs/scenario_guide/design_space_exploration.md"}}, {"data": {"id": "docs/index.md->docs/technical_architecture/testing_architecture.md", "source": "docs/index.md", "target": "docs/technical_architecture/testing_architecture.md"}}, {"data": {"id": "docs/index.md->docs/scientific_model/chemotaxis.md", "source": "docs/index.md", "target": "docs/scientific_model/chemotaxis.md"}}, {"data": {"id": "docs/index.md->docs/scenario_guide/future_prospects/agentic_log_writer.md", "source": "docs/index.md", "target": "docs/scenario_guide/future_prospects/agentic_log_writer.md"}}, {"data": {"id": "docs/index.md->docs/scientific_model/reaction_diffusion.md", "source": "docs/index.md", "target": "docs/scientific_model/reaction_diffusion.md"}}, {"data": {"id": "docs/index.md->docs/scenario_guide/design_space_exploration.md", "source": "docs/index.md", "target": "docs/scenario_guide/design_space_exploration.md"}}, {"data": {"id": "docs/index.md->docs/scientific_model/mathematical_framework.md", "source": "docs/index.md", "target": "docs/scientific_model/mathematical_framework.md"}}, {"data": {"id": "docs/index.md->docs/scenario_guide/scenario_authoring.md", "source": "docs/index.md", "target": "docs/scenario_guide/scenario_authoring.md"}}, {"data": {"id": "docs/index.md->docs/technical_architecture/interfaces_and_ui.md", "source": "docs/index.md", "target": "docs/technical_architecture/interfaces_and_ui.md"}}, {"data": {"id": "docs/index.md->docs/technical_architecture/system_architecture.md", "source": "docs/index.md", "target": "docs/technical_architecture/system_architecture.md"}}, {"data": {"id": "docs/index.md->docs/development_guide/contribution_workflow.md", "source": "docs/index.md", "target": "docs/development_guide/contribution_workflow.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/reference/module-map.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/reference/module-map.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/technical_architecture/telemetry.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/technical_architecture/telemetry.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/scientific_model/morphological_defenses.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/scientific_model/morphological_defenses.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/scientific_model/index.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/scientific_model/index.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/technical_architecture/engine_execution.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/technical_architecture/engine_execution.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/scientific_model/mathematical_framework.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/scientific_model/mathematical_framework.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/scientific_model/future_prospects/biological_abstractions.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/scientific_model/future_prospects/biological_abstractions.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/scenario_guide/scenario_authoring.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/scenario_guide/scenario_authoring.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/technical_architecture/interfaces_and_ui.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/technical_architecture/interfaces_and_ui.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/scenario_guide/curated_examples.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/scenario_guide/curated_examples.md"}}, {"data": {"id": "docs/reference/glossary-and-concept-index.md->docs/technical_architecture/system_architecture.md", "source": "docs/reference/glossary-and-concept-index.md", "target": "docs/technical_architecture/system_architecture.md"}}, {"data": {"id": "docs/reference/index.md->docs/reference/api.md", "source": "docs/reference/index.md", "target": "docs/reference/api.md"}}, {"data": {"id": "docs/reference/index.md->docs/reference/glossary-and-concept-index.md", "source": "docs/reference/index.md", "target": "docs/reference/glossary-and-concept-index.md"}}, {"data": {"id": "docs/reference/index.md->docs/reference/module-map.md", "source": "docs/reference/index.md", "target": "docs/reference/module-map.md"}}, {"data": {"id": "docs/reference/index.md->docs/reference/requirements-traceability.md", "source": "docs/reference/index.md", "target": "docs/reference/requirements-traceability.md"}}, {"data": {"id": "docs/reference/module-map.md->docs/index.md", "source": "docs/reference/module-map.md", "target": "docs/index.md"}}, {"data": {"id": "docs/reference/module-map.md->docs/reference/api.md", "source": "docs/reference/module-map.md", "target": "docs/reference/api.md"}}, {"data": {"id": "docs/reference/module-map.md->docs/technical_architecture/engine_execution.md", "source": "docs/reference/module-map.md", "target": "docs/technical_architecture/engine_execution.md"}}, {"data": {"id": "docs/reference/module-map.md->docs/technical_architecture/interfaces_and_ui.md", "source": "docs/reference/module-map.md", "target": "docs/technical_architecture/interfaces_and_ui.md"}}, {"data": {"id": "docs/reference/module-map.md->docs/scientific_model/flora_and_symbiosis.md", "source": "docs/reference/module-map.md", "target": "docs/scientific_model/flora_and_symbiosis.md"}}, {"data": {"id": "docs/reference/module-map.md->docs/development_guide/contribution_workflow.md", "source": "docs/reference/module-map.md", "target": "docs/development_guide/contribution_workflow.md"}}, {"data": {"id": "docs/reference/requirements-traceability.md->docs/technical_architecture/system_architecture.md", "source": "docs/reference/requirements-traceability.md", "target": "docs/technical_architecture/system_architecture.md"}}, {"data": {"id": "docs/reference/requirements-traceability.md->docs/reference/module-map.md", "source": "docs/reference/requirements-traceability.md", "target": "docs/reference/module-map.md"}}, {"data": {"id": "docs/reference/requirements-traceability.md->docs/development_guide/contribution_workflow.md", "source": "docs/reference/requirements-traceability.md", "target": "docs/development_guide/contribution_workflow.md"}}, {"data": {"id": "docs/scenario_guide/future_prospects/ai_coevolution_dse.md->docs/scenario_guide/design_space_exploration.md", "source": "docs/scenario_guide/future_prospects/ai_coevolution_dse.md", "target": "docs/scenario_guide/design_space_exploration.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scenario_guide/future_prospects/ai_coevolution_dse.md", "source": "docs/scenario_guide/index.md", "target": "docs/scenario_guide/future_prospects/ai_coevolution_dse.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scenario_guide/future_prospects/agentic_log_writer.md", "source": "docs/scenario_guide/index.md", "target": "docs/scenario_guide/future_prospects/agentic_log_writer.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scientific_model/future_prospects/parameter_calibration_strategy.md", "source": "docs/scenario_guide/index.md", "target": "docs/scientific_model/future_prospects/parameter_calibration_strategy.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scenario_guide/design_space_exploration.md", "source": "docs/scenario_guide/index.md", "target": "docs/scenario_guide/design_space_exploration.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scenario_guide/scenario_authoring.md", "source": "docs/scenario_guide/index.md", "target": "docs/scenario_guide/scenario_authoring.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scenario_guide/curated_examples.md", "source": "docs/scenario_guide/index.md", "target": "docs/scenario_guide/curated_examples.md"}}, {"data": {"id": "docs/scenario_guide/index.md->docs/scenario_guide/empirical_database.md", "source": "docs/scenario_guide/index.md", "target": "docs/scenario_guide/empirical_database.md"}}, {"data": {"id": "docs/scientific_model/computations/index.md->docs/scientific_model/computations/herbivore_starvation.md", "source": "docs/scientific_model/computations/index.md", "target": "docs/scientific_model/computations/herbivore_starvation.md"}}, {"data": {"id": "docs/scientific_model/computations/index.md->docs/scientific_model/computations/defense_signaling_cascade.md", "source": "docs/scientific_model/computations/index.md", "target": "docs/scientific_model/computations/defense_signaling_cascade.md"}}, {"data": {"id": "docs/scientific_model/computations/index.md->docs/scientific_model/computations/phloem_translocation.md", "source": "docs/scientific_model/computations/index.md", "target": "docs/scientific_model/computations/phloem_translocation.md"}}, {"data": {"id": "docs/scientific_model/computations/index.md->docs/scientific_model/computations/clonal_mitosis.md", "source": "docs/scientific_model/computations/index.md", "target": "docs/scientific_model/computations/clonal_mitosis.md"}}, {"data": {"id": "docs/scientific_model/computations/index.md->docs/scientific_model/computations/mycorrhizal_propagation.md", "source": "docs/scientific_model/computations/index.md", "target": "docs/scientific_model/computations/mycorrhizal_propagation.md"}}, {"data": {"id": "docs/scientific_model/ecological_analytics.md->docs/scientific_model/population_dynamics.md", "source": "docs/scientific_model/ecological_analytics.md", "target": "docs/scientific_model/population_dynamics.md"}}, {"data": {"id": "docs/scientific_model/flora_and_symbiosis.md->docs/scientific_model/herbivore_behavior.md", "source": "docs/scientific_model/flora_and_symbiosis.md", "target": "docs/scientific_model/herbivore_behavior.md"}}, {"data": {"id": "docs/scientific_model/flora_and_symbiosis.md->docs/scientific_model/future_prospects/biological_abstractions.md", "source": "docs/scientific_model/flora_and_symbiosis.md", "target": "docs/scientific_model/future_prospects/biological_abstractions.md"}}, {"data": {"id": "docs/scientific_model/future_prospects/parameter_calibration_strategy.md->docs/scientific_model/future_prospects/spatiotemporal_scaling.md", "source": "docs/scientific_model/future_prospects/parameter_calibration_strategy.md", "target": "docs/scientific_model/future_prospects/spatiotemporal_scaling.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/herbivore_behavior.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/herbivore_behavior.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/ecological_analytics.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/ecological_analytics.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/morphological_defenses.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/morphological_defenses.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/chemotaxis.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/chemotaxis.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/future_prospects/parameter_calibration_strategy.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/future_prospects/parameter_calibration_strategy.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/reaction_diffusion.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/reaction_diffusion.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/mathematical_framework.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/mathematical_framework.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/future_prospects/biological_abstractions.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/future_prospects/biological_abstractions.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/population_dynamics.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/population_dynamics.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/related_works.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/related_works.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/future_prospects/spatiotemporal_scaling.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/future_prospects/spatiotemporal_scaling.md"}}, {"data": {"id": "docs/scientific_model/index.md->docs/scientific_model/flora_and_symbiosis.md", "source": "docs/scientific_model/index.md", "target": "docs/scientific_model/flora_and_symbiosis.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/herbivore_behavior.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/herbivore_behavior.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/ecological_analytics.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/ecological_analytics.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/morphological_defenses.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/morphological_defenses.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/chemotaxis.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/chemotaxis.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/reaction_diffusion.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/reaction_diffusion.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/population_dynamics.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/population_dynamics.md"}}, {"data": {"id": "docs/scientific_model/mathematical_framework.md->docs/scientific_model/flora_and_symbiosis.md", "source": "docs/scientific_model/mathematical_framework.md", "target": "docs/scientific_model/flora_and_symbiosis.md"}}, {"data": {"id": "docs/scientific_model/related_works.md->docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md", "source": "docs/scientific_model/related_works.md", "target": "docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/telemetry.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/telemetry.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/testing_architecture.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/testing_architecture.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/engine_execution.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/engine_execution.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/signaling_triggers.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/signaling_triggers.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/interfaces_and_ui.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/interfaces_and_ui.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/system_architecture.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/system_architecture.md"}}, {"data": {"id": "docs/technical_architecture/index.md->docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md", "source": "docs/technical_architecture/index.md", "target": "docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md"}}, {"data": {"id": ".agents/README.md->docs/technical_architecture/engine_execution.md", "source": ".agents/README.md", "target": "docs/technical_architecture/engine_execution.md"}}, {"data": {"id": ".agents/index.md->.agents/memory/palette.md", "source": ".agents/index.md", "target": ".agents/memory/palette.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/02-scientific-architect.md", "source": ".agents/index.md", "target": ".agents/roles/02-scientific-architect.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/06-git-operator.md", "source": ".agents/index.md", "target": ".agents/roles/06-git-operator.md"}}, {"data": {"id": ".agents/index.md->.agents/skills/validate-okf/SKILL.md", "source": ".agents/index.md", "target": ".agents/skills/validate-okf/SKILL.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/04-qa-automator.md", "source": ".agents/index.md", "target": ".agents/roles/04-qa-automator.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/09-matrix-auditor.md", "source": ".agents/index.md", "target": ".agents/roles/09-matrix-auditor.md"}}, {"data": {"id": ".agents/index.md->.agents/memory/complexity.md", "source": ".agents/index.md", "target": ".agents/memory/complexity.md"}}, {"data": {"id": ".agents/index.md->.agents/rules/01-stochastic-engine-and-replay.md", "source": ".agents/index.md", "target": ".agents/rules/01-stochastic-engine-and-replay.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/07-api-and-ui-developer.md", "source": ".agents/index.md", "target": ".agents/roles/07-api-and-ui-developer.md"}}, {"data": {"id": ".agents/index.md->.agents/rules/05-data-flow-invariants.md", "source": ".agents/index.md", "target": ".agents/rules/05-data-flow-invariants.md"}}, {"data": {"id": ".agents/index.md->.agents/rules/02-numba-constraints.md", "source": ".agents/index.md", "target": ".agents/rules/02-numba-constraints.md"}}, {"data": {"id": ".agents/index.md->.agents/workflows/matrix-tdd-refactor.md", "source": ".agents/index.md", "target": ".agents/workflows/matrix-tdd-refactor.md"}}, {"data": {"id": ".agents/index.md->.agents/skills/audit-okf-matrix-coverage/SKILL.md", "source": ".agents/index.md", "target": ".agents/skills/audit-okf-matrix-coverage/SKILL.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/08-telemetry-and-data-engineer.md", "source": ".agents/index.md", "target": ".agents/roles/08-telemetry-and-data-engineer.md"}}, {"data": {"id": ".agents/index.md->.agents/workflows/vertical-slice-development.md", "source": ".agents/index.md", "target": ".agents/workflows/vertical-slice-development.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/01-orchestrator.md", "source": ".agents/index.md", "target": ".agents/roles/01-orchestrator.md"}}, {"data": {"id": ".agents/index.md->.agents/workflows/implement-scientific-model.md", "source": ".agents/index.md", "target": ".agents/workflows/implement-scientific-model.md"}}, {"data": {"id": ".agents/index.md->.agents/rules/03-git-security-and-signing.md", "source": ".agents/index.md", "target": ".agents/rules/03-git-security-and-signing.md"}}, {"data": {"id": ".agents/index.md->.agents/skills/analyze-zarr/SKILL.md", "source": ".agents/index.md", "target": ".agents/skills/analyze-zarr/SKILL.md"}}, {"data": {"id": ".agents/index.md->.agents/skills/run-benchmarks/SKILL.md", "source": ".agents/index.md", "target": ".agents/skills/run-benchmarks/SKILL.md"}}, {"data": {"id": ".agents/index.md->.agents/memory/chisel.md", "source": ".agents/index.md", "target": ".agents/memory/chisel.md"}}, {"data": {"id": ".agents/index.md->.agents/rules/04-markdown-formatting.md", "source": ".agents/index.md", "target": ".agents/rules/04-markdown-formatting.md"}}, {"data": {"id": ".agents/index.md->.agents/skills/verify-matrix-trace-parity/SKILL.md", "source": ".agents/index.md", "target": ".agents/skills/verify-matrix-trace-parity/SKILL.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/03-engine-developer.md", "source": ".agents/index.md", "target": ".agents/roles/03-engine-developer.md"}}, {"data": {"id": ".agents/index.md->.agents/memory/architecture_state_map.md", "source": ".agents/index.md", "target": ".agents/memory/architecture_state_map.md"}}, {"data": {"id": ".agents/index.md->.agents/README.md", "source": ".agents/index.md", "target": ".agents/README.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/05-docs-librarian.md", "source": ".agents/index.md", "target": ".agents/roles/05-docs-librarian.md"}}, {"data": {"id": ".agents/index.md->.agents/roles/10-causal-verifier.md", "source": ".agents/index.md", "target": ".agents/roles/10-causal-verifier.md"}}, {"data": {"id": ".agents/index.md->.agents/manifesto/phids-core-philosophy.md", "source": ".agents/index.md", "target": ".agents/manifesto/phids-core-philosophy.md"}}, {"data": {"id": ".agents/index.md->.agents/rules/00-python-modernization.md", "source": ".agents/index.md", "target": ".agents/rules/00-python-modernization.md"}}, {"data": {"id": ".agents/index.md->.agents/workflows/delegation-protocol.md", "source": ".agents/index.md", "target": ".agents/workflows/delegation-protocol.md"}}, {"data": {"id": ".agents/index.md->.agents/AGENTS.md", "source": ".agents/index.md", "target": ".agents/AGENTS.md"}}, {"data": {"id": ".agents/index.md->.agents/memory/canon.md", "source": ".agents/index.md", "target": ".agents/memory/canon.md"}}, {"data": {"id": ".agents/index.md->.agents/memory/bolt.md", "source": ".agents/index.md", "target": ".agents/memory/bolt.md"}}, {"data": {"id": ".agents/index.md->.agents/skills/auto-reconcile-matrix-drift/SKILL.md", "source": ".agents/index.md", "target": ".agents/skills/auto-reconcile-matrix-drift/SKILL.md"}}, {"data": {"id": ".agents/index.md->.agents/workflows/matrix-drift-reconciliation.md", "source": ".agents/index.md", "target": ".agents/workflows/matrix-drift-reconciliation.md"}}]};
+
+    document.getElementById('node-count').innerText = graphData.nodes.length;
+    document.getElementById('edge-count').innerText = graphData.edges.length;
+
+    const cy = cytoscape({
+      container: document.getElementById('cy'),
+      elements: [...graphData.nodes, ...graphData.edges],
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'label': 'data(label)',
+            'color': '#f3f4f6',
+            'font-size': '10px',
+            'text-valign': 'bottom',
+            'text-margin-y': 4,
+            'background-color': function(ele) {
+              const type = ele.data('type');
+              if (type === 'Attested Computation') return '#ff5722';
+              if (type === 'Scientific Model') return '#00e5ff';
+              if (type === 'Architecture Document') return '#b388ff';
+              if (type === 'Agent Role') return '#ffd600';
+              if (type === 'Behavioral Rule') return '#ff1744';
+              if (type === 'Directory Index') return '#78909c';
+              return '#4caf50';
+            },
+            'border-width': 2,
+            'border-color': function(ele) {
+              const tier = ele.data('trust_tier');
+              if (tier === 'Human-Reviewed') return '#00e676';
+              if (tier === 'Machine-Confirmed') return '#00e5ff';
+              return 'rgba(255,255,255,0.2)';
+            },
+            'width': 24,
+            'height': 24
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 1.2,
+            'line-color': 'rgba(255,255,255,0.18)',
+            'target-arrow-color': 'rgba(255,255,255,0.25)',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier',
+            'arrow-scale': 0.6
+          }
+        },
+        {
+          selector: '.highlighted',
+          style: {
+            'background-color': '#ffff00',
+            'border-width': 4,
+            'border-color': '#ffffff'
+          }
+        }
+      ],
+      layout: {
+        name: 'cose',
+        animate: false,
+        padding: 50,
+        nodeRepulsion: 4500,
+        idealEdgeLength: 60
+      }
+    });
+
+    cy.on('tap', 'node', function(evt) {
+      const node = evt.target;
+      const data = node.data();
+
+      const panel = document.getElementById('details-panel');
+      panel.innerHTML = `
+        <div class="concept-card">
+          <div class="concept-title">${data.label}</div>
+          <div class="tag-list">
+            <span class="tag">${data.type}</span>
+            <span class="tag tier">${data.trust_tier}</span>
+            <span class="tag">${data.status}</span>
+          </div>
+          <div class="concept-desc">${data.description || '<i>No description declared.</i>'}</div>
+          <div class="meta-item"><b>Asset Path:</b> <code>${data.id}</code></div>
+        </div>
+      `;
+    });
+
+    document.getElementById('search').addEventListener('input', function(e) {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        cy.nodes().removeClass('highlighted');
+        return;
+      }
+      cy.nodes().forEach(n => {
+        const d = n.data();
+        const match = d.label.toLowerCase().includes(q) ||
+                      d.type.toLowerCase().includes(q) ||
+                      d.id.toLowerCase().includes(q);
+        if (match) {
+          n.addClass('highlighted');
+        } else {
+          n.removeClass('highlighted');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

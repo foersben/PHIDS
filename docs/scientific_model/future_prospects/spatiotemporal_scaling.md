@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: "Unified Forest-Scale Architecture & Spatiotemporal Scaling"
-status: realized
+status: stable
 version: 2.0
 description: "A unified specification for scaling PHIDS to large physical biomes,
   addressing memory limits, subloop computability, storage constraints, kinetic abstraction,

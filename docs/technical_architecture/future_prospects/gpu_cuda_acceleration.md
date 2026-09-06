@@ -2,7 +2,7 @@
 type: Architecture Document
 title: GPU CUDA Acceleration Engine
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Future architecture for GPU-accelerated reaction-diffusion PDE
   solvers and 3D cellular automata using PyTorch and CUDA C++ bindings.

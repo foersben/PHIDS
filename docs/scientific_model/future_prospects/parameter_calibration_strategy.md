@@ -2,7 +2,7 @@
 type: Scientific Model
 title: Empirical Parameter Scaling & Calibration Strategy
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Detailed non-dimensionalization and calibration strategy bridging
   empirical database traits to discrete PHIDS simulation parameters.

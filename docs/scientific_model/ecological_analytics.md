@@ -2,7 +2,7 @@
 type: Scientific Model
 title: Ecological Analytics & Evaluation
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Documentation for Ecological Analytics & Evaluation in the PHIDS
   framework.

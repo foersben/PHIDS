@@ -2,7 +2,7 @@
 type: Agent Skill
 title: Trigger
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Scans docs/scientific_model/ files and reports any concept document
   that describes temporal state shifts without a Data-Flow Matrix Table.

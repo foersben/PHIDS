@@ -2,7 +2,7 @@
 type: Architecture Document
 title: Interfaces & UI
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.1
 description: Technical documentation for administrative UI surfaces, HTMX
   controls, WebSocket streaming, and live dual-proxy cell inspection tooltips in
@@ -12,7 +12,7 @@ generated: {by: process:okf-updater, at: "2026-08-18T11:08:44Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: cell_details
-  resource: src/phids/api/presenters/dashboard/cell_details.py
+  resource: src/phids/api/presenters/dashboard/cell_details/__init__.py
 - id: payloads
   resource: src/phids/api/presenters/dashboard/payloads.py
 - id: base

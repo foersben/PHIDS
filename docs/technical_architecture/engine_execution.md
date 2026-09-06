@@ -2,7 +2,7 @@
 type: Architecture Document
 title: Engine Execution
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.1
 description: Core execution loop, phase ordering, ECS architecture, and
   low-level CPU performance optimizations in the PHIDS simulation framework.
@@ -31,9 +31,9 @@ sources:
 - id: movement
   resource: src/phids/engine/systems/interaction/movement/__init__.py
 - id: lifecycle
-  resource: src/phids/engine/systems/lifecycle/
+  resource: src/phids/engine/systems/lifecycle/__init__.py
 - id: signaling_lifecycle
-  resource: src/phids/engine/systems/signaling/lifecycle/
+  resource: src/phids/engine/systems/signaling/lifecycle.py
 - id: constants
   resource: src/phids/shared/constants.py
 ---

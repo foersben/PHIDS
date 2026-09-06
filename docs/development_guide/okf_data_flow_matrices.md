@@ -2,7 +2,7 @@
 type: Guide
 title: OKF Data-Flow Matrix Architecture & Verification Workflow
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.1
 description: Complete specification, agentic governance extensions (roles,
   rules, skills, workflows), and operational pipeline for modeling complex

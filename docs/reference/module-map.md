@@ -2,7 +2,7 @@
 type: Reference
 title: Module Map and Symbol Guide
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.3
 description: Whole-project inventory of active phids.* runtime packages,
   presenters, UI templates, and symbol responsibilities.

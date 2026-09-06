@@ -2,7 +2,7 @@
 type: Agent Memory
 title: Current Architecture State (June 2026)
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: "- **Python:** Migrating to 3.13."
 tags: [chemotaxis, python]

@@ -3,7 +3,7 @@ okf_version: "0.2"
 type: Reference
 title: PHIDS Documentation Overview
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Core landing page and abstract for the Plant-Herbivore Interaction
   & Defense Simulator (PHIDS) documentation.

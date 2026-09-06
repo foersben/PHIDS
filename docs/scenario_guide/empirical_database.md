@@ -2,7 +2,7 @@
 type: Concept
 title: Empirical Database Pipeline
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Architecture for the PHIDS Extract, Transform, Load (ETL) pipeline,
   generating the empirical DuckDB database.

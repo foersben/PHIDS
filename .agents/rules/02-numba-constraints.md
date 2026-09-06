@@ -2,7 +2,7 @@
 type: Agent Rule
 title: Numba Constraints
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.1
 description: Constraints for Numba JIT compilation in PHIDS.
 tags: [numba, performance, simd]

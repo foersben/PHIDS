@@ -2,7 +2,7 @@
 type: Scientific Model
 title: Flora Lifecycle and Symbiotic Networks
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.3
 description: Documentation for Flora Lifecycle and Symbiotic Networks in the
   PHIDS framework.

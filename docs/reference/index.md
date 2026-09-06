@@ -1,57 +1,27 @@
----
-type: Reference
-title: API & Package Reference Overview
-status: stable
-stale_after: "2027-01-01"
-version: 1.0
-description: High-level entry point for package module maps, symbol definitions,
-  glossary index, and Python API reference.
-tags: [phids, reference, api, module-map]
-generated: {by: process:okf-updater, at: "2026-07-26T18:31:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
-sources:
-- id: module-map
-  resource: docs/reference/module-map.md
-- id: glossary-and-concept-index
-  resource: docs/reference/glossary-and-concept-index.md
-- id: requirements-traceability
-  resource: docs/reference/requirements-traceability.md
-- id: api
-  resource: docs/reference/api.md
----
+# API & Package Reference Overview
 
 The reference section separates human-oriented explanation from symbol-oriented API detail.
 
 ## Use This Section When You Need
 
-* exact Python module and symbol documentation,
-* schema field details,
-* runtime method signatures,
-* direct links from prose pages into implementation reference.
+* Exact Python module and symbol documentation,
+* Schema field details and type bounds,
+* Runtime method signatures and argument requirements,
+* Direct links from prose pages into implementation reference.
 
 ## Components of This Section
 
-* `reference/module-map.md` 
-    * whole-project package and symbol ownership map.
-* `reference/glossary-and-concept-index.md` 
-    * current-state definitions for scientific and
-      engineering vocabulary, each cross-linked to the owning narrative chapter.
-* `reference/requirements-traceability.md` 
-    * current-state mapping from requirements to code, docs, and tests.
-* `reference/api.md` 
-    * Zensical-backed Python API reference.
-* `appendices/readme.md` 
-    * mirror of the repository README inside the docs site.
-* legacy reference material preserved in `legacy/`.
+* [Module Map](module-map.md) - Whole-project package and symbol ownership map.
+* [Glossary & Concept Index](glossary-and-concept-index.md) - Current-state definitions for scientific and engineering vocabulary, each cross-linked to the owning narrative chapter.
+* [Requirements Traceability](requirements-traceability.md) - Current-state mapping from requirements to code, docs, and verification tests.
+* [Python API Reference](api.md) - Zensical-backed Python API reference and auto-generated docstrings.
 
 ## Recommended Reading Order
 
-1. Start with `reference/module-map.md` if you need to locate the owning module for a behavior.
-2. Use `reference/api.md` when you need exact signatures, fields, or docstrings.
-3. Use the narrative chapters elsewhere in the site when you need subsystem meaning or scientific
-   interpretation.
+1. Start with [Module Map](module-map.md) if you need to locate the owning module for a behavior.
+2. Use [Python API Reference](api.md) when you need exact signatures, fields, or docstrings.
+3. Use the narrative chapters elsewhere in the site when you need subsystem meaning or scientific interpretation.
 
 ## Editorial Rule
 
-Narrative pages should explain *why* the simulator is structured as it is. The reference pages
-should explain *what symbols exist* and *how they are declared*.
+Narrative pages should explain *why* the simulator is structured as it is. The reference pages should explain *what symbols exist* and *how they are declared*.

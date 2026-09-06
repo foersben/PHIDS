@@ -32,6 +32,9 @@ audit-matrix:
 verify-matrix:
     uv run python scripts/verify_matrix_trace_parity.py --all
 
+visualize-okf:
+    uv run python scripts/visualize_okf.py
+
 mutate:
     uv run mutmut run
 

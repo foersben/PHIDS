@@ -2,7 +2,7 @@
 type: Scientific Model
 title: Chemotaxis & Flow Fields
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.2
 description: Documentation for Chemotaxis & Flow Fields in the PHIDS framework.
 tags: [phids, numba, chemotaxis]

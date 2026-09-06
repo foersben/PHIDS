@@ -2,7 +2,7 @@
 type: Concept
 title: AI Coevolution & Distributed EEDSE Engine (v3.2 Future Prospect)
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Future framework for distributed Ray/Tune multi-objective
   evolutionary algorithms and AI agent coevolution in PHIDS.

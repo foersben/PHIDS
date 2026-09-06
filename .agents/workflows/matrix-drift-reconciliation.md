@@ -2,7 +2,7 @@
 type: Agent Workflow
 title: Automated Matrix Drift Reconciliation
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Automated workflow for detecting, reconciling, and updating
   documented Data-Flow Matrices when engine parameters or telemetry drift.

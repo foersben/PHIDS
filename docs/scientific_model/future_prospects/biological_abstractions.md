@@ -2,7 +2,7 @@
 type: Concept
 title: Biological Abstractions & Grid Mechanics
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.5
 description: Analysis of computational trade-offs for foraging mechanics, plant
   lifecycle states, grid saturation, and collateral trophic interactions in a
@@ -18,7 +18,7 @@ sources:
 - id: flora_and_symbiosis
   resource: docs/scientific_model/flora_and_symbiosis.md
 - id: roadmap
-  resource: docs/development_guide/development_guide/roadmap.md
+  resource: docs/development_guide/roadmap.md
 - id: species
   resource: src/phids/api/schemas/species.py
 - id: plant

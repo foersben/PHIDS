@@ -2,7 +2,7 @@
 type: Reference
 title: Python API Reference
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Documentation for Python API Reference in the PHIDS framework.
 tags: [phids, ecs, python]

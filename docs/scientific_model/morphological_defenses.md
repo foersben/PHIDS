@@ -2,7 +2,7 @@
 type: Scientific Model
 title: Morphological Defenses and Dynamic Resource Reallocation
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.1
 description: Mathematical and biological formulation of constitutive
   morphological defenses, digestibility modulation, and rate-limited phloem

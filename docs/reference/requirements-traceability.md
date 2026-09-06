@@ -2,7 +2,7 @@
 type: Reference
 title: Requirements Traceability
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Documentation for Requirements Traceability in the PHIDS framework.
 tags: [phids, ecs, numba, chemotaxis]
@@ -32,17 +32,17 @@ sources:
 - id: test_scenario_io
   resource: tests/unit/io/test_scenario_io.py
 - id: test_api_simulation_and_scenario_routes
-  resource: tests/integration/api/test_api_simulation_and_scenario_routes.py
+  resource: tests/integration/api/test_simulation_and_scenario_routes/test_simulation_control_routes.py
 - id: test_api_routes
   resource: tests/integration/api/test_api_routes.py
 - id: test_ui_state
-  resource: tests/unit/api/test_ui_state.py
+  resource: tests/unit/api/test_ui_state/test_condition_helpers.py
 - id: test_ui_routes
-  resource: tests/integration/api/test_ui_routes.py
+  resource: tests/integration/api/test_ui_routes/test_batch_ui_routes.py
 - id: test_api_builder_and_helpers
-  resource: tests/integration/api/test_api_builder_and_helpers.py
+  resource: tests/integration/api/test_api_builder_and_helpers/test_builder_helpers.py
 - id: test_systems_behavior
-  resource: tests/integration/systems/test_systems_behavior.py
+  resource: tests/integration/systems/test_systems_behavior/test_feeding_behavior.py
 - id: test_termination_and_loop
   resource: tests/integration/systems/test_termination_and_loop.py
 - id: test_telemetry_per_species

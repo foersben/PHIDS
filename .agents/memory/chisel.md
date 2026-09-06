@@ -2,7 +2,7 @@
 type: Agent Memory
 title: Chisel
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Refactoring dashboard presenter monolithic logs and learnings
 tags: [phids, ecs, numba]
@@ -11,27 +11,25 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 name: chisel
 sources:
 - id: dashboard
-  resource: dashboard.py
+  resource: src/phids/api/presenters/dashboard/__init__.py
 - id: helpers
-  resource: helpers.py
+  resource: src/phids/api/services/draft/helpers.py
 - id: cell_details
-  resource: cell_details.py
+  resource: src/phids/api/presenters/dashboard/cell_details/__init__.py
 - id: payloads
-  resource: payloads.py
+  resource: src/phids/api/presenters/dashboard/payloads.py
 - id: mycorrhizal
-  resource: mycorrhizal.py
+  resource: src/phids/api/presenters/dashboard/mycorrhizal.py
 - id: substances
-  resource: substances.py
+  resource: src/phids/api/presenters/dashboard/substances.py
 - id: shared
-  resource: shared.py
+  resource: src/phids/api/presenters/dashboard/shared.py
 - id: interaction
-  resource: interaction.py
+  resource: src/phids/engine/systems/interaction/__init__.py
 - id: biotope
-  resource: draft/biotope.py
+  resource: src/phids/api/services/draft/biotope.py
 - id: species
-  resource: draft/species.py
-- id: __init__
-  resource: __init__.py
+  resource: src/phids/api/services/draft/species.py
 ---
 
 ## 2026-07-10 - Refactoring Dashboard Presenter Monolith

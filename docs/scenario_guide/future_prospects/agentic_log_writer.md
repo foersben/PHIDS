@@ -2,7 +2,7 @@
 type: Concept
 title: Agentic Diagnostic Log Writer & Systemic Integrity Observer
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Specifications for the asynchronous dse-log-observer agent that
   performs telemetry logging, systemic anomaly detection, and high-confidence

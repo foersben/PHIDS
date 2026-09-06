@@ -3,7 +3,7 @@ type: Concept
 title: "Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE): Master
   Architectural Specification"
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 3.0
 description: The Plant-Herbivore Interaction & Defense Simulator (PHIDS)
   utilizes an **Evolutionary Encapsulated Multi-Stage Design Space Exploration

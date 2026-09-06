@@ -2,7 +2,7 @@
 type: Agent Skill
 title: Trigger
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Parses Markdown Data-Flow Matrix tables into dataframes and asserts
   point-by-point numerical parity against Pytest traces.

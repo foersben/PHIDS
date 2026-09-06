@@ -2,7 +2,7 @@
 type: Guide
 title: Contribution Workflow
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Quality gates, two-pass Numba testing strategy, and Zensical
   documentation build policy in PHIDS.

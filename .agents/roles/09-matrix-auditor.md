@@ -2,7 +2,7 @@
 type: Agent Role
 title: Directives
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: "- **Coverage Auditing:** Periodically scan all Markdown files in `docs/scientific_model/`
   to verify Data-Flow Matrix coverage."

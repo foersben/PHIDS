@@ -2,7 +2,7 @@
 type: Agent Memory
 title: Bolt's Performance Journal
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: "**Learning:** The previous ECS design relied on an `Iterator[Entity]`
   for `query(...)`, forcing callers in hot paths to wrap it in a materialized `..."
@@ -10,8 +10,10 @@ tags: [ecs, numba, performance, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
-- id: test_batch_runner
-  resource: test_batch_runner.py
+- id: batch_orchestration
+  resource: tests/integration/systems/test_batch/test_batch_orchestration.py
+- id: batch_runner
+  resource: src/phids/engine/batch/runner.py
 ---
 
 ## 2024-05-18 - [Optimization of ECSWorld.query]

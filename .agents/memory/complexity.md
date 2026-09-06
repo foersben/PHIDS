@@ -2,7 +2,7 @@
 type: Agent Memory
 title: Complexity
 status: stable
-stale_after: "2027-01-01"
+stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
 description: Refactoring cognitive complexity from telemetry module and
   learnings
@@ -12,7 +12,7 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 name: complexity
 sources:
 - id: telemetry
-  resource: telemetry.py
+  resource: src/phids/api/routers/telemetry/chartjs.py
 ---
 
 ## 2026-07-22 - Refactoring Telemetry API Monolith
