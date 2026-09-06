@@ -25,7 +25,7 @@ sources:
 - id: emission
   resource: src/phids/engine/systems/signaling/emission.py
 - id: triggers
-  resource: src/phids/engine/systems/signaling/triggers.py
+  resource: src/phids/engine/systems/signaling/triggers/phase.py
 - id: feeding
   resource: src/phids/engine/systems/interaction/feeding.py
 - id: movement
@@ -237,9 +237,9 @@ for s in range(self.num_signals):
 
 This transforms computational scaling from static $O(K_{\text{total}} \times W \times H)$ stencil passes to dynamic $O(K_{\text{active}} \times W \times H)$ operational evaluation, achieving a **~36.7% execution speedup** in sparse signal diffusion.
 
-### 3. Hot-Path Import Resolution & Dynamic Module Overhead (`triggers.py`)
+### 3. Hot-Path Import Resolution & Dynamic Module Overhead (`triggers/phase.py`)
 
-High-frequency system phases evaluate activation triggers across thousands of flora entity instances per tick ($O(N_{\text{plants}} \times M_{\text{triggers}})$ in `src/phids/engine/systems/signaling/triggers.py`).
+High-frequency system phases evaluate activation triggers across thousands of flora entity instances per tick ($O(N_{\text{plants}} \times M_{\text{triggers}})$ in `src/phids/engine/systems/signaling/triggers/phase.py`).
 
 Executing function-local `import` statements inside inner evaluation loops (such as `from phids.api.schemas.triggers import ...`) forces the Python interpreter to perform dynamic `sys.modules` dictionary lookups, module lock verifications, and stack frame attribute resolution on every single iteration.
 
