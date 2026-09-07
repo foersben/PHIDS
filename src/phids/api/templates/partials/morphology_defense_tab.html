@@ -546,98 +546,79 @@
 
   {% endif %}
 
-  <!-- Trigger Rules Info Board -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
-    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-      <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Trigger Rules & Gates Configuration Guide</h3>
+  <!-- Unified Morphology & Defense Architecture Guide -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-5 w-full">
+    <div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📖</span>
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Morphology & Defense Architecture Guide</h3>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Comprehensive guide to constitutive physical armaments, inducible biochemical cascades, nested logic gates, and draft compilation.
+      </p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
-      <!-- Section 1: The Synthesis & Release Lifecycle -->
-      <div class="space-y-2">
-        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
-          <span>🔄</span> Rule Lifecycle & Synthesis
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <!-- Part 1: Constitutive / Passive Morphology -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-amber-600">🛡️</span> Constitutive Morphology
         </h4>
-        <p class="text-slate-500">
-          The simulation engine evaluates active trigger rules per-cell at each simulation step (tick) following this timeline:
+        <p class="text-[11px] text-slate-500">
+          Permanent physical traits built into plant tissues that act passively without metabolic synthesis triggers:
         </p>
-        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
-          <li><strong>Attack Detection:</strong> An herbivore swarm of species <code class="bg-slate-50 px-0.5 rounded">H_i</code> enters a cell containing plant species <code class="bg-slate-50 px-0.5 rounded">P_j</code>. If the swarm population is &ge; the rule's minimum trigger headcount, synthesis begins.</li>
-          <li><strong>Active Synthesis:</strong> The plant spends the substance's configured energy cost per tick to produce the chemical. This phase lasts for the specified <code class="bg-slate-50 px-0.5 rounded">Synthesis Duration</code> (ticks).</li>
-          <li><strong>Activation Gating:</strong> Once synthesis is underway, the engine evaluates the rule's nested <strong>Activation Condition</strong>. If no condition is configured, the release is unconditional. If a gate exists, the chemical's active effects (repelling, poisoning, or signaling) are blocked until the gate evaluates to <strong>True</strong>.</li>
-          <li><strong>Dissipation & Aftereffects:</strong> When synthesis halts, the chemical continues to provide protection for the duration of the substance's <code class="bg-slate-50 px-0.5 rounded">Aftereffect Ticks</code>.</li>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>🗡️ Mechanical Damage:</strong> Physical barriers (thorns, trichomes, spines) inflicting direct harm per bite. Range: <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">[0.0, 5.0]</code>. Deterrent against smaller or unadapted swarms.</li>
+          <li><strong>🧱 Digestibility Modifier:</strong> Structural fiber (lignin, silica) reducing nutritional yield. Multiplier range: <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">[0.0, 1.0]</code> (1.0 = 100% calories, 0.0 = completely indigestible).</li>
+          <li><strong>⚖️ Energetic Trade-Off:</strong> Constitutive defenses deter herbivores automatically but cannot be dynamically deactivated when grazing pressure drops.</li>
         </ul>
       </div>
 
-      <!-- Section 2: Logic Gates & Conditions Decoded -->
-      <div class="space-y-2">
-        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
-          <span>🌿</span> Logic Gates & Predicates
+      <!-- Part 2: Inducible Defenses & Synthesis Timeline -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-indigo-600">⚡</span> Inducible Defense Timeline
         </h4>
-        <p class="text-slate-500">
-          Gating structures are formed by connecting logical operators (Group nodes) to environmental measurements (Leaf nodes):
+        <p class="text-[11px] text-slate-500">
+          Biochemical defenses evaluated per-cell on every simulation tick following a Jasmonic-acid-style cascade:
         </p>
-        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
-          <li><strong>all_of (AND Gate):</strong> Evaluates to True only if all child predicate nodes within this block evaluate to True.</li>
-          <li><strong>any_of (OR Gate):</strong> Evaluates to True if at least one child predicate node within this block evaluate to True.</li>
-          <li><strong>herbivore_presence (Leaf):</strong> Checks the current cell's local herbivore population. Evaluates to True if the selected herbivore species meets or exceeds the target count.</li>
-          <li><strong>substance_active (Leaf):</strong> Checks if the selected substance is currently active (synthesizing or lingering) within the plant's own cell. This allows you to construct cascading defensive pathways (e.g., Substance A must be active to trigger Toxin B).</li>
-          <li><strong>environmental_signal (Leaf):</strong> Checks local volatile signaling concentration grids. Evaluates to True if the diffused chemical level at the plant's coordinates exceeds the minimum threshold.</li>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Attack Detection:</strong> When an herbivore swarm enters a plant's cell and meets the trigger threshold headcount, synthesis is initiated.</li>
+          <li><strong>Active Synthesis:</strong> The plant allocates energy per tick to produce the substance over the configured <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">Synthesis Duration</code>.</li>
+          <li><strong>Activation Gating:</strong> If a gate condition exists, chemical effects (signaling, repelling, toxicity) remain suppressed until the gate evaluates to <strong>True</strong>.</li>
+          <li><strong>Aftereffect Dissipation:</strong> After synthesis halts, protection persists for <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">Aftereffect Ticks</code> before returning to baseline.</li>
         </ul>
       </div>
 
-      <!-- Section 3: Modifying & Saving Rules -->
-      <div class="space-y-2">
-        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
-          <span>⚡</span> Applying Config changes
+      <!-- Part 3: Nested Logic Gates & Predicates -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-emerald-600">🌿</span> Logic Gates & Predicates
         </h4>
-        <p class="text-slate-500">
-          The PHIDS builder is data-oriented. Understanding how changes apply is crucial:
+        <p class="text-[11px] text-slate-500">
+          Connect logical operators (Group nodes) to environmental measurements (Leaf nodes) in nested trees:
         </p>
-        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
-          <li><strong>Draft State:</strong> Adding a rule, deleting nodes, changing values, or configuring gates updates the in-memory <strong>DraftState</strong> configuration on the server.</li>
-          <li><strong>Live Commit:</strong> The active running simulation loop remains isolated from your draft edits. You must click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the top sticky header (or click <strong>▶ Start</strong> / <strong>↺ Reset</strong>) to compile these rules into Numba-compiled ECS system arrays.</li>
-          <li><strong>Parallel Execution:</strong> Multiple rules configured on the same (plant, herbivore) pair fire simultaneously and independently, allowing a single attack to trigger multiple signaling pathways at once.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-  <!-- Passive Morphology Info Board -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
-    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-      <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Passive Morphology Guide</h3>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
-      <div class="space-y-2">
-        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
-          <span>🗡️</span> Mechanical Damage
-        </h4>
-        <p class="text-slate-500">
-          Constitutive defenses such as thorns, spines, and trichomes cause direct physical harm to attacking herbivores. This damage is applied instantly per grazing action.
-        </p>
-        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
-          <li><strong>Suitable Range:</strong> Typically <code class="bg-slate-50 px-0.5 rounded">[0.0, 5.0]</code>.</li>
-          <li><strong>0.0:</strong> Completely defenseless (soft tissues).</li>
-          <li><strong>1.0 - 2.0:</strong> Moderate defense, deters smaller swarms.</li>
-          <li><strong>> 3.0:</strong> Severe physical deterrent (heavy thorn cover).</li>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>all_of (AND Gate):</strong> Matches only when all child predicates evaluate to True.</li>
+          <li><strong>any_of (OR Gate):</strong> Matches when at least one child predicate evaluates to True.</li>
+          <li><strong>herbivore_presence:</strong> Evaluates True if local target herbivore count meets or exceeds the threshold.</li>
+          <li><strong>substance_active:</strong> True if an upstream substance is active, enabling multi-stage signaling pathways.</li>
+          <li><strong>environmental_signal:</strong> True if local diffused volatile concentration exceeds threshold.</li>
         </ul>
       </div>
 
-      <div class="space-y-2">
-        <h4 class="font-semibold text-slate-700 flex items-center gap-1">
-          <span>🧱</span> Digestibility Modifier
+      <!-- Part 4: Compilation & Execution -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-sky-600">🔄</span> Compilation & Execution
         </h4>
-        <p class="text-slate-500">
-          The accumulation of structural polymers like lignin and silica makes the plant tissues harder to digest, directly reducing the caloric/nutritional energy extracted by herbivores.
+        <p class="text-[11px] text-slate-500">
+          How morphological and trigger configurations are transferred to the high-performance simulation core:
         </p>
-        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1">
-          <li><strong>Suitable Range:</strong> Must be a multiplier within <code class="bg-slate-50 px-0.5 rounded">[0.0, 1.0]</code>.</li>
-          <li><strong>1.0:</strong> Fully digestible (100% caloric yield).</li>
-          <li><strong>0.4 - 0.8:</strong> Typical range for armored, woody, or mature tissues.</li>
-          <li><strong>0.0:</strong> Completely indigestible (yields 0 energy to the grazing herbivore).</li>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Draft State:</strong> Edits to morphology tables or trigger rules update the in-memory <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">DraftState</code> instantly.</li>
+          <li><strong>Compilation to JIT Arrays:</strong> Edits remain isolated from the live loop until you click <strong class="text-indigo-600">🔄 Load Draft</strong>, compiling rules into Numba-ready arrays.</li>
+          <li><strong>Parallel Triggers:</strong> Multiple rules on the same (plant, herbivore) pair execute simultaneously, allowing coordinated defense and alarm emission.</li>
         </ul>
       </div>
     </div>

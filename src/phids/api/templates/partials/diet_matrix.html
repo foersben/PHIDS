@@ -54,32 +54,60 @@
   {% endif %}
 
   <!-- Diet Matrix Info Board -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
-    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-      <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Diet Compatibility Guide</h3>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
+    <div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📖</span>
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Trophic Diet Compatibility & Cascade Guide</h3>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Bipartite interaction network mapping herbivore feeding affinities, trophic specialization, and ecological carrying capacity.
+      </p>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
-      <div>
-        <p class="font-semibold text-slate-700">Matrix Layout & Interactions:</p>
-        <p class="text-slate-500 mt-1">
-          This grid maps feeding compatibility between herbivores (rows) and flora species (columns).
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <!-- Column 1: Matrix Layout -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-indigo-600">🍽️</span> Binary Affinities
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          This bipartite matrix establishes feeding compatibility between herbivores (rows) and flora species (columns):
         </p>
-        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>Rows:</strong> The active herbivore species in the simulation draft.</li>
-          <li><strong>Columns:</strong> The active flora/plant species in the simulation draft.</li>
-          <li><strong>☑️ Checked (Compatible):</strong> The herbivore swarm will graze on this flora species when present in the same cell, draining plant energy and replenishing the swarm's energy.</li>
-          <li><strong>☐ Unchecked (Incompatible):</strong> The herbivore swarm cannot feed on this plant species. Over-reliance on incompatible species will lead to swarm starvation and eventual extinction.</li>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>☑️ Compatible:</strong> The herbivore swarm grazes on this host plant when co-located in the same cell, transferring plant biomass into herbivore energy.</li>
+          <li><strong>☐ Incompatible:</strong> The herbivore cannot consume this species. Co-located swarms bypass the plant entirely.</li>
+          <li><strong>Bite Mechanics:</strong> Feeding rate, plant digestibility modifiers, and herbivore digestive efficiency modulate exact energy transfers.</li>
         </ul>
       </div>
-      <div>
-        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
-        <p class="text-slate-500 mt-1">
-          Toggling any checkbox immediately triggers a background save to the server-side draft.
+
+      <!-- Column 2: Ecological Specialization -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-emerald-600">🌿</span> Specialization vs Generalism
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          Network connectivity directly impacts ecological stability:
         </p>
-        <p class="text-slate-500 mt-1">
-          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Generalist Herbivores:</strong> Swarms feeding on multiple flora species buffer themselves against single-species collapses, but can drive vulnerable flora species to extinction.</li>
+          <li><strong>Specialist Herbivores:</strong> Swarms restricted to a single host exhibit classic tightly-coupled Lotka-Volterra predator-prey oscillations.</li>
+          <li><strong>Trophic Refuges:</strong> Incompatible flora species act as competition buffers and physical barriers across the cellular grid.</li>
+        </ul>
+      </div>
+
+      <!-- Column 3: Draft Compilation -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-sky-600">🔄</span> Live Loop Compilation
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          How dietary matrices are loaded into SIMD interaction kernels:
         </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Immediate Autosave:</strong> Toggling checkboxes triggers an instant background update to <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">DraftState</code>.</li>
+          <li><strong>Kernel Compilation:</strong> Click <strong class="text-indigo-600">🔄 Load Draft</strong> in the top header to compile the compatibility boolean array into Numba `@njit` feeding loops.</li>
+          <li><strong>Circuit Breakers:</strong> Incompatible configurations leading to total starvation will trigger Z4 (herbivore extinction) circuit-breakers.</li>
+        </ul>
       </div>
     </div>
   </div>

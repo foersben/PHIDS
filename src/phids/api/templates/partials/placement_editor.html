@@ -211,31 +211,62 @@
   </div>
 
   <!-- Placement Editor Info Board -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-4 space-y-3 w-full">
-    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-      <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Placement Editor Guide</h3>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
+    <div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📖</span>
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Spatial Placement & Procedural Generation Guide</h3>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Interactive canvas and stochastic algorithms for authoring initial biotope topologies and species distributions.
+      </p>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
-      <div>
-        <p class="font-semibold text-slate-700">What is this view?</p>
-        <p class="text-slate-500 mt-1">
-          This interactive canvas allows you to design initial spatial layouts by placing plant entities and herbivore swarms directly onto the grid.
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <!-- Column 1: Manual Placement -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-indigo-600">🖌️</span> Manual Canvas Editing
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          Direct cell-by-cell placement on the interactive 2D grid:
         </p>
-        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>🌿 Place Plant:</strong> Select a flora species and set its initial energy to seed it at a cell.</li>
-          <li><strong>🐛 Place Swarm:</strong> Select a herbivore species, set its initial population headcount, and set starting energy.</li>
-          <li><strong>🧹 Erase:</strong> Deletes entities from selected cells (removes plants first, then swarms).</li>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>🌿 Place Plant:</strong> Select a flora species and set initial biomass/energy to seed a specimen at the clicked coordinate.</li>
+          <li><strong>🐛 Place Swarm:</strong> Select a herbivore species, set starting headcount and initial per-capita energy.</li>
+          <li><strong>🧹 Erase Tool:</strong> Clears placed entities at the clicked coordinate (removes plants first, then herbivore swarms).</li>
+          <li><strong>Entity Inspector:</strong> Placed coordinates populate the right-side <em>Placed Entities</em> ledger with instant deletion buttons.</li>
         </ul>
       </div>
-      <div>
-        <p class="font-semibold text-slate-700">How to Apply Changes?</p>
-        <p class="text-slate-500 mt-1">
-          Placements are saved instantly to your current <strong>DraftState</strong> configuration.
+
+      <!-- Column 2: Procedural Generators -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-emerald-600">✨</span> Procedural Generation
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          Automate spatial distributions across the cellular automaton:
         </p>
-        <p class="text-slate-500 mt-1">
-          ⚠️ <strong>Crucial:</strong> These edits will not affect the active running simulation loop until you click the <strong class="text-indigo-600">🔄 Load Draft</strong> button in the sticky top header, or restart/reset the simulation loop.
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>🎲 Random Uniform:</strong> Seeds entities across random coordinates up to the specified density percentage (0-100%).</li>
+          <li><strong>🌌 Gaussian Clusters:</strong> Generates concentrated spatial patches around random cluster centroids using configured variance spread.</li>
+          <li><strong>🦓 Banded Striping:</strong> Creates alternating parallel biological corridors (horizontal or vertical) with configurable band counts.</li>
+          <li><strong>⚖️ Species Proportions:</strong> Slider weights govern relative species representation in the generated output.</li>
+        </ul>
+      </div>
+
+      <!-- Column 3: Draft Compilation -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-sky-600">🔄</span> DraftState Compilation
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          How spatial topology connects to the live execution core:
         </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Draft State Persistence:</strong> All manual and generated placements are written immediately to the server-side <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">DraftState</code>.</li>
+          <li><strong>Simulation Decoupling:</strong> Edits will not affect the active running simulation loop until you click <strong class="text-indigo-600">🔄 Load Draft</strong> in the top header.</li>
+          <li><strong>Boundary Constraints:</strong> Placements outside grid dimensions (e.g. after resizing the biotope) are pruned during compilation.</li>
+        </ul>
       </div>
     </div>
   </div>

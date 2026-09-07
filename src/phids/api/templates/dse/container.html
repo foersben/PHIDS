@@ -337,6 +337,80 @@
       </div>
     </div>
   </div>
+
+  <!-- DSE Optimizer Info Board -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-8 space-y-4 w-full">
+    <div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📖</span>
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Differential Stability Explorer (DSE) & Pareto Optimization Guide</h3>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Theoretical framework, multi-objective evolutionary heuristics (NSGA-II), parameter locking, and sensitivity classifications.
+      </p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+      <!-- Part 1: DSE Objective & Attractors -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-indigo-600">🧬</span> Attractor Discovery
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          The Differential Stability Explorer navigates complex multidimensional parameter spaces to locate stable coevolutionary attractors:
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Generative Exploration:</strong> Dynamically searches for novel archetype combinations that establish stable limit cycles without extinction.</li>
+          <li><strong>Refinement Mode:</strong> Begins from an existing scenario draft, perturbing parameters within bounded hypercubes to maximize longevity and trophic efficiency.</li>
+          <li><strong>Pruning Defective Regimes:</strong> Rapidly culls parameter configurations that trigger early collapse (Z2-Z7 termination conditions).</li>
+        </ul>
+      </div>
+
+      <!-- Part 2: Parameter Locking vs Free Search -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-amber-600">🔒</span> Parameter Locking (Constants)
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          Control which ecological variables the genetic algorithm is permitted to mutate:
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>🔓 Unlocked (Optimized):</strong> The evolutionary algorithm varies this parameter across generational trials to find optimal trade-offs.</li>
+          <li><strong>🔒 Locked (Constant):</strong> Fixes the value to a known empirical invariant (e.g. fixed grid dimension or known substance decay), preventing optimizer drift.</li>
+          <li><strong>Slot Multiplicity:</strong> Adjust the number of available species slots (up to 16, governed by the Rule-of-16 architecture).</li>
+        </ul>
+      </div>
+
+      <!-- Part 3: Sensitivity Classification Badges -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-emerald-600">🏷️</span> Tuning Sensitivity Badges
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          Parameters are tagged to communicate their mathematical and numerical sensitivity:
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Standard (Optimized):</strong> Baseline ecological variables with broad continuous stability domains.</li>
+          <li><strong>Advanced Tuning:</strong> High-sensitivity kinetic parameters (e.g. Chemotaxis Decay) that drastically alter spatial gradients.</li>
+          <li><strong>Math Tuning:</strong> Numerical stability thresholds (e.g. <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">Truncate Threshold</code>) that zero out infinitesimal gradients to prevent Numba JIT float denormalization slowdowns.</li>
+        </ul>
+      </div>
+
+      <!-- Part 4: Live Pareto Frontier -->
+      <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+        <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+          <span class="text-sky-600">📈</span> Live Pareto Frontier
+        </h4>
+        <p class="text-[11px] text-slate-500">
+          The right-hand panel visualizes the non-dominated Pareto front in real time:
+        </p>
+        <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>Multi-Objective Trade-Offs:</strong> Evaluates simultaneous fitness dimensions: plant survival longevity, herbivore population stability, and defense cost burden.</li>
+          <li><strong>Non-Dominated Solutions:</strong> Highlighted points represent candidate scenarios where no single objective can be improved without degrading another.</li>
+          <li><strong>Candidate Inspection:</strong> Click any Pareto candidate to preview its parameters or apply it directly to your active simulation draft.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>

@@ -257,6 +257,65 @@
       {% endif %}
     </div>
 
+    <!-- Bio-Database Catalog Info Board -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-8 space-y-4 w-full">
+      <div class="border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📖</span>
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Bio-Database Catalog & Provenance Guide</h3>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">
+          Master repository of clustered biological archetypes, machine-learning trait reconstruction, and data ingestion pipelines.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
+        <!-- Column 1: Archetypes vs Scenarios -->
+        <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+          <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+            <span class="text-indigo-600">🗃️</span> Master Archetypes vs Drafts
+          </h4>
+          <p class="text-[11px] text-slate-500">
+            The Bio-Database serves as the definitive reference library of plant species, herbivore behaviors, and secondary metabolites:
+          </p>
+          <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+            <li><strong>Master Archetypes:</strong> Persistent botanical and zoological blueprints stored in the backend database. They define default physiological ranges, feeding preferences, and defense cascades.</li>
+            <li><strong>Draft Instances:</strong> Adding an archetype to a simulation copies its parameters into the active <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">DraftState</code>, where you can tune metrics independently without mutating the catalog.</li>
+            <li><strong>Custom Archetypes:</strong> Use the <em>+ Create Custom Archetype</em> button to author synthetic species with tailored traits.</li>
+          </ul>
+        </div>
+
+        <!-- Column 2: Data Provenance & ML Clustering -->
+        <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+          <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+            <span class="text-emerald-600">🧬</span> Empirical ML Provenance
+          </h4>
+          <p class="text-[11px] text-slate-500">
+            Archetypes are derived from aggregated empirical ecological datasets through unsupervised machine learning:
+          </p>
+          <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+            <li><strong>Source Databases:</strong> Ingests empirical field observations from the <em>TRY Plant Trait Database</em>, <em>Global Biotic Interactions (GloBI)</em>, and biochemical repositories.</li>
+            <li><strong>K-Means Clustering:</strong> Multidimensional physiological traits are clustered to produce representative archetype centroids with computed Euclidean distances.</li>
+            <li><strong>KNN Imputation:</strong> Missing botanical traits (e.g. defense costs or survival thresholds) are reconstructed using K-Nearest Neighbors weighted interpolation.</li>
+          </ul>
+        </div>
+
+        <!-- Column 3: ETL Rebuild & Synchronization -->
+        <div class="space-y-2 bg-slate-50/60 rounded-lg p-3.5 border border-slate-100">
+          <h4 class="font-semibold text-slate-800 text-[11px] flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+            <span class="text-sky-600">⚙️</span> Database Pipeline (ETL)
+          </h4>
+          <p class="text-[11px] text-slate-500">
+            How raw ecological datasets are parsed and compiled into simulation-ready priors:
+          </p>
+          <ul class="list-disc list-inside text-[11px] text-slate-500 space-y-1.5">
+            <li><strong>Rebuild Database (ETL):</strong> Executes the core extraction, transformation, and loading pipeline (<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">data_pipeline/</code>), refreshing the local database from source records.</li>
+            <li><strong>Non-Destructive Calibration:</strong> Custom overrides and newly registered archetypes are merged with empirical centroids during rebuilds.</li>
+            <li><strong>Schema Safety:</strong> Pydantic V2 schemas enforce physical bounds (e.g. non-negative growth, unit-interval efficiencies).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 

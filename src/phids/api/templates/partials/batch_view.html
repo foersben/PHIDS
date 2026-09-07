@@ -550,15 +550,40 @@
   </p>
 {% endif %}
 
-  <!-- Info Board -->
-  <div class="mt-4 rounded-md bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
-    <h3 class="font-semibold text-slate-700 mb-2">📊 Diagnostic Diagram Guide</h3>
-    <ul class="space-y-2 list-disc list-inside">
-      <li><strong>Balanced Overview / Stacked Biomass:</strong> Evaluates ecosystem energy transfer. Tracks Flora vs Herbivore population and biomass metrics to ensure energy is moving up the trophic chain and not becoming trapped.</li>
-      <li><strong>Phase Space:</strong> Maps Flora Population (X) against Herbivore Population (Y). A stable Lotka-Volterra ecosystem forms a closed, repeating orbital loop. Crashing ecosystems spiral into the origin (0,0).</li>
-      <li><strong>Collapse Risk Focus:</strong> Plots a survival probability curve (Kaplan-Meier estimator). Measures the exact probability that a scenario survives to tick <em>T</em> without hitting a terminal condition (Z2-Z7).</li>
-      <li><strong>Herbivore Pressure Focus:</strong> Maps total herbivore population specifically against <code>death_herbivore_feeding</code> events (plant deaths caused by grazing) and <code>death_starvation</code> (herbivore deaths caused by lack of food). Proves whether declining flora populations are due to active grazing pressure or simply poor baseline growth constraints, and tracks when herbivores starve.</li>
-      <li><strong>Defense Economy Ratio (Ledger):</strong> Isolates <code>death_defense_maintenance</code> events. Visualizes the metabolic burden of toxin synthesis to prove if flora are over-producing defenses and starving themselves to death.</li>
-    </ul>
-  </div>
+  <!-- Diagnostic Preset Interpretation Reference -->
+  <details class="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs text-slate-600 group">
+    <summary class="font-semibold text-slate-700 cursor-pointer hover:text-indigo-600 flex items-center justify-between list-none">
+      <span class="flex items-center gap-1.5">
+        <span>📊</span>
+        <span>Diagnostic Preset Interpretation Reference</span>
+      </span>
+      <span class="text-xs text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+    </summary>
+    <div class="mt-3 pt-2.5 border-t border-slate-200/60 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-[11px] leading-relaxed">
+      <div class="p-2.5 bg-white rounded-lg border border-slate-200/50">
+        <strong class="text-slate-800 block mb-0.5">Balanced Overview</strong>
+        Tracks Flora vs Herbivore population and $\pm\sigma$ variance ribbons to verify trophic energy transfer up the food chain.
+      </div>
+      <div class="p-2.5 bg-white rounded-lg border border-slate-200/50">
+        <strong class="text-slate-800 block mb-0.5">Phase Space</strong>
+        Maps Flora (X) vs Herbivores (Y). Stable Lotka-Volterra systems form closed limit-cycle orbits; collapses spiral into (0,0).
+      </div>
+      <div class="p-2.5 bg-white rounded-lg border border-slate-200/50">
+        <strong class="text-slate-800 block mb-0.5">Collapse Risk Focus</strong>
+        Plots empirical Kaplan-Meier survival probability curve over time measuring exact survival fraction before terminal conditions.
+      </div>
+      <div class="p-2.5 bg-white rounded-lg border border-slate-200/50">
+        <strong class="text-slate-800 block mb-0.5">Herbivore Pressure Focus</strong>
+        Compares Herbivore population and $\pm\sigma$ against grazing deaths (<code class="bg-slate-100 px-0.5 rounded">death_herbivore_feeding</code>) and starvation events.
+      </div>
+      <div class="p-2.5 bg-white rounded-lg border border-slate-200/50">
+        <strong class="text-slate-800 block mb-0.5">Defense Economy Ratio</strong>
+        Isolates defense maintenance mortality (<code class="bg-slate-100 px-0.5 rounded">death_defense_maintenance</code>) to verify whether plants over-produce toxins and self-starve.
+      </div>
+      <div class="p-2.5 bg-white rounded-lg border border-slate-200/50">
+        <strong class="text-slate-800 block mb-0.5">Statistical Variance (&plusmn;&sigma;)</strong>
+        Shaded confidence bands represent ensemble standard deviation across all $N$ independent stochastic Monte Carlo runs.
+      </div>
+    </div>
+  </details>
 </div>

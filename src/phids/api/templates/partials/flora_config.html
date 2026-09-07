@@ -101,27 +101,35 @@
   </div>
 
   <!-- Flora Config Info Board -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 mt-6 space-y-3 w-full">
-    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-      <span class="text-lg">📖</span>
-      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Flora Species & Autotrophic Parameters</h3>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 mt-6 space-y-4 w-full">
+    <div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📖</span>
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Flora Species & Autotrophic Growth Guide</h3>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Physiological parameters governing primary biomass synthesis, allometric energy storage, senescence thresholds, and spatial dispersal.
+      </p>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed font-sans">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600 leading-relaxed font-sans">
       <div>
         <p class="font-semibold text-slate-700">Ecological Parameters Explained:</p>
-        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>⚡ Base E (Base Energy):</strong> The initial biomass/energy allocated to new seedlings or placed specimens (min 0.1).</li>
-          <li><strong>🔋 Max E (Max Energy):</strong> The upper carrying capacity constraint per plant (min 0.1). Autotrophic growth ceases when saturated.</li>
-          <li><strong>📈 Growth Rate:</strong> Passive autotrophic energy gain per simulation tick (min 0.0).</li>
-          <li><strong>❤️ Surv. Thr. (Survival Threshold):</strong> The critical energy floor (min 0.0). Dropping below this triggers senescence (starvation death).</li>
-          <li><strong>🌱 Repr. Int. (Reproduction Interval):</strong> Tick interval dictating spatial dispersion attempts (min 1).</li>
-          <li><strong>🎭 Camo (Camouflage):</strong> Boolean toggle (on/off). Evolutionary trait causing localized chemical signal attenuation, disrupting the semiochemical flow-field and reducing olfactory detection.</li>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>⚡ Base E (Base Energy):</strong> Initial biomass/energy allocated to newly germinated seedlings or placed specimens (min 0.1).</li>
+          <li><strong>🔋 Max E (Max Energy):</strong> Upper carrying-capacity limit per specimen (min 0.1). When energy reaches Max E, photosynthetic intake saturates and excess energy is funneled toward reproduction or defense.</li>
+          <li><strong>📈 Growth Rate:</strong> Passive autotrophic energy gain per simulation tick (min 0.0) from photosynthesis and root nutrient uptake.</li>
+          <li><strong>❤️ Surv. Thr. (Survival Threshold):</strong> Critical energy floor (min 0.0). Falling below this threshold triggers plant senescence (starvation death).</li>
+          <li><strong>🌱 Repr. Int. (Reproduction Interval):</strong> Tick interval dictating mitotic/spatial seed dispersion attempts (min 1).</li>
+          <li><strong>🎭 Camo (Camouflage):</strong> Evolutionary morphological/chemical trait causing localized semiochemical signal attenuation, disrupting the VOC flow-field and reducing herbivore olfactory detection.</li>
         </ul>
+      </div>
       <div>
-        <p class="font-semibold text-slate-700">Applying Changes:</p>
-        <p class="text-slate-500 mt-1">
-          Edits autosave to the DraftState. ⚠️ You must click <strong class="text-indigo-600">🔄 Load Draft</strong> for parameters to inject into the live Numba arrays and JIT interaction loops.
-        </p>
+        <p class="font-semibold text-slate-700">Dispersion Mechanics & Draft Lifecycle:</p>
+        <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1.5">
+          <li><strong>🌾 Seed Dispersion:</strong> Plants disperse new clonal or seed entities across neighboring cells within their physiological dispersal radius if sufficient surplus energy exists above their survival threshold.</li>
+          <li><strong>🤝 Mycorrhizal Energy Relays:</strong> Species with active root channels share surplus energy and alarm signals across adjacent cells, buffering vulnerable seedlings against herbivore grazing.</li>
+          <li><strong>🔄 Applying Draft Changes:</strong> All table modifications autosave to server-side <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">DraftState</code>. ⚠️ You must click <strong class="text-indigo-600">🔄 Load Draft</strong> in the top header (or restart the simulation) for parameters to compile into the active Numba arrays.</li>
+        </ul>
       </div>
     </div>
   </div>
