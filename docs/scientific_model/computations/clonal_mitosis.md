@@ -25,7 +25,7 @@ sources:
   - id: parity_test
     resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
   - id: conceptual_model
-    resource: ../population_dynamics.md
+    resource: ../part_4_heterotrophic_kinematics/population_dynamics.md
 ---
 
 # Herbivore Clonal Mitosis & Biomass Bifurcation

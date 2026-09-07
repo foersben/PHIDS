@@ -172,7 +172,7 @@ Constitutive defenses directly modify the trophic interaction loop without requi
 
 Constitutive defenses act strictly as quantitative or structural barriers during the feeding phase (e.g., lignin, thorns, silica). Rather than relying on discrete spatial collision volumes, these traits directly penalize the herbivore's metabolic intake and population count during the synchronous interaction loop.
 
-> **Deep Dive:** For the explicit continuous-to-discrete mathematical mapping detailing how quantitative digestibility reduces gross intake into net energy, and how physical damage scales to integer swarm casualties via the *Attrition Trap*, see **[Feeding & Attrition Dynamics in Herbivore Behavior](herbivore_behavior.md#feeding-attrition-dynamics)**.
+> **Deep Dive:** For the explicit continuous-to-discrete mathematical mapping detailing how quantitative digestibility reduces gross intake into net energy, and how physical damage scales to integer swarm casualties via the *Attrition Trap*, see **[Feeding & Attrition Dynamics in Herbivore Behavior](../part_4_heterotrophic_kinematics/herbivore_behavior.md#feeding-attrition-dynamics)**.
 
 ---
 
@@ -181,7 +181,7 @@ Constitutive defenses act strictly as quantitative or structural barriers during
 As of **Implementation Plan 1 (Core ECS Array Expansion)**, `PlantComponent` carries two structural
 mass fields alongside the established caloric energy fields. These fields are the ECS-level runtime
 reflection of the **Decoupled Dual-Proxy Architecture** described in
-[`biological_abstractions.md`](future_prospects/biological_abstractions.md).
+[`biological_abstractions.md`](../future_prospects/biological_abstractions.md).
 
 | Field | Type | Default | Semantics |
 | :--- | :--- | :--- | :--- |

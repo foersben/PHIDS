@@ -44,34 +44,25 @@ def _parse_frontmatter(content: str) -> tuple[dict[str, object], str]:
         return {}, parts[2]
 
 
-def audit_document(file_path: Path) -> list[str]:
-    """Audit a single scientific model Markdown document.
-
-    Args:
-        file_path: Path to the markdown document.
-
-    Returns:
-        List of validation error messages, or empty list if fully compliant.
-    """
+def _check_matrix_presence(body: str) -> list[str]:
+    """Check for Data-Flow Matrix section and table."""
     errors: list[str] = []
-    text = file_path.read_text(encoding="utf-8")
-    fm, body = _parse_frontmatter(text)
-
-    # 1. Check Data-Flow Matrix section
     has_matrix_section = bool(
         re.search(r"##\s+(?:Data-Flow\s+Matrix\s+Specifications|Data-Flow\s+Matrix)", body, re.IGNORECASE)
     )
     if not has_matrix_section:
         errors.append("Missing mandatory '## Data-Flow Matrix Specifications' section.")
 
-    # 2. Check for Markdown table following the section
     has_table = bool(re.search(r"\|\s*Tick\s*[^|]*\|", body, re.IGNORECASE)) or bool(
         re.search(r"\|\s*Event\s*\|[^|]*Precondition", body, re.IGNORECASE)
     )
     if not has_table:
         errors.append("Missing columnar Data-Flow Matrix table (| Tick ... |).")
+    return errors
 
-    # 3. Check Rule 05-C Bilateral Resource Mapping in frontmatter
+
+def _extract_declared_resources(fm: dict[str, object]) -> list[str]:
+    """Extract string resources declared in frontmatter."""
     sources = fm.get("sources") or fm.get("resources") or []
     if not isinstance(sources, list):
         sources = [sources]
@@ -82,6 +73,13 @@ def audit_document(file_path: Path) -> list[str]:
             declared_resources.append(str(item["resource"]))
         elif isinstance(item, str):
             declared_resources.append(item)
+    return declared_resources
+
+
+def _check_bilateral_resources(fm: dict[str, object]) -> list[str]:
+    """Check Rule 05-C Bilateral Resource Mapping in frontmatter."""
+    errors: list[str] = []
+    declared_resources = _extract_declared_resources(fm)
 
     has_engine_link = any("src/phids/engine" in r or "src/phids/api" in r for r in declared_resources)
     if not has_engine_link:
@@ -101,6 +99,62 @@ def audit_document(file_path: Path) -> list[str]:
         )
 
     return errors
+
+
+def audit_document(file_path: Path) -> list[str]:
+    """Audit a single scientific model Markdown document.
+
+    Args:
+        file_path: Path to the markdown document.
+
+    Returns:
+        List of validation error messages, or empty list if fully compliant.
+    """
+    text = file_path.read_text(encoding="utf-8")
+    fm, body = _parse_frontmatter(text)
+    return _check_matrix_presence(body) + _check_bilateral_resources(fm)
+
+
+def _discover_target_files(target_dir: Path, strict: bool) -> list[Path]:
+    """Discover Markdown files targeted for matrix coverage audit."""
+    cascade_names = {
+        "morphological_defenses.md",
+        "reaction_diffusion.md",
+        "herbivore_behavior.md",
+        "flora_and_symbiosis.md",
+        "population_dynamics.md",
+        "biological_abstractions.md",
+    }
+    excluded_names = {"index.md", "log.md", "related_works.md", "parameter_calibration_strategy.md"}
+
+    if strict:
+        return [f for f in target_dir.rglob("*.md") if f.name not in excluded_names and "site" not in f.parts]
+    return [f for f in target_dir.rglob("*.md") if f.name in cascade_names and "site" not in f.parts]
+
+
+def _execute_audit_run(md_files: list[Path]) -> int:
+    """Run audit checks and print summary report."""
+    total_violations = 0
+    total_files = len(md_files)
+
+    for doc in sorted(md_files):
+        rel_path = doc.relative_to(Path.cwd()) if doc.is_relative_to(Path.cwd()) else doc
+        doc_errors = audit_document(doc)
+        if doc_errors:
+            total_violations += len(doc_errors)
+            print(f"❌ Coverage Deficit in -> {rel_path}:")
+            for err in doc_errors:
+                print(f"   • {err}")
+        else:
+            print(f"✅ {rel_path}: Data-Flow Matrix & Rule 05-C Bilateral Mapping verified.")
+
+    print(f"\nAudit complete: {total_files - (1 if total_violations else 0)}/{total_files} files compliant.")
+    if total_violations > 0:
+        print(f"⚠️ Total violations: {total_violations}. Failing gate.")
+        return 1
+
+    print("🎉 100% OKF Data-Flow Matrix coverage verified.")
+    return 0
 
 
 def main() -> int:
@@ -123,45 +177,9 @@ def main() -> int:
         print(f"❌ Error: Target directory '{target_dir}' does not exist.")
         return 1
 
-    # Core behavioral cascade concept documents in PHIDS
-    cascade_names = {
-        "morphological_defenses.md",
-        "reaction_diffusion.md",
-        "herbivore_behavior.md",
-        "flora_and_symbiosis.md",
-        "population_dynamics.md",
-        "biological_abstractions.md",
-    }
-    excluded_names = {"index.md", "log.md", "related_works.md", "parameter_calibration_strategy.md"}
-
-    if args.strict:
-        md_files = [f for f in target_dir.rglob("*.md") if f.name not in excluded_names and "site" not in f.parts]
-    else:
-        md_files = [f for f in target_dir.rglob("*.md") if f.name in cascade_names and "site" not in f.parts]
-
-    total_files = len(md_files)
-    total_violations = 0
-
-    print(f"🔍 Auditing OKF Data-Flow Matrix Coverage across {total_files} concept files in '{args.dir}'...\n")
-
-    for doc in sorted(md_files):
-        rel_path = doc.relative_to(Path.cwd()) if doc.is_relative_to(Path.cwd()) else doc
-        doc_errors = audit_document(doc)
-        if doc_errors:
-            total_violations += len(doc_errors)
-            print(f"❌ Coverage Deficit in -> {rel_path}:")
-            for err in doc_errors:
-                print(f"   • {err}")
-        else:
-            print(f"✅ {rel_path}: Data-Flow Matrix & Rule 05-C Bilateral Mapping verified.")
-
-    print(f"\nAudit complete: {total_files - (1 if total_violations else 0)}/{total_files} files compliant.")
-    if total_violations > 0:
-        print(f"⚠️ Total violations: {total_violations}. Failing gate.")
-        return 1
-
-    print("🎉 100% OKF Data-Flow Matrix coverage verified.")
-    return 0
+    md_files = _discover_target_files(target_dir, args.strict)
+    print(f"🔍 Auditing OKF Data-Flow Matrix Coverage across {len(md_files)} concept files in '{args.dir}'...\n")
+    return _execute_audit_run(md_files)
 
 
 if __name__ == "__main__":

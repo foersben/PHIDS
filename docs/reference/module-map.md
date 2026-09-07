@@ -146,9 +146,9 @@ Modules and symbols:
 
 Narrative docs:
 
-* `docs/scientific_model/flora_and_symbiosis.md`
-* `docs/scientific_model/herbivore_behavior.md`
-* `docs/scientific_model/chemotaxis.md`
+* `docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md`
+* `docs/scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md`
+* `docs/scientific_model/part_3_signaling_and_transport/chemotaxis.md`
 
 ### `phids.engine.core.biotope`
 
@@ -206,7 +206,7 @@ Key symbol:
 
 Narrative docs:
 
-* `docs/scientific_model/flora_and_symbiosis.md`
+* `docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md`
 
 ### `phids.engine.systems.interaction`
 
@@ -220,7 +220,7 @@ Key symbol:
 
 Narrative docs:
 
-* `docs/scientific_model/herbivore_behavior.md`
+* `docs/scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md`
 
 ### `phids.engine.systems.signaling`
 
@@ -234,7 +234,7 @@ Key symbol:
 
 Narrative docs:
 
-* `docs/scientific_model/chemotaxis.md`
+* `docs/scientific_model/part_3_signaling_and_transport/chemotaxis.md`
 
 ## `phids.io`
 
@@ -367,7 +367,7 @@ If you know the symbol but not the page, start here:
 
 * `SimulationLoop` - [`docs/technical_architecture/engine_execution.md`](../technical_architecture/engine_execution.md)
 * `DraftState` - [`docs/technical_architecture/interfaces_and_ui.md`](../technical_architecture/interfaces_and_ui.md)
-* `PlantComponent` - [`docs/scientific_model/flora_and_symbiosis.md`](../scientific_model/flora_and_symbiosis.md)
+* `PlantComponent` - [`docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md`](../scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md)
 * `GridEnvironment` - [`docs/technical_architecture/engine_execution.md`](../technical_architecture/engine_execution.md)
 
 ### Narrative vs. API Reference

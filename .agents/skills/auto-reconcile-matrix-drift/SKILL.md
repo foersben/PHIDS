@@ -22,5 +22,5 @@ Dispatched by `@matrix-auditor` or `@causal-verifier` when runtime traces diverg
 # Execution
 
 ```bash
-uv run python scripts/reconcile_matrix_drift.py --doc docs/scientific_model/morphological_defenses.md
+uv run python scripts/reconcile_matrix_drift.py --doc docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md
 ```

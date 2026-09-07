@@ -171,7 +171,7 @@ This scalar directly alters the attraction landscape *before* the Gaussian convo
 
 ### Impact on Chemotaxis
 
-See `docs/scientific_model/chemotaxis.md` for the exact mathematical effects on swarm navigation.
+See [Chemotaxis & Flow Fields](chemotaxis.md) for the exact mathematical effects on swarm navigation.
 
 ---
 

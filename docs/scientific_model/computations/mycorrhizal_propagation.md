@@ -24,7 +24,7 @@ sources:
   - id: parity_test
     resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
   - id: conceptual_model
-    resource: ../flora_and_symbiosis.md
+    resource: ../part_2_autotrophic_dynamics/flora_and_symbiosis.md
 ---
 
 # Mycorrhizal Root Network Multi-Hop Signal Propagation

@@ -59,23 +59,23 @@ Home = "index.md"
 "Scientific Model" = [
     { "Part I: Foundations" = [
         { "Overview" = "scientific_model/index.md" },
-        { "Mathematical Framework" = "scientific_model/mathematical_framework.md" },
-        { "Related Works" = "scientific_model/related_works.md" },
+        { "Mathematical Framework" = "scientific_model/part_1_foundations/mathematical_framework.md" },
+        { "Related Works" = "scientific_model/part_1_foundations/related_works.md" },
     ] },
     { "Part II: Autotrophic Dynamics" = [
-        { "Flora & Symbiosis" = "scientific_model/flora_and_symbiosis.md" },
-        { "Morphological Defenses" = "scientific_model/morphological_defenses.md" },
+        { "Flora & Symbiosis" = "scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md" },
+        { "Morphological Defenses" = "scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md" },
     ] },
     { "Part III: Signaling & Transport" = [
-        { "Reaction-Diffusion PDEs" = "scientific_model/reaction_diffusion.md" },
-        { "Chemotaxis & Flow Fields" = "scientific_model/chemotaxis.md" },
+        { "Reaction-Diffusion PDEs" = "scientific_model/part_3_signaling_and_transport/reaction_diffusion.md" },
+        { "Chemotaxis & Flow Fields" = "scientific_model/part_3_signaling_and_transport/chemotaxis.md" },
     ] },
     { "Part IV: Heterotrophic Kinematics" = [
-        { "Herbivore Behavior & Kinematics" = "scientific_model/herbivore_behavior.md" },
-        { "Population Dynamics" = "scientific_model/population_dynamics.md" },
+        { "Herbivore Behavior & Kinematics" = "scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md" },
+        { "Population Dynamics" = "scientific_model/part_4_heterotrophic_kinematics/population_dynamics.md" },
     ] },
     { "Part V: Ecosystem Synthesis" = [
-        { "Ecological Analytics" = "scientific_model/ecological_analytics.md" },
+        { "Ecological Analytics" = "scientific_model/part_5_ecosystem_synthesis/ecological_analytics.md" },
     ] },
     { "Attested Computations" = [
         { "Overview" = "scientific_model/computations/index.md" },
@@ -112,8 +112,8 @@ Scenarios = [
     { "Scenario Authoring" = "scenario_guide/scenario_authoring.md" },
     { "Curated Examples" = "scenario_guide/curated_examples.md" },
     { "Work in Progress" = [
-        { "Design Space Exploration (DSE)" = "scenario_guide/design_space_exploration.md" },
-        { "Empirical Database" = "scenario_guide/empirical_database.md" },
+        { "Design Space Exploration (DSE)" = "scenario_guide/work_in_progress/design_space_exploration.md" },
+        { "Empirical Database" = "scenario_guide/work_in_progress/empirical_database.md" },
     ] },
     { "Future Prospects" = [
         { "AI Coevolution & Distributed DSE" = "scenario_guide/future_prospects/ai_coevolution_dse.md" },
@@ -124,15 +124,20 @@ Scenarios = [
 
 [[project.nav]]
 "Development & Reference" = [
-    { "Overview" = "reference/index.md" },
-    { "Strategic Roadmap" = "development_guide/development_guide/roadmap.md" },
-    { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
-    { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
-    { "Data-Flow Matrix Architecture" = "development_guide/okf_data_flow_matrices.md" },
-    { "Module Map" = "reference/module-map.md" },
-    { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
-    { "Requirements Traceability" = "reference/requirements-traceability.md" },
-    { "Python API Reference" = "reference/api.md" },
+    { "Development Guide" = [
+        { "Overview" = "development_guide/index.md" },
+        { "Strategic Roadmap" = "development_guide/roadmap.md" },
+        { "Contribution & Workflows" = "development_guide/contribution_workflow.md" },
+        { "Agent Ecosystem" = "development_guide/agent_ecosystem.md" },
+        { "Data-Flow Matrix Architecture" = "development_guide/okf_data_flow_matrices.md" },
+    ] },
+    { "Reference" = [
+        { "Overview" = "reference/index.md" },
+        { "Module Map" = "reference/module-map.md" },
+        { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
+        { "Requirements Traceability" = "reference/requirements-traceability.md" },
+        { "Python API Reference" = "reference/api.md" },
+    ] },
     # { "Legacy Archive" = "legacy/index.md" },
 ]
 

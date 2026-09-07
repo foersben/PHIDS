@@ -44,23 +44,32 @@ graph TD
 The theoretical and computational foundations of PHIDS are partitioned into specialized domains to provide rigorous clarity on both the *what* and the *why* of the engine's construction.
 
 ### Part I: Foundations
-* [Mathematical Framework](mathematical_framework.md) - Formal PDEs, continuous-discrete coupling, deterministic operator chains, and state preservation invariants.
-* [Related Works](related_works.md) - Theoretical contextualization of PHIDS alongside classical Lotka-Volterra models, cellular automata, and IBM frameworks.
+
+* [Mathematical Framework](part_1_foundations/mathematical_framework.md) - Formal PDEs, continuous-discrete coupling, deterministic operator chains, and state preservation invariants.
+* [Related Works](part_1_foundations/related_works.md) - Theoretical contextualization of PHIDS alongside classical Lotka-Volterra models, cellular automata, and IBM frameworks.
 
 ### Part II: Autotrophic Dynamics
-* [Flora & Symbiosis](flora_and_symbiosis.md) - Autotrophic metabolic economics, underground mycorrhizal fungal networks, and nutrient exchange cascades.
-* [Morphological Defenses](morphological_defenses.md) - Physical deterrents, trichome density, structural barriers, and constitutive defense kinetics.
+
+* [Flora & Symbiosis](part_2_autotrophic_dynamics/flora_and_symbiosis.md) - Autotrophic metabolic economics, underground mycorrhizal fungal networks, and nutrient exchange cascades.
+* [Morphological Defenses](part_2_autotrophic_dynamics/morphological_defenses.md) - Physical deterrents, trichome density, structural barriers, and constitutive defense kinetics.
 
 ### Part III: Signaling & Transport
-* [Reaction-Diffusion PDEs](reaction_diffusion.md) - Isotropic Gaussian kernels, volatile organic compound (VOC) plume advection, and atmospheric dispersion physics.
-* [Chemotaxis & Flow Fields](chemotaxis.md) - Global sensory navigation gradients, sensory field sampling, and Charnov Marginal Value Theorem patch dynamics.
+
+* [Reaction-Diffusion PDEs](part_3_signaling_and_transport/reaction_diffusion.md) - Isotropic Gaussian kernels, volatile organic compound (VOC) plume advection, and atmospheric dispersion physics.
+* [Chemotaxis & Flow Fields](part_3_signaling_and_transport/chemotaxis.md) - Global sensory navigation gradients, sensory field sampling, and Charnov Marginal Value Theorem patch dynamics.
 
 ### Part IV: Heterotrophic Kinematics
-* [Herbivore Behavior & Kinematics](herbivore_behavior.md) - Foraging decision state machines, kinetic movement models, and metabolic attrition budgets.
-* [Population Dynamics](population_dynamics.md) - Density-dependent mortality, swarm mitosis, biomass energy bifurcation, and carrying capacity constraints.
+
+* [Herbivore Behavior & Kinematics](part_4_heterotrophic_kinematics/herbivore_behavior.md) - Foraging decision state machines, kinetic movement models, and metabolic attrition budgets.
+* [Population Dynamics](part_4_heterotrophic_kinematics/population_dynamics.md) - Density-dependent mortality, swarm mitosis, biomass energy bifurcation, and carrying capacity constraints.
 
 ### Part V: Ecosystem Synthesis
-* [Ecological Analytics](ecological_analytics.md) - Statistical metrics, trophic stability indicators, phase portraits, and emergence analysis.
+
+* [Ecological Analytics](part_5_ecosystem_synthesis/ecological_analytics.md) - Statistical metrics, trophic stability indicators, phase portraits, and emergence analysis.
+
+### Attested Computations
+
+* [Attested Computations Suite](computations/index.md) - Sanctioned deterministic baseline computations enforcing 1:1 table-to-trace parity.
 
 ## Speculative Research and Future Horizons
 

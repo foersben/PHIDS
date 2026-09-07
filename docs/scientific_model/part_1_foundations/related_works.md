@@ -114,7 +114,7 @@ Here is the technical and mathematical proof of why the PHIDS engine architectur
 
 #### A. Current Benchmark Headroom
 
-As documented in the technical architecture benchmarks ([GPU CUDA Acceleration Engine](../technical_architecture/future_prospects/gpu_cuda_acceleration.md)), the Numba `@njit(parallel=True, fastmath=True)` JIT-compiled OpenMP multi-threaded C-speed loops in PHIDS process a massive $1024 \times 1024$ "Forest-Scale" grid in **$\sim 3.4\text{ ms per tick}$** on a standard CPU.
+As documented in the technical architecture benchmarks ([GPU CUDA Acceleration Engine](../../technical_architecture/future_prospects/gpu_cuda_acceleration.md)), the Numba `@njit(parallel=True, fastmath=True)` JIT-compiled OpenMP multi-threaded C-speed loops in PHIDS process a massive $1024 \times 1024$ "Forest-Scale" grid in **$\sim 3.4\text{ ms per tick}$** on a standard CPU.
 
 If the target UI streaming rate (via Zarr) is equivalent to 60 FPS ($16.6\text{ ms}$ budget), $3.4\text{ ms}$ leaves a healthy **~80% CPU cycle surplus** per timeframe, strictly preserving the engine's real-time capability at full 1 km² scale.
 
@@ -128,7 +128,7 @@ Soil biogeochemistry (nitrogen mineralization) evolves over **days or weeks**, w
 PHIDS executes high-frequency kinetics every tick ($\Delta \tau = 1\text{ hr}$), while staggering slow soil biogeochemistry across Phase-Staggered Cohorts (`(entity_id % S) == (tick % S)` for 24-tick Daily and 168-tick Weekly strides) without incurring hot-path loop overhead or telemetry sawtooth spikes.
 3. **Subnormal Floating-Point Clamping:**
 As continuous chemical compounds decay asymptotically ($C \times (1 - \lambda)$ per tick), floating-point values eventually enter the IEEE 754 denormalized regime ($< 10^{-308}$). This normally causes CPUs to drop out of hardware ALU acceleration into slow software microcode. PHIDS enforces **epsilon truncation** ($C < 1 \times 10^{-4} \rightarrow 0.0$) alongside FTZ/DAZ hardware flags, maintaining maximum hardware execution speed.
-4. **Future GPU/CUDA Offloading ([GPU CUDA Acceleration Engine](../technical_architecture/future_prospects/gpu_cuda_acceleration.md)):**
+4. **Future GPU/CUDA Offloading ([GPU CUDA Acceleration Engine](../../technical_architecture/future_prospects/gpu_cuda_acceleration.md)):**
 If a research project requires simulating hundreds of coupled chemical reaction pathways across massive 3D canopy/soil volumes ($2048 \times 2048 \times 16$), PHIDS's architecture is already mapped to offload continuous field updates to PyTorch/CUDA VRAM tensor stencils, bypassing CPU PCIe bus bottlenecks entirely.
 
 ### Positioning Conclusion

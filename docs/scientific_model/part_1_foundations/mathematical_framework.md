@@ -10,17 +10,17 @@ generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: chemotaxis
-  resource: chemotaxis.md
+  resource: ../part_3_signaling_and_transport/chemotaxis.md
 - id: population_dynamics
-  resource: population_dynamics.md
+  resource: ../part_4_heterotrophic_kinematics/population_dynamics.md
 - id: reaction_diffusion
-  resource: reaction_diffusion.md
+  resource: ../part_3_signaling_and_transport/reaction_diffusion.md
 - id: herbivore_behavior
-  resource: herbivore_behavior.md
+  resource: ../part_4_heterotrophic_kinematics/herbivore_behavior.md
 - id: flora_and_symbiosis
-  resource: flora_and_symbiosis.md
+  resource: ../part_2_autotrophic_dynamics/flora_and_symbiosis.md
 - id: ecological_analytics
-  resource: ecological_analytics.md
+  resource: ../part_5_ecosystem_synthesis/ecological_analytics.md
 ---
 
 This document formalizes the Plant-Herbivore Interaction & Defense Simulator (PHIDS) as a coupled hybrid dynamical system. In this model, discrete entity transitions within a data-oriented Entity-Component-System (ECS) are strictly synchronized with continuous field updates executing across double-buffered cellular automata layers.
@@ -57,15 +57,15 @@ The following matrix provides a high-level master overview of all core scientifi
 
 | Subsystem / Feature | Biological Perspective (Why it matters biologically) | Computer Science / Math Rationale (How it is computed) | Deep-Dive Reference |
 | :--- | :--- | :--- | :--- |
-| **Toroidal Grid Geometry (Periodic Boundaries)** | Unbounded continuous world topology preserving mass conservation and wind transport without edge-effect boundary artifacts. | Branchless modulo arithmetic `(x + dx) % width` and `(y + dy) % height` across Numba `@njit` kernels and ECS spatial hash keying. | [Reaction-Diffusion PDEs](reaction_diffusion.md) |
-| **Volatile Signal Dispersion & Wind Advection** | Airborne Volatile Organic Compound (VOC) warnings spread downwind from damaged plants to prime neighbors across toroidal boundaries. | 2D Semi-Lagrangian advection + $3\times 3$ isotropic Gaussian convolution stencil + denormalization clamp ($<10^{-4} \to 0.0$). | [Reaction-Diffusion PDEs](reaction_diffusion.md) |
-| **Sigmoidal Hill Kinetics Priming** | Plant perception of airborne VOCs operates as a continuous, dose-dependent logarithmic response curve ($S(c) = \frac{c^n}{K^n + c^n}$). | Non-linear Hill activation function in `triggers.py` replacing artificial step-function threshold triggers. | [Reaction-Diffusion PDEs](reaction_diffusion.md#stress-induced-resource-reallocation-senescence) |
-| **Chemotaxis & Flow-Field Navigation** | Herbivore swarms navigate superposed attractant (food energy) and repellent (toxin) chemical landscapes. | Scalar potential surface tensor $F_t[x,y] = \alpha E \cdot N - \beta \sum T_k$ compiled via Numba `@njit(parallel=True)`. | [Chemotaxis & Flow Fields](chemotaxis.md) |
-| **Constitutive Morphological Defenses** | Mechanical thorns inflict physical mouthpart trauma; cell-wall lignin/silica reduces caloric digestibility. | $O(1)$ floor integer attrition $\lfloor m_{\text{bite}} (1-\rho) \rfloor$ and caloric discount factor $\eta_{\text{net}}$ in `feeding.py`. | [Constitutive Morphological Defenses](morphological_defenses.md) |
-| **Rate-Limited Phloem Translocation** | Mobile carbohydrates are translocated from leaves to roots via phloem sieve tubes, creating a vulnerability window. | First-order exponential relaxation recurrence equation $N^{t+1} = N^t - k(N^t - N_{\text{target}})$ in `lifecycle/`. | [Constitutive Morphological Defenses](morphological_defenses.md#23-rate-limited-phloem-translocation-kinetics) |
-| **Mycorrhizal Networks & Carbon Tax** | Subterranean fungal hyphae relay signals between root systems, supported by obligate photosynthate fees. | Spatial graph adjacency relay bypassing atmospheric diffusion grids + per-tick carbon tax fee deducted in `lifecycle/`. | [Flora and Symbiosis](flora_and_symbiosis.md) |
-| **Holling Type II Feeding Response** | Herbivore feeding saturates at high food density due to non-zero handling time ($T_h$). | Saturating intake equation $\Delta E = \frac{a E}{1 + a T_h E}$ evaluated per grazing interaction in `feeding.py`. | [Herbivore Behavior](herbivore_behavior.md) |
-| **Swarm Behavioral Paradigms & Memory** | Swarms exhibit distinct flight modes (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`) and aversion memory decay. | Per-entity behavioral paradigm state + exponential memory decay array ($M_{t+1} = M_t \cdot 0.95$) in `movement.py`. | [Herbivore Behavior](herbivore_behavior.md) |
+| **Toroidal Grid Geometry (Periodic Boundaries)** | Unbounded continuous world topology preserving mass conservation and wind transport without edge-effect boundary artifacts. | Branchless modulo arithmetic `(x + dx) % width` and `(y + dy) % height` across Numba `@njit` kernels and ECS spatial hash keying. | [Reaction-Diffusion PDEs](../part_3_signaling_and_transport/reaction_diffusion.md) |
+| **Volatile Signal Dispersion & Wind Advection** | Airborne Volatile Organic Compound (VOC) warnings spread downwind from damaged plants to prime neighbors across toroidal boundaries. | 2D Semi-Lagrangian advection + $3\times 3$ isotropic Gaussian convolution stencil + denormalization clamp ($<10^{-4} \to 0.0$). | [Reaction-Diffusion PDEs](../part_3_signaling_and_transport/reaction_diffusion.md) |
+| **Sigmoidal Hill Kinetics Priming** | Plant perception of airborne VOCs operates as a continuous, dose-dependent logarithmic response curve ($S(c) = \frac{c^n}{K^n + c^n}$). | Non-linear Hill activation function in `triggers.py` replacing artificial step-function threshold triggers. | [Reaction-Diffusion PDEs](../part_3_signaling_and_transport/reaction_diffusion.md#stress-induced-resource-reallocation-senescence) |
+| **Chemotaxis & Flow-Field Navigation** | Herbivore swarms navigate superposed attractant (food energy) and repellent (toxin) chemical landscapes. | Scalar potential surface tensor $F_t[x,y] = \alpha E \cdot N - \beta \sum T_k$ compiled via Numba `@njit(parallel=True)`. | [Chemotaxis & Flow Fields](../part_3_signaling_and_transport/chemotaxis.md) |
+| **Constitutive Morphological Defenses** | Mechanical thorns inflict physical mouthpart trauma; cell-wall lignin/silica reduces caloric digestibility. | $O(1)$ floor integer attrition $\lfloor m_{\text{bite}} (1-\rho) \rfloor$ and caloric discount factor $\eta_{\text{net}}$ in `feeding.py`. | [Constitutive Morphological Defenses](../part_2_autotrophic_dynamics/morphological_defenses.md) |
+| **Rate-Limited Phloem Translocation** | Mobile carbohydrates are translocated from leaves to roots via phloem sieve tubes, creating a vulnerability window. | First-order exponential relaxation recurrence equation $N^{t+1} = N^t - k(N^t - N_{\text{target}})$ in `lifecycle/`. | [Constitutive Morphological Defenses](../part_2_autotrophic_dynamics/morphological_defenses.md#23-rate-limited-phloem-translocation-kinetics) |
+| **Mycorrhizal Networks & Carbon Tax** | Subterranean fungal hyphae relay signals between root systems, supported by obligate photosynthate fees. | Spatial graph adjacency relay bypassing atmospheric diffusion grids + per-tick carbon tax fee deducted in `lifecycle/`. | [Flora and Symbiosis](../part_2_autotrophic_dynamics/flora_and_symbiosis.md) |
+| **Holling Type II Feeding Response** | Herbivore feeding saturates at high food density due to non-zero handling time ($T_h$). | Saturating intake equation $\Delta E = \frac{a E}{1 + a T_h E}$ evaluated per grazing interaction in `feeding.py`. | [Herbivore Behavior](../part_4_heterotrophic_kinematics/herbivore_behavior.md) |
+| **Swarm Behavioral Paradigms & Memory** | Swarms exhibit distinct flight modes (`MACRO_SWARM`, `SOLITARY_GRAZER`, `OVIPOSITION_SEEKER`) and aversion memory decay. | Per-entity behavioral paradigm state + exponential memory decay array ($M_{t+1} = M_t \cdot 0.95$) in `movement.py`. | [Herbivore Behavior](../part_4_heterotrophic_kinematics/herbivore_behavior.md) |
 
 ---
 
@@ -282,7 +282,7 @@ This baseline gradient-ascent is overridden by biological responses:
    * $C_{\text{max}}$: The maximum carrying capacity (in population units) allowed on a single tile before density-dependent repulsion is triggered.
 2. **Anchoring:** If a swarm co-locates with an energy-rich, diet-compatible plant, movement is suppressed to prioritize feeding.
 
-> **Deep Dive:** See [Chemotaxis & Flow Fields](chemotaxis.md) for a detailed explanation of unified scalar guidance, finite-neighborhood ascent, and biological equivalents.
+> **Deep Dive:** See [Chemotaxis & Flow Fields](../part_3_signaling_and_transport/chemotaxis.md) for a detailed explanation of unified scalar guidance, finite-neighborhood ascent, and biological equivalents.
 
 ## 4. Herbivore Interaction and Metabolic Attrition
 
@@ -311,7 +311,7 @@ Conversely, if surplus energy exceeds baseline requirements ($E_i^t > N_i E_{\te
 
 During metabolic evaluation, the model compares $E_i^t$, the current total energy reserve of the swarm at tick $t$, against its absolute requirement. This requirement is defined by $N_i E_{\text{min},i}$, where $E_{\text{min},i}$ is the minimum survival threshold per individual. Any caloric surplus surpassing this boundary is converted into new progeny, governed by $\rho_i$, the specific energy cost required to synthesize one new individual of the species.
 
-> **Deep Dive:** See [Population Dynamics vs. Continuous ODEs](population_dynamics.md) for an analysis of discrete modeling vs. continuous Lotka-Volterra implementations.
+> **Deep Dive:** See [Population Dynamics vs. Continuous ODEs](../part_4_heterotrophic_kinematics/population_dynamics.md) for an analysis of discrete modeling vs. continuous Lotka-Volterra implementations.
 
 ## 5. Induced Defense and Signaling Diffusion
 
@@ -350,7 +350,7 @@ In the discrete realization, the future concentration field $C_s^{t+1}$ is compu
 
 > **Deep Dives:**
 >
-> * See [Reaction-Diffusion & Partial Differential Equations](reaction_diffusion.md) for step-by-step examples of convolution kernels and gradient dispersion models.
-> * See [Herbivore Behavior & Kinematics](herbivore_behavior.md) for explicit movement momentum, probabilistic spatial routing, and capacity displacement rules.
-> * See [Flora & Symbiosis](flora_and_symbiosis.md) for reproductive dispersion equations, explicit energy checks, and Mycorrhizal (Root Network) transfer bypasses.
-> * See [Ecological Analytics](ecological_analytics.md) for how the PHIDS data output structurally evaluates these discrete implementations against classic continuous equations like the Lotka-Volterra models.
+> * See [Reaction-Diffusion & Partial Differential Equations](../part_3_signaling_and_transport/reaction_diffusion.md) for step-by-step examples of convolution kernels and gradient dispersion models.
+> * See [Herbivore Behavior & Kinematics](../part_4_heterotrophic_kinematics/herbivore_behavior.md) for explicit movement momentum, probabilistic spatial routing, and capacity displacement rules.
+> * See [Flora & Symbiosis](../part_2_autotrophic_dynamics/flora_and_symbiosis.md) for reproductive dispersion equations, explicit energy checks, and Mycorrhizal (Root Network) transfer bypasses.
+> * See [Ecological Analytics](../part_5_ecosystem_synthesis/ecological_analytics.md) for how the PHIDS data output structurally evaluates these discrete implementations against classic continuous equations like the Lotka-Volterra models.

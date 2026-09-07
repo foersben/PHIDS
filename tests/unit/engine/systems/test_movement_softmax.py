@@ -129,7 +129,8 @@ def test_softmax_field_choice_jit_parity() -> None:
         -1,
     )
 
-    x_py, y_py = _softmax_field_choice_jit.py_func(
+    py_func = getattr(_softmax_field_choice_jit, "py_func", _softmax_field_choice_jit)
+    x_py, y_py = py_func(
         count,
         False,
         scores,
@@ -160,7 +161,8 @@ def test_flat_field_choice_jit_parity() -> None:
 
     x_jit, y_jit = _flat_field_choice_jit(count, 0, 0, 0, 0, c_x, c_y, np.zeros(4, dtype=np.float64), rand_val)
 
-    x_py, y_py = _flat_field_choice_jit.py_func(count, 0, 0, 0, 0, c_x, c_y, np.zeros(4, dtype=np.float64), rand_val)
+    py_func = getattr(_flat_field_choice_jit, "py_func", _flat_field_choice_jit)
+    x_py, y_py = py_func(count, 0, 0, 0, 0, c_x, c_y, np.zeros(4, dtype=np.float64), rand_val)
 
     assert x_jit == x_py
     assert y_jit == y_py
@@ -191,7 +193,8 @@ def test_weighted_field_choice_jit_parity() -> None:
         -1,
     )
 
-    x_py, y_py = _weighted_field_choice_jit.py_func(
+    py_func = getattr(_weighted_field_choice_jit, "py_func", _weighted_field_choice_jit)
+    x_py, y_py = py_func(
         count,
         False,
         scores,
@@ -239,7 +242,8 @@ def test_choose_neighbour_by_flow_probability_jit_parity() -> None:
         1.0,
     )
 
-    x_py, y_py = _choose_neighbour_by_flow_probability_jit.py_func(
+    py_func = getattr(_choose_neighbour_by_flow_probability_jit, "py_func", _choose_neighbour_by_flow_probability_jit)
+    x_py, y_py = py_func(
         0,
         0,
         0,
@@ -269,7 +273,8 @@ def test_random_walk_step_jit_parity() -> None:
 
     x_jit, y_jit = _random_walk_step_jit(0, 0, 10, 10, c_x, c_y, 0.5)
 
-    x_py, y_py = _random_walk_step_jit.py_func(0, 0, 10, 10, c_x, c_y, 0.5)
+    py_func = getattr(_random_walk_step_jit, "py_func", _random_walk_step_jit)
+    x_py, y_py = py_func(0, 0, 10, 10, c_x, c_y, 0.5)
 
     assert x_jit == x_py
     assert y_jit == y_py

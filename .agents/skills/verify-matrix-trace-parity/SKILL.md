@@ -22,5 +22,5 @@ Pre-push gate, after modifying simulation behavior equations, or dispatched by `
 # Execution
 
 ```bash
-uv run python scripts/verify_matrix_trace_parity.py --doc docs/scientific_model/morphological_defenses.md
+uv run python scripts/verify_matrix_trace_parity.py --doc docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md
 ```

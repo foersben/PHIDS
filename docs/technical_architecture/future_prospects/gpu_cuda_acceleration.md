@@ -13,7 +13,7 @@ sources:
 - id: engine_execution
   resource: docs/technical_architecture/engine_execution.md
 - id: reaction_diffusion
-  resource: docs/scientific_model/reaction_diffusion.md
+  resource: docs/scientific_model/part_3_signaling_and_transport/reaction_diffusion.md
 ---
 
 ## GPU CUDA Acceleration Engine (Future Prospect)

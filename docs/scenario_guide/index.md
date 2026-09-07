@@ -22,8 +22,8 @@ graph TD
 
 ## Work in Progress
 
-* [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](design_space_exploration.md) - Guide on utilizing the EEDSE Optimizer to discover stable ecological configurations autonomously.
-* [Empirical Database](empirical_database.md) - Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
+* [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](work_in_progress/design_space_exploration.md) - Guide on utilizing the EEDSE Optimizer to discover stable ecological configurations autonomously.
+* [Empirical Database](work_in_progress/empirical_database.md) - Documentation on the underlying trait-pipeline that pulls from real-world scientific data.
 
 ---
 

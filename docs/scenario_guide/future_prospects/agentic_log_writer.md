@@ -12,7 +12,7 @@ generated: {by: process:okf-updater, at: "2026-08-03T15:00:00Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: design_space_exploration
-  resource: docs/scenario_guide/design_space_exploration.md
+  resource: docs/scenario_guide/work_in_progress/design_space_exploration.md
 - id: agent_ecosystem
   resource: docs/development_guide/agent_ecosystem.md
 ---

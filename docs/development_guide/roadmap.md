@@ -17,9 +17,9 @@ sources:
 - id: system_architecture
   resource: docs/technical_architecture/system_architecture.md
 - id: design_space_exploration
-  resource: docs/scenario_guide/design_space_exploration.md
+  resource: docs/scenario_guide/work_in_progress/design_space_exploration.md
 - id: empirical_database
-  resource: docs/scenario_guide/empirical_database.md
+  resource: docs/scenario_guide/work_in_progress/empirical_database.md
 ---
 
 This document defines the strategic development roadmap for the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It details implemented foundations, active pre-v1.0 base milestones, and future research horizons across **biological fidelity**, **full-stack software architecture**, **spatiotemporal scaling**, **empirical database ingestion**, **UI controls**, **telemetry/replay updates**, **QA regression gates**, and **high-performance computing (HPC)**.
@@ -83,8 +83,8 @@ This document defines the strategic development roadmap for the Plant-Herbivore 
     * **Empirical Bio-Database Pipeline**: Extend DuckDB schema (`phids.analytics.bio_database`) and `src/data_pipeline/json_builder.py` to ingest species-specific MVT patch residence time thresholds and temperature parameters $\tau$ from PanTHERIA / empirical literature.
     * **Telemetry & Replay Schema**: Direct update to `ReplayState` and Zarr dataset schemas to serialize per-swarm foraging mode transitions and departure ticks. All scenario examples (`scenarios/*.yaml`) updated to match.
     * **QA & Verification Gates**: Unit tests for Boltzmann transition probabilities, MVT departure triggers, and partial herbivory recovery in `tests/unit/engine/systems/test_movement.py`; `mutmut` kill rate $>85\%$; benchmark regression gate $<5\%$ tick latency overhead.
-    * **Documentation**: Update `docs/scientific_model/herbivore_behavior.md`, `docs/scientific_model/chemotaxis.md`, and `docs/technical_architecture/engine_execution.md`.
-    * **DSE Scope Extension**: Expose continuous gene `softmax_temperature` ($\tau$) in [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for evolutionary trajectory optimization.
+    * **Documentation**: Update `docs/scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md`, `docs/scientific_model/part_3_signaling_and_transport/chemotaxis.md`, and `docs/technical_architecture/engine_execution.md`.
+    * **DSE Scope Extension**: Expose continuous gene `softmax_temperature` ($\tau$) in [Design Space Exploration Guide](../scenario_guide/work_in_progress/design_space_exploration.md) for evolutionary trajectory optimization.
 
 ---
 
@@ -136,7 +136,7 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
     * **QA & Verification Gates**: Unit tests for $GDD$ accumulation; mutation test coverage via `mutmut` ($>85\%$ kill rate on `lifecycle/`); benchmark regression gate ($<5\%$ tick overhead).
     * **Packaging**: Verify standalone binary bundling in `packaging/phids.spec` for updated templates and DuckDB schemas.
     * **Documentation**: Update `docs/technical_architecture/engine_execution.md` (lifecycle phase update) and `docs/scenario_guide/index.md`.
-    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/work_in_progress/design_space_exploration.md) for new continuous genes (`germination_gdd_threshold`, `seed_dormancy_decay_rate`).
 
 ### Stage 3B: Soil Detritus & Biomass Recycling Loop
 
@@ -152,7 +152,7 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
     * **Telemetry & Replay Schema**: Direct update to Zarr schema adding `/soil_nitrogen` matrix layer when enabled.
     * **QA & Verification Gates**: Nitrogen and total biomass conservation law integration tests.
     * **Documentation**: Update `docs/technical_architecture/system_architecture.md` with soil double-buffering layers.
-    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for soil mineralization continuous/discrete genes.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/work_in_progress/design_space_exploration.md) for soil mineralization continuous/discrete genes.
 
 ### Stage 3C: Macro-Patch Weather & Micro-Climate Profile
 
@@ -167,8 +167,8 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
     * **Empirical Bio-Database Pipeline**: Ingest species thermal tolerance limits ($T_{\text{min}}, T_{\text{max}}$) into `bio_database.json`.
     * **Telemetry & Replay Schema**: Record global climate scalars directly in Zarr frame metadata.
     * **QA & Verification Gates**: Validate Arrhenius reaction rate scaling tests for VOC synthesis.
-    * **Documentation**: Update `docs/scientific_model/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
-    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/design_space_exploration.md) for climate amplitude and drought intensity genes.
+    * **Documentation**: Update `docs/scientific_model/part_1_foundations/mathematical_framework.md` with temperature-dependent Arrhenius kinetics for VOC synthesis.
+    * **DSE Scope Extension**: Cross-reference [Design Space Exploration Guide](../scenario_guide/work_in_progress/design_space_exploration.md) for climate amplitude and drought intensity genes.
 
 ### Stage 3 Implementation Summary Matrix
 
@@ -176,21 +176,24 @@ Stage 3 is structured into granular, independent sub-stages. Each sub-stage can 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Stage 3A** | Soil Seed Bank | Low-Mod ($\sim 250$ LOC) | `seed_bank_layer`, `lifecycle/` GDD logic | HTMX Seed Bank toggle, GDD sliders, JSON buttons, live overlay | Ingest `gdd_threshold`, `seed_decay` in DuckDB | Direct `/seed_bank_density` Zarr update, `mutmut` $>85\%$ | `engine_execution.md` | `germination_gdd_threshold`, `seed_decay_rate` |
 | **Stage 3B** | Soil Detritus Recycling | Moderate ($\sim 350$ LOC) | `SoilModule` JIT mineralization kernels | Soil settings panel (Disabled/Dense/Patch), live N-map | Soil N baselines & tissue N:P decay ratios | Direct `/soil_nitrogen` Zarr array | `system_architecture.md` | `mineralization_rate`, `soil_nitrogen_baseline` |
-| **Stage 3C** | Weather Profiles | Low-Mod ($\sim 220$ LOC) | `WeatherModule`, `SimulationLoop` Phase 0 | Weather profile selector, dashboard temp badge | Species thermal limits ($T_{\text{min}}, T_{\text{max}}$) in JSON | Direct climate scalars in Zarr metadata | `mathematical_framework.md` | `seasonal_temp_amplitude`, `drought_factor` |
+| **Stage 3C** | Weather Profiles | Low-Mod ($\sim 220$ LOC) | `WeatherModule`, `SimulationLoop` Phase 0 | Weather profile selector, dashboard temp badge | Species thermal limits ($T_{\text{min}}, T_{\text{max}}$) in JSON | Direct climate scalars in Zarr metadata | `part_1_foundations/mathematical_framework.md` | `seasonal_temp_amplitude`, `drought_factor` |
 
 ---
 
-## Stage 4: Unified Forest-Scale Architecture & Biome Scaling (Pre-v1.0 Base Milestone)
+## Stage 4: Unified Forest-Scale Architecture & Biome Scaling `[Implemented]`
 
 To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically, PHIDS enforces Dimensional Anchoring ($\Delta L = 1\text{m}$, $\Delta \tau = 1\text{hr}$, $\Delta E = 100\text{kcal}$) and multi-scale temporal loop boundaries.
 
-### Stage 4A: Toroidal Power-of-2 Bitwise Wrap & Memory Locality
+### Stage 4A: Toroidal Power-of-2 Bitwise Wrap & Memory Locality `[Implemented]`
 
-* **Computational Target**: Shift to power-of-two grid dimensions ($1024 \times 1024$) allowing single-cycle bitwise AND masking (`x & 1023`) for toroidal wrap-around boundaries, guaranteeing high cache-line locality during $5 \times 5$ spatial convolutions.
+* **Computational Target**: Shift to power-of-two grid dimensions ($1024 \times 1024$) allowing single-cycle bitwise AND masking (`x & (W-1)`) for toroidal wrap-around boundaries, guaranteeing high cache-line locality during $5 \times 5$ spatial convolutions.
+* **Implementation & Verification**: Implemented via Numba `@njit` kernels in `src/phids/engine/core/flow_field.py` (`_propagate_iteration_jit_pow2`, `_run_pow2_parallel`, `_run_pow2_serial`) and verified by `tests/unit/engine/invariants/test_toroidal_topological_invariants.py`.
 
-### Stage 4B: $O(1)$ Trophic Anchoring Fast-Path ("Bolt Optimization")
+### Stage 4B: $O(1)$ Trophic Anchoring Fast-Path ("Bolt Optimization") `[Implemented]`
 
 * **Computational Target**: Short-circuit chemotactic gradient calculations ($\Delta x = 0, \Delta y = 0$) when swarms are co-located with uneaten food, bypassing multi-layer tensor evaluations during feeding.
+* **Implementation & Verification**: Implemented in `src/phids/engine/systems/interaction/movement/anchoring.py` (`_is_swarm_anchored_jit`) and integrated into `_resolve_swarm_movement`.
+
 
 ---
 

@@ -12,11 +12,11 @@ generated: {by: process:okf-updater, at: "2026-07-26T18:10:00Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: population_dynamics
-  resource: docs/scientific_model/population_dynamics.md
+  resource: docs/scientific_model/part_4_heterotrophic_kinematics/population_dynamics.md
 - id: empirical_database
-  resource: docs/scenario_guide/empirical_database.md
+  resource: docs/scenario_guide/work_in_progress/empirical_database.md
 - id: design_space_exploration
-  resource: docs/scenario_guide/design_space_exploration.md
+  resource: docs/scenario_guide/work_in_progress/design_space_exploration.md
 ---
 
 This document details the scientific strategy for bridging raw empirical database entries (TRY, PanTHERIA, GloBI, Pherobase, ToxValDB) and discrete simulation parameters within the Plant-Herbivore Interaction & Defense Simulator (PHIDS). It establishes a non-dimensionalization framework ensuring Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) searches yield biologically authentic ecosystems rather than unphysical mathematical artifacts.

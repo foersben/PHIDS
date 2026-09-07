@@ -66,187 +66,185 @@ def _extract_markdown_table(doc_path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def verify_phloem_matrix_parity(doc_path: Path) -> list[str]:
-    """Verify phloem translocation table against live engine trace."""
-    errors: list[str] = []
+def _verify_table_against_trace(
+    doc_path: Path,
+    trace: list[Any],
+    check_row_fn: Any,
+) -> list[str]:
+    """Verify table against runtime trace using the provided row checker."""
     table = _extract_markdown_table(doc_path)
     if not table:
         return ["Could not find or parse Data-Flow Matrix table in document."]
-
-    trace = generate_phloem_translocation_trace(0.5, 0.2, 0.5, 2, 6)
     if len(table) != len(trace):
-        errors.append(f"Row count mismatch: Document has {len(table)} rows; runtime trace has {len(trace)} rows.")
-        return errors
+        return [f"Row count mismatch: Document has {len(table)} rows; runtime trace has {len(trace)} rows."]
 
-    for _i, (doc_row, trace_row) in enumerate(zip(table, trace, strict=False)):
-        for key in doc_row:
-            low_k = key.lower()
-            try:
-                if "apparent" in low_k:
-                    val = float(doc_row[key].split()[0])
-                    expected = float(trace_row.n_apparent)
-                    if abs(val - expected) > 1e-4:
-                        errors.append(f"Tick {trace_row.tick} apparent drift: Doc={val}, Runtime={expected}")
-                elif "target" in low_k:
-                    val = float(doc_row[key].split()[0])
-                    expected = float(trace_row.n_target)
-                    if abs(val - expected) > 1e-4:
-                        errors.append(f"Tick {trace_row.tick} target drift: Doc={val}, Runtime={expected}")
-                elif "withdrawal" in low_k:
-                    val_int = int(doc_row[key].split()[0])
-                    if val_int != trace_row.withdrawal_ticks:
-                        errors.append(
-                            f"Tick {trace_row.tick} withdrawal ticks drift: "
-                            f"Doc={val_int}, Runtime={trace_row.withdrawal_ticks}"
-                        )
-            except (ValueError, IndexError):
-                pass
-
+    errors: list[str] = []
+    for doc_row, trace_row in zip(table, trace, strict=False):
+        errors.extend(check_row_fn(doc_row, trace_row))
     return errors
+
+
+def _check_phloem_metric(low_k: str, val_str: str, trace_row: Any) -> list[str]:
+    errors: list[str] = []
+    try:
+        if "apparent" in low_k and abs(float(val_str) - float(trace_row.n_apparent)) > 1e-4:
+            errors.append(
+                f"Tick {trace_row.tick} apparent drift: Doc={float(val_str)}, Runtime={float(trace_row.n_apparent)}"
+            )
+        elif "target" in low_k and abs(float(val_str) - float(trace_row.n_target)) > 1e-4:
+            errors.append(
+                f"Tick {trace_row.tick} target drift: Doc={float(val_str)}, Runtime={float(trace_row.n_target)}"
+            )
+        elif "withdrawal" in low_k and int(val_str) != trace_row.withdrawal_ticks:
+            errors.append(
+                f"Tick {trace_row.tick} withdrawal ticks drift: "
+                f"Doc={int(val_str)}, Runtime={trace_row.withdrawal_ticks}"
+            )
+    except (ValueError, IndexError):
+        pass
+    return errors
+
+
+def _check_phloem_row(doc_row: dict[str, str], trace_row: Any) -> list[str]:
+    row_errors: list[str] = []
+    for key, raw_val in doc_row.items():
+        parts = raw_val.split()
+        if parts:
+            row_errors.extend(_check_phloem_metric(key.lower(), parts[0], trace_row))
+    return row_errors
+
+
+def verify_phloem_matrix_parity(doc_path: Path) -> list[str]:
+    """Verify phloem translocation table against live engine trace."""
+    trace = generate_phloem_translocation_trace(0.5, 0.2, 0.5, 2, 6)
+    return _verify_table_against_trace(doc_path, trace, _check_phloem_row)
+
+
+def _check_defense_metric(low_k: str, val_str: str, trace_row: Any) -> list[str]:
+    errors: list[str] = []
+    try:
+        val = float(val_str)
+        if (("e_current" in low_k) or (low_k.startswith("e") and "current" in low_k)) and abs(
+            val - trace_row.e_current
+        ) > 1e-4:
+            errors.append(f"Tick {trace_row.tick} E drift: Doc={val}, Expected={trace_row.e_current}")
+        elif "internal" in low_k and abs(val - trace_row.m_internal) > 1e-4:
+            errors.append(f"Tick {trace_row.tick} M_internal drift: Doc={val}, Expected={trace_row.m_internal}")
+        elif "external" in low_k and abs(val - trace_row.l_external) > 1e-4:
+            errors.append(f"Tick {trace_row.tick} L_external drift: Doc={val}, Expected={trace_row.l_external}")
+    except (ValueError, IndexError):
+        pass
+    return errors
+
+
+def _check_defense_row(doc_row: dict[str, str], trace_row: Any) -> list[str]:
+    row_errors: list[str] = []
+    for key, raw_val in doc_row.items():
+        parts = raw_val.split()
+        if parts:
+            row_errors.extend(_check_defense_metric(key.lower(), parts[0], trace_row))
+    return row_errors
 
 
 def verify_defense_matrix_parity(doc_path: Path) -> list[str]:
     """Verify defense signaling cascade table against canonical trace."""
-    errors: list[str] = []
-    table = _extract_markdown_table(doc_path)
-    if not table:
-        return ["Could not find or parse Data-Flow Matrix table in document."]
-
     trace = generate_defense_cascade_trace()
-    if len(table) != len(trace):
-        errors.append(f"Row count mismatch: Document has {len(table)} rows; runtime trace has {len(trace)} rows.")
-        return errors
+    return _verify_table_against_trace(doc_path, trace, _check_defense_row)
 
-    for doc_row, trace_row in zip(table, trace, strict=False):
-        for key in doc_row:
-            low_k = key.lower()
-            try:
-                if ("e_current" in low_k) or (low_k.startswith("e") and "current" in low_k):
-                    val = float(doc_row[key].split()[0])
-                    if abs(val - trace_row.e_current) > 1e-4:
-                        errors.append(f"Tick {trace_row.tick} E drift: Doc={val}, Expected={trace_row.e_current}")
-                elif "internal" in low_k:
-                    val = float(doc_row[key].split()[0])
-                    if abs(val - trace_row.m_internal) > 1e-4:
-                        errors.append(
-                            f"Tick {trace_row.tick} M_internal drift: Doc={val}, Expected={trace_row.m_internal}"
-                        )
-                elif "external" in low_k:
-                    val = float(doc_row[key].split()[0])
-                    if abs(val - trace_row.l_external) > 1e-4:
-                        errors.append(
-                            f"Tick {trace_row.tick} L_external drift: Doc={val}, Expected={trace_row.l_external}"
-                        )
-            except ValueError:
-                pass
 
+def _check_starvation_metric(low_k: str, val_str: str, trace_row: Any) -> list[str]:
+    errors: list[str] = []
+    try:
+        if "population" in low_k:
+            val_pop = int(val_str)
+            if val_pop != trace_row.population:
+                errors.append(f"Tick {trace_row.tick} Pop drift: Doc={val_pop}, Expected={trace_row.population}")
+        elif "energy" in low_k and "min" not in low_k:
+            val_e = float(val_str)
+            if abs(val_e - trace_row.energy) > 1e-4:
+                errors.append(f"Tick {trace_row.tick} E drift: Doc={val_e}, Expected={trace_row.energy}")
+        elif "alive" in low_k:
+            val_alive = float(val_str)
+            if abs(val_alive - trace_row.alive_mask) > 1e-4:
+                errors.append(
+                    f"Tick {trace_row.tick} alive_mask drift: Doc={val_alive}, Expected={trace_row.alive_mask}"
+                )
+    except (ValueError, IndexError):
+        pass
     return errors
+
+
+def _check_starvation_row(doc_row: dict[str, str], trace_row: Any) -> list[str]:
+    row_errors: list[str] = []
+    for key, raw_val in doc_row.items():
+        parts = raw_val.split()
+        if parts:
+            row_errors.extend(_check_starvation_metric(key.lower(), parts[0], trace_row))
+    return row_errors
 
 
 def verify_starvation_matrix_parity(doc_path: Path) -> list[str]:
     """Verify herbivore starvation table against canonical trace."""
-    errors: list[str] = []
-    table = _extract_markdown_table(doc_path)
-    if not table:
-        return ["Could not find or parse Data-Flow Matrix table in document."]
-
     trace = generate_herbivore_starvation_trace()
-    if len(table) != len(trace):
-        errors.append(f"Row count mismatch: Document has {len(table)} rows; runtime trace has {len(trace)} rows.")
-        return errors
+    return _verify_table_against_trace(doc_path, trace, _check_starvation_row)
 
-    for doc_row, trace_row in zip(table, trace, strict=False):
-        for key in doc_row:
-            low_k = key.lower()
-            try:
-                if "population" in low_k:
-                    val_pop = int(doc_row[key].split()[0])
-                    if val_pop != trace_row.population:
-                        errors.append(
-                            f"Tick {trace_row.tick} Pop drift: Doc={val_pop}, Expected={trace_row.population}"
-                        )
-                elif "energy" in low_k and "min" not in low_k:
-                    val_e = float(doc_row[key].split()[0])
-                    if abs(val_e - trace_row.energy) > 1e-4:
-                        errors.append(f"Tick {trace_row.tick} E drift: Doc={val_e}, Expected={trace_row.energy}")
-                elif "alive" in low_k:
-                    val_alive = float(doc_row[key].split()[0])
-                    if abs(val_alive - trace_row.alive_mask) > 1e-4:
-                        errors.append(
-                            f"Tick {trace_row.tick} alive_mask drift: Doc={val_alive}, Expected={trace_row.alive_mask}"
-                        )
-            except (ValueError, IndexError):
-                pass
 
+def _check_mycorrhizal_metric(low_k: str, val_str: str, trace_row: Any) -> list[str]:
+    errors: list[str] = []
+    try:
+        val = float(val_str)
+        if "hop1" in low_k and "energy" not in low_k and abs(val - trace_row.hop1_signal) > 1e-4:
+            errors.append(f"Tick {trace_row.tick} Hop 1 signal drift: Doc={val}, Expected={trace_row.hop1_signal}")
+        elif "hop2" in low_k and abs(val - trace_row.hop2_signal) > 1e-4:
+            errors.append(f"Tick {trace_row.tick} Hop 2 signal drift: Doc={val}, Expected={trace_row.hop2_signal}")
+    except (ValueError, IndexError):
+        pass
     return errors
+
+
+def _check_mycorrhizal_row(doc_row: dict[str, str], trace_row: Any) -> list[str]:
+    row_errors: list[str] = []
+    for key, raw_val in doc_row.items():
+        parts = raw_val.split()
+        if parts:
+            row_errors.extend(_check_mycorrhizal_metric(key.lower(), parts[0], trace_row))
+    return row_errors
 
 
 def verify_mycorrhizal_matrix_parity(doc_path: Path) -> list[str]:
     """Verify mycorrhizal root hop propagation table against canonical trace."""
-    errors: list[str] = []
-    table = _extract_markdown_table(doc_path)
-    if not table:
-        return ["Could not find or parse Data-Flow Matrix table in document."]
-
     trace = generate_mycorrhizal_hop_trace()
-    if len(table) != len(trace):
-        errors.append(f"Row count mismatch: Document has {len(table)} rows; runtime trace has {len(trace)} rows.")
-        return errors
+    return _verify_table_against_trace(doc_path, trace, _check_mycorrhizal_row)
 
-    for doc_row, trace_row in zip(table, trace, strict=False):
-        for key in doc_row:
-            low_k = key.lower()
-            try:
-                if "hop1" in low_k and "energy" not in low_k:
-                    val = float(doc_row[key].split()[0])
-                    if abs(val - trace_row.hop1_signal) > 1e-4:
-                        errors.append(
-                            f"Tick {trace_row.tick} Hop 1 signal drift: Doc={val}, Expected={trace_row.hop1_signal}"
-                        )
-                elif "hop2" in low_k:
-                    val = float(doc_row[key].split()[0])
-                    if abs(val - trace_row.hop2_signal) > 1e-4:
-                        errors.append(
-                            f"Tick {trace_row.tick} Hop 2 signal drift: Doc={val}, Expected={trace_row.hop2_signal}"
-                        )
-            except (ValueError, IndexError):
-                pass
 
+def _check_mitosis_metric(low_k: str, val_str: str, trace_row: Any) -> list[str]:
+    errors: list[str] = []
+    try:
+        val = int(val_str)
+        if (("parent_pop" in low_k) or (("parent" in low_k) and ("pop" in low_k))) and val != trace_row.parent_pop:
+            errors.append(f"Tick {trace_row.tick} Parent Pop drift: Doc={val}, Expected={trace_row.parent_pop}")
+        elif (
+            ("daughter_pop" in low_k) or (("daughter" in low_k) and ("pop" in low_k))
+        ) and val != trace_row.daughter_pop:
+            errors.append(f"Tick {trace_row.tick} Daughter Pop drift: Doc={val}, Expected={trace_row.daughter_pop}")
+    except (ValueError, IndexError):
+        pass
     return errors
+
+
+def _check_mitosis_row(doc_row: dict[str, str], trace_row: Any) -> list[str]:
+    row_errors: list[str] = []
+    for key, raw_val in doc_row.items():
+        parts = raw_val.split()
+        if parts:
+            row_errors.extend(_check_mitosis_metric(key.lower(), parts[0], trace_row))
+    return row_errors
 
 
 def verify_mitosis_matrix_parity(doc_path: Path) -> list[str]:
     """Verify clonal mitosis bifurcation table against canonical trace."""
-    errors: list[str] = []
-    table = _extract_markdown_table(doc_path)
-    if not table:
-        return ["Could not find or parse Data-Flow Matrix table in document."]
-
     trace = generate_clonal_mitosis_trace()
-    if len(table) != len(trace):
-        errors.append(f"Row count mismatch: Document has {len(table)} rows; runtime trace has {len(trace)} rows.")
-        return errors
-
-    for doc_row, trace_row in zip(table, trace, strict=False):
-        for key in doc_row:
-            low_k = key.lower()
-            try:
-                if ("parent_pop" in low_k) or (("parent" in low_k) and ("pop" in low_k)):
-                    val = int(doc_row[key].split()[0])
-                    if val != trace_row.parent_pop:
-                        errors.append(
-                            f"Tick {trace_row.tick} Parent Pop drift: Doc={val}, Expected={trace_row.parent_pop}"
-                        )
-                elif ("daughter_pop" in low_k) or (("daughter" in low_k) and ("pop" in low_k)):
-                    val = int(doc_row[key].split()[0])
-                    if val != trace_row.daughter_pop:
-                        errors.append(
-                            f"Tick {trace_row.tick} Daughter Pop drift: Doc={val}, Expected={trace_row.daughter_pop}"
-                        )
-            except (ValueError, IndexError):
-                pass
-
-    return errors
+    return _verify_table_against_trace(doc_path, trace, _check_mitosis_row)
 
 
 def main() -> int:
@@ -257,11 +255,11 @@ def main() -> int:
     args = parser.parse_args()
 
     doc_registry: dict[str, Any] = {
-        "docs/scientific_model/morphological_defenses.md": verify_phloem_matrix_parity,
-        "docs/scientific_model/reaction_diffusion.md": verify_defense_matrix_parity,
-        "docs/scientific_model/herbivore_behavior.md": verify_starvation_matrix_parity,
-        "docs/scientific_model/flora_and_symbiosis.md": verify_mycorrhizal_matrix_parity,
-        "docs/scientific_model/population_dynamics.md": verify_mitosis_matrix_parity,
+        "docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md": verify_phloem_matrix_parity,
+        "docs/scientific_model/part_3_signaling_and_transport/reaction_diffusion.md": verify_defense_matrix_parity,
+        "docs/scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md": verify_starvation_matrix_parity,
+        "docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md": verify_mycorrhizal_matrix_parity,
+        "docs/scientific_model/part_4_heterotrophic_kinematics/population_dynamics.md": verify_mitosis_matrix_parity,
         "docs/development_guide/okf_data_flow_matrices.md": verify_defense_matrix_parity,
         "docs/scientific_model/computations/defense_signaling_cascade.md": verify_defense_matrix_parity,
         "docs/scientific_model/computations/phloem_translocation.md": verify_phloem_matrix_parity,

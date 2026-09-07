@@ -44,6 +44,7 @@ This directory houses the autonomous agent architecture, role specializations, h
 * [Implement Scientific Model](workflows/implement-scientific-model.md) - Formal pipeline for introducing new biological mechanisms from ODEs/PDEs to SIMD ECS kernels.
 * [Matrix Drift Reconciliation](workflows/matrix-drift-reconciliation.md) - Automated detection and updating of Data-Flow Matrices when engine kinetics intentionally drift.
 * [Matrix TDD Refactor](workflows/matrix-tdd-refactor.md) - Test-driven development loop translating matrix tables into Pytest traces and JIT kernels.
+* [Validate Full-Stack Integrity](workflows/validate-full-stack.md) - Coordinated full-stack verification pipeline covering OKF, matrix coverage, parity, and Zensical builds.
 * [Vertical Slice Development](workflows/vertical-slice-development.md) - End-to-end coordinated pipeline for building full-stack simulation features across all layers.
 
 ---
@@ -56,8 +57,10 @@ This directory houses the autonomous agent architecture, role specializations, h
 * [Run Benchmarks](skills/run-benchmarks/SKILL.md) - Performance benchmarking with `pytest-benchmark` regression thresholds.
 * [Validate Open Knowledge Format](skills/validate-okf/SKILL.md) - Verification of OKF v0.2 frontmatter schemas and knowledge graph link integrity.
 * [Verify Matrix Trace Parity](skills/verify-matrix-trace-parity/SKILL.md) - Numerical assertion of 1:1 table-to-trace parity for Data-Flow Matrices.
+* [Visualize Open Knowledge Format](skills/visualize-okf/SKILL.md) - Interactive Cytoscape.js knowledge graph generator and dependency visualizer.
 
 ---
+
 
 ## Agent Memory & Learning Journals
 

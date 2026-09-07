@@ -84,10 +84,11 @@ To ensure exact determinism and reproducibility, the engine executes a strict ph
 
 Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps) to prevent race conditions during continuous diffusion processes. The engine employs high-throughput macro optimizations:
 
-* **Massive Scale Parallelization (JIT & OpenMP):** Distributes heavy environmental processes (like signal diffusion) across multi-threaded CPU workers, achieving massive throughput scaling on large grid simulations.
-* **Processor Stall Prevention (Flush-to-Zero):** In-place truncation of decaying signal tails prevents hardware-level microcode execution stalls caused by infinitely small decimal numbers.
+* **Toroidal Power-of-2 Bitwise Wrap:** Single-cycle bitwise AND coordinate wrapping (`x & (W-1)`) for power-of-two grids ($1024 \times 1024$) guarantees exact toroidal periodic boundary conditions and high L1/L2 cache-line locality during $5 \times 5$ spatial convolutions.
+* **Massive Scale Parallelization (JIT & OpenMP):** Distributes heavy environmental processes (like signal diffusion and flow-field relaxation) across multi-threaded CPU workers, achieving massive throughput scaling on large grid simulations.
+* **Processor Stall Prevention (Flush-to-Zero):** In-place truncation of decaying signal tails below `SIGNAL_EPSILON` ($10^{-4}$) prevents hardware-level microcode execution stalls caused by denormal/subnormal floating-point numbers.
 * **Active Channel Gating:** Fast-path skipping of inactive chemical or diffusion channels via integer bitmasks ensures CPU cycles are only spent on active biological processes.
-* **Constant-Time Dispersal (Stochastic Raycasting):** Seed trajectories and airborne drifts execute in constant time, while swarms anchored on active feeding patches bypass redundant flow-field calculation overhead.
+* **Constant-Time Dispersal & Trophic Anchoring:** Seed trajectories execute via $O(1)$ stochastic polar raycasting, while swarms co-located with active food patches leverage $O(1)$ trophic anchoring (`_is_swarm_anchored_jit`) to bypass redundant flow-field pathfinding evaluations during feeding.
 * **Predictable Ecosystem Scaling (Rule of 16):** Maximum 16 species and substances are strictly pre-allocated at initialization, ensuring deterministic cache utilization and preventing memory latency spikes.
 
 ### UI & WebSockets: FastAPI, HTMX & TailwindCSS
@@ -95,6 +96,7 @@ Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps)
 The web-based control center is served by **FastAPI**, rendered via server-side templates with **HTMX**, and styled using **Tailwind CSS**. To allow the UI to render massive swarms and grids effortlessly without melting browser DOMs, the WebSocket telemetry streams (`/ws/ui/stream`) utilize strictly **columnar JSON payloads** with cache signatures. This prevents redundant encoding overhead on the server and ensures bounded in-place Chart.js updates on the client.
 
 ### High-Performance Replay (Zarr & Polars)
+
 
 Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS now defaults to the **Zarr** storage backend (`src/phids/io/zarr_replay.py`) for replay data and telemetry exports. This enables high-performance, chunked, and memory-decoupled visual slicing of long-running Monte Carlo batch simulations. Analysts can effortlessly load enormous multidimensional datasets into **Polars** or Pandas DataFrames seamlessly without memory exhaustion.
 
@@ -153,7 +155,7 @@ Previously computed batches can be rehydrated into the in-memory ledger using th
 `Load Persisted Batches` button (backed by `POST /api/batch/load-persisted`).
 
 Reference chapter:
-[`docs/scientific_model/ecological_analytics.md`](docs/scientific_model/ecological_analytics.md).
+[`docs/scientific_model/part_5_ecosystem_synthesis/ecological_analytics.md`](docs/scientific_model/part_5_ecosystem_synthesis/ecological_analytics.md).
 
 ---
 
@@ -186,7 +188,9 @@ Authoring references:
 Dependency management and environment isolation are strictly handled by Astral's `uv`, and task execution is automated via `just`.
 
 ```bash
-uv sync --all-extras --dev
+uv sync --all-groups
+# or one-step full bootstrap:
+just setup
 ```
 
 ### 2) Start the application
@@ -232,6 +236,10 @@ The ECS engine relies heavily on Numba JIT compilation. To ensure both logical c
 1. **Pass 1: Logic & Coverage (`NUMBA_DISABLE_JIT=1`):** Tests are run with JIT explicitly disabled to enforce pure-Python line coverage and validate branch logic without compilation overhead masking interpreter coverage.
 2. **Pass 2: Compilation Verification:** Tests are re-run with JIT enabled to verify safe machine-code compilation, confirming parametric invariants and ensuring zero runtime segfaults during fast-math execution.
 
+### Causal Data-Flow Matrix Parity Testing (Rule 05)
+
+Every multi-tick behavioral cascade (foraging, signaling, phloem translocation, starvation mortality) is formally governed by an Open Knowledge Format (OKF v0.2) Data-Flow Matrix specification. The test suite (`tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`) and pre-commit verification script (`scripts/verify_matrix_trace_parity.py --all`) assert exact 1:1 point-by-point numerical parity between documented Markdown matrix tables and runtime simulation traces.
+
 ### Property Hypothesis Testing
 
 To guarantee invariant ecosystem rules (e.g., mass conservation, correct condition tree algebraic evaluation), PHIDS utilizes property-based testing (via the `hypothesis` library). These pilot tests aggressively explore edge cases in the biological mechanics and trophic interaction rules.
@@ -246,7 +254,12 @@ Scripted local CI covering linting, the two-pass tests, and docs build:
 
 Useful `just` Commands:
 
+* `just setup`: Complete initial setup (`uv sync`, pre-commit hooks, extensions, DuckDB ETL).
 * `just test`: Run the full test suite via pytest.
+* `just test-matrix`: Run the causal Data-Flow Matrix integration test suite.
+* `just audit-matrix`: Audit OKF Data-Flow Matrix coverage across documentation.
+* `just verify-matrix`: Verify 1:1 table-to-trace parity against live simulation traces.
+* `just visualize-okf`: Generate the interactive Cytoscape.js knowledge graph (`docs/viz.html`).
 * `just lint`: Automatically fix formatting and run static analysis (Ruff & Mypy).
 * `just check`: Run all pre-commit hooks across the codebase.
 * `just docs`: Build and serve the Zensical documentation strictly.
@@ -260,6 +273,7 @@ Hook-only verification:
 uv run pre-commit run --all-files
 uv run pre-commit run --all-files --hook-stage pre-push
 ```
+
 
 GitHub Actions policy summary:
 
@@ -333,7 +347,7 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 | 🔬 **Scientific Model** | [`docs/scientific_model/index.md`](docs/scientific_model/index.md) | [Scientific Model](https://foersben.github.io/PHIDS/scientific_model/) | Reaction-diffusion PDEs, chemotaxis, Lotka-Volterra dynamics, and plant defenses. |
 | ⚙️ **Technical Architecture** | [`docs/technical_architecture/index.md`](docs/technical_architecture/index.md) | [Technical Architecture](https://foersben.github.io/PHIDS/technical_architecture/) | ECS data structures, Numba JIT double-buffering, FastAPI/HTMX UI, and Zarr telemetry. |
 | 🧪 **Scenario Guide** | [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md) | [Scenario Guide](https://foersben.github.io/PHIDS/scenario_guide/) | Pydantic V2 scenario schemas, curated blueprints, and DSE optimization workflows. |
-| 🛠️ **Development Guide** | [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md) | [Development Guide](https://foersben.github.io/PHIDS/development_guide/contribution_workflow/) | Two-pass Numba testing strategy, pre-commit hooks, local CI scripts, and release runbook. |
+| 🛠️ **Development Guide** | [`docs/development_guide/index.md`](docs/development_guide/index.md) | [Development Guide](https://foersben.github.io/PHIDS/development_guide/) | Strategic roadmap, agent ecosystem, contribution workflows, and release runbook. |
 | 📐 **Data-Flow Matrices** | [`docs/development_guide/okf_data_flow_matrices.md`](docs/development_guide/okf_data_flow_matrices.md) | [Data-Flow Matrix](https://foersben.github.io/PHIDS/development_guide/okf_data_flow_matrix_architecture/) | OKF Data-Flow Matrix architecture, SIMD transfer tables, and trace testing verification. |
 | 📖 **Reference & API** | [`docs/reference/index.md`](docs/reference/index.md) | [Reference](https://foersben.github.io/PHIDS/reference/) | Module ownership map, glossary/concept index, requirements traceability, and Python API. |
 
@@ -341,6 +355,7 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 
 * 🌿 **[Biological Abstractions & Grid Mechanics](docs/scientific_model/future_prospects/biological_abstractions.md)** ([Live](https://foersben.github.io/PHIDS/scientific_model/future_prospects/biological_abstractions_and_grid_mechanics/)): Decoupled dual-proxy metabolic framework, structural mass accumulation, and incidental seedling mortality.
 * 🧮 **[Parameter Calibration Strategy](docs/scientific_model/future_prospects/parameter_calibration_strategy.md)** ([Live](https://foersben.github.io/PHIDS/scientific_model/future_prospects/parameter_calibration_strategy/)): Non-dimensionalization, Buckingham $\Pi$-groups, log-normal hyper-cubes, and Kleiber-Arrhenius thermodynamic scaling.
+* 🌐 **[Spatiotemporal Scaling Architecture](docs/scientific_model/future_prospects/spatiotemporal_scaling.md)** ([Live](https://foersben.github.io/PHIDS/scientific_model/future_prospects/spatiotemporal_scaling_architecture/)): Dimensional anchoring ($\Delta L = 1\text{m}$, $\Delta \tau = 1\text{hr}$), multi-scale temporal loop decimation (fast, medium, slow), and forest-scale biome scaling.
 * ⚡ **[GPU CUDA Acceleration Engine](docs/technical_architecture/future_prospects/gpu_cuda_acceleration.md)** ([Live](https://foersben.github.io/PHIDS/technical_architecture/future_prospects/gpu_cuda_acceleration/)): Architecture for offloading 2D/3D reaction-diffusion PDE stencil solvers and VOC advection to PyTorch and CUDA C++ GPU kernels.
 * 🤖 **[AI Coevolution & Distributed DSE](docs/scenario_guide/future_prospects/ai_coevolution_dse.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/ai_coevolution_dse/)): Ray/Tune distributed multi-objective Pareto optimization, AITL vs HITL intervention governance, and reinforcement learning swarm coevolution under EEDSE.
 * 📝 **[Agentic Diagnostic Log Writer](docs/scenario_guide/future_prospects/agentic_log_writer.md)** ([Live](https://foersben.github.io/PHIDS/scenario_guide/future_prospects/agentic_log_writer/)): The diagnostic observer agent monitoring systemic integrity and execution anomalies.
@@ -377,7 +392,7 @@ data/                   Empirical DuckDB trait database (TRY/PanTHERIA) & batch 
 docs/                   Zensical documentation corpus with OKF frontmatter & Future Prospects
 examples/               Curated scenario blueprint JSON files
 packaging/              PyInstaller desktop binary packaging configuration
-scripts/                Local CI runner (local_ci.sh), benchmark gates, and release helpers
+scripts/                Automation & validation scripts (15 scripts, pre-commit & CI gates; see scripts/README.md)
 tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration
 ```
 
@@ -391,9 +406,12 @@ tests/                  Hypothesis invariant tests, two-pass Numba tests, and AP
 * Want to model behavioral cascades via branchless SIMD transfer tables? Start at [`docs/development_guide/okf_data_flow_matrices.md`](docs/development_guide/okf_data_flow_matrices.md).
 * Want to calibrate traits to empirical scales? Start at [`docs/scientific_model/future_prospects/parameter_calibration_strategy.md`](docs/scientific_model/future_prospects/parameter_calibration_strategy.md).
 * Want to explore high-density replays & Polars exports? Start at [`docs/technical_architecture/telemetry.md`](docs/technical_architecture/telemetry.md).
-* Want to run evolutionary EEDSE searches? Start at [`docs/scenario_guide/design_space_exploration.md`](docs/scenario_guide/design_space_exploration.md).
+* Want to run evolutionary EEDSE searches? Start at [`docs/scenario_guide/work_in_progress/design_space_exploration.md`](docs/scenario_guide/work_in_progress/design_space_exploration.md).
 * Want to understand AI integration boundaries? Start at [`docs/scenario_guide/future_prospects/agentic_log_writer.md`](docs/scenario_guide/future_prospects/agentic_log_writer.md).
 * Want contributor workflow and CI policy? Start at [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
+* Want to inspect all automation scripts and pre-commit gates? Start at [`scripts/README.md`](scripts/README.md).
+* Want to explore the interactive knowledge graph? Open [`docs/viz.html`](docs/viz.html) or run `just visualize-okf`.
+
 
 ---
 

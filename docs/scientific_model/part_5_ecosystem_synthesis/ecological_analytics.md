@@ -11,7 +11,7 @@ generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: population_dynamics
-  resource: population_dynamics.md
+  resource: ../part_4_heterotrophic_kinematics/population_dynamics.md
 - id: loop
   resource: src/phids/engine/loop.py
 ---
@@ -47,7 +47,7 @@ Where:
 
 ### The Purpose of Tracking
 
-While PHIDS is a discrete spatial simulation and *not* a continuous ODE solver (see [Population Dynamics](population_dynamics.md)), the macroscopic emergent behavior of the grid should still resemble classical Lotka-Volterra dynamics.
+While PHIDS is a discrete spatial simulation and *not* a continuous ODE solver (see [Population Dynamics](../part_4_heterotrophic_kinematics/population_dynamics.md)), the macroscopic emergent behavior of the grid should still resemble classical Lotka-Volterra dynamics.
 
 A successful, stable scenario will exhibit **Cyclic Oscillations** (Boom-and-Bust cycles):
 

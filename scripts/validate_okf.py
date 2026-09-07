@@ -139,53 +139,50 @@ def _validate_actor_string(val: Any, field_name: str) -> str | None:
     return None
 
 
-def validate_index_document(file_path: Path, root_path: Path, is_bundle_root: bool) -> list[str]:
-    """Validate an index.md file according to OKF v0.2 §8 (Option A)."""
+def _validate_bundle_root_index(content: str) -> tuple[str, list[str]]:
+    """Validate root index frontmatter."""
+    if not content.startswith("---"):
+        return content, []
+
+    fm, body, parse_errors = _parse_frontmatter_block(content)
+    errors = list(parse_errors)
+    if fm is not None:
+        allowed = {
+            "okf_version",
+            "type",
+            "title",
+            "status",
+            "stale_after",
+            "version",
+            "description",
+            "tags",
+            "generated",
+            "verified",
+            "sources",
+        }
+        non_allowed = set(fm.keys()) - allowed
+        if non_allowed:
+            errors.append(f"Bundle root index.md contains unexpected frontmatter keys: {non_allowed}")
+    return body, errors
+
+
+def _validate_sub_index(content: str) -> tuple[str, list[str]]:
+    """Validate subdirectory index has no frontmatter (Option A)."""
+    if not content.startswith("---"):
+        return content, []
+
+    errors = [
+        "Subdirectory index.md must not contain YAML frontmatter (OKF v0.2 §8). "
+        "Retain rich overview prose and section headings directly in the Markdown body."
+    ]
+    parts = content.split("---", 2)
+    content_to_check = parts[2] if len(parts) >= 3 else content
+    return content_to_check, errors
+
+
+def _validate_index_links(content_to_check: str, file_path: Path, root_path: Path) -> list[str]:
+    """Validate cross-document links inside an index file."""
     errors: list[str] = []
-    content = file_path.read_text(encoding="utf-8").strip()
-
-    if is_bundle_root:
-        # Bundle-root index.md MAY carry frontmatter with only okf_version key
-        if content.startswith("---"):
-            fm, body, parse_errors = _parse_frontmatter_block(content)
-            errors.extend(parse_errors)
-            if fm is not None:
-                non_allowed = set(fm.keys()) - {
-                    "okf_version",
-                    "type",
-                    "title",
-                    "status",
-                    "stale_after",
-                    "version",
-                    "description",
-                    "tags",
-                    "generated",
-                    "verified",
-                    "sources",
-                }
-                if non_allowed:
-                    errors.append(f"Bundle root index.md contains unexpected frontmatter keys: {non_allowed}")
-            content_to_check = body
-        else:
-            content_to_check = content
-    else:
-        # Subdirectory index.md: per OKF v0.2 §8 Option A, MUST NOT contain frontmatter
-        if content.startswith("---"):
-            errors.append(
-                "Subdirectory index.md must not contain YAML frontmatter (OKF v0.2 §8). "
-                "Retain rich overview prose and section headings directly in the Markdown body."
-            )
-            # Still check body links for completeness
-            parts = content.split("---", 2)
-            content_to_check = parts[2] if len(parts) >= 3 else content
-        else:
-            content_to_check = content
-
-    # Check for at least one heading in index.md
-    if not any(line.startswith("#") for line in content_to_check.splitlines()):
-        errors.append("Index file must contain at least one Markdown section heading ('# ...').")
-
-    # Validate links in index.md
     for link in MARKDOWN_LINK_PATTERN.findall(content_to_check):
         if link.startswith("/"):
             target = (root_path / link.lstrip("/")).resolve()
@@ -193,7 +190,22 @@ def validate_index_document(file_path: Path, root_path: Path, is_bundle_root: bo
             target = (file_path.parent / link).resolve()
         if not target.exists():
             errors.append(f"Broken link in index.md: '{link}' does not exist.")
+    return errors
 
+
+def validate_index_document(file_path: Path, root_path: Path, is_bundle_root: bool) -> list[str]:
+    """Validate an index.md file according to OKF v0.2 §8 (Option A)."""
+    content = file_path.read_text(encoding="utf-8").strip()
+
+    if is_bundle_root:
+        content_to_check, errors = _validate_bundle_root_index(content)
+    else:
+        content_to_check, errors = _validate_sub_index(content)
+
+    if not any(line.startswith("#") for line in content_to_check.splitlines()):
+        errors.append("Index file must contain at least one Markdown section heading ('# ...').")
+
+    errors.extend(_validate_index_links(content_to_check, file_path, root_path))
     return errors
 
 
@@ -215,7 +227,6 @@ def validate_log_document(file_path: Path) -> list[str]:
     if not date_headings:
         errors.append("Log file must contain at least one date heading in ISO 8601 '## YYYY-MM-DD' format.")
     else:
-        # Check that dates are strictly descending (newest first)
         for i in range(len(date_headings) - 1):
             if date_headings[i] < date_headings[i + 1]:
                 errors.append(
@@ -226,103 +237,123 @@ def validate_log_document(file_path: Path) -> list[str]:
     return errors
 
 
-def validate_concept_document(
-    file_path: Path,
-    root_path: Path,
-    base_paths: list[Path],
-    stats: OKFAuditStats,
-) -> list[str]:
-    """Validate a concept document according to OKF v0.2 specifications."""
+def _validate_concept_type_and_status(fm: dict[str, Any]) -> list[str]:
+    """Validate mandatory type and allowed status enum."""
     errors: list[str] = []
-    content = file_path.read_text(encoding="utf-8").strip()
-
-    fm, body, parse_errors = _parse_frontmatter_block(content)
-    if parse_errors:
-        return parse_errors
-
-    if fm is None:
-        return ["Failed to read frontmatter mapping."]
-
-    stats.total_concepts += 1
-
-    # 1. Mandatory 'type' field (§4.1, §11)
     doc_type = fm.get("type")
     if not doc_type or not isinstance(doc_type, str) or not doc_type.strip():
         errors.append("Missing or empty mandatory OKF frontmatter key: 'type'.")
 
-    # 2. Lifecycle 'status' enum (§5.4)
     status = fm.get("status")
     if status is not None and status not in ALLOWED_STATUSES:
         errors.append(f"Invalid status '{status}'. OKF v0.2 allows: {', '.join(sorted(ALLOWED_STATUSES))}.")
 
-    # 3. Timestamp check: stale_after (§5.5)
+    if doc_type == "Attested Computation":
+        if "runtime" not in fm or not str(fm["runtime"]).strip():
+            errors.append("Concept of type 'Attested Computation' MUST declare a 'runtime' field (§10.2).")
+
+    return errors
+
+
+def _validate_concept_stale_after(fm: dict[str, Any], stats: OKFAuditStats) -> list[str]:
+    """Validate and record stale_after expiration date."""
     stale_after = fm.get("stale_after")
-    if stale_after is not None:
-        ts_err = _validate_timestamp_string(stale_after, "stale_after")
+    if stale_after is None:
+        stats.no_expiry += 1
+        return []
+
+    ts_err = _validate_timestamp_string(stale_after, "stale_after")
+    if ts_err:
+        return [ts_err]
+
+    try:
+        stale_str = str(stale_after)
+        stale_dt = datetime.fromisoformat(stale_str.replace("Z", "+00:00"))
+        if datetime.now(UTC) >= stale_dt:
+            stats.stale += 1
+        else:
+            stats.fresh += 1
+    except Exception:
+        stats.no_expiry += 1
+    return []
+
+
+def _validate_concept_generated(fm: dict[str, Any]) -> list[str]:
+    """Validate generated provenance block."""
+    generated = fm.get("generated")
+    if generated is None:
+        return []
+
+    if not isinstance(generated, dict):
+        return ["Frontmatter 'generated' must be a mapping with {by, at}."]
+
+    errors: list[str] = []
+    if "by" in generated:
+        actor_err = _validate_actor_string(generated["by"], "generated.by")
+        if actor_err:
+            errors.append(actor_err)
+    else:
+        errors.append("Key 'generated' is missing required subfield 'by'.")
+
+    if "at" in generated:
+        ts_err = _validate_timestamp_string(generated["at"], "generated.at")
         if ts_err:
             errors.append(ts_err)
+    return errors
+
+
+def _validate_single_verification(entry: Any, idx: int) -> tuple[bool, bool, list[str]]:
+    """Validate a single verified entry. Returns (is_human, is_machine, errors)."""
+    if not isinstance(entry, dict):
+        return False, False, [f"verified[{idx}] must be a mapping."]
+
+    errors: list[str] = []
+    is_human = False
+    is_machine = False
+
+    if "by" in entry:
+        actor_err = _validate_actor_string(entry["by"], f"verified[{idx}].by")
+        if actor_err:
+            errors.append(actor_err)
+        elif str(entry["by"]).startswith("human:"):
+            is_human = True
         else:
-            try:
-                stale_str = str(stale_after)
-                stale_dt = datetime.fromisoformat(stale_str.replace("Z", "+00:00"))
-                if datetime.now(UTC) >= stale_dt:
-                    stats.stale += 1
-                else:
-                    stats.fresh += 1
-            except Exception:
-                stats.no_expiry += 1
+            is_machine = True
     else:
-        stats.no_expiry += 1
+        errors.append(f"verified[{idx}] is missing required subfield 'by'.")
 
-    # 4. Provenance & Trust: generated (§5.2)
-    generated = fm.get("generated")
-    if generated is not None:
-        if isinstance(generated, dict):
-            if "by" in generated:
-                actor_err = _validate_actor_string(generated["by"], "generated.by")
-                if actor_err:
-                    errors.append(actor_err)
-            else:
-                errors.append("Key 'generated' is missing required subfield 'by'.")
+    if "at" in entry:
+        ts_err = _validate_timestamp_string(entry["at"], f"verified[{idx}].at")
+        if ts_err:
+            errors.append(ts_err)
 
-            if "at" in generated:
-                ts_err = _validate_timestamp_string(generated["at"], "generated.at")
-                if ts_err:
-                    errors.append(ts_err)
-        else:
-            errors.append("Frontmatter 'generated' must be a mapping with {by, at}.")
+    return is_human, is_machine, errors
 
-    # 5. Provenance & Trust: verified (§5.2, §5.3)
+
+def _validate_concept_verified(fm: dict[str, Any], stats: OKFAuditStats) -> list[str]:
+    """Validate verified provenance entries and record trust tier."""
     verified = fm.get("verified")
+    if verified is None:
+        stats.unverified += 1
+        return []
+
+    verified_list = [verified] if isinstance(verified, dict) else verified
+    if not isinstance(verified_list, list):
+        stats.unverified += 1
+        return ["Frontmatter 'verified' must be a mapping or a list of mappings."]
+
+    errors: list[str] = []
     has_human = False
     has_machine = False
 
-    if verified is not None:
-        verified_list = [verified] if isinstance(verified, dict) else verified
-        if isinstance(verified_list, list):
-            for idx, entry in enumerate(verified_list):
-                if not isinstance(entry, dict):
-                    errors.append(f"verified[{idx}] must be a mapping.")
-                    continue
-                if "by" in entry:
-                    actor_err = _validate_actor_string(entry["by"], f"verified[{idx}].by")
-                    if actor_err:
-                        errors.append(actor_err)
-                    elif str(entry["by"]).startswith("human:"):
-                        has_human = True
-                    else:
-                        has_machine = True
-                else:
-                    errors.append(f"verified[{idx}] is missing required subfield 'by'.")
+    for idx, entry in enumerate(verified_list):
+        h, m, errs = _validate_single_verification(entry, idx)
+        if h:
+            has_human = True
+        if m:
+            has_machine = True
+        errors.extend(errs)
 
-                if "at" in entry:
-                    ts_err = _validate_timestamp_string(entry["at"], f"verified[{idx}].at")
-                    if ts_err:
-                        errors.append(ts_err)
-        else:
-            errors.append("Frontmatter 'verified' must be a mapping or a list of mappings.")
-
-    # Derive Trust Tier (§5.3)
     if has_human:
         stats.human_reviewed += 1
     elif has_machine:
@@ -330,29 +361,38 @@ def validate_concept_document(
     else:
         stats.unverified += 1
 
-    # 6. Provenance: sources (§5.1)
+    return errors
+
+
+def _validate_concept_sources(fm: dict[str, Any], file_path: Path, root_path: Path) -> list[str]:
+    """Validate sources resource paths."""
     sources = fm.get("sources")
-    if sources is not None:
-        if isinstance(sources, list):
-            for idx, s in enumerate(sources):
-                if not isinstance(s, dict):
-                    errors.append(f"sources[{idx}] must be a mapping with 'resource'.")
-                    continue
-                resource = s.get("resource")
-                if not resource or not isinstance(resource, str):
-                    errors.append(f"sources[{idx}] is missing required 'resource' string.")
-                else:
-                    if not _resolve_source_path(resource, file_path, root_path):
-                        errors.append(f"Broken source resource in sources[{idx}]: '{resource}' does not exist.")
-        else:
-            errors.append("Frontmatter 'sources' must be a list of source entries.")
+    if sources is None:
+        return []
+    if not isinstance(sources, list):
+        return ["Frontmatter 'sources' must be a list of source entries."]
 
-    # 7. Attested Computations (§10)
-    if doc_type == "Attested Computation":
-        if "runtime" not in fm or not str(fm["runtime"]).strip():
-            errors.append("Concept of type 'Attested Computation' MUST declare a 'runtime' field (§10.2).")
+    errors: list[str] = []
+    for idx, s in enumerate(sources):
+        if not isinstance(s, dict):
+            errors.append(f"sources[{idx}] must be a mapping with 'resource'.")
+            continue
+        resource = s.get("resource")
+        if not resource or not isinstance(resource, str):
+            errors.append(f"sources[{idx}] is missing required 'resource' string.")
+        elif not _resolve_source_path(resource, file_path, root_path):
+            errors.append(f"Broken source resource in sources[{idx}]: '{resource}' does not exist.")
+    return errors
 
-    # 8. Cross-document Markdown Link Validation (§6.1)
+
+def _validate_concept_links(
+    body: str,
+    file_path: Path,
+    root_path: Path,
+    base_paths: list[Path],
+) -> list[str]:
+    """Validate cross-document Markdown links."""
+    errors: list[str] = []
     for link in MARKDOWN_LINK_PATTERN.findall(body):
         if link.startswith(("http://", "https://", "#")):
             continue
@@ -366,7 +406,31 @@ def validate_concept_document(
             errors.append(f"Broken Markdown Link: target '{link}' does not exist.")
         elif not any(target.is_relative_to(bp) for bp in base_paths):
             errors.append(f"Security Alert: Link path '{link}' escapes authorized knowledge bundle domains.")
+    return errors
 
+
+def validate_concept_document(
+    file_path: Path,
+    root_path: Path,
+    base_paths: list[Path],
+    stats: OKFAuditStats,
+) -> list[str]:
+    """Validate a concept document according to OKF v0.2 specifications."""
+    content = file_path.read_text(encoding="utf-8").strip()
+    fm, body, parse_errors = _parse_frontmatter_block(content)
+    if parse_errors:
+        return parse_errors
+    if fm is None:
+        return ["Failed to read frontmatter mapping."]
+
+    stats.total_concepts += 1
+    errors: list[str] = []
+    errors.extend(_validate_concept_type_and_status(fm))
+    errors.extend(_validate_concept_stale_after(fm, stats))
+    errors.extend(_validate_concept_generated(fm))
+    errors.extend(_validate_concept_verified(fm, stats))
+    errors.extend(_validate_concept_sources(fm, file_path, root_path))
+    errors.extend(_validate_concept_links(body, file_path, root_path, base_paths))
     return errors
 
 
@@ -398,6 +462,26 @@ def auto_fix_timestamps(files: list[Path]) -> int:
     return fixed_count
 
 
+def _validate_single_bundle_file(
+    md_file: Path,
+    root_path: Path,
+    base_paths: list[Path],
+    docs_root_index: Path,
+    stats: OKFAuditStats,
+) -> list[str]:
+    """Validate an individual markdown file based on file role."""
+    if md_file.name == "index.md":
+        stats.total_indexes += 1
+        is_root = (md_file.resolve() == docs_root_index) or (md_file.parent.resolve() == root_path.resolve())
+        return validate_index_document(md_file, root_path, is_bundle_root=is_root)
+
+    if md_file.name == "log.md":
+        stats.total_logs += 1
+        return validate_log_document(md_file)
+
+    return validate_concept_document(md_file, root_path, base_paths, stats)
+
+
 def scan_bundle(
     target_files: list[Path],
     root_path: Path,
@@ -406,7 +490,6 @@ def scan_bundle(
     """Scan and validate all supplied markdown files."""
     total_errors = 0
     stats = OKFAuditStats()
-
     docs_root_index = (root_path / "docs" / "index.md").resolve()
 
     for md_file in target_files:
@@ -417,18 +500,7 @@ def scan_bundle(
         if "docs/legacy/" in file_posix or "site/" in file_posix:
             continue
 
-        file_errors: list[str] = []
-
-        if md_file.name == "index.md":
-            stats.total_indexes += 1
-            is_root = (md_file.resolve() == docs_root_index) or (md_file.parent.resolve() == root_path.resolve())
-            file_errors = validate_index_document(md_file, root_path, is_bundle_root=is_root)
-        elif md_file.name == "log.md":
-            stats.total_logs += 1
-            file_errors = validate_log_document(md_file)
-        else:
-            file_errors = validate_concept_document(md_file, root_path, base_paths, stats)
-
+        file_errors = _validate_single_bundle_file(md_file, root_path, base_paths, docs_root_index, stats)
         if file_errors:
             total_errors += len(file_errors)
             rel_display = md_file.relative_to(root_path) if md_file.is_relative_to(root_path) else md_file

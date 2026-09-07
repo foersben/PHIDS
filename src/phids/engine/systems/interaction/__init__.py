@@ -62,18 +62,138 @@ from phids.engine.systems.interaction.population import _accumulate_tile_populat
 from phids.engine.systems.interaction.population import _co_located_swarm_population as _co_located_swarm_population
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
+
     from phids.api.schemas.species import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
     )
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
-from typing import TYPE_CHECKING, cast
+    from phids.engine.systems.interaction.feeding import (
+        CachedFloraForagingParams,
+        CachedHerbivoreForagingParams,
+    )
+
+from typing import cast
 
 import numpy as np
 
-if TYPE_CHECKING:
-    import numpy.typing as npt
+
+def _initialize_scratch_buffers(
+    scratch_cx: npt.NDArray[np.int32] | None,
+    scratch_cy: npt.NDArray[np.int32] | None,
+    scratch_scores: npt.NDArray[np.float64] | None,
+    scratch_adjusted: npt.NDArray[np.float64] | None,
+    scratch_weights: npt.NDArray[np.float64] | None,
+) -> tuple[
+    npt.NDArray[np.int32],
+    npt.NDArray[np.int32],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+]:
+    """Initialize scratch arrays if not provided by the caller."""
+    cx = np.empty(5, dtype=np.int32) if scratch_cx is None else scratch_cx
+    cy = np.empty(5, dtype=np.int32) if scratch_cy is None else scratch_cy
+    scores = np.empty(5, dtype=np.float64) if scratch_scores is None else scratch_scores
+    adjusted = np.empty(5, dtype=np.float64) if scratch_adjusted is None else scratch_adjusted
+    weights = np.empty(5, dtype=np.float64) if scratch_weights is None else scratch_weights
+    return cx, cy, scores, adjusted, weights
+
+
+def _accumulate_all_tile_populations(
+    world: ECSWorld,
+    env: GridEnvironment,
+    tile_populations: npt.NDArray[np.int32],
+) -> None:
+    """Accumulate total population across all active swarms onto the grid."""
+    for eid in world._component_index.get(SwarmComponent, set()):
+        # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
+        # _component_index is strictly synchronized with _entities during this read-only pass.
+        indexed_swarm = cast("SwarmComponent", world._entities[eid]._components[SwarmComponent])
+        _accumulate_tile_population(
+            tile_populations,
+            indexed_swarm.x,
+            indexed_swarm.y,
+            env.width,
+            indexed_swarm.population,
+        )
+
+
+def _process_swarm_interaction(
+    eid: int,
+    world: ECSWorld,
+    env: GridEnvironment,
+    diet_matrix: npt.NDArray[np.bool_],
+    herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
+    tile_populations: npt.NDArray[np.int32],
+    cached_flora_params: list[CachedFloraForagingParams],
+    cached_herbivore_params: list[CachedHerbivoreForagingParams],
+    scratch_buffers: tuple[
+        npt.NDArray[np.int32],
+        npt.NDArray[np.int32],
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+    ],
+    dead_swarms: list[int],
+    plant_death_causes: dict[str, int] | None,
+    herbivore_death_causes: dict[str, int] | None,
+    is_medium_tick: bool,
+    is_slow_tick: bool,
+) -> None:
+    """Execute movement, feeding, and metabolism for a single active swarm."""
+    entity = world._entities.get(eid)
+    if entity is None:
+        return
+    # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
+    swarm = cast("SwarmComponent", entity._components[SwarmComponent])
+    scratch_cx, scratch_cy, scratch_scores, scratch_adjusted, scratch_weights = scratch_buffers
+
+    # 1-2. Movement Phase
+    has_moved = _resolve_swarm_movement(
+        swarm,
+        entity,
+        env,
+        world,
+        diet_matrix,
+        tile_populations,
+        herbivore_params_dict,
+        scratch_cx,
+        scratch_cy,
+        scratch_scores,
+        scratch_adjusted,
+        scratch_weights,
+    )
+
+    # 3. Feeding Phase (Daily Loop - gated to is_medium_tick)
+    if not has_moved and is_medium_tick:
+        _resolve_swarm_feeding(
+            swarm,
+            world,
+            env,
+            diet_matrix,
+            cached_flora_params,
+            cached_herbivore_params,
+            tile_populations,
+            plant_death_causes,
+        )
+
+    # 4. Metabolism & Reproduction (Daily Loop - gated to is_medium_tick)
+    if not swarm.repelled and is_medium_tick:
+        _resolve_swarm_metabolism_and_reproduction(
+            swarm,
+            entity,
+            world,
+            env,
+            tile_populations,
+            dead_swarms,
+            scratch_cx,
+            scratch_cy,
+            herbivore_death_causes,
+            is_slow_tick=is_slow_tick,
+        )
 
 
 def run_interaction(
@@ -127,85 +247,34 @@ def run_interaction(
     tile_populations: npt.NDArray[np.int32] = env.reset_tile_populations()
     herbivore_params_dict: dict[int, HerbivoreSpeciesParams] = {p.species_id: p for p in herbivore_species_params}
 
-    if scratch_cx is None:
-        scratch_cx = np.empty(5, dtype=np.int32)
-    if scratch_cy is None:
-        scratch_cy = np.empty(5, dtype=np.int32)
-    if scratch_scores is None:
-        scratch_scores = np.empty(5, dtype=np.float64)
-    if scratch_adjusted is None:
-        scratch_adjusted = np.empty(5, dtype=np.float64)
-    if scratch_weights is None:
-        scratch_weights = np.empty(5, dtype=np.float64)
+    scratch_buffers = _initialize_scratch_buffers(
+        scratch_cx, scratch_cy, scratch_scores, scratch_adjusted, scratch_weights
+    )
 
     # Pre-build parameter caches for O(1) slot resolution in feeding loops
     cached_flora_params = cache_flora_foraging_params(flora_species_params) if is_medium_tick else []
     cached_herbivore_params = cache_herbivore_foraging_params(herbivore_species_params) if is_medium_tick else []
 
     # Initial population accumulation pass
-    for eid in world._component_index.get(SwarmComponent, set()):
-        # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
-        # _component_index is strictly synchronized with _entities during this read-only pass.
-        indexed_swarm = cast("SwarmComponent", world._entities[eid]._components[SwarmComponent])
-        _accumulate_tile_population(
-            tile_populations,
-            indexed_swarm.x,
-            indexed_swarm.y,
-            env.width,
-            indexed_swarm.population,
-        )
+    _accumulate_all_tile_populations(world, env, tile_populations)
 
     # Main interaction loop
     for eid in list(world._component_index.get(SwarmComponent, set())):
-        # We must keep the defensive .get() here because entities can be destroyed mid-loop.
-        entity = world._entities.get(eid)
-        if entity is None:
-            continue
-        # ⚡ Bolt Optimization: Rely on ECS lifecycle invariants.
-        swarm = cast("SwarmComponent", entity._components[SwarmComponent])
-
-        # 1-2. Movement Phase
-        has_moved = _resolve_swarm_movement(
-            swarm,
-            entity,
-            env,
+        _process_swarm_interaction(
+            eid,
             world,
+            env,
             diet_matrix,
-            tile_populations,
             herbivore_params_dict,
-            scratch_cx,
-            scratch_cy,
-            scratch_scores,
-            scratch_adjusted,
-            scratch_weights,
+            tile_populations,
+            cached_flora_params,
+            cached_herbivore_params,
+            scratch_buffers,
+            dead_swarms,
+            plant_death_causes,
+            herbivore_death_causes,
+            is_medium_tick,
+            is_slow_tick,
         )
-
-        # 3. Feeding Phase (Daily Loop - gated to is_medium_tick)
-        if not has_moved and is_medium_tick:
-            _resolve_swarm_feeding(
-                swarm,
-                world,
-                env,
-                diet_matrix,
-                cached_flora_params,
-                cached_herbivore_params,
-                tile_populations,
-                plant_death_causes,
-            )
-
-        # 4. Metabolism & Reproduction (Daily Loop - gated to is_medium_tick)
-        if not swarm.repelled and is_medium_tick:
-            _resolve_swarm_metabolism_and_reproduction(
-                swarm,
-                entity,
-                world,
-                env,
-                tile_populations,
-                dead_swarms,
-                scratch_cx,
-                scratch_cy,
-                herbivore_death_causes,
-                is_slow_tick=is_slow_tick,
-            )
 
     world.collect_garbage(dead_swarms)

@@ -26,7 +26,7 @@ sources:
   - id: parity_test
     resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
   - id: conceptual_model
-    resource: ../herbivore_behavior.md
+    resource: ../part_4_heterotrophic_kinematics/herbivore_behavior.md
 ---
 
 # Herbivore Metabolic Tax & Starvation Attrition

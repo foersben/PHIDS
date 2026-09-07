@@ -87,12 +87,12 @@ During the migration from legacy Object-Oriented implementations to the current 
 ## Documentation Map
 
 * **Scientific Model** - research scope, detailed breakdown of mathematical models (Chemotaxis, PDEs), biological reasoning, and equations:
-    * [Scientific Model](scientific_model/mathematical_framework.md)
+    * [Scientific Model](scientific_model/part_1_foundations/mathematical_framework.md)
 * **Technical Architecture** - system constraints, package boundaries, loop ownership, interfaces, and telemetry:
     * [Testing Architecture](technical_architecture/testing_architecture.md)
     * [Technical Architecture](technical_architecture/system_architecture.md)
 * **Scenarios** - schema semantics, import/export, and curated examples:
-    * [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](scenario_guide/design_space_exploration.md)
+    * [Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE)](scenario_guide/work_in_progress/design_space_exploration.md)
     * [Agentic Diagnostic Log Writer](scenario_guide/future_prospects/agentic_log_writer.md)
     * [Scenario Guide](scenario_guide/scenario_authoring.md)
 * **Development & Reference** - API Reference, contribution workflows, agent orchestration (MCP & AITL Diagnostic Observers), and historical archives:
@@ -102,7 +102,7 @@ During the migration from legacy Object-Oriented implementations to the current 
 
 For initial onboarding, the recommended reading progression is:
 
-1. Start with the deep dives in the [Scientific Model](scientific_model/mathematical_framework.md), especially [Chemotaxis & Flow Fields](scientific_model/chemotaxis.md) and [Reaction-Diffusion PDEs](scientific_model/reaction_diffusion.md).
+1. Start with the deep dives in the [Scientific Model](scientific_model/part_1_foundations/mathematical_framework.md), especially [Chemotaxis & Flow Fields](scientific_model/part_3_signaling_and_transport/chemotaxis.md) and [Reaction-Diffusion PDEs](scientific_model/part_3_signaling_and_transport/reaction_diffusion.md).
 2. Continue to the architecture overview under [Technical Architecture](technical_architecture/system_architecture.md).
 3. Inspect the UI and REST surfaces in [Interfaces and UI](technical_architecture/interfaces_and_ui.md).
 4. Review scenario authoring rules in [Scenario Guide](scenario_guide/scenario_authoring.md).

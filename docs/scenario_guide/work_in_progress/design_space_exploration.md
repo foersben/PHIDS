@@ -13,7 +13,7 @@ generated: {by: process:okf-updater, at: "2026-08-03T12:00:00Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: agentic_log_writer
-  resource: future_prospects/agentic_log_writer.md
+  resource: ../future_prospects/agentic_log_writer.md
 ---
 
 !!! warning "Module Status: Work In Progress (WIP/CIP) / Construction Site"

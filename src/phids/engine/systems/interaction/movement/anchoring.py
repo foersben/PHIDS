@@ -12,6 +12,36 @@ if TYPE_CHECKING:
 
 
 @njit(cache=True)
+def _should_depart_mvt_jit(
+    caloric_intake: float,
+    metabolic_upkeep: float,
+    rand_val: float,
+) -> bool:
+    """Evaluate stochastic departure curve based on the Marginal Value Theorem (MVT)."""
+    if metabolic_upkeep <= 0.0:
+        return False
+    ratio = caloric_intake / metabolic_upkeep
+    p_depart = 1.0 / (1.0 + np.exp(5.0 * (ratio - 1.0)))
+    return bool(rand_val < p_depart)
+
+
+@njit(cache=True)
+def _has_compatible_food_jit(
+    x: int,
+    y: int,
+    species_id: int,
+    plant_energy_by_species: npt.NDArray[np.float64],
+    diet_matrix: npt.NDArray[np.bool_],
+) -> bool:
+    """Check if swarm is co-located with any compatible flora species with positive energy."""
+    _, num_flora = diet_matrix.shape
+    for flora_species_id in range(num_flora):
+        if diet_matrix[species_id, flora_species_id] and plant_energy_by_species[flora_species_id, x, y] > 0.0:
+            return True
+    return False
+
+
+@njit(cache=True)
 def _is_swarm_anchored_jit(
     x: int,
     y: int,
@@ -46,21 +76,14 @@ def _is_swarm_anchored_jit(
     if apparent_nutrition_val <= 0.0:
         return False
 
-    num_herbivores, num_flora = diet_matrix.shape
+    num_herbivores, _ = diet_matrix.shape
     if species_id >= num_herbivores:
         return False
 
-    for flora_species_id in range(num_flora):
-        if diet_matrix[species_id, flora_species_id]:
-            if plant_energy_by_species[flora_species_id, x, y] > 0.0:
-                # Stochastic MVT Departure
-                if metabolic_upkeep > 0.0:
-                    ratio = caloric_intake / metabolic_upkeep
-                    p_depart = 1.0 / (1.0 + np.exp(5.0 * (ratio - 1.0)))
-                    if rand_val < p_depart:
-                        return False
-                return True
-    return False
+    if not _has_compatible_food_jit(x, y, species_id, plant_energy_by_species, diet_matrix):
+        return False
+
+    return not _should_depart_mvt_jit(caloric_intake, metabolic_upkeep, rand_val)
 
 
 def _is_swarm_anchored(

@@ -14,9 +14,9 @@ generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: mathematical_framework
-  resource: docs/scientific_model/mathematical_framework.md
+  resource: docs/scientific_model/part_1_foundations/mathematical_framework.md
 - id: flora_and_symbiosis
-  resource: docs/scientific_model/flora_and_symbiosis.md
+  resource: docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md
 - id: roadmap
   resource: docs/development_guide/roadmap.md
 - id: species

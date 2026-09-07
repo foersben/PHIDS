@@ -11,7 +11,7 @@ generated: {by: process:okf-updater, at: "2026-08-13T19:30:00Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: mathematical_framework
-  resource: ../scientific_model/mathematical_framework.md
+  resource: ../scientific_model/part_1_foundations/mathematical_framework.md
 - id: system_architecture
   resource: ../technical_architecture/system_architecture.md
 - id: engine_execution
@@ -47,7 +47,7 @@ kinds are `herbivore_presence`, `substance_active`, `environmental_signal`, `all
 Activation conditions allow composite, multi-factor trigger logic beyond a simple herbivore-count
 threshold.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Aftereffect
 
@@ -56,7 +56,7 @@ active for a bounded number of ticks after its trigger condition ceases to be sa
 with zero aftereffect deactivates on the first non-triggered tick; one configured as `irreversible`
 is pinned in the active state permanently after first activation.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Airborne Diffusion
 
@@ -67,7 +67,7 @@ Toxin layers are intentionally excluded from diffusion; toxins are point-emitter
 constrained to the emitting plant's cell.
 
 See: [`engine/biotope-and-double-buffering.md`](../technical_architecture/system_architecture.md),
-[`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+[`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -80,7 +80,7 @@ floor: `baseline_energy = population × energy_min`. In the interaction system's
 only energy above this baseline ("surplus energy") is eligible for conversion into new individuals.
 This prevents large, energy-marginal swarms from reproducing.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -93,7 +93,7 @@ computation. A plant with `camouflage=True` and `camouflage_factor < 1.0` reduce
 attraction signal visible to herbivore swarms, providing partial concealment from gradient-following
 movement.
 
-See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/flow-field.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Carrying Capacity (`TILE_CARRYING_CAPACITY`)
 
@@ -103,7 +103,7 @@ dispersal is triggered. The check aggregates the `population` attribute of all c
 not the count of swarm entities - so that biologically dense tiles are correctly identified
 regardless of swarm entity fragmentation.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Control Center
 
@@ -134,7 +134,7 @@ A `True` entry permits the corresponding herbivore species to feed on the corres
 during the interaction phase. The matrix is loaded from `SimulationConfig.diet_matrix` and cached
 in `SimulationLoop._diet_matrix`.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`scenarios/schema-and-curated-examples.md`](../scenario_guide/curated_examples.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md), [`scenarios/schema-and-curated-examples.md`](../scenario_guide/curated_examples.md)
 
 ### Decoupled Dual-Proxy Architecture
 
@@ -212,7 +212,7 @@ See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_executi
 
 An initiator (or nested activation-condition) that evaluates whether the concentration of a named ambient signal layer at the emitting plant's cell meets or exceeds a configured `min_concentration` threshold. This enables a plant to activate a defense (like `ResourceWithdrawalAction`) in response to ambient signal concentrations deposited by mycorrhizal relay or airborne diffusion from neighbouring plants, modeling primed systemic acquired resistance (SAR).
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### `extract_ui_snapshot`
 
@@ -231,7 +231,7 @@ aggregate plant-energy layer and toxin layers. Positive values are associated wi
 energy (attractive); toxin contribution is subtractive (repulsive). Swarms sample this field to
 select their next movement cell via `_choose_neighbour_by_flow_probability(...)`.
 
-See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/flow-field.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -256,7 +256,7 @@ alive. PHIDS prevents ghost entities through immediate `unregister_position` cal
 in both the interaction and signaling phases.
 
 See: [`engine/ecs-and-spatial-hash.md`](../technical_architecture/engine_execution.md),
-[`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+[`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### `GridEnvironment`
 
@@ -277,7 +277,7 @@ A substance configured with `irreversible=True`. Once activated, such a substanc
 active state and does not deactivate due to trigger loss or aftereffect expiry. This models a
 systemic acquired resistance (SAR)-like permanent induced defense response.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -290,7 +290,7 @@ inflicted on a swarm co-located with a non-zero toxin concentration:
 `casualties = int(lethality_rate × toxin_value × population)`. A lethality rate of 0.0 means the
 toxin is non-lethal (potentially only repellent).
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -303,7 +303,7 @@ the magnitude of the deficit. Each lost individual "refunds" `energy_min` units 
 reserve is clamped to `0.0`. This models starvation as a smooth population shrinkage rather than
 an abrupt all-or-nothing event.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Mitosis
 
@@ -312,7 +312,7 @@ threshold. The parent swarm retains `floor(n/2)` individuals; a new swarm entity
 the complementary half and equal share of energy. The parent's `initial_population` is reset to the
 retained value, which re-anchors the future mitosis threshold.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Mycorrhizal Network
 
@@ -322,7 +322,7 @@ different, if enabled) species occupy cells within a maximum distance. The signa
 these links to relay signal concentrations to connected cells, modelling root-mediated chemical
 communication.
 
-See: [`engine/lifecycle.md`](../scientific_model/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/lifecycle.md`](../scientific_model/part_1_foundations/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -356,13 +356,13 @@ A swarm state flag (`repelled`, `repelled_ticks_remaining`) set either by chemic
 performs a random-walk step rather than following the flow field, and the timer decrements each
 tick until it reaches zero.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md), [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### `ResourceWithdrawalAction`
 
 A trigger action payload (`resource_withdrawal`) representing stress-induced senescence. When executed, it overrides the plant's `apparent_nutrition_factor` (dropping it below 1.0) for a configured `withdrawal_duration` to dynamically reduce its caloric attractiveness in the global flow field, forcing herbivores to bypass the plant.
 
-See: [`engine/morphological_defenses.md`](../scientific_model/morphological_defenses.md)
+See: [`engine/morphological_defenses.md`](../scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md)
 
 ### Rule of 16
 
@@ -385,7 +385,7 @@ configured as irreversible will maintain its defense permanently. A neighbouring
 with `environmental_signal` activation can prime its own defense in response to relay-deposited
 signal concentrations, approximating primed SAR.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### `SIGNAL_EPSILON`
 
@@ -426,14 +426,14 @@ activation state, aftereffect timer, lethality/repellence parameters, activation
 and energy cost. Substances are materialized as discrete entities by the signaling system when a
 trigger rule fires.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### Surplus Energy
 
 The energy a swarm holds above its `baseline_energy` (`energy − population × energy_min`). Only
 surplus energy is convertible into new individuals during the interaction phase's reproduction step.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md), [Baseline Energy](#baseline-energy)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md), [Baseline Energy](#baseline-energy)
 
 ### Synthesis
 
@@ -442,7 +442,7 @@ and activation (defense becomes effective). `synthesis_remaining` is decremented
 trigger is satisfied; once it reaches zero and the activation condition passes, the substance
 transitions to the active state.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -495,7 +495,7 @@ airborne Gaussian diffusion. They are point-emitter defenses that emit into and 
 toxin layer at the emitting plant's cell. Their effects on swarms (lethal casualties, repellence)
 are enforced exclusively in the signaling phase by `_apply_toxin_to_swarms`.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -509,7 +509,7 @@ velocity of `n` means the swarm navigates once every `n` ticks; between navigati
 (`consumption_rate / velocity`) to prevent high-frequency movers from extracting disproportionate
 energy per tick.
 
-See: [`engine/interaction.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ### VOC (Volatile Organic Compound)
 
@@ -518,7 +518,7 @@ signal layers, diffuse through the environment via Gaussian convolution, and can
 `environmental_signal` activation condition. They model airborne alarm volatiles such as green leaf
 volatiles and terpenes.
 
-See: [`engine/signaling.md`](../scientific_model/mathematical_framework.md)
+See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical_framework.md)
 
 ---
 
@@ -537,7 +537,7 @@ A uniform 2D velocity vector (`wind_x`, `wind_y`) configured at scenario load an
 directional atmospheric transport of volatile signals. The wind vector can be updated at runtime via
 `PUT /api/wind`.
 
-See: [`engine/flow-field.md`](../scientific_model/mathematical_framework.md),
+See: [`engine/flow-field.md`](../scientific_model/part_1_foundations/mathematical_framework.md),
 [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)
 
 ---
