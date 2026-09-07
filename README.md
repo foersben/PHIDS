@@ -9,13 +9,15 @@ data-oriented engine core, strict state invariants, and reproducible telemetry s
 scenario outcomes can be interpreted as traceable computational experiments rather than opaque
 animation artifacts.
 
-Current release line: `v0.10.0`.
+Current release line: `v0.10.0` (active development branch preparing `v0.11.0`).
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![Build Status](https://github.com/foersben/PHIDS/actions/workflows/ci.yml/badge.svg)](https://github.com/foersben/PHIDS/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-zensical-blue.svg)](https://foersben.github.io/PHIDS/)
 [![Checked with mypy](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Cognitive Complexity](https://img.shields.io/badge/cognitive%20complexity-%E2%89%A415-blue.svg)](https://github.com/astral-sh/complexipy)
+[![Knowledge Format](https://img.shields.io/badge/knowledge-OKF%20v0.2-blue.svg)](docs/development_guide/okf_data_flow_matrices.md)
 [![Dual License: EUPL-1.2 / Commercial](https://img.shields.io/badge/License-EUPL--1.2%20%7C%20Commercial-blue.svg)](#-licensing)
 
 *Dual-licensed under EUPL-1.2 (Academic/Open Source) and a Commercial License.*
@@ -46,10 +48,29 @@ Rather than assuming instant global communication, PHIDS utilizes continuous rea
 
 ### Chemotactic Foraging & Trophic Defenses
 
-Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis—sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Foraging behavior natively incorporates **Charnov's Marginal Value Theorem (MVT)** and **Softmax Stochastic Action Selection** (Stage 1B milestone complete). Swarms continuously re-evaluate local intake rates against landscape potential to make stochastic, biologically plausible decisions about when to abandon a depleting resource patch, controlled by a distinct temperature ($\tau$) parameter. Plants counter grazing pressure by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
+Herbivores in PHIDS do not possess omniscient knowledge of the map. They forage via chemotaxis - sensing and navigating localized chemical gradients to find caloric rewards while avoiding toxic compounds. Foraging behavior natively incorporates **Charnov's Marginal Value Theorem (MVT)** and **Softmax Stochastic Action Selection** (Stage 1B milestone complete). Swarms continuously re-evaluate local intake rates against landscape potential to make stochastic, biologically plausible decisions about when to abandon a depleting resource patch, controlled by a distinct temperature ($\tau$) parameter. Plants counter grazing pressure by deploying both baseline (constitutive) defenses and reactive (induced) defenses:
 
 * **Morphological Defenses (Passive):** Features like spines (inflicting mechanical damage) or tough lignin (digestibility modifiers that cause caloric attenuation during feeding).
 * **Chemical Defenses (Active):** When grazing pressure reaches a threshold, a plant might synthesize a targeted toxin or release an alarm signal, triggering compound chemical-defense cascades across the ecosystem. Or, under high stress, a plant might initiate *resource withdrawal* to mask its apparent nutritional value.
+
+### Structured Scientific Model & Attested Computations
+
+All biological mechanisms are formalized within a comprehensive 5-part Zensical scientific model:
+
+* **[Part 1: Foundations](docs/scientific_model/part_1_foundations/mathematical_framework.md):** Continuous-discrete hybrid mathematical formulation, conservation invariants, and related academic literature.
+* **[Part 2: Autotrophic Dynamics](docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md):** Photosynthesis, structural lignification, symbiosis, and rate-limited phloem nutrient translocation.
+* **[Part 3: Signaling & Transport](docs/scientific_model/part_3_signaling_and_transport/reaction_diffusion.md):** 2D Gaussian reaction-diffusion PDEs, semi-Lagrangian advection, and chemotactic gradient ascent.
+* **[Part 4: Heterotrophic Kinematics](docs/scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md):** Optimal foraging (MVT), Softmax temperature parameterization ($\tau$), metabolic starvation, and clonal mitosis bifurcation.
+* **[Part 5: Ecosystem Synthesis](docs/scientific_model/part_5_ecosystem_synthesis/ecological_analytics.md):** Lotka-Volterra trophic equilibrium, multi-species stability criteria, and aggregate statistical analytics.
+* **[Attested Computations Suite](docs/scientific_model/computations/index.md):** Self-contained, deterministic computational receipts executing canonical simulation traces with bit-exact machine verification.
+
+### Dual-Audience Data-Flow Matrix Protocol
+
+Every temporal state transition in PHIDS is documented as an Open Knowledge Format (OKF v0.2) **Data-Flow Matrix**. To eliminate cognitive barriers while maintaining scientific rigor, each matrix features:
+
+1. **A Conceptual Guide for General Observers:** Uses an intuitive "slow-motion film strip" or "biological ledger" metaphor to explain what physical transitions occur step-by-step in nature.
+2. **A Technical Scenario Narrative in Words:** Continuous floating prose detailing the exact biological triggers, multi-tick kinetics, conservation bounds, and branchless SIMD masking operations.
+3. **Verified State Transition Table:** Columnar numerical transfer table validated point-by-point against live engine traces to prevent documentation drift.
 
 ---
 
@@ -97,20 +118,40 @@ The web-based control center is served by **FastAPI**, rendered via server-side 
 
 ### High-Performance Replay (Zarr & Polars)
 
-
 Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS now defaults to the **Zarr** storage backend (`src/phids/io/zarr_replay.py`) for replay data and telemetry exports. This enables high-performance, chunked, and memory-decoupled visual slicing of long-running Monte Carlo batch simulations. Analysts can effortlessly load enormous multidimensional datasets into **Polars** or Pandas DataFrames seamlessly without memory exhaustion.
 
-### Agentic Integration: MCP Server Support & Diagnostic Observers
+### Agentic Integration: Model Context Protocol (MCP) Server & Diagnostic Observers
 
-PHIDS is natively designed to be operated by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) is included. It allows external LLMs and agents to hook directly into the simulator to safely execute diagnostic workflows. Key capabilities include:
+PHIDS is natively engineered for autonomous operation by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) allows external LLMs and IDE assistants to inspect runtime state, validate biological invariants, evaluate OKF documentation compliance, and export multi-format artifacts:
 
-* **Simulation & Diagnostics**: Read the `runtime_snapshot()` (retrieving scenario metadata, grid dimensions, species counts, and tick configuration), inspect the active draft via `active_draft_resource`, and query complex batch outcomes via `query_batch_jobs()`.
-* **Configuration Validation**: Pre-verify AI-generated configurations via `validate_simulation_config()` to catch structural errors (e.g., non-power-of-two grid limits, unbound species IDs) before attempting to launch a backend loop.
-* **Telemetry & Plot Generation**: Use `query_telemetry_schema()` to explore available state metrics, and leverage `export_telemetry_data()` to generate headless academic artifact plots (PNGs, TikZ, DataFrames as CSV/JSON) directly returned as payload strings or base64 streams for agent context processing.
-
-This ensures comprehensive accessibility to the full application stack, enabling autonomous scenario tuning, diagnostic debugging, and AI-driven experiment generation without disturbing the HTTP API launcher or breaking the engine's single-writer discipline.
+* **11 Native MCP Tools:**
+  * `runtime_snapshot()`: Reads global simulation metadata, grid dimensions, active species counts, and tick configuration.
+  * `inspect_live_simulation()`: Directly inspects running ECS entity populations, energy distributions, and step metrics.
+  * `validate_biological_invariants()`: Asserts conservation bounds, non-negative states, and valid coordinate placement.
+  * `validate_simulation_config(config_json)`: Validates scenario structures against strict Pydantic V2 schemas prior to execution.
+  * `validate_okf_compliance()`: Evaluates Open Knowledge Format (OKF v0.2) frontmatter, path resolution, and doc freshness.
+  * `query_diagnostic_logs(limit)`: Retrieves structured diagnostic log events and observer warnings.
+  * `query_batch_jobs()`: Queries the batch execution ledger and historical job statuses.
+  * `read_batch_summary(job_id)`: Fetches aggregate metrics and survival statistics for a completed batch.
+  * `query_telemetry_schema()`: Explores available scalar and tensor metrics in the live telemetry engine.
+  * `inspect_telemetry_schema(zarr_store_path)`: Inspects array schemas and chunk layouts of on-disk Zarr replay buffers.
+  * `export_telemetry_data(...)`: Headless generation of CSV tables, LaTeX tabular markup, TikZ vector graphics, or PNG charts.
+* **3 Native Streamable Resources:**
+  * `phids://config/draft.json` (`active_draft_resource`): Real-time server-side draft scenario configuration.
+  * `phids://simulation/live.json` (`live_simulation_resource`): Live telemetry status of the active simulation loop.
+  * `phids://analysis/drift-report.md` (`analyze_simulation_drift`): Evaluates parameter drift against canonical baselines.
 
 Furthermore, PHIDS introduces an **Agentic Diagnostic Log Writer & Systemic Integrity Observer** (`dse-log-observer`). This lightweight observer tracks scaling drift, structural violations (e.g., spatial physics vs. MILP disconnects), and execution anomalies without acting as an uninterpretable black box. EEDSE optimization pathways are governed by strict **Human-in-the-Loop (HITL) vs. AI-in-the-Loop (AITL) Intervention Gates**, ensuring algorithmic decisions remain interpretable.
+
+### 🧪 Empirical Trait Pipeline (`src/data_pipeline/`)
+
+PHIDS features a dedicated, automated empirical data pipeline (`src/data_pipeline/`) that grounds simulation parameters in peer-reviewed biological datasets:
+
+* **Global Dataset Ingestion:** Extracts botanical and zoological functional traits from LEDA (trait measurements), BIEN (botanical inventories), GIFT (island floras), TRY, and PanTHERIA databases.
+* **Dual Licensing Architecture:**
+  * *Core Empirical Pipeline (`just etl`):* Processes open-access datasets under CC0 and CC-BY licenses for unrestricted public redistribution.
+  * *Extended Academic Pipeline (`just etl-extended`):* Opt-in processing of non-commercial datasets under CC-BY-NC-SA 4.0 terms, strictly guarded by pre-commit import barriers (`NC License Guard`).
+* **Archetype Extraction & DuckDB Compilation:** Vectorizes continuous physiological measurements into discrete plant and herbivore archetype vectors stored in DuckDB (`bio_database.duckdb`), directly feeding the parameter calibration framework (`parameter_calibration_strategy.md`).
 
 ### 🧬 Evolutionary Encapsulated Multi-Stage Design Space Exploration (EEDSE) & Empirical Database
 
@@ -227,62 +268,124 @@ Open:
 
 ## ✅ Development, Testing & CI behavior
 
-Strict quality gates are enforced to guarantee arithmetic invariants, memory safety, and simulation stability.
+Strict quality gates are enforced across the repository to guarantee physical conservation invariants, branch coverage, numerical parity, and zero runtime memory faults.
+
+For comprehensive documentation of the testing hierarchy, directory structure, custom pytest markers, and Google-style docstring requirements, see [`tests/README.md`](tests/README.md).
 
 ### Two-Pass Numba Testing Strategy
 
-The ECS engine relies heavily on Numba JIT compilation. To ensure both logical correctness and memory-safe machine code generation, the CI pipeline (`scripts/local_ci.sh`) employs a strict **Two-Pass Testing Strategy**:
+The ECS engine relies heavily on Numba JIT compilation. To ensure both logical correctness and memory-safe machine code generation, the testing pipeline employs a strict **Two-Pass Testing Strategy**:
 
-1. **Pass 1: Logic & Coverage (`NUMBA_DISABLE_JIT=1`):** Tests are run with JIT explicitly disabled to enforce pure-Python line coverage and validate branch logic without compilation overhead masking interpreter coverage.
-2. **Pass 2: Compilation Verification:** Tests are re-run with JIT enabled to verify safe machine-code compilation, confirming parametric invariants and ensuring zero runtime segfaults during fast-math execution.
+1. **Pass 1: Logic & Branch Coverage (`NUMBA_DISABLE_JIT=1`):** Tests run with JIT compilation disabled. Because compiled machine code bypasses Python VM tracing hooks, disabling JIT exposes all inner branches, boundary clamps, and edge conditions directly to `coverage.py`, enforcing a strict branch coverage floor ($\ge 80\%$, currently **84.65%** overall and **89.0%** diff coverage).
+2. **Pass 2: JIT Parity & Latency Verification:** Tests re-run with JIT enabled (`just test-parity` and `just benchmark`). This verifies that compiled LLVM kernels produce bit-exact numerical parity against pure-Python reference implementations within floating-point tolerance ($\text{atol} \le 1\times 10^{-12}$) with zero memory leaks or OpenMP race conditions.
+
+### Scientific Invariant & Physical Proof Suites
+
+Computational simulation logic must mirror physical laws and biological equations to exact floating-point precision. PHIDS maintains specialized test suites for mathematical conservation:
+
+* **Thermodynamic Energy Balance (`just test-scientific`):** Enforces First Law of Thermodynamics compliance ($\Delta E_{\text{herbivore}} + E_{\text{digestive\_loss}} = \Delta E_{\text{plant\_consumed}}$, $\text{rel\_tol} \le 1\times 10^{-6}$), Holling Type II asymptotic saturation bounds ($I(N) \le 1/T_h$), and monotone Hill defense induction curves.
+* **PDE Advection Conservation (`just test-scientific`):** Verifies semi-Lagrangian chemical mass conservation across toroidal boundaries ($\nabla \cdot \vec{v} = 0$, $\text{rtol} \le 1\times 10^{-5}$) and asserts chemical concentration non-negativity ($c \ge 0.0$) with tail-zeroing below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
+* **Bit-Exact Replay Playback (`just test-replay`):** Asserts that evaluation outcomes serialized tick-by-tick into compressed Zarr matrices can be played back with zero numerical divergence, completely bypassing engine simulation logic.
+* **Mutation Testing (`just mutate`):** Validates test-suite fault-detection power via Mutmut by injecting mutations into core movement and interaction kernels.
+* **Property-Based Testing (Hypothesis):** Aggressively stress-tests mathematical invariants, half-life degradation rates, and toroidal coordinate wrapping ($x \ \& \ (W - 1) \equiv x \pmod{W}$) across thousands of pseudo-random parameter combinations.
 
 ### Causal Data-Flow Matrix Parity Testing (Rule 05)
 
 Every multi-tick behavioral cascade (foraging, signaling, phloem translocation, starvation mortality) is formally governed by an Open Knowledge Format (OKF v0.2) Data-Flow Matrix specification. The test suite (`tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`) and pre-commit verification script (`scripts/verify_matrix_trace_parity.py --all`) assert exact 1:1 point-by-point numerical parity between documented Markdown matrix tables and runtime simulation traces.
 
-### Property Hypothesis Testing
+### Cognitive Complexity Budget ($\le 15$)
 
-To guarantee invariant ecosystem rules (e.g., mass conservation, correct condition tree algebraic evaluation), PHIDS utilizes property-based testing (via the `hypothesis` library). These pilot tests aggressively explore edge cases in the biological mechanics and trophic interaction rules.
+All production and test functions are bound by a strict cognitive complexity budget ($\le 15$) enforced via Complexipy (`just complexity`). Deeply nested branching logic must be refactored into atomic, single-responsibility helper functions or branchless SIMD array masks.
 
-### Scripted local CI & `just` commands
+### Automation Tooling & `Justfile` Recipes
 
-Scripted local CI covering linting, the two-pass tests, and docs build:
+PHIDS provides a comprehensive task runner configured in `Justfile`, backed by 15 automation and validation scripts detailed in [`scripts/README.md`](scripts/README.md).
 
-```bash
-./scripts/local_ci.sh all
-```
+#### Setup & Environment
 
-Useful `just` Commands:
+* `just setup` (or `just install`): Bootstrap dependencies (`uv sync --all-groups`), install git hooks, register recommended VS Code extensions, and execute initial empirical DuckDB ETL.
+* `just install-extensions`: Install recommended editor extensions declared in `.vscode/extensions.json`.
 
-* `just setup`: Complete initial setup (`uv sync`, pre-commit hooks, extensions, DuckDB ETL).
-* `just test`: Run the full test suite via pytest.
-* `just test-matrix`: Run the causal Data-Flow Matrix integration test suite.
-* `just audit-matrix`: Audit OKF Data-Flow Matrix coverage across documentation.
-* `just verify-matrix`: Verify 1:1 table-to-trace parity against live simulation traces.
+#### Quality & Static Analysis
+
+* `just lint`: Run Ruff linter (`--fix`), Ruff formatter, and strict Mypy type validation across `src/phids/`.
+* `just format`: Format all Python codebases using Ruff.
+* `just check`: Execute pre-commit quality gates across all staged and repository files.
+* `just complexity` (or `just complexity-local`): Run repository-wide cognitive complexity audits with Complexipy.
+
+#### Test Execution
+
+* `just test`: Run the standard Pytest suite across all test packages with benchmarks enabled.
+* `just test-scientific`: Run biological and physical invariant tests (`-m scientific_invariant`) with `--no-cov`.
+* `just test-parity`: Run Numba JIT vs. pure-Python numerical equivalence tests (`-m jit_parity`).
+* `just test-replay`: Run bit-exact Zarr replay round-trip tests (`tests/e2e/replay_and_io/`).
+* `just mutate`: Run mutation testing with Mutmut across core simulation kernels.
+* `just ci-test`: Execute local CI test orchestration script (`./scripts/local_ci.sh tests`).
+
+#### Causal Data-Flow Matrices & OKF Governance
+
+* `just test-matrix`: Execute the causal Data-Flow Matrix integration test suite.
+* `just audit-matrix`: Audit OKF Data-Flow Matrix coverage and bilateral resource links across `docs/scientific_model/`.
+* `just verify-matrix`: Assert 1:1 table-to-trace parity against live simulation runs (`scripts/verify_matrix_trace_parity.py --all`).
+* `just validate-okf`: Validate OKF v0.2 frontmatter schemas, relative path links, and timestamp freshness.
 * `just visualize-okf`: Generate the interactive Cytoscape.js knowledge graph (`docs/viz.html`).
-* `just lint`: Automatically fix formatting and run static analysis (Ruff & Mypy).
-* `just check`: Run all pre-commit hooks across the codebase.
-* `just docs`: Build and serve the Zensical documentation strictly.
-* `just bench-compare-jit`: Compare JIT performance of the current workspace against a baseline branch.
-* `just act-complexity`: Run code complexity checks using complexipy.
-* `just clean`: Remove all build artifacts, cache directories, and test coverage files.
 
-Hook-only verification:
+#### Simulation Runtime & Documentation
+
+* `just run`: Launch the PHIDS FastAPI simulation server with auto-reload (`uv run phids --reload`).
+* `just docs`: Strictly build static Zensical documentation (`uv run zensical build`).
+* `just serve`: Build and serve live interactive Zensical documentation on `localhost:9000`.
+
+#### Benchmarking & Performance
+
+* `just benchmark`: Execute latency micro-benchmarks with Numba JIT enabled (`pytest-benchmark`).
+* `just bench-compare <ref1> <ref2> <scenario>`: Compare simulation performance between two git branches or scenario blueprints.
+* `just bench-compare-jit <ref1> <ref2> <scenario>`: Run comparative benchmarks isolated to compiled JIT execution phases.
+
+#### Empirical Trait Data Pipeline
+
+* `just etl`: Run the core open-access empirical trait pipeline (LEDA, BIEN, GIFT).
+* `just etl-refresh`: Force re-download and rebuild core DuckDB trait database.
+* `just etl-extended`: Run the extended academic pipeline incorporating TRY and PanTHERIA (requires NC agreement).
+* `just etl-extended-refresh`: Force re-download and rebuild extended academic datasets.
+* `just etl-publish-core`: Publish core CC0/CC-BY trait artifacts to Hugging Face.
+* `just etl-publish-extended`: Publish extended CC-BY-NC-SA trait artifacts to Hugging Face.
+
+#### Local CI & Containerized GitHub Actions (`act`)
+
+* `just act-ci`: Execute the full GitHub Actions `quality-gate` workflow locally via `nektos/act`.
+* `just act-docker`: Test container build workflow locally via `act`.
+* `just act-release`: Simulate multi-arch release builds locally using act event payloads.
+* `just act-profiling`: Run architectural profiling workflow locally via `act`.
+* `just act-complexity`: Run CI cognitive complexity gate workflow locally via `act`.
+
+#### Maintenance & Hygiene
+
+* `just clean`: Remove all build artifacts, cache directories (`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`), and coverage data.
+* `just clean-act`: Prune dangling Docker containers and networks labeled by `nektos/act`.
+* `just docker-clean`: Remove local PHIDS container images and prune system caches.
+
+#### Fast Local CI Script & Hook-Only Verification
 
 ```bash
+# Full local CI pass covering linting, two-pass tests, and strict docs build
+./scripts/local_ci.sh all
+
+# Hook-only verification across all repository files
 uv run pre-commit run --all-files
 uv run pre-commit run --all-files --hook-stage pre-push
 ```
-
 
 GitHub Actions policy summary:
 
 * CI quality gates (`.github/workflows/ci.yml`) run automatically on pushes and PRs targeting `main` and `develop`.
 * Documentation site deployment to GitHub Pages triggers automatically on pushes to `main`.
-* Container image, DuckDB bio-database, and desktop binary releases publish automatically on semantic tag boundaries (`v*`).
+* Container images, DuckDB bio-databases, and desktop binary releases publish automatically on semantic tag boundaries (`v*`).
 
 References:
 
+* [`tests/README.md`](tests/README.md)
+* [`scripts/README.md`](scripts/README.md)
 * [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md)
 
 ---
@@ -344,11 +447,15 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 | Domain | Local Repository File | Live Hosted Page | Description |
 | --- | --- | --- | --- |
 | 🏠 **Docs Home** | [`docs/index.md`](docs/index.md) | [Home](https://foersben.github.io/PHIDS/) | High-level abstract, biological introduction, and core engineering principles. |
-| 🔬 **Scientific Model** | [`docs/scientific_model/index.md`](docs/scientific_model/index.md) | [Scientific Model](https://foersben.github.io/PHIDS/scientific_model/) | Reaction-diffusion PDEs, chemotaxis, Lotka-Volterra dynamics, and plant defenses. |
+| 🔬 **Scientific Model** | [`docs/scientific_model/index.md`](docs/scientific_model/index.md) | [Scientific Model](https://foersben.github.io/PHIDS/scientific_model/) | 5-part mathematical foundations, autotrophic dynamics, reaction-diffusion PDEs, chemotaxis, and ecosystem synthesis. |
+| 🔢 **Attested Computations** | [`docs/scientific_model/computations/index.md`](docs/scientific_model/computations/index.md) | [Computations](https://foersben.github.io/PHIDS/scientific_model/computations/) | Empirical computational models, SIMD matrix traces, and runtime verification contracts. |
 | ⚙️ **Technical Architecture** | [`docs/technical_architecture/index.md`](docs/technical_architecture/index.md) | [Technical Architecture](https://foersben.github.io/PHIDS/technical_architecture/) | ECS data structures, Numba JIT double-buffering, FastAPI/HTMX UI, and Zarr telemetry. |
-| 🧪 **Scenario Guide** | [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md) | [Scenario Guide](https://foersben.github.io/PHIDS/scenario_guide/) | Pydantic V2 scenario schemas, curated blueprints, and DSE optimization workflows. |
+| 🧪 **Scenario Guide** | [`docs/scenario_guide/index.md`](docs/scenario_guide/index.md) | [Scenario Guide](https://foersben.github.io/PHIDS/scenario_guide/) | Pydantic V2 scenario schemas, curated blueprints, and WIP DSE optimization workflows. |
 | 🛠️ **Development Guide** | [`docs/development_guide/index.md`](docs/development_guide/index.md) | [Development Guide](https://foersben.github.io/PHIDS/development_guide/) | Strategic roadmap, agent ecosystem, contribution workflows, and release runbook. |
 | 📐 **Data-Flow Matrices** | [`docs/development_guide/okf_data_flow_matrices.md`](docs/development_guide/okf_data_flow_matrices.md) | [Data-Flow Matrix](https://foersben.github.io/PHIDS/development_guide/okf_data_flow_matrix_architecture/) | OKF Data-Flow Matrix architecture, SIMD transfer tables, and trace testing verification. |
+| 🧪 **Test Architecture** | [`tests/README.md`](tests/README.md) | [Tests](https://github.com/foersben/PHIDS/blob/develop/tests/README.md) | Two-pass Numba testing, physical invariant proofs, mutation testing, and coverage governance. |
+| ⚙️ **Automation Tooling** | [`scripts/README.md`](scripts/README.md) | [Scripts](https://github.com/foersben/PHIDS/blob/develop/scripts/README.md) | Dossiers for all 15 validation, audit, parity, ETL, and benchmarking scripts. |
+| 🌐 **Knowledge Graph** | [`docs/viz.html`](docs/viz.html) | [Knowledge Graph](https://foersben.github.io/PHIDS/viz.html) | Interactive Cytoscape.js visual graph of the OKF documentation and agent ecosystem. |
 | 📖 **Reference & API** | [`docs/reference/index.md`](docs/reference/index.md) | [Reference](https://foersben.github.io/PHIDS/reference/) | Module ownership map, glossary/concept index, requirements traceability, and Python API. |
 
 ### 🔮 Future Prospects & Strategic Enhancements
@@ -378,22 +485,24 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 ## 🗂 Repository shape at a glance
 
 ```text
-src/phids/              canonical runtime package
-├── api/                FastAPI routes, Pydantic V2 schemas, HTMX templates, WebSockets
-├── engine/             Core determinism domain (ECS + Numba JIT double-buffered grid fields)
-├── analytics/          Evolutionary Design Space Exploration (DSE) & empirical database tuning
-├── io/                 High-performance Zarr replay serialization & scenario ingestion
-├── telemetry/          Tick analytics, batch export routines, and Polars handlers
-├── shared/             Common constants, rule-of-16 limits, and logging configurations
-├── mcp_server.py       Model Context Protocol (MCP) stdio entrypoint for AI agents
-└── __main__.py         Command-line interface (Typer CLI) entry point
+src/
+├── phids/              canonical runtime simulation package
+│   ├── api/            FastAPI routes, Pydantic V2 schemas, HTMX templates, WebSockets
+│   ├── engine/         Core determinism domain (ECS + Numba JIT double-buffered grid fields)
+│   ├── analytics/      Evolutionary Design Space Exploration (DSE) & empirical database tuning
+│   ├── io/             High-performance Zarr replay serialization & scenario ingestion
+│   ├── telemetry/      Tick analytics, batch export routines, and Polars handlers
+│   ├── shared/         Common constants, rule-of-16 limits, and logging configurations
+│   ├── mcp_server.py   Model Context Protocol (MCP) stdio entrypoint for AI agents
+│   └── __main__.py     Command-line interface (Typer CLI) entry point
+└── data_pipeline/      Empirical trait extraction & normalization pipeline (BIEN, LEDA, GIFT, TRY, PanTHERIA)
 .agents/                AI agent ecosystem (OKF AGENTS.md, role definitions, skills & workflows)
 data/                   Empirical DuckDB trait database (TRY/PanTHERIA) & batch export ledgers
 docs/                   Zensical documentation corpus with OKF frontmatter & Future Prospects
 examples/               Curated scenario blueprint JSON files
 packaging/              PyInstaller desktop binary packaging configuration
 scripts/                Automation & validation scripts (15 scripts, pre-commit & CI gates; see scripts/README.md)
-tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration
+tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration (see tests/README.md)
 ```
 
 ---
@@ -409,9 +518,9 @@ tests/                  Hypothesis invariant tests, two-pass Numba tests, and AP
 * Want to run evolutionary EEDSE searches? Start at [`docs/scenario_guide/work_in_progress/design_space_exploration.md`](docs/scenario_guide/work_in_progress/design_space_exploration.md).
 * Want to understand AI integration boundaries? Start at [`docs/scenario_guide/future_prospects/agentic_log_writer.md`](docs/scenario_guide/future_prospects/agentic_log_writer.md).
 * Want contributor workflow and CI policy? Start at [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
+* Want to inspect the testing taxonomy, JIT two-pass strategy, and invariant proofs? Start at [`tests/README.md`](tests/README.md).
 * Want to inspect all automation scripts and pre-commit gates? Start at [`scripts/README.md`](scripts/README.md).
 * Want to explore the interactive knowledge graph? Open [`docs/viz.html`](docs/viz.html) or run `just visualize-okf`.
-
 
 ---
 
