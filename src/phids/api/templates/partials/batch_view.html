@@ -205,11 +205,11 @@
         labels,
         datasets: [
           { label: 'Flora mean', data: floraMean, borderColor: '#22c55e', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0 },
-          { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Flora +sigma', data: floraUpper, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'transparent', borderWidth: 0.5, borderDash: [3,2], fill: false, pointRadius: 0 },
+          { label: 'Flora -sigma', data: floraLower, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
           { label: 'Herbivore mean', data: herbivoreMean, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [5,3] },
-          { label: 'Herbivore +sigma', data: herbivoreUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
-          { label: 'Herbivore -sigma', data: herbivoreLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
+          { label: 'Herbivore +sigma', data: herbivoreUpper, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'transparent', borderWidth: 0.5, borderDash: [3,2], fill: false, pointRadius: 0 },
+          { label: 'Herbivore -sigma', data: herbivoreLower, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 0.5, borderDash: [3,2], fill: '-1', pointRadius: 0 },
           { label: 'Herbivore feeding deaths', data: deathHerbivore, borderColor: '#f97316', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [2,2] },
           { label: 'Defense maint. deaths', data: deathDefense, borderColor: '#eab308', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [2,2] },
           { label: 'Herbivore starvation', data: deathStarvation, borderColor: '#9333ea', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, borderDash: [2,2] },
@@ -228,17 +228,18 @@
             onClick: function(e, legendItem, legend) {
               const index = legendItem.datasetIndex;
               const ci = legend.chart;
-              const meta = ci.getDatasetMeta(index);
+              const currentVisible = ci.isDatasetVisible(index);
+              const newVisible = !currentVisible;
 
-              const isHidden = meta.hidden === null ? ci.data.datasets[index].hidden : meta.hidden;
-              meta.hidden = !isHidden;
+              ci.setDatasetVisibility(index, newVisible);
 
+              // Keep ±sigma ribbons synchronized with their parent population curves
               if (index === 0) {
-                ci.getDatasetMeta(1).hidden = meta.hidden;
-                ci.getDatasetMeta(2).hidden = meta.hidden;
+                ci.setDatasetVisibility(1, newVisible);
+                ci.setDatasetVisibility(2, newVisible);
               } else if (index === 3) {
-                ci.getDatasetMeta(4).hidden = meta.hidden;
-                ci.getDatasetMeta(5).hidden = meta.hidden;
+                ci.setDatasetVisibility(4, newVisible);
+                ci.setDatasetVisibility(5, newVisible);
               }
               ci.update();
             }
@@ -378,72 +379,100 @@
       tablePreview.innerHTML = html;
     }
 
+    const PRESET_DATASET_CONFIG = {
+      balanced: {
+        // Flora mean + ±sigma, Herbivore mean + ±sigma
+        visibility: { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: false, 7: false, 8: false },
+        showAgg: true,
+        showSurvival: true,
+        showPhase: false,
+        yTitle: 'Population (mean ± sigma)',
+      },
+      phase_space: {
+        visibility: {},
+        showAgg: false,
+        showSurvival: false,
+        showPhase: true,
+        yTitle: 'Herbivore Population',
+      },
+      collapse_risk: {
+        visibility: {},
+        showAgg: false,
+        showSurvival: true,
+        showPhase: false,
+        yTitle: 'Survival Probability',
+      },
+      herbivore_pressure: {
+        // Herbivore mean + ±sigma, Herbivore feeding deaths, Herbivore starvation
+        visibility: { 0: false, 1: false, 2: false, 3: true, 4: true, 5: true, 6: true, 7: false, 8: true },
+        showAgg: true,
+        showSurvival: false,
+        showPhase: false,
+        yTitle: 'Count (Population ± sigma / Deaths)',
+      },
+      defense_economy: {
+        // Flora mean + ±sigma, Defense maint deaths
+        visibility: { 0: true, 1: true, 2: true, 3: false, 4: false, 5: false, 6: false, 7: true, 8: false },
+        showAgg: true,
+        showSurvival: false,
+        showPhase: false,
+        yTitle: 'Count (Population ± sigma / Deaths)',
+      },
+    };
+
     function applyChartSettings() {
-      const preset = chartPreset.value;
+      const preset = chartPreset ? chartPreset.value : 'balanced';
+      const config = PRESET_DATASET_CONFIG[preset] || PRESET_DATASET_CONFIG.balanced;
       const chart = aggChart;
       if (!chart) return;
 
-      if (preset === 'phase_space') {
-        chart.options.plugins.title = { display: (chartTitleInput.value || '').trim() !== '', text: chartTitleInput.value || '', font: { size: 11 } };
-        if (phaseChart) {
-          phaseChart.options.plugins.title = chart.options.plugins.title;
-          phaseChart.update('none');
-        }
-        document.getElementById('batch-agg-chart').parentElement.classList.add('hidden');
-        survivalWrap.classList.add('hidden');
-        if (phaseWrap) phaseWrap.classList.remove('hidden');
-        syncExportLinks();
-        return;
-      } else {
-        if (phaseWrap) phaseWrap.classList.add('hidden');
-      }
+      const aggWrap = document.getElementById('batch-agg-chart') ? document.getElementById('batch-agg-chart').parentElement : null;
+      if (aggWrap) aggWrap.classList.toggle('hidden', !config.showAgg);
+      if (survivalWrap) survivalWrap.classList.toggle('hidden', !config.showSurvival);
+      if (phaseWrap) phaseWrap.classList.toggle('hidden', !config.showPhase);
 
+      const titleText = (chartTitleInput?.value || '').trim();
       chart.options.plugins.title = {
-        display: (chartTitleInput.value || '').trim() !== '',
-        text: chartTitleInput.value || '',
+        display: titleText !== '',
+        text: titleText,
         font: { size: 11 },
       };
-      chart.options.scales.x.title = { display: true, text: xLabelInput.value || 'Tick', font: { size: 10 } };
-      chart.options.scales.y.title = { display: true, text: yLabelInput.value || 'Population (mean ± sigma)', font: { size: 10 } };
 
-      // reset visibility
-      chart.data.datasets.forEach((ds) => { ds.hidden = false; });
-      chart.getDatasetMeta(1).hidden = false;
-      chart.getDatasetMeta(2).hidden = false;
-      chart.getDatasetMeta(4).hidden = false;
-      chart.getDatasetMeta(5).hidden = false;
-
-      survivalWrap.classList.remove('hidden');
-      document.getElementById('batch-agg-chart').parentElement.classList.remove('hidden');
-
-      if (preset === 'collapse_risk') {
-        // Only show survival curve, hide main chart
-        document.getElementById('batch-agg-chart').parentElement.classList.add('hidden');
+      if (phaseChart) {
+        phaseChart.options.plugins.title = {
+          display: titleText !== '',
+          text: titleText,
+          font: { size: 11 },
+        };
+        if (config.showPhase) {
+          phaseChart.update('none');
+        }
       }
-      else if (preset === 'herbivore_pressure') {
-        // Show Herbivore mean (3) and Herbivore feeding deaths (6)
+
+      if (config.showAgg) {
+        chart.options.scales.x.title = {
+          display: true,
+          text: xLabelInput?.value || 'Tick',
+          font: { size: 10 },
+        };
+        chart.options.scales.y.title = {
+          display: true,
+          text: yLabelInput?.value || config.yTitle || 'Population (mean ± sigma)',
+          font: { size: 10 },
+        };
+
+        // Deterministically set dataset visibility using Chart.js API for all datasets
         chart.data.datasets.forEach((ds, i) => {
-          const meta = chart.getDatasetMeta(i);
-          meta.hidden = ![3, 6].includes(i);
+          const isVisible = Boolean(config.visibility[i]);
+          chart.setDatasetVisibility(i, isVisible);
         });
-        survivalWrap.classList.add('hidden');
+
+        chart.update();
       }
-      else if (preset === 'defense_economy') {
-        // Show Flora mean (0) and Defense maint deaths (7)
-        chart.data.datasets.forEach((ds, i) => {
-          const meta = chart.getDatasetMeta(i);
-          meta.hidden = ![0, 7].includes(i);
-        });
-        survivalWrap.classList.add('hidden');
+
+      if (survivalChart && config.showSurvival) {
+        survivalChart.update('none');
       }
-      else if (preset === 'balanced') {
-        // Balanced hides death datasets
-        chart.getDatasetMeta(6).hidden = true;
-        chart.getDatasetMeta(7).hidden = true;
-        survivalWrap.classList.remove('hidden');
-      }
-      chart.update();
-      if (survivalChart) survivalChart.update('none');
       syncExportLinks();
     }
 
@@ -452,36 +481,41 @@
       syncExportLinks();
     }
 
+    function onPresetChange() {
+      const preset = chartPreset ? chartPreset.value : 'balanced';
+      if (preset === 'balanced') {
+        chartTitleInput.value = 'Balanced overview';
+        yLabelInput.value = 'Population (mean ± sigma)';
+      } else if (preset === 'phase_space') {
+        chartTitleInput.value = 'Phase Space';
+        yLabelInput.value = 'Herbivore Population';
+      } else if (preset === 'collapse_risk') {
+        chartTitleInput.value = 'Collapse risk focus';
+        yLabelInput.value = 'Survival Probability';
+      } else if (preset === 'herbivore_pressure') {
+        chartTitleInput.value = 'Herbivore pressure focus';
+        yLabelInput.value = 'Count (Population ± sigma / Deaths)';
+      } else if (preset === 'defense_economy') {
+        chartTitleInput.value = 'Defense economy ratio';
+        yLabelInput.value = 'Count (Population ± sigma / Deaths)';
+      }
+      applyChartSettings();
+    }
+
     applyChartBtn.addEventListener('click', applyChartSettings);
     applyTableBtn.addEventListener('click', applyTableSettings);
 
     if (chartPreset) {
-      chartPreset.addEventListener('change', () => {
-        const preset = chartPreset.value;
-        if (preset === 'balanced') {
-          chartTitleInput.value = 'Balanced overview';
-          yLabelInput.value = 'Population (mean ± sigma)';
-        } else if (preset === 'phase_space') {
-          chartTitleInput.value = 'Phase Space';
-          yLabelInput.value = 'Herbivore Population';
-        } else if (preset === 'collapse_risk') {
-          chartTitleInput.value = 'Collapse risk focus';
-          yLabelInput.value = 'Survival Probability';
-        } else if (preset === 'herbivore_pressure') {
-          chartTitleInput.value = 'Herbivore pressure focus';
-          yLabelInput.value = 'Count (Population / Deaths)';
-        } else if (preset === 'defense_economy') {
-          chartTitleInput.value = 'Defense economy ratio';
-          yLabelInput.value = 'Count (Population / Deaths)';
-        }
-        applyChartSettings();
-      });
+      chartPreset.addEventListener('change', onPresetChange);
     }
 
     window.__phidsBatchViewController = {
       destroy() {
         applyChartBtn.removeEventListener('click', applyChartSettings);
         applyTableBtn.removeEventListener('click', applyTableSettings);
+        if (chartPreset) {
+          chartPreset.removeEventListener('change', onPresetChange);
+        }
         if (aggChart) {
           aggChart.destroy();
           aggChart = null;
@@ -499,7 +533,7 @@
 
     phidsBatchTab('chart');
     if (chartPreset) {
-      chartPreset.dispatchEvent(new Event('change'));
+      onPresetChange();
     } else {
       applyChartSettings();
     }
