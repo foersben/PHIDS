@@ -13,6 +13,7 @@ This document records the chronological history of structural, scientific, and a
 * **Refactor**: Decomposed `config_flora_update` in `flora.py` into specialized field-extraction helpers, satisfying local cognitive complexity quality gates (`just complexity-local`).
 * **Update**: Streamlined the dashboard canvas tooltip by removing the redundant top-level mycorrhizal card, consolidating root connection details and partner species identities cleanly into the plant entity card.
 * **Refactor**: Purged shadowed legacy `batch.py` in favor of the modular `phids.engine.batch` package with public re-exports, elevating full repository test branch coverage to 81.6% and resolving all Zensical reference link warnings.
+* **Update**: Reconstructed the coupled hybrid dynamical system Mermaid diagram in `scientific_model/index.md` into a closed-loop causal architecture connecting discrete ECS entities, continuous biotope diffusion PDEs, and sensory chemotactic flow fields.
 
 ## 2026-09-06
 

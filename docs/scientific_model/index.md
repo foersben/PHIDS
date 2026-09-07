@@ -9,34 +9,36 @@ PHIDS operates as a profoundly coupled hybrid dynamical system designed to bridg
 This structural duality allows the engine to resolve the inherent tension in ecological modeling: the need to track explicit, integer-based population boundaries (preventing fractional or "ghost" biological artifacts) while simultaneously computing continuous-space physical phenomena like atmospheric volatile transport and spatial flow-field gradients. The mathematical framework translates complex biological events-ranging from resource acquisition and grazing pressure to induced semiochemical signaling and swarm mitigation-into transparent, causal operator chains that execute deterministically without floating-point drift.
 
 ```mermaid
-graph TD
-    subgraph Data-Oriented ECS Layer [Discrete Entity Updates]
-        A(Herbivore Swarms)
-        B(Flora Entities)
-        C(Toxin Responses)
+flowchart TD
+    subgraph ECS ["Discrete Entity Layer (Data-Oriented ECS)"]
+        direction LR
+        Flora["Flora Entities<br>• Dynamic Energy E(t)<br>• Structural Mass M_struct<br>• Trichomes & Defenses"]
+        Herbivores["Herbivore Swarms<br>• Population Headcount n(t)<br>• Caloric Energy Reserve<br>• Kinematic Velocity"]
+        Myco["Mycorrhizal Conduits<br>• Root-to-root conduits<br>• Phloem translocation<br>• Underground signaling"]
 
-        A <-->|Population Dynamics| B
-        B -->|Growth & Reproduction| B
+        Flora <-->|Nutrient & Signal Exchange| Myco
+        Herbivores -->|1. Grazing Pressure & Tissue Damage<br>(Holling Type II Consumption)| Flora
     end
 
-    subgraph Cellular Automata Layer [Continuous Field Dynamics]
-        D(Volatile Organic Compounds)
-        E(Resource Density Gradients)
-        F(Chemotactic Flow Fields)
+    subgraph Biotope ["Continuous Grid Layer (Double-Buffered PDEs)"]
+        direction LR
+        VOCs["Chemical Substrates (Biotope)<br>• Volatile Organic Compounds (VOCs)<br>• Repellent & Defense Toxins<br>• Exponential Decay"]
+        DiffSolver["Reaction-Diffusion Engine<br>• Isotropic 2D Gaussian stencil<br>• FTZ subnormal float elimination<br>• Toroidal boundary wrapping"]
+        FlowFields["Chemotactic Flow Fields<br>• Jacobi potential relaxation<br>• Gradient sensory vectors ∇Φ<br>• Power-of-two grid mapping"]
 
-        D -->|Reaction-Diffusion| D
+        VOCs -->|2D Stencil Evaluation| DiffSolver
+        DiffSolver -->|Evolved Concentrations| VOCs
+        VOCs -->|Spatial Gradient Sourcing| FlowFields
     end
 
-    A -.->|Physical Interactions| E
-    B -.->|Metabolic Emissions| D
-    F ==>|Sensory Guidance Vectors| A
-    D -.->|Signal Interference| F
+    %% Cross-Layer Bidirectional Coupling
+    Flora ==>|2. Induced Volatile Emissions<br>(Wounding & Stress Signaling)| VOCs
+    FlowFields ==>|3. Sensory Guidance Vectors<br>(Von Neumann Softmax Ascent)| Herbivores
 
-    classDef ecs fill:#111b24,stroke:#00b8d4,stroke-width:2px;
-    classDef ca fill:#141224,stroke:#b388ff,stroke-width:2px;
-
-    class A,B,C ecs;
-    class D,E,F ca;
+    classDef ecsNode fill:#111b24,stroke:#00b8d4,stroke-width:2px,color:#e0f7fa;
+    classDef biotopeNode fill:#141224,stroke:#b388ff,stroke-width:2px,color:#ede7f6;
+    class Flora,Herbivores,Myco ecsNode;
+    class VOCs,DiffSolver,FlowFields biotopeNode;
 ```
 
 ## Structure of the Scientific Exposition
