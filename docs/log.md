@@ -11,6 +11,7 @@ This document records the chronological history of structural, scientific, and a
 * **Update**: Integrated the KaTeX client-side mathematical formula rendering engine into the web interface root (`base.html`), dynamically typesetting LaTeX formulations across all partial HTMX view swaps.
 * **Update**: Conducted a repository-wide audit for DSE expansions, reconciling the guide header in `dse/container.html` to canonical **Design Space Exploration (DSE) & Pareto Optimization Guide**.
 * **Refactor**: Decomposed `config_flora_update` in `flora.py` into specialized field-extraction helpers, satisfying local cognitive complexity quality gates (`just complexity-local`).
+* **Update**: Streamlined the dashboard canvas tooltip by removing the redundant top-level mycorrhizal card, consolidating root connection details and partner species identities cleanly into the plant entity card.
 
 ## 2026-09-06
 

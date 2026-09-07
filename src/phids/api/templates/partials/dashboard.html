@@ -1468,27 +1468,6 @@
     }).join('');
   }
 
-  function renderMycorrhiza(mycorrhiza) {
-    if (!mycorrhiza || !mycorrhiza.link_count) return '';
-    const links = mycorrhiza.links || [];
-    const settings = [];
-    if (mycorrhiza.inter_species_enabled != null) settings.push(`inter-species ${mycorrhiza.inter_species_enabled ? 'on' : 'off'}`);
-    if (mycorrhiza.connection_cost != null) settings.push(`cost ${formatNumber(mycorrhiza.connection_cost, 2)}`);
-    return `
-      <div class="mt-2 rounded-lg border border-sky-500/30 bg-sky-950/20 px-2.5 py-2 space-y-1">
-        <div class="flex items-center justify-between text-xs font-semibold text-sky-300">
-          <span class="flex items-center gap-1">🕸️ Mycorrhizal Network</span>
-          <span class="font-mono text-[10px] text-sky-400">${escapeHtml(mycorrhiza.link_count)} link(s)</span>
-        </div>
-        ${settings.length ? `<div class="text-[10px] text-slate-400">${escapeHtml(settings.join(' · '))}</div>` : ''}
-        ${links.length ? `<ul class="mt-1 space-y-1 text-[10px] border-t border-slate-800/80 pt-1">${links.map(link => `
-          <li class="flex justify-between font-mono text-slate-300">
-            <span>(${escapeHtml(link.from.x)}, ${escapeHtml(link.from.y)}) ↔ (${escapeHtml(link.to.x)}, ${escapeHtml(link.to.y)})</span>
-            <span class="text-slate-400">${link.inter_species ? 'inter-species' : 'intra-species'}</span>
-          </li>`).join('')}</ul>` : ''}
-      </div>`;
-  }
-
   function renderTooltip(data) {
     if (!data) return;
 
@@ -1523,7 +1502,6 @@
           </div>`).join('');
 
     const swarmHtml = renderSwarmList(data.swarms || [], data.mode);
-    const mycorrhizaHtml = renderMycorrhiza(data.mycorrhiza);
 
     const isDraft = data.mode === 'draft';
     const envCard = isDraft
@@ -1566,10 +1544,7 @@
       ${renderConcentrationList('Signals here', data.signal_concentrations || [], 'text-sky-300')}
       ${renderConcentrationList('Toxins here', data.toxin_concentrations || [], 'text-fuchsia-300')}
 
-      <!-- Mycorrhizal Topology (Progressive) -->
-      ${mycorrhizaHtml}
-
-      <!-- Plants List (Progressive) -->
+      <!-- Plants List (Progressive, Integrated Mycorrhiza) -->
       ${plantHtml ? `<div class="mt-2 pt-1 border-t border-slate-800/60"><div class="font-semibold text-emerald-300 text-xs">Plants</div>${plantHtml}</div>` : ''}
 
       <!-- Swarms List (Progressive) -->
