@@ -328,7 +328,7 @@ See: [`engine/lifecycle.md`](../scientific_model/part_1_foundations/mathematical
 
 ## O
 
-### $O(1)$ Spatial Hash
+### $O(1)$ Spatial Hash {#o1-spatial-hash}
 
 The spatial hash embedded in `ECSWorld` that maps `(x, y)` grid cells to sets of entity IDs in
 amortized $O(1)$ time. It is the primary locality primitive in PHIDS: all cell-local interactions

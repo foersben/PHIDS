@@ -8,6 +8,7 @@ description: Documentation for Population Dynamics vs. Continuous Solvers in the
   PHIDS framework.
 tags: [phids, ecs, python]
 generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-09-07T11:00:00Z"}
 sources:
 - id: population_system
   resource: src/phids/engine/systems/interaction/population.py

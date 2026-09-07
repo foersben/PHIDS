@@ -2,6 +2,7 @@
 type: Concept
 title: "Unified Forest-Scale Architecture & Spatiotemporal Scaling"
 status: stable
+stale_after: "2027-01-01T00:00:00Z"
 version: 2.0
 description: "A unified specification for scaling PHIDS to large physical biomes,
   addressing memory limits, subloop computability, storage constraints, kinetic abstraction,
@@ -32,7 +33,7 @@ To simulate an entire physical biome (e.g., a 1 km² mixed forest) realistically
 
 This architecture unifies the empirical database pipeline (ETL), the Entity-Component-System (ECS), telemetry storage, and the multi-stage simulation loop to successfully model large-scale ecosystems without violating hardware limits, branching efficiency, or visual interpretability.
 
-## 1. The Spatiotemporal Dimensional Anchor & Memory Limits [Realized]
+## 1. The Spatiotemporal Dimensional Anchor & Memory Limits (Realized)
 
 Before a forest scenario is initialized, the `SimulationConfig` explicitly defines the base physical units ($\Delta L$, $\Delta \tau$, $\Delta E$). Everything else in the engine scales relative to these constants.
 
@@ -58,7 +59,7 @@ A modern server CPU (e.g., AMD EPYC) has $\sim 50 \text{ GB/s}$ memory bandwidth
 
 While computing an 80 MB grid is fast, storing it every tick for a 10,000-tick run would generate $800 \text{ GB}$ of raw output per scenario. This necessitates a strict decoupling of compute and storage (detailed in Section 5).
 
-## 2. Multi-Scale Temporal Decoupling (Phase-Staggered Cohort Execution) [Realized]
+## 2. Multi-Scale Temporal Decoupling (Phase-Staggered Cohort Execution) (Realized)
 
 Because VOC diffusion happens in seconds, but plant growth happens in months, evaluating all rules linearly on a 1-hour tick causes chemical diffusion to be too slow and plant growth to be uncomputably small (triggering subnormal floating-point errors).
 
@@ -79,14 +80,14 @@ Under Phase-Staggered Cohort Execution:
 * **Uniform Memory & Compute Bandwidth:** Exactly $\frac{1}{S}$-th of all entities are updated on every single tick. Per-tick CPU instruction counts and L1/L2 memory cache streaming remain uniform, completely avoiding DRAM cache-thrashing bursts.
 * **Branch Predictability:** Cohort phase masks rely on bitwise and arithmetic modulo operations that evaluate cleanly in Numba `@njit` kernels with near-zero branch penalty.
 
-## 3. Behavioral Abstraction: Stochastic Von Neumann Kinematics [Realized]
+## 3. Behavioral Abstraction: Stochastic Von Neumann Kinematics (Realized)
 
 At a $1 \text{ m}^2$ resolution, tracking the individual leg movements of insects or deer is biologically irrelevant and computationally disastrous. PHIDS abstracts physical movement using a probabilistic gradient ascent within a von Neumann neighborhood.
 
 * **The Von Neumann Neighborhood:** A swarm does not evaluate a 360-degree continuous radius (Moore 8-way). It only looks at its four adjacent orthogonal tiles: North, South, East, and West ($N, S, E, W$). This reduces DRAM fetches by $50\%$ compared to Moore neighborhoods (`_gather_neighbours_jit` in `src/phids/engine/systems/interaction/movement/__init__.py`).
 * **Stochastic Choice (SIMD Vectorization):** Instead of deterministically snapping to the absolute highest value, the swarm applies a Softmax function to the four flow-field values. A Softmax operation across 4 neighbors fits perfectly into a single 128-bit XMM register (or batched across 4 swarms in a 512-bit ZMM register for AVX-512). This reduces the probabilistic gradient ascent calculation to just $\sim 20$ clock cycles per swarm.
 
-## 4. Multi-Scale Phase-Staggered Loop Boundaries [Realized]
+## 4. Multi-Scale Phase-Staggered Loop Boundaries (Realized)
 
 To prevent IEEE 754 subnormal floating-point truncation traps and maximize CPU L1/L2 cache locality, `SimulationLoop.step()` decouples biological process frequencies via Phase-Staggered Cohort Execution (Fast, Medium, and Slow loops):
 
@@ -109,7 +110,7 @@ flowchart LR
     P1 --> P2 --> P3a --> P3b --> P3c --> P4
 ```
 
-## 5. Storage, Replay, and Telemetry (Zarr + Polars) [Realized]
+## 5. Storage, Replay, and Telemetry (Zarr + Polars) (Realized)
 
 To prevent disk-bloat, PHIDS draws a strict boundary between Compute and Storage:
 
@@ -156,14 +157,14 @@ flowchart TD
 
 * **Subnormal Tail Clamping:** Signal tails below $1 \times 10^{-4}$ are clamped to $0.0$ prior to Zstd compression, enabling high run-length compression ratios.
 
-## 6. Allometric Scaling & Population Densities [Realized]
+## 6. Allometric Scaling & Population Densities (Realized)
 
 To maintain realistic flora and fauna densities on a $1 \text{ m}^2$ resolution grid, the ETL pipeline enforces strict allometric scaling laws derived from PanTHERIA and TRY (`src/data_pipeline/archetype_extractor.py`).
 
 * **Capacity Limit:** A $1 \text{ m}^2$ cell has a fixed maximum photosynthetic carrying capacity based on actual solar irradiance (e.g., $\sim 10,000 \text{ kcal/day/m}^2$ gross).
 * **Swarm Energy Requirements (Kleiber's Law):** Herbivore energy demands are mapped directly to physical mass ($M$) using Kleiber’s Law ($BMR \propto M^{0.75}$). An Aphid swarm has low individual BMR, allowing a massive `split_population_threshold` (10,000). A Deer herd has a high individual BMR, forcing the swarm to maintain continuous high velocity across the grid to survive.
 
-## 7. Resolved Scaling Horizons: Edge Effects & Spatial Congestion [Realized]
+## 7. Resolved Scaling Horizons: Edge Effects & Spatial Congestion (Realized)
 
 As PHIDS pushes toward full $1 \text{ km}^2$ macro-scale simulation, three specific spatial scaling issues have been resolved:
 
@@ -204,13 +205,13 @@ stateDiagram-v2
     PhysicalJostling --> GradientTracking : Evaded Overcrowding
 ```
 
-### E. Volumetric Collision & Branchless Capacity Masking [Realized]
+### E. Volumetric Collision & Branchless Capacity Masking (Realized)
 
 Because 1 cell equals exactly $1 \text{ m}^2$, the ECS Spatial Hash faces entity stacking if unchecked.
 
 * **The Fix (Branchless Capacity Masking):** Preventing swarm stacking evaluates capacity as a branchless boolean mask (`mask = min(1.0, is_current + (pop <= max_capacity))`) inside Numba `@njit` kernels (`_apply_branchless_capacity_mask_jit` & `_weighted_field_choice_jit` in `src/phids/engine/systems/interaction/movement/__init__.py`). By multiplying candidate probabilities by this mask, overcrowded target cells have their weight instantly set to `0.0` without executing conditional `if` branches on population counts, eliminating CPU pipeline flushes from branch mispredictions.
 
-## 8. Aspirational Scaling Goals [Planned]
+## 8. Aspirational Scaling Goals (Planned)
 
 The following architectural optimizations represent future milestones that are planned but not yet realized in the core engine.
 
