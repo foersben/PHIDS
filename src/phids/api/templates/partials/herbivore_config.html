@@ -166,20 +166,20 @@
         <p class="font-semibold text-slate-700">Ecological Parameters Explained:</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
           <li><strong>🆔 ID & 🏷️ Name:</strong> Species identifier and classification for tracking in telemetry buffers.</li>
-          <li><strong>❤️ Energy Min (Starvation Limit):</strong> The absolute minimum energy threshold required per capita before the swarm enters a starvation state, incurring mortality (min 0.1).</li>
-          <li><strong>🏃 Speed (Velocity):</strong> Movement period in ticks between relocations (min 1). A value of <code>1</code> = moves every tick (fastest). A value of <code>5</code> = rests 4 ticks and moves on the 5th.</li>
-          <li><strong>🍽️ Eating Rate (Consumption):</strong> Biomass extracted per tick from host flora (min 0.1). This directly influences the Lotka-Volterra interaction strength and energy transfer between trophic levels.</li>
-          <li><strong>➗ Split Divisor:</strong> The energy multiplier governing swarm mitosis (min 0.1). When a swarm's gathered energy exceeds <code>population * energy_min * divisor</code>, the swarm reproduces (population increases), allowing explosive exponential growth during periods of abundant food.</li>
-          <li><strong>📈 Split Pop. (Log):</strong> Explicit threshold for swarm mitosis (0 disables). Uses logarithmic slider mapping. If set > 0, swarm splits strictly based on headcount.</li>
-          <li><strong>🎲 Softmax Temp (τ):</strong> Boltzmann temperature for stochastic foraging. <code>0.0</code> equals perfectly greedy movement towards the highest flow gradient. Higher values increase random exploratory movement.</li>
+          <li><strong>❤️ Energy Min ($E_{\text{min}}$):</strong> Absolute minimum per capita energy floor before entering starvation and incurring mortality ($E_{\text{min}} \ge 0.1$).</li>
+          <li><strong>🏃 Speed ($v$):</strong> Movement stride period in ticks between relocations (min 1). A value of $v = 1$ moves every tick; $v = 5$ moves every 5th tick.</li>
+          <li><strong>🍽️ Eating Rate ($c_{\text{herb}}$):</strong> Biomass extracted per tick from host flora ($c_{\text{herb}} \ge 0.1$). Drives Lotka-Volterra trophic energy transfer.</li>
+          <li><strong>➗ Split Divisor ($\delta_{\text{split}}$):</strong> Swarm mitosis multiplier. When swarm energy satisfies $E_{\text{swarm}} \ge N \cdot E_{\text{min}} \cdot \delta_{\text{split}}$, the swarm divides.</li>
+          <li><strong>📈 Split Pop. ($N_{\text{split}}$):</strong> Explicit population ceiling triggering fission (0 disables). Uses logarithmic slider mapping.</li>
+          <li><strong>🎲 Softmax Temp ($\tau$):</strong> Boltzmann temperature for stochastic foraging. $\tau = 0.0$ executes greedy gradient ascent; higher $\tau$ increases exploration entropy.</li>
         </ul>
       </div>
       <div>
-        <p class="font-semibold text-slate-700">Evolutionary Resistances (0.0 to 1.0):</p>
+        <p class="font-semibold text-slate-700">Evolutionary Resistances ($r \in [0.0, 1.0]$):</p>
         <ul class="list-disc list-inside mt-2 text-[11px] text-slate-500 space-y-1">
-          <li><strong>🛡️ Morph. Adapt.:</strong> Resistance to constitutive morphological defenses (e.g., thorns, trichomes). A value of <code>1.0</code> implies complete immunity, allowing unhindered feeding despite physical barriers.</li>
-          <li><strong>🧪 Chem. Neut.:</strong> Metabolic capability to bind, sequester, or excrete induced toxic secondary metabolites (e.g., alkaloids, glucosinolates). Higher values mitigate the lethal effects of airborne or localized toxins.</li>
-          <li><strong>🍂 Digest. Eff.:</strong> Efficiency of breaking down complex polymers (lignin, cellulose). Influences baseline nutritional yield during grazing.</li>
+          <li><strong>🛡️ Morph. Adapt. ($r_{\text{morph}}$):</strong> Resistance to mechanical defenses (thorns, spines). $r_{\text{morph}} = 1.0$ confers total immunity to physical bite damage.</li>
+          <li><strong>🧪 Chem. Neut. ($r_{\text{chem}}$):</strong> Metabolic detoxification rate binding and neutralizing airborne or tissue toxins.</li>
+          <li><strong>🍂 Digest. Eff. ($\eta_{\text{digest}}$):</strong> Enzymatic efficiency converting complex structural polymers (lignin, cellulose) into metabolic calories.</li>
         </ul>
         <p class="font-semibold text-slate-700 mt-3">Applying Changes:</p>
         <p class="text-slate-500 mt-1">

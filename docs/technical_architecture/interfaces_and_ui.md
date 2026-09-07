@@ -182,3 +182,19 @@ This header cleanly instructs the client-side HTMX instance to fire these events
 4. **Targeted CSS Scoping:** Global styling for `.htmx-request` (which applies `pointer-events: none; opacity: 0.7;`) was strictly scoped to `#sim-main-action-btn.htmx-request`.
 
 This architectural pattern guarantees that the UI button state perfectly matches the backend physics engine state without fragile JavaScript race conditions or duplicate listeners. It also ensures that the button's SVG spinner strictly appears only during the button's active network round-trips, completely sidestepping global UI freezes caused by HTMX attaching `.htmx-request` to the document body during unrelated background polling cycles.
+
+## KaTeX Mathematical Formula Rendering Pipeline
+
+To maintain mathematical rigor across the interface, PHIDS integrates **KaTeX** for dynamic, client-side typesetting of LaTeX formulas:
+
+* **Non-Blocking Asset Loading:** KaTeX stylesheets and auto-render extensions load asynchronously in `src/phids/api/templates/base.html`.
+* **HTMX Lifecycle Synchronization:** A global auto-render dispatcher (`window.renderAllMath(target)`) is wired to `DOMContentLoaded`, `load`, `htmx:afterSwap`, and `htmx:afterSettle`. When HTMX dynamically injects partial HTML fragments (e.g., swapping species tables, opening drawers, or refreshing telemetry charts), all LaTeX formulas enclosed in `$...$`, `$$...$$`, or `\(...\)` are typeset immediately without DOM flash or layout recalculation penalties.
+* **Component Mathematical Typography:** Formulations such as Decoupled Dual-Proxy Structural Biomass ($M_{\text{structural}}$), polar raycasting anemochory ($t_{\text{fall}} = \frac{h}{v_{\text{term}}}$, $\Delta \vec{x} = \vec{u}_{\text{wind}} \cdot t_{\text{fall}}$), phloem nutrient translocation ($\rho_{\text{trans}}$), and batch ensemble variance ribbons ($\mu \pm \sigma$) are rendered in authentic scientific notation across all guides and workbench panels.
+
+## Tiered Progressive Disclosure Configuration Layout
+
+To manage high-dimensional parameter spaces across the Rule-of-16 entities without overwhelming operators, the workbench views implement a **Tiered Progressive Disclosure Layout**:
+
+* **Primary Entity Tables:** Display core energetic, photosynthetic, and metabolic scalars directly editable inline (`base_energy`, `max_energy`, `growth_rate`, `survival_threshold`, `reproduction_interval`).
+* **Collapsible Species Drawers:** Provide accordion panels housing granular allometric parameters (lignification rates, terminal velocities, phloem withdrawal kinetics, and mycorrhizal upkeep taxes).
+* **Cross-View Ecosystem Interfaces:** Guide operators to dedicated views for emergent behaviors (e.g., Marginal Value Theorem patch departure on `/ui/herbivores`, trophic food-web links on `/ui/diet-matrix`, and constitutive physical spines on `/ui/morphology-defense`).

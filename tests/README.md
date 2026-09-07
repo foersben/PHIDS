@@ -79,8 +79,11 @@ Isolated component contracts, data structures, and mathematical helper logic tha
 
 Multi-system loop interactions, boundary crossings, and overarching physical conservation laws:
 
-* **`api/`**: Verifies FastAPI routes, WebSocket telemetry streaming, SSE connection lifecycles, and batch processing worker thread governance (`test_batch_processing_thread_governance`).
-* **`systems/`**: Asserts deterministic phase ordering across the complete 5-phase loop execution cycle:
+* **`api/`**: Verifies FastAPI routes, WebSocket telemetry streaming, SSE connection lifecycles, batch processing worker thread governance (`test_batch_processing_thread_governance`), and species/substance configuration mutations with parameter bounds validation (`test_species_and_substance_route_helpers.py`).
+* **`ui/`**: Verifies static content rendering, template integrity, and tiered progressive disclosure workbench components (`test_flora_drawer_ui.py` asserting primary table columns, collapsible species drawers, and cross-view ecosystem shortcuts).
+* **`systems/`**: Asserts deterministic phase ordering and multi-system biological mechanics:
+  * `test_dual_proxy_integration.py`: Validates the Decoupled Dual-Proxy Architecture ($E_{\text{current}}$ vs. $M_{\text{structural}}$), structural allometry growth kernels, seedling trampling FMA, and maintenance upkeep taxes.
+  * Deterministic phase ordering across the complete 5-phase loop execution cycle:
   1. **Flow Field Phase**: Dynamic gradient derivation, Jacobi relaxation, and chemical advection.
   2. **Lifecycle Phase**: Plant growth, seed dispersal, root mycorrhizal signal propagation, and culling.
   3. **Interaction Phase**: Swarm chemotaxis, incidental grazing, feeding, metabolic taxation, and clonal fission.

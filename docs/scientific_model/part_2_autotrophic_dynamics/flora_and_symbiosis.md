@@ -3,12 +3,12 @@ type: Scientific Model
 title: Flora Lifecycle and Symbiotic Networks
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
-version: 0.3
+version: 0.4
 description: Documentation for Flora Lifecycle and Symbiotic Networks in the
   PHIDS framework.
 tags: [phids, ecs, dual-proxy]
 generated: {by: process:okf-updater, at: "2026-08-13T00:27:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+verified: {by: human:foersben, at: "2026-09-07T12:30:00Z"}
 sources:
 - id: plant
   resource: src/phids/engine/components/plant.py
@@ -225,6 +225,14 @@ atomically within `rebuild_energy_layer()` alongside the caloric energy layers.
 The Zarr replay store records `structural_mass_layer` per tick from Plan 1 onwards. All historical
 replay files produced after this commit are forward-compatible with Plan 2 behavior analytics.
 
+### Workbench UI Parameterization & Progressive Disclosure
+
+In the web control center, botanical parameters are configured interactively through `/ui/flora`. To prevent visual cognitive overload across numerous allometric and aerodynamic scalars, the interface employs a **Tiered Progressive Disclosure Layout**:
+
+* **Primary Table:** Configures caloric reserves (`base_energy`, `max_energy`), photosynthetic kinetics (`growth_rate`), senescence threshold (`survival_threshold`), woodiness ceiling (`structural_mass_max`), reproduction interval, seed cost, dispersal distance, and camouflage.
+* **Collapsible Species Drawer:** Houses granular controls for weekly lignification rates (`structural_growth_rate`), wind anemochory drop height and fall velocity, phloem vascular translocation, and continuous mycorrhizal maintenance taxes.
+* **Cross-View Ecosystem Interfaces:** Directs operators to companion tabs for emergent kinetics (such as MVT patch departure on `/ui/herbivores`, binary trophic links on `/ui/diet-matrix`, and constitutive physical spines on `/ui/morphology-defense`).
+
 ---
 
 ## Data-Flow Matrix Specifications
@@ -232,7 +240,7 @@ replay files produced after this commit are forward-compatible with Plan 2 behav
 ### Conceptual Guide for General Observers
 
 !!! note "Understanding the Data-Flow Matrix (Conceptual Metaphor)"
-    Think of the table below as a slow-motion film strip tracking warning messages moving through the "Wood Wide Web"—an underground fungal network connecting plant roots.
+    Think of the table below as a slow-motion film strip tracking warning messages moving through the "Wood Wide Web" - an underground fungal network connecting plant roots.
 
     When a caterpillar chews on one plant, that plant transmits biochemical warning signals underground through mycorrhizal fungal hyphae to alert its neighbors. However, maintaining these fungal partnerships is not free: plants must continuously feed the fungus with sugars (carbon tax), and the warning signal gradually fades as it travels further away across multiple plant "hops".
 

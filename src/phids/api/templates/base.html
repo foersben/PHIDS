@@ -7,6 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- KaTeX for high-fidelity LaTeX formula rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="if (window.renderAllMath) window.renderAllMath(document.body);"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
@@ -597,6 +601,32 @@
         }
       });
     });
+
+    // Global KaTeX LaTeX rendering function for initial load and HTMX dynamic swaps
+    function renderAllMath(target) {
+      if (typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(target || document.body, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true }
+            ],
+            throwOnError: false,
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'input', 'select', 'option']
+          });
+        } catch (err) {
+          console.warn('KaTeX auto-render failed:', err);
+        }
+      }
+    }
+
+    window.renderAllMath = renderAllMath;
+    document.addEventListener('DOMContentLoaded', function() { renderAllMath(document.body); });
+    window.addEventListener('load', function() { renderAllMath(document.body); });
+    document.body.addEventListener('htmx:afterSwap', function(evt) { renderAllMath(evt.detail.target); });
+    document.body.addEventListener('htmx:afterSettle', function(evt) { renderAllMath(evt.detail.target); });
   </script>
 
 

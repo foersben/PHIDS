@@ -116,6 +116,20 @@ Grid updates rely on explicit read/write double-buffering (Phase 6 Buffer Swaps)
 
 The web-based control center is served by **FastAPI**, rendered via server-side templates with **HTMX**, and styled using **Tailwind CSS**. To allow the UI to render massive swarms and grids effortlessly without melting browser DOMs, the WebSocket telemetry streams (`/ws/ui/stream`) utilize strictly **columnar JSON payloads** with cache signatures. This prevents redundant encoding overhead on the server and ensures bounded in-place Chart.js updates on the client.
 
+### Interactive Scenario Workbench & Tiered Flora Configuration
+
+The control center provides dedicated, decoupled workbench views for configuring scenario drafts before compiling them into active Numba JIT simulation arrays:
+
+* **🌿 Flora Species Workbench (`/ui/flora`):** Implements a **Tiered Progressive Disclosure Layout** providing complete access to botanical traits without interface clutter:
+  * *Primary Table (Core Essentials):* Configures caloric baseline (`base_energy`), carrying capacity ceiling (`max_energy`), photosynthetic rate (`growth_rate`), senescence floor (`survival_threshold`), woodiness ceiling (`structural_mass_max`), seed drop interval (`reproduction_interval`), parental reproduction deduction (`seed_energy_cost`), maximum dispersal radius (`seed_max_dist`), and semiochemical masking (`camouflage`).
+  * *Collapsible Species Drawer:* Expandable in-place drawer exposing granular **Structural Allometry** (`structural_growth_rate`), **Wind Anemochory Aerodynamics** (`seed_min_dist`, `seed_drop_height`, `seed_terminal_velocity`), **Symbiosis & Phloem Kinetics** (`mycorrhizal_tax_per_link`, `translocation_rate`, `camouflage_factor`), and direct cross-view navigation shortcuts.
+  * *Decoupled Dual-Proxy Architecture ($E_{\text{current}}$ vs. $M_{\text{structural}}$):* Separates volatile caloric reserves from permanent lignified body mass. A heavily grazed plant loses caloric energy ($E$) but retains physical woodiness ($M$), eliminating the "trampled oak" paradox where mature trees revert to fragile saplings.
+* **Canonical Ecosystem Separation of Concerns (Explicit vs. Implicit):**
+  * *Marginal Value Theorem (MVT):* Governed on **🐛 Herbivores** (`consumption_rate`, `handling_time`, `energy_upkeep_per_individual`, `softmax_temperature`). Forager departure is an emergent kinetic of grazer appetite and upkeep relative to local caloric density and tissue digestibility.
+  * *Collateral Herd Trampling:* Governed on **🐛 Herbivores** (`incidental_mortality_factor`, `incidental_mortality_mode`). Herd crushing interacts branchlessly with flora structural mass ratio ($1 - M_{\text{structural}} / M_{\text{max}}$).
+  * *Trophic Edibility Network:* Configured in the bipartite **🍽️ Diet Matrix** ($16 \times 16$).
+  * *Physical & Chemical Defenses:* Mechanical thorns ($m_{\text{bite}}$), digestibility discounts ($\mu_{\text{digest}}$), and active trigger rules reside in **🛡️ Morphology & Defense**.
+
 ### High-Performance Replay (Zarr & Polars)
 
 Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS now defaults to the **Zarr** storage backend (`src/phids/io/zarr_replay.py`) for replay data and telemetry exports. This enables high-performance, chunked, and memory-decoupled visual slicing of long-running Monte Carlo batch simulations. Analysts can effortlessly load enormous multidimensional datasets into **Polars** or Pandas DataFrames seamlessly without memory exhaustion.

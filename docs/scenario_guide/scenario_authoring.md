@@ -3,12 +3,11 @@ type: Scenario
 title: Scenario Authoring & Schema
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
-version: 0.1
-description: Documentation for Scenario Authoring & Schema in the PHIDS
-  framework.
-tags: [phids]
+version: 1.1
+description: Documentation for Scenario Authoring, Schema definitions, Flora Species allometry, and Interaction Matrices in the PHIDS framework.
+tags: [phids, scenario, schema, dual-proxy]
 generated: {by: process:okf-updater, at: "2026-07-25T10:52:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+verified: {by: process:okf-updater, at: "2026-09-07T12:30:00Z"}
 ---
 
 Scenarios in PHIDS form the strict boundaries of the ecological experiment. A scenario dictates the grid dimensions, initial biomass distributions, trophic links (who eats what), and the specific substance triggers deployed by flora when attacked. At the engine level, all scenarios are structurally validated against the `SimulationConfig` Pydantic schema before execution.
@@ -60,6 +59,58 @@ flowchart TD
     class Rejection boundary
     class Ingress_Payload,Boot peripheral
 ```
+
+## Flora Species Parameters & Allometric Schema (`FloraSpeciesParams`)
+
+Each flora species in PHIDS models an autotrophic organism with distinct caloric storage, permanent structural mass, seed reproductive energetics, aerodynamic properties, and symbiotic fungal connections:
+
+| Parameter Key | UI Location | Unit | Default | Biological & Computational Interpretation |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | Table Header | String | `"NewFlora"` | Species identifier in telemetry exports and UI dashboards. |
+| `base_energy` | Primary Table | Calories | `10.0` | Initial mobile caloric energy granted to newly germinated seedlings. |
+| `max_energy` | Primary Table | Calories | `100.0` | Photosynthetic carrying capacity ceiling ($E_{\text{max}}$). |
+| `growth_rate` | Primary Table | % / tick | `5.0` | Photosynthetic carbohydrate production rate ($g_j$). |
+| `survival_threshold` | Primary Table | Calories | `1.0` | Senescence threshold floor ($E_{\text{survival}}$); falling below triggers death. |
+| `structural_mass_max` | Primary Table | Grams dry mass | `0.0` | Permanent woodiness ceiling ($M_{\text{max}}$). 0.0 invokes Plan 1 fallback ($M_{\text{max}} = E_{\text{max}}$). |
+| `structural_growth_rate` | Species Drawer | Fraction / wk | `0.01` | Lignification growth rate ($g_M$) per 168-tick slow loop stride (0.01 = 1%/week). |
+| `reproduction_interval` | Primary Table | Ticks | `10` | Modulo tick interval governing reproduction attempts. |
+| `seed_energy_cost` | Primary Table | Calories | `5.0` | Energy reserve ($E_{\text{seed}}$) deducted from parent upon seed drop. |
+| `seed_min_dist` | Species Drawer | Grid cells | `1.0` | Minimum dispersal radius ($d_{\text{min}}$) for polar raycasting. |
+| `seed_max_dist` | Primary Table | Grid cells | `3.0` | Maximum dispersal radius ($d_{\text{max}}$) for polar raycasting. |
+| `seed_drop_height` | Species Drawer | Meters | `0.5` | Canopy release height used for wind-flight duration estimation. |
+| `seed_terminal_velocity` | Species Drawer | m/s | `1.0` | Gravitational terminal fall velocity in horizontal wind currents. |
+| `translocation_rate` | Species Drawer | Fraction / tick | `0.2` | Rate of vascular phloem nutrient withdrawal to root sinks under stress. |
+| `mycorrhizal_tax_per_link` | Species Drawer | Calories / tick | `0.0` | Continuous metabolic fee deducted per active root conduit link. |
+| `camouflage` | Primary Table | Boolean | `False` | Semiochemical olfactory masking flag. |
+| `camouflage_factor` | Species Drawer | Multiplier | `1.0` | Volatile Organic Compound (VOC) signal dampening scalar $[0.0, 1.0]$. |
+
+### Decoupled Dual-Proxy Architecture ($E_{\text{current}}$ vs. $M_{\text{structural}}$)
+
+Plants in PHIDS maintain two continuous physical proxies:
+
+1. **Caloric Pool ($E_{\text{current}}$):** Volatile mobile carbohydrates accumulated through photosynthesis and extracted during herbivore grazing.
+2. **Structural Biomass ($M_{\text{structural}}$):** Permanent lignified woodiness and root infrastructure that accumulates monotonically over slow-loop gates ($M(t+1) = \min(M_{\text{max}}, M(t) + g_M \times 168)$).
+
+Crucially, **grazing decreases $E_{\text{current}}$ but never reduces $M_{\text{structural}}$**. Trampling immunity and mechanical attrition are calculated strictly against $M_{\text{structural}}$, preventing heavily grazed mature bushes and trees from artificially reverting into fragile saplings.
+
+---
+
+## Canonical Domain Separation Matrix (Explicit vs. Implicit)
+
+To preserve biological causality and prevent engine state leaks, configuration options are strictly partitioned across specialized workbench views:
+
+| Biological Phenomenon | Canonical View | Key Parameters | Governing Reason |
+| :--- | :--- | :--- | :--- |
+| **Autotrophic Physiology** | **🌿 Flora Species** (`/ui/flora`) | `base_energy`, `max_energy`, `growth_rate`, `structural_mass_max`, `structural_growth_rate` | Intrinsic botanical traits of cellular tissue and woodiness. |
+| **Reproduction & Dispersal** | **🌿 Flora Species** (`/ui/flora`) | `reproduction_interval`, `seed_energy_cost`, `seed_min_dist`, `seed_max_dist`, aerodynamics | Parental seed energetics and ballistic aerodynamic flight. |
+| **Foraging Kinetics (MVT)** | **🐛 Herbivores** (`/ui/herbivores`) | `consumption_rate`, `handling_time`, `energy_upkeep_per_individual`, `softmax_temperature` | Optimal patch departure (Charnov 1976) is an herbivore foraging decision ($Intake \ge Upkeep$), not a botanical choice. |
+| **Collateral Trampling** | **🐛 Herbivores** (`/ui/herbivores`) | `incidental_mortality_factor` ($k_{\text{incidental}}$), `incidental_mortality_mode` | Locomotion impact of animal mass; interacts branchlessly with plant $M_{\text{structural}} / M_{\text{max}}$. |
+| **Trophic Food Web** | **🍽️ Diet Matrix** (`/ui/diet-matrix`) | Binary compatibility matrix $[H \times F]$ | Bipartite graph establishing which grazers can recognize and consume each plant species. |
+| **Constitutive Defenses** | **🛡️ Morphology & Defense** (`/ui/morphology-defense`) | `mechanical_damage_per_bite` ($m_{\text{bite}}$), `digestibility_modifier` ($\mu_{\text{digest}}$) | Spines inflicting grazer mortality and lignin cell-wall barriers reducing caloric extraction efficiency. |
+| **Inducible Defenses** | **🛡️ Morphology & Defense** (`/ui/morphology-defense`) | Trigger conditions, active toxins, VOC alarms, phloem resource withdrawal | Chemical defense cascades and nutritional masking triggered by herbivore attack or alarm plumes. |
+| **Atmospheric Dispersion** | **🌍 Biotope Config** (`/ui/biotope`) | `wind_x`, `wind_y`, `signal_decay_factor`, grid dimensions | Abiotic fluid dynamics carrying seeds and semiochemical plumes. |
+
+---
 
 ## Interaction Matrices
 

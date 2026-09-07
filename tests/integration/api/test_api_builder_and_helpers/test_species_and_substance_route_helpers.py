@@ -101,7 +101,7 @@ def test_build_draft_mycorrhizal_links_respects_interspecies_flag() -> None:
 
 @pytest.mark.asyncio
 async def test_builder_flora_routes_add_update_delete(api_client: AsyncClient) -> None:
-    """Verify flora routes support add/update/delete and return 404 for missing species IDs."""
+    """Verify flora routes support add/update/delete with dual-proxy and seed parameters."""
     add_resp = await api_client.post(
         "/api/config/flora",
         data={
@@ -114,17 +114,31 @@ async def test_builder_flora_routes_add_update_delete(api_client: AsyncClient) -
             "seed_min_dist": 1.0,
             "seed_max_dist": 2.0,
             "seed_energy_cost": 1.5,
+            "seed_drop_height": 0.8,
+            "seed_terminal_velocity": 1.2,
+            "translocation_rate": 0.25,
+            "mycorrhizal_tax_per_link": 0.1,
+            "structural_mass_max": 45.0,
+            "structural_growth_rate": 0.02,
             "camouflage": "on",
             "camouflage_factor": 5.0,
         },
     )
     assert add_resp.status_code == 200, add_resp.text
+    assert "flora-drawer-" in add_resp.text
+    assert "flora-group-" in add_resp.text
 
     draft = get_draft()
     added_flora = draft.flora_species[-1]
     assert isinstance(added_flora, FloraSpeciesParams)
     assert added_flora.camouflage is True
     assert added_flora.camouflage_factor == pytest.approx(1.0)
+    assert added_flora.structural_mass_max == pytest.approx(45.0)
+    assert added_flora.structural_growth_rate == pytest.approx(0.02)
+    assert added_flora.seed_drop_height == pytest.approx(0.8)
+    assert added_flora.seed_terminal_velocity == pytest.approx(1.2)
+    assert added_flora.translocation_rate == pytest.approx(0.25)
+    assert added_flora.mycorrhizal_tax_per_link == pytest.approx(0.1)
 
     added_id = added_flora.species_id
     update_resp = await api_client.put(
@@ -133,6 +147,11 @@ async def test_builder_flora_routes_add_update_delete(api_client: AsyncClient) -
             "name": "Oak Updated",
             "camouflage": "off",
             "camouflage_factor": -1.0,
+            "structural_mass_max": -10.0,
+            "structural_growth_rate": 1.5,
+            "translocation_rate": -0.5,
+            "mycorrhizal_tax_per_link": -0.2,
+            "seed_drop_height": -0.5,
             "passive_defenses.mechanical_damage_per_bite": -5.0,
             "passive_defenses.digestibility_modifier": 2.0,
         },
@@ -144,6 +163,11 @@ async def test_builder_flora_routes_add_update_delete(api_client: AsyncClient) -
     assert updated_flora.name == "Oak Updated"
     assert updated_flora.camouflage is False
     assert updated_flora.camouflage_factor == pytest.approx(0.0)
+    assert updated_flora.structural_mass_max == pytest.approx(0.0)  # Clamped to >= 0
+    assert updated_flora.structural_growth_rate == pytest.approx(1.0)  # Clamped to <= 1.0
+    assert updated_flora.translocation_rate == pytest.approx(0.0)  # Clamped to >= 0
+    assert updated_flora.mycorrhizal_tax_per_link == pytest.approx(0.0)  # Clamped to >= 0
+    assert updated_flora.seed_drop_height == pytest.approx(0.01)  # Clamped to >= 0.01
     assert updated_flora.passive_defenses.mechanical_damage_per_bite == pytest.approx(0.0)
     assert updated_flora.passive_defenses.digestibility_modifier == pytest.approx(1.0)
 
