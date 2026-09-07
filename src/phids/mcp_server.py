@@ -350,49 +350,9 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
         ``tree_keys``, and ``store_attrs``.  On failure - ``status`` and
         ``message``.
     """
-    try:
-        import numpy as np
-        import zarr
-    except ImportError as exc:  # pragma: no cover
-        return {"status": "error", "message": f"Required package not available: {exc}"}
+    from phids.mcp_server_tools.telemetry import inspect_telemetry_schema_impl
 
-    store = Path(zarr_store_path)
-    if not store.exists():
-        return {
-            "status": "error",
-            "message": f"Store path does not exist: {zarr_store_path}",
-        }
-
-    try:
-        root: zarr.Group = zarr.open_group(str(store), mode="r")
-        tree_keys: list[str] = list(root.keys())
-
-        # Derive frame count from the consolidated _metadata JSON array.
-        frame_count: int = 0
-        if "_metadata" in root:
-            try:
-                meta_node = cast("zarr.Array[Any]", root["_metadata"])
-                meta_bytes = bytes(np.asarray(meta_node[:], dtype=np.uint8).tolist())
-                meta_obj = json.loads(meta_bytes.decode("utf-8"))
-                if isinstance(meta_obj, list):
-                    frame_count = len(meta_obj)
-                elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
-                    inner = meta_obj["_metadata"]
-                    frame_count = len(inner) if isinstance(inner, list) else 0
-            except Exception:  # pragma: no cover - corrupt metadata
-                frame_count = -1  # Corrupt metadata - indicate uncertainty
-
-        store_attrs: dict[str, Any] = dict(root.attrs) if root.attrs else {}
-
-        return {
-            "status": "success",
-            "store_path": str(store.resolve()),
-            "frame_count": frame_count,
-            "tree_keys": tree_keys,
-            "store_attrs": store_attrs,
-        }
-    except Exception as exc:
-        return {"status": "error", "message": f"Failed to read Zarr store: {exc}"}
+    return inspect_telemetry_schema_impl(zarr_store_path)
 
 
 @mcp.tool()
