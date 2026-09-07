@@ -12,17 +12,17 @@ This structural duality allows the engine to resolve the inherent tension in eco
 flowchart TD
     subgraph ECS ["Discrete Entity Layer (Data-Oriented ECS)"]
         direction LR
-        Flora["Flora Entities<br>• Dynamic Energy E(t)<br>• Structural Mass M_struct<br>• Trichomes & Defenses"]
+        Flora["Flora Entities<br>• Dynamic Energy E(t)<br>• Structural Mass M_struct<br>• Trichomes and Defenses"]
         Herbivores["Herbivore Swarms<br>• Population Headcount n(t)<br>• Caloric Energy Reserve<br>• Kinematic Velocity"]
         Myco["Mycorrhizal Conduits<br>• Root-to-root conduits<br>• Phloem translocation<br>• Underground signaling"]
 
-        Flora <-->|Nutrient & Signal Exchange| Myco
-        Herbivores -->|1. Grazing Pressure & Tissue Damage<br>(Holling Type II Consumption)| Flora
+        Flora <-->|Nutrient and Signal Exchange| Myco
+        Herbivores -->|1. Grazing and Tissue Damage| Flora
     end
 
     subgraph Biotope ["Continuous Grid Layer (Double-Buffered PDEs)"]
         direction LR
-        VOCs["Chemical Substrates (Biotope)<br>• Volatile Organic Compounds (VOCs)<br>• Repellent & Defense Toxins<br>• Exponential Decay"]
+        VOCs["Chemical Substrates (Biotope)<br>• Volatile Organic Compounds (VOCs)<br>• Repellent and Defense Toxins<br>• Exponential Decay"]
         DiffSolver["Reaction-Diffusion Engine<br>• Isotropic 2D Gaussian stencil<br>• FTZ subnormal float elimination<br>• Toroidal boundary wrapping"]
         FlowFields["Chemotactic Flow Fields<br>• Jacobi potential relaxation<br>• Gradient sensory vectors ∇Φ<br>• Power-of-two grid mapping"]
 
@@ -32,8 +32,8 @@ flowchart TD
     end
 
     %% Cross-Layer Bidirectional Coupling
-    Flora ==>|2. Induced Volatile Emissions<br>(Wounding & Stress Signaling)| VOCs
-    FlowFields ==>|3. Sensory Guidance Vectors<br>(Von Neumann Softmax Ascent)| Herbivores
+    Flora ==>|2. Induced Volatile Emissions| VOCs
+    FlowFields ==>|3. Sensory Guidance Vectors| Herbivores
 
     classDef ecsNode fill:#111b24,stroke:#00b8d4,stroke-width:2px,color:#e0f7fa;
     classDef biotopeNode fill:#141224,stroke:#b388ff,stroke-width:2px,color:#ede7f6;
