@@ -94,3 +94,9 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+
+## 2026-10-28 - Extracting MCP Server Tools into Modules
+
+Learning: When extracting logic from `mcp_server.py` to reduce cognitive complexity, splitting the monolithic tool implementations into a `mcp_server_tools` sub-package is effective. The tools should be cleanly broken down, with internal logic like parsing metadata JSON into private helper functions. When adapting the main file, it is important to retain the `@mcp.tool()` or `@mcp.resource()` decorator on the thin wrapper functions in `mcp_server.py` to maintain the registered public MCP API surface while the implementation shifts to the dedicated package.
+
+Action: For future MCP extractions, implement the logic in `mcp_server_tools` and expose thin wrapper functions in `mcp_server.py` maintaining original decorator registrations and Pydantic signatures to prevent API breakage.
