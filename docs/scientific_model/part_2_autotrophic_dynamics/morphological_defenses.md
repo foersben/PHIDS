@@ -171,6 +171,28 @@ For software engineers and data interface developers, this section maps the math
 
 ## Data-Flow Matrix Specifications
 
+### Conceptual Guide for General Observers
+
+!!! note "Understanding the Data-Flow Matrix (Conceptual Metaphor)"
+    Think of the table below as a high-speed, slow-motion film strip of the plant defense mechanism described above.
+
+    When insects feed on a plant, the plant cannot magically vanish its nutrients instantaneously. Instead, physical sap fluids gradually flow through internal vascular sieves, pumping nitrogen down into root reserves to starve the grazer, and then slowly refilling the canopy once feeding stops.
+
+    * **Tick ($t_0, t_1, \dots$):** Each row represents one discrete step in simulation time.
+    * **State Columns:** Track the physical nutrient concentrations and vascular countdown timers inside the plant.
+    * **Operation & Rule Column:** Explains the biological event occurring at that moment and the mathematical transfer that takes place.
+
+    Every number in this table is tested and verified directly against the running simulation engine, guaranteeing that the written scientific text matches the actual program behavior.
+
+### Scenario Dynamics in Words (Technical Overview)
+
+This matrix models an acute herbivore grazing event against an autotrophic plant occupying a biotope cell:
+
+1. **Initiation ($t_0$):** At baseline, the plant foliage exhibits an apparent nutritional factor of $N_{\text{apparent}} = 0.50$. Detecting mechanical damage and saliva elicitors, the plant triggers an active vascular defense. It initializes a 2-tick withdrawal countdown ($\tau_{\text{withdrawal}} = 2$) and sets an aggressive defensive nutrient ceiling of $N_{\text{target}} = 0.20$.
+2. **Vascular Withdrawal ($t_1 \to t_2$):** Phloem sap velocity is constrained by sieve-tube hydraulic conductivity ($k_{\text{trans}} = 0.50$). Nutrient translocations follow an exponential relaxation trajectory: $\Delta N = (N_{\text{target}} - N_{\text{apparent}}) \times k_{\text{trans}}$. At $t_1$, $N_{\text{apparent}}$ drops to $0.35$; by $t_2$, the countdown expires ($\tau = 0$) and the foliar nutrient factor reaches $0.275$, substantially degrading caloric payoff for feeding herbivores.
+3. **Post-Grazing Recovery ($t_3 \to t_6$):** Once the countdown hits zero and grazing ceases, the plant disengages defensive sequestration. The relaxation target automatically resets to full photosynthetic capacity ($N_{\text{target}} = 1.0$). Soluble metabolites are mobilized back to foliage, asymptotically restoring nutrition over consecutive steps ($0.6375 \to 0.8188 \to 0.9094 \to 0.9547$).
+4. **Computational & SIMD Invariant:** In the ECS engine, this entire multi-phase cycle executes via contiguous NumPy array arithmetic with zero dynamic memory allocation. The resulting scalar $N_{\text{apparent}}(x, y)$ scales the spatial attractant field $F(x, y)$ directly, smoothly deflecting herbivore foraging paths without discrete pathfinding graph searches.
+
 ### Phloem Resource Translocation & Apparent Nutrition Recovery
 
 Below is the verified Data-Flow Matrix for rate-limited phloem nutrient translocation and post-withdrawal recovery ($N_{\text{initial}} = 0.5, N_{\text{target}} = 0.2, k_{\text{trans}} = 0.5, \tau_{\text{withdrawal}} = 2$ ticks):

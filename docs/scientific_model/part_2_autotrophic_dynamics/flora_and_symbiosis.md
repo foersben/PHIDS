@@ -229,6 +229,28 @@ replay files produced after this commit are forward-compatible with Plan 2 behav
 
 ## Data-Flow Matrix Specifications
 
+### Conceptual Guide for General Observers
+
+!!! note "Understanding the Data-Flow Matrix (Conceptual Metaphor)"
+    Think of the table below as a slow-motion film strip tracking warning messages moving through the "Wood Wide Web"—an underground fungal network connecting plant roots.
+
+    When a caterpillar chews on one plant, that plant transmits biochemical warning signals underground through mycorrhizal fungal hyphae to alert its neighbors. However, maintaining these fungal partnerships is not free: plants must continuously feed the fungus with sugars (carbon tax), and the warning signal gradually fades as it travels further away across multiple plant "hops".
+
+    * **Tick ($t_0, t_1, \dots$):** Each row represents one discrete step in simulation time.
+    * **State Columns:** Track signal intensity at the emitter, first neighbor (Hop 1), second neighbor (Hop 2), and the carbon energy reserves of the receiver.
+    * **Operation & Rule Column:** Explains signal transmission latency, signal decay, and the symbiotic maintenance tax paid per step.
+
+    Every number in this table is continuously verified against the simulation engine to ensure mathematical accuracy and prevent documentation drift.
+
+### Scenario Dynamics in Words (Technical Overview)
+
+This matrix models discrete multi-hop chemical signaling across an underground mycorrhizal network between interconnected plant roots:
+
+1. **Conduit Injection ($t_0$):** A source plant undergoes herbivore grazing and releases a warning cue into its attached fungal mycelium (`source_signal` = 1.0). Downstream neighbor plants (Hop 1 and Hop 2) have not yet received the signal ($0.0$). The primary neighbor maintains a baseline caloric reserve of $E = 50.0$.
+2. **Primary Node Reception & Symbiosis Tax ($t_1$):** Transmission across fungal hyphae experiences a 1-tick transit delay. At $t_1$, the cue reaches the primary neighbor with minimal attenuation (`hop1_signal` = 0.90), while the source signal attenuates to 0.80. Simultaneously, the receiver pays a daily symbiotic carbon maintenance tax of $\Delta E = -1.5$ to sustain the hyphal connection, lowering its energy to $48.5$.
+3. **Secondary Relay & Signal Attenuation ($t_2$):** Over the second interval, the signal relays forward from the primary neighbor to a secondary node (`hop2_signal` = 0.81, reflecting quadratic distance attenuation $0.9 \times 0.9$). The primary neighbor maintains the conduit connection, absorbing another daily maintenance fee ($\Delta E = -1.5 \to 47.0$) while its own local signal level decays to 0.70.
+4. **Computational & SIMD Invariant:** Mycorrhizal connections operate as topological graphs mapped onto flat ECS index buffers. Transmission and decay evaluations use branchless multiplicative filters, allowing hundreds of interconnected root links to be processed per tick without pointer chasing or dynamic heap allocation.
+
 ### Mycorrhizal Root Network Multi-Hop Signal Propagation & Upkeep Tax
 
 Below is the verified Data-Flow Matrix for underground mycorrhizal signal propagation across consecutive conduits and plant nodes, showing signal transfer latency and daily carbon upkeep tax ($E_{\text{tax}} = 1.5$):

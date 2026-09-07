@@ -177,6 +177,29 @@ See [Chemotaxis & Flow Fields](chemotaxis.md) for the exact mathematical effects
 
 ## Data-Flow Matrix Specifications
 
+### Conceptual Guide for General Observers
+
+!!! note "Understanding the Data-Flow Matrix (Conceptual Metaphor)"
+    Think of the table below as a high-speed, slow-motion film strip capturing how plants smell, produce, and broadcast chemical defenses into the air.
+
+    In an ecosystem, a damaged plant cannot instantly vaporize defensive toxins the millisecond it is bitten. It must first invest caloric energy into chemical synthesis before volatile compounds accumulate in cellular reservoirs and evaporate into the surrounding breeze. If an insect fatally consumes the plant, all living emissions cease instantly.
+
+    * **Tick ($t_0, t_1, \dots$):** Each row represents one discrete step in simulation time.
+    * **State Columns:** Track plant health, cellular toxin stores, and volatile chemicals in the atmosphere.
+    * **Operation & Rule Column:** Explains the biological event occurring at that moment and the exact mathematical transfer that takes place.
+
+    Every value in this table is continuously verified against the simulation engine, ensuring zero divergence between our ecological narrative and the executing software.
+
+### Scenario Dynamics in Words (Technical Overview)
+
+This matrix models the life-cycle of an induced volatile organic compound (VOC) defense cascade under herbivore grazing:
+
+1. **Attack Initiation ($t_0$):** A living plant ($E = 50.0$, `alive_mask` = 1.0) experiences herbivore feeding damage. Elicitor detection sets the boolean trigger flag `is_triggered` = 1.0. At this instant, no toxin has yet been synthesized ($M_{\text{internal}} = 0.0$) and no volatile signal exists in the atmosphere ($L_{\text{external}} = 0.0$).
+2. **Metabolic Synthesis Delay ($t_1$):** Producing secondary metabolites demands cellular energy. The plant burns $\Delta E = 5.0$ caloric units to synthesize an internal toxin pool ($\Delta M = +5.0$). Because synthesis is still underway within secretory cells, atmospheric emission remains strictly $0.0$.
+3. **Active Atmospheric Emission ($t_2$):** With internal precursor pools established, volatilization begins ($\Delta L = +2.0$), drawing down internal mass ($\Delta M = -2.0$) while an additional synthesis increment occurs. Volatile molecules enter the spatial chemical grid $L_{\text{external}}$, where Gaussian diffusion begins propagating an airborne warning plume.
+4. **Mortality Interruption ($t_3$):** Severe grazing completely exhausts the plant's structural energy ($E \to 0.0$). The floating-point status mask `alive_mask` collapses to $0.0$, representing cellular mortality.
+5. **Branchless SIMD Ghost Guard ($t_4$):** In high-performance data-oriented engines, deleted entities cannot introduce scalar branching (`if plant.is_dead: continue`) into inner loops. Instead, all emission and synthesis transfer terms are multiplied by `alive_mask` ($0.0 \times \Delta = 0.0$). Dead plants remain inert in memory without radiating phantom volatile plumes, satisfying zero-allocation SIMD vectorization.
+
 ### Plant Defense Initiation, Synthesis Delay & Airborne Emission Cascade
 
 Below is the verified Data-Flow Matrix for plant defense signaling, showing initiation under attack, metabolic synthesis delay, active airborne emission, herbivore death interruption, and SIMD ghost guarding:

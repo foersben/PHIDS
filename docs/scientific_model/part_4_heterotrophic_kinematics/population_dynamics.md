@@ -186,6 +186,28 @@ The classic Lotka-Volterra predator-prey (here: herbivore-plant) equations ($\fr
 
 ## Data-Flow Matrix Specifications
 
+### Conceptual Guide for General Observers
+
+!!! note "Understanding the Data-Flow Matrix (Conceptual Metaphor)"
+    Think of the table below as a slow-motion film strip tracking asexual reproduction (clonal mitosis) in an insect swarm, such as aphids.
+
+    In nature, parthenogenetic insects like aphids reproduce rapidly when conditions are favorable. Instead of tracking thousands of individual insects one by one, our simulation groups insects into swarms. When a swarm grows sufficiently large and well-fed over a weekly cycle, it divides cleanly into two equal daughter swarms.
+
+    * **Tick ($t_0, t_{168}, \dots$):** Simulation time steps evaluated on a weekly stride (168 ticks = 7 days $\times$ 24 hours).
+    * **State Columns:** Track parent and daughter populations, caloric reserves, and the reproduction event flag.
+    * **Operation & Rule Column:** Explains the biomass threshold check and the exact division of headcounts and calories.
+
+    Every number in this table is continuously validated against the simulation engine, ensuring our population dynamic formulas match actual execution.
+
+### Scenario Dynamics in Words (Technical Overview)
+
+This matrix models the discrete clonal bifurcation of a parthenogenically reproducing herbivore swarm:
+
+1. **Biomass & Caloric Accumulation ($t_0$):** A parent swarm has foraged successfully, accumulating a population of 20 individuals and a surplus caloric reserve of $E = 50.0$. Awaiting the reproductive cycle checkpoint, no daughter swarm exists (`daughter_pop` = 0, `daughter_energy` = 0.0), and the bifurcation flag `split_occurred` is 0.0.
+2. **Weekly Stride Boundary Evaluation ($t_{168}$):** Clonal reproduction is evaluated on a 168-tick biological stride (representing 7 days of 24 simulation hours). Reaching this temporal stride boundary, the swarm satisfies both the reproductive timer requirement and the minimum caloric density threshold.
+3. **Equipartition Bifurcation ($t_{168}$):** The parent swarm bifurcates cleanly into two identical sub-swarms. Population is divided equally: parent population declines from 20 to 10, and a newly allocated daughter swarm receives 10 individuals. Caloric energy is partitioned symmetrically: $E_{\text{parent}} = 25.0$ and $E_{\text{daughter}} = 25.0$. Total energy ($25.0 + 25.0 = 50.0$) and total individuals ($10 + 10 = 20$) are strictly conserved, with `split_occurred` set to 1.0.
+4. **Computational & SIMD Invariant:** Bifurcation writes directly to pre-allocated ECS entity slots. Division arithmetic preserves strict thermodynamic conservation without floating-point rounding leakage or variable-length object allocation during JIT inner loops.
+
 ### 168-Tick Clonal Mitosis Bifurcation & Biomass Partitioning
 
 Below is the verified Data-Flow Matrix for 168-tick stride herbivore clonal bifurcation, showing biomass threshold gating and equal energy partitioning between parent and daughter swarms ($\text{pop}_{\text{parent}} = 20 \to 10, E = 50.0 \to 25.0$):

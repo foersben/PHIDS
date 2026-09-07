@@ -33,9 +33,12 @@ tests/
 └── benchmarks/                            # Latency budgets & micro-benchmarks (pytest-benchmark)
 ```
 
-### Detailed Package Catalog
+### Architectural Package Catalog
 
-### A. Unit Tests (`tests/unit/`)
+The sections below detail the responsibilities, test boundaries, and design invariants for each primary test tier:
+
+#### A. Unit Tests (`tests/unit/`)
+
 Isolated component contracts, data structures, and mathematical helper logic that execute without spinning up the full simulation loop:
 
 * **`analytics/`**: Validates the Design Space Exploration (DSE) and Evolutionary Encapsulated DSE (EEDSE) subsystem:
@@ -72,7 +75,8 @@ Isolated component contracts, data structures, and mathematical helper logic tha
 
 ---
 
-### B. Integration Tests (`tests/integration/`)
+#### B. Integration Tests (`tests/integration/`)
+
 Multi-system loop interactions, boundary crossings, and overarching physical conservation laws:
 
 * **`api/`**: Verifies FastAPI routes, WebSocket telemetry streaming, SSE connection lifecycles, and batch processing worker thread governance (`test_batch_processing_thread_governance`).
@@ -98,7 +102,8 @@ Multi-system loop interactions, boundary crossings, and overarching physical con
 
 ---
 
-### C. End-to-End Tests (`tests/e2e/`)
+#### C. End-to-End Tests (`tests/e2e/`)
+
 Full-system scenario execution from initial state load to final termination:
 
 * **`scenarios/`**: Executes complete ecosystem scenarios across varying temporal horizons (100 to 1,000+ ticks), asserting non-degeneracy, trophic stability, and population persistence.
@@ -107,7 +112,8 @@ Full-system scenario execution from initial state load to final termination:
 
 ---
 
-### D. Performance Benchmarks (`tests/benchmarks/`)
+#### D. Performance Benchmarks (`tests/benchmarks/`)
+
 Deterministic latency benchmarks asserted via `pytest-benchmark` against pre-defined performance budgets:
 
 * Spatial hash grid query throughput ($O(1)$ neighbour discovery).
@@ -138,17 +144,21 @@ graph TD
 ```
 
 ### Pass 1: Logic & Branch Coverage (`NUMBA_DISABLE_JIT=1`)
+
 * **Rationale**: Numba compiles decorated `@njit` kernels into optimized LLVM machine instructions. During execution, the CPU jumps directly into native machine code, completely bypassing the Python virtual machine's tracing hooks. As a result, standard Python coverage tools (`coverage.py`, `pytest-cov`) report 0% execution across compiled kernels.
 * **Mechanism**: By launching the test suite with `NUMBA_DISABLE_JIT=1`, Numba decorators execute as standard Python functions. This exposes every branch, boundary clamp, and fallback branch to `coverage.py`, ensuring strict branch coverage measurement.
 * **Execution**:
+
   ```bash
   NUMBA_DISABLE_JIT=1 uv run pytest --cov=src/phids --cov-fail-under=80
   ```
 
 ### Pass 2: High-Performance Parity & Latency (JIT Enabled)
+
 * **Rationale**: Disabling JIT proves logic correctness, but cannot verify compiler semantics, memory layout compatibility (e.g. C-contiguous NumPy arrays, explicit `int32`/`float64` types), or parallel OpenMP race conditions.
 * **Mechanism**: Tests tagged with `@pytest.mark.jit_parity` and `@pytest.mark.benchmark` run with full Numba JIT compilation active. These tests execute both the pure-Python reference implementation and the compiled JIT kernel, asserting point-by-point numerical identity within floating-point tolerance ($\text{atol} \le 1\times 10^{-12}$).
 * **Execution**:
+
   ```bash
   just test-parity
   just benchmark
@@ -238,16 +248,20 @@ uv run mutmut show <mutation_id>
 ## 7. Code Quality & Coverage Governance
 
 ### Strict Branch Coverage Floor ($\ge 80.0\%$)
+
 Branch coverage is enabled project-wide via `branch = true` in `pyproject.toml`. All pull requests and test runs must satisfy two independent coverage gates:
+
 1. **Global Branch Coverage**: $\ge 80.0\%$ across the entire `src/phids/` codebase (currently **84.65%**).
 2. **Diff Coverage**: $\ge 80.0\%$ branch coverage on modified lines compared against `origin/main` (currently **89.0%**).
 
 Target specific test slices during local development:
+
 ```bash
 scripts/target_cov.zsh tests/unit/engine/core/test_ecs_world.py phids.engine.core.ecs
 ```
 
 ### Cognitive Complexity Budget ($\le 15$)
+
 All test and production functions must respect a cognitive complexity budget $\le 15$ measured via Complexipy. Complex multi-branch tests must be decomposed into atomic, single-assertion functions:
 
 ```bash
@@ -256,11 +270,14 @@ just complexity
 ```
 
 ### Atomic Test Decomposition & God Test Policy
+
 * **Prohibition**: Multi-branch "God Tests" that chain multiple state transitions or unrelated subsystem checks into a monolithic test function are strictly prohibited.
 * **Requirement**: Tests must be decomposed into narrowly-scoped atomic functions targeting a single state transition, error condition, or invariant.
 
 ### Google-Style Documentation Mandate
+
 Every test module, class, and test function must include Google-style docstrings declaring:
+
 * The specific biological or mathematical invariant under test.
 * Governing physical formulas, mathematical equations, or conservation laws.
 * `Args` (for fixtures and Hypothesis strategies).
@@ -291,7 +308,7 @@ Every test module, class, and test function must include Google-style docstrings
 | **Data-Flow Matrix Audit** | `just audit-matrix` | Verifies OKF coverage across scientific concepts |
 | **Table-to-Trace Parity** | `just verify-matrix` | Asserts 1:1 numerical parity against doc tables |
 | **Zarr Replay Parity** | `just test-replay` | Tests bit-exact Zarr matrix round-trip playback |
-| **Performance Benchmarks**| `just benchmark` | Runs latency micro-benchmarks via pytest-benchmark |
+| **Performance Benchmarks** | `just benchmark` | Runs latency micro-benchmarks via pytest-benchmark |
 | **Cognitive Complexity** | `just complexity` | Evaluates Complexipy cognitive complexity ($\le 15$) |
-| **Code Formatting & Lint**| `just lint` | Runs `ruff check --fix`, `ruff format`, and strict `mypy` |
+| **Code Formatting & Lint** | `just lint` | Runs `ruff check --fix`, `ruff format`, and strict `mypy` |
 | **Full Pre-Commit Suite** | `uv run pre-commit run --all-files` | Executes all 18 pre-commit quality gates |
