@@ -42,6 +42,21 @@ class PlantComponentSchema(StrictBaseModel):
         default=0, ge=0, description="[Ticks] Ticks until apparent_nutrition_factor resets to 1.0."
     )
 
+    seed_drop_height: float = Field(default=1.25, description="[Absolute] Effective release height.")
+    seed_terminal_velocity: float = Field(default=0.8, description="[Absolute] Effective terminal velocity.")
+    last_energy_loss_cause: str | None = Field(default=None, description="[String] Death diagnostic cause.")
+    mycorrhizal_connections: list[int] = Field(default_factory=list, description="[List] Connected plant entity IDs.")
+    mycorrhizal_tax_per_link: float = Field(default=0.0, ge=0.0, description="[Absolute] Continuous carbon tax.")
+    target_nutrition_factor: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="[%] Target stress-induced nutrient discount (0.0 to 1.0)."
+    )
+    translocation_rate: float = Field(default=0.2, ge=0.0, description="[% Rate] Phloem nutrient translocation.")
+    structural_mass: float = Field(default=0.0, ge=0.0, description="[Absolute] M_structural proxy.")
+    max_structural_mass: float = Field(default=0.0, ge=0.0, description="[Absolute] Species ceiling for M_structural.")
+    growth_rate_structural: float = Field(
+        default=0.01, ge=0.0, description="[% Rate] M_structural growth per slow-loop gate."
+    )
+
 
 class SwarmComponentSchema(StrictBaseModel):
     """Pydantic schema for the Herbivore Swarm ECS component."""

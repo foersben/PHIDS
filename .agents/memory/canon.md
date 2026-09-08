@@ -36,3 +36,8 @@ Action: Use strict format regex when migrating documentation headers and rely on
 
 Learning: Documented behavioral models drift from runtime code unless automated coverage gating and point-by-point numerical trace verifiers are permanently installed in the agent pre-commit workflow.
 Action: Whenever modifying simulation systems or parameters in `src/phids/engine/systems/`, all agents must execute `scripts/audit_matrix_coverage.py` and `scripts/verify_matrix_trace_parity.py --all` before committing, ensuring 100% table-to-trace parity.
+
+## 2026-08-16 - Handling Truncated Python File Reads
+
+Learning: When verifying schema alignments in large module files (`src/phids/api/schemas/ecs.py`), standard shell `cat` commands will trigger truncation filters, causing `request_plan_review` to falsely reject the plan for violating Groundedness rules.
+Action: Always use chunked Python read scripts targeting specific 15-20 line blocks via `enumerate(f)` checks (`if START <= i <= END`) when exploring schemas to confirm exact field presence and avoid hallucination rejections.
