@@ -82,6 +82,8 @@ This page exposes the current PHIDS Python API using Zensical.
 
 ::: phids.engine.loop
 
+::: phids.engine.spawner
+
 ::: phids.engine.batch
 
 ## ECS components
@@ -96,9 +98,13 @@ This page exposes the current PHIDS Python API using Zensical.
 
 ::: phids.engine.core.biotope
 
+::: phids.engine.core.diffusion
+
 ::: phids.engine.core.ecs
 
 ::: phids.engine.core.flow_field
+
+::: phids.engine.core.flow
 
 ::: phids.engine.core.placement
 
@@ -148,11 +154,17 @@ This page exposes the current PHIDS Python API using Zensical.
 
 ::: phids.io.zarr_replay
 
+::: phids.io.replay_types
+
 ## Integration
 
 ::: phids.mcp_server
 
+::: phids.mcp
+
 ## Shared utilities
+
+::: phids.shared.coercion
 
 ::: phids.shared.constants
 

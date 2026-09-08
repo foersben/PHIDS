@@ -21,6 +21,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.systems.interaction import run_interaction as _run_interaction_impl
+from phids.shared.constants import INCOMPATIBLE_DIET_REPULSION_TICKS
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -192,3 +193,80 @@ def test_repelled_swarm_performs_random_walk(add_swarm: Callable[..., int], monk
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
     assert (swarm.x, swarm.y) != (2, 2)
     assert swarm.repelled_ticks_remaining == 1
+
+
+def test_incompatible_plant_encounter_triggers_repulsion_constant(
+    add_plant: Callable[..., int], add_swarm: Callable[..., int]
+) -> None:
+    """Landing on incompatible flora triggers INCOMPATIBLE_DIET_REPULSION_TICKS aversion duration."""
+    world = ECSWorld()
+    env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
+    add_plant(world, 1, 1, species_id=0, energy=10.0)
+    sid = add_swarm(world, 1, 1, species_id=0, pop=5)
+    swarm = world.get_entity(sid).get_component(SwarmComponent)
+    swarm.energy_upkeep_per_individual = 0.0
+    swarm.move_cooldown = 1
+
+    # Diet matrix False => incompatible diet
+    run_interaction(world, env, diet_matrix=[[False]], tick=0)
+    assert swarm.repelled is True
+    assert swarm.repelled_ticks_remaining == INCOMPATIBLE_DIET_REPULSION_TICKS
+
+
+def test_fractional_mechanical_damage_stochastic_accumulation() -> None:
+    """Verify stochastic accumulation inflicts non-zero casualties for sub-integer damage."""
+    from phids.engine.systems.interaction.feeding import (
+        CachedFloraForagingParams,
+        CachedHerbivoreForagingParams,
+        _feed_on_single_plant,
+    )
+
+    env = GridEnvironment(width=4, height=4)
+    tile_pops = [0] * 16
+
+    # 100 trials with damage = 0.8: with math.floor this yielded 0 casualties.
+    # With stochastic accumulation (prob = 0.8), aggregate casualties across 100 trials should be in [60, 95].
+    random.seed(42)
+    total_casualties = 0
+    for _ in range(100):
+        swarm = SwarmComponent(
+            entity_id=1,
+            species_id=0,
+            x=1,
+            y=1,
+            population=100,
+            initial_population=100,
+            energy=50.0,
+            energy_min=10.0,
+            velocity=1,
+            consumption_rate=1.0,
+            reproduction_energy_divisor=2.0,
+            energy_upkeep_per_individual=0.0,
+            split_population_threshold=200,
+            move_cooldown=1,
+        )
+        plant = PlantComponent(
+            entity_id=2,
+            species_id=0,
+            x=1,
+            y=1,
+            energy=100.0,
+            max_energy=100.0,
+            base_energy=10.0,
+            growth_rate=0.0,
+            survival_threshold=1.0,
+            reproduction_interval=10,
+            seed_min_dist=1.0,
+            seed_max_dist=2.0,
+            seed_energy_cost=1.0,
+        )
+        flora_params = [CachedFloraForagingParams(digestibility_modifier=1.0, mechanical_damage_per_bite=0.8)]
+        herb_params = [
+            CachedHerbivoreForagingParams(handling_time=0.0, digestive_efficiency=1.0, morphological_adaptation=0.0)
+        ]
+
+        _feed_on_single_plant(swarm, plant, flora_params, herb_params, env, tile_pops, None)
+        total_casualties += 100 - swarm.population
+
+    # Expected ~80 casualties; assert within statistical bounds [65, 95]
+    assert 65 <= total_casualties <= 95

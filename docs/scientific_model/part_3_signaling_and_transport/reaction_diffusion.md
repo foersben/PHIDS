@@ -137,15 +137,15 @@ flowchart TD
     t0 --> conv --> decay --> t1
 ```
 
-## Subnormal Float Mitigation
+## Subnormal Float Mitigation (FTZ / DAZ)
 
-When solving diffusion equations computationally, the tails of the Gaussian distribution approach zero infinitely but never reach it. This creates matrices filled with "subnormal" floats (e.g., `1e-300`). Processors struggle to calculate arithmetic with subnormals, causing severe CPU bottlenecks.
+When solving diffusion equations computationally, the tails of the Gaussian distribution approach zero infinitely but never reach it. This creates matrices filled with "subnormal" (denormalized) floating-point numbers (e.g., $1\times 10^{-300}$). Processors struggle to calculate arithmetic with subnormals in hardware, triggering microcode traps that cause severe CPU latency spikes.
 
-To maintain performance, PHIDS strictly enforces **matrix sparsity** by clamping small values. After the decay step:
+To maintain deterministic high performance, PHIDS strictly enforces **matrix sparsity** by flushing subnormals to zero (FTZ / DAZ) inside `src/phids/engine/core/biotope.py`. After the decay step:
 
-$$C^{t+1}[C^{t+1} < \varepsilon] = 0$$
+$$C^{t+1}[C^{t+1} < \varepsilon] = 0.0$$
 
-Where $\varepsilon$ is a configurable threshold (e.g., `1e-4`).
+Where $\varepsilon$ is the physical signal detection threshold constant ($\varepsilon = \text{SIGNAL\_EPSILON} = 1\times 10^{-4}$ in `phids.shared.constants`). Concentrations falling beneath this floor are safely treated as undetectable sensory noise and hard-snapped to zero.
 
 ## Alternatives Considered
 
@@ -162,10 +162,10 @@ This is one of the most sophisticated survival mechanisms in botany, modeling St
 !!! info "Biological Context"
     When a plant is subjected to severe, prolonged stress-such as continuous herbivory, impending frost, or drought-it will actively break down the chlorophyll in its leaves and rapidly pull valuable resources (nitrogen, carbon, and sugars) deep into its root system or woody stems. To an approaching herbivore, the plant visually and chemically appears "dead" or nutritionally barren, prompting the herd to move on. Once the environmental stress passes, the plant flushes resources back into its canopy.
 
-In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true-either from direct grazing (`HerbivoreAttackInitiator`) or preemptively receiving neighbor VOC signals (`EnvironmentalSignalInitiator`) using discrete step thresholds or sigmoidal Hill kinetics ($\alpha_{\text{priming}}(C) = \frac{C^n}{K_d^n + C^n}$)-and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (e.g., 0.1). This suppression is maintained for a specific `withdrawal_duration` before naturally decaying over the `aftereffect` period. Instead of synthesizing a costly toxin, the plant uses `resource_withdrawal` to avoid consumption entirely.
+In PHIDS, this is modeled via the `resource_withdrawal` trigger action payload and its corresponding runtime scalar, `apparent_nutrition_factor`. When a trigger rule evaluates to true-either from direct grazing (`HerbivoreAttackInitiator`) or preemptively receiving neighbor VOC signals (`EnvironmentalSignalInitiator`) using discrete step thresholds ($C \ge C_{\min}$, with fallback $C_{\min} = \text{DEFAULT\_ACTIVATION\_MIN\_CONCENTRATION} = 0.01$) or sigmoidal Hill kinetics ($\alpha_{\text{priming}}(C) = \frac{C^n}{K_d^n + C^n}$)-and dispatches this action, the plant's `apparent_nutrition_factor` (normally 1.0) drops to the specified level (defaulting to $\text{DEFAULT\_NUTRITION\_TARGET} = 0.1$). This suppression is maintained for a specific `withdrawal_duration` before naturally decaying over the `aftereffect` period. Instead of synthesizing a costly toxin, the plant uses `resource_withdrawal` to avoid consumption entirely.
 
 !!! note "Scientific Progression: Heaviside Step vs. Sigmoidal Hill Priming"
-    While baseline scenario triggers employ a binary Heaviside Step Function ($H(C - C_{\text{min}})$), real-world botanical signal perception operates via continuous, dose-dependent receptor binding kinetics. PHIDS supports sigmoidal Hill Equations ($\alpha = \frac{C^n}{K_d^n + C^n}$), where low ambient VOC concentrations partially prime MAP-kinase enzyme pathways without incurring massive toxin synthesis costs, committing to full defensive execution only as signal plumes saturate local receptors.
+    While baseline scenario triggers employ a binary Heaviside Step Function ($H(C - C_{\text{min}})$), real-world botanical signal perception operates via continuous, dose-dependent receptor binding kinetics. PHIDS supports sigmoidal Hill Equations ($\alpha = \frac{C^n}{K_d^n + C^n}$), where low ambient VOC concentrations partially prime MAP-kinase enzyme pathways without incurring massive toxin synthesis costs, committing to full defensive execution only as signal plumes saturate local receptors past the priming threshold ($\alpha_{\text{priming}} \ge \text{HILL\_PRIMING\_THRESHOLD} = 0.05$).
 
 This scalar directly alters the attraction landscape *before* the Gaussian convolution kernel diffuses sensory layers in the flow-field module.
 

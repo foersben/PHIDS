@@ -137,7 +137,6 @@ Scenarios = [
         { "Glossary & Concepts" = "reference/glossary-and-concept-index.md" },
         { "Requirements Traceability" = "reference/requirements-traceability.md" },
         { "Python API Reference" = "reference/api.md" },
-        { "Epistemic Soundness Audit" = "reports/epistemic_soundness_audit_report.md" },
     ] },
     # { "Legacy Archive" = "legacy/index.md" },
 ]

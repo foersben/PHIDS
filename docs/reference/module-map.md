@@ -45,6 +45,7 @@ Its top-level subpackages are:
 * `phids.api`
 * `phids.engine`
 * `phids.io`
+* `phids.mcp`
 * `phids.shared`
 * `phids.telemetry`
 
@@ -132,6 +133,20 @@ Narrative docs:
 * `docs/technical_architecture/engine_execution.md`
 * `docs/technical_architecture/system_architecture.md`
 
+### `phids.engine.spawner`
+
+Primary responsibility:
+
+* initial flora and swarm grid placement and seeding.
+
+Key symbol:
+
+* `spawn_initial_entities`
+
+Narrative docs:
+
+* `docs/technical_architecture/engine_execution.md`
+
 ### `phids.engine.components`
 
 Primary responsibility:
@@ -164,6 +179,21 @@ Narrative docs:
 
 * `docs/technical_architecture/engine_execution.md`
 
+### `phids.engine.core.diffusion`
+
+Primary responsibility:
+
+* vectorized 2D isotropic Gaussian convolution and semi-Lagrangian transport kernels.
+
+Key symbols:
+
+* `gaussian_blur_2d`
+* `advect_2d`
+
+Narrative docs:
+
+* `docs/technical_architecture/engine_execution.md`
+
 ### `phids.engine.core.ecs`
 
 Primary responsibility:
@@ -183,7 +213,7 @@ Narrative docs:
 
 Primary responsibility:
 
-* global flow-field generation and camouflage attenuation.
+* global flow-field generation and camouflage attenuation, supported by modular kernels in `phids.engine.core.flow` (`boundaries`, `solvers`, `stencils`).
 
 Key symbols:
 
@@ -263,19 +293,68 @@ Primary responsibility:
 
 * Zarr-based replay serialization and replay-file framing.
 
-Key symbols:
+Key symbol:
 
 * `ReplayBuffer`
-* `NoOpReplayBuffer`
-* `ReplaySlice`
 
 Narrative docs:
 
 * `docs/technical_architecture/telemetry.md`
 
+### `phids.io.replay_types`
+
+Primary responsibility:
+
+* telemetry replay data structures and no-op implementations.
+
+Key symbols:
+
+* `ReplaySlice`
+* `NoOpReplayBuffer`
+
+Narrative docs:
+
+* `docs/technical_architecture/telemetry.md`
+
+## `phids.mcp`
+
+This package owns Model Context Protocol (MCP) server endpoints, resources, prompts, and simulation inspection tools.
+
+### `phids.mcp` (Package)
+
+Primary responsibility:
+
+* MCP server tools, active draft resources, simulation snapshots, and telemetry queries.
+
+Key symbols:
+
+* `create_mcp_app`
+* `runtime_snapshot`
+* `inspect_live_simulation`
+* `validate_biological_invariants`
+
+Narrative docs:
+
+* `docs/technical_architecture/interfaces_and_ui.md`
+
 ## `phids.shared`
 
-This package owns cross-cutting constants and logging helpers.
+This package owns cross-cutting constants, coercion helpers, and logging utilities.
+
+### `phids.shared.coercion`
+
+Primary responsibility:
+
+* centralized scalar type coercion with safe fallbacks and boolean rejection semantics.
+
+Key symbols:
+
+* `coerce_int`
+* `coerce_float`
+
+Narrative docs:
+
+* `docs/technical_architecture/system_architecture.md`
 
 ### `phids.shared.constants`
 

@@ -37,9 +37,7 @@ def _filter_telemetry_rows_for_chart(
 ) -> list[dict[str, object]]:
     """Filter telemetry rows based on client synchronization state."""
     if run_id == current_run_id and since_tick is not None and rows:
-        latest_tick = int(rows[-1].get("tick", -1))  # type: ignore
-        if latest_tick >= since_tick:
-            return [row for row in rows if int(row.get("tick", -1)) > since_tick]  # type: ignore
+        return [row for row in rows if int(row.get("tick", -1)) > since_tick]  # type: ignore
     return rows
 
 
@@ -194,21 +192,53 @@ def _overlay_herbivore_data(
             series[f"swarm_{hid}_pop"][i] = _safe_float(swarm_pop.get(hid, 0))
 
 
+def _overlay_single_row(
+    series: dict[str, list[float]],
+    r: dict[str, object],
+    idx: int,
+    flora_ids: list[int],
+    herbivore_ids: list[int],
+) -> None:
+    """Overlay flora and herbivore metrics for a single row at a target index."""
+    if flora_ids:
+        _overlay_flora_data(series, r, idx, flora_ids)
+    if herbivore_ids:
+        _overlay_herbivore_data(series, r, idx, herbivore_ids)
+
+
+def _overlay_with_labels(
+    series: dict[str, list[float]],
+    raw_rows_for_species: list[dict[str, object]],
+    flora_ids: list[int],
+    herbivore_ids: list[int],
+    labels: list[int],
+) -> None:
+    """Overlay per-species metrics matched by explicit tick labels."""
+    tick_to_idx = {tick: idx for idx, tick in enumerate(labels)}
+    for r in raw_rows_for_species:
+        tick_val = int(r.get("tick", -1))  # type: ignore
+        idx = tick_to_idx.get(tick_val)
+        if idx is not None:
+            _overlay_single_row(series, r, idx, flora_ids, herbivore_ids)
+
+
 def _overlay_raw_species_data(
     series: dict[str, list[float]],
     raw_rows_for_species: list[dict[str, object]],
     flora_ids: list[int],
     herbivore_ids: list[int],
+    labels: list[int] | None = None,
 ) -> None:
     """Overlay per-species nested-dict data from raw rows."""
-    if not flora_ids and not herbivore_ids:
+    if (not flora_ids and not herbivore_ids) or not raw_rows_for_species:
+        return
+
+    if labels is not None:
+        _overlay_with_labels(series, raw_rows_for_species, flora_ids, herbivore_ids, labels)
         return
 
     for i, r in enumerate(raw_rows_for_species):
-        if flora_ids:
-            _overlay_flora_data(series, r, i, flora_ids)
-        if herbivore_ids:
-            _overlay_herbivore_data(series, r, i, herbivore_ids)
+        _overlay_single_row(series, r, i, flora_ids, herbivore_ids)
 
 
 @router.get("/api/telemetry/chartjs-data", summary="Per-species time-series data for Chart.js")
@@ -235,16 +265,19 @@ async def telemetry_chartjs_data(
     flora_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.flora_species}
     herbivore_names = {sp.species_id: sp.name for sp in api_main._sim_loop.config.herbivore_species}
 
-    labels, series = _extract_chart_series_df(
-        api_main._sim_loop.telemetry.dataframe.filter(pl.col("tick") > (since_tick or -1))
+    target_df = (
+        api_main._sim_loop.telemetry.dataframe.filter(pl.col("tick") > since_tick)
         if run_id == current_run_id and since_tick is not None
-        else api_main._sim_loop.telemetry.dataframe,
+        else api_main._sim_loop.telemetry.dataframe
+    )
+    labels, series = _extract_chart_series_df(
+        target_df,
         flora_ids,
         herbivore_ids,
     )
     # Overlay per-species nested-dict data from raw rows (not available in flat dataframe)
     raw_rows_for_species = _filter_telemetry_rows_for_chart(raw_rows, run_id, current_run_id, since_tick)
-    _overlay_raw_species_data(series, raw_rows_for_species, flora_ids, herbivore_ids)
+    _overlay_raw_species_data(series, raw_rows_for_species, flora_ids, herbivore_ids, labels=labels)
 
     return JSONResponse(
         {

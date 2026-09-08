@@ -159,7 +159,8 @@ def test_overgrazed_mature_plant_starves_due_to_structural_upkeep() -> None:
     env = GridEnvironment(width=5, height=5)
 
     # Plant with survival_threshold=2.0, structural_mass=max_structural_mass=100.0
-    # upkeep_fee = survival_threshold * STRUCTURAL_UPKEEP_SCALAR * (100/100) = 2.0 * 0.5 * 1.0 = 1.0 energy/tick
+    # upkeep_fee = survival_threshold * STRUCTURAL_UPKEEP_SCALAR * (100/100) * SLOW_TICK_STRIDE
+    #            = 2.0 * (0.5 / 168) * 1.0 * 168 = 1.0 energy per cohort tick
     plant_entity = world.create_entity()
     plant = PlantComponent(
         entity_id=plant_entity.entity_id,

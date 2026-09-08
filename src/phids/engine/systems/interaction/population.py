@@ -12,11 +12,25 @@ import numpy.typing as npt
 from numba import njit
 
 from phids.engine.components.swarm import SwarmComponent
+from phids.shared.constants import TILE_CARRYING_CAPACITY as TILE_CARRYING_CAPACITY
 
 if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld
 
-TILE_CARRYING_CAPACITY = 500
+
+@njit(cache=True)
+def _accumulate_tile_population_jit_pow2(
+    tile_populations: npt.NDArray[np.int32],
+    x: int,
+    y: int,
+    width: int,
+    mask_x: int,
+    mask_y: int,
+    delta: int,
+) -> None:
+    """Numba-compiled helper for power-of-two grids using bitwise wrapping without branches."""
+    idx = (y & mask_y) * width + (x & mask_x)
+    tile_populations[idx] += delta
 
 
 @njit(cache=True)
@@ -28,9 +42,12 @@ def _accumulate_tile_population_jit(
     height: int,
     delta: int,
 ) -> None:
-    """Numba-compiled helper to apply population delta in C without Python overhead."""
-    if 0 <= x < width and 0 <= y < height:
-        tile_populations[y * width + x] += delta
+    """Numba-compiled helper to apply population delta branchlessly with bounds gating."""
+    valid = (x >= 0) & (x < width) & (y >= 0) & (y < height)
+    safe_x = x if valid else 0
+    safe_y = y if valid else 0
+    safe_delta = delta if valid else 0
+    tile_populations[safe_y * width + safe_x] += safe_delta
 
 
 def _accumulate_tile_population(
@@ -63,7 +80,10 @@ def _accumulate_tile_population(
     """
     if isinstance(tile_populations, np.ndarray):
         h = height if height > 0 else (len(tile_populations) // width if width > 0 else 0)
-        _accumulate_tile_population_jit(tile_populations, x, y, width, h, delta)
+        if (width & (width - 1) == 0) and (h & (h - 1) == 0) and width > 0 and h > 0 and 0 <= x < width and 0 <= y < h:
+            _accumulate_tile_population_jit_pow2(tile_populations, x, y, width, width - 1, h - 1, delta)
+        else:
+            _accumulate_tile_population_jit(tile_populations, x, y, width, h, delta)
     elif 0 <= x < width and y >= 0:
         try:
             tile_populations[y * width + x] += delta

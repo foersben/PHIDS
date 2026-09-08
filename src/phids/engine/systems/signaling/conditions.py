@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from phids.shared.constants import DEFAULT_ACTIVATION_MIN_CONCENTRATION
+
 if TYPE_CHECKING:
     from phids.engine.components.plant import PlantComponent
     from phids.engine.core.biotope import GridEnvironment
@@ -14,28 +16,8 @@ if TYPE_CHECKING:
     from phids.engine.systems.signaling.types import ActivationNode
 
 
-def _coerce_int(value: object, default: int) -> int:
-    """Convert activation-node scalar payloads to int with deterministic fallback semantics."""
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, (int, float, str)):
-        try:
-            return int(value)
-        except ValueError:
-            return default
-    return default
-
-
-def _coerce_float(value: object, default: float) -> float:
-    """Convert activation-node scalar payloads to float with deterministic fallback semantics."""
-    if isinstance(value, bool):
-        return float(value)
-    if isinstance(value, (int, float, str)):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
+from phids.shared.coercion import coerce_float as _coerce_float
+from phids.shared.coercion import coerce_int as _coerce_int
 
 
 def _is_substance_active_for_owner(
@@ -76,7 +58,10 @@ def _eval_environmental_signal(
     env: GridEnvironment,
 ) -> bool:
     signal_id = _coerce_int(activation_condition.get("signal_id", -1), -1)
-    min_conc = _coerce_float(activation_condition.get("min_concentration", 0.01), 0.01)
+    min_conc = _coerce_float(
+        activation_condition.get("min_concentration", DEFAULT_ACTIVATION_MIN_CONCENTRATION),
+        DEFAULT_ACTIVATION_MIN_CONCENTRATION,
+    )
     if 0 <= signal_id < env.num_signals:
         return float(env.signal_layers[signal_id, plant.x, plant.y]) >= min_conc
     return False

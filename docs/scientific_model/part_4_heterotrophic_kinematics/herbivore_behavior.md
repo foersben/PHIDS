@@ -56,7 +56,7 @@ A critical edge case occurs in the engine when the entire gradient is mathematic
 
 To prevent unnatural paralysis when $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
 
-- A 10:1 preference weight is given to continue moving in the current heading.
+- A 10:1 directional momentum preference weight ($\text{ORTHOKINETIC\_MOMENTUM\_WEIGHT} = 10.0$) is given to continue moving in the current heading.
 - If no previous heading exists, isotropic random dispersal (Random Walk) is applied until a new scent gradient is found.
 
 ## 3. Capacity Limits & Physical Repulsion
@@ -65,11 +65,16 @@ The biotope is a discrete grid. While multiple swarms can occupy the same $(x, y
 
 ### Algorithmic Resolution
 
-At the start of the interaction phase, PHIDS aggregates the total population of all swarms currently on a tile. If this sum exceeds the `TILE_CARRYING_CAPACITY` (e.g., 500 individuals), the swarms enter a **Repelled Random Walk** state for $k$ ticks.
+At the start of the interaction phase, PHIDS aggregates the total population of all swarms currently on a tile. If this sum exceeds the `TILE_CARRYING_CAPACITY` (defined in `constants.py` as 500 individuals and configurable via `SimulationConfig.tile_carrying_capacity`), the swarms enter a **Repelled Random Walk** state for $k$ ticks.
+
+Similarly, when a swarm encounters an incompatible plant host (`diet_compatibility == 0.0`) without finding viable forage on the tile, the feeding subsystem marks `swarm.repelled = True` and sets `swarm.repelled_ticks_remaining = INCOMPATIBLE_DIET_REPULSION_TICKS` (defaulting to 2 ticks, calibrated in `phids.shared.constants`). This algorithmic deterrence breaks spatial arrestment and forces kinetic dispersal away from hostile or nutritionally barren flora.
 
 ### Biological Rationale
 
-This is a computational surrogate for crowding-induced displacement. When too many grazers cram into a single patch, physical jostling forces the groups to scatter radially, expanding the foraging front and alleviating the localized density pressure.
+This serves as a dual computational surrogate for:
+
+* Crowding-induced displacement: When too many grazers cram into a single patch, physical jostling forces the groups to scatter radially, expanding the foraging front and alleviating localized density pressure.
+* Non-host rejection dispersal: Herbivores landing on unpalatable or non-host vegetation rapidly dismount and disperse under gustatory deterrence, preventing kinetic arrestment on non-viable flora.
 
 ## 4. Trophic Feeding & Functional Responses
 
@@ -104,7 +109,7 @@ The probability of departure $P(\text{depart})$ is calculated as:
 
 $$P(\text{depart}) = \frac{1}{1 + e^{k(R - 1)}}$$
 
-Where $k$ is a steepness constant (currently modeled as $5.0$).
+Where $k$ is the logistic steepness constant ($k = \text{MVT\_DEPARTURE\_SIGMOID\_STEEPNESS} = 5.0$).
 
 * When $R = 1.0$ (Break-even), $P(\text{depart}) = 0.5$. (In practice, the system short-circuits to $0.0$ probability of departure if $R \ge 1.0$).
 * As $R \to 0$ (Starvation), the exponent $k(R - 1)$ approaches $-5.0$, and $e^{-5.0} \approx 0.0067$, driving $P(\text{depart}) \to \frac{1}{1.0067} \approx 0.993$.

@@ -44,18 +44,22 @@ Plants possess two distinct evolutionary defense paradigms against herbivory:
 
 ### 2.1 Constitutive Mechanical Attrition
 
-Mechanical defenses (thorns and spines) inflict physical damage on grazing mouthparts during feeding events. Let $m_{\text{bite}} \ge 0$ represent the species-specific mechanical damage coefficient per bite, and $\rho_{\text{morph}} \in [0, 1]$ represent the herbivore's morphological resistance. The integer headcount reduction $\Delta n$ for a swarm cohort of size $n(t)$ feeding on plant tissue is given by:
+Mechanical defenses (thorns and spines) inflict physical damage on grazing mouthparts during feeding events. Let $m_{\text{bite}} \ge 0$ represent the species-specific mechanical damage coefficient per bite, and $\rho_{\text{morph}} \in [0, 1]$ represent the herbivore's morphological resistance. The continuous mechanical damage $D_{\text{mech}}$ is defined as:
 
-$$\Delta n = \left\lfloor m_{\text{bite}} \cdot (1 - \rho_{\text{morph}}) \right\rfloor$$
+$$D_{\text{mech}} = m_{\text{bite}} \cdot (1 - \rho_{\text{morph}})$$
+
+To prevent discretization attrition loopholes where sub-integer damage ($D_{\text{mech}} < 1.0$) was truncated to zero by pure floor operations, the headcount reduction $\Delta n$ is evaluated via **Stochastic Accumulation**:
+
+$$\Delta n = \left\lfloor D_{\text{mech}} \right\rfloor + \mathbb{I}\left(U < (D_{\text{mech}} - \lfloor D_{\text{mech}} \rfloor)\right), \quad U \sim \text{Uniform}(0, 1)$$
 
 $$n(t + \Delta t) = \max\left(0, n(t) - \Delta n\right)$$
 
-Where $\lfloor \cdot \rfloor$ denotes the floor function, enforcing discrete integer mortality within the herbivore population cohort.
+Where $\lfloor \cdot \rfloor$ denotes the floor function and $\mathbb{I}(\cdot)$ is the indicator function evaluating a stochastic Bernoulli trial.
 
-!!! info "Execution and Biological Rationale: Mechanical Attrition"
-    Rather than artificially altering the core biochemical caloric density of the plant tissue, mechanical defenses such as trichomes, thorns, and rigid spines act exclusively to inflict localized physical trauma upon the grazing apparatus of the herbivore. This mandates a strict, immediate integer population penalty for every unit of biomass extracted, establishing an evolutionary gradient that heavily favors herbivore phenotypes possessing morphological counter-adaptations ($\rho_{\text{morph}}$).
+!!! info "Execution and Biological Rationale: Mechanical Attrition & Stochastic Accumulation"
+    Rather than artificially altering the core biochemical caloric density of the plant tissue, mechanical defenses such as trichomes, thorns, and rigid spines act exclusively to inflict localized physical trauma upon the grazing apparatus of the herbivore. This mandates an immediate population penalty for every unit of biomass extracted, establishing an evolutionary gradient that heavily favors herbivore phenotypes possessing morphological counter-adaptations ($\rho_{\text{morph}}$).
 
-    Computationally, this dynamic is resolved as a non-allocating, $O(1)$ integer subtraction evaluated inline within the synchronous trophic interaction loop. The strict enforcement of the mathematical floor function $\lfloor \cdot \rfloor$ guarantees that fractional "ghost" casualties cannot propagate into the ECS state matrices, perfectly preserving integral population boundaries without triggering slow floating-point arithmetic traps.
+    Computationally, pure floor discretization ($\lfloor D_{\text{mech}} \rfloor$) introduced an artificial "attrition immunity" artifact: herbivores suffering sub-unit damage (e.g. $D_{\text{mech}} = 0.8$) incurred zero casualties regardless of exposure duration. Under stochastic accumulation, fractional damage is resolved as a Bernoulli trial. Over statistically significant feeding interactions, expected aggregate mortality scales exactly with continuous damage ($\mathbb{E}[\Delta n] = D_{\text{mech}}$) while strictly preserving integer population boundaries in the ECS state matrices without allocating auxiliary damage accumulator arrays.
 
 ---
 

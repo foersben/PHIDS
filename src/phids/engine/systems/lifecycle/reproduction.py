@@ -10,7 +10,11 @@ import random
 from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
-from phids.shared.constants import M_STRUCTURAL_SEED_VALUE
+from phids.shared.constants import (
+    LATERAL_EDDY_DIFFUSIVITY_COEFFICIENT,
+    M_STRUCTURAL_SEED_VALUE,
+    MIN_CROSSWIND_DISPERSAL_SIGMA,
+)
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
@@ -60,7 +64,7 @@ def _attempt_reproduction(
         uy = local_wind_y / wind_speed
         # Scale wind drift by distance; add a single Gaussian spread in
         # the perpendicular axis to capture turbulent lateral scatter.
-        sigma_perp = max(0.15, 0.35 * distance)
+        sigma_perp = max(MIN_CROSSWIND_DISPERSAL_SIGMA, LATERAL_EDDY_DIFFUSIVITY_COEFFICIENT * distance)
         perp_offset = random.gauss(0.0, sigma_perp)
         tx = round(plant.x + distance * ux - perp_offset * uy)
         ty = round(plant.y + distance * uy + perp_offset * ux)
@@ -90,33 +94,15 @@ def _attempt_reproduction(
     plant.last_energy_loss_cause = "death_reproduction"
 
     new_entity = world.create_entity()
-    new_plant = PlantComponent(
+    new_plant = PlantComponent.from_params(
         entity_id=new_entity.entity_id,
         species_id=plant.species_id,
         x=tx,
         y=ty,
+        params=params,
         energy=params.base_energy,
-        max_energy=params.max_energy,
-        base_energy=params.base_energy,
-        growth_rate=params.growth_rate,
-        survival_threshold=params.survival_threshold,
-        reproduction_interval=params.reproduction_interval,
-        seed_min_dist=params.seed_min_dist,
-        seed_max_dist=params.seed_max_dist,
-        seed_energy_cost=params.seed_energy_cost,
-        seed_drop_height=params.seed_drop_height,
-        seed_terminal_velocity=params.seed_terminal_velocity,
-        camouflage=params.camouflage,
-        camouflage_factor=params.camouflage_factor,
-        last_reproduction_tick=tick,
-        translocation_rate=params.translocation_rate,
-        mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
-        # M_structural: seeds start with zero lignin/woodiness (fully vulnerable to trampling).
-        # structural_mass_max is sourced directly from FloraSpeciesParams (Plan 2+).
-        # Falls back to max_energy if 0.0 (Plan 1 compatibility for scenarios without the field).
         structural_mass=M_STRUCTURAL_SEED_VALUE,
-        max_structural_mass=params.structural_mass_max if params.structural_mass_max > 0.0 else params.max_energy,
-        growth_rate_structural=params.structural_growth_rate,
+        last_reproduction_tick=tick,
     )
     world.add_component(new_entity.entity_id, new_plant)
     world.register_position(new_entity.entity_id, tx, ty)

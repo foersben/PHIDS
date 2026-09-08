@@ -13,43 +13,10 @@ import numpy as np
 if TYPE_CHECKING:
     from phids.engine.batch.types import TelemetryRow
 
+from phids.shared.coercion import coerce_float as _coerce_float
+from phids.shared.coercion import coerce_int as _coerce_int
 
-def _coerce_int(value: object) -> int:
-    """Convert telemetry scalar to int with stable fallback semantics.
-
-    Args:
-        value: The value to convert.
-
-    Returns:
-        The converted value.
-    """
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, (int, float, str)):
-        try:
-            return int(value)
-        except ValueError:
-            return 0
-    return 0
-
-
-def _coerce_float(value: object) -> float:
-    """Convert telemetry scalar to float with stable fallback semantics.
-
-    Args:
-        value: The value to convert.
-
-    Returns:
-        The converted value.
-    """
-    if isinstance(value, bool):
-        return float(value)
-    if isinstance(value, (int, float, str)):
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
+__all__ = ["_coerce_float", "_coerce_int", "_get_int_keys", "_sanitize_for_json", "_species_count"]
 
 
 def _species_count(row: TelemetryRow, field: str, species_id: int) -> float:

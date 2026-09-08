@@ -136,6 +136,47 @@ async def test_telemetry_chartjs_since_tick_ahead_of_current_run_returns_full_ro
 
 
 @pytest.mark.asyncio
+async def test_telemetry_chartjs_delta_sync_tick_zero(api_client: AsyncClient) -> None:
+    """Validate chartjs polling delta sync with since_tick=0 properly excludes tick 0."""
+    loop = _build_loaded_loop()
+    loop.telemetry._rows = [
+        {
+            "tick": 0,
+            "flora_population": 10,
+            "herbivore_population": 5,
+            "total_flora_energy": 100.0,
+            "plant_pop_by_species": {0: 10},
+            "plant_energy_by_species": {0: 100.0},
+            "defense_cost_by_species": {0: 0.0},
+            "swarm_pop_by_species": {0: 5},
+        },
+        {
+            "tick": 1,
+            "flora_population": 12,
+            "herbivore_population": 6,
+            "total_flora_energy": 110.0,
+            "plant_pop_by_species": {0: 12},
+            "plant_energy_by_species": {0: 110.0},
+            "defense_cost_by_species": {0: 1.5},
+            "swarm_pop_by_species": {0: 6},
+        },
+    ]
+
+    response = await api_client.get(
+        "/api/telemetry/chartjs-data",
+        params={"since_tick": 0, "run_id": loop.run_id},
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["labels"] == [1]
+    assert payload["series"]["flora_population"] == [12.0]
+    assert payload["series"]["plant_0_pop"] == [12.0]
+    assert payload["series"]["swarm_0_pop"] == [6.0]
+    assert payload["series"]["defense_cost_0"] == [1.5]
+
+
+@pytest.mark.asyncio
 async def test_export_route_returns_404_without_loaded_loop(api_client: AsyncClient) -> None:
     """Validate export endpoints reject requests when no simulation loop is loaded."""
     no_loop = await api_client.get("/api/export/timeseries", params={"format": "csv"})

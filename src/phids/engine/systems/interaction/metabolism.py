@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.systems.interaction.movement.random_walk import _random_walk_step
 from phids.engine.systems.interaction.population import _accumulate_tile_population
+from phids.shared.constants import MEDIUM_TICK_STRIDE, MITOSIS_DIVISOR
 
 if TYPE_CHECKING:
     import numpy as np
@@ -61,7 +62,7 @@ def _perform_mitosis(
     See Also:
         _random_walk_step
     """
-    offspring_population = swarm.population // 2
+    offspring_population = swarm.population // MITOSIS_DIVISOR
     retained_population = swarm.population - offspring_population
     swarm.population = retained_population
     swarm.initial_population = retained_population
@@ -75,7 +76,7 @@ def _perform_mitosis(
         y=offspring_y,
         population=offspring_population,
         initial_population=offspring_population,
-        energy=swarm.energy / 2.0,
+        energy=swarm.energy / float(MITOSIS_DIVISOR),
         energy_min=swarm.energy_min,
         velocity=swarm.velocity,
         consumption_rate=swarm.consumption_rate,
@@ -83,7 +84,7 @@ def _perform_mitosis(
         energy_upkeep_per_individual=swarm.energy_upkeep_per_individual,
         split_population_threshold=swarm.split_population_threshold,
     )
-    swarm.energy /= 2.0
+    swarm.energy /= float(MITOSIS_DIVISOR)
     world.add_component(new_entity.entity_id, offspring)
     world.register_position(new_entity.entity_id, offspring_x, offspring_y)
     return offspring
@@ -130,7 +131,7 @@ def _resolve_swarm_metabolism_and_reproduction(
     """
     # Metabolic cost: scaled by MEDIUM_TICK_STRIDE (24 hours) since this function
     # is only called on the daily medium-loop gate.
-    metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual * 24
+    metabolic_cost = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual * MEDIUM_TICK_STRIDE
     swarm.metabolism_upkeep = swarm.population * swarm.energy_min * swarm.energy_upkeep_per_individual
     swarm.energy -= metabolic_cost
 

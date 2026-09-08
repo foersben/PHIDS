@@ -43,7 +43,9 @@ Attributes:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+import numpy as np
 
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.systems.interaction.feeding import (
@@ -60,6 +62,7 @@ from phids.engine.systems.interaction.movement.random_walk import _random_walk_s
 from phids.engine.systems.interaction.population import TILE_CARRYING_CAPACITY as TILE_CARRYING_CAPACITY
 from phids.engine.systems.interaction.population import _accumulate_tile_population
 from phids.engine.systems.interaction.population import _co_located_swarm_population as _co_located_swarm_population
+from phids.shared.constants import VON_NEUMANN_CHOICE_COUNT
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -74,10 +77,6 @@ if TYPE_CHECKING:
         CachedFloraForagingParams,
         CachedHerbivoreForagingParams,
     )
-
-from typing import cast
-
-import numpy as np
 
 
 def _initialize_scratch_buffers(
@@ -94,11 +93,11 @@ def _initialize_scratch_buffers(
     npt.NDArray[np.float64],
 ]:
     """Initialize scratch arrays if not provided by the caller."""
-    cx = np.empty(5, dtype=np.int32) if scratch_cx is None else scratch_cx
-    cy = np.empty(5, dtype=np.int32) if scratch_cy is None else scratch_cy
-    scores = np.empty(5, dtype=np.float64) if scratch_scores is None else scratch_scores
-    adjusted = np.empty(5, dtype=np.float64) if scratch_adjusted is None else scratch_adjusted
-    weights = np.empty(5, dtype=np.float64) if scratch_weights is None else scratch_weights
+    cx = np.empty(VON_NEUMANN_CHOICE_COUNT, dtype=np.int32) if scratch_cx is None else scratch_cx
+    cy = np.empty(VON_NEUMANN_CHOICE_COUNT, dtype=np.int32) if scratch_cy is None else scratch_cy
+    scores = np.empty(VON_NEUMANN_CHOICE_COUNT, dtype=np.float64) if scratch_scores is None else scratch_scores
+    adjusted = np.empty(VON_NEUMANN_CHOICE_COUNT, dtype=np.float64) if scratch_adjusted is None else scratch_adjusted
+    weights = np.empty(VON_NEUMANN_CHOICE_COUNT, dtype=np.float64) if scratch_weights is None else scratch_weights
     return cx, cy, scores, adjusted, weights
 
 

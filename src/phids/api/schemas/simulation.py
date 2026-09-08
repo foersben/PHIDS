@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from phids.api.schemas.base import StrictBaseModel
 from phids.api.schemas.placement import (
@@ -22,14 +22,26 @@ from phids.api.schemas.placement import (
     PlacementStrategy,
 )
 from phids.api.schemas.species import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams
-from phids.shared.constants import MAX_FLORA_SPECIES, MAX_HERBIVORE_SPECIES, MAX_SUBSTANCE_TYPES
+from phids.shared.constants import (
+    GRID_H_MAX,
+    GRID_W_MAX,
+    MAX_FLORA_SPECIES,
+    MAX_HERBIVORE_SPECIES,
+    MAX_SUBSTANCE_TYPES,
+    TILE_CARRYING_CAPACITY,
+)
 
 
 class SimulationConfig(StrictBaseModel):
     """Complete simulation configuration payload (REST /api/scenario/load body)."""
 
-    grid_width: int = Field(default=40, ge=1)
-    grid_height: int = Field(default=40, ge=1)
+    grid_width: int = Field(default=40, ge=4, le=GRID_W_MAX)
+    grid_height: int = Field(default=40, ge=4, le=GRID_H_MAX)
+    tile_carrying_capacity: int = Field(
+        default=TILE_CARRYING_CAPACITY,
+        ge=1,
+        description="Maximum aggregate herbivore individuals permitted per grid tile.",
+    )
     max_ticks: int = Field(default=1000, gt=0)
     tick_rate_hz: float = Field(default=10.0, gt=0.0, description="WebSocket stream tick rate.")
 
@@ -157,13 +169,6 @@ class SimulationConfig(StrictBaseModel):
         description="Replay storage backend.",
         pattern="^zarr$",
     )
-
-    @field_validator("grid_width", "grid_height")
-    @classmethod
-    def _validate_grid_power_of_two(cls, v: int) -> int:
-        if v not in {16, 32, 64, 128, 256, 512}:
-            raise ValueError(f"Grid dimension must be a power of two in {{16, 32, 64, 128, 256, 512}}, got {v}.")
-        return v
 
     @model_validator(mode="after")
     def _validate_species_ids(self) -> SimulationConfig:

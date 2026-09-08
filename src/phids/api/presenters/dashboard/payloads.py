@@ -12,7 +12,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from phids.api.presenters.dashboard.mycorrhizal import _build_live_mycorrhizal_links_from_snapshot
-from phids.api.presenters.dashboard.shared import _coerce_int
+from phids.api.presenters.dashboard.shared import (
+    _coerce_int,
+    calculate_structural_fragility_and_risk,
+)
 
 if TYPE_CHECKING:
     from typing import Any
@@ -185,19 +188,7 @@ def _compute_plant_metrics(p: PlantComponent) -> tuple[float, float, float, str]
         p.structural_mass = struct_mass
         p.max_structural_mass = max_struct
 
-    struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
-    fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
-    fragility_pct = min(100.0, max(0.0, fragility * 100.0))
-
-    if max_struct > 0.0 and struct_mass >= max_struct:
-        risk_level = "Immune"
-    elif fragility > 0.6:
-        risk_level = "High Risk"
-    elif fragility > 0.2:
-        risk_level = "Medium Risk"
-    else:
-        risk_level = "Low Risk"
-
+    _fragility, fragility_pct, risk_level = calculate_structural_fragility_and_risk(struct_mass, max_struct)
     return struct_mass, max_struct, fragility_pct, risk_level
 
 

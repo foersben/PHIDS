@@ -276,9 +276,9 @@ def test_mechanical_attrition_enforces_integer_casualties() -> None:
     # Act
     run_interaction(world, env, diet_matrix, flora_params, herbivore_params, tick=0)
 
-    # 10 initial population. Consumed 50 energy. Damage = 2.5 -> casualties = 2.
-    # New population should be 8.
-    assert swarm.population == 8
+    # 10 initial population. Consumed 50 energy. Damage = 2.5 -> casualties in {2, 3} via stochastic accumulation.
+    # New population should be 7 or 8.
+    assert swarm.population in (7, 8)
 
 
 def test_flow_field_toxin_additive_stacking() -> None:

@@ -45,10 +45,9 @@ def _compute_trample_probability_jit(
     Returns:
         Probability P(destroy) in range [0.0, p_max].
     """
-    if max_structural_mass <= 0.0:
-        vulnerability = 1.0
-    else:
-        vulnerability = max(0.0, 1.0 - (structural_mass / max_structural_mass))
+    safe_max = max(max_structural_mass, 1e-9)
+    vuln_calc = max(0.0, 1.0 - (structural_mass / safe_max))
+    vulnerability = 1.0 if max_structural_mass <= 0.0 else vuln_calc
     prob = float(swarm_population) * trample_factor * vulnerability
     return min(p_max, max(0.0, prob))
 

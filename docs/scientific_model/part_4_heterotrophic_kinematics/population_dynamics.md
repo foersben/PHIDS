@@ -32,7 +32,7 @@ Instead of modeling the populations of foxes and rabbits continuously via Ordina
 
 In a natural ecosystem, starvation is not a delayed, all-or-nothing event. A swarm of 100 insects needs a strict number of calories every day just to keep their collective hearts beating and wings flapping. If they only find enough food to support 90 insects, 10 insects will immediately perish.
 
-To model this, swarms continuously deplete their stored energy ($E_i$) proportional to their population size ($N_i$).
+To model this, swarms continuously deplete their stored energy ($E_i$) proportional to their population size ($N_i$), with circadian metabolic maintenance aligned to the 24-hour diurnal cycle ($\text{MEDIUM\_TICK\_STRIDE} = 24$).
 
 Let $m_i$ be the species-specific metabolic upkeep rate per individual per tick.
 
@@ -93,7 +93,7 @@ Cellular division within a macroscopic swarm occurs when the cluster population 
 
 #### I. Structural Bifurcation Mechanics
 
-During the interaction and lifecycle phase, any swarm whose population strictly violates the biological carrying capacity threshold ($N_i \ge N_{\text{split}}$) triggers an immediate cellular division event. The parent swarm fractures its population array and energetic reserve into two distinct structural entities (e.g., bifurcating a parent of 15 into cohorts of 7 and 8 individuals).
+During the interaction and lifecycle phase, any swarm whose population strictly violates the biological carrying capacity threshold ($N_i \ge N_{\text{split}}$) triggers an immediate cellular division event. The parent swarm fractures its population array and energetic reserve into $\text{MITOSIS\_DIVISOR} = 2$ distinct structural entities (via integer floor division `population // MITOSIS_DIVISOR`, e.g., bifurcating a parent of 15 into cohorts of 7 and 8 individuals).
 
 To prevent catastrophic spatial overlap, the engine subjects the daughter swarm to an immediate stochastic displacement routine ($\mathcal{W}_{\text{random}}(x_0, y_0)$). This operation translates the newly spawned offspring to a stochastically sampled adjacent coordinate within the local Von Neumann neighborhood prior to committing the entity to the ECS world matrix.
 
@@ -181,7 +181,7 @@ If a scientific scenario requires explicit age-dependent behavior (e.g., declini
 The classic Lotka-Volterra predator-prey (here: herbivore-plant) equations ($\frac{dx}{dt} = \alpha x - \beta xy$) model the rate of change of continuous populations.
 
 * *Why rejected:* ODEs treat populations as perfectly mixed, homogeneous continuous variables ($x = 42.5$ rabbits). They cannot capture discrete, localized spatial events, such as a specific herd of 10 herbivores navigating around a toxic plant at coordinate $(4, 12)$.
-* *Our advantage:* The discrete ECS formulation provides the spatial granularity required for physical movement, local chemical triggers, and density-dependent crowding (e.g., cell capacity repulsion) while preserving mathematical determinism.
+* *Our advantage:* The discrete ECS formulation provides the spatial granularity required for physical movement, local chemical triggers, and density-dependent crowding (e.g., cell capacity repulsion governed by $\text{TILE\_CARRYING\_CAPACITY} = 500$) while preserving mathematical determinism.
 
 ---
 

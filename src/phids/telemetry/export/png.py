@@ -13,7 +13,12 @@ import io
 import logging
 from typing import TYPE_CHECKING
 
-from phids.telemetry.export.core import _FLORA_COLOURS, _HERBIVORE_COLOURS, filter_telemetry_rows
+from phids.telemetry.export.core import (
+    _FLORA_COLOURS,
+    _HERBIVORE_COLOURS,
+    _get_phasespace_axis,
+    filter_telemetry_rows,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -230,37 +235,6 @@ def _plot_timeseries(
     ax.set_title(title or "PHIDS - Population Time Series")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
-
-
-def _get_phasespace_axis(
-    rows: TelemetryRows,
-    species_id: int,
-    is_flora: bool,
-    names: dict[int, str] | None,
-) -> tuple[list[float], str]:
-    """Get the phasespace axis data and label.
-
-    Args:
-        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
-        species_id: Species identifier.
-        is_flora: Whether the species is flora.
-        names: Optional display names for species.
-
-    Returns:
-        tuple[list[float], str]: The phasespace axis data and label.
-    """
-    if species_id == 0:
-        if is_flora:
-            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
-        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
-
-    if is_flora:
-        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Flora {species_id}")
-    else:
-        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Herbivore {species_id}")
-    return y, name
 
 
 def _plot_phasespace(

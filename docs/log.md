@@ -2,6 +2,23 @@
 
 This document records the chronological history of structural, scientific, and architectural updates to the PHIDS documentation bundle, adhering to the Open Knowledge Format (OKF v0.2 §9) specification.
 
+## 2026-09-09
+
+* **Refactor**: Decomposed all source and test modules exceeding 700 lines into modular packages and suites:
+  * Decomposed `tests/unit/api/test_coverage_gaps.py` (1,104 lines) into 5 focused domain test suites (`test_signaling_coverage.py`, `test_interaction_coverage.py`, `test_zarr_coverage.py`, `test_flow_field_coverage.py`, `test_chartjs_coverage.py`).
+  * Modularized `src/phids/mcp_server.py` into package `src/phids/mcp/` (`app.py`, `helpers.py`, `prompts.py`, `resources.py`, `tools_simulation.py`, `tools_telemetry.py`, `tools_validation.py`) with a backward-compatible facade.
+  * Extracted Jacobi stencils, boundary propagators, and relaxation solvers from `src/phids/engine/core/flow_field.py` into package `src/phids/engine/core/flow/`.
+  * Extracted initial entity placement from `src/phids/engine/loop.py` into `src/phids/engine/spawner.py`.
+  * Extracted replay slices and no-op buffers from `src/phids/io/zarr_replay.py` into `src/phids/io/replay_types.py`.
+  * Extracted Numba 2D advection and Gaussian convolution kernels from `src/phids/engine/core/biotope.py` into `src/phids/engine/core/diffusion.py`.
+* **Refactor**: Centralized duplicated logic across the codebase (DRY):
+  * Centralized scalar coercion in `src/phids/shared/coercion.py` (`coerce_int`, `coerce_float`) with explicit boolean rejection semantics in dashboard presenters.
+  * Centralized allometric structural fragility and collapse risk calculations in `src/phids/api/presenters/dashboard/shared.py`.
+  * Centralized plant entity instantiation in `PlantComponent.from_params`.
+  * Reused phase-space axis boundary extraction in `src/phids/telemetry/export/core.py`.
+* **Documentation**: Updated `docs/reference/api.md` and `docs/reference/module-map.md` with full coverage of the new modular packages, symbols, and utilities.
+* **Audit**: Conducted a full 10-slice Epistemic Soundness Audit (`/epistemic-soundness-audit`) verifying theoretical rigor, continuous-discrete PDE stencils, branchless SIMD kernels, and OKF compliance.
+
 ## 2026-09-07
 
 * **Update**: Aligned the Flora Species workbench (`/ui/flora`) with the Decoupled Dual-Proxy Architecture ($E_{\text{current}}$ vs. $M_{\text{structural}}$), reproductive seed energetics, and wind anemochory aerodynamics.

@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING
 
 from numba import njit
 
+from phids.shared.constants import PERCENTAGE_DIVISOR
+from phids.shared.constants import SLOW_TICK_STRIDE as SLOW_TICK_STRIDE
+
 if TYPE_CHECKING:
     from phids.engine.components.plant import PlantComponent
     from phids.engine.core.biotope import GridEnvironment
-
-SLOW_TICK_STRIDE: int = 168  # hours per weekly slow-loop gate
 
 
 @njit(cache=True)  # pragma: no cover
@@ -22,7 +23,7 @@ def _grow_simd_jit(energy: float, base_energy: float, growth_rate: float, max_en
 
     Calculates accumulated weekly photosynthetic growth scaled by SLOW_TICK_STRIDE in compiled C.
     """
-    growth = base_energy * (growth_rate / 100.0) * SLOW_TICK_STRIDE
+    growth = base_energy * (growth_rate / PERCENTAGE_DIVISOR) * SLOW_TICK_STRIDE
     val = energy + growth
     return val if val < max_energy else max_energy
 
@@ -65,25 +66,27 @@ def _calculate_structural_upkeep_jit(
     structural_mass: float,
     max_structural_mass: float,
     upkeep_scalar: float,
+    stride: int = SLOW_TICK_STRIDE,
 ) -> float:
     """Numba-compiled M_structural-scaled maintenance cost calculation kernel.
 
     Calculates the maintenance cost required to maintain lignified structural tissue.
-    Fee scales linearly with structural_mass / max_structural_mass ratio.
+    Fee scales linearly with structural_mass / max_structural_mass ratio over the stride interval.
 
     Args:
         survival_threshold: Plant survival threshold energy.
         structural_mass: Current M_structural value.
         max_structural_mass: Species ceiling for M_structural.
         upkeep_scalar: Maintenance scaling multiplier (from shared/constants.py).
+        stride: Number of ticks accumulated across the cohort stride interval (default: SLOW_TICK_STRIDE).
 
     Returns:
-        Energy maintenance fee to deduct per lifecycle tick.
+        Energy maintenance fee to deduct per lifecycle cohort update.
     """
-    if max_structural_mass <= 0.0:
-        return 0.0
-    mass_ratio = min(1.0, max(0.0, structural_mass / max_structural_mass))
-    return survival_threshold * upkeep_scalar * mass_ratio
+    safe_max = max(max_structural_mass, 1e-9)
+    valid_mask = 1.0 if max_structural_mass > 0.0 else 0.0
+    mass_ratio = min(1.0, max(0.0, structural_mass / safe_max))
+    return survival_threshold * upkeep_scalar * mass_ratio * valid_mask * float(stride)
 
 
 def _grow(

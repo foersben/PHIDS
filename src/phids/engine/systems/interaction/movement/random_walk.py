@@ -55,9 +55,7 @@ def _random_walk_step_jit(
         count = _gather_neighbours_jit_pow2(x, y, width - 1, height - 1, c_x, c_y)
     else:
         count = _gather_neighbours_jit(x, y, width, height, c_x, c_y)
-    idx = int(rand_val * count)
-    if idx >= count:
-        idx = count - 1
+    idx = min(count - 1, max(0, int(rand_val * count)))
     return c_x[idx], c_y[idx]
 
 

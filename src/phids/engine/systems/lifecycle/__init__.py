@@ -82,9 +82,13 @@ def _process_plant_lifecycle(
     _grow(plant, tick)
     _grow_structural(plant, env)
 
-    # Plan 3: Deduct M_structural-scaled maintenance cost
+    # Deduct M_structural-scaled maintenance cost (hourly scalar * SLOW_TICK_STRIDE)
     upkeep_fee = _calculate_structural_upkeep_jit(
-        plant.survival_threshold, plant.structural_mass, plant.max_structural_mass, STRUCTURAL_UPKEEP_SCALAR
+        plant.survival_threshold,
+        plant.structural_mass,
+        plant.max_structural_mass,
+        STRUCTURAL_UPKEEP_SCALAR,
+        SLOW_TICK_STRIDE,
     )
     if upkeep_fee > 0.0:
         plant.energy = max(0.0, plant.energy - upkeep_fee)

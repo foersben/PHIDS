@@ -18,6 +18,7 @@ from phids.api.presenters.dashboard.mycorrhizal import (
 from phids.api.presenters.dashboard.shared import (
     _coerce_int,
     _default_substance_name,
+    calculate_structural_fragility_and_risk,
     validate_cell_coordinates,
 )
 from phids.api.presenters.dashboard.substances import (
@@ -175,17 +176,7 @@ def _build_live_plant_payload(
     max_struct = float(plant.max_structural_mass)
     struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
     struct_upkeep = float(plant.survival_threshold) * 0.5 * min(1.0, struct_ratio) if max_struct > 0.0 else 0.0
-    fragility = max(0.0, 1.0 - struct_ratio) if max_struct > 0.0 else 1.0
-    fragility_pct = min(100.0, max(0.0, fragility * 100.0))
-
-    if max_struct > 0.0 and struct_mass >= max_struct:
-        risk_level = "Immune"
-    elif fragility > 0.6:
-        risk_level = "High Risk"
-    elif fragility > 0.2:
-        risk_level = "Medium Risk"
-    else:
-        risk_level = "Low Risk"
+    _fragility, fragility_pct, risk_level = calculate_structural_fragility_and_risk(struct_mass, max_struct)
 
     return {
         "entity_id": plant.entity_id,

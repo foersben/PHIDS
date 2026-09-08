@@ -324,3 +324,47 @@ def aggregate_to_dataframe(
         data[f"{name}_pop_std"] = series_std
 
     return pd.DataFrame(data)
+
+
+def get_phasespace_axis(
+    rows: TelemetryRows,
+    species_id: int,
+    is_flora: bool,
+    names: dict[int, str] | None,
+) -> tuple[list[float], str]:
+    """Extract phase-space population values and human-readable axis label.
+
+    Extracts a series of population metrics across telemetry frames for either
+    total ecosystem populations (when ``species_id == 0``) or a specific species.
+
+    Args:
+        rows: Sequence of recorded telemetry frame dictionaries.
+        species_id: Species identifier, or 0 for total population aggregate.
+        is_flora: True if selecting flora species, False for herbivore species.
+        names: Optional display name lookup dictionary mapping species ID to string.
+
+    Returns:
+        tuple[list[float], str]: A 2-tuple containing:
+            - A list of float population values aligned with ``rows``.
+            - A human-readable display label for the phase-space axis.
+
+    Examples:
+        >>> rows = [{"flora_population": 100}]
+        >>> get_phasespace_axis(rows, species_id=0, is_flora=True, names=None)
+        ([100.0], 'Flora (Total)')
+    """
+    if species_id == 0:
+        if is_flora:
+            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
+        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
+
+    if is_flora:
+        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Flora {species_id}")
+    else:
+        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Herbivore {species_id}")
+    return y, name
+
+
+_get_phasespace_axis = get_phasespace_axis

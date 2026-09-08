@@ -12,7 +12,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from phids.telemetry.export.core import _append_species_id, filter_telemetry_rows
+from phids.telemetry.export.core import (
+    _append_species_id,
+    _get_phasespace_axis,
+    filter_telemetry_rows,
+)
 
 if TYPE_CHECKING:
     from phids.telemetry.analytics import TelemetryRow
@@ -185,37 +189,6 @@ def _tikz_timeseries(
         "    width=12cm, height=7cm,\n"
         "]\n" + body + "\n\\end{axis}\n\\end{tikzpicture}"
     )
-
-
-def _get_phasespace_axis(
-    rows: TelemetryRows,
-    species_id: int,
-    is_flora: bool,
-    names: dict[int, str] | None,
-) -> tuple[list[float], str]:
-    """Get the phasespace axis data and label.
-
-    Args:
-        rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
-        species_id: Species identifier.
-        is_flora: Whether the species is flora.
-        names: Optional display names for species.
-
-    Returns:
-        The phasespace axis data and label.
-    """
-    if species_id == 0:
-        if is_flora:
-            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
-        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
-
-    if is_flora:
-        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Flora {species_id}")
-    else:
-        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Herbivore {species_id}")
-    return y, name
 
 
 def _tikz_phasespace(

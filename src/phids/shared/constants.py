@@ -47,6 +47,9 @@ SIGNAL_EPSILON: float = 1e-4  # values below this are zeroed after convolution
 MAX_TELEMETRY_TICKS: int = 10_000
 MAX_REPLAY_FRAMES: int = 2_000
 
+# Number of candidate directional choices (current position + 4 cardinal neighbours)
+VON_NEUMANN_CHOICE_COUNT: int = 5
+
 # ---------------------------------------------------------------------------
 # Seed dispersal defaults (global, species-overridable)
 # ---------------------------------------------------------------------------
@@ -70,6 +73,46 @@ M_STRUCTURAL_SEED_VALUE: float = 0.0
 # value sourced from the empirical bio-database via the EEDSE optimizer.
 M_STRUCTURAL_GROWTH_RATE: float = 0.01
 
-# Multiplier for M_structural-scaled maintenance cost deduction per tick.
-# Upkeep_fee = survival_threshold * STRUCTURAL_UPKEEP_SCALAR * (M_structural / max_M_structural).
-STRUCTURAL_UPKEEP_SCALAR: float = 0.5
+# Multiplier for M_structural-scaled maintenance cost deduction per hour.
+# Evaluated on the slow-loop cohort interval (SLOW_TICK_STRIDE = 168 hours):
+# Upkeep_fee = survival_threshold * STRUCTURAL_UPKEEP_SCALAR * (M_structural / max_M_structural) * SLOW_TICK_STRIDE.
+# Calibrated so that full structural mass incurs 0.5 * survival_threshold fee per weekly cohort cycle.
+STRUCTURAL_UPKEEP_SCALAR: float = 0.5 / 168.0
+
+# ---------------------------------------------------------------------------
+# Multi-Scale Temporal Strides
+# ---------------------------------------------------------------------------
+MEDIUM_TICK_STRIDE: int = 24  # Hours per diurnal cycle (medium-loop metabolic gating)
+SLOW_TICK_STRIDE: int = 168  # Hours per weekly cycle (slow-loop structural growth & mitosis gating)
+
+# ---------------------------------------------------------------------------
+# Lifecycle and Growth Conversion Constants
+# ---------------------------------------------------------------------------
+PERCENTAGE_DIVISOR: float = 100.0  # Scalar divisor converting integer percentage [0, 100] to fractional rate [0.0, 1.0]
+
+# ---------------------------------------------------------------------------
+# Anemochorous Seed Dispersal Aerodynamics (Okubo & Levin, 1989)
+# ---------------------------------------------------------------------------
+# Minimum crosswind standard deviation in meters (prevents degenerate zero-width plume)
+MIN_CROSSWIND_DISPERSAL_SIGMA: float = 0.15
+# Linear scaling coefficient of lateral plume spread with downwind distance
+LATERAL_EDDY_DIFFUSIVITY_COEFFICIENT: float = 0.35
+
+# ---------------------------------------------------------------------------
+# Signaling Activation and Translocation Thresholds
+# ---------------------------------------------------------------------------
+DEFAULT_ACTIVATION_MIN_CONCENTRATION: float = 0.01  # Fallback minimum threshold for environmental trigger activation
+DEFAULT_NUTRITION_TARGET: float = 0.1  # Fallback target nutrition factor during induced defense withdrawal
+# Minimum cooperativity priming factor required to trigger downstream defense cascade
+HILL_PRIMING_THRESHOLD: float = 0.05
+
+# ---------------------------------------------------------------------------
+# Heterotrophic Kinematics and Movement Constants
+# ---------------------------------------------------------------------------
+# Directional preference weight for continuing along current heading (10:1 inertia)
+ORTHOKINETIC_MOMENTUM_WEIGHT: float = 10.0
+MVT_DEPARTURE_SIGMOID_STEEPNESS: float = 5.0  # Logistic sigmoid steepness parameter k for patch departure probability
+TILE_CARRYING_CAPACITY: int = 500  # Default maximum aggregate herbivore individuals permitted per grid tile
+MITOSIS_DIVISOR: int = 2  # Binary fission demographic bisection divisor for supercolony fission
+# Ticks an herbivore swarm remains repelled following encounter with an incompatible host plant
+INCOMPATIBLE_DIET_REPULSION_TICKS: int = 2

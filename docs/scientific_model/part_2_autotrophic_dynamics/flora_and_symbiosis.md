@@ -34,17 +34,15 @@ To solve this while eliminating sawtooth telemetry artifacts, PHIDS uses **Phase
 
 Mathematically, flora grow photosynthetically according to their species-specific baseline rate ($g_j$), capped at $E_{\text{max}, j}$. The batched evaluation equation is:
 
-$$\Delta E_{\text{plant}} = E_{\text{base}} \times \left(\frac{g_j}{100}\right) \times \text{SLOW\_TICK\_STRIDE}$$
+$$\Delta E_{\text{plant}} = E_{\text{base}} \times \left(\frac{g_j}{\text{PERCENTAGE\_DIVISOR}}\right) \times \text{SLOW\_TICK\_STRIDE}$$
+
+where $\text{PERCENTAGE\_DIVISOR} = 100.0$ converts the species percentage parameter $[0, 100]$ to a fractional rate $[0.0, 1.0]$.
 
 By batching metabolic growth accumulation, PHIDS maintains operations well above the floating-point subnormal boundary, ensuring uninterrupted parallel vector execution in the CPU. Furthermore, deferring these state modifications prevents cache line invalidation during the fast-paced inner-loops of the simulation (like bugs moving), yielding deterministic scaling with over $93.7\%$ L1/L3 cache coherency.
 
 ---
 
 ### The Seed Cost & Germination
-
-When a plant accumulates surplus energy above its baseline capacity, it attempts reproduction.
-
-#### Seed Cost Check
 
 A plant cannot self-starve to drop a seed. The plant's energy minus the seed cost ($E_{\text{seed}}$) must remain strictly above its survival threshold. If a seed successfully spawns, $E_{\text{seed}}$ is deducted from the parent.
 
@@ -64,7 +62,9 @@ Next, it checks the local wind. If the wind is blowing, it creates a directional
 
 To model the chaotic tumbling through the air (turbulence), it adds a random perpendicular sideways drift, scaled by how far the seed is flying (longer flights mean more time to drift off course):
 
-$$\delta_{\perp} \sim \mathcal{N}(0, \sigma_{\perp}^2) \quad \text{where } \sigma_{\perp} = \max(0.15, 0.35 \cdot d)$$
+$$\delta_{\perp} \sim \mathcal{N}(0, \sigma_{\perp}^2) \quad \text{where } \sigma_{\perp} = \max(\sigma_{\perp, \min}, C_{\text{eddy}} \cdot d)$$
+
+Here, $\sigma_{\perp, \min} = \text{MIN\_CROSSWIND\_DISPERSAL\_SIGMA} = 0.15$ m establishes the minimum lateral plume variance preventing degenerate zero-width trajectories, and $C_{\text{eddy}} = \text{LATERAL\_EDDY\_DIFFUSIVITY\_COEFFICIENT} = 0.35$ governs atmospheric eddy expansion with downwind distance, formalizing the semi-empirical aerodynamic dispersal framework of Okubo and Levin (1989)[^okubo_1989].
 
 Finally, this flight path is mapped back onto the discrete grid, landing the seed at a specific coordinate:
 
@@ -189,7 +189,7 @@ reflection of the **Decoupled Dual-Proxy Architecture** described in
 | `max_energy` | `float` | from schema | Species ceiling for caloric storage. |
 | `structural_mass` | `float` | `0.0` | Permanent lignin / woodiness ($M_{structural}$). Never decreased by herbivory. |
 | `max_structural_mass` | `float` | from DB schema | Species ceiling for structural mass (sourced from `FloraSpeciesParams.structural_mass_max`). |
-| `growth_rate_structural` | `float` | `0.01` | Fractional $M_{structural}$ growth per slow-loop gate (168-tick weekly stride). |
+| `growth_rate_structural` | `float` | `0.01`[^placeholder_growth] | Fractional $M_{structural}$ growth per slow-loop gate (168-tick weekly stride). |
 
 ### Structural Mass Growth Dynamics (Plan 2)
 
@@ -268,3 +268,7 @@ Below is the verified Data-Flow Matrix for underground mycorrhizal signal propag
 | **$t_0$** | 1.0 | 0.0 | 0.0 | 50.0 | 0.0 | **Conduit Injection:** Attacked emitter releases signal into root network conduit. |
 | **$t_1$** | 0.8 | 0.9 | 0.0 | 48.5 | 1.5 | **Hop 1 Arrival:** Signal reaches primary neighbor; daily symbiosis maintenance tax deducted ($\Delta E = -1.5$). |
 | **$t_2$** | 0.6 | 0.7 | 0.81 | 47.0 | 1.5 | **Hop 2 Arrival:** Signal propagates to secondary node; Hop 1 maintains conduit connection. |
+
+[^okubo_1989]: Okubo, A., & Levin, S. A. (1989). A theoretical framework for data analysis of wind dispersal of seeds and pollen. *Ecology*, 70(2), 329-338.
+
+[^placeholder_growth]: The default value 0.01 (`M_STRUCTURAL_GROWTH_RATE`) represents an interim global constant pending empirical allometric parameter estimation from botanical trait databases during subsequent Evolutionary Design Space Exploration (EEDSE) calibration.

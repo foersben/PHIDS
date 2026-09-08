@@ -6,6 +6,8 @@ import numpy as np
 import numpy.typing as npt
 from numba import njit
 
+from phids.shared.constants import MVT_DEPARTURE_SIGMOID_STEEPNESS
+
 if TYPE_CHECKING:
     from phids.engine.components.swarm import SwarmComponent
     from phids.engine.core.biotope import GridEnvironment
@@ -18,10 +20,10 @@ def _should_depart_mvt_jit(
     rand_val: float,
 ) -> bool:
     """Evaluate stochastic departure curve based on the Marginal Value Theorem (MVT)."""
-    if metabolic_upkeep <= 0.0:
-        return False
-    ratio = caloric_intake / metabolic_upkeep
-    p_depart = 1.0 / (1.0 + np.exp(5.0 * (ratio - 1.0)))
+    safe_upkeep = max(metabolic_upkeep, 1e-9)
+    valid_mask = 1.0 if metabolic_upkeep > 0.0 else 0.0
+    ratio = caloric_intake / safe_upkeep
+    p_depart = (1.0 / (1.0 + np.exp(MVT_DEPARTURE_SIGMOID_STEEPNESS * (ratio - 1.0)))) * valid_mask
     return bool(rand_val < p_depart)
 
 
@@ -35,10 +37,12 @@ def _has_compatible_food_jit(
 ) -> bool:
     """Check if swarm is co-located with any compatible flora species with positive energy."""
     _, num_flora = diet_matrix.shape
+    found = False
     for flora_species_id in range(num_flora):
-        if diet_matrix[species_id, flora_species_id] and plant_energy_by_species[flora_species_id, x, y] > 0.0:
-            return True
-    return False
+        compatible = diet_matrix[species_id, flora_species_id]
+        has_energy = plant_energy_by_species[flora_species_id, x, y] > 0.0
+        found = found or (compatible and has_energy)
+    return found
 
 
 @njit(cache=True)
@@ -73,17 +77,13 @@ def _is_swarm_anchored_jit(
     Returns:
         True if the swarm anchors, False otherwise.
     """
-    if apparent_nutrition_val <= 0.0:
-        return False
-
     num_herbivores, _ = diet_matrix.shape
-    if species_id >= num_herbivores:
+    if apparent_nutrition_val <= 0.0 or species_id >= num_herbivores:
         return False
 
-    if not _has_compatible_food_jit(x, y, species_id, plant_energy_by_species, diet_matrix):
-        return False
-
-    return not _should_depart_mvt_jit(caloric_intake, metabolic_upkeep, rand_val)
+    has_food = _has_compatible_food_jit(x, y, species_id, plant_energy_by_species, diet_matrix)
+    depart = _should_depart_mvt_jit(caloric_intake, metabolic_upkeep, rand_val)
+    return has_food and not depart
 
 
 def _is_swarm_anchored(

@@ -21,6 +21,7 @@ from phids.engine.systems.interaction.movement.neighbors import (
     _gather_neighbours_jit,
     _gather_neighbours_jit_pow2,
 )
+from phids.shared.constants import ORTHOKINETIC_MOMENTUM_WEIGHT, TILE_CARRYING_CAPACITY
 
 if TYPE_CHECKING:
     from phids.engine.components.swarm import SwarmComponent
@@ -58,19 +59,15 @@ def _flat_field_choice_jit(
         The selected neighbour coordinates.
     """
     if last_dx == 0 and last_dy == 0:
-        idx = int(rand_val * count)
-        if idx >= count:
-            idx = count - 1
+        idx = min(count - 1, max(0, int(rand_val * count)))
         return c_x[idx], c_y[idx]
 
     target_x = x + last_dx
     target_y = y + last_dy
     total_w = 0.0
     for i in range(count):
-        if c_x[i] == target_x and c_y[i] == target_y:
-            weights[i] = 10.0
-        else:
-            weights[i] = 1.0
+        is_target = (c_x[i] == target_x) & (c_y[i] == target_y)
+        weights[i] = ORTHOKINETIC_MOMENTUM_WEIGHT if is_target else 1.0
         total_w += weights[i]
 
     r = rand_val * total_w
@@ -96,10 +93,8 @@ def _adjust_scores_and_find_extrema_jit(
     for i in range(count):
         adj = -scores[i] if invert else scores[i]
         adjusted_scores[i] = adj
-        if adj < min_score:
-            min_score = adj
-        if adj > max_score:
-            max_score = adj
+        min_score = min(min_score, adj)
+        max_score = max(max_score, adj)
     return min_score, max_score
 
 
@@ -115,7 +110,7 @@ def _weighted_field_choice_jit(
     rand_val: float,
     tile_populations: npt.NDArray[np.int32] | None = None,
     width: int = 0,
-    max_capacity: int = 500,
+    max_capacity: int = TILE_CARRYING_CAPACITY,
     current_x: int = -1,
     current_y: int = -1,
 ) -> tuple[int, int]:
@@ -176,7 +171,7 @@ def _softmax_field_choice_jit(
     tau: float,
     tile_populations: npt.NDArray[np.int32] | None = None,
     width: int = 0,
-    max_capacity: int = 500,
+    max_capacity: int = TILE_CARRYING_CAPACITY,
     current_x: int = -1,
     current_y: int = -1,
 ) -> tuple[int, int]:
@@ -280,10 +275,8 @@ def _choose_neighbour_by_flow_probability_jit(
     max_score = scores[0]
     min_score = scores[0]
     for i in range(1, count):
-        if scores[i] > max_score:
-            max_score = scores[i]
-        if scores[i] < min_score:
-            min_score = scores[i]
+        max_score = max(max_score, scores[i])
+        min_score = min(min_score, scores[i])
 
     # Flat fields provide no directional signal; preserve prior heading as inertia.
     if max_score - min_score < 1e-6:
@@ -302,7 +295,7 @@ def _choose_neighbour_by_flow_probability_jit(
             tau,
             tile_populations=tile_populations,
             width=width,
-            max_capacity=500,  # Using literal fallback, typically TILE_CARRYING_CAPACITY
+            max_capacity=TILE_CARRYING_CAPACITY,
             current_x=x,
             current_y=y,
         )
@@ -318,7 +311,7 @@ def _choose_neighbour_by_flow_probability_jit(
         rand_val,
         tile_populations=tile_populations,
         width=width,
-        max_capacity=500,  # Using literal fallback
+        max_capacity=TILE_CARRYING_CAPACITY,
         current_x=x,
         current_y=y,
     )
@@ -342,7 +335,7 @@ def _python_flat_field_choice(
 
     target_x = swarm.x + swarm.last_dx
     target_y = swarm.y + swarm.last_dy
-    weights = [10.0 if (cx == target_x and cy == target_y) else 1.0 for cx, cy in candidates]
+    weights = [ORTHOKINETIC_MOMENTUM_WEIGHT if (cx == target_x and cy == target_y) else 1.0 for cx, cy in candidates]
     return random.choices(candidates, weights=weights, k=1)[0]
 
 

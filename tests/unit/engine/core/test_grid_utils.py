@@ -35,8 +35,8 @@ def test_get_grid_masks() -> None:
 
     is_pow2_mixed, mask_x_mixed, mask_y_mixed = get_grid_masks(40, 40)
     assert is_pow2_mixed is False
-    assert mask_x_mixed == 40
-    assert mask_y_mixed == 40
+    assert mask_x_mixed == -1
+    assert mask_y_mixed == -1
 
 
 def test_power_of_two_vs_generic_grid_diffusion_parity() -> None:
@@ -52,3 +52,14 @@ def test_power_of_two_vs_generic_grid_diffusion_parity() -> None:
     # Verify wrap around edges (0,0 diffusing to max coordinates 31, 31)
     assert env_pow2.signal_layers[0, 31, 0] > 0.0
     assert env_pow2.signal_layers[0, 0, 31] > 0.0
+
+    # Verify generic non-power-of-two modulo diffusion path (40x40)
+    env_generic = GridEnvironment(width=40, height=40, num_signals=1)
+    env_generic.signal_layers[0, 0, 0] = 10.0
+    env_generic.diffuse_signals(signal_decay_factor=0.85)
+
+    assert env_generic.is_pow2 is False
+    assert env_generic.mask_x == -1
+    assert env_generic.mask_y == -1
+    assert env_generic.signal_layers[0, 39, 0] > 0.0
+    assert env_generic.signal_layers[0, 0, 39] > 0.0

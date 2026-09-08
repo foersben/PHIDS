@@ -33,6 +33,7 @@ from phids.api.schemas.triggers import (
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.systems.signaling.conditions import _check_activation_condition
+from phids.shared.constants import HILL_PRIMING_THRESHOLD
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
@@ -52,23 +53,23 @@ def _evaluate_environmental_initiator_njit(
     hill_cooperativity: float,
     out_mask: npt.NDArray[np.bool_],
 ) -> None:
-    for i in range(len(xs)):
-        x = xs[i]
-        y = ys[i]
-        conc = signal_layer[x, y]
-
-        if response_curve == 0:  # step
-            out_mask[i] = conc >= min_concentration
-        elif response_curve == 1:  # hill
-            if conc > 0.0:
-                cn = conc**hill_cooperativity
-                priming_factor = cn / (half_saturation**hill_cooperativity + cn)
-                out_mask[i] = priming_factor >= 0.05
-            else:
-                out_mask[i] = False
-        elif response_curve == 2:  # logarithmic
-            out_mask[i] = conc >= min_concentration
-        else:
+    n = len(xs)
+    if response_curve == 0:  # step
+        for i in range(n):
+            out_mask[i] = signal_layer[xs[i], ys[i]] >= min_concentration
+    elif response_curve == 1:  # hill
+        for i in range(n):
+            conc = signal_layer[xs[i], ys[i]]
+            pos_conc = max(conc, 0.0)
+            cn = pos_conc**hill_cooperativity
+            denom = half_saturation**hill_cooperativity + cn
+            priming_factor = cn / denom
+            out_mask[i] = (priming_factor >= HILL_PRIMING_THRESHOLD) & (conc > 0.0)
+    elif response_curve == 2:  # logarithmic
+        for i in range(n):
+            out_mask[i] = signal_layer[xs[i], ys[i]] >= min_concentration
+    else:
+        for i in range(n):
             out_mask[i] = False
 
 

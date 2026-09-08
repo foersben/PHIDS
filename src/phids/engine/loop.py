@@ -28,23 +28,16 @@ import numpy as np
 import numpy.typing as npt
 
 from phids.engine.components.plant import PlantComponent
-from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
 from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
-from phids.engine.core.herbivore_params import (
-    get_herbivore_consumption_rate,
-    get_herbivore_energy_min,
-    get_herbivore_energy_upkeep,
-    get_herbivore_reproduction_divisor,
-    get_herbivore_split_threshold,
-    get_herbivore_velocity,
-)
+from phids.engine.spawner import spawn_initial_entities
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
 from phids.engine.systems.signaling.types import CompiledTrigger
 from phids.io.zarr_replay import ReplayBuffer, ReplayState
+from phids.shared.coercion import coerce_float, coerce_int
 from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.shared.logging_config import get_simulation_debug_interval
 from phids.telemetry.analytics import TelemetryRecorder, TelemetryRow
@@ -69,51 +62,8 @@ class _ReplayBackend(Protocol):
 
 logger = logging.getLogger(__name__)
 
-
-def _metric_float(value: object, default: float) -> float:
-    """Convert telemetry dict values to float with safe fallbacks.
-
-    Args:
-        value: The value to convert.
-        default: The default value to use if the conversion fails.
-
-    Returns:
-        The converted value.
-    """
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
-
-
-def _metric_int(value: object, default: int) -> int:
-    """Convert telemetry dict values to int with safe fallbacks.
-
-    Args:
-        value: The value to convert.
-        default: The default value to use if the conversion fails.
-
-    Returns:
-        The converted value.
-    """
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        try:
-            return int(value)
-        except ValueError:
-            return default
-    return default
+_metric_float = coerce_float
+_metric_int = coerce_int
 
 
 class SimulationLoop:
@@ -210,7 +160,6 @@ class SimulationLoop:
             for sp in config.flora_species
         }
         # Pre-compile config.diet_matrix.rows to np.array(dtype=np.bool_)
-        # here and pass to run_interaction to avoid array allocation in the hot path.
         self._diet_matrix: npt.NDArray[np.bool_] = np.array(config.diet_matrix.rows, dtype=np.bool_)
 
         # Pre-allocate scratch buffers for zero-allocation Numba JIT movement
@@ -236,118 +185,15 @@ class SimulationLoop:
             config.tick_rate_hz,
         )
 
-    # ------------------------------------------------------------------
-    # Initialisation helpers
-    # ------------------------------------------------------------------
-
     def _spawn_initial_entities(self) -> None:
-        """Place initial plants and swarms from the configuration.
-
-        The method creates entity instances, attaches components, registers
-        spatial positions in the :class:`ECSWorld`, and populates the
-        environment's plant energy buffers.
-        """
-        spawned_plants = 0
-        spawned_swarms = 0
-
-        for plant_placement in self.config.initial_plants:
-            params = self._flora_params.get(plant_placement.species_id)
-            if params is None:
-                logger.warning(
-                    "Skipping initial plant placement with unknown flora species_id=%d at (%d, %d)",
-                    plant_placement.species_id,
-                    plant_placement.x,
-                    plant_placement.y,
-                )
-                continue
-            entity = self.world.create_entity()
-            effective_max_struct = params.structural_mass_max if params.structural_mass_max > 0.0 else params.max_energy
-            initial_energy_ratio = min(1.0, max(0.0, plant_placement.energy / max(1.0, params.max_energy)))
-            initial_struct_mass = effective_max_struct * initial_energy_ratio
-
-            plant = PlantComponent(
-                entity_id=entity.entity_id,
-                species_id=plant_placement.species_id,
-                x=plant_placement.x,
-                y=plant_placement.y,
-                energy=plant_placement.energy,
-                max_energy=params.max_energy,
-                base_energy=params.base_energy,
-                growth_rate=params.growth_rate,
-                survival_threshold=params.survival_threshold,
-                reproduction_interval=params.reproduction_interval,
-                seed_min_dist=params.seed_min_dist,
-                seed_max_dist=params.seed_max_dist,
-                seed_energy_cost=params.seed_energy_cost,
-                seed_drop_height=params.seed_drop_height,
-                seed_terminal_velocity=params.seed_terminal_velocity,
-                camouflage=params.camouflage,
-                camouflage_factor=params.camouflage_factor,
-                translocation_rate=params.translocation_rate,
-                mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
-                structural_mass=initial_struct_mass,
-                max_structural_mass=effective_max_struct,
-                growth_rate_structural=params.structural_growth_rate,
-            )
-            self.world.add_component(entity.entity_id, plant)
-            self.world.register_position(entity.entity_id, plant_placement.x, plant_placement.y)
-            self.env.set_plant_energy(
-                plant_placement.x,
-                plant_placement.y,
-                plant_placement.species_id,
-                plant_placement.energy,
-            )
-            self.env.set_structural_mass(
-                plant_placement.x,
-                plant_placement.y,
-                plant_placement.species_id,
-                initial_struct_mass,
-            )
-            spawned_plants += 1
-
-        for swarm_placement in self.config.initial_swarms:
-            entity = self.world.create_entity()
-            energy_min = get_herbivore_energy_min(self._herbivore_params, swarm_placement.species_id)
-            energy_upkeep_per_individual = get_herbivore_energy_upkeep(
-                self._herbivore_params, swarm_placement.species_id
-            )
-            initial_upkeep = swarm_placement.population * energy_min * energy_upkeep_per_individual
-
-            swarm = SwarmComponent(
-                entity_id=entity.entity_id,
-                species_id=swarm_placement.species_id,
-                x=swarm_placement.x,
-                y=swarm_placement.y,
-                population=swarm_placement.population,
-                initial_population=swarm_placement.population,
-                energy=swarm_placement.energy,
-                energy_min=energy_min,
-                velocity=get_herbivore_velocity(self._herbivore_params, swarm_placement.species_id),
-                consumption_rate=get_herbivore_consumption_rate(self._herbivore_params, swarm_placement.species_id),
-                reproduction_energy_divisor=get_herbivore_reproduction_divisor(
-                    self._herbivore_params, swarm_placement.species_id
-                ),
-                energy_upkeep_per_individual=energy_upkeep_per_individual,
-                split_population_threshold=get_herbivore_split_threshold(
-                    self._herbivore_params, swarm_placement.species_id
-                ),
-                last_caloric_intake=initial_upkeep,
-                metabolism_upkeep=initial_upkeep,
-            )
-            self.world.add_component(entity.entity_id, swarm)
-            self.world.register_position(entity.entity_id, swarm_placement.x, swarm_placement.y)
-            spawned_swarms += 1
-
-        self.env.rebuild_energy_layer()
-        logger.info(
-            "Initial entities spawned (plants=%d, swarms=%d)",
-            spawned_plants,
-            spawned_swarms,
+        """Place initial plants and swarms from configuration into the ECS world."""
+        spawn_initial_entities(
+            config=self.config,
+            world=self.world,
+            env=self.env,
+            flora_params=self._flora_params,
+            herbivore_params=self._herbivore_params,
         )
-
-    # ------------------------------------------------------------------
-    # Simulation control
-    # ------------------------------------------------------------------
 
     def start(self) -> None:
         """Mark the simulation as running.
@@ -447,9 +293,95 @@ class SimulationLoop:
             phase_timings_ms,
         )
 
-    # ------------------------------------------------------------------
-    # Core tick
-    # ------------------------------------------------------------------
+    def _step_phase_flow_field(self) -> None:
+        """Execute Phase 1: Flow-field calculation and camouflage attenuation."""
+        self.env.flow_field = compute_flow_field(
+            self.env.plant_energy_layer,
+            self.env.apparent_nutrition_layer,
+            self.env.toxin_layers,
+            self.env.width,
+            self.env.height,
+            self.env._flow_field_base,
+            self.env._flow_field_current,
+            self.env._flow_field_nxt,
+            self.config.chemotaxis_alpha,
+            self.config.chemotaxis_beta,
+            self.config.chemotaxis_decay,
+            self.config.chemotaxis_truncate_threshold,
+        )
+        for entity in self.world.query(PlantComponent):
+            plant: PlantComponent = entity.get_component(PlantComponent)
+            if plant.camouflage:
+                apply_camouflage(self.env.flow_field, plant.x, plant.y, plant.camouflage_factor)
+
+    def _step_phase_lifecycle(self, plant_death_causes: dict[str, int]) -> None:
+        """Execute Phase 2: Botanical lifecycle, growth, mycorrhiza, reproduction, and culling.
+
+        Args:
+            plant_death_causes: Mutable mapping recording plant mortality causes.
+        """
+        run_lifecycle(
+            self.world,
+            self.env,
+            self.tick,
+            cast("dict[int, object]", self._flora_params),
+            mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
+            mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
+            mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
+            plant_death_causes=plant_death_causes,
+        )
+
+    def _step_phase_interaction(
+        self,
+        plant_death_causes: dict[str, int],
+        herbivore_death_causes: dict[str, int],
+        *,
+        is_medium_tick: bool,
+        is_slow_tick: bool,
+    ) -> None:
+        """Execute Phase 3: Chemotaxis movement, herbivore feeding, starvation, and mitosis.
+
+        Args:
+            plant_death_causes: Mutable mapping recording plant mortality causes.
+            herbivore_death_causes: Mutable mapping recording herbivore mortality causes.
+            is_medium_tick: True if on 24-tick daily feeding/BMR stride.
+            is_slow_tick: True if on 168-tick weekly mitosis stride.
+        """
+        run_interaction(
+            self.world,
+            self.env,
+            self._diet_matrix,
+            list(self.config.flora_species),
+            list(self.config.herbivore_species),
+            self.tick,
+            self._scratch_cx,
+            self._scratch_cy,
+            self._scratch_scores,
+            self._scratch_adjusted,
+            self._scratch_weights,
+            plant_death_causes=plant_death_causes,
+            herbivore_death_causes=herbivore_death_causes,
+            is_medium_tick=is_medium_tick,
+            is_slow_tick=is_slow_tick,
+        )
+
+    def _step_phase_signaling(self, plant_death_causes: dict[str, int]) -> None:
+        """Execute Phase 4: Semiochemical volatile synthesis, diffusion, and toxin exposure.
+
+        Args:
+            plant_death_causes: Mutable mapping recording plant mortality causes.
+        """
+        run_signaling(
+            self.world,
+            self.env,
+            self._trigger_conditions,
+            self.config.mycorrhizal_inter_species,
+            self.config.mycorrhizal_signal_velocity,
+            self.tick,
+            plant_death_causes=plant_death_causes,
+            substance_emit_rate=self.config.substance_emit_rate,
+            signal_decay_factor=self.config.signal_decay_factor,
+        )
 
     async def step(self) -> TerminationResult:
         """Execute one deterministic simulation tick.
@@ -484,82 +416,26 @@ class SimulationLoop:
                 "death_lethal_toxin": 0,
             }
 
-            # Modulo-gating: decouple biological timescales.
-            # 1 tick = 1 hour. Daily and weekly gates batch discrete processes
-            # to match their natural biological pace and prevent subnormal float
-            # degradation from per-tick microscopic increments.
-            is_medium_tick: bool = self.tick % 24 == 0  # Daily gate (BMR, feeding)
-            is_slow_tick: bool = self.tick % 168 == 0  # Weekly gate (growth, mitosis, reproduction)
+            is_medium_tick: bool = self.tick % 24 == 0
+            is_slow_tick: bool = self.tick % 168 == 0
             phase_started = time.perf_counter()
 
-            # --------------------------------------------------------
-            # Phase 1: Flow-field update (uses current read state)
-            # --------------------------------------------------------
-            self.env.flow_field = compute_flow_field(
-                self.env.plant_energy_layer,
-                self.env.apparent_nutrition_layer,
-                self.env.toxin_layers,
-                self.env.width,
-                self.env.height,
-                self.env._flow_field_base,
-                self.env._flow_field_current,
-                self.env._flow_field_nxt,
-                self.config.chemotaxis_alpha,
-                self.config.chemotaxis_beta,
-                self.config.chemotaxis_decay,
-                self.config.chemotaxis_truncate_threshold,
-            )
+            # Phase 1: Flow-field
+            self._step_phase_flow_field()
             if debug_summary:
                 phase_timings_ms["flow_field"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # Apply camouflage attenuations
-            for entity in self.world.query(PlantComponent):
-                plant: PlantComponent = entity.get_component(PlantComponent)
-                if plant.camouflage:
-                    apply_camouflage(self.env.flow_field, plant.x, plant.y, plant.camouflage_factor)
-
-            # --------------------------------------------------------
-            # Phase 2: Lifecycle (grow, connect, reproduce, cull)
-            # Executed on every tick using Phase-Staggered Cohort scheduling
-            # ((entity_id % 168) == (tick % 168)). This distributes the weekly
-            # growth workload evenly across all ticks, ensuring uniform L1/L2
-            # cache locality and C0 macro telemetry smoothness.
-            # --------------------------------------------------------
-            run_lifecycle(
-                self.world,
-                self.env,
-                self.tick,
-                cast("dict[int, object]", self._flora_params),
-                mycorrhizal_connection_cost=self.config.mycorrhizal_connection_cost,
-                mycorrhizal_growth_interval_ticks=self.config.mycorrhizal_growth_interval_ticks,
-                mycorrhizal_inter_species=self.config.mycorrhizal_inter_species,
-                plant_death_causes=plant_death_causes,
-            )
+            # Phase 2: Lifecycle
+            self._step_phase_lifecycle(plant_death_causes)
             if debug_summary:
                 phase_timings_ms["lifecycle"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # --------------------------------------------------------
-            # Phase 3: Interaction (movement, feeding, starvation, mitosis)
-            # Movement (chemotaxis) executes every tick (Fast Loop).
-            # Feeding + Metabolism execute on the Medium Loop (daily, 24-tick stride).
-            # Mitosis executes on the Slow Loop (weekly, 168-tick stride).
-            # --------------------------------------------------------
-            run_interaction(
-                self.world,
-                self.env,
-                self._diet_matrix,
-                list(self.config.flora_species),
-                list(self.config.herbivore_species),
-                self.tick,
-                self._scratch_cx,
-                self._scratch_cy,
-                self._scratch_scores,
-                self._scratch_adjusted,
-                self._scratch_weights,
-                plant_death_causes=plant_death_causes,
-                herbivore_death_causes=herbivore_death_causes,
+            # Phase 3: Interaction
+            self._step_phase_interaction(
+                plant_death_causes,
+                herbivore_death_causes,
                 is_medium_tick=is_medium_tick,
                 is_slow_tick=is_slow_tick,
             )
@@ -567,36 +443,20 @@ class SimulationLoop:
                 phase_timings_ms["interaction"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # --------------------------------------------------------
-            # Phase 4: Signaling (substance synthesis, diffusion, toxins)
-            # --------------------------------------------------------
-            run_signaling(
-                self.world,
-                self.env,
-                self._trigger_conditions,
-                self.config.mycorrhizal_inter_species,
-                self.config.mycorrhizal_signal_velocity,
-                self.tick,
-                plant_death_causes=plant_death_causes,
-                substance_emit_rate=self.config.substance_emit_rate,
-                signal_decay_factor=self.config.signal_decay_factor,
-            )
+            # Phase 4: Signaling
+            self._step_phase_signaling(plant_death_causes)
             if debug_summary:
                 phase_timings_ms["signaling"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # Commit all energy depletion from feeding and defense upkeep before
-            # telemetry sampling and next-tick flow-field evaluation.
+            # Rebuild aggregate energy layer
             self.env.rebuild_energy_layer()
 
-            # Build one shared metrics snapshot for telemetry and termination.
+            # Phase 5: Metrics & Telemetry
             tick_metrics: TickMetrics = collect_tick_metrics(self.world)
             tick_metrics.plant_death_causes = plant_death_causes
             tick_metrics.herbivore_death_causes = herbivore_death_causes
 
-            # --------------------------------------------------------
-            # Phase 5: Telemetry
-            # --------------------------------------------------------
             self.telemetry.record(
                 self.world,
                 self.tick,
@@ -608,10 +468,7 @@ class SimulationLoop:
                 phase_timings_ms["telemetry_replay"] = (time.perf_counter() - phase_started) * 1000.0
                 phase_started = time.perf_counter()
 
-            # --------------------------------------------------------
-            # Phase 6: Termination check (double-buffer swap happens here
-            #          implicitly - all writes committed before check)
-            # --------------------------------------------------------
+            # Phase 6: Termination
             result = check_termination(
                 self.world,
                 self.tick,
@@ -678,16 +535,12 @@ class SimulationLoop:
             tick_rate_hz: Requested simulation ticks per second.
 
         Returns:
-            Applied tick-rate value after clamping.
+            float: Applied tick-rate value after clamping.
         """
         applied = max(0.1, tick_rate_hz)
         self.config.tick_rate_hz = applied
         logger.info("Simulation tick rate updated to %.2f Hz", applied)
         return applied
-
-    # ------------------------------------------------------------------
-    # Wind update (REST API integration point)
-    # ------------------------------------------------------------------
 
     def update_wind(self, vx: float, vy: float) -> None:
         """Update the environment uniform wind vector.
@@ -697,7 +550,6 @@ class SimulationLoop:
             vy: The vertical vector component of the globally applied wind force.
         """
         self.env.set_uniform_wind(vx, vy)
-        # Wind can change snapshot content without advancing ticks.
         self._state_revision += 1
         self._cached_snapshot_tick = -1
         self._cached_snapshot = None
@@ -705,19 +557,19 @@ class SimulationLoop:
 
     @property
     def state_revision(self) -> int:
-        """Return a monotonic token for non-tick state mutations relevant to stream payloads."""
-        return self._state_revision
+        """Return a monotonic token for non-tick state mutations relevant to stream payloads.
 
-    # ------------------------------------------------------------------
-    # State snapshot for WebSocket streaming
-    # ------------------------------------------------------------------
+        Returns:
+            int: Current state revision integer.
+        """
+        return self._state_revision
 
     def get_state_snapshot(self) -> ReplayState:
         """Return a serialisable snapshot of the current grid state.
 
         Returns:
             ReplayState: Snapshot containing tick, termination state and
-            environment dictionary (from :meth:`GridEnvironment.to_dict`).
+                environment dictionary (from :meth:`GridEnvironment.to_dict`).
         """
         if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
             return self._cached_snapshot

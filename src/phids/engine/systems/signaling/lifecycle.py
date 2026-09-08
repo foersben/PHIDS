@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
+from phids.shared.constants import DEFAULT_NUTRITION_TARGET
 
 if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld, Entity
@@ -49,7 +50,7 @@ def _phase_manage_nutrition_recovery(world: ECSWorld) -> None:
         if plant.withdrawal_ticks_remaining > 0:
             plant.withdrawal_ticks_remaining -= 1
             # Rate-limited translocation toward target factor
-            target = getattr(plant, "target_nutrition_factor", 0.1)
+            target = getattr(plant, "target_nutrition_factor", DEFAULT_NUTRITION_TARGET)
             rate = plant.translocation_rate
             plant.apparent_nutrition_factor += (target - plant.apparent_nutrition_factor) * rate
         else:

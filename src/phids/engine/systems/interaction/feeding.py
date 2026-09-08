@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-import math
+import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.systems.interaction.population import _accumulate_tile_population
+from phids.shared.constants import INCOMPATIBLE_DIET_REPULSION_TICKS
 
 if TYPE_CHECKING:
     import numpy as np
@@ -135,10 +136,13 @@ def _feed_on_single_plant(
     net_digestibility = min(1.0, max(0.0, digestibility_modifier * digestive_efficiency))
     metabolized_energy = consumed * net_digestibility
 
-    # Apply mechanical damage
+    # Apply mechanical damage via stochastic accumulation
     if mechanical_damage_per_bite > 0.0 and consumed > 0:
         damage = mechanical_damage_per_bite * (1.0 - morphological_adaptation)
-        casualties = math.floor(damage)
+        int_damage = int(damage)
+        prob = damage - int_damage
+        extra = 1 if (prob > 0.0 and random.random() < prob) else 0
+        casualties = int_damage + extra
         swarm.population = max(0, swarm.population - casualties)
         _accumulate_tile_population(tile_populations, swarm.x, swarm.y, env.width, -casualties)
 
@@ -257,4 +261,4 @@ def _resolve_swarm_feeding(
         swarm.repelled_ticks_remaining = 0
     elif on_incompatible_plant:
         swarm.repelled = True
-        swarm.repelled_ticks_remaining = 2
+        swarm.repelled_ticks_remaining = INCOMPATIBLE_DIET_REPULSION_TICKS
