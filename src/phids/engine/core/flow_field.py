@@ -174,8 +174,11 @@ def _propagate_iteration_jit(
             val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
 
-            diff = abs(val - current[x, y])
-            max_diff = max(max_diff, diff)
+            diff = val - current[x, y]
+            if diff > max_diff:
+                max_diff = diff
+            elif -diff > max_diff:
+                max_diff = -diff
     return max_diff
 
 
@@ -217,8 +220,11 @@ def _propagate_iteration_jit_pow2(
             val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
 
-            diff = abs(val - current[x, y])
-            max_diff = max(max_diff, diff)
+            diff = val - current[x, y]
+            if diff > max_diff:
+                max_diff = diff
+            elif -diff > max_diff:
+                max_diff = -diff
     return max_diff
 
 
@@ -244,8 +250,11 @@ def _propagate_iteration_jit_parallel(
             val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
 
-            diff = abs(val - current[x, y])
-            max_diff = max(max_diff, diff)
+            diff = val - current[x, y]
+            if diff > max_diff:
+                max_diff = diff
+            elif -diff > max_diff:
+                max_diff = -diff
     return max_diff
 
 
@@ -273,8 +282,11 @@ def _propagate_iteration_jit_pow2_parallel(
             val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
 
-            diff = abs(val - current[x, y])
-            max_diff = max(max_diff, diff)
+            diff = val - current[x, y]
+            if diff > max_diff:
+                max_diff = diff
+            elif -diff > max_diff:
+                max_diff = -diff
     return max_diff
 
 
@@ -295,7 +307,7 @@ def _truncate_subnormals_jit(
     """
     for x in range(width):
         for y in range(height):
-            if abs(current[x, y]) < threshold:
+            if current[x, y] > -threshold and current[x, y] < threshold:
                 current[x, y] = 0.0
 
 
@@ -328,17 +340,21 @@ def _update_boundary_x_jit(
     n_sum, _ = _sum_neighbours_jit(x, 0, width, height, current)
     val = base[x, 0] + (decay * n_sum * 0.25)
     nxt[x, 0] = val
-    diff1 = abs(val - current[x, 0])
+    diff1 = val - current[x, 0]
     if diff1 > max_diff:
         max_diff = diff1
+    elif -diff1 > max_diff:
+        max_diff = -diff1
 
     # Bottom boundary (y=height-1)
     n_sum, _ = _sum_neighbours_jit(x, height - 1, width, height, current)
     val = base[x, height - 1] + (decay * n_sum * 0.25)
     nxt[x, height - 1] = val
-    diff2 = abs(val - current[x, height - 1])
+    diff2 = val - current[x, height - 1]
     if diff2 > max_diff:
         max_diff = diff2
+    elif -diff2 > max_diff:
+        max_diff = -diff2
     return max_diff
 
 
@@ -371,17 +387,21 @@ def _update_boundary_y_jit(
     n_sum, _ = _sum_neighbours_jit(0, y, width, height, current)
     val = base[0, y] + (decay * n_sum * 0.25)
     nxt[0, y] = val
-    diff1 = abs(val - current[0, y])
+    diff1 = val - current[0, y]
     if diff1 > max_diff:
         max_diff = diff1
+    elif -diff1 > max_diff:
+        max_diff = -diff1
 
     # Right boundary (x=width-1)
     n_sum, _ = _sum_neighbours_jit(width - 1, y, width, height, current)
     val = base[width - 1, y] + (decay * n_sum * 0.25)
     nxt[width - 1, y] = val
-    diff2 = abs(val - current[width - 1, y])
+    diff2 = val - current[width - 1, y]
     if diff2 > max_diff:
         max_diff = diff2
+    elif -diff2 > max_diff:
+        max_diff = -diff2
     return max_diff
 
 
@@ -437,16 +457,20 @@ def _update_boundary_x_jit_pow2(
     n_sum, _ = _sum_neighbours_jit_pow2(x, 0, mask_x, mask_y, current)
     val = base[x, 0] + (decay * n_sum * 0.25)
     nxt[x, 0] = val
-    diff1 = abs(val - current[x, 0])
+    diff1 = val - current[x, 0]
     if diff1 > max_diff:
         max_diff = diff1
+    elif -diff1 > max_diff:
+        max_diff = -diff1
 
     n_sum, _ = _sum_neighbours_jit_pow2(x, height - 1, mask_x, mask_y, current)
     val = base[x, height - 1] + (decay * n_sum * 0.25)
     nxt[x, height - 1] = val
-    diff2 = abs(val - current[x, height - 1])
+    diff2 = val - current[x, height - 1]
     if diff2 > max_diff:
         max_diff = diff2
+    elif -diff2 > max_diff:
+        max_diff = -diff2
     return max_diff
 
 
@@ -465,16 +489,20 @@ def _update_boundary_y_jit_pow2(
     n_sum, _ = _sum_neighbours_jit_pow2(0, y, mask_x, mask_y, current)
     val = base[0, y] + (decay * n_sum * 0.25)
     nxt[0, y] = val
-    diff1 = abs(val - current[0, y])
+    diff1 = val - current[0, y]
     if diff1 > max_diff:
         max_diff = diff1
+    elif -diff1 > max_diff:
+        max_diff = -diff1
 
     n_sum, _ = _sum_neighbours_jit_pow2(width - 1, y, mask_x, mask_y, current)
     val = base[width - 1, y] + (decay * n_sum * 0.25)
     nxt[width - 1, y] = val
-    diff2 = abs(val - current[width - 1, y])
+    diff2 = val - current[width - 1, y]
     if diff2 > max_diff:
         max_diff = diff2
+    elif -diff2 > max_diff:
+        max_diff = -diff2
     return max_diff
 
 
@@ -534,9 +562,11 @@ def _propagate_inner_jit(
             propagated = n_sum * 0.25  # neighbour_count is always 4
             val = base[x, y] + (decay * propagated)
             nxt[x, y] = val
-            diff = abs(val - current[x, y])
+            diff = val - current[x, y]
             if diff > max_diff:
                 max_diff = diff
+            elif -diff > max_diff:
+                max_diff = -diff
     return max_diff
 
 

@@ -254,8 +254,8 @@ def test_propagate_iteration_jit_pow2_parity() -> None:
     nxt1 = np.zeros((width, height), dtype=np.float64)
     nxt2 = np.zeros((width, height), dtype=np.float64)
 
-    diff1 = _propagate_iteration_jit(width, height, decay, base, current, nxt1)
-    diff2 = _propagate_iteration_jit_pow2(width, height, mask_x, mask_y, decay, base, current, nxt2)
+    diff1 = getattr(_propagate_iteration_jit, 'py_func', _propagate_iteration_jit)(width, height, decay, base, current, nxt1)
+    diff2 = getattr(_propagate_iteration_jit_pow2, 'py_func', _propagate_iteration_jit_pow2)(width, height, mask_x, mask_y, decay, base, current, nxt2)
 
     np.testing.assert_allclose(diff1, diff2, rtol=1e-12, atol=1e-12)
     np.testing.assert_allclose(nxt1, nxt2, rtol=1e-12, atol=1e-12)
