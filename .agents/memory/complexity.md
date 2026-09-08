@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2026-09-08 - Complexity Refactoring Report
+* **Target Function:** src/phids/api/routers/config/trigger_rules.py : _build_node_updates
+* **Selection Rationale:** The function had a cognitive complexity score of 15 due to excessive if/elif nesting within a single block. It was chosen because it sits at the API layer (low performance risk), has a modular structure where logic could easily be extracted into cohesive helper functions, and yielded immediate readability benefits by flattening the central branching structure.
+* **Before/After Score:** 15 vs. passing (score <= 14)
+* **Performance Assessment:** The extracted logic consists purely of simple dictionary assignments. Extracting them into private helpers does not impact hot loops or scientific engine tick speed as this function is part of the API payload generation flow (configuration updates).
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
