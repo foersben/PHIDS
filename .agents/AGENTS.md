@@ -37,6 +37,18 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | `@matrix-auditor` | Audits Data-Flow Matrix coverage & trace parity. | Matrix audits, doc trace validation. |
 | `@causal-verifier` | Verifies branchless SIMD masks & causal invariants. | State leaks, unmasked JIT loops. |
 
+## Active Workflows
+
+| Workflow | Slash Command | Description |
+| --- | --- | --- |
+| Epistemic Soundness Audit | `/epistemic-soundness-audit` | 10-slice multi-pass relational review of biological, mathematical, and HPC integrity. |
+| Matrix TDD Refactor | `/matrix-tdd-refactor` | Translates conceptual behavior to Data-Flow Matrix specs, Pytest traces, and Numba kernels. |
+| Full-Stack Validation | `/validate-full-stack` | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
+| Model Implementation | `/implement-scientific-model` | Process for adding ecological/mathematical behaviors to ECS arrays and simulation loop. |
+| Matrix Drift Reconciliation | `/matrix-drift-reconciliation` | Automated workflow for reconciling and updating Data-Flow Matrices when engine parameters drift. |
+| Vertical Slice Development | `/vertical-slice-development` | Coordinated pipeline for building full-stack simulation features. |
+| Human Delegation Protocol | `/delegation-protocol` | Checklist for human-escalated tasks when agents are structurally blocked. |
+
 ## Documentation Formatting Rules
 
 - **Dashes:** Always use the standard hyphen (`-`) instead of the en-dash or em-dash in all Markdown documentation and UI text.
