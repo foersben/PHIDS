@@ -70,14 +70,49 @@ def _resolve_swarm_movement(
         return False
 
     # Decay aversion memory per movement tick
-    # TODO: Performance: Replace getattr(swarm, "aversion_memory", 0.0) with direct field access swarm.aversion_memory
-    if getattr(swarm, "aversion_memory", 0.0) > 0.0:
+    if swarm.aversion_memory > 0.0:
         swarm.aversion_memory *= 0.95
         if swarm.aversion_memory < 0.01:
             swarm.aversion_memory = 0.0
 
     old_x, old_y = swarm.x, swarm.y
 
+    nx, ny = _determine_next_position(
+        swarm,
+        env,
+        diet_matrix,
+        tile_populations,
+        herbivore_params_dict,
+        scratch_cx,
+        scratch_cy,
+        scratch_scores,
+        scratch_adjusted,
+        scratch_weights,
+    )
+
+    has_moved = False
+    if (nx, ny) != (old_x, old_y):
+        has_moved = _execute_swarm_movement(
+            swarm, entity, world, env, nx, ny, old_x, old_y, tile_populations, herbivore_params_dict
+        )
+
+    swarm.move_cooldown = swarm.velocity - 1
+    return has_moved
+
+
+def _determine_next_position(
+    swarm: SwarmComponent,
+    env: GridEnvironment,
+    diet_matrix: npt.NDArray[np.bool_],
+    tile_populations: npt.NDArray[np.int32] | list[int],
+    herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
+    scratch_scores: npt.NDArray[np.float64],
+    scratch_adjusted: npt.NDArray[np.float64],
+    scratch_weights: npt.NDArray[np.float64],
+) -> tuple[int, int]:
+    """Determine the next (nx, ny) coordinates for the swarm based on crowding and food availability."""
     # 1. Crowding takes strict precedence (Physical Jostling)
     if (
         not swarm.repelled
@@ -96,47 +131,58 @@ def _resolve_swarm_movement(
         swarm.repelled_ticks_remaining -= 1
         if swarm.repelled_ticks_remaining <= 0:
             swarm.repelled = False
-    else:
-        # 2. Fast O(1) check: are we already standing on valid, uneaten food?
-        import numpy as np
+        return nx, ny
 
-        anchor_rand = np.random.random()
-        if _is_swarm_anchored(swarm, env, diet_matrix, rand_val=anchor_rand):
-            nx, ny = swarm.x, swarm.y
-        else:
-            from phids.engine.core.herbivore_params import get_herbivore_softmax_temperature
+    # 2. Fast O(1) check: are we already standing on valid, uneaten food?
+    import numpy as np
 
-            tau = get_herbivore_softmax_temperature(herbivore_params_dict, swarm.species_id)
-            # 3. Resume normal gradient tracking if no food is present.
-            nx, ny = _choose_neighbour_by_flow_probability(
-                swarm,
-                env.flow_field,
-                env.width,
-                env.height,
-                scratch_cx,
-                scratch_cy,
-                scratch_scores,
-                scratch_adjusted,
-                scratch_weights,
-                tile_populations=tile_populations,
-                tau=tau,
-            )
+    anchor_rand = np.random.random()
+    if _is_swarm_anchored(swarm, env, diet_matrix, rand_val=anchor_rand):
+        return swarm.x, swarm.y
 
-    has_moved = False
-    if (nx, ny) != (old_x, old_y):
-        world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
-        _accumulate_tile_population(tile_populations, old_x, old_y, env.width, -swarm.population)
-        _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
-        swarm.x, swarm.y = nx, ny
+    from phids.engine.core.herbivore_params import get_herbivore_softmax_temperature
 
-        swarm.last_dx = _calculate_toroidal_delta(nx, old_x, env.width)
-        swarm.last_dy = _calculate_toroidal_delta(ny, old_y, env.height)
-        # Reset caloric intake when moving to a new patch to assume it's good until evaluated
-        swarm.last_caloric_intake = swarm.metabolism_upkeep
-        has_moved = True
+    tau = get_herbivore_softmax_temperature(herbivore_params_dict, swarm.species_id)
+    # 3. Resume normal gradient tracking if no food is present.
+    return _choose_neighbour_by_flow_probability(
+        swarm,
+        env.flow_field,
+        env.width,
+        env.height,
+        scratch_cx,
+        scratch_cy,
+        scratch_scores,
+        scratch_adjusted,
+        scratch_weights,
+        tile_populations=tile_populations,
+        tau=tau,
+    )
 
-        # Plan 3: Evaluate probabilistic incidental mortality (trampling or clipping) on co-located flora
-        _resolve_incidental_mortality(swarm, nx, ny, world, env, herbivore_params_dict)
 
-    swarm.move_cooldown = swarm.velocity - 1
-    return has_moved
+def _execute_swarm_movement(
+    swarm: SwarmComponent,
+    entity: Entity,
+    world: ECSWorld,
+    env: GridEnvironment,
+    nx: int,
+    ny: int,
+    old_x: int,
+    old_y: int,
+    tile_populations: npt.NDArray[np.int32] | list[int],
+    herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
+) -> bool:
+    """Apply the movement, update world state, and evaluate incidental mortality."""
+    world.move_entity(entity.entity_id, old_x, old_y, nx, ny)
+    _accumulate_tile_population(tile_populations, old_x, old_y, env.width, -swarm.population)
+    _accumulate_tile_population(tile_populations, nx, ny, env.width, swarm.population)
+    swarm.x, swarm.y = nx, ny
+
+    swarm.last_dx = _calculate_toroidal_delta(nx, old_x, env.width)
+    swarm.last_dy = _calculate_toroidal_delta(ny, old_y, env.height)
+    # Reset caloric intake when moving to a new patch to assume it's good until evaluated
+    swarm.last_caloric_intake = swarm.metabolism_upkeep
+
+    # Plan 3: Evaluate probabilistic incidental mortality (trampling or clipping) on co-located flora
+    _resolve_incidental_mortality(swarm, nx, ny, world, env, herbivore_params_dict)
+
+    return True
