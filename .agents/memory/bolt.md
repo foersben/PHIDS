@@ -95,3 +95,8 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** When making a defensive copy of a component set before iterating in a tight ECS hot loop (where mutations like `collect_garbage` might alter the original set and raise `RuntimeError: Set changed size during iteration`), `list(component_set)` is significantly faster than `tuple(component_set)`. CPython's list allocation is highly optimized and often reuses internal memory buffers, whereas `tuple` construction from an unknown-sized iterable involves additional overhead. In microbenchmarks on large component sets, `list()` outperforms `tuple()` by roughly 30%.
 **Action:** Always use `list(world._component_index.get(..., set()))` instead of `tuple(...)` when you need a mutable-safe snapshot of ECS component IDs for iteration on the hot path.
+
+## 2026-08-15 - [Short-circuiting in Numba JIT loops]
+
+**Learning:** During profiling of `_has_compatible_food_jit` in the `anchoring` module, I found that iterating through all flora species and accumulating a boolean result using `found = found or (compatible and has_energy)` prevents LLVM/Numba from short-circuiting the loop. This means the engine does unnecessary iterations and memory reads even after a compatible food source is found.
+**Action:** Replace `found = found or (condition)` accumulation logic with explicit `if condition: return True` early exits inside Numba `@njit` loops. This simple restructuring allows the compiler to short-circuit the execution, speeding up the hot path for movement anchoring checks.

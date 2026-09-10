@@ -1,0 +1,51 @@
+Comparing performance between 'develop' and 'worktree' on 1 scenario(s) (100 ticks)...
+Repeats per test: 10 | Warmup ticks: 10 | JIT Only: True
+Creating virtual repository clone in .cache/bench_clone...
+
+[Virtual Clone] Checking out 'develop'...
+[Virtual Clone] Running benchmark on 'develop' (JIT enabled) for rectangular_crossfire_extended.json...
+    -> Run 1/10 ... OK (0.24s)
+    -> Run 2/10 ... OK (0.24s)
+    -> Run 3/10 ... OK (0.25s)
+    -> Run 4/10 ... OK (0.26s)
+    -> Run 5/10 ... OK (0.27s)
+    -> Run 6/10 ... OK (0.25s)
+    -> Run 7/10 ... OK (0.25s)
+    -> Run 8/10 ... OK (0.25s)
+    -> Run 9/10 ... OK (0.26s)
+    -> Run 10/10 ... OK (0.26s)
+
+[Working Tree] Using current uncommitted state for 'worktree'...
+[Working Tree] Running benchmark on 'worktree' (JIT enabled) for rectangular_crossfire_extended.json...
+    -> Run 1/10 ... OK (0.24s)
+    -> Run 2/10 ... OK (0.24s)
+    -> Run 3/10 ... OK (0.25s)
+    -> Run 4/10 ... OK (0.25s)
+    -> Run 5/10 ... OK (0.25s)
+    -> Run 6/10 ... OK (0.25s)
+    -> Run 7/10 ... OK (0.25s)
+    -> Run 8/10 ... OK (0.25s)
+    -> Run 9/10 ... OK (0.25s)
+    -> Run 10/10 ... OK (0.26s)
+
+Cleaning up virtual repository clone...
+
+====================================================================================================
+Results for Scenario: rectangular_crossfire_extended.json
+====================================================================================================
+Commit / Ref                             | JIT Mode   | Avg Duration (s) | Total Ticks | Avg Ticks/s
+----------------------------------------------------------------------------------------------------
+develop                                  | JIT        | 0.2527           | 1000        | 395.80
+worktree                                 | JIT        | 0.2492           | 1000        | 401.36
+
+----------------------------------------------------------------------------------------------------
+Evaluation Summary: rectangular_crossfire_extended.json
+----------------------------------------------------------------------------------------------------
+- Baseline Version:  develop
+- Optimized Version: worktree
+----------------------------------------------------------------------------------------------------
+JIT Mode:
+  * Baseline:  395.80 ticks/s (0.2527s)
+  * Optimized: 401.36 ticks/s (0.2492s)
+  * Result:    Optimized is 1.41% faster.
+----------------------------------------------------------------------------------------------------

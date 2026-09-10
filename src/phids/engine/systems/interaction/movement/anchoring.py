@@ -37,12 +37,10 @@ def _has_compatible_food_jit(
 ) -> bool:
     """Check if swarm is co-located with any compatible flora species with positive energy."""
     _, num_flora = diet_matrix.shape
-    found = False
     for flora_species_id in range(num_flora):
-        compatible = diet_matrix[species_id, flora_species_id]
-        has_energy = plant_energy_by_species[flora_species_id, x, y] > 0.0
-        found = found or (compatible and has_energy)
-    return found
+        if diet_matrix[species_id, flora_species_id] and plant_energy_by_species[flora_species_id, x, y] > 0.0:
+            return True
+    return False
 
 
 @njit(cache=True)
@@ -110,10 +108,8 @@ def _is_swarm_anchored(
     Returns:
         True if the swarm is anchored, False otherwise.
     """
-    # TODO: Performance: Replace getattr with direct field access on swarm
-    # (swarm.last_caloric_intake and swarm.metabolism_upkeep) to avoid overhead in the hot path.
-    intake = float(getattr(swarm, "last_caloric_intake", 0.0))
-    upkeep = float(getattr(swarm, "metabolism_upkeep", 0.0))
+    intake = float(swarm.last_caloric_intake)
+    upkeep = float(swarm.metabolism_upkeep)
 
     if isinstance(diet_matrix, np.ndarray):
         return _is_swarm_anchored_jit(
