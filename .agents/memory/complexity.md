@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-05-15 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/config/trigger_rules.py:_build_node_updates`
+* **Selection Rationale:** The function had a complexity score of 15 and consisted of an easily partitionable set of `if/elif` branches creating dictionaries. Because it is purely in the API layer, refactoring it poses zero risk to engine performance or simulation speed, making it an ideal target compared to core movement or incidental mortality systems.
+* **Before/After Score:** 15 vs. 5
+* **Performance Assessment:** Common-sense reasoning confirms zero performance regression. The logic is identical and runs only in the FastAPI admin dashboard endpoints when configuring trigger rules, well outside any hot loop or JIT-compiled critical path.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
