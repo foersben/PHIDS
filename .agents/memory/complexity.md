@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** src/phids/api/routers/config/trigger_rules.py:_build_node_updates
+* **Selection Rationale:** The `_build_node_updates` function had a complexity score of 15 due to a deep set of `elif` clauses mapping different configuration keys based on the `current_kind`. It was selected because untangling it was extremely safe: it belongs to the standard Python API layer with zero risk to simulation performance, and logic flattening was achievable cleanly by extracting simple dictionaries without breaking architectural invariants.
+* **Before/After Score:** 15 vs. 5
+* **Performance Assessment:** The extracted logic consists of simple dictionary constructions inside the HTTP configuration API endpoints. There is zero risk of introducing engine overhead or hot-path regressions as this does not participate in the core simulation tick loop.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
