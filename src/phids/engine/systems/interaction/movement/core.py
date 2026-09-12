@@ -28,6 +28,53 @@ if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld, Entity
 
 
+
+def _determine_next_position(
+    swarm: SwarmComponent,
+    env: GridEnvironment,
+    diet_matrix: npt.NDArray[np.bool_],
+    tile_populations: npt.NDArray[np.int32] | list[int],
+    herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
+    scratch_scores: npt.NDArray[np.float64],
+    scratch_adjusted: npt.NDArray[np.float64],
+    scratch_weights: npt.NDArray[np.float64],
+) -> tuple[int, int]:
+    """Determine the next (x, y) coordinates for a swarm."""
+    if swarm.repelled and swarm.repelled_ticks_remaining > 0:
+        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
+        swarm.repelled_ticks_remaining -= 1
+        if swarm.repelled_ticks_remaining <= 0:
+            swarm.repelled = False
+        return nx, ny
+
+    # 2. Fast O(1) check: are we already standing on valid, uneaten food?
+    import numpy as np
+
+    anchor_rand = np.random.random()
+    if _is_swarm_anchored(swarm, env, diet_matrix, rand_val=anchor_rand):
+        return swarm.x, swarm.y
+
+    from phids.engine.core.herbivore_params import get_herbivore_softmax_temperature
+    tau = get_herbivore_softmax_temperature(herbivore_params_dict, swarm.species_id)
+
+    # 3. Resume normal gradient tracking if no food is present.
+    return _choose_neighbour_by_flow_probability(
+        swarm,
+        env.flow_field,
+        env.width,
+        env.height,
+        scratch_cx,
+        scratch_cy,
+        scratch_scores,
+        scratch_adjusted,
+        scratch_weights,
+        tile_populations=tile_populations,
+        tau=tau,
+    )
+
+
 def _resolve_swarm_movement(
     swarm: SwarmComponent,
     entity: Entity,
@@ -91,36 +138,18 @@ def _resolve_swarm_movement(
         swarm.repelled = True
         swarm.repelled_ticks_remaining = k_ticks
 
-    if swarm.repelled and swarm.repelled_ticks_remaining > 0:
-        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
-        swarm.repelled_ticks_remaining -= 1
-        if swarm.repelled_ticks_remaining <= 0:
-            swarm.repelled = False
-    else:
-        # 2. Fast O(1) check: are we already standing on valid, uneaten food?
-        import numpy as np
-
-        anchor_rand = np.random.random()
-        if _is_swarm_anchored(swarm, env, diet_matrix, rand_val=anchor_rand):
-            nx, ny = swarm.x, swarm.y
-        else:
-            from phids.engine.core.herbivore_params import get_herbivore_softmax_temperature
-
-            tau = get_herbivore_softmax_temperature(herbivore_params_dict, swarm.species_id)
-            # 3. Resume normal gradient tracking if no food is present.
-            nx, ny = _choose_neighbour_by_flow_probability(
-                swarm,
-                env.flow_field,
-                env.width,
-                env.height,
-                scratch_cx,
-                scratch_cy,
-                scratch_scores,
-                scratch_adjusted,
-                scratch_weights,
-                tile_populations=tile_populations,
-                tau=tau,
-            )
+    nx, ny = _determine_next_position(
+        swarm=swarm,
+        env=env,
+        diet_matrix=diet_matrix,
+        tile_populations=tile_populations,
+        herbivore_params_dict=herbivore_params_dict,
+        scratch_cx=scratch_cx,
+        scratch_cy=scratch_cy,
+        scratch_scores=scratch_scores,
+        scratch_adjusted=scratch_adjusted,
+        scratch_weights=scratch_weights,
+    )
 
     has_moved = False
     if (nx, ny) != (old_x, old_y):

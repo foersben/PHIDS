@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement/core.py _resolve_swarm_movement
+* **Selection Rationale:** The core movement loop contained high cognitive complexity due to deep if/else branches dealing with evasion, anchoring, and flow field tracking. By extracting this into a standard Python private helper function (`_determine_next_position`), we cleanly flatten the logic without risking Numba JIT regressions or introducing structural allocations.
+* **Before/After Score:** 15 vs. 7
+* **Performance Assessment:** The extracted logic consists purely of standard Python branches and overhead is minimal (no new arrays, objects, or allocations are created). Engine performance and tick latency should remain perfectly preserved.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
