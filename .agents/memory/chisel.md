@@ -94,3 +94,9 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+
+## 2024-11-20 - Extracting Nested Creation Loops
+
+Learning: When extracting a heavily nested loop that builds multiple domain objects (e.g., extracting the loop from `DraftState::from_sim_config` that populates `TriggerRule` and `SubstanceDefinition` lists) into a new helper function, it is safer to pass the target list instances directly into the helper as arguments. This allows the helper to `append()` to the lists in-place, perfectly mirroring the side effects of the original inline loop without requiring complex return types or risking object duplication if the data structures are not perfectly pure. Also, if a model like `TriggerRule` is extracted, placing it under an `if TYPE_CHECKING:` block in the original file for local variable annotations is sufficient and prevents circular runtime imports.
+
+Action: When extracting complex instantiation loops into helper functions in new files, default to passing the accumulator lists into the helper by reference. Ensure that type hinting imports in the original file are moved to `if TYPE_CHECKING:` if they are only used for annotations.
