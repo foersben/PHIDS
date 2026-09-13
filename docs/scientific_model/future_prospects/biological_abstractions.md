@@ -38,7 +38,7 @@ sources:
 - id: dashboard
   resource: src/phids/api/templates/partials/dashboard.html
 - id: simulation
-  resource: src/phids/api/routers/simulation.py
+  resource: src/phids/api/routers/simulation/__init__.py
 - id: zarr_replay
   resource: src/phids/io/zarr_replay.py
 - id: constants
