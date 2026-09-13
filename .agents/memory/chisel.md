@@ -94,3 +94,7 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+## 2026-09-14 - Routing Monolith Extraction
+
+Learning: Extracting FastAPI router monoliths (e.g., `simulation.py`) into packages using exact string-matching scripts is an extremely reliable way to partition files while preserving the exact layout, strict typings, docstrings, and imports, but it exposes tight coupling. Specifically, shared dependencies (like `_status_badge_fragment`) need careful lifecycle import adjustments due to the lack of cyclic-dependency safety inside the same router tree.
+Action: Next time a FastAPI router is split, ensure helper functions are strictly written to a `helpers.py` first, and then explicitly imported into the domain sub-routers before the top-level `APIRouter()` instantiation to guarantee no `F821 Undefined name` linting errors occur during the initial refactor pass.
