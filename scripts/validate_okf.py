@@ -462,6 +462,14 @@ def auto_fix_timestamps(files: list[Path]) -> int:
     return fixed_count
 
 
+def _print_file_errors(md_file: Path, file_errors: list[str], root_path: Path) -> None:
+    """Print the validation errors for a specific file."""
+    rel_display = md_file.relative_to(root_path) if md_file.is_relative_to(root_path) else md_file
+    print(f"❌ OKF Non-Compliance inside -> {rel_display}:")
+    for err in file_errors:
+        print(f"   • {err}")
+
+
 def _validate_single_bundle_file(
     md_file: Path,
     root_path: Path,
@@ -503,10 +511,7 @@ def scan_bundle(
         file_errors = _validate_single_bundle_file(md_file, root_path, base_paths, docs_root_index, stats)
         if file_errors:
             total_errors += len(file_errors)
-            rel_display = md_file.relative_to(root_path) if md_file.is_relative_to(root_path) else md_file
-            print(f"❌ OKF Non-Compliance inside -> {rel_display}:")
-            for err in file_errors:
-                print(f"   • {err}")
+            _print_file_errors(md_file, file_errors, root_path)
 
     return total_errors, stats
 
