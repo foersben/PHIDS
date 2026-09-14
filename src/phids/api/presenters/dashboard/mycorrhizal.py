@@ -173,6 +173,75 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     return links
 
 
+def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int) -> list[_MycorrhizalLinkPayload]:
+    """Serialise the set of active root links touching a specific cell in the live ECS world.
+
+    This helper inspects only the plant located at ``(x, y)`` and follows its direct
+    ``mycorrhizal_connections`` set, retrieving only the immediate neighbours to
+    construct the touching link payloads. This reduces time complexity from $O(N)$
+    to $O(1)$ compared to scanning the entire ECS plant population.
+
+    Args:
+        loop: The active simulation loop whose ECS world is queried.
+        x: Target column index.
+        y: Target row index.
+
+    Returns:
+        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
+        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+    """
+    from phids.engine.components.plant import PlantComponent
+
+    world = loop.world
+    entities_at_cell = world.entities_at(x, y)
+
+    center_plant = None
+    for entity_id in entities_at_cell:
+        if not world.has_entity(entity_id):
+            continue
+        entity = world.get_entity(entity_id)
+        if entity.has_component(PlantComponent):
+            center_plant = entity.get_component(PlantComponent)
+            break
+
+    if center_plant is None:
+        return []
+
+    links: list[_MycorrhizalLinkPayload] = []
+
+    for neighbour_id in sorted(center_plant.mycorrhizal_connections):
+        if not world.has_entity(neighbour_id):
+            continue
+        neighbour_entity = world.get_entity(neighbour_id)
+        if not neighbour_entity.has_component(PlantComponent):
+            continue
+
+        neighbour = neighbour_entity.get_component(PlantComponent)
+
+        # Ensure consistent ordering for the pair to avoid directionality issues
+        # (Though since we only query from one center_plant, it doesn't strictly matter
+        # for deduplication within this cell's scope, but it's good practice to match
+        # the global payload format).
+        plant_a, plant_b = center_plant, neighbour
+        if plant_a.entity_id > plant_b.entity_id:
+            plant_a, plant_b = plant_b, plant_a
+
+        links.append(
+            {
+                "entity_id_a": plant_a.entity_id,
+                "entity_id_b": plant_b.entity_id,
+                "x1": plant_a.x,
+                "y1": plant_a.y,
+                "x2": plant_b.x,
+                "y2": plant_b.y,
+                "inter_species": plant_a.species_id != plant_b.species_id,
+                "crosses_x_boundary": abs(plant_a.x - plant_b.x) > 1,
+                "crosses_y_boundary": abs(plant_a.y - plant_b.y) > 1,
+            }
+        )
+    return links
+
+
 def _build_live_mycorrhizal_links_from_snapshot(snapshot: dict[str, Any]) -> list[_MycorrhizalLinkPayload]:
     """Serialise the unique set of root links currently active using an extracted snapshot.
 

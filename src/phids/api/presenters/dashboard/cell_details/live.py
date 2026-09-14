@@ -12,8 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from phids.api.presenters.dashboard.mycorrhizal import (
-    _build_live_mycorrhizal_links,
-    _links_touching_cell,
+    _build_live_mycorrhizal_links_for_cell,
 )
 from phids.api.presenters.dashboard.shared import (
     _coerce_int,
@@ -403,8 +402,7 @@ def build_live_cell_details(
         for entity in world.query(PlantComponent)
         for plant in [entity.get_component(PlantComponent)]
     }
-    live_links = _build_live_mycorrhizal_links(loop)
-    touching_links = _links_touching_cell(live_links, x, y)
+    touching_links = _build_live_mycorrhizal_links_for_cell(loop, x, y)
 
     cell_signal_peak = float(env.signal_layers[:, x, y].max()) if env.num_signals > 0 else 0.0
     cell_toxin_peak = float(env.toxin_layers[:, x, y].max()) if env.num_toxins > 0 else 0.0

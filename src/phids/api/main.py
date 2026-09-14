@@ -116,7 +116,9 @@ async def log_http_requests(
     duration_ms = (time.perf_counter() - started) * 1000.0
 
     is_interactive_path = request.url.path.startswith(("/api/", "/ui/")) or request.url.path == "/"
-    if response.status_code >= 400 and is_interactive_path:
+    is_expected_occ_conflict = response.status_code == 409 and request.url.path == "/api/ui/cell-details"
+
+    if response.status_code >= 400 and is_interactive_path and not is_expected_occ_conflict:
         logger.warning(
             "HTTP %s %s -> %d in %.2fms",
             request.method,

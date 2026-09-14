@@ -288,6 +288,8 @@
   let lastDetailKey = '';
   let detailTimer = null;
   let previewInterval = null;
+  let detailAbortController = null;
+  let lastLiveEnrichmentTime = 0;
   const tooltipCache = new Map();
   let ws = null;
   let reconnectTimer = null;
@@ -1574,13 +1576,19 @@
     lastDetailKey = requestKey;
     const liveTick = hasLiveSimData(simData) ? Number(simData.tick ?? 0) : null;
 
+    if (detailAbortController) {
+      detailAbortController.abort();
+    }
+    detailAbortController = new AbortController();
+    const signal = detailAbortController.signal;
+
     try {
       const params = new URLSearchParams({
         x: String(hoveredCell.x),
         y: String(hoveredCell.y),
       });
       if (liveTick != null) params.set('expected_tick', String(liveTick));
-      const response = await fetch(`${CELL_DETAILS_URL}?${params.toString()}`);
+      const response = await fetch(`${CELL_DETAILS_URL}?${params.toString()}`, { signal });
       if (response.status === 409) {
         if (hoveredCell && simData) renderTooltip(buildLiveSnapshotTooltip(hoveredCell));
         return;
@@ -1594,7 +1602,8 @@
       frontendDiagnosticsUpdate({
         notes: [`Tooltip enriched from backend for cell (${payload.x}, ${payload.y}).`],
       });
-    } catch (_error) {
+    } catch (error) {
+      if (error.name === 'AbortError') return;
       // Ignore transient hover failures.
     }
   }
@@ -1630,6 +1639,7 @@
       if (snapshotPayload) renderTooltip(snapshotPayload);
     }
     positionTooltip();
+    lastLiveEnrichmentTime = Date.now();
     scheduleCellDetailsFetch();
   }
 
@@ -1712,7 +1722,12 @@
       if (hoveredCell) {
         const snapshotPayload = buildLiveSnapshotTooltip(hoveredCell);
         if (snapshotPayload) renderTooltip(snapshotPayload);
-        scheduleCellDetailsFetch(true);
+
+        const now = Date.now();
+        if (now - lastLiveEnrichmentTime >= 1000) {
+          lastLiveEnrichmentTime = now;
+          scheduleCellDetailsFetch(true);
+        }
       }
     };
 
