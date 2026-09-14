@@ -299,7 +299,7 @@ class GridEnvironment:
                 )
 
             # Check if layer after diffusion remains active
-            if not np.any(self._signal_layers_write[s] >= SIGNAL_EPSILON):
+            if not self._signal_layers_write[s].max() >= SIGNAL_EPSILON:
                 self.active_signal_channels.discard(s)
 
         # Swap buffers

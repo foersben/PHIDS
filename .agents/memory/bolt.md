@@ -95,3 +95,7 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** When making a defensive copy of a component set before iterating in a tight ECS hot loop (where mutations like `collect_garbage` might alter the original set and raise `RuntimeError: Set changed size during iteration`), `list(component_set)` is significantly faster than `tuple(component_set)`. CPython's list allocation is highly optimized and often reuses internal memory buffers, whereas `tuple` construction from an unknown-sized iterable involves additional overhead. In microbenchmarks on large component sets, `list()` outperforms `tuple()` by roughly 30%.
 **Action:** Always use `list(world._component_index.get(..., set()))` instead of `tuple(...)` when you need a mutable-safe snapshot of ECS component IDs for iteration on the hot path.
+
+## 2024-11-09 - NumPy np.any() vs .max() Allocation Bottleneck
+Learning: In performance-critical NumPy operations (e.g., engine signaling loops), using `np.any(layer >= val)` silently allocates a large temporary boolean array before evaluating `any`.
+Action: Instead, use `layer.max() >= val` to evaluate the condition in-place and return a scalar, saving memory bandwidth and improving tick throughput.
