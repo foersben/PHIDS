@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -110,14 +111,37 @@ def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, obj
     }
 
 
-def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> tuple[set[int], set[int]]:
+@dataclass(slots=True, frozen=True)
+class SpeciesIdSets:
+    """Unique species identifiers collected across Monte Carlo batch runs."""
+
+    flora_ids: frozenset[int]
+    herbivore_ids: frozenset[int]
+
+    @property
+    def all_flora_ids(self) -> frozenset[int]:
+        """Alias for backward compatibility."""
+        return self.flora_ids
+
+    @property
+    def all_herb_ids(self) -> frozenset[int]:
+        """Alias for backward compatibility."""
+        return self.herbivore_ids
+
+    @property
+    def herb_ids(self) -> frozenset[int]:
+        """Alias for backward compatibility."""
+        return self.herbivore_ids
+
+
+def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> SpeciesIdSets:
     """Collect all unique flora and herbivore species identifiers seen across runs.
 
     Args:
         aligned: The aligned per-run telemetry.
 
     Returns:
-        A tuple containing the set of flora species identifiers and the set of herbivore species identifiers.
+        SpeciesIdSets: Unique flora and herbivore species identifiers.
     """
     all_flora_ids: set[int] = set()
     all_herb_ids: set[int] = set()
@@ -125,13 +149,16 @@ def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> tuple[set[int], s
         for row in run:
             all_flora_ids.update(_get_int_keys(row.get("plant_pop_by_species", {})))
             all_herb_ids.update(_get_int_keys(row.get("swarm_pop_by_species", {})))
-    return all_flora_ids, all_herb_ids
+    return SpeciesIdSets(
+        flora_ids=frozenset(all_flora_ids),
+        herbivore_ids=frozenset(all_herb_ids),
+    )
 
 
 def _compute_species_aggregates(
     aligned: list[list[TelemetryRow]],
-    all_flora_ids: set[int],
-    all_herb_ids: set[int],
+    all_flora_ids: frozenset[int] | set[int],
+    all_herb_ids: frozenset[int] | set[int],
 ) -> dict[str, dict[str, list[float]]]:
     """Compute mean and std dev for individual tracked species over the batch.
 
@@ -197,8 +224,8 @@ def aggregate_batch_telemetry(
 
     aligned = _pad_telemetry_runs(per_run, max_len)
     scalars = _stack_scalar_aggregates(aligned)
-    all_flora_ids, all_herb_ids = _extract_species_ids(aligned)
-    species_aggs = _compute_species_aggregates(aligned, all_flora_ids, all_herb_ids)
+    species_ids = _extract_species_ids(aligned)
+    species_aggs = _compute_species_aggregates(aligned, species_ids.flora_ids, species_ids.herbivore_ids)
 
     result: BatchAggregate = {
         "ticks": ticks,

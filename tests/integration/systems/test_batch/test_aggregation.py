@@ -14,8 +14,10 @@ MUTATION_TESTING_EXEMPTION: None - all aggregation paths are deterministic core 
 from __future__ import annotations
 
 import json
+from dataclasses import FrozenInstanceError
 
 import numpy as np
+import pytest
 
 
 def _make_rows(n_ticks: int, flora_val: int, herbivore_val: int) -> list[dict]:
@@ -294,3 +296,31 @@ def test_sanitize_for_json_replaces_non_finite_values_with_none() -> None:
     assert sanitized["nested"]["arr"] == [1.0, None, None]
 
     json.dumps(sanitized, allow_nan=False)
+
+
+def test_extract_species_ids_returns_frozen_dataclass() -> None:
+    """Verify _extract_species_ids returns a frozen SpeciesIdSets dataclass."""
+    from phids.engine.batch.aggregation import SpeciesIdSets, _extract_species_ids
+
+    aligned = [
+        [
+            {"plant_pop_by_species": {1: 10, 2: 5}, "swarm_pop_by_species": {0: 3}},
+            {"plant_pop_by_species": {2: 8, 3: 2}, "swarm_pop_by_species": {1: 4}},
+        ],
+        [
+            {"plant_pop_by_species": {1: 12}, "swarm_pop_by_species": {0: 2, 2: 1}},
+        ],
+    ]
+
+    result = _extract_species_ids(aligned)
+
+    assert isinstance(result, SpeciesIdSets)
+    assert result.flora_ids == frozenset({1, 2, 3})
+    assert result.herbivore_ids == frozenset({0, 1, 2})
+    assert result.all_flora_ids == frozenset({1, 2, 3})
+    assert result.all_herb_ids == frozenset({0, 1, 2})
+    assert result.herb_ids == frozenset({0, 1, 2})
+
+    # Verify frozen immutability
+    with pytest.raises(FrozenInstanceError):
+        result.flora_ids = frozenset()  # type: ignore[misc]
