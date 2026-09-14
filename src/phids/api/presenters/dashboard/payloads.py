@@ -9,6 +9,7 @@ environmental layers, mycorrhizal root connections) streamed to the UI client.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from phids.api.presenters.dashboard.mycorrhizal import _build_live_mycorrhizal_links_from_snapshot
@@ -180,7 +181,22 @@ def _collect_flora_species(
     return all_flora_species, species_energy
 
 
-def _compute_plant_metrics(p: PlantComponent) -> tuple[float, float, float, str]:
+@dataclass(slots=True, frozen=True)
+class PlantMetrics:
+    """Biomass structural metrics and herbivory risk indicators for a single plant."""
+
+    structural_mass: float
+    max_structural_mass: float
+    fragility_pct: float
+    incidental_risk_level: str
+
+    @property
+    def risk_level(self) -> str:
+        """Alias for incidental_risk_level for presenter compatibility."""
+        return self.incidental_risk_level
+
+
+def _compute_plant_metrics(p: PlantComponent) -> PlantMetrics:
     max_struct = p.max_structural_mass if p.max_structural_mass > 0.0 else p.max_energy
     struct_mass = p.structural_mass
     if struct_mass <= 0.0 and max_struct > 0.0:
@@ -189,7 +205,12 @@ def _compute_plant_metrics(p: PlantComponent) -> tuple[float, float, float, str]
         p.max_structural_mass = max_struct
 
     _fragility, fragility_pct, risk_level = calculate_structural_fragility_and_risk(struct_mass, max_struct)
-    return struct_mass, max_struct, fragility_pct, risk_level
+    return PlantMetrics(
+        structural_mass=struct_mass,
+        max_structural_mass=max_struct,
+        fragility_pct=fragility_pct,
+        incidental_risk_level=risk_level,
+    )
 
 
 def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
@@ -206,7 +227,7 @@ def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
     plants = []
     for entity in world.query(PlantComponent):
         p = entity.get_component(PlantComponent)
-        struct_mass, max_struct, fragility_pct, risk_level = _compute_plant_metrics(p)
+        metrics = _compute_plant_metrics(p)
 
         plants.append(
             {
@@ -216,10 +237,10 @@ def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
                 "y": p.y,
                 "energy": p.energy,
                 "max_energy": p.max_energy,
-                "structural_mass": struct_mass,
-                "max_structural_mass": max_struct,
-                "fragility_pct": fragility_pct,
-                "incidental_risk_level": risk_level,
+                "structural_mass": metrics.structural_mass,
+                "max_structural_mass": metrics.max_structural_mass,
+                "fragility_pct": metrics.fragility_pct,
+                "incidental_risk_level": metrics.incidental_risk_level,
                 "root_link_count": len(p.mycorrhizal_connections),
                 "mycorrhizal_connections": set(p.mycorrhizal_connections),
             }

@@ -7,13 +7,23 @@ Verifies that the dashboard JSON payload adheres exactly to the frontend
 API contract, preventing visual regressions on the UI dashboard.
 """
 
-from phids.api.presenters.dashboard.payloads import build_live_dashboard_payload, extract_ui_snapshot
+from dataclasses import FrozenInstanceError
+
+import pytest
+
+from phids.api.presenters.dashboard.payloads import (
+    PlantMetrics,
+    _compute_plant_metrics,
+    build_live_dashboard_payload,
+    extract_ui_snapshot,
+)
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.schemas.species import (
     DietCompatibilityMatrix,
     FloraSpeciesParams,
     HerbivoreSpeciesParams,
 )
+from phids.engine.components.plant import PlantComponent
 from phids.engine.loop import SimulationLoop
 
 
@@ -112,3 +122,37 @@ def test_payload_contract_strictness() -> None:
         "intoxicated",
     }
     assert set(payload["swarms"].keys()) == expected_swarm_columns
+
+
+def test_compute_plant_metrics_returns_frozen_dataclass() -> None:
+    """Verify _compute_plant_metrics returns a frozen PlantMetrics dataclass with expected attributes."""
+    plant = PlantComponent(
+        entity_id=1,
+        species_id=0,
+        x=2,
+        y=3,
+        energy=50.0,
+        max_energy=100.0,
+        base_energy=10.0,
+        growth_rate=1.0,
+        survival_threshold=5.0,
+        reproduction_interval=10,
+        seed_min_dist=1.0,
+        seed_max_dist=3.0,
+        seed_energy_cost=10.0,
+        structural_mass=25.0,
+        max_structural_mass=100.0,
+    )
+
+    metrics = _compute_plant_metrics(plant)
+
+    assert isinstance(metrics, PlantMetrics)
+    assert metrics.structural_mass == 25.0
+    assert metrics.max_structural_mass == 100.0
+    assert metrics.fragility_pct == 75.0
+    assert metrics.incidental_risk_level == "High Risk"
+    assert metrics.risk_level == "High Risk"
+
+    # Verify frozen immutability
+    with pytest.raises(FrozenInstanceError):
+        metrics.structural_mass = 50.0  # type: ignore[misc]
