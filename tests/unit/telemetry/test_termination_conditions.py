@@ -9,12 +9,20 @@ These checks target mutation-prone boundaries and branch ordering in
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.ecs import ECSWorld
-from phids.telemetry.conditions import check_termination
+from phids.telemetry.conditions import (
+    FloraMetrics,
+    HerbivoreMetrics,
+    _gather_flora_metrics,
+    _gather_herbivore_metrics,
+    check_termination,
+)
 from phids.telemetry.tick_metrics import TickMetrics, collect_tick_metrics
 
 
@@ -226,3 +234,48 @@ def test_termination_result_matches_between_world_scan_and_tick_metrics(
 
     assert via_metrics.terminated == via_world_scan.terminated
     assert via_metrics.reason == via_world_scan.reason
+
+
+def test_flora_and_herbivore_metrics_frozen_dataclasses() -> None:
+    """Verify _gather_flora_metrics and _gather_herbivore_metrics return frozen dataclasses."""
+    world = ECSWorld()
+    _add_plant(world, species_id=1, energy=15.0)
+    _add_swarm(world, species_id=2, population=8)
+
+    flora = _gather_flora_metrics(world, None)
+    assert isinstance(flora, FloraMetrics)
+    assert flora.species_alive == frozenset({1})
+    assert flora.total_energy == 15.0
+    assert flora.any_alive is True
+    assert flora.flora_species_alive == frozenset({1})
+    assert flora.total_flora_energy == 15.0
+    assert flora.flora_alive is True
+
+    # Check frozen immutability
+    with pytest.raises(FrozenInstanceError):
+        flora.total_energy = 0.0  # type: ignore[misc]
+
+    herbivore = _gather_herbivore_metrics(world, None)
+    assert isinstance(herbivore, HerbivoreMetrics)
+    assert herbivore.species_alive == frozenset({2})
+    assert herbivore.total_population == 8
+    assert herbivore.any_alive is True
+    assert herbivore.herbivore_species_alive == frozenset({2})
+    assert herbivore.total_herbivore_population == 8
+    assert herbivore.herbivores_alive is True
+
+    # Check frozen immutability
+    with pytest.raises(FrozenInstanceError):
+        herbivore.total_population = 0  # type: ignore[misc]
+
+    # Test tick_metrics path
+    metrics = collect_tick_metrics(world)
+    flora_fast = _gather_flora_metrics(world, metrics)
+    herb_fast = _gather_herbivore_metrics(world, metrics)
+
+    assert isinstance(flora_fast, FloraMetrics)
+    assert isinstance(herb_fast, HerbivoreMetrics)
+    assert flora_fast.species_alive == flora.species_alive
+    assert flora_fast.total_energy == flora.total_energy
+    assert herb_fast.species_alive == herbivore.species_alive
+    assert herb_fast.total_population == herbivore.total_population

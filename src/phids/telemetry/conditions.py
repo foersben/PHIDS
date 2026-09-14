@@ -47,7 +47,55 @@ class TerminationResult:
     reason: str
 
 
-def _gather_flora_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> tuple[set[int], float, bool]:
+@dataclass(slots=True, frozen=True)
+class FloraMetrics:
+    """Aggregated flora metrics used for simulation termination evaluation."""
+
+    species_alive: frozenset[int]
+    total_energy: float
+    any_alive: bool
+
+    @property
+    def flora_species_alive(self) -> frozenset[int]:
+        """Alias for backwards compatibility."""
+        return self.species_alive
+
+    @property
+    def total_flora_energy(self) -> float:
+        """Alias for backwards compatibility."""
+        return self.total_energy
+
+    @property
+    def flora_alive(self) -> bool:
+        """Alias for backwards compatibility."""
+        return self.any_alive
+
+
+@dataclass(slots=True, frozen=True)
+class HerbivoreMetrics:
+    """Aggregated herbivore metrics used for simulation termination evaluation."""
+
+    species_alive: frozenset[int]
+    total_population: int
+    any_alive: bool
+
+    @property
+    def herbivore_species_alive(self) -> frozenset[int]:
+        """Alias for backwards compatibility."""
+        return self.species_alive
+
+    @property
+    def total_herbivore_population(self) -> int:
+        """Alias for backwards compatibility."""
+        return self.total_population
+
+    @property
+    def herbivores_alive(self) -> bool:
+        """Alias for backwards compatibility."""
+        return self.any_alive
+
+
+def _gather_flora_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> FloraMetrics:
     """Gather flora metrics from the ECS world or tick metrics.
 
     Args:
@@ -55,14 +103,13 @@ def _gather_flora_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> 
         tick_metrics: Pre-computed tick metrics.
 
     Returns:
-        A tuple containing the set of flora species alive, the total flora energy, and a
-        boolean indicating whether any flora are alive.
+        FloraMetrics: Aggregated flora species, total energy, and survival status.
     """
     if tick_metrics is not None:
-        return (
-            set(tick_metrics.flora_species_alive),
-            tick_metrics.total_flora_energy,
-            tick_metrics.flora_alive,
+        return FloraMetrics(
+            species_alive=frozenset(tick_metrics.flora_species_alive),
+            total_energy=tick_metrics.total_flora_energy,
+            any_alive=tick_metrics.flora_alive,
         )
 
     flora_species_alive: set[int] = set()
@@ -73,10 +120,14 @@ def _gather_flora_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> 
         flora_species_alive.add(plant.species_id)
         total_flora_energy += plant.energy
         flora_alive = True
-    return flora_species_alive, total_flora_energy, flora_alive
+    return FloraMetrics(
+        species_alive=frozenset(flora_species_alive),
+        total_energy=total_flora_energy,
+        any_alive=flora_alive,
+    )
 
 
-def _gather_herbivore_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> tuple[set[int], int, bool]:
+def _gather_herbivore_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> HerbivoreMetrics:
     """Gather herbivore metrics from the ECS world or tick metrics.
 
     Args:
@@ -84,14 +135,13 @@ def _gather_herbivore_metrics(world: ECSWorld, tick_metrics: TickMetrics | None)
         tick_metrics: Pre-computed tick metrics.
 
     Returns:
-        A tuple containing the set of herbivore species alive, the total herbivore population,
-        and a boolean indicating whether any herbivores are alive.
+        HerbivoreMetrics: Aggregated herbivore species, total population, and survival status.
     """
     if tick_metrics is not None:
-        return (
-            set(tick_metrics.herbivore_species_alive),
-            int(tick_metrics.total_herbivore_population),
-            bool(tick_metrics.herbivores_alive),
+        return HerbivoreMetrics(
+            species_alive=frozenset(tick_metrics.herbivore_species_alive),
+            total_population=tick_metrics.total_herbivore_population,
+            any_alive=tick_metrics.herbivores_alive,
         )
 
     herbivore_species_alive: set[int] = set()
@@ -102,7 +152,11 @@ def _gather_herbivore_metrics(world: ECSWorld, tick_metrics: TickMetrics | None)
         herbivore_species_alive.add(swarm.species_id)
         total_herbivore_population += swarm.population
         herbivores_alive = True
-    return herbivore_species_alive, total_herbivore_population, herbivores_alive
+    return HerbivoreMetrics(
+        species_alive=frozenset(herbivore_species_alive),
+        total_population=total_herbivore_population,
+        any_alive=herbivores_alive,
+    )
 
 
 def check_termination(
@@ -138,41 +192,40 @@ def check_termination(
     if tick >= max_ticks:
         return TerminationResult(terminated=True, reason=f"Z1: reached max_ticks={max_ticks}")
 
-    flora_species_alive, total_flora_energy, flora_alive = _gather_flora_metrics(world, tick_metrics)
+    flora_metrics = _gather_flora_metrics(world, tick_metrics)
 
     # Z2 - specific flora species extinction
-    if z2_flora_species >= 0 and z2_flora_species not in flora_species_alive:
+    if z2_flora_species >= 0 and z2_flora_species not in flora_metrics.species_alive:
         return TerminationResult(terminated=True, reason=f"Z2: flora species {z2_flora_species} extinct")
 
     # Z3 - all flora extinct
-    if z3_check_all_flora and not flora_alive:
+    if z3_check_all_flora and not flora_metrics.any_alive:
         return TerminationResult(terminated=True, reason="Z3: all flora extinct")
 
     # Z6 - aggregate flora energy exceeds upper bound
-    if 0.0 < z6_max_flora_energy < total_flora_energy:
+    if 0.0 < z6_max_flora_energy < flora_metrics.total_energy:
         return TerminationResult(
             terminated=True,
-            reason=f"Z6: total flora energy {total_flora_energy:.1f} > {z6_max_flora_energy}",
+            reason=f"Z6: total flora energy {flora_metrics.total_energy:.1f} > {z6_max_flora_energy}",
         )
 
-    herbivore_species_alive, total_herbivore_population, herbivores_alive = _gather_herbivore_metrics(
-        world, tick_metrics
-    )
+    herbivore_metrics = _gather_herbivore_metrics(world, tick_metrics)
 
     # Z4 - specific herbivore species extinction
-    if z4_herbivore_species >= 0 and z4_herbivore_species not in herbivore_species_alive:
+    if z4_herbivore_species >= 0 and z4_herbivore_species not in herbivore_metrics.species_alive:
         return TerminationResult(terminated=True, reason=f"Z4: herbivore species {z4_herbivore_species} extinct")
 
     # Z5 - all herbivores extinct
-    if z5_check_all_herbivores and not herbivores_alive:
+    if z5_check_all_herbivores and not herbivore_metrics.any_alive:
         return TerminationResult(terminated=True, reason="Z5: all herbivores extinct")
 
     # Z7 - aggregate herbivore population exceeds upper bound
-    if 0 < z7_max_total_herbivore_population < total_herbivore_population:
+    if 0 < z7_max_total_herbivore_population < herbivore_metrics.total_population:
         return TerminationResult(
             terminated=True,
             reason=(
-                f"Z7: total herbivore population {total_herbivore_population} > {z7_max_total_herbivore_population}"
+                f"Z7: total herbivore population {herbivore_metrics.total_population} "
+                f"> {z7_max_total_herbivore_population}"
             ),
         )
 
