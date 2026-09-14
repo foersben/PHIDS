@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-02-21 - Complexity Refactoring Report
+* **Target Function:** `scripts/validate_okf.py` / `scan_bundle`
+* **Selection Rationale:** The `scan_bundle` function had a cognitive complexity of 15 due to a nested loop for processing files and an inner loop for printing errors. Extracting the error printing logic into a simple `_print_file_errors` private helper function cleanly isolated the side effect logic, making the main scan loop flat and readable. It was purely an I/O operation inside an API script with zero risk to simulation performance.
+* **Before/After Score:** 15 vs. 9
+* **Performance Assessment:** Common sense confirms zero performance regression. The extracted function merely performs string formatting and printing in an offline script, not in an engine hot loop.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
