@@ -462,6 +462,25 @@ def auto_fix_timestamps(files: list[Path]) -> int:
     return fixed_count
 
 
+def _is_valid_target_file(md_file: Path) -> bool:
+    """Check if a target file is valid for OKF validation."""
+    if not md_file.exists() or not md_file.is_file():
+        return False
+
+    file_posix = md_file.as_posix()
+    if "docs/legacy/" in file_posix or "site/" in file_posix:
+        return False
+    return True
+
+
+def _print_file_errors(md_file: Path, root_path: Path, file_errors: list[str]) -> None:
+    """Print validation errors for a specific file."""
+    rel_display = md_file.relative_to(root_path) if md_file.is_relative_to(root_path) else md_file
+    print(f"❌ OKF Non-Compliance inside -> {rel_display}:")
+    for err in file_errors:
+        print(f"   • {err}")
+
+
 def _validate_single_bundle_file(
     md_file: Path,
     root_path: Path,
@@ -493,20 +512,13 @@ def scan_bundle(
     docs_root_index = (root_path / "docs" / "index.md").resolve()
 
     for md_file in target_files:
-        if not md_file.exists() or not md_file.is_file():
-            continue
-
-        file_posix = md_file.as_posix()
-        if "docs/legacy/" in file_posix or "site/" in file_posix:
+        if not _is_valid_target_file(md_file):
             continue
 
         file_errors = _validate_single_bundle_file(md_file, root_path, base_paths, docs_root_index, stats)
         if file_errors:
             total_errors += len(file_errors)
-            rel_display = md_file.relative_to(root_path) if md_file.is_relative_to(root_path) else md_file
-            print(f"❌ OKF Non-Compliance inside -> {rel_display}:")
-            for err in file_errors:
-                print(f"   • {err}")
+            _print_file_errors(md_file, root_path, file_errors)
 
     return total_errors, stats
 

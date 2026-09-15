@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-05-24 - Complexity Refactoring Report
+* **Target Function:** `scripts/validate_okf.py` / `scan_bundle`
+* **Selection Rationale:** `scan_bundle` had a complexity score of 15. The logic was easily modularized into small cohesive helpers (`_is_valid_target_file` for directory checks, and `_print_file_errors` for printing output), which reduces complexity without any performance risk because it is a validation script that operates outside the core hot-path engine execution loop.
+* **Before/After Score:** 15 vs. 11
+* **Performance Assessment:** Common-sense reasoning confirms zero performance regression as this script only validates file paths against string rules. Benchmarks passed showing no regressions in critical engine components.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
