@@ -124,12 +124,12 @@ def test_is_swarm_anchored_python_wrapper_extracts_mvt() -> None:
         velocity=1,
         consumption_rate=2.0,
     )
-    swarm.last_caloric_intake = 10.0  # type: ignore[attr-defined]
-    swarm.metabolism_upkeep = 5.0  # type: ignore[attr-defined]
+    swarm.last_caloric_intake = 10.0
+    swarm.metabolism_upkeep = 5.0
 
     # Full belly override on food should return True because p_depart is low
     assert _is_swarm_anchored(swarm, env, diet, rand_val=0.5)
 
     # Empty belly on food should return False because p_depart is high
-    swarm.last_caloric_intake = 1.0  # type: ignore[attr-defined]
+    swarm.last_caloric_intake = 1.0
     assert not _is_swarm_anchored(swarm, env, diet, rand_val=0.5)
