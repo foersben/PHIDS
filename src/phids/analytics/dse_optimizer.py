@@ -10,6 +10,7 @@ to find stable, high-biomass, and diverse plant-herbivore configurations.
 import asyncio
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -26,6 +27,21 @@ if TYPE_CHECKING:
     from phids.analytics.dse_genotype import DSEGenotype
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(slots=True, frozen=True)
+class CandidateFitness:
+    """Multi-objective fitness evaluation results for an optimization candidate.
+
+    Attributes:
+        fitness: Primary ecosystem fitness metric (longevity / ticks survived).
+        novelty: Stability metric (inverse coefficient of variation of herbivore population).
+        diversity: Spatial spread metric (dispersion ratio across the grid).
+    """
+
+    fitness: float
+    novelty: float
+    diversity: float
 
 
 # Define Multi-Objective Fitness for pymoo (Placeholder)
@@ -78,18 +94,18 @@ class DSEOptimizer:
             await loop.step()
         logger.info("Numba JIT Cache warmed successfully.")
 
-    async def evaluate_candidate(self, genotype: "DSEGenotype | None") -> tuple[float, float, float]:
+    async def evaluate_candidate(self, genotype: "DSEGenotype | None") -> CandidateFitness:
         """Headless evaluation of a single MINLP Genotype.
 
         Args:
             genotype: The candidate genotype to evaluate.
 
         Returns:
-            A tuple of float fitnesses: (longevity, stability, dispersion).
+            CandidateFitness: Multi-objective fitness results (fitness, novelty, diversity).
         """
         # Stage 1: Analytical Pre-Pruning
         if genotype and not AnalyticalPruner.evaluate_feasibility(genotype):
-            return (0.0, 0.0, 0.0)  # Instant rejection
+            return CandidateFitness(fitness=0.0, novelty=0.0, diversity=0.0)  # Instant rejection
 
         # Stage 2: Headless Simulation Evaluation
         # Translate genotype back to a runnable SimulationConfig
@@ -131,7 +147,7 @@ class DSEOptimizer:
 
         del loop
 
-        return (longevity, stability, dispersion)
+        return CandidateFitness(fitness=longevity, novelty=stability, diversity=dispersion)
 
     def _dispatch_sync_callback(
         self,
