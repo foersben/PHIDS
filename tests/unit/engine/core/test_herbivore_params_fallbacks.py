@@ -14,6 +14,7 @@ from phids.engine.core.herbivore_params import (
     get_herbivore_energy_upkeep,
     get_herbivore_evasion_duration,
     get_herbivore_reproduction_divisor,
+    get_herbivore_softmax_temperature,
     get_herbivore_split_threshold,
     get_herbivore_velocity,
 )
@@ -30,6 +31,7 @@ def test_herbivore_params_fallbacks_when_missing() -> None:
     assert get_herbivore_evasion_duration(empty_params, 99) == 5
     assert get_herbivore_reproduction_divisor(empty_params, 99) == 1.0
     assert get_herbivore_energy_upkeep(empty_params, 99) == 0.05
+    assert get_herbivore_softmax_temperature(empty_params, 99) == 0.0
     assert get_herbivore_split_threshold(empty_params, 99) == 10
 
 
@@ -45,13 +47,16 @@ def test_herbivore_params_lookups_when_present() -> None:
         reproduction_energy_divisor=2.0,
         energy_upkeep_per_individual=0.1,
         split_population_threshold=25,
+        evasion_duration_ticks=8,
+        softmax_temperature=1.25,
     )
     params_dict = {1: herb_params}
 
     assert get_herbivore_energy_min(params_dict, 1) == 12.5
     assert get_herbivore_velocity(params_dict, 1) == 2
     assert get_herbivore_consumption_rate(params_dict, 1) == 3.5
-    assert get_herbivore_evasion_duration(params_dict, 1) == 5
+    assert get_herbivore_evasion_duration(params_dict, 1) == 8
     assert get_herbivore_reproduction_divisor(params_dict, 1) == 2.0
     assert get_herbivore_energy_upkeep(params_dict, 1) == 0.1
+    assert get_herbivore_softmax_temperature(params_dict, 1) == 1.25
     assert get_herbivore_split_threshold(params_dict, 1) == 25

@@ -75,7 +75,7 @@ def get_herbivore_evasion_duration(params_dict: dict[int, HerbivoreSpeciesParams
     """
     params = params_dict.get(species_id)
     if params is not None:
-        return int(getattr(params, "evasion_duration_ticks", 5))
+        return params.evasion_duration_ticks
     return 5
 
 
@@ -123,7 +123,7 @@ def get_herbivore_softmax_temperature(params_dict: dict[int, HerbivoreSpeciesPar
     """
     params = params_dict.get(species_id)
     if params is not None:
-        return float(getattr(params, "softmax_temperature", 0.0))
+        return params.softmax_temperature
     return 0.0
 
 
