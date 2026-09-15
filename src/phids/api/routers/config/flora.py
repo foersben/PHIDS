@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
@@ -16,6 +17,14 @@ from phids.api.services.draft.species import add_flora, remove_flora
 from phids.api.ui_state.state import DraftState, get_draft
 
 router = APIRouter()
+
+
+@dataclass(slots=True, frozen=True)
+class FloraSpeciesLookup:
+    """Lookup result containing draft index and parameters for a flora species."""
+
+    index: int
+    params: FloraSpeciesParams
 
 
 @router.post("/api/config/flora", response_class=HTMLResponse, summary="Add flora species to draft")
@@ -99,11 +108,11 @@ async def config_flora_add(
     )
 
 
-def _find_flora_species(draft: DraftState, species_id: int) -> tuple[int, FloraSpeciesParams]:
+def _find_flora_species(draft: DraftState, species_id: int) -> FloraSpeciesLookup:
     """Locate flora species by ID in draft state or raise HTTPException."""
     for i, fp in enumerate(draft.flora_species):
         if isinstance(fp, FloraSpeciesParams) and fp.species_id == species_id:
-            return i, fp
+            return FloraSpeciesLookup(index=i, params=fp)
     api_main.logger.warning("Flora update requested for unknown species_id=%d", species_id)
     raise HTTPException(status_code=404, detail=f"Flora species {species_id} not found.")
 
@@ -249,7 +258,7 @@ async def config_flora_update(
         The updated flora table.
     """
     draft = get_draft()
-    idx, fp = _find_flora_species(draft, species_id)
+    lookup = _find_flora_species(draft, species_id)
 
     updates = _build_scalar_flora_updates(
         name,
@@ -262,7 +271,7 @@ async def config_flora_update(
     )
     updates.update(
         _build_spatial_and_morphological_updates(
-            fp,
+            lookup.params,
             seed_min_dist=seed_min_dist,
             seed_max_dist=seed_max_dist,
             seed_drop_height=seed_drop_height,
@@ -277,13 +286,13 @@ async def config_flora_update(
     )
     updates.update(
         _build_passive_defense_updates(
-            fp,
+            lookup.params,
             passive_defenses_mechanical_damage_per_bite,
             passive_defenses_digestibility_modifier,
         )
     )
 
-    draft.flora_species[idx] = fp.model_copy(update=updates)
+    draft.flora_species[lookup.index] = lookup.params.model_copy(update=updates)
     api_main.logger.debug("Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))
     if view == "morphology":
         from phids.api.routers.config.trigger_rules import _render_trigger_rules_partial

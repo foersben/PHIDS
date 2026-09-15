@@ -322,3 +322,20 @@ async def test_herbivore_routes_clamp_reproduction_divisor_to_physical_minimum(
     draft = get_draft()
     herbivore = next(p for p in draft.herbivore_species if isinstance(p, HerbivoreSpeciesParams) and p.species_id == 1)
     assert herbivore.reproduction_energy_divisor == pytest.approx(2.0)
+
+
+def test_find_flora_species_returns_flora_species_lookup() -> None:
+    """Verifies _find_flora_species returns a FloraSpeciesLookup value object."""
+    from fastapi import HTTPException
+
+    from phids.api.routers.config.flora import FloraSpeciesLookup, _find_flora_species
+
+    draft = get_draft()
+    lookup = _find_flora_species(draft, species_id=0)
+    assert isinstance(lookup, FloraSpeciesLookup)
+    assert lookup.index == 0
+    assert lookup.params.species_id == 0
+
+    with pytest.raises(HTTPException) as exc_info:
+        _find_flora_species(draft, species_id=999)
+    assert exc_info.value.status_code == 404
