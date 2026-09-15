@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import random
+from dataclasses import dataclass
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Form, HTTPException, Request
@@ -23,6 +24,14 @@ from phids.api.ui_state.state import DraftState, get_draft
 from phids.engine.core.placement import generate_banded, generate_clustered, generate_uniform
 
 router = APIRouter()
+
+
+@dataclass(slots=True, frozen=True)
+class AutoassignWeights:
+    """Extracted species identifiers and relative weights for procedural autoassignment."""
+
+    species_ids: list[int]
+    weights: list[float]
 
 
 def _render_placement_list_partial(request: Request, draft: DraftState) -> Response:
@@ -302,16 +311,17 @@ def _generate_autoassign_coords(
     return []
 
 
-def _extract_autoassign_weights(form: dict[str, Any]) -> tuple[list[int], list[float]]:
+def _extract_autoassign_weights(form: dict[str, Any]) -> AutoassignWeights:
     """Extract species IDs and weights from the form.
 
     Args:
         form: The form containing distribution parameters.
 
     Returns:
-        tuple[list[int], list[float]]: Tuple of species IDs and weights.
+        AutoassignWeights: Container of species IDs and their relative weights.
     """
-    species_ids, weights = [], []
+    species_ids: list[int] = []
+    weights: list[float] = []
     for key, val in form.items():
         if key.startswith("weight_") and val:
             try:
@@ -322,7 +332,7 @@ def _extract_autoassign_weights(form: dict[str, Any]) -> tuple[list[int], list[f
                     weights.append(weight)
             except ValueError:
                 pass
-    return species_ids, weights
+    return AutoassignWeights(species_ids=species_ids, weights=weights)
 
 
 @router.post("/api/config/placements/autoassign", response_class=HTMLResponse, summary="Autoassign placements")
@@ -342,14 +352,14 @@ async def config_placement_autoassign(request: Request) -> Response:
     distribution = str(form.get("distribution", "uniform"))
 
     coords = _generate_autoassign_coords(distribution, form, draft.grid_width, draft.grid_height)
-    species_ids, weights = _extract_autoassign_weights(form)
+    autoassign = _extract_autoassign_weights(form)
 
-    if not coords or not species_ids:
+    if not coords or not autoassign.species_ids:
         api_main.logger.warning("Autoassign skipped (no coords generated or no species weights > 0)")
         return _render_placement_list_partial(request, draft)
 
     # Assign coordinates based on weighted random selection
-    assignments = random.choices(species_ids, weights=weights, k=len(coords))
+    assignments = random.choices(autoassign.species_ids, weights=autoassign.weights, k=len(coords))
 
     for (x, y), sid in zip(coords, assignments, strict=False):
         if target_type == "plant":

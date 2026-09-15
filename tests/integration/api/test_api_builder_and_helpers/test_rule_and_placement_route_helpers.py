@@ -271,3 +271,20 @@ def test_websocket_stream_endpoints_close_cleanly() -> None:
     assert payload["tick"] == expected_payload["tick"]
     assert payload["grid_width"] == expected_payload["grid_width"]
     assert payload["grid_height"] == expected_payload["grid_height"]
+
+
+def test_extract_autoassign_weights_returns_autoassign_weights() -> None:
+    """Verify _extract_autoassign_weights returns an AutoassignWeights dataclass with filtered weights."""
+    from phids.api.routers.config.placements import AutoassignWeights, _extract_autoassign_weights
+
+    form = {
+        "weight_0": "1.5",
+        "weight_1": "0.0",
+        "weight_2": "2.5",
+        "weight_invalid": "abc",
+        "distribution": "uniform",
+    }
+    result = _extract_autoassign_weights(form)
+    assert isinstance(result, AutoassignWeights)
+    assert result.species_ids == [0, 2]
+    assert result.weights == [1.5, 2.5]
