@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -249,19 +250,28 @@ async def batch_view(request: Request, job_id: str) -> Response:
     )
 
 
-def _export_csv(df: Any, job_id: str) -> tuple[bytes, str, str]:
+@dataclass(slots=True, frozen=True)
+class ExportResult:
+    """Encapsulates rendered bytes, media type, and download filename for batch exports."""
+
+    content: bytes
+    media_type: str
+    filename: str
+
+
+def _export_csv(df: Any, job_id: str) -> ExportResult:
     data = df.to_csv(index=False).encode("utf-8")
     filename = f"phids_batch_{job_id}.csv"
     media_type = "text/csv"
-    return data, filename, media_type
+    return ExportResult(content=data, media_type=media_type, filename=filename)
 
 
-def _export_tex_table(df: Any, job_id: str) -> tuple[bytes, str, str]:
+def _export_tex_table(df: Any, job_id: str) -> ExportResult:
     latex: str = df.to_latex(index=False, float_format="%.2f")
     data = latex.encode("utf-8")
     filename = f"phids_batch_{job_id}_table.tex"
     media_type = "text/plain"
-    return data, filename, media_type
+    return ExportResult(content=data, media_type=media_type, filename=filename)
 
 
 def _export_tex_tikz(
@@ -271,7 +281,7 @@ def _export_tex_tikz(
     x_label: str | None,
     y_label: str | None,
     job_id: str,
-) -> tuple[bytes, str, str]:
+) -> ExportResult:
     rows_agg: list[dict[str, object]] = []
     ticks = _as_list(aggregate.get("ticks", []))
     flora_mean = _as_list(aggregate.get("flora_population_mean", []))
@@ -297,7 +307,7 @@ def _export_tex_tikz(
     data = tikz.encode("utf-8")
     filename = f"phids_batch_{job_id}.tex"
     media_type = "text/plain"
-    return data, filename, media_type
+    return ExportResult(content=data, media_type=media_type, filename=filename)
 
 
 @router.get(
@@ -334,20 +344,20 @@ async def batch_export(
     df = decimate_dataframe(df, tick_interval)
 
     if format == "csv":
-        data, filename, media_type = _export_csv(df, job_id)
+        result = _export_csv(df, job_id)
     elif format == "tex_table":
-        data, filename, media_type = _export_tex_table(df, job_id)
+        result = _export_tex_table(df, job_id)
     elif format == "tex_tikz":
-        data, filename, media_type = _export_tex_tikz(aggregate, chart_type, title, x_label, y_label, job_id)
+        result = _export_tex_tikz(aggregate, chart_type, title, x_label, y_label, job_id)
     else:
         raise HTTPException(
             status_code=400,
             detail=f"Unknown format '{format}'. Use csv, tex_table, or tex_tikz.",
         )
 
-    api_main.logger.info("Batch export job=%s format=%s size=%d", job_id, format, len(data))
+    api_main.logger.info("Batch export job=%s format=%s size=%d", job_id, format, len(result.content))
     return Response(
-        content=data,
-        media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        content=result.content,
+        media_type=result.media_type,
+        headers={"Content-Disposition": f'attachment; filename="{result.filename}"'},
     )

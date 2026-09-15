@@ -203,3 +203,51 @@ async def test_batch_routes_return_errors_for_missing_job_and_invalid_export_par
     resp = await api_client.get(target_path, params=params)
 
     assert resp.status_code == expected_status, resp.text
+
+
+def test_export_result_dataclass_contract() -> None:
+    """Verify ExportResult dataclass instantiation, immutability, and export helper return contracts."""
+    from dataclasses import FrozenInstanceError
+
+    import pandas as pd
+
+    from phids.api.routers.batch import ExportResult, _export_csv, _export_tex_table, _export_tex_tikz
+
+    result = ExportResult(content=b"sample", media_type="text/plain", filename="test.txt")
+    assert result.content == b"sample"
+    assert result.media_type == "text/plain"
+    assert result.filename == "test.txt"
+
+    with pytest.raises(FrozenInstanceError):
+        result.content = b"modified"  # type: ignore[misc]
+
+    df = pd.DataFrame({"tick": [0, 1], "flora_population_mean": [10.0, 8.0]})
+    csv_res = _export_csv(df, "job_123")
+    assert isinstance(csv_res, ExportResult)
+    assert csv_res.filename == "phids_batch_job_123.csv"
+    assert csv_res.media_type == "text/csv"
+    assert b"flora_population_mean" in csv_res.content
+
+    tex_res = _export_tex_table(df, "job_123")
+    assert isinstance(tex_res, ExportResult)
+    assert tex_res.filename == "phids_batch_job_123_table.tex"
+    assert tex_res.media_type == "text/plain"
+    assert b"\\toprule" in tex_res.content
+
+    tikz_res = _export_tex_tikz(
+        {
+            "ticks": [0],
+            "flora_population_mean": [10.0],
+            "herbivore_population_mean": [5.0],
+            "survival_probability_curve": [1.0],
+        },
+        "survival",
+        title="Title",
+        x_label="X",
+        y_label="Y",
+        job_id="job_123",
+    )
+    assert isinstance(tikz_res, ExportResult)
+    assert tikz_res.filename == "phids_batch_job_123.tex"
+    assert tikz_res.media_type == "text/plain"
+    assert b"\\begin{tikzpicture}" in tikz_res.content
