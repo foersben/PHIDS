@@ -117,3 +117,69 @@ def test_random_walk_step_mocked_choice(monkeypatch: pytest.MonkeyPatch) -> None
     cy = np.zeros(5, dtype=np.int32)
     res = _random_walk_step(5, 5, 16, 16, cx, cy)
     assert res == (5, 5)
+
+
+@pytest.mark.unit
+def test_aversion_memory_decay_in_movement_resolution() -> None:
+    """Verify that _resolve_swarm_movement decays aversion_memory via direct attribute access."""
+    from phids.engine.core.biotope import GridEnvironment
+    from phids.engine.core.ecs import ECSWorld
+    from phids.engine.systems.interaction.movement import _resolve_swarm_movement
+
+    env = GridEnvironment(width=16, height=16)
+    world = ECSWorld()
+    entity = world.create_entity()
+    swarm = SwarmComponent(
+        entity_id=entity.entity_id,
+        species_id=0,
+        x=5,
+        y=5,
+        population=10,
+        initial_population=10,
+        energy=50.0,
+        energy_min=5.0,
+        velocity=1,
+        consumption_rate=5.0,
+        aversion_memory=1.0,
+    )
+    diet_matrix = np.ones((1, 1), dtype=np.bool_)
+    tile_populations = [0] * (16 * 16)
+    cx = np.zeros(5, dtype=np.int32)
+    cy = np.zeros(5, dtype=np.int32)
+    scores = np.zeros(5, dtype=np.float64)
+    adj_scores = np.zeros(5, dtype=np.float64)
+    weights = np.zeros(5, dtype=np.float64)
+
+    _resolve_swarm_movement(
+        swarm,
+        entity,
+        env,
+        world,
+        diet_matrix,
+        tile_populations,
+        {},
+        cx,
+        cy,
+        scores,
+        adj_scores,
+        weights,
+    )
+    assert abs(swarm.aversion_memory - 0.95) < 1e-6
+
+    # Test threshold clamping below 0.01
+    swarm.aversion_memory = 0.009
+    _resolve_swarm_movement(
+        swarm,
+        entity,
+        env,
+        world,
+        diet_matrix,
+        tile_populations,
+        {},
+        cx,
+        cy,
+        scores,
+        adj_scores,
+        weights,
+    )
+    assert swarm.aversion_memory == 0.0
