@@ -9,13 +9,14 @@ Provides probabilistic calculation for trampling and collateral plant destructio
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from numba import njit
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from phids.api.schemas.species import HerbivoreSpeciesParams
     from phids.engine.components.swarm import SwarmComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
@@ -48,7 +49,7 @@ def _compute_trample_probability_jit(
     safe_max = max(max_structural_mass, 1e-9)
     vuln_calc = max(0.0, 1.0 - (structural_mass / safe_max))
     vulnerability = 1.0 if max_structural_mass <= 0.0 else vuln_calc
-    prob = float(swarm_population) * trample_factor * vulnerability
+    prob = swarm_population * trample_factor * vulnerability
     return min(p_max, max(0.0, prob))
 
 
@@ -58,7 +59,7 @@ def _resolve_incidental_mortality(
     ny: int,
     world: ECSWorld,
     env: GridEnvironment,
-    herbivore_params_dict: Mapping[int, Any] | None = None,
+    herbivore_params_dict: Mapping[int, HerbivoreSpeciesParams] | None = None,
 ) -> None:
     """Evaluate probabilistic incidental seedling mortality when a swarm enters cell (nx, ny).
 
@@ -81,9 +82,9 @@ def _resolve_incidental_mortality(
     mode_cause = "death_incidental_mortality"
 
     if herbivore_params_dict is not None and swarm.species_id in herbivore_params_dict:
-        hp_raw = herbivore_params_dict[swarm.species_id]
-        incidental_factor = float(getattr(hp_raw, "incidental_mortality_factor", 0.0))
-        mode = getattr(hp_raw, "incidental_mortality_mode", "trampling")
+        hp = herbivore_params_dict[swarm.species_id]
+        incidental_factor = hp.incidental_mortality_factor
+        mode = hp.incidental_mortality_mode
         mode_cause = "death_collateral_trampling" if mode == "trampling" else "death_incidental_consumption"
 
     if incidental_factor <= 0.0:

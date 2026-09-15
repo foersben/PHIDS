@@ -171,37 +171,36 @@ def _build_live_plant_payload(
     visible_substances = _get_live_substances(plant, owned_substances, env, herbivore_names, substance_names)
     mycorrhizal_neighbours = _get_live_mycorrhizal_neighbours(plant, plant_lookup, flora_names)
 
-    struct_mass = float(plant.structural_mass)
-    max_struct = float(plant.max_structural_mass)
+    struct_mass = plant.structural_mass
+    max_struct = plant.max_structural_mass
     struct_ratio = struct_mass / max_struct if max_struct > 0.0 else 0.0
-    struct_upkeep = float(plant.survival_threshold) * 0.5 * min(1.0, struct_ratio) if max_struct > 0.0 else 0.0
+    struct_upkeep = plant.survival_threshold * 0.5 * min(1.0, struct_ratio) if max_struct > 0.0 else 0.0
     _fragility, fragility_pct, risk_level = calculate_structural_fragility_and_risk(struct_mass, max_struct)
 
     return {
         "entity_id": plant.entity_id,
         "species_id": plant.species_id,
         "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
-        "energy": float(plant.energy),
-        "max_energy": float(plant.max_energy),
-        "base_energy": float(plant.base_energy),
-        "growth_rate": float(plant.growth_rate),
-        "energy_ratio": (float(plant.energy) / float(plant.max_energy) if float(plant.max_energy) > 0.0 else 0.0),
+        "energy": plant.energy,
+        "max_energy": plant.max_energy,
+        "base_energy": plant.base_energy,
+        "growth_rate": plant.growth_rate,
+        "energy_ratio": (plant.energy / plant.max_energy if plant.max_energy > 0.0 else 0.0),
         "energy_label": (
-            f"{plant.energy:.1f} / {plant.max_energy:.1f}"
-            f" ({100.0 * float(plant.energy) / float(plant.max_energy):.1f}%)"
-            if float(plant.max_energy) > 0.0
+            f"{plant.energy:.1f} / {plant.max_energy:.1f} ({100.0 * plant.energy / plant.max_energy:.1f}%)"
+            if plant.max_energy > 0.0
             else "N/A"
         ),
         "structural_mass": struct_mass,
         "max_structural_mass": max_struct,
         "structural_mass_pct": min(100.0, struct_ratio * 100.0),
-        "growth_rate_structural": float(plant.growth_rate_structural),
+        "growth_rate_structural": plant.growth_rate_structural,
         "structural_upkeep_fee": struct_upkeep,
         "fragility_pct": fragility_pct,
         "incidental_risk_level": risk_level,
         "is_woody_mature": max_struct > 0.0 and struct_mass >= max_struct,
         "camouflage": plant.camouflage,
-        "camouflage_factor": float(plant.camouflage_factor),
+        "camouflage_factor": plant.camouflage_factor,
         "mycorrhizal_connections": len(plant.mycorrhizal_connections),
         "mycorrhizal_neighbours": mycorrhizal_neighbours,
         "active_substances": visible_substances,
@@ -230,13 +229,14 @@ def _build_live_swarm_payload(
         The presentation structure.
     """
     sp_params = herbivore_params.get(swarm.species_id) if herbivore_params else None
-    inc_factor = float(getattr(sp_params, "incidental_mortality_factor", 0.0)) if sp_params else 0.0
-    inc_mode = str(getattr(sp_params, "incidental_mortality_mode", "trampling")) if sp_params else "trampling"
-    upkeep_per_ind = float(getattr(sp_params, "energy_upkeep_per_individual", 0.05)) if sp_params else 0.05
-    total_upkeep = float(swarm.population) * upkeep_per_ind
+    inc_factor = sp_params.incidental_mortality_factor if sp_params else 0.0
+    inc_mode = sp_params.incidental_mortality_mode if sp_params else "trampling"
+    upkeep_per_ind = sp_params.energy_upkeep_per_individual if sp_params else 0.05
+    total_upkeep = swarm.population * upkeep_per_ind
 
     # MVT Full Belly lock heuristic
     is_anchored = (cell_plant_energy >= total_upkeep and total_upkeep > 0.0) if cell_plant_energy > 0.0 else False
+    min_energy_threshold = swarm.population * swarm.energy_min
 
     return {
         "entity_id": swarm.entity_id,
@@ -244,26 +244,21 @@ def _build_live_swarm_payload(
         "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
         "population": swarm.population,
         "initial_population": swarm.initial_population,
-        "energy": float(swarm.energy),
-        "energy_min": float(swarm.energy_min),
-        "energy_deficit": max(
-            0.0,
-            float(swarm.population * swarm.energy_min - swarm.energy),
-        ),
-        "starvation_threshold": float(swarm.population) * float(swarm.energy_min),
-        "energy_label": (f"{swarm.energy:.1f} (Min: {float(swarm.population) * float(swarm.energy_min):.1f})"),
+        "energy": swarm.energy,
+        "energy_min": swarm.energy_min,
+        "energy_deficit": max(0.0, min_energy_threshold - swarm.energy),
+        "starvation_threshold": min_energy_threshold,
+        "energy_label": f"{swarm.energy:.1f} (Min: {min_energy_threshold:.1f})",
         "total_metabolic_upkeep": total_upkeep,
         "is_anchored_feeding": is_anchored,
         "incidental_mortality_factor": inc_factor,
         "incidental_mortality_mode": inc_mode,
         "mitosis_progress": (
-            float(swarm.population) / float(swarm.split_population_threshold)
-            if swarm.split_population_threshold > 0
-            else None
+            swarm.population / swarm.split_population_threshold if swarm.split_population_threshold > 0 else None
         ),
         "mitosis_label": (
             f"{swarm.population} / {swarm.split_population_threshold}"
-            f" ({100.0 * float(swarm.population) / float(swarm.split_population_threshold):.0f}%)"
+            f" ({100.0 * swarm.population / swarm.split_population_threshold:.0f}%)"
             if swarm.split_population_threshold > 0
             else "No threshold"
         ),
@@ -317,7 +312,7 @@ def _collect_live_plants_and_swarms(
         entity = world.get_entity(entity_id)
         if entity.has_component(PlantComponent):
             plant = entity.get_component(PlantComponent)
-            cell_plant_energy += float(plant.energy)
+            cell_plant_energy += plant.energy
             plants.append(
                 _build_live_plant_payload(
                     plant, flora_names, plant_lookup, owned_substances, env, herbivore_names, substance_names
@@ -463,13 +458,13 @@ def build_live_cell_details(
             "enabled": bool(touching_links),
             "link_count": len(touching_links),
             "inter_species_enabled": loop.config.mycorrhizal_inter_species,
-            "connection_cost": float(loop.config.mycorrhizal_connection_cost),
+            "connection_cost": loop.config.mycorrhizal_connection_cost,
             "signal_velocity": loop.config.mycorrhizal_signal_velocity,
             "links": [
                 {
-                    "from": {"x": int(link["x1"]), "y": int(link["y1"])},
-                    "to": {"x": int(link["x2"]), "y": int(link["y2"])},
-                    "inter_species": bool(link["inter_species"]),
+                    "from": {"x": link["x1"], "y": link["y1"]},
+                    "to": {"x": link["x2"], "y": link["y2"]},
+                    "inter_species": link["inter_species"],
                 }
                 for link in touching_links
             ],
