@@ -263,6 +263,7 @@ def test_foraging_parameter_caching_parity() -> None:
             consumption_rate=1.0,
             reproduction_energy_divisor=2.0,
             resistances=HerbivoreResistancesSchema(digestive_efficiency=0.9, morphological_adaptation=0.1),
+            handling_time=0.25,
         )
     ]
 
@@ -270,6 +271,7 @@ def test_foraging_parameter_caching_parity() -> None:
     cached_h = cache_herbivore_foraging_params(herb)
 
     assert isinstance(cached_f[0], CachedFloraForagingParams)
+    assert cached_h[0].handling_time == 0.25
     assert cached_h[0].digestive_efficiency == 0.9
     assert cached_h[0].morphological_adaptation == 0.1
 
