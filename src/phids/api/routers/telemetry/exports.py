@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
@@ -27,6 +29,14 @@ from phids.telemetry.export.tikz import generate_tikz_str
 router = APIRouter()
 
 
+@dataclass(slots=True, frozen=True)
+class ExportPayload:
+    """Container for serialized telemetry export payload and row metadata."""
+
+    data: bytes
+    row_count: int
+
+
 @router.get("/api/telemetry/export/csv", summary="Export telemetry as CSV")
 async def export_telemetry_csv() -> Response:
     """Stream the live telemetry table as CSV.
@@ -40,14 +50,14 @@ async def export_telemetry_csv() -> Response:
     """
     loop = api_main._get_loop()
 
-    def _build_csv_payload() -> tuple[bytes, int]:
+    def _build_csv_payload() -> ExportPayload:
         df = loop.telemetry.dataframe
-        return export_bytes_csv(df), int(df.height)
+        return ExportPayload(data=export_bytes_csv(df), row_count=df.height)
 
-    data, rows = await run_in_threadpool(_build_csv_payload)
-    api_main.logger.info("Telemetry exported as CSV (%d rows)", rows)
+    payload = await run_in_threadpool(_build_csv_payload)
+    api_main.logger.info("Telemetry exported as CSV (%d rows)", payload.row_count)
     return Response(
-        content=data,
+        content=payload.data,
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=telemetry.csv"},
     )
@@ -65,14 +75,14 @@ async def export_telemetry_json() -> Response:
     """
     loop = api_main._get_loop()
 
-    def _build_json_payload() -> tuple[bytes, int]:
+    def _build_json_payload() -> ExportPayload:
         df = loop.telemetry.dataframe
-        return export_bytes_json(df), int(df.height)
+        return ExportPayload(data=export_bytes_json(df), row_count=df.height)
 
-    data, rows = await run_in_threadpool(_build_json_payload)
-    api_main.logger.info("Telemetry exported as NDJSON (%d rows)", rows)
+    payload = await run_in_threadpool(_build_json_payload)
+    api_main.logger.info("Telemetry exported as NDJSON (%d rows)", payload.row_count)
     return Response(
-        content=data,
+        content=payload.data,
         media_type="application/x-ndjson",
         headers={"Content-Disposition": "attachment; filename=telemetry.ndjson"},
     )

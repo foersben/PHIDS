@@ -274,3 +274,15 @@ async def test_export_route_backend_failure_branches(
 
     assert response.status_code == 400, response.text
     assert expected_message in response.text
+
+
+def test_export_payload_dataclass_contract() -> None:
+    """Verifies ExportPayload is a frozen slots dataclass with expected attributes."""
+    from phids.api.routers.telemetry.exports import ExportPayload
+
+    payload = ExportPayload(data=b"col1,col2\n1,2\n", row_count=1)
+    assert payload.data == b"col1,col2\n1,2\n"
+    assert payload.row_count == 1
+
+    with pytest.raises((AttributeError, TypeError)):
+        payload.data = b"new"  # type: ignore[misc]
