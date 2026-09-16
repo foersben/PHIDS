@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-03-08 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/lifecycle/mycorrhiza.py `_establish_mycorrhizal_connections`
+* **Selection Rationale:** Selected due to a complexity score of 15. The function's logic inside the main entity loop was highly cohesive, making it an excellent candidate for extraction into a private helper function `_process_single_plant_mycorrhiza`. This reduces complexity without altering the algorithmic structure or adding performance overhead.
+* **Before/After Score:** 15 vs. 7
+* **Performance Assessment:** The extraction of the loop body into a helper function introduces negligible function call overhead. The benchmark results confirmed zero performance regression across the engine's core systems and hot paths.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
