@@ -34,6 +34,36 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 
+def _update_herbivore_presence(
+    updates: dict[str, object],
+    herbivore_species_id: int | None,
+    min_herbivore_population: int | None,
+) -> None:
+    if herbivore_species_id is not None:
+        updates["herbivore_species_id"] = herbivore_species_id
+    if min_herbivore_population is not None:
+        updates["min_herbivore_population"] = max(1, min_herbivore_population)
+
+
+def _update_substance_active(
+    updates: dict[str, object],
+    substance_id: int | None,
+) -> None:
+    if substance_id is not None:
+        updates["substance_id"] = substance_id
+
+
+def _update_environmental_signal(
+    updates: dict[str, object],
+    signal_id: int | None,
+    min_concentration: float | None,
+) -> None:
+    if signal_id is not None:
+        updates["signal_id"] = signal_id
+    if min_concentration is not None:
+        updates["min_concentration"] = max(0.0, min_concentration)
+
+
 def _build_node_updates(
     current_kind: str,
     kind: str | None = None,
@@ -46,19 +76,15 @@ def _build_node_updates(
     """Build the dictionary of node updates based on the current node kind."""
     updates: dict[str, object] = {}
     if current_kind == "herbivore_presence":
-        if herbivore_species_id is not None:
-            updates["herbivore_species_id"] = herbivore_species_id
-        if min_herbivore_population is not None:
-            updates["min_herbivore_population"] = max(1, min_herbivore_population)
-    elif current_kind == "substance_active":
-        if substance_id is not None:
-            updates["substance_id"] = substance_id
-    elif current_kind == "environmental_signal":
-        if signal_id is not None:
-            updates["signal_id"] = signal_id
-        if min_concentration is not None:
-            updates["min_concentration"] = max(0.0, min_concentration)
-    elif current_kind in {"all_of", "any_of"} and kind is not None:
+        _update_herbivore_presence(updates, herbivore_species_id, min_herbivore_population)
+        return updates
+    if current_kind == "substance_active":
+        _update_substance_active(updates, substance_id)
+        return updates
+    if current_kind == "environmental_signal":
+        _update_environmental_signal(updates, signal_id, min_concentration)
+        return updates
+    if current_kind in {"all_of", "any_of"} and kind is not None:
         updates["kind"] = kind
     return updates
 
