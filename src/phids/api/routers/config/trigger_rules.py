@@ -34,6 +34,18 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 
+def _update_environmental_signal(
+    updates: dict[str, object],
+    signal_id: int | None,
+    min_concentration: float | None,
+) -> None:
+    """Update environmental signal fields."""
+    if signal_id is not None:
+        updates["signal_id"] = signal_id
+    if min_concentration is not None:
+        updates["min_concentration"] = max(0.0, min_concentration)
+
+
 def _build_node_updates(
     current_kind: str,
     kind: str | None = None,
@@ -54,10 +66,7 @@ def _build_node_updates(
         if substance_id is not None:
             updates["substance_id"] = substance_id
     elif current_kind == "environmental_signal":
-        if signal_id is not None:
-            updates["signal_id"] = signal_id
-        if min_concentration is not None:
-            updates["min_concentration"] = max(0.0, min_concentration)
+        _update_environmental_signal(updates, signal_id, min_concentration)
     elif current_kind in {"all_of", "any_of"} and kind is not None:
         updates["kind"] = kind
     return updates
