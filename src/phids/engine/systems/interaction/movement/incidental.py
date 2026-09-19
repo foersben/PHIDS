@@ -53,6 +53,42 @@ def _compute_trample_probability_jit(
     return min(p_max, max(0.0, prob))
 
 
+def _process_single_entity(
+    eid: int,
+    nx: int,
+    ny: int,
+    world: ECSWorld,
+    env: GridEnvironment,
+    swarm: SwarmComponent,
+    incidental_factor: float,
+    mode_cause: str,
+    dead_ids: list[int],
+    plant_component_cls: type,
+) -> None:
+    """Process incidental mortality for a single entity."""
+    if not world.has_entity(eid):
+        return
+    ent = world.get_entity(eid)
+    if not ent.has_component(plant_component_cls):
+        return
+
+    plant = ent.get_component(plant_component_cls)
+    prob = _compute_trample_probability_jit(
+        swarm_population=swarm.population,
+        trample_factor=incidental_factor,
+        structural_mass=plant.structural_mass,
+        max_structural_mass=plant.max_structural_mass,
+        p_max=0.50,
+    )
+
+    if prob > 0.0 and random.random() < prob:
+        plant.last_energy_loss_cause = mode_cause
+        env.clear_plant_energy(nx, ny, plant.species_id)
+        env.clear_structural_mass(nx, ny, plant.species_id)
+        world.unregister_position(eid, nx, ny)
+        dead_ids.append(eid)
+
+
 def _resolve_incidental_mortality(
     swarm: SwarmComponent,
     nx: int,
@@ -76,8 +112,6 @@ def _resolve_incidental_mortality(
         env: GridEnvironment instance.
         herbivore_params_dict: Mapping of species_id to species parameters.
     """
-    from phids.engine.components.plant import PlantComponent
-
     incidental_factor = 0.0
     mode_cause = "death_incidental_mortality"
 
@@ -94,29 +128,22 @@ def _resolve_incidental_mortality(
     if not occupants:
         return
 
+    from phids.engine.components.plant import PlantComponent
+
     dead_ids: list[int] = []
     for eid in list(occupants):
-        if not world.has_entity(eid):
-            continue
-        ent = world.get_entity(eid)
-        if not ent.has_component(PlantComponent):
-            continue
-
-        plant: PlantComponent = ent.get_component(PlantComponent)
-        prob = _compute_trample_probability_jit(
-            swarm_population=swarm.population,
-            trample_factor=incidental_factor,
-            structural_mass=plant.structural_mass,
-            max_structural_mass=plant.max_structural_mass,
-            p_max=0.50,
+        _process_single_entity(
+            eid=eid,
+            nx=nx,
+            ny=ny,
+            world=world,
+            env=env,
+            swarm=swarm,
+            incidental_factor=incidental_factor,
+            mode_cause=mode_cause,
+            dead_ids=dead_ids,
+            plant_component_cls=PlantComponent,
         )
-
-        if prob > 0.0 and random.random() < prob:
-            plant.last_energy_loss_cause = mode_cause
-            env.clear_plant_energy(nx, ny, plant.species_id)
-            env.clear_structural_mass(nx, ny, plant.species_id)
-            world.unregister_position(eid, nx, ny)
-            dead_ids.append(eid)
 
     if dead_ids:
         world.collect_garbage(dead_ids)
