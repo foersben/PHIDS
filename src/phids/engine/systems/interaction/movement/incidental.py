@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.engine.components.plant import PlantComponent
     from phids.engine.components.swarm import SwarmComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
@@ -72,7 +73,7 @@ def _process_single_entity(
     if not ent.has_component(plant_component_cls):
         return
 
-    plant = ent.get_component(plant_component_cls)
+    plant: PlantComponent = ent.get_component(plant_component_cls)
     prob = _compute_trample_probability_jit(
         swarm_population=swarm.population,
         trample_factor=incidental_factor,
