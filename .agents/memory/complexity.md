@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/interaction/movement/incidental.py::_resolve_incidental_mortality`
+* **Selection Rationale:** The complexity score was exactly 15. The core issue was an overly long inner loop doing multiple entity-specific condition checks, computations, and state updates. This was easy to untangle by safely extracting the inner loop logic into a unified, cohesive helper function `_process_single_entity`, lowering cognitive weight while not breaking performance (benchmark passing cleanly).
+* **Before/After Score:** 15 vs. 8
+* **Performance Assessment:** The performance benchmark suite (e.g. `test_structural_mass_set_clear_throughput`, `test_spatial_hash_query_benchmark`) passed without regression. Function invocation overhead of extracting the inner loop is minimal for pure python loops, saving cognitive load over the threshold.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
