@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 
 from numba import njit
 
+from phids.engine.components.plant import PlantComponent
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -76,8 +78,6 @@ def _resolve_incidental_mortality(
         env: GridEnvironment instance.
         herbivore_params_dict: Mapping of species_id to species parameters.
     """
-    from phids.engine.components.plant import PlantComponent
-
     incidental_factor = 0.0
     mode_cause = "death_incidental_mortality"
 
