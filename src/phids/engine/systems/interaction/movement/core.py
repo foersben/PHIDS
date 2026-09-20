@@ -28,6 +28,49 @@ if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld, Entity
 
 
+def _handle_crowding_and_repulsion(
+    swarm: SwarmComponent,
+    env: GridEnvironment,
+    tile_populations: npt.NDArray[np.int32] | list[int],
+    herbivore_params_dict: dict[int, HerbivoreSpeciesParams],
+    scratch_cx: npt.NDArray[np.int32],
+    scratch_cy: npt.NDArray[np.int32],
+) -> tuple[bool, int, int]:
+    """Handle physical jostling and repulsion logic.
+
+    Args:
+        swarm: The swarm component.
+        env: The grid environment.
+        tile_populations: The array of current population counts per tile.
+        herbivore_params_dict: Dictionary mapping species config IDs to their parameters.
+        scratch_cx: Pre-allocated buffer for candidate X coordinates.
+        scratch_cy: Pre-allocated buffer for candidate Y coordinates.
+
+    Returns:
+        A tuple of (handled, nx, ny). If handled is True, nx and ny are the new coordinates.
+    """
+    if (
+        not swarm.repelled
+        and 0 <= swarm.x < env.width
+        and 0 <= swarm.y < env.height
+        and tile_populations[swarm.y * env.width + swarm.x] > TILE_CARRYING_CAPACITY
+    ):
+        from phids.engine.core.herbivore_params import get_herbivore_evasion_duration
+
+        k_ticks = get_herbivore_evasion_duration(herbivore_params_dict, swarm.species_id)
+        swarm.repelled = True
+        swarm.repelled_ticks_remaining = k_ticks
+
+    if swarm.repelled and swarm.repelled_ticks_remaining > 0:
+        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
+        swarm.repelled_ticks_remaining -= 1
+        if swarm.repelled_ticks_remaining <= 0:
+            swarm.repelled = False
+        return True, nx, ny
+
+    return False, swarm.x, swarm.y
+
+
 def _resolve_swarm_movement(
     swarm: SwarmComponent,
     entity: Entity,
@@ -78,24 +121,10 @@ def _resolve_swarm_movement(
     old_x, old_y = swarm.x, swarm.y
 
     # 1. Crowding takes strict precedence (Physical Jostling)
-    if (
-        not swarm.repelled
-        and 0 <= swarm.x < env.width
-        and 0 <= swarm.y < env.height
-        and tile_populations[swarm.y * env.width + swarm.x] > TILE_CARRYING_CAPACITY
-    ):
-        from phids.engine.core.herbivore_params import get_herbivore_evasion_duration
-
-        k_ticks = get_herbivore_evasion_duration(herbivore_params_dict, swarm.species_id)
-        swarm.repelled = True
-        swarm.repelled_ticks_remaining = k_ticks
-
-    if swarm.repelled and swarm.repelled_ticks_remaining > 0:
-        nx, ny = _random_walk_step(swarm.x, swarm.y, env.width, env.height, scratch_cx, scratch_cy)
-        swarm.repelled_ticks_remaining -= 1
-        if swarm.repelled_ticks_remaining <= 0:
-            swarm.repelled = False
-    else:
+    handled, nx, ny = _handle_crowding_and_repulsion(
+        swarm, env, tile_populations, herbivore_params_dict, scratch_cx, scratch_cy
+    )
+    if not handled:
         # 2. Fast O(1) check: are we already standing on valid, uneaten food?
         import numpy as np
 

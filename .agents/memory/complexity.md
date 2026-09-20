@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2026-09-20 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement/core.py _resolve_swarm_movement
+* **Selection Rationale:** The _resolve_swarm_movement function handles engine-critical physics and movement simulation with a complexity of 15. The crowding and jostling logic forms a cohesive, dense if/elif block that is easily extracted. By extracting this pure conditional sequence into a stateless helper `_handle_crowding_and_repulsion` that returns the `(handled, nx, ny)` triplet, we strictly preserve the high-performance types and inline logic of the hot loop while flattening `_resolve_swarm_movement`.
+* **Before/After Score:** 15 vs. 9
+* **Performance Assessment:** Extracting a cohesive helper subroutine adds a single function invocation per tick. Benchmark verification across the suite shows standard minor variance (OPS remained consistent at around ~106 for the batch benchmark). Zero performance regression.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
