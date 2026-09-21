@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-05-24 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement/incidental.py (`_resolve_incidental_mortality`)
+* **Selection Rationale:** The target function `_resolve_incidental_mortality` had a cognitive complexity of 15 due to a deep iteration and conditionals to process potential entity culling. It is a hot path but easily untangled by extracting the ECS component-checking and probability-checking block for a single entity into a new private helper `_process_single_entity`. This flattens the loop while preserving strict performance guarantees (no extra allocations in the inner loop).
+* **Before/After Score:** 15 vs. 10
+* **Performance Assessment:** The single entity processing logic was extracted to `_process_single_entity` function. A benchmark run using `uv run pytest tests/benchmarks/` showed stable operations per second and execution times. Thus, zero performance regression is confirmed.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
