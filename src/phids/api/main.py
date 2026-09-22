@@ -50,10 +50,11 @@ from phids.api.routers import (
     config_router,
     dse_router,
     dse_ws_router,
-    simulation_router,
     telemetry_router,
     ui_router,
 )
+from phids.api.routers.simulation.control import router as simulation_control_router
+from phids.api.routers.simulation.scenario import router as simulation_scenario_router
 from phids.api.ui_state.state import DraftState, get_draft
 from phids.api.websockets import SimulationStreamManager, UIStreamManager
 from phids.engine.core.grid_utils import is_power_of_two
@@ -374,7 +375,8 @@ async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> J
 
 
 app.include_router(batch_router)
-app.include_router(simulation_router)
+app.include_router(simulation_scenario_router)
+app.include_router(simulation_control_router)
 app.include_router(config_router)
 app.include_router(telemetry_router)
 app.include_router(ui_router)
