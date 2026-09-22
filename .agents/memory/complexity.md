@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2026-10-27 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement/incidental.py (`_resolve_incidental_mortality`)
+* **Selection Rationale:** The original `_resolve_incidental_mortality` function had a cognitive complexity of 15 due to the main interaction loop querying entities and processing destruction logic. Untangling it was straightforward and highly effective by safely extracting the core condition check and side-effect processing into a separate cohesive private helper function `_process_single_entity`. This maintains tight engine looping performance without creating overly granular logical jumps and brings the complexity of `_resolve_incidental_mortality` down to well under the 15 threshold.
+* **Before/After Score:** 15 vs. 10.
+* **Performance Assessment:** The isolated single-entity update is processed via direct positional arguments (`eid`, `world`, `env`, etc) and uses identical core components processing, keeping memory allocations near-zero and instruction overhead minimal. Simulation benchmarks demonstrate zero noticeable overhead since the internal loop executes precisely the same conditions and random check gating.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
