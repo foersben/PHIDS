@@ -94,3 +94,8 @@ Action: When dealing with presentation layers that handle distinct application m
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
+
+## 2026-09-22 - Extracting Simulation Control Router Monolith
+
+Learning: When extracting endpoints from a large routing monolith (`simulation.py`) into smaller cohesive modules (`scenario.py` and `control.py`), it is critical to ensure that helper functions (like `_status_badge_fragment` and `_apply_optional_biotope_overrides_from_form`) are first extracted into a common `helpers.py` module to prevent circular dependencies or code duplication. Additionally, a new `__init__.py` file must be created at the package level to expose the unified `router` (using `router.include_router()`), allowing the rest of the application (like `phids.api.routers.__init__.py`) to import the package transparently without modifying the composition root.
+Action: Always extract shared request/response helper functions before the endpoints themselves, and use `APIRouter.include_router` in the package `__init__.py` to provide a backward-compatible public interface when splitting FastAPI monoliths.

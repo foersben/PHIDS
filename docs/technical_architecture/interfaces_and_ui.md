@@ -19,8 +19,10 @@ sources:
   resource: src/phids/api/templates/base.html
 - id: dashboard
   resource: src/phids/api/templates/partials/dashboard.html
-- id: simulation
-  resource: src/phids/api/routers/simulation.py
+- id: simulation_control
+  resource: src/phids/api/routers/simulation/control.py
+- id: simulation_scenario
+  resource: src/phids/api/routers/simulation/scenario.py
 ---
 
 PHIDS operates as a headless FastAPI backend, equipped with RESTful configuration surfaces, high-throughput WebSockets for live state streaming, and an embedded server-rendered dashboard powered by HTMX and Jinja.
