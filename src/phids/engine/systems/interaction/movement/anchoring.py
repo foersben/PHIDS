@@ -37,12 +37,12 @@ def _has_compatible_food_jit(
 ) -> bool:
     """Check if swarm is co-located with any compatible flora species with positive energy."""
     _, num_flora = diet_matrix.shape
-    found = False
     for flora_species_id in range(num_flora):
         compatible = diet_matrix[species_id, flora_species_id]
         has_energy = plant_energy_by_species[flora_species_id, x, y] > 0.0
-        found = found or (compatible and has_energy)
-    return found
+        if compatible and has_energy:
+            return True
+    return False
 
 
 @njit(cache=True)
