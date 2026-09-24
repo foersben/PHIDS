@@ -83,6 +83,8 @@ async def start_simulation(request: Request) -> Response:
     if api_main._is_htmx_request(request):
         return _status_badge_fragment()
     return JSONResponse({"message": "Simulation started."})
+
+
 @router.post("/api/simulation/pause", summary="Pause simulation background task")
 async def pause_simulation(request: Request) -> Response:
     """Toggle pause state of the active live simulation loop.
@@ -110,6 +112,7 @@ async def pause_simulation(request: Request) -> Response:
         loop.start()
 
         if api_main._sim_task is None or api_main._sim_task.done():
+
             async def _bg() -> None:
                 try:
                     await loop.run()
@@ -117,6 +120,7 @@ async def pause_simulation(request: Request) -> Response:
                     api_main.logger.info("Background simulation task cancelled")
                 except Exception as e:
                     api_main.logger.exception("Background simulation task encountered a fatal error: %s", e)
+
             api_main._sim_task = asyncio.create_task(_bg())
         state = "resumed"
     else:
@@ -127,6 +131,8 @@ async def pause_simulation(request: Request) -> Response:
     if api_main._is_htmx_request(request):
         return _status_badge_fragment()
     return JSONResponse({"message": f"Simulation {state}.", "paused": loop.paused, "running": loop.running})
+
+
 @router.post("/api/simulation/step", summary="Advance simulation by one tick")
 async def step_simulation(request: Request) -> Response:
     """Execute exactly one deterministic tick on the active simulation loop.

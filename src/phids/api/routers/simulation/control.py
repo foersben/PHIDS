@@ -9,16 +9,18 @@ of the simulation, such as tick rate and wind.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Form, Request, Response
 from fastapi.responses import JSONResponse
 
 import phids.api.main as api_main
-from phids.api.schemas.responses import WindUpdatePayload
 from phids.api.ui_state.state import get_draft
 
 from .helpers import _status_badge_fragment
+
+if TYPE_CHECKING:
+    from phids.api.schemas.responses import WindUpdatePayload
 
 router = APIRouter()
 
