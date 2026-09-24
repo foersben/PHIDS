@@ -29,6 +29,7 @@ dependencies = [
     "optuna>=4.9.0",
     "pymoo>=0.6.2",
     "mkdocs-print-site-plugin>=2.8",
+    "duckdb>=1.5.5",
 ]
 
 [project.scripts]

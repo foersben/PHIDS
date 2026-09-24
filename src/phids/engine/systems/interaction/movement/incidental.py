@@ -56,7 +56,6 @@ def _compute_trample_probability_jit(
 def _process_single_entity(
     eid: int,
     world: ECSWorld,
-    plant_class: type,
     incidental_factor: float,
     mode_cause: str,
     swarm_population: int,
@@ -64,13 +63,15 @@ def _process_single_entity(
     nx: int,
     ny: int,
 ) -> bool:
+    from phids.engine.components.plant import PlantComponent
+
     if not world.has_entity(eid):
         return False
     ent = world.get_entity(eid)
-    if not ent.has_component(plant_class):
+    if not ent.has_component(PlantComponent):
         return False
 
-    plant = ent.get_component(plant_class)
+    plant: PlantComponent = ent.get_component(PlantComponent)
     prob = _compute_trample_probability_jit(
         swarm_population=swarm_population,
         trample_factor=incidental_factor,
@@ -111,8 +112,6 @@ def _resolve_incidental_mortality(
         env: GridEnvironment instance.
         herbivore_params_dict: Mapping of species_id to species parameters.
     """
-    from phids.engine.components.plant import PlantComponent
-
     incidental_factor = 0.0
     mode_cause = "death_incidental_mortality"
 
@@ -131,9 +130,7 @@ def _resolve_incidental_mortality(
 
     dead_ids: list[int] = []
     for eid in list(occupants):
-        if _process_single_entity(
-            eid, world, PlantComponent, incidental_factor, mode_cause, swarm.population, env, nx, ny
-        ):
+        if _process_single_entity(eid, world, incidental_factor, mode_cause, swarm.population, env, nx, ny):
             dead_ids.append(eid)
 
     if dead_ids:
