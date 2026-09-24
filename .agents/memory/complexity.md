@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-02-27 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement/incidental.py `_resolve_incidental_mortality`
+* **Selection Rationale:** This function had a complexity of 15 due to a deep loop with multiple guard clauses and a stochastic destruction block. By extracting the core inner-loop evaluation block into `_process_single_entity`, it lowered complexity significantly without breaking the ECS logic or introducing any API changes.
+* **Before/After Score:** 15 vs. 10
+* **Performance Assessment:** Common-sense evaluation indicates that extracting the single ECS resolution step out of the loop into a private function introduces extremely minor overhead while keeping the `@njit` hotpath perfectly intact. Benchmark results confirmed no noticeable latency impact on any step.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
