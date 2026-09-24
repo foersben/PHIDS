@@ -53,6 +53,41 @@ def _compute_trample_probability_jit(
     return min(p_max, max(0.0, prob))
 
 
+def _process_single_entity(
+    eid: int,
+    world: ECSWorld,
+    plant_class: type,
+    incidental_factor: float,
+    mode_cause: str,
+    swarm_population: int,
+    env: GridEnvironment,
+    nx: int,
+    ny: int,
+) -> bool:
+    if not world.has_entity(eid):
+        return False
+    ent = world.get_entity(eid)
+    if not ent.has_component(plant_class):
+        return False
+
+    plant = ent.get_component(plant_class)
+    prob = _compute_trample_probability_jit(
+        swarm_population=swarm_population,
+        trample_factor=incidental_factor,
+        structural_mass=plant.structural_mass,
+        max_structural_mass=plant.max_structural_mass,
+        p_max=0.50,
+    )
+
+    if prob > 0.0 and random.random() < prob:
+        plant.last_energy_loss_cause = mode_cause
+        env.clear_plant_energy(nx, ny, plant.species_id)
+        env.clear_structural_mass(nx, ny, plant.species_id)
+        world.unregister_position(eid, nx, ny)
+        return True
+    return False
+
+
 def _resolve_incidental_mortality(
     swarm: SwarmComponent,
     nx: int,
@@ -96,26 +131,9 @@ def _resolve_incidental_mortality(
 
     dead_ids: list[int] = []
     for eid in list(occupants):
-        if not world.has_entity(eid):
-            continue
-        ent = world.get_entity(eid)
-        if not ent.has_component(PlantComponent):
-            continue
-
-        plant: PlantComponent = ent.get_component(PlantComponent)
-        prob = _compute_trample_probability_jit(
-            swarm_population=swarm.population,
-            trample_factor=incidental_factor,
-            structural_mass=plant.structural_mass,
-            max_structural_mass=plant.max_structural_mass,
-            p_max=0.50,
-        )
-
-        if prob > 0.0 and random.random() < prob:
-            plant.last_energy_loss_cause = mode_cause
-            env.clear_plant_energy(nx, ny, plant.species_id)
-            env.clear_structural_mass(nx, ny, plant.species_id)
-            world.unregister_position(eid, nx, ny)
+        if _process_single_entity(
+            eid, world, PlantComponent, incidental_factor, mode_cause, swarm.population, env, nx, ny
+        ):
             dead_ids.append(eid)
 
     if dead_ids:
