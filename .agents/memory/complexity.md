@@ -63,3 +63,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2025-02-27 - Complexity Refactoring Report
+* **Target Function:** src/phids/api/routers/config/trigger_rules.py - _build_node_updates
+* **Selection Rationale:** This function was chosen as the target because it had a complexity score of 15 due to chained `elif` blocks handling conditionally populated node updates based on node kind. Extracting the updates for each specific leaf node kind into independent, cohesive helper functions (`_build_herbivore_presence_updates`, `_build_substance_active_updates`, and `_build_environmental_signal_updates`) flattens the main conditional block, dramatically improving readability, while bearing zero risk of engine-critical performance regressions, as this logic resides in the API layer and deals strictly with low-frequency configuration state construction.
+* **Before/After Score:** 15 vs. 5
+* **Performance Assessment:** The extracted logic is exclusively situated in a configuration API handler responsible for processing user interface forms; therefore, there is no performance risk or measurable overhead on engine hot loops. Common sense dictates that separating straightforward dictionary allocations into independent functions has no regressive consequences on simulation execution speed.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
