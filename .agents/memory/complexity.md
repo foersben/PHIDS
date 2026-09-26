@@ -63,3 +63,15 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+
+## 2024-05-18 - Complexity Refactoring Report
+* **Target Function:** `src/phids/engine/systems/interaction/movement/incidental.py` - `_resolve_incidental_mortality`
+* **Selection Rationale:** Selected this function because it had a complexity score of 15. The core complexity came from a loop iterating through ECS occupants, evaluating probabilities, and checking outcomes inside conditional guards. Extracting the inner loop's cohesive body into a private `_process_single_entity` function drastically improved readability and simplified the loop execution path without adding meaningful overhead, since it acts on standard Python objects rather than being a tight Numba numerical kernel.
+* **Before/After Score:** 15 vs. 8 (with the extracted `_process_single_entity` scoring 4).
+* **Performance Assessment:** The extracted logic doesn't introduce excessive allocation or loop overhead. Existing system benchmarks ran smoothly (`uv run pytest tests/benchmarks/`), passing all thresholds without degradation.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2024-05-18 - Complexity Refactoring Learnings (Type Annotation Issue)
+* **Target Function:** `src/phids/engine/systems/interaction/movement/incidental.py` - `_resolve_incidental_mortality`
+* **Issue:** Resolving cognitive complexity by extracting loop logic correctly improved the score and structure, but pulling the internal type annotation to the argument list caused an undefined name error in Mypy for `.has_component()`.
+* **Fix:** When extracting local imports inside loops to maintain both performance and architectural complexity thresholds, you must ensure that downstream `.get_component()` usage handles the dynamic type resolution if you use `type: ignore` or explicit hints rather than directly referencing the localized object in an unannotated scope. A dynamic `Any` usage will result in mypy errors if typing isn't globally imported.
