@@ -71,7 +71,7 @@ def _process_single_entity(
     if not ent.has_component(plant_component_cls):
         return
 
-    plant = ent.get_component(plant_component_cls)
+    plant = ent.get_component(plant_component_cls)  # type: ignore[var-annotated]
     prob = _compute_trample_probability_jit(
         swarm_population=swarm.population,
         trample_factor=incidental_factor,

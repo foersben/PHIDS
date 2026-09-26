@@ -70,3 +70,8 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 8 (with the extracted `_process_single_entity` scoring 4).
 * **Performance Assessment:** The extracted logic doesn't introduce excessive allocation or loop overhead. Existing system benchmarks ran smoothly (`uv run pytest tests/benchmarks/`), passing all thresholds without degradation.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2024-05-18 - Complexity Refactoring Learnings (Type Annotation Issue)
+* **Target Function:** `src/phids/engine/systems/interaction/movement/incidental.py` - `_resolve_incidental_mortality`
+* **Issue:** Resolving cognitive complexity by extracting loop logic correctly improved the score and structure, but pulling the internal type annotation to the argument list caused an undefined name error in Mypy for `.has_component()`.
+* **Fix:** When extracting local imports inside loops to maintain both performance and architectural complexity thresholds, you must ensure that downstream `.get_component()` usage handles the dynamic type resolution if you use `type: ignore` or explicit hints rather than directly referencing the localized object in an unannotated scope. A dynamic `Any` usage will result in mypy errors if typing isn't globally imported.
