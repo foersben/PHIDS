@@ -434,6 +434,7 @@ class CachedFloraForagingParams:
     digestibility_modifier: float
     mechanical_damage_per_bite: float
 
+
 @dataclass(slots=True, frozen=True)
 class CachedHerbivoreForagingParams:
     handling_time: float

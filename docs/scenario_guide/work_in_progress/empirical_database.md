@@ -270,6 +270,7 @@ Manual upload processes introduce unacceptable latency and human error. The ETL 
 ```python
 from huggingface_hub import HfApi
 
+
 def publish_to_huggingface(filepath: str, repo_id: str):
     """Programmatically publishes the validated database to the Hugging Face Hub."""
     api = HfApi()
@@ -278,7 +279,7 @@ def publish_to_huggingface(filepath: str, repo_id: str):
         path_in_repo="bio_database.json",
         repo_id=repo_id,
         repo_type="dataset",
-        commit_message="chore(etl): automated database compilation and alignment"
+        commit_message="chore(etl): automated database compilation and alignment",
     )
 ```
 

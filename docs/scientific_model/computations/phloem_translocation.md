@@ -45,9 +45,7 @@ if plant.withdrawal_ticks_remaining > 0:
         plant.target_nutrition_factor - plant.apparent_nutrition_factor
     ) * plant.translocation_rate
 else:
-    plant.apparent_nutrition_factor += (
-        1.0 - plant.apparent_nutrition_factor
-    ) * plant.translocation_rate
+    plant.apparent_nutrition_factor += (1.0 - plant.apparent_nutrition_factor) * plant.translocation_rate
 ```
 
 ---
