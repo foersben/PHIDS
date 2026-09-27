@@ -63,3 +63,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 37 vs. 8 (Main function), with helpers `_overlay_species_data` (3), `_overlay_flora_data` (7), and `_overlay_herbivore_data` (6).
 * **Performance Assessment:** The extraction of nested loops into helpers strictly passes references and avoids unnecessary object allocations. Benchmark results indicate zero performance regression on related API encoding endpoints.
 * **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, and the full test suite (`uv run pytest`) run flawlessly without regressions.
+## 2025-02-21 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/movement/incidental.py:_resolve_incidental_mortality
+* **Selection Rationale:** This function contained a deeply nested loop iterating over co-located entities, evaluating an unextracted trampling logic, and managing state cleanup, scoring slightly above the threshold (15). Extracting the inner loop execution into a separate `_process_single_entity` function cleanly decoupled the single-entity resolution from the iteration mechanics without affecting Numba optimizations (`_compute_trample_probability_jit` remained intact). This yielded high cognitive complexity reduction with minimal structural scattering and strictly zero engine overhead as incidental calculation is highly localized.
+* **Before/After Score:** 15 vs. 8
+* **Performance Assessment:** The single extracted function simply receives scalar parameters and bounds from its parent scope rather than resolving dictionary/mapping logic redundantly inside the loop. No regressions were introduced into hot engine loops, and benchmarks confirmed fast execution across all paths.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
