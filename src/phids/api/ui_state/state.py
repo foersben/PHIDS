@@ -330,7 +330,9 @@ class DraftState:
                         min_herbivore_population=min_pop,
                         initiator_signal_id=sig_id,
                         initiator_min_concentration=min_conc,
-                        substance_id=getattr(trig.action, "substance_id", -1),
+                        substance_id=(
+                            trig.action.substance_id if isinstance(trig.action, SynthesizeSubstanceAction) else -1
+                        ),
                         activation_condition=(
                             trig.activation_condition.model_dump(mode="json")
                             if trig.activation_condition is not None

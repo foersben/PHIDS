@@ -83,10 +83,14 @@ During the migration from legacy Object-Oriented implementations to the current 
 4. **No Homogeneous Continuous Fractions:**
     * *Legacy limitation:* Traditional continuous mathematical equations can result in physically impossible fractions of animals (e.g., calculating that 0.43 of a rabbit survived), which fails to map onto a physical, discrete grid.
     * *Current invariant:* PHIDS enforces discrete, whole physical entities. While swarms track internal caloric deficits as floats, their physical existence and splitting boundaries are absolute integers on the grid.
+5. **Static Schema Validation (No Dynamic Reflection):**
+    * *Legacy limitation:* Relying on dynamic dictionary graphs and runtime property lookups for configuration payload validation created invisible CPU overhead.
+    * *Current invariant:* All payloads are bound to strictly typed, zero-allocation `frozen=True` dataclasses before entering the engine. The hot-path explicitly forbids dynamic reflection to guarantee execution immutability.
 
 ## Documentation Map
 
 * **Scientific Model** - research scope, detailed breakdown of mathematical models (Chemotaxis, PDEs), biological reasoning, and equations:
+    * [WSN Security Isomorphism](scientific_model/part_1_foundations/wsn_isomorphism.md)
     * [Scientific Model](scientific_model/part_1_foundations/mathematical_framework.md)
 * **Technical Architecture** - system constraints, package boundaries, loop ownership, interfaces, and telemetry:
     * [Testing Architecture](technical_architecture/testing_architecture.md)

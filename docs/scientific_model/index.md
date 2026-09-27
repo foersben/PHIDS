@@ -6,7 +6,7 @@ This section formally details the Plant-Herbivore Interaction & Defense Simulato
 
 PHIDS operates as a profoundly coupled hybrid dynamical system designed to bridge the micro-scale behaviors of individual biotic agents with the macro-scale abiotic fields they inhabit. The architecture relies on the strict synchronization of discrete entity transitions-governed by a data-oriented Entity-Component-System (ECS)-with continuous field updates that execute across highly optimized, double-buffered cellular automata layers.
 
-This structural duality allows the engine to resolve the inherent tension in ecological modeling: the need to track explicit, integer-based population boundaries (preventing fractional or "ghost" biological artifacts) while simultaneously computing continuous-space physical phenomena like atmospheric volatile transport and spatial flow-field gradients. The mathematical framework translates complex biological events-ranging from resource acquisition and grazing pressure to induced semiochemical signaling and swarm mitigation-into transparent, causal operator chains that execute deterministically without floating-point drift.
+This structural duality allows the engine to resolve the inherent tension in ecological modeling: the need to track explicit, integer-based population boundaries (preventing fractional or "ghost" biological artifacts) while simultaneously computing continuous-space physical phenomena like atmospheric volatile transport and spatial flow-field gradients. The mathematical framework translates complex biological events-ranging from resource acquisition and grazing pressure to induced semiochemical signaling and swarm mitosis-into transparent, causal operator chains that execute deterministically without floating-point drift.
 
 ```mermaid
 flowchart TD
@@ -48,6 +48,7 @@ The theoretical and computational foundations of PHIDS are partitioned into spec
 ### Part I: Foundations
 
 * [Mathematical Framework](part_1_foundations/mathematical_framework.md) - Formal PDEs, continuous-discrete coupling, deterministic operator chains, and state preservation invariants.
+* [WSN Security Isomorphism](part_1_foundations/wsn_isomorphism.md) - Mathematical equivalencies between biological kinetics and distributed IT security networks.
 * [Related Works](part_1_foundations/related_works.md) - Theoretical contextualization of PHIDS alongside classical Lotka-Volterra models, cellular automata, and IBM frameworks.
 
 ### Part II: Autotrophic Dynamics

@@ -61,25 +61,25 @@ def _build_preview_plant_payload(
     """
     mycorrhizal_neighbours = []
     for link in preview_links:
-        is_left = int(link["plant_index_a"]) == index
-        is_right = int(link["plant_index_b"]) == index
+        is_left = link["plant_index_a"] == index
+        is_right = link["plant_index_b"] == index
         if not is_left and not is_right:
             continue
-        other_index = int(link["plant_index_b"] if is_left else link["plant_index_a"])
+        other_index = link["plant_index_b"] if is_left else link["plant_index_a"]
         other = draft.initial_plants[other_index]
         mycorrhizal_neighbours.append(
             {
                 "name": flora_names.get(other.species_id, f"Flora {other.species_id}"),
                 "x": other.x,
                 "y": other.y,
-                "inter_species": bool(link["inter_species"]),
+                "inter_species": link["inter_species"],
             }
         )
     return {
         "index": index,
         "species_id": plant.species_id,
         "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
-        "energy": float(plant.energy),
+        "energy": plant.energy,
         "mycorrhizal_connections": len(mycorrhizal_neighbours),
         "mycorrhizal_neighbours": mycorrhizal_neighbours,
         "configured_trigger_rules": [
@@ -180,12 +180,10 @@ def _prepare_draft_metadata(
         A tuple containing the flora names, herbivore names, substances, effective substance names, and trigger rules.
     """
     flora_names: dict[int, str] = {
-        getattr(species, "species_id", index): getattr(species, "name", f"Flora {index}")
-        for index, species in enumerate(draft.flora_species)
+        species.species_id: species.name for index, species in enumerate(draft.flora_species)
     }
     herbivore_names: dict[int, str] = {
-        getattr(species, "species_id", index): getattr(species, "name", f"Herbivore {index}")
-        for index, species in enumerate(draft.herbivore_species)
+        species.species_id: species.name for index, species in enumerate(draft.herbivore_species)
     }
     substances = {definition.substance_id: definition for definition in draft.substance_definitions}
     effective_substance_names = (
@@ -224,7 +222,7 @@ def _collect_preview_swarms(
             "species_id": swarm.species_id,
             "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
             "population": swarm.population,
-            "energy": float(swarm.energy),
+            "energy": swarm.energy,
         }
         for index, swarm in enumerate(draft.initial_swarms)
         if swarm.x == x and swarm.y == y
@@ -278,16 +276,16 @@ def build_preview_cell_details(
         "signal_concentrations": [],
         "toxin_concentrations": [],
         "mycorrhiza": {
-            "enabled": bool(touching_links),
+            "enabled": len(touching_links) > 0,
             "link_count": len(touching_links),
             "inter_species_enabled": draft.mycorrhizal_inter_species,
-            "connection_cost": float(draft.mycorrhizal_connection_cost),
+            "connection_cost": draft.mycorrhizal_connection_cost,
             "signal_velocity": draft.mycorrhizal_signal_velocity,
             "links": [
                 {
-                    "from": {"x": int(link["x1"]), "y": int(link["y1"])},
-                    "to": {"x": int(link["x2"]), "y": int(link["y2"])},
-                    "inter_species": bool(link["inter_species"]),
+                    "from": {"x": link["x1"], "y": link["y1"]},
+                    "to": {"x": link["x2"], "y": link["y2"]},
+                    "inter_species": link["inter_species"],
                 }
                 for link in touching_links
             ],

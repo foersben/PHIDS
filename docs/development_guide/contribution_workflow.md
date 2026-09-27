@@ -51,6 +51,13 @@ To improve developer iteration speed without compromising the integrity of the r
 uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
+## Data-Oriented Engine Constraints
+
+To guarantee structural determinism and maintain safety within the compiled hot-path regions, the engine enforces strict control-plane payload passing constraints:
+
+* **Static Field Resolution**: Dynamic schema reflection (e.g., `getattr()`) is prohibited on statically typed components. All state and configuration resolution must rely on explicit, compile-time bound field access to ensure type safety and eliminate reflection overhead.
+* **Immutable Payload Passing**: Inter-module data passing within the control plane must use strongly typed, frozen dataclasses (`@dataclass(slots=True, frozen=True)`). Anonymous or positional tuple returns are banned to prevent structural fragility and ensure self-documenting APIs.
+
 ## Benchmark-Sensitive Paths
 
 Edits to the following files require extreme caution. They sit on the critical execution path of the simulation tick, and sub-optimal $O(N)$ logic here will catastrophically degrade the continuous rendering capability:

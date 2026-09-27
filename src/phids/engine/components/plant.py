@@ -141,9 +141,7 @@ class PlantComponent:
             PlantComponent: Initialized plant entity component instance.
         """
         effective_energy = energy if energy is not None else params.base_energy
-        effective_max_struct = (
-            params.structural_mass_max if getattr(params, "structural_mass_max", 0.0) > 0.0 else params.max_energy
-        )
+        effective_max_struct = params.structural_mass_max if params.structural_mass_max > 0.0 else params.max_energy
         effective_struct = structural_mass if structural_mass is not None else 0.0
 
         return cls(

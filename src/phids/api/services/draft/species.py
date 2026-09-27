@@ -41,7 +41,7 @@ def add_flora(draft: DraftState, params: FloraSpeciesParams) -> None:
     resize_diet_matrix(draft)
     logger.debug(
         "Draft flora added (species_id=%s, total_flora=%d)",
-        getattr(params, "species_id", "?"),
+        params.species_id,
         len(draft.flora_species),
     )
 
@@ -109,7 +109,7 @@ def add_herbivore(draft: DraftState, params: HerbivoreSpeciesParams) -> None:
     resize_diet_matrix(draft)
     logger.debug(
         "Draft herbivore added (species_id=%s, total_herbivores=%d)",
-        getattr(params, "species_id", "?"),
+        params.species_id,
         len(draft.herbivore_species),
     )
 

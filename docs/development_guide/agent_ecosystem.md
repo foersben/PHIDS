@@ -24,6 +24,7 @@ To keep implementation truth, documentation truth, and verification truth separa
 * **`docs-librarian`**: The centralized coordinator for all documentation logic, structure, and validation. It maintains the Information Architecture (IA) and delegates concrete file writing.
 * **`docs-scientist`**: Dedicated to writing formal, equation-backed scientific and mathematical modeling documentation (like those found in the Scientific Model deep dives).
 * **`docs-operator`**: Focuses on operational, procedural guides tailored to developer execution, CI runbooks, and repository configurations.
+* **`engine-developer`**: ECS & Numba developer responsible for core performance, zero-allocation JIT kernels, double-buffering immutability, and applying DOD (Data-Oriented Design) refactorings.
 * **`git-ops`**: The sole agent authorized to manage repository commits, branches, and PR workflows. It safeguards clean commit slices and strictly respects remote-impacting authorizations.
 * **`test-ops`**: Triggers, evaluates, and resolves failures in the test suites, typing coverage, and benchmark outputs, isolating the smallest valid failing slice before pushing fixes upstream.
 * **`dse-log-observer`**: Asynchronous telemetry observer performing generational DSE journaling and high-precision systemic anomaly detection. See [Agentic Diagnostic Log Writer](../scenario_guide/future_prospects/agentic_log_writer.md).
@@ -35,6 +36,7 @@ PHIDS coordinates multi-agent operations via formal workflows defined under `.ag
 * **Full-Stack Validation (`/validate-full-stack`)**: Coordinates pre-commit quality gates, OKF compliance, matrix trace parity, and Zensical documentation builds.
 * **Epistemic Soundness & Computational Integrity Audit (`/epistemic-soundness-audit`)**: Multi-pass relational audit workflow verifying biological fidelity, mathematical rigor, and HPC/ECS computational constraints across documentation and runtime code.
 * **Matrix TDD Refactor (`/matrix-tdd-refactor`)**: Coordinated pipeline translating conceptual behavior to Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba kernels, and verified audits.
+* **ECS Code-Smell Refactoring Pipeline (`/ecs-refactor-pipeline`)**: Autonomous, performance-safe workflow for eliminating code smells from cold-path modules while respecting strict DOD/JIT hot-path constraints and zero-byte heap allocation invariants.
 * **Matrix Drift Reconciliation (`/matrix-drift-reconciliation`)**: Automated workflow detecting, reconciling, and updating documented Data-Flow Matrices when engine parameters or telemetry drift.
 * **Scientific Model Implementation (`/implement-scientific-model`)**: Process for adding ecological and mathematical behaviors with complete biological grounding.
 * **Vertical Slice Development (`/vertical-slice-development`)**: Coordinated pipeline for building full-stack simulation features.

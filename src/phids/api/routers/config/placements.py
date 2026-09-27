@@ -79,14 +79,11 @@ async def placement_data() -> JSONResponse:
         }
         for i, s in enumerate(draft.initial_swarms)
     ]
-    flora = [
-        {"species_id": getattr(fp, "species_id", i), "name": getattr(fp, "name", f"Flora {i}")}
-        for i, fp in enumerate(draft.flora_species)
-    ]
+    flora = [{"species_id": fp.species_id, "name": fp.name} for i, fp in enumerate(draft.flora_species)]
     herbivores = [
         {
-            "species_id": getattr(hp, "species_id", i),
-            "name": getattr(hp, "name", f"Herb {i}"),
+            "species_id": hp.species_id,
+            "name": hp.name,
         }
         for i, hp in enumerate(draft.herbivore_species)
     ]

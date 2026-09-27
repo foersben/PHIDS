@@ -60,6 +60,7 @@ Home = "index.md"
     { "Part I: Foundations" = [
         { "Overview" = "scientific_model/index.md" },
         { "Mathematical Framework" = "scientific_model/part_1_foundations/mathematical_framework.md" },
+        { "WSN Security Isomorphism" = "scientific_model/part_1_foundations/wsn_isomorphism.md" },
         { "Related Works" = "scientific_model/part_1_foundations/related_works.md" },
     ] },
     { "Part II: Autotrophic Dynamics" = [

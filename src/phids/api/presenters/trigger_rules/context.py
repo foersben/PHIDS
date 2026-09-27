@@ -16,10 +16,7 @@ def trigger_rules_template_context(draft: DraftState) -> dict[str, object]:
         Template context dictionary containing species registries, trigger rows, condition summaries,
         and condition-node editing metadata.
     """
-    herbivore_names = {
-        getattr(species, "species_id", index): getattr(species, "name", f"Herbivore {index}")
-        for index, species in enumerate(draft.herbivore_species)
-    }
+    herbivore_names = {species.species_id: species.name for index, species in enumerate(draft.herbivore_species)}
     substance_names = {definition.substance_id: definition.name for definition in draft.substance_definitions}
     return {
         "flora_species": draft.flora_species,
