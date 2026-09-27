@@ -171,6 +171,15 @@ class SimulationConfig(StrictBaseModel):
     )
 
     @model_validator(mode="after")
+    def _validate_substance_bounds(self) -> SimulationConfig:
+        if self.num_signals + self.num_toxins > MAX_SUBSTANCE_TYPES:
+            raise ValueError(
+                f"Total substance profiles ({self.num_signals} signals + {self.num_toxins} toxins) "
+                f"exceeds the Rule of 16 maximum ({MAX_SUBSTANCE_TYPES})."
+            )
+        return self
+
+    @model_validator(mode="after")
     def _validate_species_ids(self) -> SimulationConfig:
         flora_ids = {s.species_id for s in self.flora_species}
         herbivore_ids = {s.species_id for s in self.herbivore_species}

@@ -138,7 +138,7 @@ def test_diffuse_signals_short_circuit_skips_empty_layer() -> None:
 
     A two-signal environment is created with both layers at 0.0. A sentinel value is planted
     directly in the write buffer of signal 0 to simulate stale state from a previous tick.
-    After ``diffuse_signals()``, the write buffer must be 0.0 - confirming that the ``np.any``
+    After ``diffuse_signals()``, the write buffer must be 0.0 - confirming that the ``layer.max()``
     short-circuit guard correctly calls ``.fill(0.0)`` rather than leaving stale state in place.
     """
     env = GridEnvironment(width=8, height=8, num_signals=2, num_toxins=1)
@@ -156,10 +156,10 @@ def test_diffuse_signals_short_circuit_skips_empty_layer() -> None:
 
 
 def test_diffuse_signals_short_circuit_semantics_match_max_path() -> None:
-    """Verifies that the np.any() short-circuit guard produces identical output to the old max() guard.
+    """Verifies that the layer.max() short-circuit guard produces identical output to the old np.any() guard.
 
     A concentration of ``SIGNAL_EPSILON * 0.5`` (strictly below threshold) is injected into one
-    cell. Both the old ``layer.max() < SIGNAL_EPSILON`` and the new ``not np.any(layer >= SIGNAL_EPSILON)``
+    cell. Both the old ``not np.any(layer >= SIGNAL_EPSILON)`` and the new ``not (layer.max() >= SIGNAL_EPSILON)``
     guards must agree that this layer is quiescent and zero the field after one diffusion tick.
     This test acts as a regression gate: if the threshold comparison ever drifts semantically,
     the layer sum will be non-zero and the test will fail.

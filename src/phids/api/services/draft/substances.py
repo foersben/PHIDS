@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 from phids.api.services.draft.helpers import find_substance_index, is_truthy_flag
 from phids.api.ui_state.substances import SubstanceDefinition
 from phids.api.ui_state.triggers import TriggerRule, _remap_condition_references
+from phids.shared.constants import MAX_SUBSTANCE_TYPES
 
 if TYPE_CHECKING:
     from phids.api.ui_state.state import DraftState
@@ -61,7 +62,7 @@ def add_substance(
         ValueError: The Rule of 16 ceiling for substances has been reached.
 
     """
-    if len(draft.substance_definitions) >= 16:
+    if len(draft.substance_definitions) >= MAX_SUBSTANCE_TYPES:
         raise ValueError("Rule of 16: maximum substances reached.")
 
     definition = SubstanceDefinition(

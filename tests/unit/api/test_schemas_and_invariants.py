@@ -85,8 +85,8 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
         grid_width=64,
         grid_height=64,
         max_ticks=1000,
-        num_signals=MAX_SUBSTANCE_TYPES,
-        num_toxins=MAX_SUBSTANCE_TYPES,
+        num_signals=8,
+        num_toxins=8,
         flora_species=flora,
         herbivore_species=herbivores,
         diet_matrix=DietCompatibilityMatrix(rows=diet_rows),
@@ -96,3 +96,22 @@ def test_trigger_schema_supports_full_substance_matrix() -> None:
     assert len(config.flora_species) == MAX_FLORA_SPECIES
     for f in config.flora_species:
         assert len(f.triggers) == MAX_SUBSTANCE_TYPES
+
+
+def test_simulation_config_enforces_total_substance_limit() -> None:
+    """Assert that the total of num_signals and num_toxins respects the Rule of 16."""
+    flora = [_create_dummy_flora(0)]
+    herbivores = [_create_dummy_herbivore(0)]
+    diet_rows = [[True]]
+
+    with pytest.raises(ValidationError, match="exceeds the Rule of 16 maximum"):
+        SimulationConfig(
+            grid_width=64,
+            grid_height=64,
+            max_ticks=1000,
+            num_signals=10,
+            num_toxins=7,
+            flora_species=flora,
+            herbivore_species=herbivores,
+            diet_matrix=DietCompatibilityMatrix(rows=diet_rows),
+        )

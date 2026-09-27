@@ -92,6 +92,76 @@ def _find_valid_mycorrhizal_neighbours(
     return neighbours
 
 
+def _connect_plants(
+    plant: PlantComponent,
+    neighbour: PlantComponent,
+    env: GridEnvironment,
+    connection_cost: float,
+    formed_this_tick: set[int],
+) -> None:
+    """Connect two plants and deduct energy costs."""
+    plant.mycorrhizal_connections.add(neighbour.entity_id)
+    neighbour.mycorrhizal_connections.add(plant.entity_id)
+    plant.energy -= connection_cost
+    neighbour.energy -= connection_cost
+    plant.last_energy_loss_cause = "death_mycorrhiza"
+    neighbour.last_energy_loss_cause = "death_mycorrhiza"
+    formed_this_tick.add(plant.entity_id)
+    formed_this_tick.add(neighbour.entity_id)
+    env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
+    env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
+    env.set_apparent_nutrition(plant.x, plant.y, plant.apparent_nutrition_factor)
+    env.set_apparent_nutrition(neighbour.x, neighbour.y, neighbour.apparent_nutrition_factor)
+
+
+def _process_single_plant_mycorrhiza(
+    plant: PlantComponent,
+    world: ECSWorld,
+    env: GridEnvironment,
+    pos_index: dict[tuple[int, int], list[PlantComponent]],
+    formed_this_tick: set[int],
+    dead_entity_ids: set[int],
+    dead_entities: list[int],
+    connection_cost: float,
+    inter_species: bool,
+    plant_death_causes: dict[str, int] | None,
+) -> bool:
+    """Process mycorrhizal connections for a single plant."""
+    if plant.entity_id in dead_entity_ids:
+        return False
+    if plant.entity_id in formed_this_tick:
+        return False
+    if (plant.energy - connection_cost) < plant.survival_threshold:
+        return False
+
+    neighbours = _find_valid_mycorrhizal_neighbours(
+        plant=plant,
+        env=env,
+        pos_index=pos_index,
+        formed_this_tick=formed_this_tick,
+        dead_entity_ids=dead_entity_ids,
+        connection_cost=connection_cost,
+        inter_species=inter_species,
+    )
+
+    if not neighbours:
+        return False
+
+    neighbour = random.choice(neighbours)
+    _connect_plants(plant, neighbour, env, connection_cost, formed_this_tick)
+
+    for participant in (plant, neighbour):
+        _cull_plant_if_dead(
+            plant=participant,
+            world=world,
+            env=env,
+            dead_entity_ids=dead_entity_ids,
+            dead_entities=dead_entities,
+            plant_death_causes=plant_death_causes,
+        )
+    return True
+
+
 def _establish_mycorrhizal_connections(
     world: ECSWorld,
     env: GridEnvironment,
@@ -142,50 +212,19 @@ def _establish_mycorrhizal_connections(
     made_connection = False
 
     for plant in plants:
-        if plant.entity_id in dead_entity_ids:
-            continue
-        if plant.entity_id in formed_this_tick:
-            continue
-        if (plant.energy - connection_cost) < plant.survival_threshold:
-            continue
-
-        neighbours = _find_valid_mycorrhizal_neighbours(
-            plant=plant,
-            env=env,
-            pos_index=pos_index,
-            formed_this_tick=formed_this_tick,
-            dead_entity_ids=dead_entity_ids,
-            connection_cost=connection_cost,
-            inter_species=inter_species,
-        )
-
-        if not neighbours:
-            continue
-
-        neighbour = random.choice(neighbours)
-        plant.mycorrhizal_connections.add(neighbour.entity_id)
-        neighbour.mycorrhizal_connections.add(plant.entity_id)
-        plant.energy -= connection_cost
-        neighbour.energy -= connection_cost
-        plant.last_energy_loss_cause = "death_mycorrhiza"
-        neighbour.last_energy_loss_cause = "death_mycorrhiza"
-        formed_this_tick.add(plant.entity_id)
-        formed_this_tick.add(neighbour.entity_id)
-        env.set_plant_energy(plant.x, plant.y, plant.species_id, plant.energy)
-        env.set_plant_energy(neighbour.x, neighbour.y, neighbour.species_id, neighbour.energy)
-        env.set_apparent_nutrition(plant.x, plant.y, plant.apparent_nutrition_factor)
-        env.set_apparent_nutrition(neighbour.x, neighbour.y, neighbour.apparent_nutrition_factor)
-        made_connection = True
-
-        for participant in (plant, neighbour):
-            _cull_plant_if_dead(
-                plant=participant,
-                world=world,
-                env=env,
-                dead_entity_ids=dead_entity_ids,
-                dead_entities=dead_entities,
-                plant_death_causes=plant_death_causes,
-            )
+        if _process_single_plant_mycorrhiza(
+            plant,
+            world,
+            env,
+            pos_index,
+            formed_this_tick,
+            dead_entity_ids,
+            dead_entities,
+            connection_cost,
+            inter_species,
+            plant_death_causes,
+        ):
+            made_connection = True
 
     return made_connection, dead_entities
 

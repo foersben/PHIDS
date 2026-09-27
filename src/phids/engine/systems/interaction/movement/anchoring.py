@@ -37,12 +37,12 @@ def _has_compatible_food_jit(
 ) -> bool:
     """Check if swarm is co-located with any compatible flora species with positive energy."""
     _, num_flora = diet_matrix.shape
-    found = False
     for flora_species_id in range(num_flora):
         compatible = diet_matrix[species_id, flora_species_id]
         has_energy = plant_energy_by_species[flora_species_id, x, y] > 0.0
-        found = found or (compatible and has_energy)
-    return found
+        if compatible and has_energy:
+            return True
+    return False
 
 
 @njit(cache=True)
@@ -81,9 +81,9 @@ def _is_swarm_anchored_jit(
     if apparent_nutrition_val <= 0.0 or species_id >= num_herbivores:
         return False
 
-    has_food = _has_compatible_food_jit(x, y, species_id, plant_energy_by_species, diet_matrix)
-    depart = _should_depart_mvt_jit(caloric_intake, metabolic_upkeep, rand_val)
-    return has_food and not depart
+    if not _has_compatible_food_jit(x, y, species_id, plant_energy_by_species, diet_matrix):
+        return False
+    return not _should_depart_mvt_jit(caloric_intake, metabolic_upkeep, rand_val)
 
 
 def _is_swarm_anchored(

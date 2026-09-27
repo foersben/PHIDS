@@ -9,6 +9,7 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+from phids.api.schemas.species import FloraSpeciesParams
 from phids.engine.components.plant import PlantComponent
 from phids.shared.constants import (
     LATERAL_EDDY_DIFFUSIVITY_COEFFICIENT,
@@ -40,8 +41,6 @@ def _attempt_reproduction(
     Returns:
         Newly created plant components (empty if none).
     """
-    from phids.api.schemas.species import FloraSpeciesParams
-
     if (tick - plant.last_reproduction_tick) < plant.reproduction_interval:
         return []
     if (plant.energy - plant.seed_energy_cost) < plant.survival_threshold:

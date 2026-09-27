@@ -36,7 +36,7 @@ from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle
 from phids.engine.systems.signaling import run_signaling
 from phids.engine.systems.signaling.types import CompiledTrigger
-from phids.io.zarr_replay import ReplayBuffer, ReplayState
+from phids.io.zarr_replay import NoOpReplayBuffer, ReplayBuffer, ReplayState
 from phids.shared.coercion import coerce_float, coerce_int
 from phids.shared.constants import MAX_REPLAY_FRAMES
 from phids.shared.logging_config import get_simulation_debug_interval
@@ -132,8 +132,6 @@ class SimulationLoop:
         self.telemetry = TelemetryRecorder()
         # Deterministic replay state frames using Zarr
         if disable_replay:
-            from phids.io.zarr_replay import NoOpReplayBuffer
-
             self.replay: Any = NoOpReplayBuffer()
             self._replay_supports_raw_arrays = True
             logger.info("Using NoOp replay backend (disabling disk storage)")
