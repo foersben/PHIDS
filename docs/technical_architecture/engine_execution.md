@@ -512,6 +512,7 @@ def _propagate_iteration_jit_pow2(
             )
             val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
+
             diff = val - current[x, y]
             if diff < 0.0:
                 diff = -diff
