@@ -48,7 +48,7 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | Matrix Drift Reconciliation | `/matrix-drift-reconciliation` | Automated workflow for reconciling and updating Data-Flow Matrices when engine parameters drift. |
 | Vertical Slice Development | `/vertical-slice-development` | Coordinated pipeline for building full-stack simulation features. |
 | Human Delegation Protocol | `/delegation-protocol` | Checklist for human-escalated tasks when agents are structurally blocked. |
-| Jules Session Triage | `/jules-session-triage` | Protocol for unblocking paused Jules tasks, auditing completed sessions, and generating HITL review reports. |
+| Jules Session Triage | `/jules-session-triage` | Protocol for unblocking paused Jules tasks, auditing sessions, generating HITL reviews, and executing lifecycle cleanup (deletion upon merge/discard). |
 | Documentation Synchronization | `/doc-synchronization-pipeline` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical docs with optional triple Jules dispatch. |
 
 ## Automated Skills Registry

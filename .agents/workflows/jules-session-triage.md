@@ -77,3 +77,21 @@ Generate a structured review artifact for the human reviewer (`HITL_TRIAGE_REPOR
   * 🔴 **RECOMMENDED TO DISCARD / REJECT:** PRs with performance regressions, failing coverage, or superseded logic.
   * 🔄 **ACTIVE / UNBLOCKED SESSIONS:** Running tasks with current status and unblocking prompts sent.
 * **One-Click Action Commands:** Provide explicit `gh pr merge` or `gh pr close` commands for each PR.
+
+### Phase 5: Execution, Lifecycle Cleanup & Session Deletion Protocol
+
+Following the presentation of the HITL Review Report and the user's decision, the triage workflow executes definitive lifecycle resolution:
+
+* **Session & Branch Lifecycle Invariant:**
+  * No orphaned, finished, or abandoned sessions may linger in the active session pool. Every session must either continue actively executing or be deleted.
+* **Merged PR Resolution:**
+  * Upon confirmation to merge, merge the pull request (`gh pr merge <id> --squash --delete-branch` or interactive cherry-pick/rebase).
+  * Immediately delete the backing cloud session via `jules_delete_session(sessionId)` or `DELETE /sessions/{id}` to prevent session pool bloat.
+* **Discarded / Superseded PR Resolution:**
+  * Close the rejected pull request (`gh pr close <id> --delete-branch`).
+  * Immediately delete the backing cloud session and prune local/remote tracking branches.
+* **Completed & Stale Session Purge:**
+  * Any session in `COMPLETED`, `FAILED`, or `CANCELLED` state whose PR or worktree has already been merged, closed, or superseded must be deleted immediately.
+* **Active Session Continuation & Monitoring:**
+  * Sessions in `IN_PROGRESS` or successfully unblocked continue executing in the cloud sandbox.
+  * If an active session is identified as duplicate, redundant, or obsolete by the user, cancel and delete it (`jules_cancel_session` followed by `jules_delete_session`).

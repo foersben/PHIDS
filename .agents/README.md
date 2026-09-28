@@ -246,7 +246,7 @@ Workflows in `.agents/workflows/` coordinate multi-phase tasks:
 
 | Slash Command | Workflow Document | Primary Roles | Description |
 | :--- | :--- | :--- | :--- |
-| `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, and generates HITL triage reviews. |
+| `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, generates HITL reviews, and enforces session lifecycle cleanup (deletion upon merge/discard). |
 | `/epistemic-soundness-audit` | [epistemic-soundness-audit.md](workflows/epistemic-soundness-audit.md) | `02`, `09`, `10` | 10-slice relational audit verifying biological fidelity, mathematical rigor, and HPC invariants across docs and code. |
 | `/matrix-tdd-refactor` | [matrix-tdd-refactor.md](workflows/matrix-tdd-refactor.md) | `03`, `04`, `09` | Translates conceptual behavior to Data-Flow Matrix tables, Pytest traces, branchless Numba kernels, and verified OKF links. |
 | `/validate-full-stack` | [validate-full-stack.md](workflows/validate-full-stack.md) | All | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
