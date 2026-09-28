@@ -3,10 +3,11 @@ type: Reference
 title: Jules Standard Prompt Appendix
 status: stable
 stale_after: "2027-06-01T00:00:00Z"
-version: 1.0
+version: 1.1
 description: >
   Copy-paste prompt appendix for Jules sessions. Prevents aggressive directory
-  crawling and enforces path-scoped role selection from the first token.
+  crawling, clarifies commit signing vs GitHub Web-Flow, and enforces path-scoped
+  role selection from the first token.
 tags: [agents, jules, prompt-template, token-guardrail]
 generated: {by: process:agent-config-refactor, at: "2026-09-28T00:00:00Z"}
 ---
@@ -26,12 +27,14 @@ MCP Guidance & Token Guardrails:
 * Sub-directory AGENTS.md files load automatically; do not skip them.
 * Do NOT run generic directory listings (ls, find) across .agents/.
 * Load only the role file (.agents/roles/) for the paths you are modifying.
-* Do NOT open .agents/memory/ or .agents/manifesto/ unless I explicitly ask.
-* All Python: uv run only. Never bare python, pip, uvx, or poetry.
-* All commits: GPG/SSH signed. Stop and escalate if signing fails.
+* Do NOT open .agents/memory/ or .agents/manifesto/ unless explicitly requested.
+* All Python: uv run or just only. Never bare python, pip, or poetry.
+* Never run act commands in sandbox; act requires a local workstation Docker daemon.
+* Commits & PRs: Push PR feature branch directly. Do not run git commit -S (signing occurs upon PR merge via GitHub Web-Flow).
 * If touching engine/systems/ or api/schemas/, run gates before committing:
     uv run python scripts/audit_matrix_coverage.py
     uv run python scripts/verify_matrix_trace_parity.py --all
+    uv run mypy src/phids
 ```
 
 ---
@@ -40,18 +43,20 @@ MCP Guidance & Token Guardrails:
 
 ```text
 Task: Run the cognitive complexity audit and refactor ONE function scoring
-above 15. Balance complexity reduction against performance risk.
+above 15 (or near threshold 12-15). Balance complexity reduction against performance risk.
 
 MCP Guidance & Token Guardrails: [paste universal block]
 
 Complexity-specific constraints:
-* Scan with: uv run python -m complexipy . --failed
-  (NOT uvx complexipy; NOT act -j cognitive-complexity)
+* Scan with: just complexity (or uvx complexipy . --sort desc)
+  (Do NOT run act-complexity or act -j cognitive-complexity; Docker is unavailable)
 * Read .agents/memory/complexity.md for prior learnings before selecting target.
+* If no functions exceed 15: inspect near-threshold candidates (12 <= score <= 15).
+  If all functions are cleanly under 12, record compliance in memory and exit cleanly without creating a PR.
 * If target is in engine/systems/, also load .agents/rules/02-numba-constraints.md.
 * Never extract helper functions inside @njit functions (Numba cannot JIT closures).
 * Benchmark gate: uv run pytest tests/benchmarks/ - do not PR if >5% regression.
-* Verification: uv run ruff check . && uv run ruff format . && uv run pytest
+* Verification: uv run ruff format . && uv run ruff check . && uv run mypy src/phids && uv run pytest
 ```
 
 ---
@@ -72,7 +77,7 @@ Chisel-specific constraints:
   .agents/rules/02-numba-constraints.md AND .agents/rules/01-stochastic-engine-and-replay.md first.
 * NEVER add class attributes/instance variables to engine components.
   ECS components are NumPy arrays. OOP in engine core is banned.
-* Verification: uv run ruff format . && uv run ruff check . && uv run mypy src/ && uv run pytest
+* Verification: uv run ruff format . && uv run ruff check . && uv run mypy src/phids && uv run pytest
 * If touching schemas/systems: run uv run python scripts/audit_matrix_coverage.py
 ```
 

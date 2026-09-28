@@ -2,14 +2,17 @@
 
 <!-- UNIVERSAL RULES: apply to all AI agents (Antigravity, Jules, Copilot, etc.) -->
 
-All Python commands MUST use `uv run`. Never bare `python`, `pip`, `uvx`, or `poetry`.
-All commits must be GPG/SSH signed. Stop and escalate if signing fails.
-Pre-commit gates (run before ANY commit to `engine/` or `api/schemas/`):
+* All Python commands MUST use `uv run` or `just`. Never bare `python`, `pip`, `uvx`, or `poetry`.
+* Never run `act` in agent sandboxes; `act` is for local workstation Docker runs only.
+* Commit signing:
+  * **Local agents (Antigravity) & human developers:** Commits MUST be GPG/SSH signed (`git commit -S`). Stop and escalate if signing fails.
+  * **Cloud sandbox agents (Jules):** Creates PR feature branches without `-S`. Commits are signed upon PR merge via GitHub Web-Flow.
+* Pre-commit gates (run before ANY commit to `engine/` or `api/schemas/`):
 
 ```bash
 uv run python scripts/audit_matrix_coverage.py
 uv run python scripts/verify_matrix_trace_parity.py --all
-uv run ruff check src/ && uv run mypy src/
+uv run ruff check src/ && uv run mypy src/phids
 ```
 
 <!-- JULES-SPECIFIC: session routing and token guardrail instructions.
@@ -27,6 +30,7 @@ Stop loading additional files once you have a role assignment.
 2. **Path-scoped roles.** Load only the role file for the paths you are modifying.
    Domain-specific rules auto-load from sub-directory AGENTS.md files:
    `src/phids/engine/AGENTS.md`, `src/phids/api/AGENTS.md`, `docs/AGENTS.md`.
-3. **Restricted directories.** Do NOT open `.agents/memory/` or `.agents/manifesto/`
+3. **Commit protocol.** Push PR feature branch directly without `git commit -S`.
+4. **Restricted directories.** Do NOT open `.agents/memory/` or `.agents/manifesto/`
    unless the user prompt uses the words `historical`, `manifesto`, or `canon`.
-4. **Do NOT crawl `.agents/` blindly** or pre-load all role files.
+5. **Do NOT crawl `.agents/` blindly** or pre-load all role files.
