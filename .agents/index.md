@@ -38,6 +38,7 @@
 | `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` |
 | `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` |
 | `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` |
+| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline.md](workflows/doc-synchronization-pipeline.md) | `01`, `05`, `09`, `10` |
 
 ---
 
@@ -130,6 +131,7 @@ This directory houses the autonomous agent architecture, role specializations, h
 * [Matrix TDD Refactor](workflows/matrix-tdd-refactor.md) - Test-driven development loop translating matrix tables into Pytest traces and JIT kernels.
 * [Validate Full-Stack Integrity](workflows/validate-full-stack.md) - Coordinated full-stack verification pipeline covering OKF, matrix coverage, parity, and Zensical builds.
 * [Vertical Slice Development](workflows/vertical-slice-development.md) - End-to-end coordinated pipeline for building full-stack simulation features across all layers.
+* [Documentation & README Synchronization Pipeline](workflows/doc-synchronization-pipeline.md) - Multi-phase audit and synchronization pipeline for detecting, triaging, and updating workspace READMEs and Zensical documentation across code changes, with an optional triple-parallel Jules cloud dispatch.
 
 ---
 
@@ -144,7 +146,6 @@ This directory houses the autonomous agent architecture, role specializations, h
 * [Visualize Open Knowledge Format](skills/visualize-okf/SKILL.md) - Interactive Cytoscape.js knowledge graph generator and dependency visualizer.
 
 ---
-
 
 ## Agent Memory & Learning Journals
 

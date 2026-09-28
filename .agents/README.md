@@ -255,6 +255,20 @@ Workflows in `.agents/workflows/` coordinate multi-phase tasks:
 | `/vertical-slice-development` | [vertical-slice-development.md](workflows/vertical-slice-development.md) | `01` + All | Coordinated pipeline for building full-stack simulation features across models, kernels, telemetry, and UI. |
 | `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` | Structured markdown escalation checklist for human operators when agents encounter manual confirmation gates. |
 | `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` | Safely refactors cold-path control plane modules while preserving DOD/JIT hot-path immutability. |
+| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline.md](workflows/doc-synchronization-pipeline.md) | `01`, `05`, `09`, `10` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical docs with optional triple Jules dispatch. |
+
+### Highlighted Workflow: Documentation Synchronization (`/doc-synchronization-pipeline`)
+
+Keeping track of which README files and Zensical concept documents require updates after code changes is automated via `/doc-synchronization-pipeline`:
+
+* **Documentation Impact Mapping:** Automatically maps modified files to target READMEs (root `README.md`, `.agents/README.md`, `scripts/README.md`, `src/data_pipeline/README.md`) and Zensical pages (`docs/scientific_model/`, `docs/technical_architecture/`).
+* **Interactive Modular Gate:** Asks the user which audit tracks to run and recommends whether to execute locally or outsource to Jules in the cloud based on change volume.
+* **Optional Triple Parallel Jules Dispatch:** Dispatches 3 parallel cloud background bots to preserve local context tokens:
+  * **Canon 📜:** Audits Zensical scientific documents against engine math and preserves narrative prose.
+  * **Sentinel 🛡️:** Audits and syncs workspace READMEs, CLI commands, and directory trees.
+  * **Vigil 👁️:** Asserts OKF frontmatter validity, matrix coverage, and table-to-trace numerical parity.
+* **Composable Workflow Execution:** Can trigger or delegate to `/validate-full-stack`, `/matrix-drift-reconciliation`, `/epistemic-soundness-audit`, or `/jules-session-triage`.
+* **Static Verification Gate:** Concludes with `uv run zensical build -f zensical.toml -s` to guarantee zero broken links or markdown syntax errors.
 
 ---
 

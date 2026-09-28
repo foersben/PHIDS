@@ -49,6 +49,7 @@ Primary routing table for AI IDEs defining roles in `.agents/roles/` and core co
 | Vertical Slice Development | `/vertical-slice-development` | Coordinated pipeline for building full-stack simulation features. |
 | Human Delegation Protocol | `/delegation-protocol` | Checklist for human-escalated tasks when agents are structurally blocked. |
 | Jules Session Triage | `/jules-session-triage` | Protocol for unblocking paused Jules tasks, auditing completed sessions, and generating HITL review reports. |
+| Documentation Synchronization | `/doc-synchronization-pipeline` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical docs with optional triple Jules dispatch. |
 
 ## Automated Skills Registry
 
