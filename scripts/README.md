@@ -35,6 +35,8 @@ The scripts in this directory are governed by strict operational principles:
 | [`local_ci.sh`](#12-local_cish) | Local Orchestration | **On-Demand** | 30s - 2m | Fast Local CI Simulation |
 | [`run_ci_with_act.sh`](#13-run_ci_with_actsh) | Local Orchestration | **On-Demand** (`just act-*`) | 1m - 5m | Containerized Local GitHub Actions Rehearsal |
 | [`target_cov.sh`](#14-target_covsh) | Code Quality & TDD | **On-Demand** | 1s - 5s | Subsystem Isolated Coverage Verification |
+| [`jules_setup.sh`](#15-jules_setupsh) | Cloud Agent Environment | **Jules Sandbox Snapshot** | ~ 60s | Jules Cloud Environment Bootstrap |
+| [`audit_epistemic_integrity.py`](#16-audit_epistemic_integritypy) | Epistemic Soundness | **CI & On-Demand** | ~ 1s | Rule 02, Rule 05-B, Epistemic Integrity |
 
 ---
 
@@ -286,6 +288,65 @@ The scripts in this directory are governed by strict operational principles:
     ```bash
     ./scripts/target_cov.sh tests/integration/api/test_api_simulation_and_scenario_routes.py phids.api.routers.simulation
     ```
+
+---
+
+### 15. `jules_setup.sh`
+
+* **Purpose:** Automated cloud environment bootstrapper executed by the Jules cloud sandbox immediately after cloning. Prepares the full PHIDS development environment for remote agent sessions and triggers a persistent environment snapshot.
+* **Capabilities:**
+  * Switches the workspace from `main` to `develop` when Jules clones the default branch.
+  * Installs `uv` (Astral) if absent and symlinks it to `/usr/local/bin` when writable.
+  * Installs `just` via `uv tool install rust-just` (bypasses Cloudflare 403 CDN blocks encountered in Jules sandboxes).
+  * Pins Python 3.13, synchronizes all dependency groups (`uv sync --all-groups`), and pre-caches `pre-commit` hook environments.
+  * Runs the full verification gate sequence: `audit_matrix_coverage.py`, `verify_matrix_trace_parity.py --all`, `ruff check src/`, and `mypy src/phids`.
+* **Usage:**
+  * Configured as the **Jules Setup Script** in the Jules repository settings under `Environment > Setup Script`.
+  * Not intended for direct local developer invocation; use `just setup` and `just ci-test` locally instead.
+* **CLI Syntax:**
+
+  ```bash
+  # Jules sandbox only - invoked automatically
+  bash scripts/jules_setup.sh
+  ```
+
+---
+
+### 16. `audit_epistemic_integrity.py`
+
+* **Purpose:** Automated multi-slice auditor that verifies biological, mathematical, and HPC/ECS epistemic soundness across the full PHIDS codebase and documentation. Implements the `/epistemic-soundness-audit` workflow.
+* **10 Audit Slices:**
+  * Slice 1: Spatiotemporal Anchor & Dimensional Homogeneity
+  * Slice 2: Continuous Transport PDEs & Stencils
+  * Slice 3: Autotrophic Metabolic Kinetics & Structural Growth
+  * Slice 4: Subterranean Symbiosis & Phloem Networks
+  * Slice 5: Botanical Defenses (Constitutive vs. Inducible)
+  * Slice 6: Heterotrophic Kinematics & Foraging Dynamics
+  * Slice 7: Population Dynamics & Energetic Attrition
+  * Slice 8: Multi-Scale Decoupling & Loop Orchestration
+  * Slice 9: Empirical Data Pipeline & Allometric Scaling
+  * Slice 10: WIP/CIP Boundary Governance
+* **Key Checks:**
+  * Scalar `if/else` branching inside `@njit` kernels (Rule 02 & Rule 05-B).
+  * Heap array allocations (`np.zeros`, `np.append`) inside `@njit` loops.
+  * Ad-hoc rate clamping (`np.clip`, `min`/`max`) and discretization shortcuts (`math.floor`).
+  * Magic numeric constants in kinetic rate formulas.
+  * Toroidal coordinate wrapping inconsistencies.
+  * Boundary leakage of WIP/CIP modules into core loops.
+* **CLI Syntax:**
+
+  ```bash
+  # Run all 10 epistemic slices
+  uv run python scripts/audit_epistemic_integrity.py
+
+  # Run a specific slice (1-10)
+  uv run python scripts/audit_epistemic_integrity.py --slice 5
+
+  # Output results to a markdown report
+  uv run python scripts/audit_epistemic_integrity.py --report docs/reports/epistemic_soundness_audit_report.md
+  ```
+
+* **Exit Codes:** `0` = No integrity violations; `1` = Violations detected.
 
 ---
 
