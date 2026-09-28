@@ -99,3 +99,9 @@ Action: When extracting large route handlers with multi-layered dictionary acces
 
 Learning: When extracting a FastAPI router module (like `simulation.py`) into smaller cohesive packages (`helpers.py`, `controls.py`, `scenario.py`), it is critical to ensure that a unified interface is exported. If we don't expose an identical `router` instance, we will break the composition root `__init__.py` which registers these sub-routers into the app. Creating a unified router via `router.include_router()` seamlessly recombines the sub-modules back into a single API router for backwards compatibility while eliminating the file monolith.
 Action: Next time you split an API router module, ensure that `__init__.py` acts as a unified exporter by defining a new `APIRouter()` and using `.include_router()` for each of the new sub-modules.
+
+## 2024-10-31 - Extracting the DraftState monolith
+
+Learning: The `src/phids/api/ui_state/state.py` file had grown into a monolith handling not only the core dataclass definition of `DraftState`, but also complex translation logic (`build_sim_config`, `from_sim_config`), a global singleton pattern (`get_draft`, `set_draft`), and JSON-based file persistence. By refactoring it into a `state/` package (`models.py`, `convert.py`, `persistence.py`, `singleton.py`) and re-exporting the identical public interface through `__init__.py`, we preserved strict backward compatibility while improving cohesion. One key to success was ensuring that inner helper modules only import specifically what they need, avoiding cyclic dependencies between the pure class definition and the conversion rules.
+
+Action: Always dismantle large UI state management files by separating the pure data model from its associated persistence and translation behaviors, and use an `__init__.py` to maintain a unified import facade for the rest of the application.
