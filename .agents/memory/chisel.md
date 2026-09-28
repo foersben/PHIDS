@@ -99,3 +99,9 @@ Action: When extracting large route handlers with multi-layered dictionary acces
 
 Learning: When extracting a FastAPI router module (like `simulation.py`) into smaller cohesive packages (`helpers.py`, `controls.py`, `scenario.py`), it is critical to ensure that a unified interface is exported. If we don't expose an identical `router` instance, we will break the composition root `__init__.py` which registers these sub-routers into the app. Creating a unified router via `router.include_router()` seamlessly recombines the sub-modules back into a single API router for backwards compatibility while eliminating the file monolith.
 Action: Next time you split an API router module, ensure that `__init__.py` acts as a unified exporter by defining a new `APIRouter()` and using `.include_router()` for each of the new sub-modules.
+
+## 2024-05-23 - Extracting UI Router Monolith
+
+Learning: When extracting a large FastAPI router module (like `ui.py`) into smaller cohesive packages (`core.py`, `config.py`, `database.py`, `diagnostics.py`, `batch.py`), it is critical to expose a unified interface in the `__init__.py` using `router.include_router(sub_router)`. Additionally, any tests that mock module-level variables like `BIO_DB_PATH` in the original monolith must be updated to target the specific extracted module where the variable now resides (e.g., `ui_database.BIO_DB_PATH`) rather than the package root, otherwise monkeypatching will silently fail or raise `AttributeError`.
+
+Action: Next time an API router module is split, immediately search for uses of `monkeypatch.setattr` targeting its global variables and update them to point to the correct new submodule.

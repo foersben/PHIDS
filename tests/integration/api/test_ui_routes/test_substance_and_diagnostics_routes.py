@@ -16,7 +16,7 @@ import pytest
 from httpx import AsyncClient
 
 import phids.api.main as api_main
-import phids.api.routers.ui
+import phids.api.routers.ui.database as ui_database
 from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
 from phids.api.services.draft.placements import add_plant_placement, add_swarm_placement
 from phids.api.services.draft.trigger_rules import add_trigger_rule
@@ -213,7 +213,7 @@ async def test_api_database_save_validates_payload(
         tmp_path: Temporary path for database file.
     """
     test_db_path = tmp_path / "bio_database.json"
-    monkeypatch.setattr(phids.api.routers.ui, "BIO_DB_PATH", test_db_path)
+    monkeypatch.setattr(ui_database, "BIO_DB_PATH", test_db_path)
 
     valid_payload = {
         "flora": {
