@@ -37,6 +37,7 @@
 | `/vertical-slice-development` | [vertical-slice-development.md](workflows/vertical-slice-development.md) | `01` + all |
 | `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` |
 | `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` |
+| `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` |
 
 ---
 
