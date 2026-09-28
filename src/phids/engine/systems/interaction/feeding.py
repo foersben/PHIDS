@@ -183,6 +183,77 @@ def _is_diet_compatible(herbivore_species_id: int, plant_species_id: int, diet_m
     return plant_species_id < diet_matrix.shape[1] and bool(diet_matrix[herbivore_species_id, plant_species_id])
 
 
+@dataclass(slots=True, frozen=True)
+class FeedingContext:
+    """Consolidated parameters to avoid passing massive lists into the inner processing loop.
+
+    Attributes:
+        world: The ECS world containing all entities.
+        env: The grid environment managing spatial resources.
+        diet_matrix: The boolean matrix representing diet compatibility.
+        flora_species_params: Pre-extracted flora foraging parameters.
+        herbivore_species_params: Pre-extracted herbivore foraging parameters.
+        tile_populations: The grid tracking the populations.
+        plant_death_causes: Dictionary tracking causes of plant death.
+        stride_multiplier: The scaling factor for consumption rate over the stride interval.
+    """
+
+    world: ECSWorld
+    env: GridEnvironment
+    diet_matrix: npt.NDArray[np.bool_]
+    flora_species_params: list[FloraSpeciesParams] | list[CachedFloraForagingParams]
+    herbivore_species_params: list[HerbivoreSpeciesParams] | list[CachedHerbivoreForagingParams]
+    tile_populations: npt.NDArray[np.int32] | list[int]
+    plant_death_causes: dict[str, int] | None
+    stride_multiplier: float
+
+
+def _process_single_entity(
+    co_eid: int,
+    swarm: SwarmComponent,
+    ctx: FeedingContext,
+) -> tuple[float, bool, bool, bool]:
+    """Process feeding interaction for a single co-located entity.
+
+    Handles compatibility checks, zero-energy checks, and calls the primary
+    consumption routine.
+
+    Args:
+        co_eid: The entity ID of the co-located entity to process.
+        swarm: The swarm component that is feeding.
+        ctx: The consolidated feeding context containing environment and engine states.
+
+    Returns:
+        A tuple containing:
+            - metabolized (float): The amount of energy successfully metabolized.
+            - ate (bool): Whether any energy was metabolized.
+            - on_incomp (bool): Whether the plant is incompatible with the diet.
+            - plant_killed (bool): Whether the plant died from consumption.
+    """
+    target_plant = _get_target_plant(ctx.world, co_eid)
+    if target_plant is None:
+        return 0.0, False, False, False
+
+    if not ctx.diet_matrix[swarm.species_id][target_plant.species_id]:
+        return 0.0, False, True, False
+
+    if target_plant.energy <= 0:
+        return 0.0, False, False, False
+
+    metabolized, plant_killed = _feed_on_single_plant(
+        swarm=swarm,
+        target_plant=target_plant,
+        flora_species_params=ctx.flora_species_params,
+        herbivore_species_params=ctx.herbivore_species_params,
+        env=ctx.env,
+        tile_populations=ctx.tile_populations,
+        plant_death_causes=ctx.plant_death_causes,
+        stride_multiplier=ctx.stride_multiplier,
+    )
+
+    return metabolized, metabolized > 0, False, plant_killed
+
+
 def _resolve_swarm_feeding(
     swarm: SwarmComponent,
     world: ECSWorld,
@@ -216,32 +287,25 @@ def _resolve_swarm_feeding(
     dead_plants: list[int] = []
     total_metabolized = 0.0
 
+    ctx = FeedingContext(
+        world=world,
+        env=env,
+        diet_matrix=diet_matrix,
+        flora_species_params=flora_species_params,
+        herbivore_species_params=herbivore_species_params,
+        tile_populations=tile_populations,
+        plant_death_causes=plant_death_causes,
+        stride_multiplier=stride_multiplier,
+    )
+
     for co_eid in world.entities_at(swarm.x, swarm.y):
-        target_plant = _get_target_plant(world, co_eid)
-        if target_plant is None:
-            continue
-
-        if not diet_matrix[swarm.species_id][target_plant.species_id]:
-            on_incompatible_plant = True
-            continue
-
-        if target_plant.energy <= 0:
-            continue
-
-        metabolized, plant_killed = _feed_on_single_plant(
-            swarm=swarm,
-            target_plant=target_plant,
-            flora_species_params=flora_species_params,
-            herbivore_species_params=herbivore_species_params,
-            env=env,
-            tile_populations=tile_populations,
-            plant_death_causes=plant_death_causes,
-            stride_multiplier=stride_multiplier,
-        )
+        metabolized, ate, on_incomp, plant_killed = _process_single_entity(co_eid, swarm, ctx)
         total_metabolized += metabolized
         swarm.energy += metabolized
-        if metabolized > 0:
+        if ate:
             ate_anything = True
+        if on_incomp:
+            on_incompatible_plant = True
         if plant_killed:
             dead_plants.append(co_eid)
 
