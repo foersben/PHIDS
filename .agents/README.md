@@ -1,36 +1,95 @@
 ---
 type: Documentation
-title: Welcome to the PHIDS Agent Ecosystem
+title: PHIDS Autonomous Agent Ecosystem Architecture
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
-version: 0.10.0
-description: Welcome to the autonomous nervous system of the Plant-Herbivore
-  Interaction & Defense Simulator (PHIDS).
-tags: [phids, ecs, numba, performance, python]
-generated: {by: process:okf-updater, at: "2026-08-11T23:49:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+version: 1.0.0
+description: Comprehensive architecture, operational protocols, and role directory for the PHIDS multi-agent development ecosystem.
+tags: [agents, architecture, jules, antigravity, ecs, numba, okf]
+generated: {by: process:okf-updater, at: "2026-09-28T22:45:00Z"}
+verified: {by: process:okf-updater, at: "2026-09-28T22:45:00Z"}
 sources:
 - id: engine_execution
-  resource: ../docs/technical_architecture/engine_execution.md
+  resource: docs/technical_architecture/engine_execution.md
+- id: agent_index
+  resource: .agents/index.md
+- id: agents_routing
+  resource: .agents/AGENTS.md
+- id: prompt_template
+  resource: .agents/PROMPT_TEMPLATE.md
 - id: validate_okf
   resource: scripts/validate_okf.py
 ---
 
-Welcome to the autonomous nervous system of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). This repository is not maintained by a single monolithic Artificial Intelligence; instead, it is driven by an ecosystem of decoupled, narrow-jurisdiction AI specialists.
+# PHIDS Autonomous Agent Ecosystem Architecture
 
-Our philosophy relies on **strict discipline and separation of concerns**. By dividing problem-solving into granular roles guided by absolute invariants (our Rule Engine), we prevent the architectural drift, hallucinated dependencies, and catastrophic looping often seen in general-purpose coding LLMs. Here, agents collaborate, delegate, verify their work against hard automated gates, and systematically log their learnings.
+Welcome to the autonomous development and operational nervous system of the Plant-Herbivore Interaction & Defense Simulator (PHIDS). The PHIDS repository is not maintained by a single monolithic Artificial Intelligence model; instead, it is driven by an orchestrated ecosystem of decoupled, narrow-jurisdiction AI specialists, autonomous cloud bots, and programmatic quality gates.
+
+Our engineering philosophy relies on **strict discipline, domain separation, and deterministic execution**. By decomposing large engineering problems into granular roles bounded by absolute invariants (our Rule Engine), we prevent architectural drift, hallucinated dependencies, and circular loops.
 
 ---
 
-## 2. Team Directory: Roles & Jurisdictions
+## 1. Dual-Agent Execution Topology
 
-The PHIDS workspace is governed by 10 distinct specialist roles. When you submit a request, it is intercepted, deconstructed, and routed to the appropriate domain expert.
+The PHIDS development lifecycle operates across a complementary pair of agent architectures:
 
 ```mermaid
 graph TD
-    User([User Request]) --> Orch[01: Orchestrator]
+    subgraph Local_Workstation [Local Workstation: Antigravity IDE]
+        Human([Human Developer / Operator]) <--> AGY[Antigravity IDE Agent]
+        AGY --> LocalTools[Local Toolchain: uv / just / pytest]
+        AGY --> GPGSign[GPG / SSH Signed Commits: git commit -S]
+        AGY --> MCPClient[MCP Client]
+    end
 
-    subgraph Specialists
+    subgraph Orchestration_Layer [Orchestration Bridge]
+        MCPClient <--> JulesMCP[Jules MCP Stdio Server: 68 Tools]
+        JulesMCP <--> KeePass[KeePassXC: secret-tool Secure Storage]
+        JulesMCP <--> JulesAPI[Google Jules Cloud API: v1alpha]
+    end
+
+    subgraph Cloud_Sandbox [Google Labs Cloud Sandbox: Jules Fleet]
+        JulesAPI --> JulesAgent[Autonomous Jules Sandboxes]
+        JulesAgent --> CannedPrompts[Canned Personas: Chisel, Bolt, Canon, Complexity]
+        JulesAgent --> UnsignedFeatureBranch[PR Feature Branches: No -S]
+    end
+
+    subgraph GitHub_Remote [GitHub Repository: foersben/PHIDS]
+        UnsignedFeatureBranch --> PullRequest[GitHub Pull Request]
+        PullRequest --> GHA[GitHub Actions: CI, diff-cover, benchmarks]
+        GPGSign --> DevelopBranch[Protected Branch: develop]
+        PullRequest -.->|Web-Flow GPG Signed Merge| DevelopBranch
+    end
+
+    AGY -.->|Triages & Reviews PRs via /jules-session-triage| PullRequest
+```
+
+### Topology Characteristics
+
+* **Local Workstation (Antigravity IDE):**
+  * **Environment:** Interactive pairing environment executing directly on Linux workstation hardware.
+  * **Commands:** Executes system commands via `uv run` and `just`.
+  * **Commit Integrity:** All commits produced locally **MUST** be cryptographically GPG/SSH signed (`git commit -S`). Escalates to the human operator if keys are locked.
+  * **Role:** High-context reasoning, complex cross-cutting refactoring, workflow dispatching, PR triage, and human collaboration.
+
+* **Cloud Sandbox (Google Labs Jules Fleet):**
+  * **Environment:** Ephemeral, isolated cloud containers running asynchronous batch or scheduled tasks.
+  * **Commands:** Operates in non-interactive remote sandboxes via bash tool runners.
+  * **Commit Integrity:** Creates PR feature branches with unsigned commits. Signing occurs cryptographically upon PR merge via GitHub Web-Flow.
+  * **Restricted Execution:** Never runs Docker-in-Docker tools (`act` is banned in agent sandboxes). Bounded by single-task limits and non-crawling routing rules.
+  * **Role:** Targeted autonomous micro-tasks: cognitive complexity reduction, JIT performance optimization, document alignment, and package refactoring.
+
+---
+
+## 2. Team Directory: The 10 Core Specialist Roles
+
+The PHIDS codebase is governed by 10 distinct specialist roles defined in `.agents/roles/`. Every modification routes through the algorithmic decision matrix in `.agents/index.md`.
+
+```mermaid
+graph TD
+    User([Task / Command Ingress]) --> Orch[01: Orchestrator]
+
+    subgraph Core_Specialists
         Orch --> Sci[02: Scientific Architect]
         Orch --> Eng[03: Engine Developer]
         Orch --> QA[04: QA Automator]
@@ -42,180 +101,255 @@ graph TD
         Orch --> Caus[10: Causal Verifier]
     end
 
-    Sci -.->|Handoff Models| Eng
-    Eng -.->|Handoff Simulation| QA
-    Eng -.->|Handoff Schema| Tel
-    API -.->|Handoff Features| QA
-    QA -.->|Coverage/Tests| Git
+    Sci -.->|Numerical Models| Eng
+    Eng -.->|Simulation State| QA
+    Eng -.->|Array Schemas| Tel
+    API -.->|Endpoints & Views| QA
+    QA -.->|Green CI / Gates| Git
     Aud -.->|Audit Matrix Tables| Docs
     Caus -.->|Verify SIMD Masks| Eng
-    Git -.->|Release| User
+    Git -.->|Release / Merge| User
 ```
 
-### The Specialist Roster
+### Role Roster
 
-* **01. Orchestrator**
-  * **Role:** Command ingress and workflow manager.
-  * **Jurisdiction:** Broad workflow planning, but restricted from writing math/kernels.
-  * **Dependencies:** Triggers all sub-agents and orchestrates `.agents/workflows/`.
-* **02. Scientific Architect**
-  * **Role:** Translates ecological theories into optimized matrix operations.
-  * **Jurisdiction:** `docs/scientific_model/`.
-  * **Dependencies:** Hands off numerical designs to the Engine Developer.
-* **03. Engine Developer**
-  * **Role:** Implements the core Entity-Component-System (ECS) loops and spatial hashing.
+* **01. Orchestrator (`@orchestrator`):**
+  * **Jurisdiction:** Command ingress, workflow dispatching, and cross-cutting project management.
+  * **Constraints:** Restricted from directly authoring mathematical equations or Numba kernels. Delegates to specialist sub-agents.
+* **02. Scientific Architect (`@scientific-architect`):**
+  * **Jurisdiction:** `docs/scientific_model/`, `src/phids/api/schemas/`.
+  * **Responsibilities:** Translates ecological theories (reaction-diffusion PDEs, chemotaxis, volatile signaling, mycorrhizal exchange) into continuous-discrete hybrid dynamical models.
+* **03. Engine Developer (`@engine-developer`):**
   * **Jurisdiction:** `src/phids/engine/`.
-  * **Dependencies:** Relies on the Scientific Architect; passes simulation logic to QA Automator.
-* **04. QA Automator**
-  * **Role:** Validates deterministic execution, monitors performance regressions, and writes mutation tests.
-  * **Jurisdiction:** `tests/`.
-  * **Dependencies:** Validates code from the Engine and API Developers.
-* **05. Docs Librarian**
-  * **Role:** Synchronizes the documentation tree and manages formatting.
-  * **Jurisdiction:** `docs/` and `zensical.toml`.
-  * **Dependencies:** None.
-* **06. Git Operator**
-  * **Role:** Manages the repository lifecycle, versioning, and commit integrity.
-  * **Jurisdiction:** Git tree and `.github/workflows/`.
-  * **Dependencies:** Only acts after QA signs off; halts on missing cryptographic keys.
-* **07. API & UI Developer**
-  * **Role:** Builds the FastAPI backends, WebSockets, and HTMX server-rendered interfaces.
-  * **Jurisdiction:** `src/phids/api/` and `src/phids/ui/`.
-  * **Dependencies:** Supplies the front-end for the engine; verified by QA.
-* **08. Telemetry & Data Engineer**
-  * **Role:** Manages Zarr serialization schemas and out-of-core Polars analytics.
-  * **Jurisdiction:** `src/phids/telemetry/`.
-  * **Dependencies:** Ingests tick outcomes from the Engine Developer.
-* **09. Matrix Auditor**
-  * **Role:** Scans `docs/scientific_model/` for Data-Flow Matrix table coverage and cross-checks Markdown tables against live Pytest traces.
-  * **Jurisdiction:** `docs/scientific_model/` and `tests/integration/scientific_invariants/`.
-  * **Dependencies:** Issues diff tasks to QA Automator and Docs Librarian.
-* **10. Causal Verifier**
-  * **Role:** Monitors engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates.
-  * **Jurisdiction:** `src/phids/engine/systems/`.
-  * **Dependencies:** Asserts float mask gates (`alive_mask`, `capacity_mask`) in Numba kernels.
+  * **Responsibilities:** Implements data-oriented Entity-Component-System (ECS) arrays, Numba `@njit` kernels, spatial hashing grids, and double-buffering layers. Banned from introducing Python objects or allocations in hot paths.
+* **04. QA Automator (`@qa-automator`):**
+  * **Jurisdiction:** `tests/`, `scripts/`.
+  * **Responsibilities:** Validates deterministic replay invariants, isolates test regressions, monitors `pytest-benchmark` gates, and writes mutation/hypothesis tests.
+* **05. Docs Librarian (`@docs-librarian`):**
+  * **Jurisdiction:** `docs/`, `zensical.toml`.
+  * **Responsibilities:** Enforces Open Knowledge Format (OKF v0.2) compliance, validates graph links via `scripts/validate_okf.py`, maintains Zensical documentation builds, and enforces zero-truncation policies.
+* **06. Git Operator (`@git-operator`):**
+  * **Jurisdiction:** Git tree, `.github/workflows/`, release tags.
+  * **Responsibilities:** Manages branch merges, release tags, and cryptographic commit signing verification (`git commit -S`).
+* **07. API & UI Developer (`@api-and-ui-developer`):**
+  * **Jurisdiction:** `src/phids/api/`, `src/phids/templates/`.
+  * **Responsibilities:** Builds FastAPI REST endpoints, WebSocket telemetry streams, and HTMX server-rendered interfaces.
+* **08. Telemetry & Data Engineer (`@telemetry-and-data-engineer`):**
+  * **Jurisdiction:** Zarr replay buffers, Polars telemetry schemas, and replay playback services.
+  * **Responsibilities:** Ensures all tick outcomes serialize faithfully into out-of-core columnar formats.
+* **09. Matrix Auditor (`@matrix-auditor`):**
+  * **Jurisdiction:** Data-Flow Matrix specifications across documentation and tests.
+  * **Responsibilities:** Runs `scripts/audit_matrix_coverage.py` to ensure all multi-tick behavioral cascades possess documented tables and bilateral test links.
+* **10. Causal Verifier (`@causal-verifier`):**
+  * **Jurisdiction:** Causal loop invariant checks and branchless SIMD kernel masks.
+  * **Responsibilities:** Runs `scripts/verify_matrix_trace_parity.py --all` to assert exact numerical table-to-trace parity.
 
 ---
 
-## 3. Guardrails: The Rule Engine
+## 3. Autonomous Scheduled Personas (Jules Fleet)
 
-Agents operate within an ironclad set of core invariants located in `.agents/rules/`. These rules are non-negotiable and override standard agent impulses.
-
-* **Python Modernization (`00`)**: Prevents the use of legacy tools. Agents must strictly use `uv run` and `just`, enforce `mypy` typings, and validate code via `ruff`.
-* **Stochastic Engine & Replay (`01`)**: Ensures absolute determinism. All tick outcomes are written to the `_write` layer (double-buffering) and logged to Zarr replay buffers to guarantee flawless serialization.
-* **Numba Constraints (`02`)**: Maintains the execution speed of our JIT hot-paths. It bans Python objects inside `@njit` boundaries, enforces pre-allocation, and mandates float masking for state transitions.
-* **Git Security & Signing (`03`)**: Mandates cryptographic GPG/SSH signatures on all commits. Agents are instructed to halt and escalate to a human operator rather than bypass failed signatures.
-* **Data-Flow Invariants (`05`)**: Enforces Table-to-Trace Parity (Rule 05-A), Branchless SIMD Float Masks (Rule 05-B), and Bilateral OKF Resource Mapping (Rule 05-C).
-
----
-
-## 4. Collaboration: Workflows & The Delegation Protocol
-
-To prevent recursive loops or fragmented development, agents pass tasks via established workflows located in `.agents/workflows/`.
-
-### The Vertical Slice Development Workflow
-
-This pipeline ensures a new ecological feature is implemented securely across the entire stack. A concept moves from the Scientific Architect's models directly into the Engine Developer's JIT loops, gets wired to Telemetry, exposed via the API Developer's UI, and strictly verified by QA-simultaneously.
-
-### Matrix-Driven TDD Refactoring
-
-Coordinated 4-stage pipeline translating conceptual behavior into formal Data-Flow Matrix tables, failing Pytest trace fixtures, branchless Numba array kernels, and verified OKF resource mappings.
-
-### Automated Matrix Drift Reconciliation
-
-Automated recovery workflow detecting numerical drift between telemetry traces and documented matrix tables, generating candidate markdown diffs for one-click operator approval.
-
-### The Delegation Protocol
-
-When an agent encounters a structurally blocked task (e.g., an interactive MFA prompt, or a missing GPG key), they use the **Delegation Protocol**. Instead of guessing or failing silently, the agent outputs a highly structured markdown checklist of the exact context, instructions, and resumption signals for the human operator to complete the manual gate.
-
-```mermaid
-sequenceDiagram
-    participant U as User Request
-    participant O as Orchestrator
-    participant M as Memory [(State Map)]
-    participant W as Workflow
-    participant SA as Scientific Architect
-    participant ED as Engine Developer
-    participant QA as QA Automator
-
-    U->>O: Request new ecological feature
-    O->>M: Check architecture state lockfile
-    O->>W: Initialize 'Vertical Slice Development'
-    W->>SA: Delegate: Define mathematical model
-    SA-->>W: Model completed
-    W->>ED: Delegate: Implement JIT-compiled systems
-    ED-->>W: Engine logic completed
-    W->>QA: Delegate: Write benchmarks & tests
-    QA-->>W: Validation passed
-    W->>O: Workflow completed successfully
-    O->>M: Update state map
-    O->>U: Feature deployed
-```
-
----
-
-## 5. Automated Quality Gates & Skills
-
-Our repository does not rely on agent promises; it relies on automated enforcement scripts found in `.agents/skills/`. Before any code is committed, it must survive pre-commit hooks and explicit programmatic skills.
-
-* **Run Benchmarks (`run-benchmarks`):** Evaluates `pytest-benchmark` execution speeds to reject any code that degrades the performance of the spatial hashing loops.
-* **Analyze Zarr (`analyze-zarr`):** Inspects Zarr schemas to guarantee telemetry replays match active loop data.
-* **Validate OKF (`validate-okf`):** A critical gate enforcing our implementation of the Open Knowledge Format (OKF v0.2).
-* **Verify Matrix Trace Parity (`verify-matrix-trace-parity`):** Parses Markdown Data-Flow Matrix tables and asserts point-by-point numerical parity against Pytest traces.
-* **Audit OKF Matrix Coverage (`audit-okf-matrix-coverage`):** Scans concept documents in `docs/scientific_model/` and reports state shifts missing matrix tables.
-* **Auto Reconcile Matrix Drift (`auto-reconcile-matrix-drift`):** Captures runtime traces and auto-updates Markdown table rows when parameters drift.
-
-### The OKF Validation Pipeline
-
-The `validate_okf.py` script inspects all documentation files to guarantee they possess correct YAML frontmatter and that they do not contain dangling or escaping markdown links.
+For recurring cloud background runs, specialized personas are instantiated using the standardized prompt architecture in `.agents/PROMPT_TEMPLATE.md`:
 
 ```mermaid
 graph LR
-    Agent(Agent Modifies Docs) --> Hook{Pre-commit Trigger}
-    Hook -->|Runs| OKF[validate_okf.py]
+    subgraph Jules_Scheduled_Fleet
+        Chisel["Chisel ⛏️<br/>Modular Decoupler"]
+        Bolt["Bolt ⚡<br/>Performance Optimizer"]
+        Canon["Canon 📜<br/>Documentation Sentinel"]
+        Complexity["Complexity 🧩<br/>Cognitive Refactorer"]
+        Sentinel["Sentinel 🛡️<br/>Matrix Watchdog"]
+        Vigil["Vigil 👁️<br/>Mutation Hardener"]
+    end
 
-    OKF --> Frontmatter{Check YAML}
-    OKF --> Graph{Check Links}
-
-    Frontmatter -->|Pass| Graph
-    Frontmatter -->|Fail| Reject[Reject Build]
-
-    Graph -->|Valid internal| Accept[Accept Build]
-    Graph -->|External/Escaping| Reject
+    Chisel -->|Single Monolith Package Split| PR1[PR: Modular ui/]
+    Bolt -->|Cross-Commit JIT Benchmarking| PR2[PR: Zero-Allocation Diffuse]
+    Canon -->|Bidirectional Code-Doc Alignment| PR3[PR: Solver Sync]
+    Complexity -->|AST Single-Function Refactor| PR4[PR: Feeding Loop]
+    Sentinel -->|Trace Parity & Matrix Repair| PR5[PR: Matrix Sync]
+    Vigil -->|Mutant Killing Test Addition| PR6[PR: Invariant Tests]
 ```
 
-### 🔗 Link Validation Reference Examples
+### The Persona Profiles
 
-To ensure your documentation passes the `validate_okf.py` build gates, strictly format your links according to these rules:
+* **Chisel ⛏️ (Autonomous Codebase Sculptor):**
+  * **Mission:** Autonomously identify and carve exactly **ONE** monolithic module (>400 lines or mixed domain responsibilities) into cohesive, strictly typed sub-packages.
+  * **Standard Finder:** `find src/phids/ -name "*.py" -not -name "__init__.py" -exec wc -l {} + | sort -rn | head -n 10`.
+  * **Verification:** Enforces backward compatibility via `__init__.py` facade re-exports and runs full pytest.
 
-```markdown
-# ✅ VALID LINK (Relative internal path)
-[Engine Architecture](../docs/technical_architecture/engine_execution.md)
+* **Bolt ⚡ (Performance Optimization Specialist):**
+  * **Mission:** Identify and implement exactly **ONE** measurable performance optimization in hot paths (tight loops, array allocation, scalar gating).
+  * **Verification Tool:** Compares active changes against baseline `develop` using the cross-commit JIT benchmarking utility:
+    ```bash
+    just bench-compare-jit develop worktree examples/rectangular_crossfire_extended.json 100 10 10
+    ```
+  * **Boundary:** Rejects changes that show throughput regressions or add branch divergence to SIMD loops. Records findings in `.agents/memory/bolt.md`.
 
-# ❌ INVALID LINK (External web protocol)
-[External Reference](https://example.com/docs)
-<!-- Error: Target path escapes authorized knowledge domains -->
+* **Canon 📜 (Documentation & Invariant Sentinel):**
+  * **Mission:** Audits the codebase against the Zensical documentation and OKF Data-Flow Matrices.
+  * **Bidirectional Authority:** Can autonomously decide whether code drifted from documentation or whether documentation lagged behind approved optimizations, updating whichever is appropriate and defending the decision in the PR description.
 
-# ❌ INVALID LINK (Escaping repository boundary)
-[Secret File](../../../etc/passwd)
-<!-- Error: Target path escapes authorized knowledge domains -->
-```
+* **Complexity 🧩 (Cognitive Complexity Specialist):**
+  * **Mission:** Uses `complexipy` and AST inspection to find exactly **ONE** function with cognitive complexity > 15 and refactor it into clean, typed helper functions without introducing interpreter overhead.
+
+* **Sentinel 🛡️ (Matrix Drift & Invariant Watchdog):**
+  * **Mission:** Enforces Rule 05 invariants. Runs `scripts/audit_matrix_coverage.py` and `scripts/verify_matrix_trace_parity.py --all`. Reconciles table rows when simulation kinetics intentionally drift.
+
+* **Vigil 👁️ (Mutation Testing & Suite Hardener):**
+  * **Mission:** Discovers surviving mutant branches using mutation testing and hypothesis property testing, crafting targeted unit tests to harden system invariants.
 
 ---
 
-## 6. Memory Paradigms: How Context Persists
+## 4. The Rule Engine: Non-Negotiable Invariants
 
-Multi-agent conversations are ephemeral. To maintain long-term coherence across sessions, agents persist their context using tightly controlled markdown files inside `.agents/memory/`.
+All agents (local or cloud) must strictly adhere to the rules located in `.agents/rules/`:
 
-### The Architecture State Map
+* **Rule 00: Python Modernization (`00-python-modernization.md`):**
+  * Ban `pip`, `poetry`, `python`, `black`, `flake8`.
+  * Execute ALL commands strictly via `uv run` or `just`.
+  * Enforce strict `mypy` typing across all modules (favor built-in generics `list`, `dict`, `str | None`).
+  * Format and lint strictly via `uv run ruff check` and `uv run ruff format`.
 
-The `architecture_state_map.md` acts as our global lockfile. Before initiating major refactors, the Orchestrator checks this file to avoid clashing with ongoing migrations. **Protocol:** Agents must update this map when opening or closing major architectural tasks.
+* **Rule 01: Stochastic Engine & Replay (`01-stochastic-engine-and-replay.md`):**
+  * Strict double-buffering: Systems read from current layer; write ONLY to `_write` layer.
+  * Deterministic serialization: Record all tick outcomes tick-by-tick into Zarr replay buffers. Playback reads Zarr directly, bypassing engine logic.
+  * Seed PRNGs per Biotope region or Swarm component.
 
-* *Example Context:* Currently tracking the active migration to Python 3.13 and the switch to `uv` for dependency management.
+* **Rule 02: Numba Constraints (`02-numba-constraints.md`):**
+  * Zero Python collections (`dict`, `list`, custom classes) inside `@njit` hot paths.
+  * Contiguous layouts and explicit dtypes (`np.float32`, `np.int32`, avoiding accidental `float64` upcasts).
+  * Zero array allocations (`np.zeros`, `np.append`) inside per-tick JIT loops.
+  * Float state masking: Represent transitions via float transfers (`delta * alive_mask`), prohibiting scalar enums or branching conditionals in SIMD inner loops.
 
-### Agent Performance Journals
+* **Rule 03: Git Security & Signing (`03-git-security-and-signing.md`):**
+  * Workstation commits MUST be cryptographically GPG/SSH signed (`git commit -S`). Halts and escalates if signing keys are locked.
+  * Never bypass signature requirements via `.git/config` tampering.
 
-Individual agents maintain their own hyper-focused journals (e.g., `bolt.md` for engine performance, `palette.md` for UI/UX lessons).
+* **Rule 04: Markdown Formatting Standards (`04-markdown-formatting.md`):**
+  * Standard hyphen (`-`) exclusively. En-dash and em-dash are strictly prohibited.
+  * Unordered lists must use `*` with exactly 1 space after `*` and 2 spaces per indent level.
+  * Exactly 1 blank line before and after lists, code blocks, and headings. Trim trailing whitespace.
 
-* **Protocol:** These files are **not routine activity logs**. They are reserved exclusively for logging high-value architectural lessons structured as `Learning:` and `Action:` pairs. This prevents the logs from bloating while preserving crucial micro-lessons (like ECS query optimizations) for future reference.
+* **Rule 05: Data-Flow Invariants (`05-data-flow-invariants.md`):**
+  * **Rule 05-A (Table-to-Trace Parity):** Every Markdown Data-Flow Matrix table must match Pytest traces in `tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`.
+  * **Rule 05-B (Branchless SIMD Masks):** State transfers in JIT kernels must execute via scalar/vector float multiplication (`delta * mask`).
+  * **Rule 05-C (Bilateral Resource Mapping):** OKF frontmatter `sources:` must declare both system code and test trace files.
+  * **Rule 05-D (Agentic Gate):** Pre-commit hooks reject commits failing matrix audit or trace parity.
+
+* **Universal Sandbox Constraint:**
+  * Running `act` (local GitHub Actions runner) is strictly banned in all agent sandboxes.
+
+---
+
+## 5. Active Workflows & Slash Commands
+
+Workflows in `.agents/workflows/` coordinate multi-phase tasks:
+
+| Slash Command | Workflow Document | Primary Roles | Description |
+| :--- | :--- | :--- | :--- |
+| `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, and generates HITL triage reviews. |
+| `/epistemic-soundness-audit` | [epistemic-soundness-audit.md](workflows/epistemic-soundness-audit.md) | `02`, `09`, `10` | 10-slice relational audit verifying biological fidelity, mathematical rigor, and HPC invariants across docs and code. |
+| `/matrix-tdd-refactor` | [matrix-tdd-refactor.md](workflows/matrix-tdd-refactor.md) | `03`, `04`, `09` | Translates conceptual behavior to Data-Flow Matrix tables, Pytest traces, branchless Numba kernels, and verified OKF links. |
+| `/validate-full-stack` | [validate-full-stack.md](workflows/validate-full-stack.md) | All | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
+| `/implement-scientific-model` | [implement-scientific-model.md](workflows/implement-scientific-model.md) | `02`, `03` | Protocol for introducing new ecological/mathematical behaviors into ECS arrays and simulation loop. |
+| `/matrix-drift-reconciliation` | [matrix-drift-reconciliation.md](workflows/matrix-drift-reconciliation.md) | `09`, `10` | Automated detection and reconciliation of drifted Data-Flow Matrices against runtime simulation traces. |
+| `/vertical-slice-development` | [vertical-slice-development.md](workflows/vertical-slice-development.md) | `01` + All | Coordinated pipeline for building full-stack simulation features across models, kernels, telemetry, and UI. |
+| `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` | Structured markdown escalation checklist for human operators when agents encounter manual confirmation gates. |
+| `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` | Safely refactors cold-path control plane modules while preserving DOD/JIT hot-path immutability. |
+
+---
+
+## 6. Automated Quality Gates & Skills
+
+Quality is enforced programmatically through scripts and skills in `.agents/skills/`:
+
+```mermaid
+graph TD
+    CommitAttempt([git commit -S]) --> PreCommit[18 Pre-Commit Verification Hooks]
+
+    subgraph Gates [Automated Quality Gates]
+        PreCommit --> Lints[Ruff Quality Linting & Formatting]
+        PreCommit --> Types[Strict Mypy Type Checking]
+        PreCommit --> OKFCheck[OKF Conformance: scripts/validate_okf.py]
+        PreCommit --> MatrixCov[Matrix Coverage: scripts/audit_matrix_coverage.py]
+        PreCommit --> MatrixParity[Trace Parity: scripts/verify_matrix_trace_parity.py]
+        PreCommit --> LicenseGuard[NC License Guard: check_no_extended_imports.py]
+        PreCommit --> Pytest[Full Pytest & Invariant Suite: 1200+ tests]
+    end
+
+    Gates -->|All Passed| SignedCommit[Cryptographically Signed Commit Created]
+    Gates -->|Any Failed| Halt[Halt & Escalate to Specialist]
+```
+
+### Specialist Skills Directory
+
+* **`analyze-zarr`:** Inspects Zarr arrays to assert correct tensor shapes, chunk configurations, and schema serialization.
+* **`audit-okf-matrix-coverage`:** Scans `docs/scientific_model/` and reports temporal state transitions missing formal Data-Flow Matrix specifications.
+* **`auto-reconcile-matrix-drift`:** Captures numerical execution traces and automatically updates Markdown table rows when parameters drift intentionally.
+* **`run-benchmarks`:** Executes `pytest-benchmark` performance tests to guarantee zero regression on hot-path spatial indexing loops.
+* **`validate-okf`:** Enforces OKF v0.2 frontmatter compliance, graph link validity, and trust tier definitions across all markdown assets.
+* **`verify-matrix-trace-parity`:** Asserts exact numerical 1:1 parity between Markdown Data-Flow Matrix tables and live Pytest trace fixtures.
+* **`visualize-okf`:** Compiles an interactive HTML knowledge graph visualization of the PHIDS ecosystem.
+
+---
+
+## 7. Jules MCP Orchestration Engine
+
+Antigravity IDE communicates with Google Labs Jules via a local stdio MCP server located in `antigravity-jules-orchestration`:
+
+```mermaid
+graph LR
+    subgraph Antigravity_Environment
+        AGY[Antigravity Agent] -->|MCP JSON-RPC| StdioServer[mcp-stdio-server.js]
+    end
+
+    subgraph KeyPass_Integration
+        StdioServer -->|secret-tool lookup| KeyPass[(KeePassXC Password Manager)]
+        KeyPass -->|Jules API Key & PAT| StdioServer
+    end
+
+    subgraph Jules_Backend
+        StdioServer -->|Express Engine| JulesBackend[index.js: 68 Tools]
+        JulesBackend -->|REST API v1alpha| GoogleJules[jules.googleapis.com]
+    end
+```
+
+### Capabilities & Configuration
+
+* **Tool Configurations:**
+  * **Optimal Curated Mode (Default, 14 Tools):** `jules_list_sources`, `jules_create_session`, `jules_list_sessions`, `jules_get_session`, `jules_send_message`, `jules_approve_plan`, `jules_get_activities`, `jules_cancel_session`, `jules_delete_session`, `jules_get_diff`, `jules_retry_session`, `jules_create_from_issue`, `jules_get_pr_status`, `jules_merge_pr`.
+  * **Full Orchestration Suite (68 Tools):** Enabled by setting `JULES_EXPOSE_ALL_TOOLS=true` in `~/.gemini/config/mcp_config.json` or in the server `.env`. Adds batch processing, session timelines, queue pipelines, semantic memory, and suggested tasks.
+* **Payload Protocol:**
+  * Interactive prompt messages sent via `jules_send_message` map strictly to `{ "prompt": "<message>" }` in the Google Jules REST API.
+* **Credential Security:**
+  * Keys are resolved dynamically from KeePassXC via `secret-tool lookup Title "Jules API Key"`, keeping raw secrets out of plaintext configs.
+
+---
+
+## 8. Memory System & Persistent Knowledge
+
+To prevent cross-session context loss, agents persist learnings in `.agents/memory/`:
+
+* **Global Lockfile (`architecture_state_map.md`):**
+  * Tracks high-level architectural migrations (e.g., Python 3.13 upgrade, zero-allocation array buffer swaps).
+  * Checked by the Orchestrator before dispatching structural refactoring.
+* **Specialist Learning Journals:**
+  * Focused memory logs (`bolt.md`, `chisel.md`, `canon.md`, `complexity.md`, `palette.md`).
+  * Reserved exclusively for critical learnings formatted as `Learning:` and `Action:` pairs (e.g., why branchless `abs` intrinsics outperform inline branching in Numba).
+* **Restricted Loading Policy:**
+  * Memory files are **never** crawled or bulk-loaded automatically. They are loaded exclusively on explicit task triggers to safeguard agent context tokens.
+
+---
+
+## 9. Open Knowledge Format (OKF v0.2) & Multi-Audience Documentation
+
+Documentation in PHIDS is treated as executable knowledge:
+
+* **YAML Frontmatter:** Every markdown document must declare `type`, `title`, `status`, `version`, `description`, `tags`, `generated`, and relative `sources:`.
+* **Zero Truncation / Compression Policy:** Agents are strictly prohibited from summarizing away narrative scientific prose, biological rationales, or mathematical derivations.
+* **Floating Explanatory Prose:** Explanatory context between equations and tables must remain preserved.
+* **Multi-Audience Stratification:** Documentation must cater simultaneously to:
+  * Theoretical Ecologists (botanical defenses, volatile kinetics, mycorrhizal resource allocations).
+  * Applied Mathematicians (reaction-diffusion PDEs, continuous-discrete hybrid dynamical systems, isotropic Gaussian diffusion).
+  * Systems & HPC Engineers (data-oriented ECS arrays, branchless SIMD masks, Numba `@njit` kernels).
+  * General Scientific Readers (accessible abstracts and clear architectural diagrams).
+* **Footnote Attribution:** Sources are cited via inline markdown footnotes (`[^id]`) without interrupting continuous prose.
