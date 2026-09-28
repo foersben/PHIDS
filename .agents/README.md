@@ -43,7 +43,7 @@ graph TD
     end
 
     subgraph Orchestration_Layer [Orchestration Bridge]
-        MCPClient <--> JulesMCP[Jules MCP Stdio Server: 68 Tools]
+        MCPClient <--> JulesMCP[Jules MCP Stdio Server: 14 Tools]
         JulesMCP <--> KeePass[KeePassXC: secret-tool Secure Storage]
         JulesMCP <--> JulesAPI[Google Jules Cloud API: v1alpha]
     end
@@ -282,13 +282,15 @@ graph TD
 
 ### Specialist Skills Directory
 
-* **`analyze-zarr`:** Inspects Zarr arrays to assert correct tensor shapes, chunk configurations, and schema serialization.
-* **`audit-okf-matrix-coverage`:** Scans `docs/scientific_model/` and reports temporal state transitions missing formal Data-Flow Matrix specifications.
-* **`auto-reconcile-matrix-drift`:** Captures numerical execution traces and automatically updates Markdown table rows when parameters drift intentionally.
-* **`run-benchmarks`:** Executes `pytest-benchmark` performance tests to guarantee zero regression on hot-path spatial indexing loops.
-* **`validate-okf`:** Enforces OKF v0.2 frontmatter compliance, graph link validity, and trust tier definitions across all markdown assets.
-* **`verify-matrix-trace-parity`:** Asserts exact numerical 1:1 parity between Markdown Data-Flow Matrix tables and live Pytest trace fixtures.
-* **`visualize-okf`:** Compiles an interactive HTML knowledge graph visualization of the PHIDS ecosystem.
+Programmatic verification and execution harnesses reside in [`.agents/skills/`](skills/README.md). Antigravity automatically registers each skill into the agent's runtime context:
+
+* **[`analyze-zarr`](skills/analyze-zarr/SKILL.md):** Inspects Zarr arrays to assert correct tensor shapes, chunk configurations, and schema serialization.
+* **[`audit-okf-matrix-coverage`](skills/audit-okf-matrix-coverage/SKILL.md):** Scans `docs/scientific_model/` and reports temporal state transitions missing formal Data-Flow Matrix specifications.
+* **[`auto-reconcile-matrix-drift`](skills/auto-reconcile-matrix-drift/SKILL.md):** Captures numerical execution traces and automatically updates Markdown table rows when parameters drift intentionally.
+* **[`run-benchmarks`](skills/run-benchmarks/SKILL.md):** Executes `pytest-benchmark` performance tests to guarantee zero regression on hot-path spatial indexing loops.
+* **[`validate-okf`](skills/validate-okf/SKILL.md):** Enforces OKF v0.2 frontmatter compliance, graph link validity, and trust tier definitions across all markdown assets.
+* **[`verify-matrix-trace-parity`](skills/verify-matrix-trace-parity/SKILL.md):** Asserts exact numerical 1:1 parity between Markdown Data-Flow Matrix tables and live Pytest trace fixtures.
+* **[`visualize-okf`](skills/visualize-okf/SKILL.md):** Compiles an interactive HTML knowledge graph visualization of the PHIDS ecosystem.
 
 ---
 
@@ -308,7 +310,7 @@ graph LR
     end
 
     subgraph Jules_Backend
-        StdioServer -->|Express Engine| JulesBackend[index.js: 68 Tools]
+        StdioServer -->|Express Engine| JulesBackend[index.js: 14 Tools]
         JulesBackend -->|REST API v1alpha| GoogleJules[jules.googleapis.com]
     end
 ```

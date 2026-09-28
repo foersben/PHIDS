@@ -14,11 +14,13 @@ sources:
   resource: scripts/visualize_okf.py
 ---
 
-# Trigger
+# Visualize Open Knowledge Format
+
+## Trigger
 
 Dispatched when analyzing cross-document dependencies, auditing knowledge graph continuity, or generating `docs/viz.html` for documentation deployment.
 
-# Execution
+## Execution
 
 ```bash
 uv run python scripts/visualize_okf.py

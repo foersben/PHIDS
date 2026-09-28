@@ -1,6 +1,6 @@
 ---
 type: Agent Skill
-title: Trigger
+title: Run Benchmarks
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
@@ -11,11 +11,13 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 name: Run Benchmarks
 ---
 
-# Trigger
+# Run Benchmarks
+
+## Trigger
 
 Before merging engine logic changes or after completing a vertical slice.
 
-# Execution
+## Execution
 
 ```bash
 uv run pytest tests/benchmarks/ --benchmark-only --benchmark-json artifacts/benchmark_results.json

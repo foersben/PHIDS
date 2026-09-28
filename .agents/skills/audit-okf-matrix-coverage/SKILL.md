@@ -1,6 +1,6 @@
 ---
 type: Agent Skill
-title: Trigger
+title: Audit OKF Matrix Coverage
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
@@ -15,11 +15,13 @@ sources:
   resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
-# Trigger
+# Audit OKF Matrix Coverage
+
+## Trigger
 
 Dispatched periodically by `@matrix-auditor` or during documentation completeness audits.
 
-# Execution
+## Execution
 
 ```bash
 uv run python scripts/audit_matrix_coverage.py --dir docs/scientific_model/

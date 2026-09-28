@@ -1,6 +1,6 @@
 ---
 type: Agent Skill
-title: Trigger
+title: Auto Reconcile Matrix Drift
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
@@ -15,11 +15,13 @@ sources:
   resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
-# Trigger
+# Auto Reconcile Matrix Drift
+
+## Trigger
 
 Dispatched by `@matrix-auditor` or `@causal-verifier` when runtime traces diverge from documented markdown tables after intentional parameter updates.
 
-# Execution
+## Execution
 
 ```bash
 uv run python scripts/reconcile_matrix_drift.py --doc docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md

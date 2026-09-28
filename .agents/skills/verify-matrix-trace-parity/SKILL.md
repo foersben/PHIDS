@@ -1,6 +1,6 @@
 ---
 type: Agent Skill
-title: Trigger
+title: Verify Matrix Trace Parity
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
@@ -15,11 +15,13 @@ sources:
   resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
-# Trigger
+# Verify Matrix Trace Parity
+
+## Trigger
 
 Pre-push gate, after modifying simulation behavior equations, or dispatched by `@matrix-auditor`.
 
-# Execution
+## Execution
 
 ```bash
 uv run python scripts/verify_matrix_trace_parity.py --doc docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md

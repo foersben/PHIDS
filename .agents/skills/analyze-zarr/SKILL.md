@@ -1,6 +1,6 @@
 ---
 type: Agent Skill
-title: Trigger
+title: Analyze Zarr Telemetry
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
@@ -14,11 +14,13 @@ sources:
   resource: scripts/inspect_zarr.py
 ---
 
-# Trigger
+# Analyze Zarr Telemetry
+
+## Trigger
 
 After running a simulation scenario to confirm telemetry schema correctness.
 
-# Execution
+## Execution
 
 ```bash
 uv run python scripts/inspect_zarr.py path/to/replay.zarr

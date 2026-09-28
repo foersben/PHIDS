@@ -1,6 +1,6 @@
 ---
 type: Agent Skill
-title: Trigger
+title: Validate Open Knowledge Format
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 0.1
@@ -14,11 +14,13 @@ sources:
   resource: scripts/validate_okf.py
 ---
 
-# Trigger
+# Validate Open Knowledge Format
+
+## Trigger
 
 When creating or heavily modifying files in `docs/` or `.agents/`.
 
-# Execution
+## Execution
 
 ```bash
 uv run python scripts/validate_okf.py
