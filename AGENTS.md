@@ -34,3 +34,9 @@ Stop loading additional files once you have a role assignment.
 4. **Restricted directories.** Do NOT open `.agents/memory/` or `.agents/manifesto/`
    unless the user prompt uses the words `historical`, `manifesto`, or `canon`.
 5. **Do NOT crawl `.agents/` blindly** or pre-load all role files.
+
+## Agent Resources & Capability Manifest
+
+* **Skills Directory:** Programmatic verification skills reside in `.agents/skills/` (`validate-okf`, `run-benchmarks`, `audit-okf-matrix-coverage`, `verify-matrix-trace-parity`, `auto-reconcile-matrix-drift`, `analyze-zarr`, `visualize-okf`).
+* **Jules Prompt Templates:** Standardized canned prompts for autonomous background personas (`Chisel`, `Bolt`, `Canon`, `Complexity`, `Sentinel`, `Vigil`) are defined in `.agents/PROMPT_TEMPLATE.md`.
+* **Task Offloading:** Antigravity agents should evaluate whether broad or token-intensive tasks (complexity refactors, multi-scenario JIT benchmarks, mutation testing) should be offloaded to cloud Jules agents to conserve workstation context tokens.
