@@ -173,12 +173,10 @@ class DietCompatibilityMatrix(StrictBaseModel):
             if len(row) > MAX_FLORA_SPECIES:
                 raise ValueError(f"DietCompatibilityMatrix row length {len(row)} exceeds {MAX_FLORA_SPECIES}.")
 
-        # Pad columns
         for row in self.rows:
             while len(row) < MAX_FLORA_SPECIES:
                 row.append(False)
 
-        # Pad rows
         while len(self.rows) < MAX_HERBIVORE_SPECIES:
             self.rows.append([False] * MAX_FLORA_SPECIES)
 

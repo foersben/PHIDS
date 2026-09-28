@@ -299,8 +299,6 @@ def _propagate_inner_jit(
             propagated = n_sum * 0.25
             val = base[x, y] + (decay * propagated)
             nxt[x, y] = val
-            diff = val - current[x, y]
-            if diff < 0.0:
-                diff = -diff
+            diff = abs(val - current[x, y])
             max_diff = max(max_diff, diff)
     return float(max_diff)

@@ -36,7 +36,3 @@ Action: Use strict format regex when migrating documentation headers and rely on
 
 Learning: Documented behavioral models drift from runtime code unless automated coverage gating and point-by-point numerical trace verifiers are permanently installed in the agent pre-commit workflow.
 Action: Whenever modifying simulation systems or parameters in `src/phids/engine/systems/`, all agents must execute `scripts/audit_matrix_coverage.py` and `scripts/verify_matrix_trace_parity.py --all` before committing, ensuring 100% table-to-trace parity.
-
-## 2026-10-31 - Numba JIT OpenMP Reduction Parity
-Learning: Replacing `abs()` in dense inner Numba loops with `if/elif` branches breaks Numba's implicit detection of parallel reduction variables (`max_diff`) in `@njit(parallel=True)` OpenMP kernels.
-Action: To safely eliminate `abs()` microcode traps while maintaining correct mathematical parity and thread-safe OpenMP scaling, replace `abs()` with `diff = val - current; if diff < 0.0: diff = -diff` but strictly preserve the original reduction assignment `max_diff = max(max_diff, diff)`.
