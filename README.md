@@ -515,7 +515,7 @@ data/                   Empirical DuckDB trait database (TRY/PanTHERIA) & batch 
 docs/                   Zensical documentation corpus with OKF frontmatter & Future Prospects
 examples/               Curated scenario blueprint JSON files
 packaging/              PyInstaller desktop binary packaging configuration
-scripts/                Automation & validation scripts (15 scripts, pre-commit & CI gates; see scripts/README.md)
+scripts/                Automation & validation scripts (16 scripts, pre-commit & CI gates; see scripts/README.md)
 tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration (see tests/README.md)
 ```
 
@@ -534,6 +534,7 @@ tests/                  Hypothesis invariant tests, two-pass Numba tests, and AP
 * Want contributor workflow and CI policy? Start at [`docs/development_guide/contribution_workflow.md`](docs/development_guide/contribution_workflow.md).
 * Want to inspect the testing taxonomy, JIT two-pass strategy, and invariant proofs? Start at [`tests/README.md`](tests/README.md).
 * Want to inspect all automation scripts and pre-commit gates? Start at [`scripts/README.md`](scripts/README.md).
+* Want to explore the autonomous multi-agent ecosystem, roles, and workflows? Start at [`.agents/README.md`](.agents/README.md).
 * Want to explore the interactive knowledge graph? Open [`docs/viz.html`](docs/viz.html) or run `just visualize-okf`.
 
 ---
