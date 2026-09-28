@@ -9,6 +9,7 @@ This package implements the automated Extract, Transform, Load (ETL) pipeline th
 The pipeline strictly enforces copyright and intellectual property boundaries to ensure the core PHIDS simulation engine remains free of non-commercial (NC) license contaminations:
 
 ### A. Core Permissive Sources (Redistributable)
+
 * **TRY Plant Trait Database:** CC-BY 4.0 (<https://www.try-db.org>)
 * **Global Biotic Interactions (GLoBI):** CC-BY 4.0 (<https://globalbioticinteractions.org>)
 * **PanTHERIA (Mammalian Life History & Ecology):** CC0 / Public Domain (<https://doi.org/10.1890/08-1494.1>)
@@ -17,6 +18,7 @@ The pipeline strictly enforces copyright and intellectual property boundaries to
 * **Global Biodiversity Information Facility (GBIF):** CC0 (<https://www.gbif.org>)
 
 ### B. Extended Non-Commercial (NC) Sources (Protected)
+
 * **BIEN, LEDA, GIFT:** Licensed under CC-BY-NC or ShareAlike restrictions.
 * **Legal Invariant:** Data from these sources is strictly cached under `src/data_pipeline/cache/extended/` and compiled into `bio_database_extended.duckdb`. These assets are **never** committed or published to the core repository, and the guard in `src/data_pipeline/db/export.py` programmatically aborts export if contamination is detected.
 
