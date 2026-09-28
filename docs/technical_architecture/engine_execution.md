@@ -512,9 +512,10 @@ def _propagate_iteration_jit_pow2(
             )
             val = base[x, y] + (decay * neighbours_sum * 0.25)
             nxt[x, y] = val
-            diff = abs(val - current[x, y])
-            if diff > max_diff:
-                max_diff = diff
+            diff = val - current[x, y]
+            if diff < 0.0:
+                diff = -diff
+            max_diff = max(max_diff, diff)
     return max_diff
 ```
 
