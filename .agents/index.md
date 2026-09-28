@@ -1,4 +1,87 @@
-# PHIDS Autonomous Agent Ecosystem Directory
+# PHIDS Agent Ecosystem - Algorithmic Decision Matrix
+
+* **For MCP agents (Jules):** Use the decision matrix to select your role.
+  Sub-directory `AGENTS.md` files load automatically with domain detail.
+* **For human readers:** Full annotated directory index follows the matrix.
+
+---
+
+## Quick-Route: Identify Your Task Type
+
+| If you are modifying... | Adopt role | Matrix gate? | Sub-AGENTS.md auto-loads? |
+| --- | --- | --- | --- |
+| `src/phids/engine/systems/` or `engine/core/` | `03-engine-developer` | YES | `src/phids/engine/AGENTS.md` |
+| `src/phids/api/schemas/` or `api/services/` | `02-scientific-architect` | YES | `src/phids/api/AGENTS.md` |
+| `src/phids/api/routers/` or `api/presenters/` or `templates/` | `07-api-and-ui-developer` | NO | `src/phids/api/AGENTS.md` |
+| `tests/` | `04-qa-automator` | YES (matrix tests) | - |
+| `docs/` | `05-docs-librarian` | NO | `docs/AGENTS.md` |
+| `.agents/` | `05-docs-librarian` | NO | - |
+| `scripts/` | `04-qa-automator` | NO | - |
+| `.github/` or `pyproject.toml` | `06-git-operator` | NO | - |
+| Cross-cutting / planning | `01-orchestrator` | DEPENDS | - |
+| Zarr / Polars / telemetry | `08-telemetry-and-data-engineer` | NO | - |
+| Matrix coverage audit | `09-matrix-auditor` | YES | - |
+| Branchless mask verification | `10-causal-verifier` | YES | - |
+
+---
+
+## Workflow Dispatch
+
+| Slash Command | Workflow File | Pre-load roles |
+| --- | --- | --- |
+| `/epistemic-soundness-audit` | [epistemic-soundness-audit.md](workflows/epistemic-soundness-audit.md) | `02`, `09`, `10` |
+| `/matrix-tdd-refactor` | [matrix-tdd-refactor.md](workflows/matrix-tdd-refactor.md) | `03`, `04`, `09` |
+| `/validate-full-stack` | [validate-full-stack.md](workflows/validate-full-stack.md) | all |
+| `/implement-scientific-model` | [implement-scientific-model.md](workflows/implement-scientific-model.md) | `02`, `03` |
+| `/matrix-drift-reconciliation` | [matrix-drift-reconciliation.md](workflows/matrix-drift-reconciliation.md) | `09`, `10` |
+| `/vertical-slice-development` | [vertical-slice-development.md](workflows/vertical-slice-development.md) | `01` + all |
+| `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` |
+| `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` |
+
+---
+
+## Mandatory Pre-Commit Gates
+
+When `Matrix gate? = YES`:
+
+```bash
+uv run python scripts/audit_matrix_coverage.py
+uv run python scripts/verify_matrix_trace_parity.py --all
+uv run pytest tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
+uv run ruff check src/ && uv run mypy src/
+```
+
+---
+
+## MCP Tool Priority
+
+| Task | Use MCP tool (not grep/find) |
+| --- | --- |
+| Simulation state | `runtime_snapshot` |
+| Batch job status | `query_batch_jobs` |
+| Diagnostic logs | `query_diagnostic_logs` |
+| Telemetry schema | `inspect_telemetry_schema` |
+| Config / draft | `phids://config/draft.json` |
+
+---
+
+## Restricted Memory Policy
+
+Load ONLY when the user explicitly requests:
+
+| Resource | Trigger keyword |
+| --- | --- |
+| `.agents/memory/bolt.md` | "HPC", "performance history", "benchmark learnings" |
+| `.agents/memory/chisel.md` | "refactor history", "modularization learnings" |
+| `.agents/memory/canon.md` | "canon", "milestones" |
+| `.agents/memory/complexity.md` | "complexity history" |
+| `.agents/memory/palette.md` | "UI history", "design decisions" |
+| `.agents/memory/architecture_state_map.md` | "system topology", "full architecture" |
+| `.agents/manifesto/phids-core-philosophy.md` | "manifesto", "historical" |
+
+---
+
+## Autonomous Agent Ecosystem Directory
 
 This directory houses the autonomous agent architecture, role specializations, hard behavioral constraints (rules), operational workflows, executable skills, and collective memory for the Plant-Herbivore Interaction & Defense Simulator (PHIDS).
 
