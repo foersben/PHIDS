@@ -88,10 +88,12 @@ Learning: The `src/phids/api/presenters/dashboard/cell_details.py` file grew to 
 Action: When dealing with presentation layers that handle distinct application modes (e.g., live engine vs draft builder), extract them into isolated modules within a package, and rely on `__init__.py` to provide a unified public interface. This preserves backwards compatibility for importers while eliminating the monolith.
 
 ## 2026-10-27 - Trigger Re-arming State Coupling
+
 **Learning:** The `SubstanceComponent` lacked sufficient state memory to distinguish between a newly triggered synthesis event and a continuing synthesis event waiting for its activation condition. Both states appeared identical (`active=False`, `synthesis_remaining=0`). This led to premature resetting of `synthesis_remaining` in `_apply_synthesize_action`. Furthermore, `_process_single_trigger` incorrectly bypassed activation condition checks for `SynthesizeSubstanceAction`.
 **Action:** Introduced `triggered_last_tick` to `SubstanceComponent`, updated during `_phase_index_and_clean_substances`. This decouples the state and correctly identifies whether a synthesis trigger is a new event (where it should re-arm) versus an ongoing waiting phase. Never use zeroed countdowns (`synthesis_remaining <= 0`) as the sole proxy for state transitions in discrete simulation loops.
 
 ## 2026-08-16 - Telemetry API Refactoring: Extracted Chart.js overlay logic to reduce complexity
+
 Learning: Extracting logic that iterates over raw dictionary-based telemetry into smaller helper functions eliminates deeply nested iterations (such as those previously found in `telemetry_chartjs_data`) and drastically improves the cognitive complexity score.
 Action: When extracting large route handlers with multi-layered dictionary accesses into packages, split the dictionary traversal logic into separate private helper functions (like `_overlay_flora_data`) rather than keeping them inside the main handler.
 
@@ -105,3 +107,9 @@ Action: Next time you split an API router module, ensure that `__init__.py` acts
 Learning: When extracting a large FastAPI router module (like `ui.py`) into smaller cohesive packages (`core.py`, `config.py`, `database.py`, `diagnostics.py`, `batch.py`), it is critical to expose a unified interface in the `__init__.py` using `router.include_router(sub_router)`. Additionally, any tests that mock module-level variables like `BIO_DB_PATH` in the original monolith must be updated to target the specific extracted module where the variable now resides (e.g., `ui_database.BIO_DB_PATH`) rather than the package root, otherwise monkeypatching will silently fail or raise `AttributeError`.
 
 Action: Next time an API router module is split, immediately search for uses of `monkeypatch.setattr` targeting its global variables and update them to point to the correct new submodule.
+
+## 2024-10-31 - Extracting the DraftState monolith
+
+Learning: The `src/phids/api/ui_state/state.py` file had grown into a monolith handling not only the core dataclass definition of `DraftState`, but also complex translation logic (`build_sim_config`, `from_sim_config`), a global singleton pattern (`get_draft`, `set_draft`), and JSON-based file persistence. By refactoring it into a `state/` package (`models.py`, `convert.py`, `persistence.py`, `singleton.py`) and re-exporting the identical public interface through `__init__.py`, we preserved strict backward compatibility while improving cohesion. One key to success was ensuring that inner helper modules only import specifically what they need, avoiding cyclic dependencies between the pure class definition and the conversion rules.
+
+Action: Always dismantle large UI state management files by separating the pure data model from its associated persistence and translation behaviors, and use an `__init__.py` to maintain a unified import facade for the rest of the application.
