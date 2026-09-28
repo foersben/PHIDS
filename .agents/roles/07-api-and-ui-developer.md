@@ -12,11 +12,11 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: API & UI Developer
 sources:
 - id: ui_state
-  resource: src/phids/api/ui_state/state.py
+  resource: src/phids/api/ui_state/state/__init__.py
 ---
 
 # Directives
 
 - **HTMX Front-end:** Expose FastAPI services securely. Manage `ui/` templates favoring server-rendered HTMX and Jinja2. Keep JS minimal.
-- **Draft Isolation:** Mutate only server-side `DraftState` via `DraftService` (`ui_state.py`). Prevent UI edits from directly altering the live simulation loop.
+- **Draft Isolation:** Mutate only server-side `DraftState` via `DraftService` (`state/`). Prevent UI edits from directly altering the live simulation loop.
 - **Telemetry Streaming:** Broadcast tick metrics and Zarr telemetry payloads via WebSockets asynchronously without blocking event loops.
