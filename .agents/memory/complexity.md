@@ -98,3 +98,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 7
 * **Performance Assessment:** The extraction of the loop body into a helper function introduces negligible function call overhead. The benchmark results confirmed zero performance regression across the engine's core systems and hot paths.
 * **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
+
+## 2026-09-28 - Complexity Refactoring Report
+* **Target Function:** src/phids/engine/systems/interaction/feeding.py `_resolve_swarm_feeding`
+* **Selection Rationale:** Selected due to a complexity score of 15. The function iteratively processed co-located entities with nested compatibility and state checks. Extracting the inner loop into `_process_single_entity` provided a clean abstraction with negligible overhead, meeting the trade-off of high benefit and low performance risk.
+* **Before/After Score:** 15 vs. 11
+* **Performance Assessment:** Ran `uv run pytest tests/benchmarks/`. Performance remained stable; no overhead introduced by the clean abstraction in the interaction system.
+* **Test Verification:** Confirmed that all linting, unit tests, and complexity checks pass.
