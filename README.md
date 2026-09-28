@@ -297,11 +297,11 @@ The ECS engine relies heavily on Numba JIT compilation. To ensure both logical c
 
 Computational simulation logic must mirror physical laws and biological equations to exact floating-point precision. PHIDS maintains specialized test suites for mathematical conservation:
 
-* **Thermodynamic Energy Balance (`just test-scientific`):** Enforces First Law of Thermodynamics compliance ($\Delta E_{\text{herbivore}} + E_{\text{digestive\_loss}} = \Delta E_{\text{plant\_consumed}}$, $\text{rel\_tol} \le 1\times 10^{-6}$), Holling Type II asymptotic saturation bounds ($I(N) \le 1/T_h$), and monotone Hill defense induction curves.
+* **Thermodynamic Energy Balance (`just test-scientific`):** Enforces First Law of Thermodynamics compliance ($\Delta E_{\text{herbivore}} + E_{\text{digestive loss}} = \Delta E_{\text{plant consumed}}$, $\text{rtol} \le 1\times 10^{-6}$), Holling Type II asymptotic saturation bounds ($I(N) \le 1/T_h$), and monotone Hill defense induction curves.
 * **PDE Advection Conservation (`just test-scientific`):** Verifies semi-Lagrangian chemical mass conservation across toroidal boundaries ($\nabla \cdot \vec{v} = 0$, $\text{rtol} \le 1\times 10^{-5}$) and asserts chemical concentration non-negativity ($c \ge 0.0$) with tail-zeroing below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
 * **Bit-Exact Replay Playback (`just test-replay`):** Asserts that evaluation outcomes serialized tick-by-tick into compressed Zarr matrices can be played back with zero numerical divergence, completely bypassing engine simulation logic.
 * **Mutation Testing (`just mutate`):** Validates test-suite fault-detection power via Mutmut by injecting mutations into core movement and interaction kernels.
-* **Property-Based Testing (Hypothesis):** Aggressively stress-tests mathematical invariants, half-life degradation rates, and toroidal coordinate wrapping ($x \ \& \ (W - 1) \equiv x \pmod{W}$) across thousands of pseudo-random parameter combinations.
+* **Property-Based Testing (Hypothesis):** Aggressively stress-tests mathematical invariants, half-life degradation rates, and toroidal coordinate wrapping (`x & (W - 1) == x % W`) across thousands of pseudo-random parameter combinations.
 
 ### Causal Data-Flow Matrix Parity Testing (Rule 05)
 
