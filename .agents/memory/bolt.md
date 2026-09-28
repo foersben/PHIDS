@@ -95,3 +95,8 @@ Action: Rely on invariant synchronization to safely drop defensive dictionary lo
 
 **Learning:** When making a defensive copy of a component set before iterating in a tight ECS hot loop (where mutations like `collect_garbage` might alter the original set and raise `RuntimeError: Set changed size during iteration`), `list(component_set)` is significantly faster than `tuple(component_set)`. CPython's list allocation is highly optimized and often reuses internal memory buffers, whereas `tuple` construction from an unknown-sized iterable involves additional overhead. In microbenchmarks on large component sets, `list()` outperforms `tuple()` by roughly 30%.
 **Action:** Always use `list(world._component_index.get(..., set()))` instead of `tuple(...)` when you need a mutable-safe snapshot of ECS component IDs for iteration on the hot path.
+
+## 2026-08-15 - [Do not replace math built-ins with manual conditionals in Numba]
+
+**Learning:** During profiling, replacing standard `abs()` and `max()` calls with manual `if/elif` logic inside tight mathematical loops was identified as an anti-pattern when using Numba `@njit`. Numba and its underlying LLVM compiler automatically lower these built-ins to highly optimized, branchless intrinsics (e.g., `llvm.fabs`). Manual conditionals introduce branch misprediction overhead, degrade performance, and actively break Numba's `prange` automatic OpenMP reduction inference.
+**Action:** Always trust modern compiler intrinsic optimizations for basic math like `abs()` and `max()`. Do not replace them with verbose manual conditional blocks in JIT kernels, as doing so sacrifices readability and negatively impacts performance.
