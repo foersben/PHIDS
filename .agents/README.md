@@ -258,9 +258,13 @@ Workflows in `.agents/workflows/` coordinate multi-phase tasks:
 
 ---
 
-## 6. Automated Quality Gates & Skills
+## 6. Automated Quality Gates & Skills Architecture
 
-Quality is enforced programmatically through scripts and skills in `.agents/skills/`:
+Quality and computational invariants are enforced programmatically through repository scripts and native Antigravity skills residing in `.agents/skills/`.
+
+### 6.1. Pre-Commit Gate Pipeline
+
+Every commit must satisfy 18 deterministic pre-commit hooks before being cryptographically signed:
 
 ```mermaid
 graph TD
@@ -280,17 +284,147 @@ graph TD
     Gates -->|Any Failed| Halt[Halt & Escalate to Specialist]
 ```
 
-### Specialist Skills Directory
+### 6.2. The Four-Tier Governance & Skills Model
 
-Programmatic verification and execution harnesses reside in [`.agents/skills/`](skills/README.md). Antigravity automatically registers each skill into the agent's runtime context:
+In the PHIDS agent architecture, skills occupy the deterministic execution layer beneath roles, rules, and workflows:
 
-* **[`analyze-zarr`](skills/analyze-zarr/SKILL.md):** Inspects Zarr arrays to assert correct tensor shapes, chunk configurations, and schema serialization.
-* **[`audit-okf-matrix-coverage`](skills/audit-okf-matrix-coverage/SKILL.md):** Scans `docs/scientific_model/` and reports temporal state transitions missing formal Data-Flow Matrix specifications.
-* **[`auto-reconcile-matrix-drift`](skills/auto-reconcile-matrix-drift/SKILL.md):** Captures numerical execution traces and automatically updates Markdown table rows when parameters drift intentionally.
-* **[`run-benchmarks`](skills/run-benchmarks/SKILL.md):** Executes `pytest-benchmark` performance tests to guarantee zero regression on hot-path spatial indexing loops.
-* **[`validate-okf`](skills/validate-okf/SKILL.md):** Enforces OKF v0.2 frontmatter compliance, graph link validity, and trust tier definitions across all markdown assets.
-* **[`verify-matrix-trace-parity`](skills/verify-matrix-trace-parity/SKILL.md):** Asserts exact numerical 1:1 parity between Markdown Data-Flow Matrix tables and live Pytest trace fixtures.
-* **[`visualize-okf`](skills/visualize-okf/SKILL.md):** Compiles an interactive HTML knowledge graph visualization of the PHIDS ecosystem.
+```mermaid
+graph TD
+    subgraph Governance [Behavioral Governance]
+        Roles[1. Specialist Roles: .agents/roles/<br/>Jurisdiction, perspective, and persona identity]
+        Rules[2. Architectural Rules: .agents/rules/<br/>Hard system invariants, ECS DOD, Numba constraints, GPG]
+    end
+
+    subgraph Execution [Operational Execution]
+        Workflows[3. Slash Workflows: .agents/workflows/<br/>Multi-step interactive and background pipelines]
+        Skills[4. Executable Skills: .agents/skills/<br/>Deterministic command cheatsheets and verification runners]
+    end
+
+    Roles --> Workflows
+    Rules --> Workflows
+    Workflows --> Skills
+```
+
+* **Specialist Roles (`.agents/roles/*.md`):** Establish jurisdiction and mental models (e.g., `@engine-developer`, `@matrix-auditor`).
+* **Architectural Rules (`.agents/rules/*.md`):** Hard invariants enforced by pre-commit and CI (e.g., Rule 00 `uv run`, Rule 02 float masks, Rule 05 parity).
+* **Slash Workflows (`.agents/workflows/*.md`):** Multi-step operational pipelines triggered via slash commands (e.g., `/matrix-tdd-refactor`, `/jules-session-triage`).
+* **Specialist Skills (`.agents/skills/*/SKILL.md`):** Atomic, deterministic playbooks that wrap repository verification scripts into standardized AI execution units.
+
+### 6.3. Dynamic Discovery & Agent Registration
+
+Skills in PHIDS are **not** static text; they are natively discovered and mounted by Google Antigravity:
+
+* **Auto-Discovery:** At startup, Antigravity scans `.agents/skills/` for all subdirectories containing a valid `SKILL.md` with YAML frontmatter.
+* **Context Injection:** Antigravity automatically registers every skill into the active AI toolbelt under `<skills>`, defining the skill name, trigger, and description.
+* **Zero-Hallucination Execution:** When an agent encounters an operational trigger, it views the corresponding `SKILL.md` to retrieve exact, tested CLI flags and arguments rather than improvising shell commands.
+
+### 6.4. Specialist Skills Catalog
+
+| Skill Name | Path | Primary Python Harness | Primary Role Trigger |
+| --- | --- | --- | --- |
+| **Analyze Zarr Telemetry** | [analyze-zarr](skills/analyze-zarr/SKILL.md) | `scripts/inspect_zarr.py` | `@telemetry-and-data-engineer` after running scenarios |
+| **Audit OKF Matrix Coverage** | [audit-okf-matrix-coverage](skills/audit-okf-matrix-coverage/SKILL.md) | `scripts/audit_matrix_coverage.py` | `@matrix-auditor` during doc & cascade reviews |
+| **Auto Reconcile Matrix Drift** | [auto-reconcile-matrix-drift](skills/auto-reconcile-matrix-drift/SKILL.md) | `scripts/reconcile_matrix_drift.py` | `@causal-verifier` on intentional parameter drift |
+| **Run Benchmarks** | [run-benchmarks](skills/run-benchmarks/SKILL.md) | `pytest tests/benchmarks/` | `@engine-developer`, `Bolt` before PR opening |
+| **Validate Open Knowledge Format** | [validate-okf](skills/validate-okf/SKILL.md) | `scripts/validate_okf.py` | `@docs-librarian`, all agents editing `docs/` |
+| **Verify Matrix Trace Parity** | [verify-matrix-trace-parity](skills/verify-matrix-trace-parity/SKILL.md) | `scripts/verify_matrix_trace_parity.py` | `@matrix-auditor`, `@causal-verifier`, pre-commit gate |
+| **Visualize Open Knowledge Format** | [visualize-okf](skills/visualize-okf/SKILL.md) | `scripts/visualize_okf.py` | `@docs-librarian` for graph builds and audits |
+
+### 6.5. Deep Skill Invariants & CLI Execution
+
+#### Analyze Zarr Telemetry (`analyze-zarr`)
+
+* **Purpose:** Inspects multi-species simulation recordings stored in Zarr format.
+* **Invariants:** Validates chunk structure, time dimension indexing, floating-point dtypes, and compression codecs.
+* **CLI Command:**
+
+```bash
+uv run python scripts/inspect_zarr.py path/to/replay.zarr
+```
+
+#### Audit OKF Matrix Coverage (`audit-okf-matrix-coverage`)
+
+* **Purpose:** Enforces Rule 05 by scanning `docs/scientific_model/` for temporal state transitions missing formal Data-Flow Matrix specifications.
+* **Invariants:** Asserts that every biological or environmental interaction concept document has an associated Markdown matrix table.
+* **CLI Command:**
+
+```bash
+uv run python scripts/audit_matrix_coverage.py --dir docs/scientific_model/
+```
+
+#### Auto Reconcile Matrix Drift (`auto-reconcile-matrix-drift`)
+
+* **Purpose:** Automatically captures runtime execution traces and updates Markdown table rows when simulation parameters drift intentionally.
+* **Invariants:** Parses AST tables, executes the corresponding test trace, and rewires numerical cells while preserving explanatory narrative prose.
+* **CLI Command:**
+
+```bash
+uv run python scripts/reconcile_matrix_drift.py --doc docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md
+```
+
+#### Run Benchmarks (`run-benchmarks`)
+
+* **Purpose:** Executes `pytest-benchmark` suites to ensure zero throughput regression in Numba `@njit` kernels and spatial hash grids.
+* **CLI Command:**
+
+```bash
+uv run pytest tests/benchmarks/ --benchmark-only --benchmark-json artifacts/benchmark_results.json
+```
+
+#### Validate Open Knowledge Format (`validate-okf`)
+
+* **Purpose:** Validates OKF v0.2 YAML frontmatter schemas, trust tier definitions, freshness timestamps, and internal link structure.
+* **CLI Command:**
+
+```bash
+uv run python scripts/validate_okf.py
+```
+
+#### Verify Matrix Trace Parity (`verify-matrix-trace-parity`)
+
+* **Purpose:** Enforces Rule 05-A by asserting exact 1:1 numerical parity between documented Markdown tables and runtime simulation arrays.
+* **CLI Command:**
+
+```bash
+uv run python scripts/verify_matrix_trace_parity.py --all
+```
+
+#### Visualize Open Knowledge Format (`visualize-okf`)
+
+* **Purpose:** Generates an interactive Cytoscape.js knowledge graph visualization from all OKF markdown files and their relational links.
+* **CLI Command:**
+
+```bash
+uv run python scripts/visualize_okf.py
+```
+
+### 6.6. How to Author and Register a New Skill
+
+When introducing new programmatic verification tools or execution scripts into PHIDS:
+
+* **Create Directory:** Create `.agents/skills/<skill-name>/`.
+* **Add `SKILL.md`:** Populate with standard OKF frontmatter:
+
+```yaml
+---
+type: Agent Skill
+title: <Human-Readable Skill Name>
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
+description: <One-line summary of what the skill executes>
+tags: [python, ecs, verification]
+generated: {by: process:okf-updater, at: "<ISO-TIMESTAMP>"}
+verified: {by: process:okf-updater, at: "<ISO-TIMESTAMP>"}
+name: <Skill Display Name>
+sources:
+- id: script_id
+  resource: scripts/<script_name>.py
+---
+```
+
+* **Define Trigger & Execution:** Specify `# <Skill Display Name>` followed by `## Trigger` and `## Execution` with the exact `uv run` command.
+* **Register in Indices:** Add the skill entry to [`.agents/README.md`](README.md), [`.agents/index.md`](index.md), and [`.agents/AGENTS.md`](AGENTS.md).
 
 ---
 
