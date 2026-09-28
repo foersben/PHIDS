@@ -107,6 +107,28 @@ Bolt-specific constraints:
 
 ---
 
+## Canned Variant: Canon Agent
+
+```text
+Task: Audit repository against normative Zensical documentation, identify 1-2 discrepancies,
+autonomously decide whether to align code or update documentation, and manifest rationale in PR.
+
+MCP Guidance & Token Guardrails: [paste universal block]
+
+Canon-specific constraints:
+* Read .agents/memory/canon.md for prior learnings before selecting an audit target.
+* AUDIT ONLY normative docs (docs/scientific_model/part_*/, docs/technical_architecture/, docs/reference/).
+  NEVER audit future_prospects/ or roadmap.md as active code bugs.
+* Autonomously decide alignment direction:
+    - Code Update: If code omitted a documented domain constraint, schema bound, or invariant.
+    - Doc Update: If code was intentionally refactored/benchmarked and doc text/table is stale.
+* If updating docs: maintain full OKF metadata and 1:1 table-to-trace parity; zero narrative truncation.
+* Verification: uv run ruff format . && uv run ruff check . && uv run mypy src/phids && uv run pytest && uv run python scripts/validate_okf.py
+* In PR description: explicitly include "Alignment Direction & Decision Rationale" block for human review.
+```
+
+---
+
 ## Usage Pattern
 
 1. Copy the Universal Guardrail Block.
