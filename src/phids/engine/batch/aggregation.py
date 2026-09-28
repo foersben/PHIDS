@@ -92,7 +92,7 @@ def _stack_scalar_aggregates(aligned: list[list[TelemetryRow]]) -> dict[str, obj
     death_starvation = _extract_scalar_matrix(aligned, "death_starvation")
 
     # Extinction probability: fraction of runs where flora hit zero at any tick
-    extinction_count = int(np.sum(np.any(flora_pop == 0, axis=1)))
+    extinction_count = int(np.sum(flora_pop.min(axis=1) == 0))
     extinction_probability = extinction_count / len(aligned) if aligned else 0.0
     survival_probability_curve = np.mean(flora_pop > 0, axis=0).tolist() if aligned else []
 
