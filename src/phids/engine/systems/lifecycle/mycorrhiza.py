@@ -198,10 +198,11 @@ def _establish_mycorrhizal_connections(
         energy layers in this same lifecycle pass.
     """
     excluded = excluded_entity_ids or set()
+    plants: list[PlantComponent]
     if plants_cache is not None:
-        plants: list[PlantComponent] = [p for p in plants_cache if p.entity_id not in excluded]
+        plants = [p for p in plants_cache if p.entity_id not in excluded]
     else:
-        plants: list[PlantComponent] = [
+        plants = [
             e.get_component(PlantComponent) for e in world.query(PlantComponent) if e.entity_id not in excluded
         ]
     plants.sort(key=lambda plant: (plant.y, plant.x, plant.species_id, plant.entity_id))
