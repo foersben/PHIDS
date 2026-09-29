@@ -117,3 +117,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 7
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of a helper function call here is completely negligible.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+## 2026-09-29 - Complexity Refactoring Report
+* **Target Function:** _build_live_plant_payload and relatives in src/phids/api/presenters/dashboard/cell_details/live.py
+* **Selection Rationale:** Parameter count was too high (7-12) for several tightly coupled serialization functions, driving up cognitive load.
+* **Before/After Score:** 5 -> 5 (Cognitive complexity was low, but argument list was large). Parameter count reduced from 7/12 to 2.
+* **Performance Assessment:** Replaced multi-arg passing with a frozen dataclass passed by reference, maintaining zero copying and matching original overhead.
+* **Test Verification:** Tests passed, output parity maintained.

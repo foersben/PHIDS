@@ -9,6 +9,7 @@ mycorrhizal links, and diffused concentrations at a specific grid coordinate.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from phids.api.presenters.dashboard.mycorrhizal import (
@@ -37,12 +38,24 @@ if TYPE_CHECKING:
     from phids.engine.loop import SimulationLoop
 
 
+@dataclass(slots=True, frozen=True)
+class LiveCellContext:
+    """Context object holding immutable references for cell serialization."""
+
+    env: GridEnvironment
+    flora_names: dict[int, str]
+    herbivore_names: dict[int, str]
+    herbivore_params: dict[int, Any]
+    plant_lookup: dict[int, PlantComponent]
+    owned_substances: dict[int, list[SubstanceComponent]]
+    substance_names: dict[int, str]
+    cell_toxin_peak: float
+    cell_signal_peak: float
+
+
 def _get_live_substances(
     plant: PlantComponent,
-    owned_substances: dict[int, list[SubstanceComponent]],
-    env: GridEnvironment,
-    herbivore_names: dict[int, str],
-    substance_names: dict[int, str],
+    ctx: LiveCellContext,
 ) -> list[dict[str, object]]:
     """Helper to collect and serialize visible active substances on a plant.
 
@@ -53,23 +66,24 @@ def _get_live_substances(
 
     Args:
         plant: The plant component.
-        owned_substances: The owned substances.
-        env: The grid environment.
-        herbivore_names: The herbivore names.
-        substance_names: The substance names.
+        ctx: The live cell context.
 
     Returns:
         The list of visible active substances.
     """
     plant_substances = sorted(
-        (substance for substance in owned_substances.get(plant.entity_id, []) if _is_live_substance_visible(substance)),
+        (
+            substance
+            for substance in ctx.owned_substances.get(plant.entity_id, [])
+            if _is_live_substance_visible(substance)
+        ),
         key=lambda substance: (substance.is_toxin, substance.substance_id),
     )
     visible_substances = [
         _serialize_live_substance(
             substance,
-            herbivore_names=herbivore_names,
-            substance_names=substance_names,
+            herbivore_names=ctx.herbivore_names,
+            substance_names=ctx.substance_names,
         )
         for substance in plant_substances
     ]
@@ -80,24 +94,24 @@ def _get_live_substances(
         )
         for payload in visible_substances
     }
-    for signal_id in range(env.num_signals):
-        if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
+    for signal_id in range(ctx.env.num_signals):
+        if float(ctx.env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
             continue
         substance_key = (signal_id, False)
         if substance_key in visible_keys:
             continue
         visible_substances.append(
-            _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
+            _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=ctx.substance_names)
         )
         visible_keys.add(substance_key)
-    for toxin_id in range(env.num_toxins):
-        if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
+    for toxin_id in range(ctx.env.num_toxins):
+        if float(ctx.env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
             continue
         substance_key = (toxin_id, True)
         if substance_key in visible_keys:
             continue
         visible_substances.append(
-            _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
+            _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=ctx.substance_names)
         )
         visible_keys.add(substance_key)
     visible_substances.sort(
@@ -111,28 +125,26 @@ def _get_live_substances(
 
 def _get_live_mycorrhizal_neighbours(
     plant: PlantComponent,
-    plant_lookup: dict[int, PlantComponent],
-    flora_names: dict[int, str],
+    ctx: LiveCellContext,
 ) -> list[dict[str, object]]:
     """Helper to collect mycorrhizal neighbors details.
 
     Args:
         plant: The plant component.
-        plant_lookup: The plant lookup.
-        flora_names: The flora names.
+        ctx: The live cell context.
 
     Returns:
         The list of mycorrhizal neighbors.
     """
     mycorrhizal_neighbours = []
     for neighbour_id in sorted(plant.mycorrhizal_connections):
-        neighbour = plant_lookup.get(neighbour_id)
+        neighbour = ctx.plant_lookup.get(neighbour_id)
         if neighbour is None:
             continue
         mycorrhizal_neighbours.append(
             {
                 "entity_id": neighbour.entity_id,
-                "name": flora_names.get(neighbour.species_id, f"Flora {neighbour.species_id}"),
+                "name": ctx.flora_names.get(neighbour.species_id, f"Flora {neighbour.species_id}"),
                 "x": neighbour.x,
                 "y": neighbour.y,
                 "inter_species": neighbour.species_id != plant.species_id,
@@ -143,12 +155,7 @@ def _get_live_mycorrhizal_neighbours(
 
 def _build_live_plant_payload(
     plant: PlantComponent,
-    flora_names: dict[int, str],
-    plant_lookup: dict[int, PlantComponent],
-    owned_substances: dict[int, list[SubstanceComponent]],
-    env: GridEnvironment,
-    herbivore_names: dict[int, str],
-    substance_names: dict[int, str],
+    ctx: LiveCellContext,
 ) -> dict[str, object]:
     """Helper to construct the detailed live plant presentation structure.
 
@@ -158,18 +165,13 @@ def _build_live_plant_payload(
 
     Args:
         plant: The plant component.
-        flora_names: The flora names.
-        plant_lookup: The plant lookup.
-        owned_substances: The owned substances.
-        env: The grid environment.
-        herbivore_names: The herbivore names.
-        substance_names: The substance names.
+        ctx: The live cell context.
 
     Returns:
         The presentation structure.
     """
-    visible_substances = _get_live_substances(plant, owned_substances, env, herbivore_names, substance_names)
-    mycorrhizal_neighbours = _get_live_mycorrhizal_neighbours(plant, plant_lookup, flora_names)
+    visible_substances = _get_live_substances(plant, ctx)
+    mycorrhizal_neighbours = _get_live_mycorrhizal_neighbours(plant, ctx)
 
     struct_mass = plant.structural_mass
     max_struct = plant.max_structural_mass
@@ -180,7 +182,7 @@ def _build_live_plant_payload(
     return {
         "entity_id": plant.entity_id,
         "species_id": plant.species_id,
-        "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
+        "name": ctx.flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
         "energy": plant.energy,
         "max_energy": plant.max_energy,
         "base_energy": plant.base_energy,
@@ -209,26 +211,20 @@ def _build_live_plant_payload(
 
 def _build_live_swarm_payload(
     swarm: SwarmComponent,
-    herbivore_names: dict[int, str],
-    herbivore_params: dict[int, Any] | None = None,
-    cell_toxin_peak: float = 0.0,
-    cell_signal_peak: float = 0.0,
+    ctx: LiveCellContext,
     cell_plant_energy: float = 0.0,
 ) -> dict[str, object]:
     """Helper to construct the detailed live swarm presentation structure.
 
     Args:
         swarm: The swarm component.
-        herbivore_names: The herbivore names.
-        herbivore_params: Optional mapping of species_id to species params schema.
-        cell_toxin_peak: The toxin peak in the cell.
-        cell_signal_peak: The signal peak in the cell.
+        ctx: The live cell context.
         cell_plant_energy: Available plant energy in the cell.
 
     Returns:
         The presentation structure.
     """
-    sp_params = herbivore_params.get(swarm.species_id) if herbivore_params else None
+    sp_params = ctx.herbivore_params.get(swarm.species_id)
     inc_factor = sp_params.incidental_mortality_factor if sp_params else 0.0
     inc_mode = sp_params.incidental_mortality_mode if sp_params else "trampling"
     upkeep_per_ind = sp_params.energy_upkeep_per_individual if sp_params else 0.05
@@ -241,7 +237,7 @@ def _build_live_swarm_payload(
     return {
         "entity_id": swarm.entity_id,
         "species_id": swarm.species_id,
-        "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
+        "name": ctx.herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
         "population": swarm.population,
         "initial_population": swarm.initial_population,
         "energy": swarm.energy,
@@ -264,9 +260,9 @@ def _build_live_swarm_payload(
         ),
         "repelled": swarm.repelled,
         "repelled_ticks_remaining": swarm.repelled_ticks_remaining,
-        "intoxicated": cell_toxin_peak > 0.0,
-        "signal_level": cell_signal_peak,
-        "toxin_level": cell_toxin_peak,
+        "intoxicated": ctx.cell_toxin_peak > 0.0,
+        "signal_level": ctx.cell_signal_peak,
+        "toxin_level": ctx.cell_toxin_peak,
     }
 
 
@@ -274,15 +270,7 @@ def _collect_live_plants_and_swarms(
     x: int,
     y: int,
     world: ECSWorld,
-    env: GridEnvironment,
-    flora_names: dict[int, str],
-    herbivore_names: dict[int, str],
-    herbivore_params: dict[int, Any],
-    plant_lookup: dict[int, PlantComponent],
-    owned_substances: dict[int, list[SubstanceComponent]],
-    substance_names: dict[int, str],
-    cell_toxin_peak: float,
-    cell_signal_peak: float,
+    ctx: LiveCellContext,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Helper to query the ECS registry and serialize co-located plants and swarms.
 
@@ -290,15 +278,7 @@ def _collect_live_plants_and_swarms(
         x: The x-coordinate of the cell.
         y: The y-coordinate of the cell.
         world: The ECS world.
-        env: The grid environment.
-        flora_names: A dictionary mapping flora species IDs to their names.
-        herbivore_names: A dictionary mapping herbivore species IDs to their names.
-        herbivore_params: A dictionary mapping herbivore species IDs to their params.
-        plant_lookup: A dictionary mapping plant entity IDs to their plant components.
-        owned_substances: A dictionary mapping herbivore entity IDs to their owned substances.
-        substance_names: A dictionary mapping substance IDs to their names.
-        cell_toxin_peak: The peak toxin level in the cell.
-        cell_signal_peak: The peak signal level in the cell.
+        ctx: The live cell context.
 
     Returns:
         A tuple containing a list of plants and a list of swarms.
@@ -313,11 +293,7 @@ def _collect_live_plants_and_swarms(
         if entity.has_component(PlantComponent):
             plant = entity.get_component(PlantComponent)
             cell_plant_energy += plant.energy
-            plants.append(
-                _build_live_plant_payload(
-                    plant, flora_names, plant_lookup, owned_substances, env, herbivore_names, substance_names
-                )
-            )
+            plants.append(_build_live_plant_payload(plant, ctx))
 
     for entity_id in sorted(world.entities_at(x, y)):
         if not world.has_entity(entity_id):
@@ -328,10 +304,7 @@ def _collect_live_plants_and_swarms(
             swarms.append(
                 _build_live_swarm_payload(
                     swarm,
-                    herbivore_names,
-                    herbivore_params,
-                    cell_toxin_peak,
-                    cell_signal_peak,
+                    ctx,
                     cell_plant_energy,
                 )
             )
@@ -402,40 +375,43 @@ def build_live_cell_details(
     cell_signal_peak = float(env.signal_layers[:, x, y].max()) if env.num_signals > 0 else 0.0
     cell_toxin_peak = float(env.toxin_layers[:, x, y].max()) if env.num_toxins > 0 else 0.0
 
+    ctx = LiveCellContext(
+        env=env,
+        flora_names=flora_names,
+        herbivore_names=herbivore_names,
+        herbivore_params=herbivore_params,
+        plant_lookup=plant_lookup,
+        owned_substances=owned_substances,
+        substance_names=substance_names,
+        cell_toxin_peak=cell_toxin_peak,
+        cell_signal_peak=cell_signal_peak,
+    )
     plants, swarms = _collect_live_plants_and_swarms(
         x,
         y,
         world,
-        env,
-        flora_names,
-        herbivore_names,
-        herbivore_params,
-        plant_lookup,
-        owned_substances,
-        substance_names,
-        cell_toxin_peak,
-        cell_signal_peak,
+        ctx,
     )
 
     signal_concentrations = [
         {
             "substance_id": signal_id,
             "name": substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False)),
-            "value": float(env.signal_layers[signal_id, x, y]),
-            "value_pct": min(100.0, float(env.signal_layers[signal_id, x, y]) * 100.0),
+            "value": float(ctx.env.signal_layers[signal_id, x, y]),
+            "value_pct": min(100.0, float(ctx.env.signal_layers[signal_id, x, y]) * 100.0),
         }
-        for signal_id in range(env.num_signals)
-        if float(env.signal_layers[signal_id, x, y]) > 0.0
+        for signal_id in range(ctx.env.num_signals)
+        if float(ctx.env.signal_layers[signal_id, x, y]) > 0.0
     ]
     toxin_concentrations = [
         {
             "substance_id": toxin_id,
             "name": substance_names.get(toxin_id, _default_substance_name(toxin_id, is_toxin=True)),
-            "value": float(env.toxin_layers[toxin_id, x, y]),
-            "value_pct": min(100.0, float(env.toxin_layers[toxin_id, x, y]) * 100.0),
+            "value": float(ctx.env.toxin_layers[toxin_id, x, y]),
+            "value_pct": min(100.0, float(ctx.env.toxin_layers[toxin_id, x, y]) * 100.0),
         }
-        for toxin_id in range(env.num_toxins)
-        if float(env.toxin_layers[toxin_id, x, y]) > 0.0
+        for toxin_id in range(ctx.env.num_toxins)
+        if float(ctx.env.toxin_layers[toxin_id, x, y]) > 0.0
     ]
 
     return {
