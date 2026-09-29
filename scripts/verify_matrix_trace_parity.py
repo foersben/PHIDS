@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 # Ensure project root is on sys.path for test imports
 _ROOT = Path(__file__).resolve().parent.parent
@@ -27,6 +27,9 @@ from tests.integration.scientific_invariants.test_causal_data_flow_matrices impo
     generate_mycorrhizal_hop_trace,
     generate_phloem_translocation_trace,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def _extract_markdown_table(doc_path: Path) -> list[dict[str, str]]:
@@ -247,6 +250,34 @@ def verify_mitosis_matrix_parity(doc_path: Path) -> list[str]:
     return _verify_table_against_trace(doc_path, trace, _check_mitosis_row)
 
 
+def _process_target_doc(
+    doc: Path,
+    doc_registry: dict[str, Callable[[Path], list[str]]],
+) -> int:
+    """Process a single document to verify matrix parity.
+
+    Args:
+        doc: The Path to the markdown document.
+        doc_registry: The registry mapping document paths to verification functions.
+
+    Returns:
+        The number of errors encountered for this document.
+    """
+    rel_str = str(doc.relative_to(Path.cwd())) if doc.is_relative_to(Path.cwd()) else str(doc)
+    print(f"🔬 Verifying Data-Flow Matrix Parity for '{rel_str}'...")
+
+    verifier = doc_registry.get(rel_str, verify_phloem_matrix_parity)
+    errors = verifier(doc)
+    if errors:
+        print(f"❌ Parity Violations in '{rel_str}':")
+        for err in errors:
+            print(f"   • {err}")
+        return len(errors)
+
+    print("✅ 100% Numerical Parity verified against runtime Pytest trace.")
+    return 0
+
+
 def main() -> int:
     """Run trace parity verifier."""
     parser = argparse.ArgumentParser(description="Verify table-to-trace parity for OKF Data-Flow Matrices.")
@@ -279,18 +310,7 @@ def main() -> int:
 
     total_errors = 0
     for doc in targets:
-        rel_str = str(doc.relative_to(Path.cwd())) if doc.is_relative_to(Path.cwd()) else str(doc)
-        print(f"🔬 Verifying Data-Flow Matrix Parity for '{rel_str}'...")
-
-        verifier = doc_registry.get(rel_str, verify_phloem_matrix_parity)
-        errors = verifier(doc)
-        if errors:
-            total_errors += len(errors)
-            print(f"❌ Parity Violations in '{rel_str}':")
-            for err in errors:
-                print(f"   • {err}")
-        else:
-            print("✅ 100% Numerical Parity verified against runtime Pytest trace.")
+        total_errors += _process_target_doc(doc, doc_registry)
 
     return 1 if total_errors > 0 else 0
 

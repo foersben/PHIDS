@@ -110,3 +110,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Target Function:** src/phids/engine/systems/interaction/feeding.py `FeedingContext` and `_process_single_entity`
 * **Action:** Added comprehensive Google-style documentation for the newly extracted dataclass and helper function.
 * **Status:** Verified that all parameters, attributes, and return values are accurately documented.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `scripts/verify_matrix_trace_parity.py` - `main`
+* **Selection Rationale:** The main function reached a complexity of 15 due to a nested evaluation loop for printing test errors directly within the target iteration. Extracting this logic to `_process_target_doc` flattens the loop iteration while preserving structural behavior.
+* **Before/After Score:** 15 vs. 7
+* **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of a helper function call here is completely negligible.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
