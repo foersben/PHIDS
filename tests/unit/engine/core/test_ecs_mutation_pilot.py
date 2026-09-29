@@ -85,3 +85,26 @@ def test_ecs_entity_id_monotonicity() -> None:
     world.destroy_entity(entities[2].entity_id)
     e_new = world.create_entity()
     assert e_new.entity_id == 5
+
+
+def test_ecs_world_structural_version() -> None:
+    """Validate ECSWorld structural version increments accurately."""
+    world = ECSWorld()
+    v0 = world._structural_version
+
+    e1 = world.create_entity()
+    v1 = world._structural_version
+    assert v1 == v0 + 1, "Creating an entity should increment version by exactly 1"
+
+    comp = PlantComponent(e1.entity_id, 0, 5, 5, 10.0, 10.0, 10.0, 0.1, 1.0, 5, 1.0, 3.0, 1.0)
+    world.add_component(e1.entity_id, comp)
+    v2 = world._structural_version
+    assert v2 == v1 + 1, "Adding a component should increment version by exactly 1"
+
+    world.remove_component(e1.entity_id, PlantComponent)
+    v3 = world._structural_version
+    assert v3 == v2 + 1, "Removing a component should increment version by exactly 1"
+
+    world.destroy_entity(e1.entity_id)
+    v4 = world._structural_version
+    assert v4 == v3 + 1, "Destroying an entity should increment version by exactly 1"
