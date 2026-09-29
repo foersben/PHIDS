@@ -88,14 +88,17 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
     metrics.flora_alive = metrics.flora_population > 0
 
     total_flora_energy = 0.0
+
+    plant_pop = metrics.plant_pop_by_species
+    plant_energy = metrics.plant_energy_by_species
+    flora_species_alive = metrics.flora_species_alive
+
     for plant in plant_components:
         species_id = int(plant.species_id)
         total_flora_energy += plant.energy
-        metrics.flora_species_alive.add(species_id)
-        metrics.plant_pop_by_species[species_id] = metrics.plant_pop_by_species.get(species_id, 0) + 1
-        metrics.plant_energy_by_species[species_id] = (
-            metrics.plant_energy_by_species.get(species_id, 0.0) + plant.energy
-        )
+        flora_species_alive.add(species_id)
+        plant_pop[species_id] = plant_pop.get(species_id, 0) + 1
+        plant_energy[species_id] = plant_energy.get(species_id, 0.0) + plant.energy
 
     # Round to 6 decimals to prevent IEEE 754 ULP drift in telemetry
     metrics.total_flora_energy = round(total_flora_energy, 6)
@@ -107,29 +110,34 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
     metrics.herbivore_clusters = len(swarm_components)
     metrics.herbivores_alive = metrics.herbivore_clusters > 0
 
+    swarm_pop = metrics.swarm_pop_by_species
+    herbivore_species_alive = metrics.herbivore_species_alive
+
     for swarm in swarm_components:
         species_id = int(swarm.species_id)
         population = int(swarm.population)
         metrics.herbivore_population += population
         metrics.total_herbivore_population += population
-        metrics.herbivore_species_alive.add(species_id)
-        metrics.swarm_pop_by_species[species_id] = metrics.swarm_pop_by_species.get(species_id, 0) + population
+        herbivore_species_alive.add(species_id)
+        swarm_pop[species_id] = swarm_pop.get(species_id, 0) + population
 
     substance_entities = world.query(SubstanceComponent)
     substances: list[SubstanceComponent] = [e.get_component(SubstanceComponent) for e in substance_entities]
+
+    defense_cost = metrics.defense_cost_by_species
+    world_entities_get = world._entities.get
+
     for substance in substances:
         if not substance.active or substance.energy_cost_per_tick <= 0.0:
             continue
 
-        owner = world._entities.get(substance.owner_plant_id)
+        owner = world_entities_get(substance.owner_plant_id)
         if owner is None or not owner.has_component(PlantComponent):
             continue
 
         owner_plant = owner.get_component(PlantComponent)
         owner_species_id = int(owner_plant.species_id)
-        metrics.defense_cost_by_species[owner_species_id] = metrics.defense_cost_by_species.get(
-            owner_species_id, 0.0
-        ) + float(substance.energy_cost_per_tick)
+        defense_cost[owner_species_id] = defense_cost.get(owner_species_id, 0.0) + float(substance.energy_cost_per_tick)
 
     for sid in metrics.defense_cost_by_species:
         metrics.defense_cost_by_species[sid] = round(metrics.defense_cost_by_species[sid], 6)
