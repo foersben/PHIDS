@@ -19,7 +19,7 @@ import phids.api.main as api_main
 import phids.api.routers.ui.database as ui_database
 from phids.api.presenters.dashboard import build_live_dashboard_payload, extract_ui_snapshot
 from phids.api.services.draft.placements import add_plant_placement, add_swarm_placement
-from phids.api.services.draft.trigger_rules import add_trigger_rule
+from phids.api.services.draft.trigger_rules_pkg import add_trigger_rule
 from phids.api.ui_state.state import get_draft
 from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine.components.swarm import SwarmComponent

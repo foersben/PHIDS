@@ -23,7 +23,7 @@ import pytest
 from phids.api.services.draft.biotope import update_biotope
 from phids.api.services.draft.diet import set_diet_compatibility
 from phids.api.services.draft.substances import add_substance, remove_substance, update_substance
-from phids.api.services.draft.trigger_rules import add_trigger_rule
+from phids.api.services.draft.trigger_rules_pkg import add_trigger_rule
 from phids.api.ui_state.state import DraftState
 
 

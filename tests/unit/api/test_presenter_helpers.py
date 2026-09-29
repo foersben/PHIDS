@@ -34,7 +34,7 @@ from phids.api.services.draft.placements import (
     add_plant_placement,
     add_swarm_placement,
 )
-from phids.api.services.draft.trigger_rules import (
+from phids.api.services.draft.trigger_rules_pkg import (
     add_trigger_rule,
     default_activation_condition_for_rule,
     trigger_rule_by_index,

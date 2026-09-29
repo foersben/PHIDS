@@ -21,7 +21,7 @@ from phids.api.schemas.placement import InitialPlantPlacement, InitialSwarmPlace
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.schemas.species import DietCompatibilityMatrix, FloraSpeciesParams, HerbivoreSpeciesParams
 from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction, TriggerConditionSchema
-from phids.api.services.draft.trigger_rules import (
+from phids.api.services.draft.trigger_rules_pkg import (
     add_trigger_rule,
     parse_activation_condition_json,
     trigger_rule_by_index,

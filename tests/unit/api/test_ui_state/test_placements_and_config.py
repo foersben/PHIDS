@@ -24,7 +24,7 @@ from phids.api.services.draft.placements import (
     remove_plant_placement,
     remove_swarm_placement,
 )
-from phids.api.services.draft.trigger_rules import add_trigger_rule
+from phids.api.services.draft.trigger_rules_pkg import add_trigger_rule
 from phids.api.ui_state.state import DraftState, get_draft, reset_draft, set_draft
 from phids.api.ui_state.substances import SubstanceDefinition
 from phids.api.ui_state.triggers import TriggerRule

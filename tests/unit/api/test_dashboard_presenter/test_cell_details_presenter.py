@@ -25,7 +25,7 @@ from phids.api.schemas.species import (
 )
 from phids.api.schemas.triggers import HerbivoreAttackInitiator, PassiveDefensesSchema, TriggerConditionSchema
 from phids.api.services.draft.placements import add_plant_placement, add_swarm_placement
-from phids.api.services.draft.trigger_rules import add_trigger_rule
+from phids.api.services.draft.trigger_rules_pkg import add_trigger_rule
 from phids.api.ui_state.state import DraftState, reset_draft
 from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine.loop import SimulationLoop

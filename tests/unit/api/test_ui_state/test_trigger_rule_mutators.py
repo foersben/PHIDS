@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from phids.api.services.draft.trigger_rules import (
+from phids.api.services.draft.trigger_rules_pkg import (
     add_trigger_rule,
     append_trigger_rule_condition_child,
     delete_trigger_rule_condition_node,

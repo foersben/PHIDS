@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
 from phids.api.presenters.trigger_rules import trigger_rules_template_context
-from phids.api.services.draft.trigger_rules import (
+from phids.api.services.draft.trigger_rules_pkg import (
     add_trigger_rule,
     append_trigger_rule_condition_child,
     default_activation_condition_for_rule,
