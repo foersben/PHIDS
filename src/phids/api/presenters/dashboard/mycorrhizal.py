@@ -9,6 +9,7 @@ between Manhattan-adjacent plant entities in both draft and live simulation mode
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
@@ -51,24 +52,30 @@ class _MycorrhizalLinkPayload(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 
 
+
+@dataclass(slots=True, frozen=True)
+class _DraftEvaluationContext:
+    """Context holding shared state for draft neighbor evaluation."""
+    draft: DraftState
+    seen_pairs: set[tuple[int, int]]
+    links: list[_MycorrhizalLinkPayload]
+
 def _evaluate_draft_neighbor_pair(
-    draft: DraftState,
+    ctx: _DraftEvaluationContext,
     left_index: int,
     left: Any,
     right_index: int,
     right: Any,
-    seen_pairs: set[tuple[int, int]],
-    links: list[_MycorrhizalLinkPayload],
 ) -> None:
     """Evaluate a pair of draft plants and append a link if valid."""
     pair = (min(left_index, right_index), max(left_index, right_index))
-    if pair in seen_pairs:
+    if pair in ctx.seen_pairs:
         return
-    seen_pairs.add(pair)
+    ctx.seen_pairs.add(pair)
     inter_species = left.species_id != right.species_id
-    if inter_species and not draft.mycorrhizal_inter_species:
+    if inter_species and not ctx.draft.mycorrhizal_inter_species:
         return
-    links.append(
+    ctx.links.append(
         {
             "plant_index_a": left_index,
             "plant_index_b": right_index,
@@ -110,6 +117,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
     width = draft.grid_width
     height = draft.grid_height
     seen_pairs: set[tuple[int, int]] = set()
+    ctx = _DraftEvaluationContext(draft, seen_pairs, links)
 
     for (x, y), (left_index, left) in plants_by_pos.items():
         for dx, dy in ((1, 0), (0, 1)):
@@ -118,7 +126,7 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
             neighbor = plants_by_pos.get((nx, ny))
             if neighbor is not None:
                 right_index, right = neighbor
-                _evaluate_draft_neighbor_pair(draft, left_index, left, right_index, right, seen_pairs, links)
+                _evaluate_draft_neighbor_pair(ctx, left_index, left, right_index, right)
 
     return links
 
