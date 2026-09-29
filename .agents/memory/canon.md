@@ -36,3 +36,6 @@ Action: Use strict format regex when migrating documentation headers and rely on
 
 Learning: Documented behavioral models drift from runtime code unless automated coverage gating and point-by-point numerical trace verifiers are permanently installed in the agent pre-commit workflow.
 Action: Whenever modifying simulation systems or parameters in `src/phids/engine/systems/`, all agents must execute `scripts/audit_matrix_coverage.py` and `scripts/verify_matrix_trace_parity.py --all` before committing, ensuring 100% table-to-trace parity.
+## 2026-12-05 - [Fused Loop Discrepancy]
+Learning: Dead or leftover uncalled functions (like `_numba_decay_signal_layer`) can be a strong signal that code was optimized/fused elsewhere, but the documentation wasn't updated to reflect it.
+Action: When encountering a discrepancy involving performance-critical logic or Numba kernels, search for references in the actual codebase (like `diffusion.py` doing the exact described decay) to see if the feature simply moved or was fused before assuming the code is "broken."

@@ -24,7 +24,6 @@ from phids.engine.systems.lifecycle.growth import _apply_mycorrhizal_tax_jit, _g
 from phids.engine.systems.signaling.conditions import _check_activation_condition
 from phids.engine.systems.signaling.emission import (
     _apply_toxin_to_swarms,
-    _numba_decay_signal_layer,
     _process_single_emission,
 )
 from phids.engine.systems.signaling.spatial import (
@@ -346,14 +345,7 @@ def test_simd_lifecycle_and_decay_kernels_parity() -> None:
     t1 = _apply_mycorrhizal_tax_jit(energy=50.0, tax_per_link=1.5, num_links=3)
     assert t1 == 45.5  # 50.0 - (1.5 * 3)
 
-    # 3. Airborne VOC signal layer decay kernel
-    layer = np.array([[10.0, 0.005], [0.0, 1.0]], dtype=np.float64)
-    _numba_decay_signal_layer(layer, decay_factor=0.5, epsilon=0.01)
-    assert layer[0, 0] == 5.0
-    assert layer[0, 1] == 0.0  # 0.005 * 0.5 = 0.0025 < epsilon -> 0.0
-    assert layer[1, 1] == 0.5
-
-    # 4. Dead plant substance emission branch
+    # 3. Dead plant substance emission branch
     world = ECSWorld()
     env = GridEnvironment(width=8, height=8)
     plant_ent = world.create_entity()

@@ -9,28 +9,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-from numba import njit
 
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.systems.signaling.spatial import _collect_mycorrhizal_targets
-
-
-@njit(cache=True)  # pragma: no cover
-def _numba_decay_signal_layer(
-    layer: np.ndarray,
-    decay_factor: float,
-    epsilon: float,
-) -> None:
-    """Numba-compiled 256-Bit AVX2 SIMD airborne signal layer decay kernel across YMM registers."""
-    w, h = layer.shape
-    for x in range(w):
-        for y in range(h):
-            val = layer[x, y] * decay_factor
-            mask = 1.0 if val >= epsilon else 0.0
-            layer[x, y] = val * mask
-
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment

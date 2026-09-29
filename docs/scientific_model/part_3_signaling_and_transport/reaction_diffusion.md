@@ -12,8 +12,8 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: biotope
   resource: src/phids/engine/core/biotope.py
-- id: signaling_emission
-  resource: src/phids/engine/systems/signaling/emission.py
+- id: signaling_diffusion
+  resource: src/phids/engine/core/diffusion.py
 - id: trace_tests
   resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---
@@ -141,7 +141,7 @@ flowchart TD
 
 When solving diffusion equations computationally, the tails of the Gaussian distribution approach zero infinitely but never reach it. This creates matrices filled with "subnormal" (denormalized) floating-point numbers (e.g., $1\times 10^{-300}$). Processors struggle to calculate arithmetic with subnormals in hardware, triggering microcode traps that cause severe CPU latency spikes.
 
-To maintain deterministic high performance, PHIDS strictly enforces **matrix sparsity** by flushing subnormals to zero (FTZ / DAZ) inside `src/phids/engine/core/biotope.py`. After the decay step:
+To maintain deterministic high performance, PHIDS strictly enforces **matrix sparsity** by flushing subnormals to zero (FTZ / DAZ) inside `src/phids/engine/core/diffusion.py`. The decay and zeroing operations are fused into the discrete convolution loop via branchless ternary selection (`0.0 if v < epsilon else v`):
 
 $$C^{t+1}[C^{t+1} < \varepsilon] = 0.0$$
 
