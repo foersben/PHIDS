@@ -9,6 +9,7 @@ mycorrhizal links, and diffused concentrations at a specific grid coordinate.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from phids.api.presenters.dashboard.mycorrhizal import (
@@ -29,16 +30,25 @@ if TYPE_CHECKING:
     from phids.api.ui_state.triggers import TriggerRule
 
 
+
+@dataclass(slots=True, frozen=True)
+class _PreviewContext:
+    """Contextual metadata for building preview payloads."""
+
+    draft: DraftState
+    preview_links: list[_MycorrhizalLinkPayload]
+    flora_names: dict[int, str]
+    herbivore_names: dict[int, str]
+    substances: dict[int, SubstanceDefinition]
+    effective_substance_names: dict[int, str]
+    rules_by_flora: dict[int, list[TriggerRule]]
+
+
+
 def _build_preview_plant_payload(
     index: int,
     plant: PlacedPlant,
-    draft: DraftState,
-    preview_links: list[_MycorrhizalLinkPayload],
-    flora_names: dict[int, str],
-    herbivore_names: dict[int, str],
-    substances: dict[int, SubstanceDefinition],
-    effective_substance_names: dict[int, str],
-    rules_by_flora: dict[int, list[TriggerRule]],
+    context: _PreviewContext,
 ) -> dict[str, object]:
     """Helper to construct the detailed draft plant presentation structure.
 
@@ -48,28 +58,22 @@ def _build_preview_plant_payload(
     Args:
         index: The index of the plant.
         plant: The plant component.
-        draft: The draft state.
-        preview_links: A list of mycorrhizal links.
-        flora_names: A dictionary mapping flora species IDs to their names.
-        herbivore_names: A dictionary mapping herbivore species IDs to their names.
-        substances: A dictionary mapping substance IDs to their definitions.
-        effective_substance_names: A dictionary mapping substance IDs to their effective names.
-        rules_by_flora: A dictionary mapping flora species IDs to their trigger rules.
+        context: The preview context containing metadata.
 
     Returns:
         A dictionary containing the plant presentation structure.
     """
     mycorrhizal_neighbours = []
-    for link in preview_links:
+    for link in context.preview_links:
         is_left = link["plant_index_a"] == index
         is_right = link["plant_index_b"] == index
         if not is_left and not is_right:
             continue
         other_index = link["plant_index_b"] if is_left else link["plant_index_a"]
-        other = draft.initial_plants[other_index]
+        other = context.draft.initial_plants[other_index]
         mycorrhizal_neighbours.append(
             {
-                "name": flora_names.get(other.species_id, f"Flora {other.species_id}"),
+                "name": context.flora_names.get(other.species_id, f"Flora {other.species_id}"),
                 "x": other.x,
                 "y": other.y,
                 "inter_species": link["inter_species"],
@@ -78,7 +82,7 @@ def _build_preview_plant_payload(
     return {
         "index": index,
         "species_id": plant.species_id,
-        "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
+        "name": context.flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
         "energy": plant.energy,
         "mycorrhizal_connections": len(mycorrhizal_neighbours),
         "mycorrhizal_neighbours": mycorrhizal_neighbours,
@@ -86,12 +90,12 @@ def _build_preview_plant_payload(
             {
                 "substance_id": rule.substance_id,
                 "substance_name": (
-                    substances[rule.substance_id].name
-                    if rule.substance_id in substances
+                    context.substances[rule.substance_id].name
+                    if rule.substance_id in context.substances
                     else _default_substance_name(rule.substance_id, is_toxin=False)
                 ),
                 "herbivore_species_id": rule.herbivore_species_id,
-                "herbivore_name": herbivore_names.get(
+                "herbivore_name": context.herbivore_names.get(
                     rule.herbivore_species_id,
                     f"Herbivore {rule.herbivore_species_id}",
                 ),
@@ -99,11 +103,11 @@ def _build_preview_plant_payload(
                 "activation_condition": rule.activation_condition,
                 "activation_condition_summary": _describe_activation_condition(
                     rule.activation_condition,
-                    herbivore_names=herbivore_names,
-                    substance_names=effective_substance_names,
+                    herbivore_names=context.herbivore_names,
+                    substance_names=context.effective_substance_names,
                 ),
             }
-            for rule in rules_by_flora.get(plant.species_id, [])
+            for rule in context.rules_by_flora.get(plant.species_id, [])
         ],
     }
 
@@ -111,13 +115,7 @@ def _build_preview_plant_payload(
 def _collect_preview_plants(
     x: int,
     y: int,
-    draft: DraftState,
-    preview_links: list[_MycorrhizalLinkPayload],
-    flora_names: dict[int, str],
-    herbivore_names: dict[int, str],
-    substances: dict[int, SubstanceDefinition],
-    effective_substance_names: dict[int, str],
-    rules_by_flora: dict[int, list[TriggerRule]],
+    context: _PreviewContext,
 ) -> list[dict[str, object]]:
     """Helper to collect and serialize draft plants at a target cell.
 
@@ -129,32 +127,20 @@ def _collect_preview_plants(
     Args:
         x: The x coordinate of the cell.
         y: The y coordinate of the cell.
-        draft: The draft state.
-        preview_links: A list of mycorrhizal links.
-        flora_names: A dictionary mapping flora species IDs to their names.
-        herbivore_names: A dictionary mapping herbivore species IDs to their names.
-        substances: A dictionary mapping substance IDs to their definitions.
-        effective_substance_names: A dictionary mapping substance IDs to their effective names.
-        rules_by_flora: A dictionary mapping flora species IDs to their trigger rules.
+        context: The preview context containing metadata.
 
     Returns:
         A list of dictionaries containing the plant presentation structure.
     """
     plants = []
-    for index, plant in enumerate(draft.initial_plants):
+    for index, plant in enumerate(context.draft.initial_plants):
         if plant.x != x or plant.y != y:
             continue
         plants.append(
             _build_preview_plant_payload(
                 index,
                 plant,
-                draft,
-                preview_links,
-                flora_names,
-                herbivore_names,
-                substances,
-                effective_substance_names,
-                rules_by_flora,
+                context,
             )
         )
     return plants
@@ -256,9 +242,17 @@ def build_preview_cell_details(
     preview_links = build_draft_mycorrhizal_links(draft)
     touching_links = _links_touching_cell(preview_links, x, y)
 
-    plants = _collect_preview_plants(
-        x, y, draft, preview_links, flora_names, herbivore_names, substances, effective_substance_names, rules_by_flora
+    context = _PreviewContext(
+        draft=draft,
+        preview_links=preview_links,
+        flora_names=flora_names,
+        herbivore_names=herbivore_names,
+        substances=substances,
+        effective_substance_names=effective_substance_names,
+        rules_by_flora=rules_by_flora,
     )
+
+    plants = _collect_preview_plants(x, y, context)
 
     swarms = _collect_preview_swarms(x, y, draft, herbivore_names)
 
