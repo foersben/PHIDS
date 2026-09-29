@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import polars as pl
@@ -66,18 +67,23 @@ def _append_toxin_voc_stage1(
     return rule_id_counter + 1
 
 
+@dataclasses.dataclass(slots=True, frozen=True)
+class ToxinVocContext:
+    """Context object for toxin/VOC rule parameters."""
+    rule_id_counter: int
+    fid: int
+    voc_id: int
+    toxin_id: int
+    lethality: float
+
 def _append_toxin_voc_stage2(
-    rows: list[dict[str, object]], rule_id_counter: int, fid: int, voc_id: int, toxin_id: int, lethality: float
+    rows: list[dict[str, object]], ctx: ToxinVocContext
 ) -> int:
     """Append stage 2 toxin/VOC rule to rules table.
 
     Args:
         rows: List of rule records to append to.
-        rule_id_counter: Current rule ID counter (will be incremented).
-        fid: Flora ID for this rule.
-        voc_id: VOC substance ID for this rule.
-        toxin_id: Toxin substance ID for this rule.
-        lethality: Lethality rate for the toxin.
+        ctx: Context containing rule parameters.
 
     Returns:
         Next rule ID counter value.
@@ -86,46 +92,46 @@ def _append_toxin_voc_stage2(
         "kind": "all_of",
         "conditions": [
             {"kind": "herbivore_presence", "min_herbivore_population": 15},
-            {"kind": "substance_active", "substance_id": voc_id},
+            {"kind": "substance_active", "substance_id": ctx.voc_id},
         ],
     }
     act2 = {
         "type": "synthesize_substance",
-        "substance_id": toxin_id,
+        "substance_id": ctx.toxin_id,
         "synthesis_duration": 5,
         "is_toxin": True,
-        "lethal": lethality > 2.0,
-        "lethality_rate": lethality,
+        "lethal": ctx.lethality > 2.0,
+        "lethality_rate": ctx.lethality,
         "repellent": False,
         "repellent_walk_ticks": 0,
         "energy_cost_per_tick": 0.3,
-        "irreversible": lethality > 5.0,
+        "irreversible": ctx.lethality > 5.0,
     }
     rows.append(
         _rule_row(
-            rule_id_counter,
-            fid,
+            ctx.rule_id_counter,
+            ctx.fid,
             1,
             15,
             25,
             "all_of",
             cond2,
             "synthesize_substance",
-            toxin_id,
+            ctx.toxin_id,
             True,
-            lethality > 2.0,
-            lethality,
+            ctx.lethality > 2.0,
+            ctx.lethality,
             False,
             0,
             5,
-            lethality > 5.0,
+            ctx.lethality > 5.0,
             0.3,
             None,
             act2,
             None,
         )
     )
-    return rule_id_counter + 1
+    return ctx.rule_id_counter + 1
 
 
 def _append_toxin_only(
@@ -345,7 +351,8 @@ def _build_trigger_rules_df(
             lethality = normalise_lethality_rate(float(ld50) if ld50 is not None else None)
 
             rule_id_counter = _append_toxin_voc_stage1(rows, rule_id_counter, fid, voc_id)
-            rule_id_counter = _append_toxin_voc_stage2(rows, rule_id_counter, fid, voc_id, toxin_id, lethality)
+            ctx = ToxinVocContext(rule_id_counter, fid, voc_id, toxin_id, lethality)
+            rule_id_counter = _append_toxin_voc_stage2(rows, ctx)
 
         elif has_toxin:
             toxin_compound = str(species_toxins[0]["compound_name"])
