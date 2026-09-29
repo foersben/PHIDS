@@ -117,3 +117,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 15 vs. 7
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of a helper function call here is completely negligible.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+## 2025-02-14 - Complexity Refactoring Report
+* **Target Function:** `_collect_preview_plants` and `_build_preview_plant_payload` in `src/phids/api/presenters/dashboard/cell_details/preview.py`
+* **Selection Rationale:** Refactoring to group related parameters into a `DraftMetadata` dataclass to improve readability and maintainability.
+* **Before/After Score:** Cognitive complexity score remained low, argument count reduced from 9 to 5.
+* **Performance Assessment:** Negligible performance impact as this is an API payload builder using a simple frozen dataclass for grouping.
+* **Test Verification:** Verified by `uv run pytest tests/unit/api/test_dashboard_presenter/test_cell_details_presenter.py` and checking the pre-commit hooks.

@@ -9,6 +9,7 @@ mycorrhizal links, and diffused concentrations at a specific grid coordinate.
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING
 
 from phids.api.presenters.dashboard.mycorrhizal import (
@@ -29,16 +30,23 @@ if TYPE_CHECKING:
     from phids.api.ui_state.triggers import TriggerRule
 
 
+@dataclasses.dataclass(slots=True, frozen=True)
+class DraftMetadata:
+    """Consolidated metadata dictionary indices for draft components."""
+
+    flora_names: dict[int, str]
+    herbivore_names: dict[int, str]
+    substances: dict[int, SubstanceDefinition]
+    effective_substance_names: dict[int, str]
+    rules_by_flora: dict[int, list[TriggerRule]]
+
+
 def _build_preview_plant_payload(
     index: int,
     plant: PlacedPlant,
     draft: DraftState,
     preview_links: list[_MycorrhizalLinkPayload],
-    flora_names: dict[int, str],
-    herbivore_names: dict[int, str],
-    substances: dict[int, SubstanceDefinition],
-    effective_substance_names: dict[int, str],
-    rules_by_flora: dict[int, list[TriggerRule]],
+    metadata: DraftMetadata,
 ) -> dict[str, object]:
     """Helper to construct the detailed draft plant presentation structure.
 
@@ -50,11 +58,7 @@ def _build_preview_plant_payload(
         plant: The plant component.
         draft: The draft state.
         preview_links: A list of mycorrhizal links.
-        flora_names: A dictionary mapping flora species IDs to their names.
-        herbivore_names: A dictionary mapping herbivore species IDs to their names.
-        substances: A dictionary mapping substance IDs to their definitions.
-        effective_substance_names: A dictionary mapping substance IDs to their effective names.
-        rules_by_flora: A dictionary mapping flora species IDs to their trigger rules.
+        metadata: Consolidated metadata dictionary indices.
 
     Returns:
         A dictionary containing the plant presentation structure.
@@ -69,7 +73,7 @@ def _build_preview_plant_payload(
         other = draft.initial_plants[other_index]
         mycorrhizal_neighbours.append(
             {
-                "name": flora_names.get(other.species_id, f"Flora {other.species_id}"),
+                "name": metadata.flora_names.get(other.species_id, f"Flora {other.species_id}"),
                 "x": other.x,
                 "y": other.y,
                 "inter_species": link["inter_species"],
@@ -78,7 +82,7 @@ def _build_preview_plant_payload(
     return {
         "index": index,
         "species_id": plant.species_id,
-        "name": flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
+        "name": metadata.flora_names.get(plant.species_id, f"Flora {plant.species_id}"),
         "energy": plant.energy,
         "mycorrhizal_connections": len(mycorrhizal_neighbours),
         "mycorrhizal_neighbours": mycorrhizal_neighbours,
@@ -86,12 +90,12 @@ def _build_preview_plant_payload(
             {
                 "substance_id": rule.substance_id,
                 "substance_name": (
-                    substances[rule.substance_id].name
-                    if rule.substance_id in substances
+                    metadata.substances[rule.substance_id].name
+                    if rule.substance_id in metadata.substances
                     else _default_substance_name(rule.substance_id, is_toxin=False)
                 ),
                 "herbivore_species_id": rule.herbivore_species_id,
-                "herbivore_name": herbivore_names.get(
+                "herbivore_name": metadata.herbivore_names.get(
                     rule.herbivore_species_id,
                     f"Herbivore {rule.herbivore_species_id}",
                 ),
@@ -99,11 +103,11 @@ def _build_preview_plant_payload(
                 "activation_condition": rule.activation_condition,
                 "activation_condition_summary": _describe_activation_condition(
                     rule.activation_condition,
-                    herbivore_names=herbivore_names,
-                    substance_names=effective_substance_names,
+                    herbivore_names=metadata.herbivore_names,
+                    substance_names=metadata.effective_substance_names,
                 ),
             }
-            for rule in rules_by_flora.get(plant.species_id, [])
+            for rule in metadata.rules_by_flora.get(plant.species_id, [])
         ],
     }
 
@@ -113,11 +117,7 @@ def _collect_preview_plants(
     y: int,
     draft: DraftState,
     preview_links: list[_MycorrhizalLinkPayload],
-    flora_names: dict[int, str],
-    herbivore_names: dict[int, str],
-    substances: dict[int, SubstanceDefinition],
-    effective_substance_names: dict[int, str],
-    rules_by_flora: dict[int, list[TriggerRule]],
+    metadata: DraftMetadata,
 ) -> list[dict[str, object]]:
     """Helper to collect and serialize draft plants at a target cell.
 
@@ -131,11 +131,7 @@ def _collect_preview_plants(
         y: The y coordinate of the cell.
         draft: The draft state.
         preview_links: A list of mycorrhizal links.
-        flora_names: A dictionary mapping flora species IDs to their names.
-        herbivore_names: A dictionary mapping herbivore species IDs to their names.
-        substances: A dictionary mapping substance IDs to their definitions.
-        effective_substance_names: A dictionary mapping substance IDs to their effective names.
-        rules_by_flora: A dictionary mapping flora species IDs to their trigger rules.
+        metadata: Consolidated metadata dictionary indices.
 
     Returns:
         A list of dictionaries containing the plant presentation structure.
@@ -150,11 +146,7 @@ def _collect_preview_plants(
                 plant,
                 draft,
                 preview_links,
-                flora_names,
-                herbivore_names,
-                substances,
-                effective_substance_names,
-                rules_by_flora,
+                metadata,
             )
         )
     return plants
@@ -163,13 +155,7 @@ def _collect_preview_plants(
 def _prepare_draft_metadata(
     draft: DraftState,
     substance_names: dict[int, str] | None,
-) -> tuple[
-    dict[int, str],
-    dict[int, str],
-    dict[int, SubstanceDefinition],
-    dict[int, str],
-    dict[int, list[TriggerRule]],
-]:
+) -> DraftMetadata:
     """Prepare and index flora, herbivore, and trigger rule metadata from draft state.
 
     Args:
@@ -177,7 +163,7 @@ def _prepare_draft_metadata(
         substance_names: The substance names.
 
     Returns:
-        A tuple containing the flora names, herbivore names, substances, effective substance names, and trigger rules.
+        A DraftMetadata instance with consolidated metadata.
     """
     flora_names: dict[int, str] = {
         species.species_id: species.name for index, species in enumerate(draft.flora_species)
@@ -196,14 +182,20 @@ def _prepare_draft_metadata(
     for rule in draft.trigger_rules:
         rules_by_flora.setdefault(rule.flora_species_id, []).append(rule)
 
-    return flora_names, herbivore_names, substances, effective_substance_names, rules_by_flora
+    return DraftMetadata(
+        flora_names=flora_names,
+        herbivore_names=herbivore_names,
+        substances=substances,
+        effective_substance_names=effective_substance_names,
+        rules_by_flora=rules_by_flora,
+    )
 
 
 def _collect_preview_swarms(
     x: int,
     y: int,
     draft: DraftState,
-    herbivore_names: dict[int, str],
+    metadata: DraftMetadata,
 ) -> list[dict[str, object]]:
     """Helper to collect and serialize draft swarms at a target cell.
 
@@ -211,7 +203,7 @@ def _collect_preview_swarms(
         x: The x coordinate of the cell.
         y: The y coordinate of the cell.
         draft: The draft state.
-        herbivore_names: The herbivore names.
+        metadata: Consolidated metadata dictionary indices.
 
     Returns:
         The list of draft swarms.
@@ -220,7 +212,7 @@ def _collect_preview_swarms(
         {
             "index": index,
             "species_id": swarm.species_id,
-            "name": herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
+            "name": metadata.herbivore_names.get(swarm.species_id, f"Herbivore {swarm.species_id}"),
             "population": swarm.population,
             "energy": swarm.energy,
         }
@@ -249,18 +241,13 @@ def build_preview_cell_details(
     """
     validate_cell_coordinates(x, y, draft.grid_width, draft.grid_height)
 
-    flora_names, herbivore_names, substances, effective_substance_names, rules_by_flora = _prepare_draft_metadata(
-        draft, substance_names
-    )
+    metadata = _prepare_draft_metadata(draft, substance_names)
 
     preview_links = build_draft_mycorrhizal_links(draft)
     touching_links = _links_touching_cell(preview_links, x, y)
 
-    plants = _collect_preview_plants(
-        x, y, draft, preview_links, flora_names, herbivore_names, substances, effective_substance_names, rules_by_flora
-    )
-
-    swarms = _collect_preview_swarms(x, y, draft, herbivore_names)
+    plants = _collect_preview_plants(x, y, draft, preview_links, metadata)
+    swarms = _collect_preview_swarms(x, y, draft, metadata)
 
     return {
         "mode": "draft",
