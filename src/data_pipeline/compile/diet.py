@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import polars as pl
 
 
@@ -39,14 +41,50 @@ def _append_diet_matrix_rows(
         flora_name_to_id: Mapping from flora names to IDs.
         documented_targets: Set of documented target flora names.
     """
+    if not documented_targets:
+        for fid in flora_name_to_id.values():
+            rows.append(
+                {
+                    "herbivore_species_id": hid,
+                    "flora_species_id": fid,
+                    "is_edible": True,
+                    "globi_documented": False,
+                }
+            )
+        return
+
+    # Check 1: flora_name.lower() in t.
+    # Joining with a delimiter that won't appear in taxon names.
+    targets_joined = "\n" + "\n".join(documented_targets) + "\n"
+
+    # Check 2: t in flora_name.lower().
+    try:
+        escaped_targets = [re.escape(t) for t in documented_targets]
+        targets_pattern = re.compile("|".join(escaped_targets))
+    except Exception:
+        targets_pattern = None
+
+    targets_tuple = tuple(documented_targets)
+
     for flora_name, fid in flora_name_to_id.items():
-        # GLoBI match: fuzzy name overlap
-        globi_match = any(flora_name.lower() in t or t in flora_name.lower() for t in documented_targets)
+        flora_lower = flora_name.lower()
+
+        if flora_lower in targets_joined:
+            globi_match = True
+        elif targets_pattern is not None:
+            globi_match = bool(targets_pattern.search(flora_lower))
+        else:
+            globi_match = False
+            for t in targets_tuple:
+                if t in flora_lower:
+                    globi_match = True
+                    break
+
         rows.append(
             {
                 "herbivore_species_id": hid,
                 "flora_species_id": fid,
-                "is_edible": True if not documented_targets else globi_match,
+                "is_edible": globi_match,
                 "globi_documented": globi_match,
             }
         )
