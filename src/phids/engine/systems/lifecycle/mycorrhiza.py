@@ -169,6 +169,7 @@ def _establish_mycorrhizal_connections(
     inter_species: bool,
     excluded_entity_ids: set[int] | None = None,
     plant_death_causes: dict[str, int] | None = None,
+    plants_cache: list[PlantComponent] | None = None,
 ) -> tuple[bool, list[int]]:
     """Establish bidirectional root connections between adjacent plants.
 
@@ -188,6 +189,7 @@ def _establish_mycorrhizal_connections(
         excluded_entity_ids: Plants to ignore (for example, plants already
             marked for removal in the current lifecycle pass).
         plant_death_causes: Optional dictionary tracking causes of plant death.
+        plants_cache: Optional cached list of all current plants.
 
     Returns:
         ``(made_connection, dead_entity_ids)`` where
@@ -196,9 +198,12 @@ def _establish_mycorrhizal_connections(
         energy layers in this same lifecycle pass.
     """
     excluded = excluded_entity_ids or set()
-    plants: list[PlantComponent] = [
-        e.get_component(PlantComponent) for e in world.query(PlantComponent) if e.entity_id not in excluded
-    ]
+    if plants_cache is not None:
+        plants: list[PlantComponent] = [p for p in plants_cache if p.entity_id not in excluded]
+    else:
+        plants: list[PlantComponent] = [
+            e.get_component(PlantComponent) for e in world.query(PlantComponent) if e.entity_id not in excluded
+        ]
     plants.sort(key=lambda plant: (plant.y, plant.x, plant.species_id, plant.entity_id))
 
     # Index plants by position for fast neighbour lookup

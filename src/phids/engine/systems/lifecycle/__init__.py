@@ -152,8 +152,10 @@ def run_lifecycle(
     """
     dead: list[int] = []
 
-    for entity in world.query(PlantComponent):
-        plant: PlantComponent = entity.get_component(PlantComponent)
+    all_entities = world.query(PlantComponent)
+    plants_cache = [e.get_component(PlantComponent) for e in all_entities]
+
+    for entity, plant in zip(all_entities, plants_cache, strict=False):
         _process_plant_lifecycle(
             entity, plant, tick, env, world, flora_species_params, plant_death_causes, force_all_entities, dead
         )
@@ -167,6 +169,7 @@ def run_lifecycle(
             mycorrhizal_inter_species,
             excluded_entity_ids=set(dead),
             plant_death_causes=plant_death_causes,
+            plants_cache=plants_cache,
         )
         dead.extend(mycorrhiza_dead)
 
