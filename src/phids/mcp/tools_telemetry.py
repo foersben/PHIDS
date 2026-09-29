@@ -14,6 +14,27 @@ from phids.mcp.app import mcp
 from phids.mcp.helpers import get_active_sim_loop
 
 
+def _extract_frame_count(root: Any) -> int:
+    """Extract frame count from Zarr root group metadata."""
+    import numpy as np
+
+    if "_metadata" not in root:
+        return 0
+
+    try:
+        meta_node = cast("Any", root["_metadata"])
+        meta_bytes = bytes(np.asarray(meta_node[:], dtype=np.uint8).tolist())
+        meta_obj = json.loads(meta_bytes.decode("utf-8"))
+        if isinstance(meta_obj, list):
+            return len(meta_obj)
+        elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
+            inner = meta_obj["_metadata"]
+            return len(inner) if isinstance(inner, list) else 0
+        return 0
+    except Exception:  # pragma: no cover
+        return -1
+
+
 @mcp.tool()
 def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
     """Expose Zarr replay store structure to the agent without loading field arrays.
@@ -30,7 +51,6 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
             ``tree_keys``, and ``store_attrs``. On failure - ``status`` and ``message``.
     """
     try:
-        import numpy as np
         import zarr
     except ImportError as exc:  # pragma: no cover
         return {"status": "error", "message": f"Required package not available: {exc}"}
@@ -46,19 +66,7 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
         root: zarr.Group = zarr.open_group(str(store), mode="r")
         tree_keys: list[str] = list(root.keys())
 
-        frame_count: int = 0
-        if "_metadata" in root:
-            try:
-                meta_node = cast("zarr.Array[Any]", root["_metadata"])
-                meta_bytes = bytes(np.asarray(meta_node[:], dtype=np.uint8).tolist())
-                meta_obj = json.loads(meta_bytes.decode("utf-8"))
-                if isinstance(meta_obj, list):
-                    frame_count = len(meta_obj)
-                elif isinstance(meta_obj, dict) and "_metadata" in meta_obj:
-                    inner = meta_obj["_metadata"]
-                    frame_count = len(inner) if isinstance(inner, list) else 0
-            except Exception:  # pragma: no cover
-                frame_count = -1
+        frame_count: int = _extract_frame_count(root)
 
         store_attrs: dict[str, Any] = dict(root.attrs) if root.attrs else {}
 
