@@ -21,14 +21,7 @@ from phids.engine.systems.interaction.movement.choices import (
 from phids.engine.systems.interaction.movement.choices import (
     _choose_neighbour_by_flow_probability_jit as _choose_neighbour_by_flow_probability_jit,
 )
-from phids.engine.systems.interaction.movement.choices import (
-    _choose_neighbour_by_flow_probability_python as _choose_neighbour_by_flow_probability_python,
-)
 from phids.engine.systems.interaction.movement.choices import _flat_field_choice_jit as _flat_field_choice_jit
-from phids.engine.systems.interaction.movement.choices import _python_flat_field_choice as _python_flat_field_choice
-from phids.engine.systems.interaction.movement.choices import (
-    _python_weighted_field_choice as _python_weighted_field_choice,
-)
 from phids.engine.systems.interaction.movement.choices import _softmax_field_choice_jit as _softmax_field_choice_jit
 from phids.engine.systems.interaction.movement.choices import _weighted_field_choice_jit as _weighted_field_choice_jit
 from phids.engine.systems.interaction.movement.core import _resolve_swarm_movement as _resolve_swarm_movement
@@ -51,15 +44,12 @@ __all__ = [
     "_calculate_toroidal_delta",
     "_choose_neighbour_by_flow_probability",
     "_choose_neighbour_by_flow_probability_jit",
-    "_choose_neighbour_by_flow_probability_python",
     "_compute_trample_probability_jit",
     "_flat_field_choice_jit",
     "_gather_neighbours_jit",
     "_gather_neighbours_jit_pow2",
     "_is_swarm_anchored",
     "_is_swarm_anchored_jit",
-    "_python_flat_field_choice",
-    "_python_weighted_field_choice",
     "_random_walk_step",
     "_random_walk_step_jit",
     "_resolve_incidental_mortality",

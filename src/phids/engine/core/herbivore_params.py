@@ -4,7 +4,7 @@
 """Pure functional utilities for herbivore species parameter lookups.
 
 This module provides safe dictionary lookups for :class:`~phids.api.schemas.species.HerbivoreSpeciesParams`
-with sensible fallback defaults to ensure deterministic fallback behaviour when parameters are missing.
+mapping directly without fallback logic.
 """
 
 from __future__ import annotations
@@ -23,12 +23,9 @@ def get_herbivore_energy_min(params_dict: dict[int, HerbivoreSpeciesParams], spe
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        Configured minimum energy if found, otherwise a sensible default of 1.0.
+        Configured minimum energy.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.energy_min
-    return 1.0
+    return params_dict[species_id].energy_min
 
 
 def get_herbivore_velocity(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> int:
@@ -39,12 +36,9 @@ def get_herbivore_velocity(params_dict: dict[int, HerbivoreSpeciesParams], speci
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        int: Movement period in ticks; defaults to 1 when not found.
+        int: Movement period in ticks.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.velocity
-    return 1
+    return params_dict[species_id].velocity
 
 
 def get_herbivore_consumption_rate(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> float:
@@ -55,12 +49,9 @@ def get_herbivore_consumption_rate(params_dict: dict[int, HerbivoreSpeciesParams
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        float: Consumption rate if present, otherwise 1.0 by default.
+        float: Consumption rate.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.consumption_rate
-    return 1.0
+    return params_dict[species_id].consumption_rate
 
 
 def get_herbivore_evasion_duration(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> int:
@@ -71,12 +62,9 @@ def get_herbivore_evasion_duration(params_dict: dict[int, HerbivoreSpeciesParams
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        Configured evasion duration if found, otherwise a sensible default of 5.
+        Configured evasion duration.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.evasion_duration_ticks
-    return 5
+    return params_dict[species_id].evasion_duration_ticks
 
 
 def get_herbivore_reproduction_divisor(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> float:
@@ -87,12 +75,9 @@ def get_herbivore_reproduction_divisor(params_dict: dict[int, HerbivoreSpeciesPa
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        float: Reproduction divisor if present, otherwise 1.0.
+        float: Reproduction divisor.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.reproduction_energy_divisor
-    return 1.0
+    return params_dict[species_id].reproduction_energy_divisor
 
 
 def get_herbivore_energy_upkeep(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> float:
@@ -103,12 +88,9 @@ def get_herbivore_energy_upkeep(params_dict: dict[int, HerbivoreSpeciesParams], 
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        Configured upkeep scalar if found; otherwise 0.05 as a sensible default.
+        Configured upkeep scalar.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.energy_upkeep_per_individual
-    return 0.05
+    return params_dict[species_id].energy_upkeep_per_individual
 
 
 def get_herbivore_softmax_temperature(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> float:
@@ -119,12 +101,9 @@ def get_herbivore_softmax_temperature(params_dict: dict[int, HerbivoreSpeciesPar
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        Configured softmax temperature if found; otherwise 0.0 (deterministic max selection).
+        Configured softmax temperature.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.softmax_temperature
-    return 0.0
+    return params_dict[species_id].softmax_temperature
 
 
 def get_herbivore_split_threshold(params_dict: dict[int, HerbivoreSpeciesParams], species_id: int) -> int:
@@ -135,9 +114,6 @@ def get_herbivore_split_threshold(params_dict: dict[int, HerbivoreSpeciesParams]
         species_id: Herbivore species identifier to look up.
 
     Returns:
-        Configured split threshold if found; otherwise 10.
+        Configured split threshold.
     """
-    params = params_dict.get(species_id)
-    if params is not None:
-        return params.split_population_threshold
-    return 10
+    return params_dict[species_id].split_population_threshold

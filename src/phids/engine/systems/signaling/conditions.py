@@ -32,7 +32,7 @@ def _is_substance_active_for_owner(
 def _eval_herbivore_presence(
     plant: PlantComponent,
     activation_condition: ActivationNode,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
 ) -> bool:
     herbivore_species_id = _coerce_int(activation_condition.get("herbivore_species_id", -1), -1)
     min_herbivore_population = _coerce_int(activation_condition.get("min_herbivore_population", 1), 1)
@@ -72,7 +72,7 @@ def _eval_all_of(
     owner_plant_id: int,
     activation_condition: ActivationNode,
     env: GridEnvironment,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     conditions = activation_condition.get("conditions", [])
@@ -97,7 +97,7 @@ def _eval_any_of(
     owner_plant_id: int,
     activation_condition: ActivationNode,
     env: GridEnvironment,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     conditions = activation_condition.get("conditions", [])
@@ -122,7 +122,7 @@ def _check_activation_condition(
     owner_plant_id: int,
     activation_condition: ActivationNode | None,
     env: GridEnvironment,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
 ) -> bool:
     """Evaluate a nested activation predicate tree for one plant-owned substance.

@@ -1,0 +1,19 @@
+⛏️ Chisel: Eradicate backward compatibility shims in engine core & ECS systems
+
+💡 What:
+* Removed the `dict_backup` fallback parameter and associated code from `SwarmPopulationIndex` in `src/phids/engine/systems/signaling/spatial.py`.
+* Updated `_build_swarm_population_index` to no longer construct dictionary fallbacks.
+* Removed type unions allowing `dict[tuple[int, int, int], int]` from downstream systems (conditions, triggers, synthesis).
+* Removed the `| None` fallback from `PlantComponent.from_params()` parameters (`energy` and `structural_mass`) and the associated default value assignments.
+
+🎯 Why:
+The engine core strictly enforces data-oriented ECS patterns and Canonical data flows via arrays. Dictionary fallbacks for `SwarmPopulationIndex` incur heap allocations in the hot path. Making the canonical Numba arrays the only accepted types enforces performance limits and simplifies code.
+
+✅ Verification:
+* Verified via `pytest`
+* Verified via `scripts/audit_matrix_coverage.py`
+* Verified via `scripts/verify_matrix_trace_parity.py --all`
+* Verified via `ruff check` and `mypy`
+
+✨ Result:
+Simplification of engine arrays, strict canonical types, and elimination of object allocations and legacy fallback behaviors in the hot simulation path.

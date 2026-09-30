@@ -120,7 +120,7 @@ def _evaluate_initiator(
     trig: CompiledTrigger,
     plant: PlantComponent,
     env: GridEnvironment,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
 ) -> bool:
     if isinstance(trig.schema.initiator, HerbivoreAttackInitiator):
         return (
@@ -185,7 +185,7 @@ def _process_single_trigger_action(
     world: ECSWorld,
     env: GridEnvironment,
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:
@@ -217,7 +217,7 @@ def _process_single_trigger(
     world: ECSWorld,
     env: GridEnvironment,
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:
@@ -291,7 +291,7 @@ def _dispatch_trigger_for_plants(
     world: ECSWorld,
     env: GridEnvironment,
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
     swarm_grid: npt.NDArray[np.int32] | None,
@@ -331,7 +331,7 @@ def _evaluate_species_triggers(
     world: ECSWorld,
     env: GridEnvironment,
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
     swarm_grid: npt.NDArray[np.int32] | None,
@@ -370,7 +370,7 @@ def _phase_evaluate_triggers(
     env: GridEnvironment,
     trigger_conditions: dict[int, list[CompiledTrigger]],
     owner_substance_by_key: dict[tuple[int, int], SubstanceComponent],
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:

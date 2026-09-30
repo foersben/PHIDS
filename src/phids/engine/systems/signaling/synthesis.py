@@ -22,7 +22,7 @@ def _process_advance_single_synthesis(
     entity_id: int,
     world: ECSWorld,
     env: GridEnvironment,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_substances: list[int],
 ) -> None:
@@ -61,7 +61,7 @@ def _phase_advance_synthesis(
     world: ECSWorld,
     substance_entities: list[Entity],
     env: GridEnvironment,
-    swarm_population_by_cell_species: SwarmPopulationIndex | dict[tuple[int, int, int], int],
+    swarm_population_by_cell_species: SwarmPopulationIndex,
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_substances: list[int],
 ) -> None:

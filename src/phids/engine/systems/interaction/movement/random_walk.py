@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
 
-_orig_choice = random.choice
 
 
 @njit(cache=True)
@@ -80,12 +79,4 @@ def _random_walk_step(
     Returns:
         The new coordinates.
     """
-    if random.choice is not _orig_choice:
-        candidates: list[tuple[int, int]] = [(x, y)]
-        candidates.append(((x - 1) % width, y))
-        candidates.append(((x + 1) % width, y))
-        candidates.append((x, (y - 1) % height))
-        candidates.append((x, (y + 1) % height))
-        return random.choice(candidates)
-
     return _random_walk_step_jit(x, y, width, height, c_x, c_y, random.random())

@@ -117,15 +117,14 @@ class PlantComponent:
         x: int,
         y: int,
         params: FloraSpeciesParams,
-        energy: float | None = None,
-        structural_mass: float | None = None,
+        energy: float,
+        structural_mass: float,
         last_reproduction_tick: int = 0,
     ) -> PlantComponent:
         """Construct a PlantComponent instance from species configuration parameters.
 
         Maps species-level allometric and kinematic parameters into the per-entity
-        runtime state container, applying default fallback logic for structural mass
-        and initial energy if not explicitly specified.
+        runtime state container, mapping directly without fallback logic.
 
         Args:
             entity_id: Unique integer identifier assigned by the ECSWorld.
@@ -133,23 +132,21 @@ class PlantComponent:
             x: Grid x-coordinate in [0, width - 1].
             y: Grid y-coordinate in [0, height - 1].
             params: Validated FloraSpeciesParams declaring allometric thresholds and kinetics.
-            energy: Initial caloric energy reserve. Defaults to params.base_energy if None.
+            energy: Initial caloric energy reserve.
             structural_mass: Initial structural mass proxy. Defaults to 0.0 if None.
             last_reproduction_tick: Simulation tick of last reproduction event. Defaults to 0.
 
         Returns:
             PlantComponent: Initialized plant entity component instance.
         """
-        effective_energy = energy if energy is not None else params.base_energy
         effective_max_struct = params.structural_mass_max if params.structural_mass_max > 0.0 else params.max_energy
-        effective_struct = structural_mass if structural_mass is not None else 0.0
 
         return cls(
             entity_id=entity_id,
             species_id=species_id,
             x=x,
             y=y,
-            energy=effective_energy,
+            energy=energy,
             max_energy=params.max_energy,
             base_energy=params.base_energy,
             growth_rate=params.growth_rate,
@@ -165,7 +162,7 @@ class PlantComponent:
             last_reproduction_tick=last_reproduction_tick,
             translocation_rate=params.translocation_rate,
             mycorrhizal_tax_per_link=params.mycorrhizal_tax_per_link,
-            structural_mass=effective_struct,
+            structural_mass=structural_mass,
             max_structural_mass=effective_max_struct,
             growth_rate_structural=params.structural_growth_rate,
         )

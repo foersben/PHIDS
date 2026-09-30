@@ -20,7 +20,7 @@ __all__ = ["_coerce_float", "_coerce_int", "_get_int_keys", "_sanitize_for_json"
 
 
 def _species_count(row: TelemetryRow, field: str, species_id: int) -> float:
-    """Read one species count from a telemetry row field map with numeric fallback.
+    """Read one species count from a telemetry row field map without numeric fallback.
 
     Args:
         row: The telemetry row.
@@ -30,10 +30,10 @@ def _species_count(row: TelemetryRow, field: str, species_id: int) -> float:
     Returns:
         The species count.
     """
-    raw_map = row.get(field, {})
+    raw_map = row[field]
     if not isinstance(raw_map, dict):
         return 0.0
-    return _coerce_float(raw_map.get(species_id, 0.0))
+    return _coerce_float(raw_map[species_id])
 
 
 def _get_int_keys(d: object) -> set[int]:

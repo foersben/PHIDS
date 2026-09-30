@@ -26,8 +26,6 @@ from phids.shared.constants import ORTHOKINETIC_MOMENTUM_WEIGHT, TILE_CARRYING_C
 if TYPE_CHECKING:
     from phids.engine.components.swarm import SwarmComponent
 
-_orig_choices = random.choices
-_orig_choice = random.choice
 
 
 @njit(cache=True)
@@ -317,83 +315,10 @@ def _choose_neighbour_by_flow_probability_jit(
     )
 
 
-def _python_flat_field_choice(
-    swarm: SwarmComponent,
-    candidates: list[tuple[int, int]],
-) -> tuple[int, int]:
-    """Helper to choose from flat field candidates using inertia direction or random choice.
-
-    Args:
-        swarm: The swarm component.
-        candidates: List of candidate coordinates.
-
-    Returns:
-        The selected neighbour coordinates.
-    """
-    if swarm.last_dx == 0 and swarm.last_dy == 0:
-        return random.choice(candidates)
-
-    target_x = swarm.x + swarm.last_dx
-    target_y = swarm.y + swarm.last_dy
-    weights = [ORTHOKINETIC_MOMENTUM_WEIGHT if (cx == target_x and cy == target_y) else 1.0 for cx, cy in candidates]
-    return random.choices(candidates, weights=weights, k=1)[0]
 
 
-def _python_weighted_field_choice(
-    scores: list[float],
-    candidates: list[tuple[int, int]],
-    invert: bool,
-) -> tuple[int, int]:
-    """Helper to choose from non-flat field candidates using flow probability weights.
-
-    Args:
-        scores: List of flow field scores.
-        candidates: List of candidate coordinates.
-        invert: Whether to invert the scores.
-
-    Returns:
-        The selected neighbour coordinates.
-    """
-    adjusted_scores = [-score for score in scores] if invert else scores
-    min_score = min(adjusted_scores)
-    weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
-    return random.choices(candidates, weights=weights, k=1)[0]
 
 
-def _choose_neighbour_by_flow_probability_python(
-    swarm: SwarmComponent,
-    flow_field: npt.NDArray[np.float64],
-    width: int,
-    height: int,
-    invert: bool,
-) -> tuple[int, int]:
-    """Fallback Python logic when random choice is mocked.
-
-    Args:
-        swarm: The swarm component.
-        flow_field: The flow field.
-        width: The width of the grid environment.
-        height: The height of the grid environment.
-        invert: Whether to invert the flow field.
-
-    Returns:
-        The selected neighbour coordinates.
-    """
-    x, y = swarm.x, swarm.y
-    candidates: list[tuple[int, int]] = [(x, y)]
-    candidates.append(((x - 1) % width, y))
-    candidates.append(((x + 1) % width, y))
-    candidates.append((x, (y - 1) % height))
-    candidates.append((x, (y + 1) % height))
-
-    scores = [float(flow_field[cx, cy]) for cx, cy in candidates]
-    max_score = max(scores)
-    min_score = min(scores)
-
-    if max_score - min_score < 1e-6:
-        return _python_flat_field_choice(swarm, candidates)
-
-    return _python_weighted_field_choice(scores, candidates, invert)
 
 
 def _choose_neighbour_by_flow_probability(
@@ -431,9 +356,6 @@ def _choose_neighbour_by_flow_probability(
     Returns:
         The selected neighbour coordinates.
     """
-    if random.choices is not _orig_choices or random.choice is not _orig_choice:
-        return _choose_neighbour_by_flow_probability_python(swarm, flow_field, width, height, invert)
-
     tile_pop_arr: npt.NDArray[np.int32] | None = None
     if isinstance(tile_populations, np.ndarray):
         tile_pop_arr = tile_populations

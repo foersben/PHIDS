@@ -79,21 +79,18 @@ class SwarmPopulationIndex:
     bypassing Python object creation and eliminating heap allocations during hot signaling passes.
     """
 
-    __slots__ = ("_dict", "_grid")
+    __slots__ = ("_grid",)
 
     def __init__(
         self,
         grid: npt.NDArray[np.int32] | None = None,
-        dict_backup: dict[tuple[int, int, int], int] | None = None,
     ) -> None:
         """Initialize SwarmPopulationIndex with backing 3D array or fallback dictionary.
 
         Args:
             grid: Pre-allocated 3D NumPy int32 array buffer [num_species, W, H].
-            dict_backup: Fallback Python dictionary mapping (x, y, species_id) -> population.
         """
         self._grid = grid
-        self._dict = dict_backup
 
     def get(self, key: tuple[int, int, int], default: int = 0) -> int:
         """Return total swarm population at (x, y, species_id).
@@ -110,39 +107,30 @@ class SwarmPopulationIndex:
             if 0 <= species_id < self._grid.shape[0] and 0 <= x < self._grid.shape[1] and 0 <= y < self._grid.shape[2]:
                 return int(self._grid[species_id, x, y])
             return default
-        if self._dict is not None:
-            return self._dict.get(key, default)
+
         return default
 
 
 def _build_swarm_population_index(
     world: ECSWorld,
-    env: GridEnvironment | None = None,
-) -> SwarmPopulationIndex | dict[tuple[int, int, int], int]:
+    env: GridEnvironment,
+) -> SwarmPopulationIndex:
     """Return a per-cell, per-species swarm-population index for one signaling tick.
 
     Args:
         world: ECSWorld used for spatial hash lookup.
-        env: Optional GridEnvironment hosting pre-allocated 3D swarm population buffer.
+        env: GridEnvironment hosting pre-allocated 3D swarm population buffer.
 
     Returns:
-        SwarmPopulationIndex backing pre-allocated 3D array or fallback dictionary.
+        SwarmPopulationIndex backing pre-allocated 3D array.
     """
-    if env is not None:
-        grid = env.reset_swarm_populations()
-        num_species, width, height = grid.shape
-        for entity in world.query(SwarmComponent):
-            swarm: SwarmComponent = entity.get_component(SwarmComponent)
-            if 0 <= swarm.species_id < num_species and 0 <= swarm.x < width and 0 <= swarm.y < height:
-                grid[swarm.species_id, swarm.x, swarm.y] += swarm.population
-        return SwarmPopulationIndex(grid=grid)
-
-    populations: dict[tuple[int, int, int], int] = {}
+    grid = env.reset_swarm_populations()
+    num_species, width, height = grid.shape
     for entity in world.query(SwarmComponent):
-        sw: SwarmComponent = entity.get_component(SwarmComponent)
-        key = (sw.x, sw.y, sw.species_id)
-        populations[key] = populations.get(key, 0) + sw.population
-    return populations
+        swarm: SwarmComponent = entity.get_component(SwarmComponent)
+        if 0 <= swarm.species_id < num_species and 0 <= swarm.x < width and 0 <= swarm.y < height:
+            grid[swarm.species_id, swarm.x, swarm.y] += swarm.population
+    return SwarmPopulationIndex(grid=grid)
 
 
 def _co_located_swarm_population(
