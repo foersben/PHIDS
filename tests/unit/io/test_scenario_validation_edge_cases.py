@@ -38,8 +38,9 @@ def test_load_scenario_from_json_root_not_object() -> None:
 def test_scenario_to_json_file_output() -> None:
     """Verify scenario_to_json serializes and writes to destination file path."""
     from phids.api.ui_state.state import DraftState
+    from phids.api.ui_state.state.convert import build_sim_config
 
-    config = DraftState.default().build_sim_config()
+    config = build_sim_config(DraftState.default())
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = Path(tmpdir) / "exported_scenario.json"
         json_str = scenario_to_json(config, path=out_path)
@@ -50,3 +51,20 @@ def test_scenario_to_json_file_output() -> None:
         reloaded = load_scenario_from_json(out_path)
         assert reloaded.grid_width == config.grid_width
         assert reloaded.grid_height == config.grid_height
+
+
+def test_scenario_to_json_no_path() -> None:
+    """Verify scenario_to_json returns a JSON string when path is None."""
+    import json
+
+    from phids.api.ui_state.state import DraftState
+    from phids.api.ui_state.state.convert import build_sim_config
+
+    config = build_sim_config(DraftState.default())
+    json_str = scenario_to_json(config)
+
+    assert isinstance(json_str, str)
+    # Verify it's valid JSON and contains expected keys
+    parsed = json.loads(json_str)
+    assert "grid_width" in parsed
+    assert parsed["grid_width"] == config.grid_width

@@ -70,20 +70,13 @@ class TickMetrics:
     herbivore_death_causes: dict[str, int] = field(default_factory=dict)
 
 
-def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
-    """Aggregate one shared snapshot of live ECS metrics from the current world.
+def _collect_plant_metrics(metrics: TickMetrics, plant_components: list[PlantComponent]) -> None:
+    """Aggregate metrics for all active plants.
 
     Args:
-        world: ECS world sampled after ordered system execution for the tick.
-
-    Returns:
-        TickMetrics: Shared aggregate metrics suitable for telemetry and termination.
-
+        metrics: The metrics object to update.
+        plant_components: The list of plant components to aggregate.
     """
-    metrics = TickMetrics()
-
-    plant_entities = world.query(PlantComponent)
-    plant_components: list[PlantComponent] = [e.get_component(PlantComponent) for e in plant_entities]
     metrics.flora_population = len(plant_components)
     metrics.flora_alive = metrics.flora_population > 0
 
@@ -102,8 +95,14 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
     for sid in metrics.plant_energy_by_species:
         metrics.plant_energy_by_species[sid] = round(metrics.plant_energy_by_species[sid], 6)
 
-    swarm_entities = world.query(SwarmComponent)
-    swarm_components: list[SwarmComponent] = [e.get_component(SwarmComponent) for e in swarm_entities]
+
+def _collect_swarm_metrics(metrics: TickMetrics, swarm_components: list[SwarmComponent]) -> None:
+    """Aggregate metrics for all active swarms.
+
+    Args:
+        metrics: The metrics object to update.
+        swarm_components: The list of swarm components to aggregate.
+    """
     metrics.herbivore_clusters = len(swarm_components)
     metrics.herbivores_alive = metrics.herbivore_clusters > 0
 
@@ -115,8 +114,15 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
         metrics.herbivore_species_alive.add(species_id)
         metrics.swarm_pop_by_species[species_id] = metrics.swarm_pop_by_species.get(species_id, 0) + population
 
-    substance_entities = world.query(SubstanceComponent)
-    substances: list[SubstanceComponent] = [e.get_component(SubstanceComponent) for e in substance_entities]
+
+def _collect_substance_metrics(metrics: TickMetrics, substances: list[SubstanceComponent], world: ECSWorld) -> None:
+    """Aggregate metrics for all active substances.
+
+    Args:
+        metrics: The metrics object to update.
+        substances: The list of substance components to aggregate.
+        world: The ECS world for retrieving plant owners.
+    """
     for substance in substances:
         if not substance.active or substance.energy_cost_per_tick <= 0.0:
             continue
@@ -133,5 +139,30 @@ def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
 
     for sid in metrics.defense_cost_by_species:
         metrics.defense_cost_by_species[sid] = round(metrics.defense_cost_by_species[sid], 6)
+
+
+def collect_tick_metrics(world: ECSWorld) -> TickMetrics:
+    """Aggregate one shared snapshot of live ECS metrics from the current world.
+
+    Args:
+        world: ECS world sampled after ordered system execution for the tick.
+
+    Returns:
+        TickMetrics: Shared aggregate metrics suitable for telemetry and termination.
+
+    """
+    metrics = TickMetrics()
+
+    plant_entities = world.query(PlantComponent)
+    plant_components: list[PlantComponent] = [e.get_component(PlantComponent) for e in plant_entities]
+    _collect_plant_metrics(metrics, plant_components)
+
+    swarm_entities = world.query(SwarmComponent)
+    swarm_components: list[SwarmComponent] = [e.get_component(SwarmComponent) for e in swarm_entities]
+    _collect_swarm_metrics(metrics, swarm_components)
+
+    substance_entities = world.query(SubstanceComponent)
+    substances: list[SubstanceComponent] = [e.get_component(SubstanceComponent) for e in substance_entities]
+    _collect_substance_metrics(metrics, substances, world)
 
     return metrics

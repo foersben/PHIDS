@@ -393,22 +393,13 @@ def _apply_mycorrhizal_tax_jit(energy: float, tax_per_link: float, num_links: in
 
 This operation compiles into 256-bit AVX2 SIMD subtractions (`vsubpd`), deducting multi-link maintenance costs in compiled C without interpreter overhead.
 
-### 10. 256-Bit SIMD Airborne VOC Signal Channel Attenuation (`emission.py`)
+### 10. Fused 256-Bit SIMD Airborne VOC Signal Channel Attenuation (`diffusion.py`)
 
-Per-tick airborne signaling channel attenuation scales 2D volatile organic compound (VOC) concentration layers after spatial Gaussian advection-diffusion (`src/phids/engine/systems/signaling/emission.py`).
+Per-tick airborne signaling channel attenuation scales 2D volatile organic compound (VOC) concentration layers simultaneously with spatial Gaussian advection-diffusion (`src/phids/engine/core/diffusion.py`).
 
-#### Numba JIT In-Place Layer Decay Kernel
+#### Numba JIT Fused Convolution and Decay Kernel
 
-PHIDS decays active signal layers via `@njit(cache=True)` compiled kernel `_numba_decay_signal_layer`:
-
-```python
-@njit(cache=True)
-def _numba_decay_signal_layer(layer: np.ndarray, decay_factor: float, epsilon: float) -> None:
-    layer *= decay_factor
-    layer[layer < epsilon] = 0.0
-```
-
-By executing array scaling in-place across 256-bit YMM vector registers and zeroing out values below `SIGNAL_EPSILON`, airborne VOC decay achieves a **~10% - 15% speedup** without temporary array allocations.
+PHIDS decays active signal layers via `@njit(cache=True)` compiled kernel `_numba_convolve_signal_layer`. By fusing array scaling and zeroing out values below `SIGNAL_EPSILON` directly into the convolution loop via branchless ternary logic (`0.0 if v < epsilon else v`), airborne VOC decay achieves a **~10% - 15% speedup** without temporary array allocations or subsequent layer passes.
 
 ### 11. Spatial Hash Entity Query Buffer Reuse (`ecs.py` & `spatial.py`)
 

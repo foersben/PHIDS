@@ -113,3 +113,9 @@ Action: Next time an API router module is split, immediately search for uses of 
 Learning: The `src/phids/api/ui_state/state.py` file had grown into a monolith handling not only the core dataclass definition of `DraftState`, but also complex translation logic (`build_sim_config`, `from_sim_config`), a global singleton pattern (`get_draft`, `set_draft`), and JSON-based file persistence. By refactoring it into a `state/` package (`models.py`, `convert.py`, `persistence.py`, `singleton.py`) and re-exporting the identical public interface through `__init__.py`, we preserved strict backward compatibility while improving cohesion. One key to success was ensuring that inner helper modules only import specifically what they need, avoiding cyclic dependencies between the pure class definition and the conversion rules.
 
 Action: Always dismantle large UI state management files by separating the pure data model from its associated persistence and translation behaviors, and use an `__init__.py` to maintain a unified import facade for the rest of the application.
+
+## 2026-09-30 - Extracting the Draft Trigger Rules Monolith
+
+Learning: When extracting a large draft mutation monolith (like `trigger_rules.py`) into a package, avoid temporary suffixing (such as `_pkg`). By removing the monolithic file and creating a directory package `trigger_rules/` with `conditions.py`, `core.py`, and `__init__.py` re-exporting the exact public symbols, backwards compatibility is completely preserved and zero downstream import statements across tests or routers need to be modified.
+
+Action: Always sculpt monoliths into pure Python packages with an `__init__.py` facade matching the original module name, keeping downstream code untouched.

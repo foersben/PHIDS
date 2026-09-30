@@ -19,3 +19,4 @@ severity: critical
 - **Execution:** Ban `pip`, `poetry`, `python`. Execute ALL commands via `uv run` or `just`.
 - **Types:** Enforce strict `mypy`. Type all function signatures, generics, and variable assignments explicitly.
 - **Linting:** Validate all code via `uv run ruff check` and `uv run ruff format`. Ban `flake8`, `black`, `isort`.
+- **FastAPI Router Extraction:** When extracting monolithic FastAPI routers into smaller packages, always define a new `APIRouter()` in the `__init__.py` composition root and use `.include_router()` to recombine them, ensuring backwards compatibility for downstream clients.
