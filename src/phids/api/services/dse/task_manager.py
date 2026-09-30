@@ -7,16 +7,19 @@ Manages running, cancelling, and streaming live progress metrics from the Design
 Exploration (DSE) genetic algorithm task in a non-blocking background worker thread.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import threading
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from phids.analytics.dse_optimizer import DSEOptimizer
-from phids.api.schemas.simulation import SimulationConfig
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from phids.api.schemas.simulation import SimulationConfig
     from phids.api.websockets.manager import DSEStreamManager
 
 logger = logging.getLogger(__name__)
@@ -31,7 +34,7 @@ class DSETaskManager:
 
     """
 
-    def __init__(self, websocket_manager: "DSEStreamManager") -> None:
+    def __init__(self, websocket_manager: DSEStreamManager) -> None:
         """Initialize the DSE Task Manager.
 
         Args:
@@ -39,12 +42,12 @@ class DSETaskManager:
 
         """
         self.websocket_manager = websocket_manager
-        self._active_task: asyncio.Task[Any] | None = None
+        self._active_task: asyncio.Task[None] | None = None
         self._cancel_event: threading.Event | None = None
         self._main_loop: asyncio.AbstractEventLoop | None = None
         self.pareto_cache: list[SimulationConfig] = []
 
-    def _broadcast_payload(self) -> Callable[[dict[str, Any], list[SimulationConfig]], None]:
+    def _broadcast_payload(self) -> Callable[[dict[str, object], list[SimulationConfig]], None]:
         """Create a synchronous closure that safely schedules the broadcast on the main event loop.
 
         Returns:
@@ -52,7 +55,7 @@ class DSETaskManager:
 
         """
 
-        def callback(payload: dict[str, Any], configs: list[SimulationConfig]) -> None:
+        def callback(payload: dict[str, object], configs: list[SimulationConfig]) -> None:
             self.pareto_cache = configs
             if self._main_loop is not None:
                 asyncio.run_coroutine_threadsafe(self.websocket_manager.broadcast_dse(payload), self._main_loop)
@@ -105,7 +108,7 @@ class DSETaskManager:
 dse_task_manager: DSETaskManager | None = None
 
 
-def get_dse_manager(ws_manager: "DSEStreamManager") -> DSETaskManager:
+def get_dse_manager(ws_manager: DSEStreamManager) -> DSETaskManager:
     """Return the global DSE Task Manager.
 
     Args:
