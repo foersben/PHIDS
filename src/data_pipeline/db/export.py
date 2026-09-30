@@ -5,8 +5,8 @@
 
 The simulation engine and the HTMX UI currently load ``bio_database.json``
 via ``src/phids/analytics/bio_database.py``.  This module generates that file
-on demand from the DuckDB source of truth, preserving full backward
-compatibility while making the JSON a derived artifact rather than the
+on demand from the DuckDB source of truth, making the JSON a
+derived artifact rather than the
 authoritative store.
 
 Export strategy
