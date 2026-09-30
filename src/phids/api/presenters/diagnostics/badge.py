@@ -61,8 +61,6 @@ def render_main_action_btn_html(sim_loop: SimulationLoop | None) -> str:
         btn_action, btn_text = "/api/simulation/pause", "⏸ Pause"
         btn_color = "bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-500"
 
-
-
     btn_html = f"""
         <button id="sim-main-action-btn"
                 hx-post="{btn_action}"

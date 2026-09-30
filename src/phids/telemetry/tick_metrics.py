@@ -115,9 +115,7 @@ def _collect_swarm_metrics(metrics: TickMetrics, swarm_components: list[SwarmCom
         metrics.swarm_pop_by_species[species_id] = metrics.swarm_pop_by_species.get(species_id, 0) + population
 
 
-def _collect_substance_metrics(
-    metrics: TickMetrics, substances: list[SubstanceComponent], world: ECSWorld
-) -> None:
+def _collect_substance_metrics(metrics: TickMetrics, substances: list[SubstanceComponent], world: ECSWorld) -> None:
     """Aggregate metrics for all active substances.
 
     Args:
