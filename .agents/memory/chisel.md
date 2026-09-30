@@ -119,3 +119,7 @@ Action: Always dismantle large UI state management files by separating the pure 
 Learning: When extracting a large draft mutation monolith (like `trigger_rules.py`) into a package, avoid temporary suffixing (such as `_pkg`). By removing the monolithic file and creating a directory package `trigger_rules/` with `conditions.py`, `core.py`, and `__init__.py` re-exporting the exact public symbols, backwards compatibility is completely preserved and zero downstream import statements across tests or routers need to be modified.
 
 Action: Always sculpt monoliths into pure Python packages with an `__init__.py` facade matching the original module name, keeping downstream code untouched.
+
+## 2024-11-20 - Extracting Dashboard Payloads Monolith
+Learning: Splitting a large UI state extraction module (payloads.py) into smaller modules like collections, core, metrics, and snapshot helps improve maintainability without breaking the API.
+Action: When dismantling large API presenter files, ensure that __init__.py re-exports the exact same functions and types to preserve downstream imports.
