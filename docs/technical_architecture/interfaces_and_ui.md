@@ -14,7 +14,7 @@ sources:
 - id: cell_details
   resource: src/phids/api/presenters/dashboard/cell_details/__init__.py
 - id: payloads
-  resource: src/phids/api/presenters/dashboard/payloads.py
+  resource: src/phids/api/presenters/dashboard/payloads/core.py
 - id: base
   resource: src/phids/api/templates/base.html
 - id: dashboard

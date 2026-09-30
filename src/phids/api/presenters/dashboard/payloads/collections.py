@@ -148,7 +148,7 @@ def _collect_flora_species(
     width: int,
     height: int,
     live_flora_species_ids: set[int],
-) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Collect active flora species metrics from snapshot.
 
     Args:
@@ -161,8 +161,8 @@ def _collect_flora_species(
     Returns:
         Tuple of basic species info and species energy info.
     """
-    all_flora_species: list[dict[str, object]] = []
-    species_energy: list[dict[str, object]] = []
+    all_flora_species: list[dict[str, Any]] = []
+    species_energy: list[dict[str, Any]] = []
     is_large_grid = width * height >= 10000
     for species in config_flora_species:
         species_id = species.species_id

@@ -32,7 +32,7 @@ sources:
 - id: lifecycle
   resource: src/phids/engine/systems/lifecycle/
 - id: payloads
-  resource: src/phids/api/presenters/dashboard/payloads.py
+  resource: src/phids/api/presenters/dashboard/payloads/core.py
 - id: base
   resource: src/phids/api/templates/base.html
 - id: dashboard
@@ -241,7 +241,7 @@ The **Decoupled Dual-Proxy Architecture** is fully implemented across four produ
 
 ### Plan 4 - Dashboard UI Telemetry & Dual-Proxy Tooltip Pipeline (Delivered in commits `ffd0ddc`, `a6203fa`, `47efe6b`, `4f5b6af`, `d4ca1ea`, `53fadd1`, `fb53b35`, `0980aed`, `27f6204`, `1cae166`)
 
-- `src/phids/api/presenters/dashboard/payloads.py`: Serialized dual-proxy fields (`structural_mass`, `max_structural_mass`, `fragility_pct`, `incidental_risk_level`, `max_energy`) across columnar entity tables and `extract_ui_snapshot`. Implemented dynamic in-memory self-healing for active loop entities.
+- `src/phids/api/presenters/dashboard/payloads/core.py`: Serialized dual-proxy fields (`structural_mass`, `max_structural_mass`, `fragility_pct`, `incidental_risk_level`, `max_energy`) across columnar entity tables and `extract_ui_snapshot`. Implemented dynamic in-memory self-healing for active loop entities.
 - `src/phids/engine/loop.py` & `src/phids/engine/systems/lifecycle/`: Initialized placement structural mass proportional to initial placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$) and enforced the **Plan 1 Compatibility Fallback Rule** ($M_{\text{max}} = E_{\text{max}}$ when `structural_mass_max == 0.0`).
 - `src/phids/api/templates/base.html`: Unified primary simulation action button (`#sim-main-action-btn`), global HTMX sync bridge (`window.phidsSyncMainActionButton`), and robust `/api/simulation/pause` task recovery.
 - `src/phids/api/templates/partials/dashboard.html`: Integrated dual-proxy health/biomass bars, energy ratio formatting, live-only mycorrhizal link layer rendering, and explicit `(inter-species)` vs `(intra-species)` badges.

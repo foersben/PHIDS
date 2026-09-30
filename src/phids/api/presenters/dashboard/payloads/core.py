@@ -20,7 +20,7 @@ def build_live_dashboard_payload(
     snapshot: dict[str, Any],
     *,
     substance_names: dict[int, str],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Assemble the full JSON payload streamed to the browser canvas over the UI WebSocket.
 
     This function constructs the authoritative rendering payload consumed by
@@ -46,7 +46,7 @@ def build_live_dashboard_payload(
     flora_names = {species.species_id: species.name for species in snapshot["flora_species"]}
     herbivore_names = {species.species_id: species.name for species in snapshot["herbivore_species"]}
 
-    owned_substances: dict[int, list[dict[str, object]]] = {}
+    owned_substances: dict[int, list[dict[str, Any]]] = {}
     for sub in snapshot["substances"]:
         owned_substances.setdefault(sub["owner_plant_id"], []).append(sub)
 
