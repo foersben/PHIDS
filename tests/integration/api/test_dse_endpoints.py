@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 
 from phids.api.main import app
 from phids.api.ui_state.state import DraftState
+from phids.api.ui_state.state.convert import build_sim_config
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def test_dse_start_and_stop_endpoints_non_blocking(client: TestClient) -> None:
         client: Fastapi test client fixture.
     """
     # Grab a valid base configuration
-    base_config = DraftState.default().build_sim_config()
+    base_config = build_sim_config(DraftState.default())
 
     # 1. Start DSE Task
     response = client.post("/api/dse/start", json=base_config.model_dump())
