@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AliasChoices, Field, model_validator
+from pydantic import Field, model_validator
 
 from phids.api.schemas.base import HerbivoreId, SpeciesId, StrictBaseModel
 from phids.api.schemas.triggers import PassiveDefensesSchema, TriggerConditionSchema
@@ -122,7 +122,6 @@ class HerbivoreSpeciesParams(StrictBaseModel):
     reproduction_energy_divisor: float = Field(
         default=2.0,
         ge=2.0,
-        validation_alias=AliasChoices("reproduction_energy_divisor", "reproduction_divisor"),
         description="Denominator for φ(e_h,t) = floor(R(C_i,t) / E_min(e_h)).",
     )
     energy_upkeep_per_individual: float = Field(
