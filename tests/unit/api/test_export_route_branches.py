@@ -25,6 +25,7 @@ from phids.api.services.draft.placements import (
     add_swarm_placement,
 )
 from phids.api.ui_state.state import get_draft
+from phids.api.ui_state.state.convert import build_sim_config
 from phids.engine.loop import SimulationLoop
 
 if TYPE_CHECKING:
@@ -40,7 +41,7 @@ def _build_loaded_loop() -> SimulationLoop:
     draft = get_draft()
     add_plant_placement(draft, 0, 2, 2, 12.0)
     add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
-    loop = SimulationLoop(draft.build_sim_config())
+    loop = SimulationLoop(build_sim_config(draft))
     api_main._sim_loop = loop
     return loop
 

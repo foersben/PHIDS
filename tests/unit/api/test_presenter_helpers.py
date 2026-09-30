@@ -40,6 +40,7 @@ from phids.api.services.draft.trigger_rules import (
     trigger_rule_by_index,
 )
 from phids.api.ui_state.state import DraftState, get_draft
+from phids.api.ui_state.state.convert import build_sim_config
 from phids.api.ui_state.substances import SubstanceDefinition
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.loop import SimulationLoop
@@ -54,7 +55,7 @@ def _build_loaded_loop() -> SimulationLoop:
     draft = get_draft()
     add_plant_placement(draft, 0, 2, 2, 12.0)
     add_swarm_placement(draft, 0, 2, 2, 4, 8.0)
-    loop = SimulationLoop(draft.build_sim_config())
+    loop = SimulationLoop(build_sim_config(draft))
     api_main._sim_loop = loop
     return loop
 
@@ -183,7 +184,7 @@ def test_presenter_payload_helpers_status_badge_and_energy_deficit() -> None:
     add_plant_placement(draft, 0, 2, 2, 12.0)
     add_swarm_placement(draft, 0, 2, 2, 4, 30.0)
     add_swarm_placement(draft, 0, 3, 3, 4, 1.0)
-    loop = SimulationLoop(draft.build_sim_config())
+    loop = SimulationLoop(build_sim_config(draft))
     api_main._sim_loop = loop
 
     for entity in loop.world.query(SwarmComponent):

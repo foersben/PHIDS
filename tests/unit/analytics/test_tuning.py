@@ -14,12 +14,13 @@ import pytest
 
 from phids.analytics.tuning import TrophicOptimizer
 from phids.api.ui_state.state import DraftState
+from phids.api.ui_state.state.convert import build_sim_config
 
 
 @pytest.fixture
 def base_blueprint() -> dict:
     """Provide a base valid scenario configuration."""
-    return DraftState.default().build_sim_config().model_dump()
+    return build_sim_config(DraftState.default()).model_dump()
 
 
 def test_trophic_optimizer_init(base_blueprint: dict) -> None:
