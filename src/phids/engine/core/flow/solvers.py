@@ -310,12 +310,8 @@ def _compute_flow_field_impl(
         truncate_threshold: Truncation threshold.
 
     Returns:
-        npt.NDArray[np.float64]: Scalar attraction field of shape ``(W, H)``.
+        npt.NDArray[np.float64]: Scalar attraction field of shape (W, H).
     """
-    base.fill(0.0)
-    current.fill(0.0)
-    nxt.fill(0.0)
-
     _init_base_and_current_jit(
         width, height, plant_energy, apparent_nutrition_layer, toxin_layers, base, current, alpha, beta
     )
@@ -327,6 +323,7 @@ def _compute_flow_field_impl(
     use_parallel = width * height >= NUMBA_PARALLEL_THRESHOLD_CELLS
 
     if is_pow2:
+
         if use_parallel:
             current, nxt = _run_pow2_parallel(
                 width, height, max_iterations, mask_x, mask_y, decay, base, current, nxt, truncate_threshold

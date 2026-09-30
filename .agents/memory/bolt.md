@@ -105,3 +105,13 @@ Action: Replace operations like `np.any(layer >= val)` with `layer.max() >= val`
 
 Learning: In Numba `@njit` kernels, accumulating boolean results with non-short-circuiting logic like `found = found or (condition)` prevents LLVM from optimizing the loop with early exits.
 Action: Replace boolean accumulation with explicit `if condition: return True` statements. This allows Numba/LLVM to short-circuit execution, saving unnecessary loop iterations and memory reads on hot paths like movement anchoring checks.
+
+## 2026-09-30 - Flow Field Iterative Bounds vs Inline Optimizations
+
+Learning: I attempted to apply multiple theoretical performance optimizations from earlier learnings (like removing  in favor of inline inequalities for subnormals in , or replacing boolean accumulation arrays in , and extracting constant multiplications from loops in ). While replacing  with  yielded significant speedups (~6.9% throughput increase), manual branch optimizations like avoiding  actually resulted in performance degradation. It appears LLVM's  in Numba handles branchless intrinsic optimization for  more efficiently than explicit Python-level conditional branches. When benchmarking combined effects on , the speedups were volatile but eventually I consolidated changes that brought positive net effect.
+Action: Be cautious when applying manual pure-Python branch optimizations to Numba  loops. Rely on LLVM to optimize standard functions like  and focus on eliminating allocations (e.g.  vs ) which consistently bypass CPython's object overhead.
+
+## 2026-09-30 - Flow Field Iterative Bounds vs Inline Optimizations
+
+Learning: I attempted to apply multiple theoretical performance optimizations from earlier learnings (like removing abs in favor of inline inequalities for subnormals in stencils.py, or replacing boolean accumulation arrays in biotope.py, and extracting constant multiplications from loops in boundaries.py). While replacing np.amax(layer) with float(layer.max()) yielded significant speedups (~6.9% throughput increase), manual branch optimizations like avoiding abs() actually resulted in performance degradation. It appears LLVM's fastmath in Numba handles branchless intrinsic optimization for abs() more efficiently than explicit Python-level conditional branches. When benchmarking combined effects on rectangular_crossfire_extended.json, the speedups were volatile but eventually I consolidated changes that brought positive net effect.
+Action: Be cautious when applying manual pure-Python branch optimizations to Numba @njit(fastmath=True) loops. Rely on LLVM to optimize standard functions like abs() and focus on eliminating allocations (e.g. layer.max() vs np.any()) which consistently bypass CPython's object overhead.

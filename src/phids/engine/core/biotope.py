@@ -261,8 +261,7 @@ class GridEnvironment:
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
-            max_val = float(np.amax(layer))
-            if max_val < SIGNAL_EPSILON:
+            if float(layer.max()) < SIGNAL_EPSILON:
                 self.active_signal_channels.discard(s)
                 self._signal_layers_write[s].fill(0.0)
                 continue

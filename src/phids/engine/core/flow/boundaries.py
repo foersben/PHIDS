@@ -263,26 +263,15 @@ def _propagate_inner_jit(
     current: npt.NDArray[np.float64],
     nxt: npt.NDArray[np.float64],
 ) -> float:
-    """Propagate the flow field in the inner grid without boundary wrap branches.
-
-    Args:
-        width: The width of the grid environment.
-        height: The height of the grid environment.
-        decay: The decay rate.
-        base: The base flow field.
-        current: The current flow field.
-        nxt: The next flow field.
-
-    Returns:
-        float: The maximum difference in the inner grid.
-    """
+    # Propagate the flow field in the inner grid without boundary wrap branches.
     max_diff = 0.0
+    c_decay = decay * 0.25
     for x in range(1, width - 1):
         for y in range(1, height - 1):
             n_sum = current[x - 1, y] + current[x + 1, y] + current[x, y - 1] + current[x, y + 1]
-            propagated = n_sum * 0.25
-            val = base[x, y] + (decay * propagated)
+            val = base[x, y] + (c_decay * n_sum)
             nxt[x, y] = val
             diff = abs(val - current[x, y])
-            max_diff = max(max_diff, diff)
+            if diff > max_diff:
+                max_diff = diff
     return float(max_diff)
