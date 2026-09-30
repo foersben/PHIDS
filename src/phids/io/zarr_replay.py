@@ -33,7 +33,7 @@ import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 
@@ -74,7 +74,6 @@ class ReplayBuffer:
         self,
         max_frames: int | None = None,
         *,
-        spill_to_disk: bool = False,  # noqa: ARG002  # Ignored for Zarr; included for drop-in compatibility
         spill_path: str | Path | None = None,
     ) -> None:
         """Create or open a Zarr replay buffer.
@@ -84,8 +83,6 @@ class ReplayBuffer:
                 than zero, only the most recent ``max_frames`` snapshots are retained
                 in the Zarr store. Older frames are automatically pruned during append.
                 If ``None``, all frames are retained indefinitely.
-            spill_to_disk: Accepted for API compatibility but has no effect; Zarr
-                storage is always disk-backed.
             spill_path: Optional explicit path for the Zarr store. If omitted,
                 a temporary directory is allocated lazily.
         """
@@ -350,7 +347,7 @@ class ReplayBuffer:
         if not isinstance(field_data, np.ndarray):
             # Store scalar or string as JSON metadata
             if field_name not in frame_group.attrs:
-                frame_group.attrs[field_name] = field_data
+                frame_group.attrs[field_name] = cast("Any", field_data)
             return
 
         # Dimensionality-based heuristic for optimal CPU L2 cache alignment (~256 KB)
@@ -425,8 +422,7 @@ class ReplayBuffer:
                 if not isinstance(field_obj, zarr.Array):
                     continue
                 array_data = np.asarray(field_obj[:])
-                # Convert back to native Python lists for compatibility
-                state[field_name] = cast("ReplayValue", array_data.tolist())
+                state[field_name] = cast("ReplayValue", array_data)
         except (AttributeError, TypeError):
             pass
 

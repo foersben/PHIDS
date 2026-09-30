@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     import numpy as np
 
 type ReplayScalar = bool | int | float | str | None
-type ReplayValue = ReplayScalar | list["ReplayValue"] | dict[str, "ReplayValue"]
+type ReplayValue = ReplayScalar | np.ndarray | dict[str, "ReplayValue"]
 type ReplayState = dict[str, ReplayValue]
 
 
