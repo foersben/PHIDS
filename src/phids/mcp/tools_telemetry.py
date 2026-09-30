@@ -108,7 +108,7 @@ def query_telemetry_schema() -> dict[str, Any]:
 
 def _export_csv_telemetry(
     filtered_rows: list[Any],
-    normalized_data_type: str,
+    data_type: str,
     tick_interval: int,
     columns: str | None,
 ) -> str:
@@ -116,7 +116,7 @@ def _export_csv_telemetry(
 
     Args:
         filtered_rows: Sequence of filtered telemetry rows.
-        normalized_data_type: Chart or dataset type name.
+        data_type: Chart or dataset type name.
         tick_interval: Stride interval for downsampling.
         columns: Optional comma-separated column filter string.
 
@@ -130,7 +130,7 @@ def _export_csv_telemetry(
         telemetry_to_dataframe,
     )
 
-    if normalized_data_type in ("timeseries", "defense_economy", "biomass_stack"):
+    if data_type in ("timeseries", "defense_economy", "biomass_stack"):
         df = aggregate_to_dataframe(filtered_rows)  # type: ignore[arg-type]
     else:
         df = telemetry_to_dataframe(filtered_rows)
@@ -177,7 +177,7 @@ def _export_tex_table_telemetry(
 
 def _export_tex_tikz_telemetry(
     filtered_rows: list[Any],
-    normalized_data_type: str,
+    data_type: str,
     flora_names: dict[int, str],
     herbivore_names: dict[int, str],
     plant_species_id: int,
@@ -194,7 +194,7 @@ def _export_tex_tikz_telemetry(
 
     Args:
         filtered_rows: Sequence of filtered telemetry rows.
-        normalized_data_type: Chart type identifier.
+        data_type: Chart type identifier.
         flora_names: Mapping of flora ID to display name.
         herbivore_names: Mapping of herbivore ID to display name.
         plant_species_id: Flora ID for phase-space x-axis.
@@ -214,7 +214,7 @@ def _export_tex_tikz_telemetry(
 
     return generate_tikz_str(
         filtered_rows,
-        normalized_data_type,
+        data_type,
         flora_names=flora_names,
         herbivore_names=herbivore_names,
         plant_species_id=plant_species_id,
@@ -231,7 +231,7 @@ def _export_tex_tikz_telemetry(
 
 def _export_png_telemetry(
     filtered_rows: list[Any],
-    normalized_data_type: str,
+    data_type: str,
     flora_names: dict[int, str],
     herbivore_names: dict[int, str],
     plant_species_id: int,
@@ -248,7 +248,7 @@ def _export_png_telemetry(
 
     Args:
         filtered_rows: Sequence of filtered telemetry rows.
-        normalized_data_type: Chart type identifier.
+        data_type: Chart type identifier.
         flora_names: Mapping of flora ID to display name.
         herbivore_names: Mapping of herbivore ID to display name.
         plant_species_id: Flora ID for phase-space x-axis.
@@ -268,7 +268,7 @@ def _export_png_telemetry(
 
     bytes_data = generate_png_bytes(
         filtered_rows,
-        normalized_data_type,
+        data_type,
         flora_names=flora_names,
         herbivore_names=herbivore_names,
         plant_species_id=plant_species_id,
@@ -307,7 +307,7 @@ def export_telemetry_data(
 
     Args:
         format: 'csv', 'tex_table', 'tex_tikz', or 'png'.
-        data_type: 'timeseries', 'phasespace', 'defense_economy', 'biomass_stack', 'metabolic'.
+        data_type: 'timeseries', 'phasespace', 'defense_economy', 'biomass_stack'.
         tick_interval: Decimation factor for large datasets (e.g. 10 = every 10th tick).
         plant_species_id: Flora species ID for phase-space axes.
         herbivore_species_id: Herbivore species ID for phase-space axes.
@@ -329,10 +329,9 @@ def export_telemetry_data(
     if loop is None:
         return {"status": "error", "message": "No active simulation loop loaded."}
 
-    normalized_data_type = "defense_economy" if data_type == "metabolic" else data_type
     valid_data_types = {"timeseries", "phasespace", "defense_economy", "biomass_stack"}
 
-    if normalized_data_type not in valid_data_types:
+    if data_type not in valid_data_types:
         return {"status": "error", "message": f"Invalid data_type. Must be one of {valid_data_types}"}
 
     if format not in {"csv", "tex_table", "tex_tikz", "png"}:
@@ -348,13 +347,13 @@ def export_telemetry_data(
         filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
 
         if format == "csv":
-            data = _export_csv_telemetry(filtered_rows, normalized_data_type, tick_interval, columns)
+            data = _export_csv_telemetry(filtered_rows, data_type, tick_interval, columns)
         elif format == "tex_table":
             data = _export_tex_table_telemetry(rows, columns, flora_ids, herbivore_ids, tick_interval)
         elif format == "tex_tikz":
             data = _export_tex_tikz_telemetry(
                 filtered_rows,
-                normalized_data_type,
+                data_type,
                 flora_names,
                 herbivore_names,
                 plant_species_id,
@@ -370,7 +369,7 @@ def export_telemetry_data(
         elif format == "png":
             data = _export_png_telemetry(
                 filtered_rows,
-                normalized_data_type,
+                data_type,
                 flora_names,
                 herbivore_names,
                 plant_species_id,
