@@ -136,6 +136,7 @@ async def test_trigger_rule_condition_node_routes_validate_parent_paths(
             "flora_species_id": 0,
             "herbivore_species_id": 0,
             "substance_id": 0,
+            "min_herbivore_population": 3,
             "activation_condition_json": (
                 '{"kind":"herbivore_presence","herbivore_species_id":0,"min_herbivore_population":3}'
             ),
@@ -151,15 +152,15 @@ async def test_trigger_rule_condition_node_routes_validate_parent_paths(
     )
     update_node_resp = await api_client.put(
         "/api/config/trigger-rules/0/condition/node",
-        data={"path": "1", "substance_id": 1},
+        data={"path": "0", "substance_id": 1},
     )
     delete_child_resp = await api_client.post(
         "/api/config/trigger-rules/0/condition/delete",
-        data={"path": "1"},
+        data={"path": "0"},
     )
     invalid_parent_resp = await api_client.post(
         "/api/config/trigger-rules/0/condition/child",
-        data={"node_kind": "herbivore_presence", "parent_path": "0"},
+        data={"node_kind": "herbivore_presence", "parent_path": "999"},
     )
 
     assert replace_root_resp.status_code == 200, replace_root_resp.text

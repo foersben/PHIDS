@@ -41,9 +41,6 @@ from phids.api.presenters.dashboard import (
     build_preview_cell_details,
     extract_ui_snapshot,
 )
-from phids.api.presenters.dashboard.shared import (
-    _default_substance_name,
-)
 from phids.api.presenters.diagnostics import render_status_badge_html
 from phids.api.routers import (
     batch_router,
@@ -62,7 +59,6 @@ from phids.shared.logging_config import configure_logging
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from phids.api.schemas.simulation import SimulationConfig
     from phids.engine.loop import SimulationLoop
 
 configure_logging()
@@ -149,7 +145,6 @@ _BATCH_DIR = pathlib.Path("data") / "batches"
 
 
 def _set_simulation_substance_names(
-    config: SimulationConfig,
     *,
     draft: DraftState | None = None,
 ) -> None:
@@ -171,38 +166,7 @@ def _set_simulation_substance_names(
         )
         return
 
-    from phids.api.schemas.triggers import SynthesizeSubstanceAction
-
-    derived_names: dict[int, str] = {}
-    for flora in config.flora_species:
-        for trigger in flora.triggers:
-            if isinstance(trigger.action, SynthesizeSubstanceAction):
-                derived_names.setdefault(
-                    trigger.action.substance_id,
-                    _default_substance_name(
-                        trigger.action.substance_id,
-                        is_toxin=trigger.action.is_toxin,
-                    ),
-                )
     _sim_substance_names.clear()
-    _sim_substance_names.update(derived_names)
-
-
-def _substance_name(substance_id: int, *, is_toxin: bool) -> str:
-    """Resolve the most informative display label for one substance identifier.
-
-    Args:
-        substance_id: Substance-layer identifier.
-        is_toxin: Flag used by fallback naming when no explicit label exists.
-
-    Returns:
-        Display name suitable for diagnostics and tooltip rendering.
-
-    """
-    return _sim_substance_names.get(
-        substance_id,
-        _default_substance_name(substance_id, is_toxin=is_toxin),
-    )
 
 
 def _is_htmx_request(request: Request) -> bool:
