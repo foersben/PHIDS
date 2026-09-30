@@ -249,7 +249,7 @@ async def config_trigger_rule_condition_child_add(
             parent_path,
             default_activation_condition_for_rule(draft, rule, node_kind),
         )
-    except IndexError as exc:
+    except (IndexError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return _render_trigger_rules_partial(request, draft)
 
