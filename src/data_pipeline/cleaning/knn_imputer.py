@@ -41,6 +41,7 @@ allow subnormal floats to enter the normalisation pipeline.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -58,13 +59,20 @@ _K_WITHIN_ORDER: int = 5
 _K_GLOBAL_FALLBACK: int = 10
 
 
+@dataclass(frozen=True, slots=True)
+class ImputationContext:
+    """Context parameters for taxonomic imputation."""
+
+    df: pl.DataFrame
+    family_col: str
+    order_col: str
+    existing_numeric: list[str]
+
+
 def _process_single_family(
     family: str,
-    df: pl.DataFrame,
     result_df: pl.DataFrame,
-    family_col: str,
-    order_col: str,
-    existing_numeric: list[str],
+    ctx: ImputationContext,
 ) -> tuple[pl.DataFrame, bool]:
     """Process imputation for a single family group.
 
@@ -74,62 +82,53 @@ def _process_single_family(
 
     Args:
         family: The family name to process.
-        df: The input DataFrame.
         result_df: The result DataFrame to update.
-        family_col: The family column name.
-        order_col: The order column name.
-        existing_numeric: List of numeric columns to impute.
+        ctx: Context parameters for imputation.
 
     Returns:
         The updated result DataFrame and a boolean indicating whether processing was successful.
     """
-    mask = pl.col(family_col) == family
-    group_df = df.filter(mask)
+    mask = pl.col(ctx.family_col) == family
+    group_df = ctx.df.filter(mask)
 
     if len(group_df) >= _K_WITHIN_FAMILY:
-        imputed = _run_knn_imputer(group_df, existing_numeric, k=_K_WITHIN_FAMILY)
-        return _update_rows(result_df, mask, imputed, existing_numeric), True
+        imputed = _run_knn_imputer(group_df, ctx.existing_numeric, k=_K_WITHIN_FAMILY)
+        return _update_rows(result_df, mask, imputed, ctx.existing_numeric), True
 
-    if order_col in df.columns:
-        order_val = group_df[order_col].drop_nulls().first() if len(group_df) > 0 else None
+    if ctx.order_col in ctx.df.columns:
+        order_val = group_df[ctx.order_col].drop_nulls().first() if len(group_df) > 0 else None
         if order_val is not None:
-            order_mask = pl.col(order_col) == order_val
-            order_group = df.filter(order_mask)
+            order_mask = pl.col(ctx.order_col) == order_val
+            order_group = ctx.df.filter(order_mask)
             if len(order_group) >= _K_WITHIN_ORDER:
-                imputed = _run_knn_imputer(order_group, existing_numeric, k=_K_WITHIN_ORDER)
+                imputed = _run_knn_imputer(order_group, ctx.existing_numeric, k=_K_WITHIN_ORDER)
                 family_in_order = (
-                    imputed.filter(pl.col(family_col) == family) if family_col in imputed.columns else imputed
+                    imputed.filter(pl.col(ctx.family_col) == family) if ctx.family_col in imputed.columns else imputed
                 )
-                return _update_rows(result_df, mask, family_in_order, existing_numeric), True
+                return _update_rows(result_df, mask, family_in_order, ctx.existing_numeric), True
 
-    imputed = _run_knn_imputer(df, existing_numeric, k=_K_GLOBAL_FALLBACK)
-    return _update_rows(result_df, mask, imputed.filter(mask), existing_numeric), True
+    imputed = _run_knn_imputer(ctx.df, ctx.existing_numeric, k=_K_GLOBAL_FALLBACK)
+    return _update_rows(result_df, mask, imputed.filter(mask), ctx.existing_numeric), True
 
 
 def _process_taxonomic_groups(
-    df: pl.DataFrame,
     result_df: pl.DataFrame,
     families: list[str],
-    family_col: str,
-    order_col: str,
-    existing_numeric: list[str],
+    ctx: ImputationContext,
 ) -> tuple[pl.DataFrame, int]:
     """Process imputation iteratively for each family, falling back to order or global.
 
     Args:
-        df: Input Polars DataFrame with potential null values in numeric columns.
         result_df: The result DataFrame to update.
         families: List of family names to process.
-        family_col: The family column name.
-        order_col: The order column name.
-        existing_numeric: List of numeric columns to impute.
+        ctx: Context parameters for imputation.
 
     Returns:
         The updated result DataFrame and the number of groups processed.
     """
     groups_processed = 0
     for family in families:
-        result_df, processed = _process_single_family(family, df, result_df, family_col, order_col, existing_numeric)
+        result_df, processed = _process_single_family(family, result_df, ctx)
         if processed:
             groups_processed += 1
     return result_df, groups_processed
@@ -173,9 +172,8 @@ def impute_missing_traits(
     groups_processed = 0
     if family_col in df.columns:
         families = df[family_col].drop_nulls().unique().to_list()
-        result_df, groups_processed = _process_taxonomic_groups(
-            df, result_df, families, family_col, order_col, existing_numeric
-        )
+        ctx = ImputationContext(df, family_col, order_col, existing_numeric)
+        result_df, groups_processed = _process_taxonomic_groups(result_df, families, ctx)
     else:
         # No taxonomy info: global imputation only
         logger.warning("KNN imputer: no family column '%s' found, running global imputation", family_col)
