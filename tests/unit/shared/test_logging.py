@@ -21,7 +21,6 @@ import logging
 from typing import TYPE_CHECKING
 
 from phids.api.ui_state.state import DraftState
-from phids.api.ui_state.state.convert import build_sim_config
 from phids.engine.loop import SimulationLoop
 from phids.shared.logging_config import configure_logging, get_simulation_debug_interval
 
@@ -50,7 +49,7 @@ def test_draft_build_logs_missing_species_warning(caplog) -> None:
 
     with caplog.at_level(logging.WARNING, logger="phids.api.ui_state"):
         try:
-            build_sim_config(draft)
+            draft.build_sim_config()
         except ValueError:
             pass
 

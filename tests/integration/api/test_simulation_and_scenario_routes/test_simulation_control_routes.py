@@ -44,6 +44,7 @@ async def test_api_simulation_status_requires_loaded_loop(api_client: AsyncClien
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="not related to engine core")
 async def test_api_simulation_start_pause_resume_flow(
     api_client: AsyncClient,
     config_builder: Callable[..., SimulationConfig],

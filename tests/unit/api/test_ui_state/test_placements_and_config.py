@@ -26,7 +26,6 @@ from phids.api.services.draft.placements import (
 )
 from phids.api.services.draft.trigger_rules import add_trigger_rule
 from phids.api.ui_state.state import DraftState, get_draft, reset_draft, set_draft
-from phids.api.ui_state.state.convert import build_sim_config
 from phids.api.ui_state.substances import SubstanceDefinition
 from phids.api.ui_state.triggers import TriggerRule
 
@@ -54,7 +53,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     """
     empty_draft = DraftState(flora_species=[], herbivore_species=[])
     with pytest.raises(ValueError):
-        build_sim_config(empty_draft)
+        empty_draft.build_sim_config()
 
     draft = DraftState.default()
     draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Alarm")]
@@ -84,7 +83,7 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     add_plant_placement(draft, 0, 2, 2, 8.5)
     add_swarm_placement(draft, 0, 2, 2, 4, 9.0)
 
-    config = cast("SimulationConfig", build_sim_config(draft))
+    config = cast("SimulationConfig", draft.build_sim_config())
     assert config.mycorrhizal_growth_interval_ticks == 11
     assert config.z2_flora_species_extinction == 0
     assert config.z4_herbivore_species_extinction == 0

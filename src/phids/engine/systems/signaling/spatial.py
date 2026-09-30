@@ -84,6 +84,7 @@ class SwarmPopulationIndex:
     def __init__(
         self,
         grid: npt.NDArray[np.int32] | None = None,
+
     ) -> None:
         """Initialize SwarmPopulationIndex with backing 3D array or fallback dictionary.
 
@@ -91,6 +92,7 @@ class SwarmPopulationIndex:
             grid: Pre-allocated 3D NumPy int32 array buffer [num_species, W, H].
         """
         self._grid = grid
+
 
     def get(self, key: tuple[int, int, int], default: int = 0) -> int:
         """Return total swarm population at (x, y, species_id).

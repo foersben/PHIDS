@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from phids.api.schemas.placement import PlacementStrategy
     from phids.api.schemas.responses import BatchJobState
+    from phids.api.schemas.simulation import SimulationConfig
     from phids.api.schemas.species import (
         FloraSpeciesParams,
         HerbivoreSpeciesParams,
@@ -132,3 +133,31 @@ class DraftState:
             initial_swarms=[],
         )
         return state
+
+    def build_sim_config(self) -> SimulationConfig:
+        """Assemble a :class:`~phids.api.schemas.SimulationConfig`.
+
+        Returns:
+            SimulationConfig: Validated simulation configuration.
+
+        Raises:
+            ValueError: If no flora or herbivore species defined.
+        """
+        from phids.api.ui_state.state.convert import build_sim_config
+
+        return build_sim_config(self)
+
+    @classmethod
+    def from_sim_config(cls, config: SimulationConfig, scenario_name: str = "") -> DraftState:
+        """Reconstruct a ``DraftState`` from a validated :class:`SimulationConfig`.
+
+        Args:
+            config: Validated simulation configuration to reconstruct from.
+            scenario_name: Human-readable label; defaults to the grid dimensions.
+
+        Returns:
+            DraftState: Reconstructed draft ready for use in the builder UI.
+        """
+        from phids.api.ui_state.state.convert import from_sim_config
+
+        return from_sim_config(config, scenario_name)

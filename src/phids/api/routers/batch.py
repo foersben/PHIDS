@@ -28,7 +28,6 @@ from phids.api.schemas.responses import (
     BatchStartPayload,
 )
 from phids.api.ui_state.state import get_draft
-from phids.api.ui_state.state.convert import build_sim_config
 from phids.telemetry.export.core import decimate_dataframe, filter_dataframe_columns
 from phids.telemetry.export.tikz import generate_tikz_str
 
@@ -124,7 +123,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
 
     draft = get_draft()
     try:
-        config = build_sim_config(draft)
+        config = draft.build_sim_config()
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Invalid draft: {exc}") from exc
 

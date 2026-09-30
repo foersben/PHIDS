@@ -23,8 +23,7 @@ from fastapi.responses import JSONResponse
 
 import phids.api.main as api_main
 from phids.api.schemas.simulation import SimulationConfig
-from phids.api.ui_state.state import get_draft, set_draft
-from phids.api.ui_state.state.convert import build_sim_config, from_sim_config
+from phids.api.ui_state.state import DraftState, get_draft, set_draft
 from phids.engine.loop import SimulationLoop
 
 from .helpers import _apply_optional_biotope_overrides_from_form, _status_badge_fragment
@@ -80,7 +79,7 @@ async def scenario_export() -> Response:
     """
     draft = get_draft()
     try:
-        config = build_sim_config(draft)
+        config = draft.build_sim_config()
         data = json.dumps(config.model_dump(), indent=2)
     except (ValueError, AttributeError) as exc:
         api_main.logger.warning("Scenario export failed: %s", exc)
@@ -114,7 +113,7 @@ async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa
         api_main.logger.warning("Scenario import failed for file %s: %s", file.filename, exc)
         raise HTTPException(status_code=422, detail=f"Invalid scenario JSON: {exc}") from exc
 
-    new_draft = from_sim_config(
+    new_draft = DraftState.from_sim_config(
         config,
         scenario_name=(file.filename or "imported").replace(".json", ""),
     )
@@ -157,7 +156,7 @@ async def scenario_load_draft(request: Request) -> Response:
 
     draft = get_draft()
     try:
-        config = build_sim_config(draft)
+        config = draft.build_sim_config()
     except (ValueError, Exception) as exc:
         api_main.logger.warning("Draft load into simulation failed: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
