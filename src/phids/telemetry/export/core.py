@@ -13,6 +13,8 @@ import logging
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+from phids.shared.coercion import coerce_int
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -310,14 +312,14 @@ def aggregate_to_dataframe(
     data["herbivore_population_std"] = aggregate.get("herbivore_population_std", [0.0] * len(ticks))
 
     for fid, series_mean in _object_mapping(aggregate.get("per_flora_pop_mean", {})).items():
-        fid_int = _to_int(fid, default=-1)
+        fid_int = coerce_int(fid, default=-1)
         name = (flora_names or {}).get(fid_int, f"flora_{fid_int}")
         data[f"{name}_pop_mean"] = series_mean
         series_std = _object_mapping(aggregate.get("per_flora_pop_std", {})).get(fid, [0.0] * len(ticks))
         data[f"{name}_pop_std"] = series_std
 
     for pid, series_mean in _object_mapping(aggregate.get("per_herbivore_pop_mean", {})).items():
-        pid_int = _to_int(pid, default=-1)
+        pid_int = coerce_int(pid, default=-1)
         name = (herbivore_names or {}).get(pid_int, f"herbivore_{pid_int}")
         data[f"{name}_pop_mean"] = series_mean
         series_std = _object_mapping(aggregate.get("per_herbivore_pop_std", {})).get(pid, [0.0] * len(ticks))

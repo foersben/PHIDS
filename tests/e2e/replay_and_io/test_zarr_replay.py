@@ -78,9 +78,8 @@ class TestReplayBuffer:
         assert retrieved["terminated"] is False
         assert retrieved["termination_reason"] is None
 
-        # Verify field round-trip (lists after to_dict conversion)
-        retrieved_energy = np.array(retrieved["plant_energy_layer"], dtype=np.float32)
-        retrieved_signal = np.array(retrieved["signal_layers"], dtype=np.float32)
+        retrieved_energy = retrieved["plant_energy_layer"]
+        retrieved_signal = retrieved["signal_layers"]
 
         np.testing.assert_array_almost_equal(energy_field, retrieved_energy)
         np.testing.assert_array_almost_equal(signal_field, retrieved_signal)
@@ -107,7 +106,7 @@ class TestReplayBuffer:
         buf.append(state)
         retrieved = buf.get_frame(0)
 
-        retrieved_signal = np.array(retrieved["signal_layers"], dtype=np.float32)
+        retrieved_signal = retrieved["signal_layers"]
         # Values < 1e-4 should be clipped to 0.0
         assert retrieved_signal[0, 0, 1] == 0.0  # 1e-5
         assert retrieved_signal[0, 1, 1] == 0.0  # 1e-7
@@ -340,10 +339,10 @@ class TestZarrReplayIntegration:
         assert retrieved["grid_height"] == grid_h
 
         # Verify array shapes are preserved
-        plant_energy = np.array(retrieved["plant_energy_layer"], dtype=np.float32)
+        plant_energy = retrieved["plant_energy_layer"]
         assert plant_energy.shape == (num_flora, grid_h, grid_w)
 
-        signal_layers = np.array(retrieved["signal_layers"], dtype=np.float32)
+        signal_layers = retrieved["signal_layers"]
         assert signal_layers.shape == (num_signals, grid_h, grid_w)
 
     def test_zarr_large_buffer_compression(self, temp_zarr_dir: Path) -> None:
