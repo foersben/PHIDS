@@ -12,7 +12,7 @@ and an optional compound activation-condition predicate tree.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import ConfigDict, Field, model_validator
 
@@ -117,7 +117,7 @@ class TriggerConditionSchema(StrictBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _map_legacy_trigger_fields(cls, data: dict[str, object]) -> dict[str, object]:
+    def _map_legacy_trigger_fields(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Maps legacy `herbivore_species_id` and `min_herbivore_population` to `initiator`."""
         if isinstance(data, dict) and "initiator" not in data:
             if "herbivore_species_id" in data:
