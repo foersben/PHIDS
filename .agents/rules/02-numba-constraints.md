@@ -19,3 +19,5 @@ severity: critical
 - **Array Layouts:** Require contiguous layouts and explicit dtypes (e.g., `np.float32`, `np.int32`) for JIT inputs. Avoid upcasting to `float64` unless PDE-required.
 - **Pre-allocation:** Ban array allocation (`np.zeros`, `np.append`) inside JIT loops. Pre-allocate in write buffer and mutate in-place.
 - **Float Masking:** State transitions must be represented as array-to-array transfers gated by float masks (`0.0` or `1.0`), prohibiting scalar enums or `if/else` state branching in JIT hot paths.
+- **Absolute Value Avoidance:** Inside tight loops, avoid `abs(val) < threshold`. Replace with inline logic `val > -threshold and val < threshold` to reduce LLVM overhead and improve auto-vectorization.
+- **Testing Fallbacks:** When accessing Python fallbacks of JIT-compiled functions in unit tests, always use `getattr(func, "py_func", func)` instead of direct `.py_func` access. This prevents `AttributeError` failures in CI pipelines where `NUMBA_DISABLE_JIT=1` is active.

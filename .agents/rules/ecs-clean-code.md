@@ -76,6 +76,8 @@ DOD simulation core. Do not flag or change them:
   JIT scope are acceptable as Numba can unpack these without Python overhead. Do not convert
   to dataclass inside JIT scope.
 
+* **ECS Hot-Loop Memory Copies**: When taking a mutable-safe snapshot of ECS component IDs for iteration, **always use `list(component_set)` instead of `tuple(component_set)`**. CPython's list allocation is highly optimized and reuses internal memory buffers, making it roughly 30% faster in hot loops.
+
 ---
 
 ## Cold-Path Targets (What Must Be Fixed)
