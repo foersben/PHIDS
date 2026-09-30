@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Request
@@ -14,6 +15,8 @@ import phids.api.main as api_main
 from phids.analytics.bio_database import BioDatabaseModel  # noqa: TC001
 
 BIO_DB_PATH = Path("src/phids/analytics/bio_database.json")
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -60,8 +63,9 @@ async def api_database_save(payload: BioDatabaseModel) -> Response:
             json.dump(payload.model_dump(), f, indent=2)
 
         return Response(status_code=200)
-    except Exception as e:
-        return Response(content=str(e), status_code=400)
+    except Exception:
+        logger.exception("Failed to save bio-database")
+        return Response(content="Failed to save database", status_code=400)
 
 
 @router.post("/api/database/rebuild", summary="Rebuild Bio-Database via ETL pipeline")
@@ -84,10 +88,12 @@ async def api_database_rebuild() -> Response:
         )
         _stdout, stderr = await process.communicate()
         if process.returncode != 0:
-            return Response(content=f"ETL Failed:\\n{stderr.decode('utf-8')}", status_code=500)
+            logger.error("ETL Failed:\n%s", stderr.decode("utf-8"))
+            return Response(content="ETL Failed", status_code=500)
 
         # We trigger an HTMX refresh of the panel by returning a client-side redirect header
         # or we can just return a success message
         return Response(content="ETL Pipeline completed successfully.", status_code=200, headers={"HX-Refresh": "true"})
-    except Exception as e:
-        return Response(content=str(e), status_code=500)
+    except Exception:
+        logger.exception("Failed to run ETL pipeline")
+        return Response(content="Failed to rebuild database", status_code=500)
