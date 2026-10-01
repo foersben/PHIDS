@@ -105,3 +105,6 @@ Action: Replace operations like `np.any(layer >= val)` with `layer.max() >= val`
 
 Learning: In Numba `@njit` kernels, accumulating boolean results with non-short-circuiting logic like `found = found or (condition)` prevents LLVM from optimizing the loop with early exits.
 Action: Replace boolean accumulation with explicit `if condition: return True` statements. This allows Numba/LLVM to short-circuit execution, saving unnecessary loop iterations and memory reads on hot paths like movement anchoring checks.
+## 2026-09-30 - Inline absolute value evaluation in Numba stencils
+Learning: Using `abs(val) < threshold` incurs a minor function call overhead even within Numba's `@njit` compilation path. By unrolling this into `val > -threshold and val < threshold` explicitly within subnormal truncation boundaries, and flattening scalar arithmetic (like tracking the base summation in a Python local instead of indexing array reads repeatedly), we can squeeze out additional vectorization benefits.
+Action: Use explicit boundaries (e.g., `x > -val and x < val`) rather than `abs()` inside tight Numba arrays, and accumulate mathematically to local scalar variables (`b_val`) before simultaneously assigning to multi-array locations.
