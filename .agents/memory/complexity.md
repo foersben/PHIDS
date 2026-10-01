@@ -124,3 +124,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 3 (Maximum score among helpers is 8)
 * **Performance Assessment:** The extracted logic strictly passes object references inside telemetry aggregation paths instead of core engine solver hotspots. Benchmarking guarantees zero performance regression or memory overhead.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-27 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/routers/telemetry/chartjs.py` - `_extract_chart_series`
+* **Selection Rationale:** The function accumulated a cognitive complexity score of 14 due to its deeply nested iterative mapping for extracting various components (flora populations, energies, herbivore populations) from raw row data into Chart.js series formats. As an API layer, extracting the loop state instantiation and row appending into separate functions posed no performance risk to the core engine solver hotspots.
+* **Before/After Score:** 14 vs. 1
+* **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.

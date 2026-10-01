@@ -41,13 +41,8 @@ def _filter_telemetry_rows_for_chart(
     return rows
 
 
-def _extract_chart_series(
-    rows: list[dict[str, object]],
-    flora_ids: list[int],
-    herbivore_ids: list[int],
-) -> tuple[list[int], dict[str, list[float]]]:
-    """Extract numerical time series and labels from raw telemetry rows."""
-    labels: list[int] = []
+def _init_chart_series(flora_ids: list[int], herbivore_ids: list[int]) -> dict[str, list[float]]:
+    """Initialize empty arrays for the required telemetry series."""
     series: dict[str, list[float]] = {
         "flora_population": [],
         "herbivore_population": [],
@@ -59,28 +54,50 @@ def _extract_chart_series(
         series[f"defense_cost_{fid}"] = []
     for hid in herbivore_ids:
         series[f"swarm_{hid}_pop"] = []
+    return series
+
+
+def _append_row_to_series(
+    series: dict[str, list[float]],
+    labels: list[int],
+    r: dict[str, object],
+    flora_ids: list[int],
+    herbivore_ids: list[int],
+) -> None:
+    """Extract data from a single telemetry row and append it to the time series."""
+    # Note: We must retain original exact values where possible; some tests assert strict arrays.
+    tick_val = int(r.get("tick", 0))  # type: ignore
+    labels.append(tick_val)
+    series["flora_population"].append(_safe_float(r.get("flora_population", 0)))
+    series["herbivore_population"].append(_safe_float(r.get("herbivore_population", 0)))
+    series["total_flora_energy"].append(_safe_float(r.get("total_flora_energy", 0.0)))
+
+    plant_pop = r.get("plant_pop_by_species", {})
+    plant_energy = r.get("plant_energy_by_species", {})
+    defense_cost = r.get("defense_cost_by_species", {})
+    if isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict):
+        for fid in flora_ids:
+            series[f"plant_{fid}_pop"].append(_safe_float(plant_pop.get(fid, 0)))
+            series[f"plant_{fid}_energy"].append(_safe_float(plant_energy.get(fid, 0.0)))
+            series[f"defense_cost_{fid}"].append(_safe_float(defense_cost.get(fid, 0.0)))
+
+    swarm_pop = r.get("swarm_pop_by_species", {})
+    if isinstance(swarm_pop, dict):
+        for hid in herbivore_ids:
+            series[f"swarm_{hid}_pop"].append(_safe_float(swarm_pop.get(hid, 0)))
+
+
+def _extract_chart_series(
+    rows: list[dict[str, object]],
+    flora_ids: list[int],
+    herbivore_ids: list[int],
+) -> tuple[list[int], dict[str, list[float]]]:
+    """Extract numerical time series and labels from raw telemetry rows."""
+    labels: list[int] = []
+    series = _init_chart_series(flora_ids, herbivore_ids)
 
     for r in rows:
-        # Note: We must retain original exact values where possible; some tests assert strict arrays.
-        tick_val = int(r.get("tick", 0))  # type: ignore
-        labels.append(tick_val)
-        series["flora_population"].append(_safe_float(r.get("flora_population", 0)))
-        series["herbivore_population"].append(_safe_float(r.get("herbivore_population", 0)))
-        series["total_flora_energy"].append(_safe_float(r.get("total_flora_energy", 0.0)))
-
-        plant_pop = r.get("plant_pop_by_species", {})
-        plant_energy = r.get("plant_energy_by_species", {})
-        defense_cost = r.get("defense_cost_by_species", {})
-        if isinstance(plant_pop, dict) and isinstance(plant_energy, dict) and isinstance(defense_cost, dict):
-            for fid in flora_ids:
-                series[f"plant_{fid}_pop"].append(_safe_float(plant_pop.get(fid, 0)))
-                series[f"plant_{fid}_energy"].append(_safe_float(plant_energy.get(fid, 0.0)))
-                series[f"defense_cost_{fid}"].append(_safe_float(defense_cost.get(fid, 0.0)))
-
-        swarm_pop = r.get("swarm_pop_by_species", {})
-        if isinstance(swarm_pop, dict):
-            for hid in herbivore_ids:
-                series[f"swarm_{hid}_pop"].append(_safe_float(swarm_pop.get(hid, 0)))
+        _append_row_to_series(series, labels, r, flora_ids, herbivore_ids)
 
     return labels, series
 
