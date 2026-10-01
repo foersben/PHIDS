@@ -30,7 +30,11 @@ import zarr
 
 
 def _inspect_metadata(root: zarr.Group) -> None:
-    """Inspect and print Zarr consolidated metadata."""
+    """Inspect and print Zarr consolidated metadata.
+
+    Args:
+        root: Zarr root group.
+    """
     if "_metadata" not in root:
         print("Warning: Consolidated '_metadata' array not found at root.", file=sys.stderr)
         return
@@ -56,6 +60,9 @@ def _inspect_metadata(root: zarr.Group) -> None:
 
 def _inspect_frames(root: zarr.Group) -> int:
     """Inspect and print Zarr frame structure.
+
+    Args:
+        root: Zarr root group.
 
     Returns:
         int: Exit code (0 for success, 1 for errors).
