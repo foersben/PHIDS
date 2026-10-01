@@ -39,3 +39,7 @@ Action: Whenever modifying simulation systems or parameters in `src/phids/engine
 ## 2026-12-05 - [Fused Loop Discrepancy]
 Learning: Dead or leftover uncalled functions (like `_numba_decay_signal_layer`) can be a strong signal that code was optimized/fused elsewhere, but the documentation wasn't updated to reflect it.
 Action: When encountering a discrepancy involving performance-critical logic or Numba kernels, search for references in the actual codebase (like `diffusion.py` doing the exact described decay) to see if the feature simply moved or was fused before assuming the code is "broken."
+## 2026-09-30 - Alignment of Trigger Matrix Documentation
+
+Learning: The scenario authoring guide historically referenced a monolithic "16x16 Substance Trigger Interaction Matrix" (Trigger_Matrix), which became outdated after the codebase evolved to use per-species bounded `list[TriggerConditionSchema]` architectures that compile into discrete `CompiledTrigger` trees, while still preserving the underlying Rule of 16 memory bounds via `MAX_SUBSTANCE_TYPES`.
+Action: When evaluating documentation vs. code discrepancies regarding bounded architecture representations, trust the active runtime Pydantic schemas (e.g. `FloraSpeciesParams`, `TriggerConditionSchema`) as the source of truth, and update the architectural Markdown diagrams and text to reflect the per-species implementation while retaining explanatory prose.

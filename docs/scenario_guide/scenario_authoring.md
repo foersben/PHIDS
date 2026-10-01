@@ -22,7 +22,7 @@ To circumvent this, configurations are structurally bounded. Every scenario is p
 * **16 Herbivore Species**
 * **16 Substance Profiles**
 
-These indices translate directly into fixed $(16 \times 16)$ boolean matrices for diet compatibility and integer matrices for defense behavior. Exceeding these bounds at the API or file ingress stage will result in a validation rejection, ensuring the simulation runs predictably.
+These indices translate directly into fixed $(16 \times 16)$ boolean matrices for diet compatibility and array bounded schema blocks for defense behavior. Exceeding these bounds at the API or file ingress stage will result in a validation rejection, ensuring the simulation runs predictably.
 
 ```mermaid
 flowchart TD
@@ -38,7 +38,6 @@ flowchart TD
     subgraph PreAllocated_Matrices ["Fixed Cache-Resident Invariant Rule Matrices"]
         direction TB
         Diet_Matrix["Diet Compatibility Block Matrix<br><i>(Fixed 16x16 Contiguous Boolean Matrix)</i>"]
-        Trigger_Matrix["Substance Trigger Interaction Matrix<br><i>(Fixed 16x16 Contiguous Integer Lookup Matrix)</i>"]
     end
 
     %% Structural Boundaries Check
@@ -48,14 +47,14 @@ flowchart TD
 
     %% Connections
     Boot --> Configuration_Limit
-    Configuration_Limit --> Diet_Matrix & Trigger_Matrix
+    Configuration_Limit --> Diet_Matrix
 
     %% Class Allocations
     classDef dataLayer fill:#111b24,stroke:#00b8d4,stroke-width:2px,rx:6px,ry:6px;
     classDef boundary fill:#1c1212,stroke:#ff5252,stroke-width:2px,rx:6px,ry:6px;
     classDef peripheral fill:#181818,stroke:#9e9e9e,stroke-width:2px,rx:6px,ry:6px;
 
-    class Configuration_Limit,Diet_Matrix,Trigger_Matrix dataLayer
+    class Configuration_Limit,Diet_Matrix dataLayer
     class Rejection boundary
     class Ingress_Payload,Boot peripheral
 ```
@@ -114,10 +113,10 @@ To preserve biological causality and prevent engine state leaks, configuration o
 
 ## Interaction Matrices
 
-Scenarios orchestrate behavior through explicit matrices, which are fully editable via the HTMX UI Draft State:
+Scenarios orchestrate behavior through explicit matrices and bounded interaction schemas, which are fully editable via the HTMX UI Draft State:
 
 1. **Diet Compatibility Matrix**: A $16 \times 16$ boolean matrix determining whether herbivore $E_i$ can metabolize flora $P_j$. If incompatible, an attempted feeding event resolves into rejection, prompting a randomized displacement of the swarm away from the plant.
-2. **Trigger Matrix**: A $16 \times 16$ mapping detailing which action a given flora species $P_j$ executes upon a specific trigger initiation. Actions include synthesizing specific substances (`SynthesizeSubstanceAction`) or pulling resources (`ResourceWithdrawalAction`). Crucially, triggers can be initiated by direct localized attacks (`HerbivoreAttackInitiator`) or by sensing ambient chemical compounds (`EnvironmentalSignalInitiator`). This allows complex scenarios where a plant synthesizes lethal toxins against one grazer, while preemptively withdrawing resources when smelling warning signals from a neighbor.
+2. **Per-Species Trigger Conditions**: Rather than a monolithic matrix, defensive behaviors are defined per flora species via a `list[TriggerConditionSchema]`. To preserve the Rule of 16 memory constraint, this list is strictly bounded to a maximum length of 16 (`MAX_SUBSTANCE_TYPES`). Actions include synthesizing specific substances (`SynthesizeSubstanceAction`) or pulling resources (`ResourceWithdrawalAction`). Crucially, triggers can be initiated by direct localized attacks (`HerbivoreAttackInitiator`) or by sensing ambient chemical compounds (`EnvironmentalSignalInitiator`), and are compiled into sophisticated predicate trees (`CompiledTrigger`). This allows complex scenarios where a plant synthesizes lethal toxins against one grazer, while preemptively withdrawing resources when smelling warning signals from a neighbor.
 
 ## Import/Export Pathways
 
