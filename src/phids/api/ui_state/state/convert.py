@@ -188,6 +188,65 @@ def build_sim_config(state: DraftState) -> SimulationConfig:
     return config
 
 
+def _import_trigger_rule(
+    trig: TriggerConditionSchema,
+    flora_spec_id: int,
+    seen_substance_ids: set[int],
+    imported_substances: list[SubstanceDefinition],
+    imported_trigger_rules: list[TriggerRule],
+) -> None:
+    from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
+    from phids.api.ui_state.substances import SubstanceDefinition
+
+    i_type: Literal["herbivore_attack", "environmental_signal"]
+    if isinstance(trig.initiator, HerbivoreAttackInitiator):
+        i_type = "herbivore_attack"
+        h_id = trig.initiator.herbivore_species_id
+        min_pop = trig.initiator.min_herbivore_population
+        sig_id = -1
+        min_conc = 0.0
+    else:
+        i_type = "environmental_signal"
+        h_id = -1
+        min_pop = 0
+        sig_id = trig.initiator.signal_id
+        min_conc = trig.initiator.min_concentration
+
+    imported_trigger_rules.append(
+        TriggerRule(
+            flora_species_id=flora_spec_id,
+            initiator_type=i_type,
+            herbivore_species_id=h_id,
+            min_herbivore_population=min_pop,
+            initiator_signal_id=sig_id,
+            initiator_min_concentration=min_conc,
+            substance_id=(trig.action.substance_id if isinstance(trig.action, SynthesizeSubstanceAction) else -1),
+            activation_condition=(
+                trig.activation_condition.model_dump(mode="json") if trig.activation_condition is not None else None
+            ),
+        )
+    )
+
+    if isinstance(trig.action, SynthesizeSubstanceAction):
+        if trig.action.substance_id not in seen_substance_ids:
+            seen_substance_ids.add(trig.action.substance_id)
+            imported_substances.append(
+                SubstanceDefinition(
+                    substance_id=trig.action.substance_id,
+                    name=f"Substance {trig.action.substance_id}",
+                    is_toxin=trig.action.is_toxin,
+                    lethal=trig.action.lethal,
+                    repellent=trig.action.repellent,
+                    synthesis_duration=trig.action.synthesis_duration,
+                    aftereffect_ticks=trig.aftereffect_ticks,
+                    lethality_rate=trig.action.lethality_rate,
+                    repellent_walk_ticks=trig.action.repellent_walk_ticks,
+                    energy_cost_per_tick=trig.action.energy_cost_per_tick,
+                    irreversible=trig.action.irreversible,
+                )
+            )
+
+
 def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftState:
     """Reconstruct a ``DraftState`` from a validated :class:`SimulationConfig`.
 
@@ -198,9 +257,7 @@ def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftS
     Returns:
         DraftState: Reconstructed draft ready for use in the builder UI.
     """
-    from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
     from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
-    from phids.api.ui_state.substances import SubstanceDefinition
 
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
@@ -208,57 +265,13 @@ def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftS
 
     for flora_spec in config.flora_species:
         for trig in flora_spec.triggers:
-            i_type: Literal["herbivore_attack", "environmental_signal"]
-            if isinstance(trig.initiator, HerbivoreAttackInitiator):
-                i_type = "herbivore_attack"
-                h_id = trig.initiator.herbivore_species_id
-                min_pop = trig.initiator.min_herbivore_population
-                sig_id = -1
-                min_conc = 0.0
-            else:
-                i_type = "environmental_signal"
-                h_id = -1
-                min_pop = 0
-                sig_id = trig.initiator.signal_id
-                min_conc = trig.initiator.min_concentration
-
-            imported_trigger_rules.append(
-                TriggerRule(
-                    flora_species_id=flora_spec.species_id,
-                    initiator_type=i_type,
-                    herbivore_species_id=h_id,
-                    min_herbivore_population=min_pop,
-                    initiator_signal_id=sig_id,
-                    initiator_min_concentration=min_conc,
-                    substance_id=(
-                        trig.action.substance_id if isinstance(trig.action, SynthesizeSubstanceAction) else -1
-                    ),
-                    activation_condition=(
-                        trig.activation_condition.model_dump(mode="json")
-                        if trig.activation_condition is not None
-                        else None
-                    ),
-                )
+            _import_trigger_rule(
+                trig,
+                flora_spec.species_id,
+                seen_substance_ids,
+                imported_substances,
+                imported_trigger_rules,
             )
-
-            if isinstance(trig.action, SynthesizeSubstanceAction):
-                if trig.action.substance_id not in seen_substance_ids:
-                    seen_substance_ids.add(trig.action.substance_id)
-                    imported_substances.append(
-                        SubstanceDefinition(
-                            substance_id=trig.action.substance_id,
-                            name=f"Substance {trig.action.substance_id}",
-                            is_toxin=trig.action.is_toxin,
-                            lethal=trig.action.lethal,
-                            repellent=trig.action.repellent,
-                            synthesis_duration=trig.action.synthesis_duration,
-                            aftereffect_ticks=trig.aftereffect_ticks,
-                            lethality_rate=trig.action.lethality_rate,
-                            repellent_walk_ticks=trig.action.repellent_walk_ticks,
-                            energy_cost_per_tick=trig.action.energy_cost_per_tick,
-                            irreversible=trig.action.irreversible,
-                        )
-                    )
 
     return DraftState(
         scenario_name=scenario_name or f"{config.grid_width}x{config.grid_height}",
