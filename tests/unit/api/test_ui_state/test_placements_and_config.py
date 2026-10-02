@@ -104,3 +104,61 @@ def test_draft_placements_build_config_and_singleton_helpers() -> None:
     assert get_draft().scenario_name == "Custom"
     reset_draft()
     assert get_draft().scenario_name == "Default Scenario"
+
+def test_from_sim_config_environmental_signal_trigger() -> None:
+    from phids.api.ui_state.state.convert import from_sim_config
+    from phids.api.ui_state.state import DraftState
+    from phids.api.ui_state.substances import SubstanceDefinition
+    from phids.api.services.draft.trigger_rules import add_trigger_rule
+
+    draft = DraftState.default()
+    draft.substance_definitions = [SubstanceDefinition(substance_id=0, name="Alarm")]
+    add_trigger_rule(
+        draft,
+        0,
+        0,
+        0,
+        min_herbivore_population=0,
+        initiator_type="environmental_signal",
+        initiator_signal_id=0,
+        initiator_min_concentration=0.5,
+        activation_condition={
+            "kind": "environmental_signal",
+            "signal_id": 0,
+            "min_concentration": 0.5,
+        },
+    )
+
+    config = build_sim_config(draft)
+    new_draft = from_sim_config(config)
+    assert new_draft.trigger_rules[0].initiator_type == "environmental_signal"
+    assert new_draft.trigger_rules[0].initiator_signal_id == 0
+    assert new_draft.trigger_rules[0].initiator_min_concentration == 0.5
+
+def test_from_sim_config_resource_withdrawal_action() -> None:
+    from phids.api.ui_state.state.convert import from_sim_config
+    from phids.api.ui_state.state import DraftState
+    from phids.api.services.draft.trigger_rules import add_trigger_rule
+
+    draft = DraftState.default()
+    add_trigger_rule(
+        draft,
+        0,
+        0,
+        0,
+        min_herbivore_population=5,
+        action_type="resource_withdrawal",
+        apparent_nutrition_factor=0.5,
+        withdrawal_duration=10,
+        aftereffect_ticks=5,
+        activation_condition={
+            "kind": "herbivore_presence",
+            "herbivore_species_id": 0,
+            "min_herbivore_population": 5,
+        },
+    )
+
+    config = build_sim_config(draft)
+    new_draft = from_sim_config(config)
+    # The current DraftState only stores `substance_id` and assumes SynthesizeSubstanceAction if substance_id != -1
+    assert new_draft.trigger_rules[0].substance_id == -1

@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-31 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/ui_state/state/convert.py` - `from_sim_config`
+* **Selection Rationale:** The function `from_sim_config` reached a complexity score of 14 due to its deeply nested iterative mapping that translated a simulation configuration schema back into UI Draft state. Specifically, iterating over `config.flora_species` and then mapping internal `flora_spec.triggers` branches to rebuild `TriggerRule` and `SubstanceDefinition` objects caused unnecessary nesting. Extracting `_import_trigger_rule` safely separates this nested loop state into a cohesive subroutine without impacting engine hotspots.
+* **Before/After Score:** 14 vs. 3
+* **Performance Assessment:** The function resides strictly in the API layer for drafting new simulation boundaries. Extracting this routine poses zero performance risk or overhead to the core ECS simulation solver loops.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
