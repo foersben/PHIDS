@@ -143,6 +143,19 @@ def _parse_species_ids(raw: str | None) -> set[int] | None:
     return out if out else None
 
 
+def _filter_species_map(data: dict[int, object], keep: set[int]) -> dict[int, object]:
+    """Filter a species map to retain only IDs present in the keep set.
+
+    Args:
+        data: The species map to filter.
+        keep: Set of species IDs to keep.
+
+    Returns:
+        Filtered species map.
+    """
+    return {sid: val for sid, val in data.items() if sid in keep}
+
+
 def _filter_single_row(
     row: TelemetryRow,
     flora_keep: set[int] | None,
@@ -159,16 +172,12 @@ def _filter_single_row(
         The filtered telemetry row.
     """
     clone = dict(row)
-    plant_pop = _species_map(row, "plant_pop_by_species")
-    plant_energy = _species_map(row, "plant_energy_by_species")
-    defense_cost = _species_map(row, "defense_cost_by_species")
-    swarm_pop = _species_map(row, "swarm_pop_by_species")
     if flora_keep is not None:
-        clone["plant_pop_by_species"] = {sid: val for sid, val in plant_pop.items() if sid in flora_keep}
-        clone["plant_energy_by_species"] = {sid: val for sid, val in plant_energy.items() if sid in flora_keep}
-        clone["defense_cost_by_species"] = {sid: val for sid, val in defense_cost.items() if sid in flora_keep}
+        clone["plant_pop_by_species"] = _filter_species_map(_species_map(row, "plant_pop_by_species"), flora_keep)
+        clone["plant_energy_by_species"] = _filter_species_map(_species_map(row, "plant_energy_by_species"), flora_keep)
+        clone["defense_cost_by_species"] = _filter_species_map(_species_map(row, "defense_cost_by_species"), flora_keep)
     if herbivore_keep is not None:
-        clone["swarm_pop_by_species"] = {sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep}
+        clone["swarm_pop_by_species"] = _filter_species_map(_species_map(row, "swarm_pop_by_species"), herbivore_keep)
     return clone
 
 
@@ -328,6 +337,50 @@ def aggregate_to_dataframe(
     return pd.DataFrame(data)
 
 
+def _get_total_population_axis(
+    rows: TelemetryRows,
+    is_flora: bool,
+) -> tuple[list[float], str]:
+    """Extract phase-space total population values and human-readable axis label.
+
+    Args:
+        rows: Sequence of recorded telemetry frame dictionaries.
+        is_flora: True if selecting flora species, False for herbivore species.
+
+    Returns:
+        tuple[list[float], str]: Population values and label.
+    """
+    if is_flora:
+        return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
+    return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
+
+
+def _get_species_population_axis(
+    rows: TelemetryRows,
+    species_id: int,
+    is_flora: bool,
+    names: dict[int, str] | None,
+) -> tuple[list[float], str]:
+    """Extract phase-space species population values and human-readable axis label.
+
+    Args:
+        rows: Sequence of recorded telemetry frame dictionaries.
+        species_id: Species identifier.
+        is_flora: True if selecting flora species, False for herbivore species.
+        names: Optional display name lookup dictionary mapping species ID to string.
+
+    Returns:
+        tuple[list[float], str]: Population values and label.
+    """
+    if is_flora:
+        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Flora {species_id}")
+    else:
+        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Herbivore {species_id}")
+    return y, name
+
+
 def get_phasespace_axis(
     rows: TelemetryRows,
     species_id: int,
@@ -356,17 +409,8 @@ def get_phasespace_axis(
         ([100.0], 'Flora (Total)')
     """
     if species_id == 0:
-        if is_flora:
-            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
-        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
-
-    if is_flora:
-        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Flora {species_id}")
-    else:
-        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Herbivore {species_id}")
-    return y, name
+        return _get_total_population_axis(rows, is_flora)
+    return _get_species_population_axis(rows, species_id, is_flora, names)
 
 
 _get_phasespace_axis = get_phasespace_axis
