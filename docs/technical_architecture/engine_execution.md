@@ -533,8 +533,7 @@ def _numba_convolve_signal_layer(
     # 2. Toroidal Gaussian Diffusion (Convolution) & Decay
     # ...
     v *= decay
-    if v < epsilon:
-        v = 0.0
+    v = 0.0 if v < epsilon else v
     write_buffer[x, y] = v
 ```
 
