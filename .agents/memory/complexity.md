@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-03 - Complexity Refactoring Report
+* **Target Function:** `src/phids/telemetry/export/core.py` - `_filter_single_row` and `get_phasespace_axis`
+* **Selection Rationale:** The functions were approaching the complexity limit with a score of 14 due to deeply nested logic for filtering species and creating phase-space graphs. Given their position in the telemetry export layer, extracting the loop states into separate functions posed no performance risk to the core engine solver hotspots.
+* **Before/After Score:** 14 vs. 2 (for _filter_single_row) and 1 (for get_phasespace_axis)
+* **Performance Assessment:** The extraction of logic poses zero risk to the core engine solver hotspots since this is used only in telemetry exports.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
