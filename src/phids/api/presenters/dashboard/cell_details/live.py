@@ -80,16 +80,33 @@ def _get_live_substances(
         )
         for payload in visible_substances
     }
-    for signal_id in range(env.num_signals):
-        if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
-            continue
-        substance_key = (signal_id, False)
-        if substance_key in visible_keys:
-            continue
-        visible_substances.append(
-            _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
+    _add_live_environment_signals(env, plant, substance_names, visible_substances, visible_keys)
+    _add_live_environment_toxins(env, plant, substance_names, visible_substances, visible_keys)
+    visible_substances.sort(
+        key=lambda payload: (
+            payload.get("kind") == "toxin",
+            _coerce_int(payload.get("substance_id", -1), default=-1),
         )
-        visible_keys.add(substance_key)
+    )
+    return visible_substances
+
+
+def _add_live_environment_toxins(
+    env: GridEnvironment,
+    plant: PlantComponent,
+    substance_names: dict[int, str],
+    visible_substances: list[dict[str, object]],
+    visible_keys: set[tuple[int, bool]],
+) -> None:
+    """Helper to append active environmental toxins to the visible list.
+
+    Args:
+        env: The grid environment.
+        plant: The target plant component.
+        substance_names: Mapping of substance IDs to names.
+        visible_substances: Accumulated list of substance payloads.
+        visible_keys: Set of already seen substance keys to prevent duplicates.
+    """
     for toxin_id in range(env.num_toxins):
         if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
             continue
@@ -100,13 +117,34 @@ def _get_live_substances(
             _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
         )
         visible_keys.add(substance_key)
-    visible_substances.sort(
-        key=lambda payload: (
-            payload.get("kind") == "toxin",
-            _coerce_int(payload.get("substance_id", -1), default=-1),
+
+
+def _add_live_environment_signals(
+    env: GridEnvironment,
+    plant: PlantComponent,
+    substance_names: dict[int, str],
+    visible_substances: list[dict[str, object]],
+    visible_keys: set[tuple[int, bool]],
+) -> None:
+    """Helper to append active environmental signals to the visible list.
+
+    Args:
+        env: The grid environment.
+        plant: The target plant component.
+        substance_names: Mapping of substance IDs to names.
+        visible_substances: Accumulated list of substance payloads.
+        visible_keys: Set of already seen substance keys to prevent duplicates.
+    """
+    for signal_id in range(env.num_signals):
+        if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
+            continue
+        substance_key = (signal_id, False)
+        if substance_key in visible_keys:
+            continue
+        visible_substances.append(
+            _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
         )
-    )
-    return visible_substances
+        visible_keys.add(substance_key)
 
 
 def _get_live_mycorrhizal_neighbours(

@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-04 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/presenters/dashboard/cell_details/live.py` - `_get_live_substances`
+* **Selection Rationale:** The function accumulated a cognitive complexity score of 14 due to gathering and deduplicating active substances from both owned subsets and environment grid layers. Given its placement in the API presenter layer, extracting the loop state appending for signals and toxins into private handlers strictly improves modularity without risking the engine's core performance.
+* **Before/After Score:** 14 vs. 9 (Main function), with helpers `_add_live_environment_signals` (5) and `_add_live_environment_toxins` (5).
+* **Performance Assessment:** The extracted logic executes in the UI payload construction path and strictly passes references for `env` and sets for deduplication. Benchmark results on `test_dashboard_payload_build_and_json_encode_benchmark` show standard deviation overlap, indicating no measureable regression.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, matrix parity gates, and complexipy passed successfully.
