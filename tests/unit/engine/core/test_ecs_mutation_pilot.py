@@ -108,3 +108,12 @@ def test_ecs_world_structural_version() -> None:
     world.destroy_entity(e1.entity_id)
     v4 = world._structural_version
     assert v4 == v3 + 1, "Destroying an entity should increment version by exactly 1"
+
+def test_ecs_entity_remove_nonexistent_component() -> None:
+    """Validate removing a non-existent component does not raise KeyError."""
+    entity = Entity(100)
+    assert not entity.has_component(PlantComponent)
+    # The original implementation uses pop(..., None) to avoid KeyError.
+    # The mutant removes the default 'None', which causes a KeyError here.
+    entity.remove_component(PlantComponent)
+    assert not entity.has_component(PlantComponent)
