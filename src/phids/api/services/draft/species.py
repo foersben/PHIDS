@@ -46,6 +46,27 @@ def add_flora(draft: DraftState, params: FloraSpeciesParams) -> None:
     )
 
 
+def _remove_flora_trigger_rules(rules: list[TriggerRule], species_id: int) -> list[TriggerRule]:
+    """Helper to remove flora species from trigger rules and compact IDs.
+
+    Args:
+        rules: The current list of trigger rules.
+        species_id: The ID of the flora species to remove.
+
+    Returns:
+        The updated list of trigger rules.
+    """
+    new_rules: list[TriggerRule] = []
+    for rule in rules:
+        if rule.flora_species_id == species_id:
+            continue
+        new_rule = dataclasses.replace(rule)
+        if new_rule.flora_species_id > species_id:
+            new_rule.flora_species_id -= 1
+        new_rules.append(new_rule)
+    return new_rules
+
+
 def remove_flora(draft: DraftState, species_id: int) -> None:
     """Remove one flora species and compact all dependent references.
 
@@ -75,15 +96,7 @@ def remove_flora(draft: DraftState, species_id: int) -> None:
         if idx < len(row):
             del row[idx]
 
-    new_rules: list[TriggerRule] = []
-    for rule in draft.trigger_rules:
-        if rule.flora_species_id == species_id:
-            continue
-        new_rule = dataclasses.replace(rule)
-        if new_rule.flora_species_id > species_id:
-            new_rule.flora_species_id -= 1
-        new_rules.append(new_rule)
-    draft.trigger_rules = new_rules
+    draft.trigger_rules = _remove_flora_trigger_rules(draft.trigger_rules, species_id)
 
     draft.initial_plants = [p for p in draft.initial_plants if p.species_id != species_id]
     rebuild_species_ids(draft)
