@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/telemetry/export/core.py` - `get_phasespace_axis`
+* **Selection Rationale:** The function accumulated a cognitive complexity score of 14 due to nested if-else statements managing logic for both total ecosystem extraction (`species_id == 0`) and specific species mapping. Extracting the separate scenarios into dedicated helpers drastically flattens the main function logic without introducing any engine solver hotpath changes.
+* **Before/After Score:** 14 vs. 1
+* **Performance Assessment:** The extracted logic strictly runs during telemetry and API metric export steps. Breaking out the data extraction into sub-functions introduces no overhead into the core simulation loops, and retains perfectly identical operational parameters while avoiding memory allocation bottlenecks.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.

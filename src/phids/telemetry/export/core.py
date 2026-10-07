@@ -328,6 +328,32 @@ def aggregate_to_dataframe(
     return pd.DataFrame(data)
 
 
+def _get_phasespace_total(
+    rows: TelemetryRows,
+    is_flora: bool,
+) -> tuple[list[float], str]:
+    """Extract phase-space population values for total ecosystem."""
+    if is_flora:
+        return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
+    return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
+
+
+def _get_phasespace_species(
+    rows: TelemetryRows,
+    species_id: int,
+    is_flora: bool,
+    names: dict[int, str] | None,
+) -> tuple[list[float], str]:
+    """Extract phase-space population values for a specific species."""
+    if is_flora:
+        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Flora {species_id}")
+    else:
+        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
+        name = (names or {}).get(species_id, f"Herbivore {species_id}")
+    return y, name
+
+
 def get_phasespace_axis(
     rows: TelemetryRows,
     species_id: int,
@@ -356,17 +382,8 @@ def get_phasespace_axis(
         ([100.0], 'Flora (Total)')
     """
     if species_id == 0:
-        if is_flora:
-            return [float(r.get("flora_population", 0)) for r in rows], "Flora (Total)"
-        return [float(r.get("herbivore_population", 0)) for r in rows], "Herbivores (Total)"
-
-    if is_flora:
-        y = [float(r.get("plant_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Flora {species_id}")
-    else:
-        y = [float(r.get("swarm_pop_by_species", {}).get(species_id, 0)) for r in rows]
-        name = (names or {}).get(species_id, f"Herbivore {species_id}")
-    return y, name
+        return _get_phasespace_total(rows, is_flora)
+    return _get_phasespace_species(rows, species_id, is_flora, names)
 
 
 _get_phasespace_axis = get_phasespace_axis
