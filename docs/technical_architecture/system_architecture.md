@@ -82,7 +82,7 @@ As illustrated above, during the tick, the Engine relies strictly on the `State_
 
 ## Memory Bounding: The "Rule of 16"
 
-Dynamic memory allocation during the hot simulation loop introduces prohibitive latency. The architecture imposes a strict upper bound constraint: the system accommodates a maximum of 16 distinct flora species, 16 herbivore species, and 16 substance mechanisms. Matrices (such as diet compatibility or trigger relationships) are pre-allocated at a fixed $(16 \times 16)$ scale during bootstrapping.
+Dynamic memory allocation during the hot simulation loop introduces prohibitive latency. The architecture imposes a strict upper bound constraint: the system accommodates a maximum of 16 distinct flora species, 16 herbivore species, and 16 substance mechanisms. While diet compatibility is pre-allocated at a fixed $(16 \times 16)$ scale, trigger relationships are enforced via a bounded per-species list of up to 16 conditions to preserve strict cache boundaries during bootstrapping.
 
 ## 256-Bit AVX2 SIMD & Numba JIT Accelerated Kernels
 
@@ -118,7 +118,7 @@ flowchart TD
     A["<b>🌐 1. Asynchronous Ingress Layer</b><br/><hr style='border:1px solid #3B82F6; margin: 4px 0;'/><br/><i>FastAPI REST Control Surface</i><br/>• POST /api/scenario/load<br/>• POST /api/simulation/start|pause<br/>• PUT /api/simulation/wind"]:::ingress
 
     %% 2. STRUCTURAL CONSTRAINTS
-    B["<b>🗃️ 2. Structural Memory Bounding</b><br/><hr style='border:1px solid #94A3B8; margin: 4px 0;'/><br/><i>Strict Memory Bounding (Rule of 16)</i><br/>• [16x16] Diet Compatibility Matrix<br/>• [16x16] Substance Trigger Matrix<br/>• Pre-allocated NumPy Environment Arrays"]:::constraint
+    B["<b>🗃️ 2. Structural Memory Bounding</b><br/><hr style='border:1px solid #94A3B8; margin: 4px 0;'/><br/><i>Strict Memory Bounding (Rule of 16)</i><br/>• [16x16] Diet Compatibility Matrix<br/>• [16 Max] Per-Species Trigger Rules<br/>• Pre-allocated NumPy Environment Arrays"]:::constraint
 
     %% 3. ENGINE CORE
     C["<b>⚙️ 3. Headless Engine Core</b><br/><hr style='border:1px solid #8B5CF6; margin: 4px 0;'/><br/><i>SimulationLoop (loop.py)</i><br/>• <b>ECSWorld:</b> O(1) Spatial Hash Entity Indexing<br/>• <b>GridEnvironment:</b> Double-Buffered CA Layers"]:::core
@@ -167,7 +167,7 @@ flowchart TD
     subgraph Component_Registry ["🗃️ 2. Memory Bounds (Rule of 16 Pre-Allocated Arrays)"]
         PC["PlantComponent Matrices (16x16)"]
         SC["SwarmComponent Matrices (16x16)"]
-        SUB["SubstanceComponent Profiles (16)"]
+        SUB["SubstanceComponent Profiles (16 Max)"]
     end
 
     %% 3. Engine Core
