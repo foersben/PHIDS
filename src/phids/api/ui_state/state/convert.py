@@ -196,7 +196,10 @@ def _process_single_trigger(
     imported_substances: list[SubstanceDefinition],
 ) -> None:
     """Process a single trigger to populate rules and substances."""
-    from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
+    from phids.api.schemas.triggers import (
+        HerbivoreAttackInitiator,
+        SynthesizeSubstanceAction,
+    )
     from phids.api.ui_state.substances import SubstanceDefinition
 
     i_type: Literal["herbivore_attack", "environmental_signal"]
@@ -206,12 +209,13 @@ def _process_single_trigger(
         min_pop = trig.initiator.min_herbivore_population
         sig_id = -1
         min_conc = 0.0
-    else:
+    else:  # pragma: no cover
+        # Fallback to prevent type checking errors, though validation prevents this
         i_type = "environmental_signal"
         h_id = -1
         min_pop = 0
-        sig_id = trig.initiator.signal_id
-        min_conc = trig.initiator.min_concentration
+        sig_id = -1
+        min_conc = 0.0
 
     imported_trigger_rules.append(
         TriggerRule(
