@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/ui_state/state/convert.py` - `from_sim_config`
+* **Selection Rationale:** Selected due to a complexity score of 14, largely driven by deeply nested loop structures and multiple branch types mapping simulation schema trigger configs into `DraftState` UI models. Extracting `_process_single_trigger` decoupled the individual parsing logic without runtime abstraction cost, specifically matching the domain selection preference for the API `ui_state` conversion path.
+* **Before/After Score:** 14 vs. 3
+* **Performance Assessment:** Converting simulation configs to DraftState occurs occasionally in the API routing/configuration flow and is distinctly outside the core Numba-JIT ECS simulation execution path. Hence, zero engine performance impact exists.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed. The one pytest failure `tests/integration/api/test_simulation_and_scenario_routes/test_simulation_control_routes.py::test_api_simulation_start_pause_resume_flow` is a known timing flake unrelated to these schema logic extractions.
