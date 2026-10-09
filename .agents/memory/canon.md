@@ -43,3 +43,8 @@ Action: When encountering a discrepancy involving performance-critical logic or 
 
 Learning: The scenario authoring guide historically referenced a monolithic "16x16 Substance Trigger Interaction Matrix" (Trigger_Matrix), which became outdated after the codebase evolved to use per-species bounded `list[TriggerConditionSchema]` architectures that compile into discrete `CompiledTrigger` trees, while still preserving the underlying Rule of 16 memory bounds via `MAX_SUBSTANCE_TYPES`.
 Action: When evaluating documentation vs. code discrepancies regarding bounded architecture representations, trust the active runtime Pydantic schemas (e.g. `FloraSpeciesParams`, `TriggerConditionSchema`) as the source of truth, and update the architectural Markdown diagrams and text to reflect the per-species implementation while retaining explanatory prose.
+
+## 2024-10-09 - Alignment of Substance Trigger Matrix Documentation
+
+Learning: The system architecture documentation historically referenced a "16x16 Substance Trigger Matrix", which became outdated after the codebase evolved to use per-species bounded `list[TriggerConditionSchema]` architectures that compile into discrete `CompiledTrigger` trees, while still preserving the underlying Rule of 16 memory bounds via `MAX_SUBSTANCE_TYPES`.
+Action: When evaluating documentation vs. code discrepancies regarding bounded architecture representations, trust the active runtime Pydantic schemas (e.g. `FloraSpeciesParams`, `TriggerConditionSchema`) as the source of truth, and update the architectural Markdown diagrams and text to reflect the per-species implementation while retaining explanatory prose.
