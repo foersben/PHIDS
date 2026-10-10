@@ -1,0 +1,6 @@
+I will refactor `src/phids/api/ui_state/state/convert.py`, specifically targeting the `from_sim_config` function which currently has a cognitive complexity of 14.
+
+1. I will extract the inner loop logic mapping a `TriggerConditionSchema` to a `TriggerRule` and `SubstanceDefinition` into a private helper function, for example, `_import_trigger_rule_and_substance`.
+2. This refactoring will decrease the depth of nesting and lower the cognitive complexity score well below 12.
+3. I will then ensure all gates pass (ruff formatting/checking, mypy checking, pytest, and matrix parity).
+4. After verifying the complexity is reduced and all tests pass, I will document this refactoring in `.agents/memory/complexity.md`.
