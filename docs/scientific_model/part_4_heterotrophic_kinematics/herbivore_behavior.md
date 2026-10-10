@@ -175,6 +175,29 @@ Where:
 - $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
 - $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
 
+
+
+## 7. Collateral Damage: Trampling and Incidental Mortality
+
+When a massive herd of herbivores moves across a field, they do not merely consume targeted flora—they accidentally crush, trample, or clip fragile seeds and saplings underfoot or during indiscriminate foraging.
+
+Rather than implementing a computationally prohibitive collision engine, PHIDS models this collateral damage probabilistically during spatial coordinate transitions (when a swarm moves to a new tile).
+
+When a swarm enters a new spatial coordinate $(nx, ny)$, the engine calculates a destruction probability $P(\text{destroy})$ for each co-located plant entity based on the plant's structural maturity and the swarm's population density:
+
+$$P(\text{destroy}) = \min\left(P_{\max}, \text{population} \times k_{\text{incidental}} \times \max\left(0, 1 - \frac{M_{\text{structural}}}{M_{\max}}\right)\right)$$
+
+Where:
+
+- $P_{\max}$: The maximum per-step destruction probability ceiling (default $0.50$).
+- $k_{\text{incidental}}$: The `incidental_mortality_factor` configured for the herbivore species.
+- $M_{\text{structural}}$: The plant's permanent physical growth (lignin, woodiness).
+- $M_{\max}$: The plant species' structural mass ceiling.
+
+If a standard uniform random variable $X \sim U(0, 1)$ is less than $P(\text{destroy})$, the plant entity is immediately culled from the simulation.
+
+This mathematical formulation dictates that mature trees ($M_{\text{structural}} \approx M_{\max}$) are entirely immune to trampling ($P(\text{destroy}) = 0$), while newly dispersed seeds ($M_{\text{structural}} \approx 0$) face the maximum theoretical risk of being crushed by heavy grazing herds ($P(\text{destroy}) \propto \text{population} \times k_{\text{incidental}}$).
+
 ## Co-Evolutionary Adaptations & Resistance Matrices
 
 To counter plant defenses, the PHIDS engine supports formal evolutionary arms races through the `HerbivoreResistancesSchema` attached to the `HerbivoreSpeciesParams` (with the dictionary mapping `resistances`).
