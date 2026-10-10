@@ -47,11 +47,16 @@ def _init_base_and_current_jit(
 
     for x in range(width):
         for y in range(height):
-            b_val = alpha * plant_energy[x, y] * apparent_nutrition_layer[x, y]
-            for t in range(num_toxins):
-                b_val -= beta * toxin_layers[t, x, y]
-            base[x, y] = b_val
-            current[x, y] = b_val
+            base[x, y] = alpha * plant_energy[x, y] * apparent_nutrition_layer[x, y]
+
+    for t in range(num_toxins):
+        for x in range(width):
+            for y in range(height):
+                base[x, y] -= beta * toxin_layers[t, x, y]
+
+    for x in range(width):
+        for y in range(height):
+            current[x, y] = base[x, y]
 
 
 @njit(cache=True, fastmath=True)
