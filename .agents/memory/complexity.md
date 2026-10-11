@@ -131,3 +131,17 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/ui_state/state/convert.py` - `from_sim_config`
+* **Selection Rationale:** The function `from_sim_config` reached a complexity score of 14 due to its deeply nested iterative mapping for extracting and configuring triggered substance rules and definitions. As an API layer configuration function, extracting the trigger parsing into a cohesive private helper function `_process_single_trigger` poses zero performance risk to the core engine solver hotspots.
+* **Before/After Score:** 14 vs. 3
+* **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The loop iteration overhead is trivial and does not modify any runtime simulation engine characteristics. No performance regressions.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/ui_state/state/convert.py` - `from_sim_config`
+* **Selection Rationale:** The function `from_sim_config` reached a complexity score of 14 due to its deeply nested iterative mapping for extracting and configuring triggered substance rules and definitions. As an API layer configuration function, extracting the trigger parsing into a cohesive private helper function `_process_single_trigger` poses zero performance risk to the core engine solver hotspots.
+* **Before/After Score:** 14 vs. 3
+* **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The loop iteration overhead is trivial and does not modify any runtime simulation engine characteristics. No performance regressions.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
