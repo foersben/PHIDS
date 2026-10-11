@@ -43,3 +43,8 @@ Action: When encountering a discrepancy involving performance-critical logic or 
 
 Learning: The scenario authoring guide historically referenced a monolithic "16x16 Substance Trigger Interaction Matrix" (Trigger_Matrix), which became outdated after the codebase evolved to use per-species bounded `list[TriggerConditionSchema]` architectures that compile into discrete `CompiledTrigger` trees, while still preserving the underlying Rule of 16 memory bounds via `MAX_SUBSTANCE_TYPES`.
 Action: When evaluating documentation vs. code discrepancies regarding bounded architecture representations, trust the active runtime Pydantic schemas (e.g. `FloraSpeciesParams`, `TriggerConditionSchema`) as the source of truth, and update the architectural Markdown diagrams and text to reflect the per-species implementation while retaining explanatory prose.
+
+## 2025-02-18 - Aligning Schema Default with OKF Data-Flow Matrix Baseline
+
+Learning: The `ResourceWithdrawalAction` pydantic schema in `src/phids/api/schemas/triggers.py` had a default `withdrawal_duration` of 10. However, the scientific model's Data-Flow Matrix in `docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md` explicitly models the baseline behavior starting with $\tau_{withdrawal} = 2$.
+Action: Always verify that Pydantic default configurations align with the established baseline parameters presented in normative Data-Flow Matrix examples to prevent subtle initialization drift across tests.
