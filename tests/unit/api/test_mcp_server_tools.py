@@ -181,7 +181,7 @@ def test_export_telemetry_data_csv() -> None:
                 assert res["data"] == "test_csv_data"
 
 
-@patch("phids.telemetry.export.png.generate_png_bytes")
+@patch("phids.telemetry.export.png.core.generate_png_bytes")
 def test_export_telemetry_data_png(mock_export: MagicMock) -> None:
     """Test export_telemetry_data png output."""
     import base64

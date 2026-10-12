@@ -19,7 +19,7 @@ from phids.telemetry.export.core import (
     telemetry_to_dataframe,
 )
 from phids.telemetry.export.latex import export_bytes_tex_table
-from phids.telemetry.export.png import generate_png_bytes
+from phids.telemetry.export.png.core import generate_png_bytes
 from phids.telemetry.export.structured import (
     export_bytes_csv,
     export_bytes_json,

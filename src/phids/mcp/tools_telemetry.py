@@ -264,7 +264,7 @@ def _export_png_telemetry(
     Returns:
         str: Base64-encoded PNG image string.
     """
-    from phids.telemetry.export.png import generate_png_bytes
+    from phids.telemetry.export.png.core import generate_png_bytes
 
     bytes_data = generate_png_bytes(
         filtered_rows,

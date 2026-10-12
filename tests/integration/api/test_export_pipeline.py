@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 from phids.telemetry.export.core import telemetry_to_dataframe
 from phids.telemetry.export.latex import export_bytes_tex_table
-from phids.telemetry.export.png import generate_png_bytes
+from phids.telemetry.export.png.core import generate_png_bytes
 from phids.telemetry.export.tikz import generate_tikz_str
 
 
