@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/presenters/dashboard/mycorrhizal.py` - `_build_live_mycorrhizal_links_for_cell`
+* **Selection Rationale:** Reached a complexity score of 13 due to iterating through ECS entities twice: first to find the center plant matching the grid cell, and second to compile and validate the links for its mycorrhizal connections. Extracting the center plant search into `_find_center_plant` and the link formatting into `_build_neighbour_links_for_plant` flattens the execution flow.
+* **Before/After Score:** 13 vs. 1 (Max score among extracted helpers is 7).
+* **Performance Assessment:** The extracted logic executes entirely within the API dashboard payload serialization path. Object references and ECS lookups remain identical to the unextracted version, carrying no performance cost to the Numba core engine hotspots.
+* **Test Verification:** Confirmed that `ruff`, `mypy`, `pytest`, matrix parity scripts, and `complexipy` tests all pass.

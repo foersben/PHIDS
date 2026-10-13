@@ -173,42 +173,40 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
     return links
 
 
-def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int) -> list[_MycorrhizalLinkPayload]:
-    """Serialise the set of active root links touching a specific cell in the live ECS world.
-
-    This helper inspects only the plant located at ``(x, y)`` and follows its direct
-    ``mycorrhizal_connections`` set, retrieving only the immediate neighbours to
-    construct the touching link payloads. This reduces time complexity from $O(N)$
-    to $O(1)$ compared to scanning the entire ECS plant population.
+def _find_center_plant(world: Any, entities_at_cell: set[int] | frozenset[int]) -> Any:
+    """Find the first plant component among the entities at a specific cell.
 
     Args:
-        loop: The active simulation loop whose ECS world is queried.
-        x: Target column index.
-        y: Target row index.
+        world: The ECS world.
+        entities_at_cell: The entity IDs at the target cell.
 
     Returns:
-        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
-        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+        The plant component if found, else None.
     """
     from phids.engine.components.plant import PlantComponent
 
-    world = loop.world
-    entities_at_cell = world.entities_at(x, y)
-
-    center_plant = None
     for entity_id in entities_at_cell:
         if not world.has_entity(entity_id):
             continue
         entity = world.get_entity(entity_id)
         if entity.has_component(PlantComponent):
-            center_plant = entity.get_component(PlantComponent)
-            break
+            return entity.get_component(PlantComponent)
+    return None
 
-    if center_plant is None:
-        return []
+
+def _build_neighbour_links_for_plant(world: Any, center_plant: Any) -> list[_MycorrhizalLinkPayload]:
+    """Build the list of mycorrhizal links for a given center plant.
+
+    Args:
+        world: The ECS world.
+        center_plant: The center plant component.
+
+    Returns:
+        A list of link dictionaries.
+    """
+    from phids.engine.components.plant import PlantComponent
 
     links: list[_MycorrhizalLinkPayload] = []
-
     for neighbour_id in sorted(center_plant.mycorrhizal_connections):
         if not world.has_entity(neighbour_id):
             continue
@@ -218,10 +216,6 @@ def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int)
 
         neighbour = neighbour_entity.get_component(PlantComponent)
 
-        # Ensure consistent ordering for the pair to avoid directionality issues
-        # (Though since we only query from one center_plant, it doesn't strictly matter
-        # for deduplication within this cell's scope, but it's good practice to match
-        # the global payload format).
         plant_a, plant_b = center_plant, neighbour
         if plant_a.entity_id > plant_b.entity_id:
             plant_a, plant_b = plant_b, plant_a
@@ -240,6 +234,33 @@ def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int)
             }
         )
     return links
+
+
+def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int) -> list[_MycorrhizalLinkPayload]:
+    """Serialise the set of active root links touching a specific cell in the live ECS world.
+
+    This helper inspects only the plant located at ``(x, y)`` and follows its direct
+    ``mycorrhizal_connections`` set, retrieving only the immediate neighbours to
+    construct the touching link payloads. This reduces time complexity from $O(N)$
+    to $O(1)$ compared to scanning the entire ECS plant population.
+
+    Args:
+        loop: The active simulation loop whose ECS world is queried.
+        x: Target column index.
+        y: Target row index.
+
+    Returns:
+        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
+        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+    """
+    world = loop.world
+    entities_at_cell = world.entities_at(x, y)
+
+    center_plant = _find_center_plant(world, entities_at_cell)
+    if center_plant is None:
+        return []
+
+    return _build_neighbour_links_for_plant(world, center_plant)
 
 
 def _build_live_mycorrhizal_links_from_snapshot(snapshot: dict[str, Any]) -> list[_MycorrhizalLinkPayload]:
