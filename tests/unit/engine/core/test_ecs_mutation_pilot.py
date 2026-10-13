@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.ecs import ECSWorld, Entity
 
@@ -108,3 +110,38 @@ def test_ecs_world_structural_version() -> None:
     world.destroy_entity(e1.entity_id)
     v4 = world._structural_version
     assert v4 == v3 + 1, "Destroying an entity should increment version by exactly 1"
+
+
+def test_ecs_world_initial_structural_version():
+    """Verify that a newly instantiated ECSWorld has a _structural_version of exactly 0.
+
+    This explicitly kills mutmut mutant 10, which mutates:
+    - self._structural_version: int = 0
+    + self._structural_version: int = 1
+    """
+    world = ECSWorld()
+    assert world._structural_version == 0, "Initial structural version must be exactly 0"
+
+
+def test_ecs_entity_remove_component_pop_returns_default():
+    """Verify that removing a non-existent component does not raise a KeyError.
+
+    This explicitly kills mutmut mutant 3, which mutates:
+    - self._components.pop(component_type, None)
+    + self._components.pop(component_type, )
+    """
+    from phids.engine.core.ecs import Entity
+
+    class FakeComp:
+        pass
+
+    e = Entity(1)
+    e._components[FakeComp] = FakeComp()
+    e.remove_component(FakeComp)
+    # the second argument to pop is missing if mutmut_3 survives. So if we pop a nonexistent one, it will raise KeyError
+    # so we call it again on a missing component.
+    # We'll assert that calling remove_component on a non-existent component does not raise KeyError.
+    try:
+        e.remove_component(FakeComp)
+    except KeyError:
+        pytest.fail("remove_component raised KeyError. It should pop with a default of None.")
