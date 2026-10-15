@@ -75,15 +75,7 @@ def remove_flora(draft: DraftState, species_id: int) -> None:
         if idx < len(row):
             del row[idx]
 
-    new_rules: list[TriggerRule] = []
-    for rule in draft.trigger_rules:
-        if rule.flora_species_id == species_id:
-            continue
-        new_rule = dataclasses.replace(rule)
-        if new_rule.flora_species_id > species_id:
-            new_rule.flora_species_id -= 1
-        new_rules.append(new_rule)
-    draft.trigger_rules = new_rules
+    draft.trigger_rules = _compact_flora_trigger_rules(draft.trigger_rules, species_id)
 
     draft.initial_plants = [p for p in draft.initial_plants if p.species_id != species_id]
     rebuild_species_ids(draft)
@@ -94,6 +86,27 @@ def remove_flora(draft: DraftState, species_id: int) -> None:
         len(draft.flora_species),
         len(draft.trigger_rules),
     )
+
+
+def _compact_flora_trigger_rules(trigger_rules: list[TriggerRule], removed_species_id: int) -> list[TriggerRule]:
+    """Filter and shift flora_species_id for trigger rules after a flora species is removed.
+
+    Args:
+        trigger_rules: The list of trigger rules to compact.
+        removed_species_id: The ID of the removed flora species.
+
+    Returns:
+        The compacted list of trigger rules.
+    """
+    new_rules: list[TriggerRule] = []
+    for rule in trigger_rules:
+        if rule.flora_species_id == removed_species_id:
+            continue
+        new_rule = dataclasses.replace(rule)
+        if new_rule.flora_species_id > removed_species_id:
+            new_rule.flora_species_id -= 1
+        new_rules.append(new_rule)
+    return new_rules
 
 
 def add_herbivore(draft: DraftState, params: HerbivoreSpeciesParams) -> None:

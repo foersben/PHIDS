@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-15 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/services/draft/species.py` - `remove_flora`
+* **Selection Rationale:** The function had a complexity score of 14, largely driven by the in-line loop modifying `draft.trigger_rules` to shift IDs downwards and removing rules. Extracting this into a private helper function flattens the main function without any performance risk.
+* **Before/After Score:** 14 vs. 9
+* **Performance Assessment:** As an API draft configuration handler, this logic lies outside the core engine hot path. The abstraction introduces negligible overhead and simplifies understanding of species removal side effects.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
