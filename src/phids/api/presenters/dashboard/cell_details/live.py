@@ -80,8 +80,27 @@ def _get_live_substances(
         )
         for payload in visible_substances
     }
+    _append_diffused_signals(visible_substances, visible_keys, env, plant.x, plant.y, substance_names)
+    _append_diffused_toxins(visible_substances, visible_keys, env, plant.x, plant.y, substance_names)
+    visible_substances.sort(
+        key=lambda payload: (
+            payload.get("kind") == "toxin",
+            _coerce_int(payload.get("substance_id", -1), default=-1),
+        )
+    )
+    return visible_substances
+
+
+def _append_diffused_signals(
+    visible_substances: list[dict[str, object]],
+    visible_keys: set[tuple[int, bool]],
+    env: GridEnvironment,
+    x: int,
+    y: int,
+    substance_names: dict[int, str],
+) -> None:
     for signal_id in range(env.num_signals):
-        if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
+        if float(env.signal_layers[signal_id, x, y]) <= 0.0:
             continue
         substance_key = (signal_id, False)
         if substance_key in visible_keys:
@@ -90,8 +109,18 @@ def _get_live_substances(
             _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
         )
         visible_keys.add(substance_key)
+
+
+def _append_diffused_toxins(
+    visible_substances: list[dict[str, object]],
+    visible_keys: set[tuple[int, bool]],
+    env: GridEnvironment,
+    x: int,
+    y: int,
+    substance_names: dict[int, str],
+) -> None:
     for toxin_id in range(env.num_toxins):
-        if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
+        if float(env.toxin_layers[toxin_id, x, y]) <= 0.0:
             continue
         substance_key = (toxin_id, True)
         if substance_key in visible_keys:
@@ -100,13 +129,6 @@ def _get_live_substances(
             _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
         )
         visible_keys.add(substance_key)
-    visible_substances.sort(
-        key=lambda payload: (
-            payload.get("kind") == "toxin",
-            _coerce_int(payload.get("substance_id", -1), default=-1),
-        )
-    )
-    return visible_substances
 
 
 def _get_live_mycorrhizal_neighbours(

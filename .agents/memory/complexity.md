@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/presenters/dashboard/cell_details/live.py` - `_get_live_substances`
+* **Selection Rationale:** The function reached a complexity score of 14 due to sequential `for` loops conditionally filtering and appending diffused signals and toxins into a list of visible substances. Given its role in the API presenter layer for building payload data, it posed zero engine performance risk. The loop logic was cleanly extracted to dedicated helper functions.
+* **Before/After Score:** 14 vs. 4
+* **Performance Assessment:** The extracted logic simply references the shared GridEnvironment and iterates it exactly as the original inline loops. Because it's called per UI websocket tick for payload preparation rather than within the Numba `@njit` hot path, it maintains zero performance risk. Benchmark results verified no measurable slowdown.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
