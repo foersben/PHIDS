@@ -123,3 +123,6 @@ Action: Always sculpt monoliths into pure Python packages with an `__init__.py` 
 ## 2024-11-20 - Extracting Dashboard Payloads Monolith
 Learning: Splitting a large UI state extraction module (payloads/core.py) into smaller modules like collections, core, metrics, and snapshot helps improve maintainability without breaking the API.
 Action: When dismantling large API presenter files, ensure that __init__.py re-exports the exact same functions and types to preserve downstream imports.
+## 2026-10-17 - Splitting Live Cell Details Monolith
+Learning: When refactoring a large UI serialization module like `live.py` into a package, splitting entity serialization (plants, swarms) and state aggregation logic into separate sub-modules while exporting a unified `__init__.py` interface cleanly decouples dependencies and preserves backward compatibility without requiring downstream route changes. A Python extraction script ensures no logic or formatting is lost during the move.
+Action: Continue extracting isolated UI state serializers into sub-modules under a unified package.
