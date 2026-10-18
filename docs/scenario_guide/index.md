@@ -43,7 +43,7 @@ Understand how to define your custom ecosystem configurations. This guide detail
 
 * The Pydantic validation schema (`SimulationConfig`) ensuring configuration integrity before boot.
 * The **Rule of 16** constraint, which limits flora, herbivores, and chemical substances to pre-allocated static cache lines, avoiding dynamic memory allocation latency during hot execution loops.
-* How to define the **Diet Compatibility** and **Substance Trigger** matrices to construct complex trophic relationships.
+* How to define the **Diet Compatibility** matrix and per-species **Substance Trigger** bounded lists to construct complex trophic relationships.
 
 ### 2. Curated Examples
 
