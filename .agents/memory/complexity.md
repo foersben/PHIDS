@@ -131,3 +131,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2025-02-28 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/presenters/dashboard/cell_details/live.py` - `_get_live_substances`
+* **Selection Rationale:** Selected due to a cognitive complexity score of 14, nearing the threshold. The function iterated through all environmental signals and toxins to append their representation into a list of visible substances if they were active in the cell but not directly owned by the plant entity. By extracting these two loops into a cohesive private helper `_append_environmental_substances`, the main function was greatly flattened.
+* **Before/After Score:** 14 vs. < 12
+* **Performance Assessment:** The extracted logic executes entirely within the API response payload generation for the live dashboard tooltip. The UI layer already sits outside the engine hot path, and creating an additional helper function maintains all direct matrix lookups with exactly zero performance penalty for simulation operations.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.

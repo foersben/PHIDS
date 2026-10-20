@@ -80,6 +80,32 @@ def _get_live_substances(
         )
         for payload in visible_substances
     }
+    _append_environmental_substances(plant, env, visible_substances, visible_keys, substance_names)
+    visible_substances.sort(
+        key=lambda payload: (
+            payload.get("kind") == "toxin",
+            _coerce_int(payload.get("substance_id", -1), default=-1),
+        )
+    )
+    return visible_substances
+
+
+def _append_environmental_substances(
+    plant: PlantComponent,
+    env: GridEnvironment,
+    visible_substances: list[dict[str, object]],
+    visible_keys: set[tuple[int, bool]],
+    substance_names: dict[int, str],
+) -> None:
+    """Helper to append diffused environmental substances (signals and toxins) for a plant.
+
+    Args:
+        plant: The plant component.
+        env: The grid environment.
+        visible_substances: The list of currently visible substances.
+        visible_keys: The set of substance keys (id, is_toxin) already processed.
+        substance_names: Mapping of substance IDs to their names.
+    """
     for signal_id in range(env.num_signals):
         if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
             continue
@@ -100,13 +126,6 @@ def _get_live_substances(
             _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
         )
         visible_keys.add(substance_key)
-    visible_substances.sort(
-        key=lambda payload: (
-            payload.get("kind") == "toxin",
-            _coerce_int(payload.get("substance_id", -1), default=-1),
-        )
-    )
-    return visible_substances
 
 
 def _get_live_mycorrhizal_neighbours(
