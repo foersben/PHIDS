@@ -123,3 +123,8 @@ Action: Always sculpt monoliths into pure Python packages with an `__init__.py` 
 ## 2024-11-20 - Extracting Dashboard Payloads Monolith
 Learning: Splitting a large UI state extraction module (payloads/core.py) into smaller modules like collections, core, metrics, and snapshot helps improve maintainability without breaking the API.
 Action: When dismantling large API presenter files, ensure that __init__.py re-exports the exact same functions and types to preserve downstream imports.
+
+## 2024-05-18 - Extraction of Matplotlib PNG Generator Monolith
+
+Learning: The `src/phids/telemetry/export/png.py` file was a monolith handling both the top-level dispatch API (`generate_png_bytes`) and the underlying Matplotlib rendering implementations (e.g., `_plot_timeseries`). Splitting it into `generator.py` and `plots.py` inside a `png/` package cleans up the dependencies. Re-exporting `generate_png_bytes` through `__init__.py` fully preserves backward compatibility. Note that `Axes` types had to be correctly resolved by importing `matplotlib.axes` instead of just using bare `Axes` from a previous local typing block.
+Action: Always verify type-checker behavior locally when splitting apart typing logic, specifically ensuring that lazy imports inside `if TYPE_CHECKING:` blocks resolve properly without triggering `ModuleNotFoundError` during runtime execution.
