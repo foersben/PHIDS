@@ -131,3 +131,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+## 2026-10-22 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/ui_state/state/convert.py` - `from_sim_config`
+* **Selection Rationale:** The main function reached a complexity of 14 due to deep loops scanning flora specs and their respective condition configurations. Extracting the trigger mapping loop to `_extract_triggers` reduces the module-level function down to just 0 in cognitive complexity while retaining exactly the same data-flow semantics.
+* **Before/After Score:** 14 vs. 0
+* **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of a helper function call here is completely negligible.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
