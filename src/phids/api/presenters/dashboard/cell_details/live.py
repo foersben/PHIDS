@@ -37,6 +37,44 @@ if TYPE_CHECKING:
     from phids.engine.loop import SimulationLoop
 
 
+def _collect_environmental_substances(
+    plant: PlantComponent,
+    env: GridEnvironment,
+    visible_substances: list[dict[str, object]],
+    visible_keys: set[tuple[int, bool]],
+    substance_names: dict[int, str],
+) -> None:
+    """Helper to collect environmental signals and toxins at the plant's location.
+
+    Args:
+        plant: The plant component.
+        env: The grid environment.
+        visible_substances: The list of visible substances to append to.
+        visible_keys: The set of visible substance keys.
+        substance_names: The substance names.
+    """
+    for signal_id in range(env.num_signals):
+        if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
+            continue
+        substance_key = (signal_id, False)
+        if substance_key in visible_keys:
+            continue
+        visible_substances.append(
+            _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
+        )
+        visible_keys.add(substance_key)
+    for toxin_id in range(env.num_toxins):
+        if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
+            continue
+        substance_key = (toxin_id, True)
+        if substance_key in visible_keys:
+            continue
+        visible_substances.append(
+            _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
+        )
+        visible_keys.add(substance_key)
+
+
 def _get_live_substances(
     plant: PlantComponent,
     owned_substances: dict[int, list[SubstanceComponent]],
@@ -80,26 +118,9 @@ def _get_live_substances(
         )
         for payload in visible_substances
     }
-    for signal_id in range(env.num_signals):
-        if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
-            continue
-        substance_key = (signal_id, False)
-        if substance_key in visible_keys:
-            continue
-        visible_substances.append(
-            _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
-        )
-        visible_keys.add(substance_key)
-    for toxin_id in range(env.num_toxins):
-        if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
-            continue
-        substance_key = (toxin_id, True)
-        if substance_key in visible_keys:
-            continue
-        visible_substances.append(
-            _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
-        )
-        visible_keys.add(substance_key)
+
+    _collect_environmental_substances(plant, env, visible_substances, visible_keys, substance_names)
+
     visible_substances.sort(
         key=lambda payload: (
             payload.get("kind") == "toxin",
