@@ -1,0 +1,12 @@
+### 🧭 Alignment Direction & Decision Rationale
+
+* **Direction Chosen:** `[Documentation Update]`
+* **The Discrepancy:** `docs/technical_architecture/system_architecture.md` referenced a `[16x16] Substance Trigger Matrix` and `docs/technical_architecture/signaling_triggers.md` referred to an "interaction matrix".
+* **Why this direction?** The codebase was intentionally evolved to use per-species bounded `list[TriggerConditionSchema]` architectures that compile into discrete `CompiledTrigger` trees, preserving the Rule of 16 limits (`MAX_SUBSTANCE_TYPES`). Updating the stale documentation ensures alignment with the current runtime Pydantic schemas (`FloraSpeciesParams`, `TriggerConditionSchema`).
+* **Human Verification Checklist:**
+  - [ ] Reviewer check 1: Verify the updated architectural diagram in `system_architecture.md`.
+  - [ ] Reviewer check 2: Verify the updated explanatory text in `signaling_triggers.md`.
+
+### 🔬 Technical Changes & Verification
+* **Modified Files:** `docs/technical_architecture/system_architecture.md`, `docs/technical_architecture/signaling_triggers.md`
+* **Quality Gates:** Confirmed that `ruff`, `mypy src/phids`, `pytest`, `validate_okf`, and matrix parity checks passed cleanly.

@@ -1,0 +1,18 @@
+--- docs/technical_architecture/system_architecture.md
++++ docs/technical_architecture/system_architecture.md
+@@ -118,7 +118,7 @@
+
+     %% 2. STRUCTURAL CONSTRAINTS
+-    B["<b>🗃️ 2. Structural Memory Bounding</b><br/><hr style='border:1px solid #94A3B8; margin: 4px 0;'/><br/><i>Strict Memory Bounding (Rule of 16)</i><br/>• [16x16] Diet Compatibility Matrix<br/>• [16x16] Substance Trigger Matrix<br/>• Pre-allocated NumPy Environment Arrays"]:::constraint
++    B["<b>🗃️ 2. Structural Memory Bounding</b><br/><hr style='border:1px solid #94A3B8; margin: 4px 0;'/><br/><i>Strict Memory Bounding (Rule of 16)</i><br/>• [16x16] Diet Compatibility Matrix<br/>• Bounded Per-Species Trigger Profiles (≤16)<br/>• Pre-allocated NumPy Environment Arrays"]:::constraint
+
+     %% 3. ENGINE CORE
+--- docs/technical_architecture/signaling_triggers.md
++++ docs/technical_architecture/signaling_triggers.md
+@@ -16,7 +16,7 @@
+ ## Core Mechanism
+
+-The signaling trigger mechanism governs the dynamic response of `PlantComponent`s to environmental stimuli, facilitating the active emission of secondary metabolites (`SubstanceComponent`s), either as communicative signals (VOCs) or defensive toxins. The interaction matrix couples stimuli (initiators) and condition predicates (activation conditions) to physiological responses (actions).
++The signaling trigger mechanism governs the dynamic response of `PlantComponent`s to environmental stimuli, facilitating the active emission of secondary metabolites (`SubstanceComponent`s), either as communicative signals (VOCs) or defensive toxins. Rather than a monolithic matrix, defensive behaviors are defined per flora species via a bounded list of trigger conditions (`list[TriggerConditionSchema]`) which compile into discrete `CompiledTrigger` trees, coupling stimuli (initiators) and condition predicates (activation conditions) to physiological responses (actions) while maintaining Rule of 16 memory limits.
+
+ ## The State Coupling Bug
