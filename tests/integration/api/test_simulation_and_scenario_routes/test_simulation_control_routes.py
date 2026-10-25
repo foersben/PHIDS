@@ -74,6 +74,7 @@ async def test_api_simulation_start_pause_resume_flow(
 
     assert api_main._sim_loop is not None
     api_main._sim_loop.start()
+    api_main._sim_loop.terminated = False
     already_running_resp = await api_client.post("/api/simulation/start")
     assert already_running_resp.status_code == 200, already_running_resp.text
     assert already_running_resp.json()["message"] == "Simulation already running."
