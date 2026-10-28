@@ -1,0 +1,12 @@
+### 🧭 Alignment Direction & Decision Rationale
+
+* **Direction Chosen:** `[Documentation Update]`
+* **The Discrepancy:** The documentation previously described the interaction engine as using a monolithic "[16x16] Substance Trigger Matrix" (e.g. `docs/technical_architecture/system_architecture.md`) and stated "The interaction matrix couples stimuli...". However, the runtime active code in `src/phids/api/schemas/species.py` implements defense logic via a per-species, strictly bounded `list[TriggerConditionSchema]` that respects the maximum length of 16 without being a monolithic 16x16 struct across all types.
+* **Why this direction?** The code was intentionally optimized to use per-species schemas which compile down into `CompiledTrigger` trees, as this design aligns with the required Rule of 16 memory bounding while offering more flexibility for compound predicates. Updating the outdated narrative docs correctly resolves the discrepancy without altering working simulation logic.
+* **Human Verification Checklist:**
+  - [ ] Reviewer check 1: Confirm that the Mermaid diagrams in `system_architecture.md` correctly render and have not lost styling when updated to reflect `Bounded list[TriggerConditionSchema] Trees`.
+  - [ ] Reviewer check 2: Verify that `signaling_triggers.md` accurately preserves the floating explanation logic around the trigger architecture while now appropriately describing it as a "per-species trigger condition schemas" approach.
+
+### 🔬 Technical Changes & Verification
+* **Modified Files:** `docs/technical_architecture/system_architecture.md`, `docs/technical_architecture/signaling_triggers.md`
+* **Quality Gates:** Confirmed that `ruff`, `mypy src/phids`, `pytest`, `validate_okf`, and matrix parity checks passed cleanly.

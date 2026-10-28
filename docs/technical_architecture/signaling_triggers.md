@@ -15,7 +15,7 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 
 ## Core Mechanism
 
-The signaling trigger mechanism governs the dynamic response of `PlantComponent`s to environmental stimuli, facilitating the active emission of secondary metabolites (`SubstanceComponent`s), either as communicative signals (VOCs) or defensive toxins. The interaction matrix couples stimuli (initiators) and condition predicates (activation conditions) to physiological responses (actions).
+The signaling trigger mechanism governs the dynamic response of `PlantComponent`s to environmental stimuli, facilitating the active emission of secondary metabolites (`SubstanceComponent`s), either as communicative signals (VOCs) or defensive toxins. The per-species trigger condition schemas couple stimuli (initiators) and condition predicates (activation conditions) to physiological responses (actions).
 
 ## The State Coupling Bug
 
