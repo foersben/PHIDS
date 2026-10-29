@@ -258,6 +258,7 @@ def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftS
         DraftState: Reconstructed draft ready for use in the builder UI.
     """
     from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
+    from phids.api.ui_state.substances import SubstanceDefinition
 
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
