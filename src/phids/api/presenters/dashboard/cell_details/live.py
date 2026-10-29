@@ -80,6 +80,25 @@ def _get_live_substances(
         )
         for payload in visible_substances
     }
+    _add_environmental_signals(env, plant, visible_keys, visible_substances, substance_names)
+    _add_environmental_toxins(env, plant, visible_keys, visible_substances, substance_names)
+
+    visible_substances.sort(
+        key=lambda payload: (
+            payload.get("kind") == "toxin",
+            _coerce_int(payload.get("substance_id", -1), default=-1),
+        )
+    )
+    return visible_substances
+
+
+def _add_environmental_signals(
+    env: GridEnvironment,
+    plant: PlantComponent,
+    visible_keys: set[tuple[int, bool]],
+    visible_substances: list[dict[str, object]],
+    substance_names: dict[int, str],
+) -> None:
     for signal_id in range(env.num_signals):
         if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
             continue
@@ -90,6 +109,15 @@ def _get_live_substances(
             _fallback_live_substance_payload(signal_id, is_toxin=False, substance_names=substance_names)
         )
         visible_keys.add(substance_key)
+
+
+def _add_environmental_toxins(
+    env: GridEnvironment,
+    plant: PlantComponent,
+    visible_keys: set[tuple[int, bool]],
+    visible_substances: list[dict[str, object]],
+    substance_names: dict[int, str],
+) -> None:
     for toxin_id in range(env.num_toxins):
         if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
             continue
@@ -100,13 +128,6 @@ def _get_live_substances(
             _fallback_live_substance_payload(toxin_id, is_toxin=True, substance_names=substance_names)
         )
         visible_keys.add(substance_key)
-    visible_substances.sort(
-        key=lambda payload: (
-            payload.get("kind") == "toxin",
-            _coerce_int(payload.get("substance_id", -1), default=-1),
-        )
-    )
-    return visible_substances
 
 
 def _get_live_mycorrhizal_neighbours(
