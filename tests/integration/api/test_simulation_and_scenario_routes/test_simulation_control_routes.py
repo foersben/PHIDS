@@ -49,7 +49,7 @@ async def test_api_simulation_start_pause_resume_flow(
     config_builder: Callable[..., SimulationConfig],
 ) -> None:
     """Verify start/pause/status transitions and repeated start behavior are reported correctly."""
-    config = config_builder()
+    config = config_builder(max_ticks=200)
     load_resp = await api_client.post("/api/scenario/load", json=config.model_dump(mode="json"))
     assert load_resp.status_code == 200, load_resp.text
 

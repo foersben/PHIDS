@@ -188,18 +188,12 @@ def build_sim_config(state: DraftState) -> SimulationConfig:
     return config
 
 
-def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftState:
-    """Reconstruct a ``DraftState`` from a validated :class:`SimulationConfig`.
-
-    Args:
-        config: Validated simulation configuration to reconstruct from.
-        scenario_name: Human-readable label; defaults to the grid dimensions.
-
-    Returns:
-        DraftState: Reconstructed draft ready for use in the builder UI.
-    """
+def _extract_triggers(
+    config: SimulationConfig,
+) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
+    """Extract trigger rules and substance definitions from simulation config."""
+    from typing import Literal
     from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
-    from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
     from phids.api.ui_state.substances import SubstanceDefinition
 
     imported_trigger_rules: list[TriggerRule] = []
@@ -259,6 +253,22 @@ def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftS
                             irreversible=trig.action.irreversible,
                         )
                     )
+    return imported_trigger_rules, imported_substances
+
+
+def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftState:
+    """Reconstruct a ``DraftState`` from a validated :class:`SimulationConfig`.
+
+    Args:
+        config: Validated simulation configuration to reconstruct from.
+        scenario_name: Human-readable label; defaults to the grid dimensions.
+
+    Returns:
+        DraftState: Reconstructed draft ready for use in the builder UI.
+    """
+    from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
+
+    imported_trigger_rules, imported_substances = _extract_triggers(config)
 
     return DraftState(
         scenario_name=scenario_name or f"{config.grid_width}x{config.grid_height}",
