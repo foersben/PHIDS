@@ -161,11 +161,13 @@ run:
 # Build static scientific and architectural documentation with Zensical
 [group("simulation-and-docs")]
 docs:
+    uv run python scripts/governance/visualize_okf.py
     uv run zensical build --strict
 
 # Build and serve live Zensical documentation on localhost:9000
 [group("simulation-and-docs")]
 serve:
+    uv run python scripts/governance/visualize_okf.py
     uv run zensical build --strict
     uv run zensical serve -a localhost:9000
 

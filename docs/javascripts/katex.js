@@ -18,5 +18,9 @@ function renderKaTeXMath() {
 if (typeof document$ !== "undefined") {
   document$.subscribe(renderKaTeXMath);
 } else {
-  document.addEventListener("DOMContentLoaded", renderKaTeXMath);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", renderKaTeXMath);
+  } else {
+    renderKaTeXMath();
+  }
 }

@@ -57,7 +57,7 @@ dev = [
     "httpx>=0.28.0",
     "httpx2>=2.7.0",
     "pre-commit>=4.0.0",
-    "zensical>=0.0.51",
+    "zensical>=0.0.73",
     "mkdocstrings[python]>=0.27.0",
     "mkdocs-htmlproofer-plugin>=1.5.0",
     "pyyaml>=6.0.2",
@@ -163,3 +163,5 @@ directory = ".cache/htmlcov"
 "src/phids/api/services/draft/trigger_rules.py" = ["TC001"]
 # Test files instantiate schema types directly; imports must be at runtime.
 "tests/**/*.py" = ["TC001", "TC002", "TC003"]
+# Embedded HTML/JS visualization bundle in knowledge graph visualizer.
+"scripts/governance/visualize_okf.py" = ["E501"]

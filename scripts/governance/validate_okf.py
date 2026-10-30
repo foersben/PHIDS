@@ -20,11 +20,13 @@ Validates:
 from __future__ import annotations
 
 import argparse
+import ast
+import json
 import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -35,7 +37,81 @@ ACTOR_PATTERN = re.compile(r"^(?:human:[a-zA-Z0-9_\-]+|process:[a-zA-Z0-9_\-]+|[
 MARKDOWN_LINK_PATTERN = re.compile(r"\]\(([^:\s#)]+\.md)(?:#[^)]+)?\)")
 LOG_DATE_HEADING_PATTERN = re.compile(r"^##\s+(\d{4}-\d{2}-\d{2})\b")
 
-ALLOWED_STATUSES = {"draft", "stable", "deprecated"}
+ALLOWED_STATUSES = {"draft", "stable", "deprecated", "verified"}
+
+
+def _find_ast_child_node(scope: ast.AST, wanted_kind: str, name: str) -> ast.AST | None:
+    """Find a child AST node of a given kind and name within a scope."""
+    if not isinstance(scope, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+        return None
+    for child in scope.body:
+        if isinstance(child, ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+            if type(child).__name__ == wanted_kind and child.name == name:
+                return child
+    return None
+
+
+def resolve_ast_node_lines(file_path: Path, ast_target: str) -> tuple[int, int] | None:
+    """Resolve an ast_target such as FunctionDef:load_config to current source line bounds.
+
+    Supported kinds are FunctionDef, AsyncFunctionDef and ClassDef. Nested members use
+    dotted names (ClassDef:Outer.Inner or FunctionDef:Class.method).
+
+    Args:
+        file_path: Python source file to parse.
+        ast_target: Target in <NodeKind>:<dotted.name> form.
+
+    Returns:
+        Inclusive (start_line, end_line) tuple, or None when the node cannot be found.
+    """
+    kind, sep, dotted = ast_target.partition(":")
+    if not sep or not dotted:
+        return None
+    try:
+        tree = ast.parse(file_path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return None
+
+    scope: ast.AST = tree
+    parts = dotted.split(".")
+    for idx, name in enumerate(parts):
+        wanted_kind = kind if idx == len(parts) - 1 else "ClassDef"
+        matched = _find_ast_child_node(scope, wanted_kind, name)
+        if matched is None:
+            return None
+        scope = matched
+
+    if not isinstance(scope, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+        return None
+    return scope.lineno, scope.end_lineno or scope.lineno
+
+
+def validate_claim_ast_targets(root_path: Path) -> list[str]:
+    """Verify every ast_target in openwiki/.claims/**/*.json resolves in its primary Python file."""
+    errors: list[str] = []
+    claims_dir = root_path / "openwiki" / ".claims"
+    if not claims_dir.exists():
+        return errors
+    for json_file in sorted(claims_dir.rglob("*.json")):
+        try:
+            data = json.loads(json_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"{json_file.relative_to(root_path)}: invalid JSON ({exc})")
+            continue
+        for claim in data.get("claims", []):
+            target = claim.get("ast_target")
+            if not target:
+                continue
+            evidence = claim.get("evidence") or [{}]
+            resource = str(evidence[0].get("resource", "")).replace("repo://", "").split("#", 1)[0]
+            src = root_path / resource
+            if not resource.endswith(".py") or not src.is_file():
+                errors.append(f"{json_file.name}: claim {claim.get('id')} ast_target needs a Python primary file")
+            elif resolve_ast_node_lines(src, target) is None:
+                errors.append(
+                    f"{json_file.name}: claim {claim.get('id')} ast_target {target!r} not found in {resource}"
+                )
+    return errors
 
 
 class OKFAuditStats:
@@ -57,8 +133,11 @@ class OKFAuditStats:
 def _parse_frontmatter_block(content: str) -> tuple[dict[str, Any] | None, str, list[str]]:
     """Extract and parse YAML frontmatter from document content.
 
+    Args:
+        content: The content of the document.
+
     Returns:
-        (frontmatter_dict, body_content, parse_errors)
+        A tuple containing the frontmatter dictionary, the body content, and a list of parse errors.
     """
     if not content.startswith("---"):
         return None, content, ["Missing YAML frontmatter delimiter ('---') at start of file."]
@@ -73,7 +152,7 @@ def _parse_frontmatter_block(content: str) -> tuple[dict[str, Any] | None, str, 
     try:
         data = yaml.safe_load(yaml_text)
         if data is None:
-            data = {}
+            data = cast("dict[str, Any]", {})
         if not isinstance(data, dict):
             return None, body, ["YAML frontmatter must be a key-value mapping."]
         return data, body, []
@@ -82,7 +161,16 @@ def _parse_frontmatter_block(content: str) -> tuple[dict[str, Any] | None, str, 
 
 
 def _resolve_source_path(resource: str, doc_path: Path, root_path: Path) -> bool:
-    """Check if a source resource path points to an existing file."""
+    """Check if a source resource path points to an existing file.
+
+    Args:
+        resource: The resource to check.
+        doc_path: The path to the document.
+        root_path: The path to the workspace root.
+
+    Returns:
+        True if the resource path points to an existing file, False otherwise.
+    """
     # Ignore web URLs, mailto, or scope descriptors with whitespace
     if resource.startswith(("http://", "https://", "mailto:")) or " " in resource:
         return True
@@ -90,6 +178,9 @@ def _resolve_source_path(resource: str, doc_path: Path, root_path: Path) -> bool
     clean_resource = resource.split("#")[0].strip()
     if not clean_resource:
         return True
+
+    if clean_resource.startswith("repo://"):
+        clean_resource = clean_resource[len("repo://") :].lstrip("/")
 
     # Check relative to document parent
     if (doc_path.parent / clean_resource).exists():
@@ -100,12 +191,23 @@ def _resolve_source_path(resource: str, doc_path: Path, root_path: Path) -> bool
     # Check relative to docs directory
     if (root_path / "docs" / clean_resource).exists():
         return True
+    # Check relative to openwiki directory
+    if (root_path / "openwiki" / clean_resource).exists():
+        return True
 
     return False
 
 
 def _validate_timestamp_string(val: Any, field_name: str) -> str | None:
-    """Validate that a field value is formatted as strict ISO 8601 UTC."""
+    """Validate that a field value is formatted as strict ISO 8601 UTC.
+
+    Args:
+        val: The value to validate.
+        field_name: The name of the field.
+
+    Returns:
+        None if the value is valid, an error message otherwise.
+    """
     if isinstance(val, datetime):
         if val.tzinfo is not None and val.tzinfo == UTC:
             return None
@@ -128,7 +230,15 @@ def _validate_timestamp_string(val: Any, field_name: str) -> str | None:
 
 
 def _validate_actor_string(val: Any, field_name: str) -> str | None:
-    """Validate that an actor conforms to human:<id>, process:<id>, or <producer>/<version>."""
+    """Validate that an actor conforms to human:<id>, process:<id>, or <producer>/<version>.
+
+    Args:
+        val: The value to validate.
+        field_name: The name of the field.
+
+    Returns:
+        None if the value is valid, an error message otherwise.
+    """
     if not isinstance(val, str):
         return f"Field '{field_name}' must be a string identifier."
     if not ACTOR_PATTERN.match(val):
@@ -140,7 +250,14 @@ def _validate_actor_string(val: Any, field_name: str) -> str | None:
 
 
 def _validate_bundle_root_index(content: str) -> tuple[str, list[str]]:
-    """Validate root index frontmatter."""
+    """Validate root index frontmatter.
+
+    Args:
+        content: The content of the document.
+
+    Returns:
+        A tuple containing the body content and a list of validation errors.
+    """
     if not content.startswith("---"):
         return content, []
 
@@ -167,21 +284,58 @@ def _validate_bundle_root_index(content: str) -> tuple[str, list[str]]:
 
 
 def _validate_sub_index(content: str) -> tuple[str, list[str]]:
-    """Validate subdirectory index has no frontmatter (Option A)."""
+    """Validate subdirectory index under Option A (no frontmatter) or Option B (valid frontmatter).
+
+    Args:
+        content: The content of the document.
+
+    Returns:
+        A tuple containing the body content and a list of validation errors.
+    """
     if not content.startswith("---"):
         return content, []
 
-    errors = [
-        "Subdirectory index.md must not contain YAML frontmatter (OKF v0.2 §8). "
-        "Retain rich overview prose and section headings directly in the Markdown body."
-    ]
-    parts = content.split("---", 2)
-    content_to_check = parts[2] if len(parts) >= 3 else content
-    return content_to_check, errors
+    fm, body, parse_errors = _parse_frontmatter_block(content)
+    if parse_errors:
+        return body, parse_errors
+
+    errors: list[str] = []
+    if fm is not None:
+        allowed = {
+            "okf_version",
+            "type",
+            "title",
+            "status",
+            "stale_after",
+            "version",
+            "description",
+            "tags",
+            "generated",
+            "verified",
+            "sources",
+            "trust_tier",
+        }
+        non_allowed = set(fm.keys()) - allowed
+        if non_allowed:
+            errors.append(f"Subdirectory index.md contains unexpected frontmatter keys: {non_allowed}")
+        if "type" in fm and not str(fm["type"]).strip():
+            errors.append("Field 'type' must not be empty.")
+        if "status" in fm and fm["status"] not in ALLOWED_STATUSES:
+            errors.append(f"Invalid status '{fm['status']}'. OKF v0.2 allows: {', '.join(sorted(ALLOWED_STATUSES))}.")
+    return body, errors
 
 
 def _validate_index_links(content_to_check: str, file_path: Path, root_path: Path) -> list[str]:
-    """Validate cross-document links inside an index file."""
+    """Validate cross-document links inside an index file.
+
+    Args:
+        content_to_check: The content of the document to check for links.
+        file_path: The path to the index file.
+        root_path: The path to the workspace root.
+
+    Returns:
+        A list of validation errors.
+    """
     errors: list[str] = []
     for link in MARKDOWN_LINK_PATTERN.findall(content_to_check):
         if link.startswith("/"):
@@ -194,7 +348,16 @@ def _validate_index_links(content_to_check: str, file_path: Path, root_path: Pat
 
 
 def validate_index_document(file_path: Path, root_path: Path, is_bundle_root: bool) -> list[str]:
-    """Validate an index.md file according to OKF v0.2 §8 (Option A)."""
+    """Validate an index.md file according to OKF v0.2 §8 (Option A).
+
+    Args:
+        file_path: The path to the index file.
+        root_path: The path to the workspace root.
+        is_bundle_root: Whether the index file is the root of a bundle.
+
+    Returns:
+        A list of validation errors.
+    """
     content = file_path.read_text(encoding="utf-8").strip()
 
     if is_bundle_root:
@@ -210,7 +373,14 @@ def validate_index_document(file_path: Path, root_path: Path, is_bundle_root: bo
 
 
 def validate_log_document(file_path: Path) -> list[str]:
-    """Validate a log.md file according to OKF v0.2 §9."""
+    """Validate a log.md file according to OKF v0.2 §9.
+
+    Args:
+        file_path: The path to the log file.
+
+    Returns:
+        A list of validation errors.
+    """
     errors: list[str] = []
     content = file_path.read_text(encoding="utf-8").strip()
 
@@ -256,7 +426,15 @@ def _validate_concept_type_and_status(fm: dict[str, Any]) -> list[str]:
 
 
 def _validate_concept_stale_after(fm: dict[str, Any], stats: OKFAuditStats) -> list[str]:
-    """Validate and record stale_after expiration date."""
+    """Validate and record stale_after expiration date.
+
+    Args:
+        fm: The frontmatter mapping.
+        stats: The audit statistics.
+
+    Returns:
+        A list of validation errors.
+    """
     stale_after = fm.get("stale_after")
     if stale_after is None:
         stats.no_expiry += 1
@@ -279,7 +457,14 @@ def _validate_concept_stale_after(fm: dict[str, Any], stats: OKFAuditStats) -> l
 
 
 def _validate_concept_generated(fm: dict[str, Any]) -> list[str]:
-    """Validate generated provenance block."""
+    """Validate generated provenance block.
+
+    Args:
+        fm: The frontmatter mapping.
+
+    Returns:
+        A list of validation errors.
+    """
     generated = fm.get("generated")
     if generated is None:
         return []
@@ -303,7 +488,16 @@ def _validate_concept_generated(fm: dict[str, Any]) -> list[str]:
 
 
 def _validate_single_verification(entry: Any, idx: int) -> tuple[bool, bool, list[str]]:
-    """Validate a single verified entry. Returns (is_human, is_machine, errors)."""
+    """Validate a single verified entry. Returns (is_human, is_machine, errors).
+
+    Args:
+        entry: The entry to validate.
+        idx: The index of the entry.
+
+    Returns:
+        A tuple containing the boolean indicating if the entry is human-verified,
+        if it is machine-verified, and a list of validation errors.
+    """
     if not isinstance(entry, dict):
         return False, False, [f"verified[{idx}] must be a mapping."]
 
@@ -331,7 +525,15 @@ def _validate_single_verification(entry: Any, idx: int) -> tuple[bool, bool, lis
 
 
 def _validate_concept_verified(fm: dict[str, Any], stats: OKFAuditStats) -> list[str]:
-    """Validate verified provenance entries and record trust tier."""
+    """Validate verified provenance entries and record trust tier.
+
+    Args:
+        fm: The frontmatter mapping.
+        stats: The audit statistics.
+
+    Returns:
+        A list of validation errors.
+    """
     verified = fm.get("verified")
     if verified is None:
         stats.unverified += 1
@@ -365,7 +567,16 @@ def _validate_concept_verified(fm: dict[str, Any], stats: OKFAuditStats) -> list
 
 
 def _validate_concept_sources(fm: dict[str, Any], file_path: Path, root_path: Path) -> list[str]:
-    """Validate sources resource paths."""
+    """Validate sources resource paths.
+
+    Args:
+        fm: The frontmatter mapping.
+        file_path: The path to the concept document.
+        root_path: The path to the workspace root.
+
+    Returns:
+        A list of validation errors.
+    """
     sources = fm.get("sources")
     if sources is None:
         return []
@@ -391,9 +602,23 @@ def _validate_concept_links(
     root_path: Path,
     base_paths: list[Path],
 ) -> list[str]:
-    """Validate cross-document Markdown links."""
+    """Validate cross-document Markdown links.
+
+    Args:
+        body: The body content of the document.
+        file_path: The path to the concept document.
+        root_path: The path to the workspace root.
+        base_paths: A list of base paths to check for sources.
+
+    Returns:
+        A list of validation errors.
+    """
     errors: list[str] = []
-    for link in MARKDOWN_LINK_PATTERN.findall(body):
+    # Strip fenced code blocks and inline code spans to prevent matching syntax examples
+    sanitized_body = re.sub(r"```.*?```", "", body, flags=re.DOTALL)
+    sanitized_body = re.sub(r"`[^`\n]+`", "", sanitized_body)
+
+    for link in MARKDOWN_LINK_PATTERN.findall(sanitized_body):
         if link.startswith(("http://", "https://", "#")):
             continue
 
@@ -415,7 +640,17 @@ def validate_concept_document(
     base_paths: list[Path],
     stats: OKFAuditStats,
 ) -> list[str]:
-    """Validate a concept document according to OKF v0.2 specifications."""
+    """Validate a concept document according to OKF v0.2 specifications.
+
+    Args:
+        file_path: The path to the concept document.
+        root_path: The path to the workspace root.
+        base_paths: A list of base paths to check for sources.
+        stats: The audit statistics.
+
+    Returns:
+        A list of validation errors.
+    """
     content = file_path.read_text(encoding="utf-8").strip()
     fm, body, parse_errors = _parse_frontmatter_block(content)
     if parse_errors:
@@ -435,7 +670,14 @@ def validate_concept_document(
 
 
 def auto_fix_timestamps(files: list[Path]) -> int:
-    """Normalize date-only strings YYYY-MM-DD to strict ISO 8601 UTC in frontmatter."""
+    """Normalize date-only strings YYYY-MM-DD to strict ISO 8601 UTC in frontmatter.
+
+    Args:
+        files: A list of markdown files to normalize timestamps in.
+
+    Returns:
+        The number of fixed files.
+    """
     fixed_count = 0
     date_regex = re.compile(r'^(stale_after:\s*["\']?)(\d{4}-\d{2}-\d{2})(["\']?)$', re.MULTILINE)
 
@@ -463,15 +705,30 @@ def auto_fix_timestamps(files: list[Path]) -> int:
 
 
 def _is_valid_target_file(md_file: Path) -> bool:
-    """Check if file exists and is not within excluded paths."""
+    """Check if file exists and is not within excluded paths.
+
+    Args:
+        md_file: The markdown file to check.
+
+    Returns:
+        True if the file is a valid target file, False otherwise.
+    """
     if not md_file.exists() or not md_file.is_file():
+        return False
+    if md_file.name == "INSTRUCTIONS.md":
         return False
     file_posix = md_file.as_posix()
     return "docs/legacy/" not in file_posix and "site/" not in file_posix
 
 
 def _print_file_errors(md_file: Path, file_errors: list[str], root_path: Path) -> None:
-    """Print the validation errors for a specific file."""
+    """Print the validation errors for a specific file.
+
+    Args:
+        md_file: The markdown file to print errors for.
+        file_errors: A list of validation errors.
+        root_path: The path to the workspace root.
+    """
     rel_display = md_file.relative_to(root_path) if md_file.is_relative_to(root_path) else md_file
     print(f"❌ OKF Non-Compliance inside -> {rel_display}:")
     for err in file_errors:
@@ -482,13 +739,24 @@ def _validate_single_bundle_file(
     md_file: Path,
     root_path: Path,
     base_paths: list[Path],
-    docs_root_index: Path,
+    bundle_root_indexes: set[Path],
     stats: OKFAuditStats,
 ) -> list[str]:
-    """Validate an individual markdown file based on file role."""
+    """Validate an individual markdown file based on file role.
+
+    Args:
+        md_file: The markdown file to validate.
+        root_path: The path to the workspace root.
+        base_paths: A list of base paths to check for sources.
+        bundle_root_indexes: The set of bundle root index paths.
+        stats: The audit statistics.
+
+    Returns:
+        A list of validation errors.
+    """
     if md_file.name == "index.md":
         stats.total_indexes += 1
-        is_root = (md_file.resolve() == docs_root_index) or (md_file.parent.resolve() == root_path.resolve())
+        is_root = (md_file.resolve() in bundle_root_indexes) or (md_file.parent.resolve() == root_path.resolve())
         return validate_index_document(md_file, root_path, is_bundle_root=is_root)
 
     if md_file.name == "log.md":
@@ -503,16 +771,30 @@ def scan_bundle(
     root_path: Path,
     base_paths: list[Path],
 ) -> tuple[int, OKFAuditStats]:
-    """Scan and validate all supplied markdown files."""
+    """Scan and validate all supplied markdown files.
+
+    Args:
+        target_files: A list of markdown files to validate.
+        root_path: The path to the workspace root.
+        base_paths: A list of base paths to check for sources.
+
+    Returns:
+        A tuple containing the total number of errors and the audit statistics.
+    """
     total_errors = 0
     stats = OKFAuditStats()
-    docs_root_index = (root_path / "docs" / "index.md").resolve()
+    bundle_root_indexes = {
+        (root_path / "docs" / "index.md").resolve(),
+        (root_path / "openwiki" / "index.md").resolve(),
+    }
+    for bp in base_paths:
+        bundle_root_indexes.add((bp / "index.md").resolve())
 
     for md_file in target_files:
         if not _is_valid_target_file(md_file):
             continue
 
-        file_errors = _validate_single_bundle_file(md_file, root_path, base_paths, docs_root_index, stats)
+        file_errors = _validate_single_bundle_file(md_file, root_path, base_paths, bundle_root_indexes, stats)
         if file_errors:
             total_errors += len(file_errors)
             _print_file_errors(md_file, file_errors, root_path)
@@ -520,31 +802,40 @@ def scan_bundle(
     return total_errors, stats
 
 
-def main() -> None:
-    """CLI entry point for OKF v0.2 validation engine."""
-    parser = argparse.ArgumentParser(description="Google Open Knowledge Format (OKF v0.2) Conformance Validator")
-    parser.add_argument("files", nargs="*", help="Specific markdown files to validate (defaults to docs/ and .agents/)")
-    parser.add_argument("--fix", action="store_true", help="Auto-fix date-only timestamps to strict ISO 8601 UTC")
-    parser.add_argument("--root", default=".", help="Root workspace directory")
-    args = parser.parse_args()
+def _is_candidate_md(p: Path) -> bool:
+    """Check if markdown file should be included in audit."""
+    return ".archive" not in p.parts and p.name != "INSTRUCTIONS.md"
 
-    root_path = Path(args.root).resolve()
-    base_dirs = [root_path / "docs", root_path / ".agents"]
-    base_paths = [d for d in base_dirs if d.exists()]
 
-    if args.files:
-        target_files = [Path(f).resolve() for f in args.files]
-    else:
-        target_files = []
+def _collect_from_dir(directory: Path, target_files: list[Path]) -> None:
+    """Recursively collect candidate markdown files from a directory."""
+    for child in directory.rglob("*.md"):
+        if _is_candidate_md(child):
+            target_files.append(child)
+
+
+def _collect_target_files(args_files: list[str], base_paths: list[Path], root_path: Path) -> list[Path]:
+    """Collect markdown target files from arguments or default base paths."""
+    target_files: list[Path] = []
+    if not args_files:
         for base in base_paths:
-            target_files.extend(base.rglob("*.md"))
+            _collect_from_dir(base, target_files)
+        return target_files
 
-    if args.fix:
-        fixed_count = auto_fix_timestamps(target_files)
-        print(f"🛠️  Auto-fixed {fixed_count} files with normalized ISO 8601 UTC timestamps.")
+    for f in args_files:
+        p = Path(f).resolve()
+        if p.is_dir():
+            _collect_from_dir(p, target_files)
+            if p not in base_paths and p.is_relative_to(root_path):
+                base_paths.append(p)
+        elif p.is_file() and _is_candidate_md(p):
+            target_files.append(p)
 
-    total_errors, stats = scan_bundle(target_files, root_path, base_paths)
+    return target_files
 
+
+def _print_audit_summary(stats: OKFAuditStats, total_errors: int) -> None:
+    """Print formatted OKF audit summary table and exit process."""
     print("\n" + "=" * 65)
     print("📊 OKF v0.2 Knowledge Bundle Audit Summary")
     print("=" * 65)
@@ -567,6 +858,37 @@ def main() -> None:
 
     print("\n✅ OKF Conformance Check: All documentation paths and knowledge invariants are pristine.\n")
     sys.exit(0)
+
+
+def main() -> None:
+    """CLI entry point for OKF v0.2 validation engine."""
+    parser = argparse.ArgumentParser(description="Google Open Knowledge Format (OKF v0.2) Conformance Validator")
+    parser.add_argument(
+        "files",
+        nargs="*",
+        help="Specific markdown files or directories to validate (defaults to docs/, .agents/, and openwiki/)",
+    )
+    parser.add_argument("--fix", action="store_true", help="Auto-fix date-only timestamps to strict ISO 8601 UTC")
+    parser.add_argument("--root", default=".", help="Root workspace directory")
+    args = parser.parse_args()
+
+    root_path = Path(args.root).resolve()
+    base_dirs = [root_path / "docs", root_path / ".agents", root_path / "openwiki"]
+    base_paths = [d for d in base_dirs if d.exists()]
+
+    target_files = _collect_target_files(args.files, base_paths, root_path)
+
+    if args.fix:
+        fixed_count = auto_fix_timestamps(target_files)
+        print(f"🛠️  Auto-fixed {fixed_count} files with normalized ISO 8601 UTC timestamps.")
+
+    total_errors, stats = scan_bundle(target_files, root_path, base_paths)
+    claim_errors = validate_claim_ast_targets(root_path)
+    for err in claim_errors:
+        print(f"❌ claims: {err}")
+    total_errors += len(claim_errors)
+
+    _print_audit_summary(stats, total_errors)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@
 * JIT & SIMD: Hot paths use Numba `@njit`. Ban Python objects (`dict`, `list`, closures) and allocations in inner loops. Float masks (0.0/1.0) only.
 * Replay & Invariants: Simulation outcomes stream to Zarr replay buffers. Read from historical Zarr buffers for playback.
 * Cognitive Complexity: Ceiling <= 15 (`just complexity`).
+* Editorial Idiom & British English: All generated documentation, docstrings, commit messages, and reports must adhere to Rule 04 (`.agents/rules/04-markdown-formatting.md`), employing British English orthography (`optimise`, `analyse`, `behaviour`, `modelling`, `artefact`) and an analytical, pragmatic German-native idiom (structured causal transitions, smell-oriented optimality auditing, and hyphen-delimited qualification clauses without colloquial marketing fluff).
 
 ## Mandatory Pre-Commit Gates
 Run before any commit to `src/phids/engine/` or `src/phids/api/schemas/`:

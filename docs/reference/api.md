@@ -10,9 +10,32 @@ generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 ---
 
-This page exposes the current PHIDS Python API using Zensical.
+# Python API & Service Contract Reference
 
-## Schemas and ingress
+The PHIDS application exposes an enterprise FastAPI service alongside a data-oriented Python API designed to orchestrate high-performance simulation runs, spatiotemporal PDE diffusions, and real-time telemetry streaming under strict zero-allocation hot-path constraints.
+
+---
+
+## 1. Architectural Guardrails: Async Event Loop Safety
+
+**Threadpool Offloading (Rule 06 Mandate):**
+All synchronous CPU-intensive, disk I/O, or database operations - including scenario YAML/JSON ingestion, Polars data transformations, DuckDB biological trait queries, and synchronous Zarr slice reads - must be offloaded to an AnyIO worker threadpool using `await asyncio.to_thread(...)` or `await anyio.to_thread.run_sync(...)`.
+
+**Computational Rationale:**
+FastAPI operates on a single-threaded cooperative event loop. Executing synchronous I/O or PDE computations directly inside `async def` route handlers blocks the event loop thread, preventing the server from accepting incoming HTTP requests or serving WebSocket keep-alive frames. Offloading CPU/IO bursts ensures the event loop remains responsive with sub-5ms latency percentiles.
+
+---
+
+## 2. Zero-Allocation Hot Path & Double-Buffered Arrays
+
+Simulation state transformations inside `src/phids/engine/` operate on pre-allocated NumPy array layers:
+* **Double-Buffering Invariant:** Systems read exclusively from immutable current layer arrays and write to `_write` layers.
+* **Float Mask Gating (Rule 05-B):** State transitions execute branchlessly via float multipliers (`0.0` or `1.0`), eliminating dynamic allocations, Python closures, and scalar branching from JIT loops.
+* **WebSocket Serialization:** State broadcasts serialize contiguous component buffers directly into compact binary payloads or lightweight JSON telemetry summaries without intermediate heap copies.
+
+---
+
+## 3. Schemas and Ingress
 
 ::: phids.api.schemas.base
 

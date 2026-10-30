@@ -9,9 +9,19 @@ docs_dir = "docs"
 site_dir = "site"
 language = "en"
 
+exclude_docs = """
+/.archive/
+/latex/**
+/latex/**/*
+/latex/*
+"""
+
 watch = [
     "Justfile",
+    "pyproject.toml",
     "src/phids/",
+    "examples/",
+    "scripts/governance/",
     ".agents/",
 ]
 
@@ -24,7 +34,6 @@ extra_javascript = [
     "javascripts/katex.js",
     "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js",
     "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js",
-    "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js",
     "javascripts/mermaid.js",
     "javascripts/widgets/applet_viewport.js",
 ]
@@ -39,7 +48,6 @@ features = [
     "navigation.path",
     "navigation.indexes",
     "navigation.top",
-    "toc.integrate",
     "search.suggest",
     "search.highlight",
     "content.action.edit",
@@ -60,7 +68,7 @@ name = "Switch to dark mode"
 
 [[project.theme.palette]]
 scheme = "slate"
-primary = "black"
+primary = "teal"
 accent = "deep-orange"
 [project.theme.palette.toggle]
 icon = "material/brightness-4"
@@ -95,6 +103,9 @@ toc = { permalink = true, toc_depth = 4 }
 
 [[project.nav]]
 Home = "index.md"
+
+[[project.nav]]
+"Interactive Hub" = "interactive_hub.md"
 
 [[project.nav]]
 "Scientific Model" = [

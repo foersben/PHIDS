@@ -7,8 +7,6 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        # Keep our OKF frontmatter template syntax clean
-        exclude: ^(\.agents/|docs/)
       - id: end-of-file-fixer
       - id: mixed-line-ending
         args: [--fix=lf]
