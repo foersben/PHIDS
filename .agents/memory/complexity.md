@@ -144,3 +144,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 4
 * **Performance Assessment:** Extracting logic executes strictly in the API response formatting path. No effect on the core simulation engine. Performance regression is strictly avoided.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-30 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/services/draft/species.py` -> `remove_flora`
+* **Selection Rationale:** This function accumulated a cognitive complexity score of 14 due to multiple nested loops to iterate through the diet matrix and trigger rules to compact flora references upon removal. Since it was near the threshold limit, isolating this compacting block of state modification into a helper cleanly separates iteration logic out of the main endpoint execution flow.
+* **Before/After Score:** 14 vs. 4
+* **Performance Assessment:** The extraction strictly runs logic on in-memory lists representing the draft state configuration layer out of the hot path of the core simulation engine. It does not regress engine loops or metrics.
+* **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, type checks, schema trace parities and tests (`uv run pytest`) run flawlessly without regressions.

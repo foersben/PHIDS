@@ -46,6 +46,31 @@ def add_flora(draft: DraftState, params: FloraSpeciesParams) -> None:
     )
 
 
+def _compact_flora_references(draft: DraftState, species_id: int, idx: int) -> None:
+    """Remove dependent references to a flora species across the draft state.
+
+    Args:
+        draft: Draft state mutated in place.
+        species_id: Flora species identifier being removed.
+        idx: The index of the flora species in the original list.
+    """
+    for row in draft.diet_matrix:
+        if idx < len(row):
+            del row[idx]
+
+    new_rules: list[TriggerRule] = []
+    for rule in draft.trigger_rules:
+        if rule.flora_species_id == species_id:
+            continue
+        new_rule = dataclasses.replace(rule)
+        if new_rule.flora_species_id > species_id:
+            new_rule.flora_species_id -= 1
+        new_rules.append(new_rule)
+    draft.trigger_rules = new_rules
+
+    draft.initial_plants = [p for p in draft.initial_plants if p.species_id != species_id]
+
+
 def remove_flora(draft: DraftState, species_id: int) -> None:
     """Remove one flora species and compact all dependent references.
 
@@ -71,21 +96,7 @@ def remove_flora(draft: DraftState, species_id: int) -> None:
         raise ValueError(f"Flora species_id {species_id} not found.")
 
     del draft.flora_species[idx]
-    for row in draft.diet_matrix:
-        if idx < len(row):
-            del row[idx]
-
-    new_rules: list[TriggerRule] = []
-    for rule in draft.trigger_rules:
-        if rule.flora_species_id == species_id:
-            continue
-        new_rule = dataclasses.replace(rule)
-        if new_rule.flora_species_id > species_id:
-            new_rule.flora_species_id -= 1
-        new_rules.append(new_rule)
-    draft.trigger_rules = new_rules
-
-    draft.initial_plants = [p for p in draft.initial_plants if p.species_id != species_id]
+    _compact_flora_references(draft, species_id, idx)
     rebuild_species_ids(draft)
     resize_diet_matrix(draft)
     logger.debug(
