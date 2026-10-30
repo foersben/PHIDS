@@ -7,8 +7,8 @@ stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
 description: Attested computation seal verifying full repository static analysis and test gates.
 tags: [attestation, verification, pre-commit, seal]
-generated: {by: "process:attest-seal", at: "2026-10-30T00:34:21Z"}
-verified: {by: "process:attest-seal", at: "2026-10-30T00:34:21Z"}
+generated: {by: "process:attest-seal", at: "2026-10-30T00:52:06Z"}
+verified: {by: "process:attest-seal", at: "2026-10-30T00:52:06Z"}
 sources:
   - id: toolchain_spec
     resource: .agents/toolchain.yaml
@@ -16,24 +16,24 @@ sources:
 
 # System Health Attestation Seal
 
-* **Timestamp:** `2026-10-30T00:34:21Z`
+* **Timestamp:** `2026-10-30T00:52:06Z`
 * **Overall Status:** `PASSED`
-* **Total Runtime:** `34.21s`
+* **Total Runtime:** `26.68s`
 * **Runtime Environment:** Astral uv (Python 3.13 on Linux x86_64)
 
 ## Verification Gate Results
 
 | Gate | Command | Exit Code | Status |
 | :--- | :--- | :--- | :--- |
-| **Gate 1: Ruff Code Hygiene** | `uv run ruff check .` | `0` | ✅ PASSED (0.06s) |
-| **Gate 2: Strict Mypy Core & Scripts** | `uv run mypy src/phids scripts` | `0` | ✅ PASSED (0.74s) |
-| **Gate 3: Cognitive Complexity Ceiling (<=15)** | `just complexity` | `0` | ✅ PASSED (0.12s) |
-| **Gate 4: Rule 04 Markdown Formatting** | `uv run python scripts/governance/verify_markdown_rules.py` | `0` | ✅ PASSED (0.11s) |
-| **Gate 5: OKF v0.2 Graph & Metadata** | `uv run python scripts/validate_okf.py` | `0` | ✅ PASSED (0.30s) |
-| **Gate 6: Data-Flow Matrix Trace Parity** | `uv run python scripts/verify_matrix_trace_parity.py --all` | `0` | ✅ PASSED (0.74s) |
-| **Gate 7: Data-Flow Matrix Coverage Audit** | `uv run python scripts/audit_matrix_coverage.py` | `0` | ✅ PASSED (0.13s) |
-| **Gate 8: Code Invariants & Bypass Ratchet** | `uv run python scripts/governance/verify_code_invariants.py` | `0` | ✅ PASSED (0.54s) |
-| **Gate 9: Engine Unit Test Suite** | `uv run pytest tests/unit/ -q -o "addopts="` | `0` | ✅ PASSED (31.47s) |
+| **Gate 1: Ruff Code Hygiene** | `uv run ruff check .` | `0` | ✅ PASSED (0.10s) |
+| **Gate 2: Strict Mypy Core & Scripts** | `uv run mypy src/phids scripts` | `0` | ✅ PASSED (1.02s) |
+| **Gate 3: Cognitive Complexity Ceiling (<=15)** | `just complexity` | `0` | ✅ PASSED (0.33s) |
+| **Gate 4: Rule 04 Markdown Formatting** | `uv run python scripts/governance/verify_markdown_rules.py` | `0` | ✅ PASSED (0.12s) |
+| **Gate 5: OKF v0.2 Graph & Metadata** | `uv run python scripts/validate_okf.py` | `0` | ✅ PASSED (0.39s) |
+| **Gate 6: Data-Flow Matrix Trace Parity** | `uv run python scripts/verify_matrix_trace_parity.py --all` | `0` | ✅ PASSED (0.95s) |
+| **Gate 7: Data-Flow Matrix Coverage Audit** | `uv run python scripts/audit_matrix_coverage.py` | `0` | ✅ PASSED (0.14s) |
+| **Gate 8: Code Invariants & Bypass Ratchet** | `uv run python scripts/governance/verify_code_invariants.py` | `0` | ✅ PASSED (0.64s) |
+| **Gate 9: Engine Unit Test Suite** | `uv run pytest tests/unit/ -q -o "addopts="` | `0` | ✅ PASSED (23.00s) |
 
 ## Attestation Assertion
 
