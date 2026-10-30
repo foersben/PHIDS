@@ -151,7 +151,6 @@ def test_compute_plant_metrics_returns_frozen_dataclass() -> None:
     assert metrics.max_structural_mass == 100.0
     assert metrics.fragility_pct == 75.0
     assert metrics.incidental_risk_level == "High Risk"
-    assert metrics.risk_level == "High Risk"
 
     # Verify frozen immutability
     with pytest.raises(FrozenInstanceError):

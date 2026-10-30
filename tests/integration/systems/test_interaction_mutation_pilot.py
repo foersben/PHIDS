@@ -68,7 +68,7 @@ def test_crowding_threshold_strict_gt_capacity(
         1,
         0,
         species_id=0,
-        pop=TILE_CARRYING_CAPACITY,
+        population=TILE_CARRYING_CAPACITY,
         velocity=1,
         energy=0.0,
     )
@@ -91,7 +91,7 @@ def test_crowding_threshold_strict_gt_capacity(
         1,
         0,
         species_id=0,
-        pop=TILE_CARRYING_CAPACITY + 1,
+        population=TILE_CARRYING_CAPACITY + 1,
         velocity=1,
         energy=0.0,
     )
@@ -128,7 +128,7 @@ def test_crowding_precedes_anchor_when_edible_plant_present(
     env.flow_field[:, 0] = [0.0, 1.0, 2.0, 3.0]
 
     plant_id = add_plant(world, 1, 0, species_id=0, energy=20.0)
-    swarm_id = add_swarm(world, 1, 0, species_id=0, pop=TILE_CARRYING_CAPACITY + 1)
+    swarm_id = add_swarm(world, 1, 0, species_id=0, population=TILE_CARRYING_CAPACITY + 1)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     swarm.energy_upkeep_per_individual = 0.0
     swarm.split_population_threshold = TILE_CARRYING_CAPACITY * 10
@@ -156,7 +156,7 @@ def test_plant_death_requires_strict_less_than_survival_threshold(
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
 
     plant_id = add_plant(world, 1, 1, species_id=0, energy=2.0, survival_threshold=1.0)
-    swarm_id = add_swarm(world, 1, 1, species_id=0, pop=1, velocity=1, consumption_rate=1.0)
+    swarm_id = add_swarm(world, 1, 1, species_id=0, population=1, velocity=1, consumption_rate=1.0)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     swarm.move_cooldown = 1
     swarm.energy_upkeep_per_individual = 0.0
@@ -179,7 +179,7 @@ def test_mixed_diet_contact_prefers_successful_feeding_over_incompatible_flag(
 
     add_plant(world, 1, 1, species_id=0, energy=5.0)
     add_plant(world, 1, 1, species_id=1, energy=5.0)
-    swarm_id = add_swarm(world, 1, 1, species_id=0, pop=2, velocity=1, consumption_rate=1.0)
+    swarm_id = add_swarm(world, 1, 1, species_id=0, population=2, velocity=1, consumption_rate=1.0)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     swarm.move_cooldown = 1
     swarm.repelled = True
@@ -202,7 +202,7 @@ def test_velocity_floor_prevents_zero_division_and_preserves_consumption_scaling
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
 
     plant_id = add_plant(world, 1, 1, species_id=0, energy=20.0)
-    swarm_id = add_swarm(world, 1, 1, species_id=0, pop=4, velocity=0, consumption_rate=2.0)
+    swarm_id = add_swarm(world, 1, 1, species_id=0, population=4, velocity=0, consumption_rate=2.0)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     swarm.move_cooldown = 1
     swarm.energy_upkeep_per_individual = 0.0

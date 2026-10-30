@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from phids.engine.core.biotope import _numba_convolve_signal_layer
-from phids.engine.core.flow_field import (
+from phids.engine.core.flow import (
     _init_base_and_current_jit,
     _propagate_iteration_jit_parallel,
     _propagate_iteration_jit_pow2,

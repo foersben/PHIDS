@@ -1,19 +1,17 @@
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
 
-"""Comprehensive test suite for Zarr replay backend and legacy msgpack migration.
+"""Comprehensive test suite for Zarr replay buffer serialization and querying.
 
-This test module validates the ReplayBuffer API compatibility with the legacy
-ReplayBuffer, field serialization round-trip fidelity, metadata persistence,
-retention policies, and backwards migration from msgpack-encoded replay files.
+This test module validates the ReplayBuffer API fidelity, field serialization
+round-trip accuracy, metadata persistence, retention policies, and bit-level
+trajectory reproducibility.
 """
 
 from __future__ import annotations
 
-# ruff: noqa: I001
-
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pytest

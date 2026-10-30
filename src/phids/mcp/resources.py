@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import json
 
+from phids.mcp import helpers
 from phids.mcp.app import mcp
-from phids.mcp.helpers import _draft_to_json, get_active_sim_loop, get_current_draft
 
 
 @mcp.resource("phids://config/draft.json")
@@ -26,7 +26,7 @@ def active_draft_resource() -> str:
     Returns:
         str: Indented JSON string of the current DraftState.
     """
-    return _draft_to_json(get_current_draft())
+    return helpers._draft_to_json(helpers.get_current_draft())
 
 
 @mcp.resource("phids://simulation/live.json")
@@ -39,7 +39,7 @@ def live_simulation_resource() -> str:
     Returns:
         str: Indented JSON string of the live simulation loop status.
     """
-    loop = get_active_sim_loop()
+    loop = helpers.get_active_sim_loop()
     if loop is None:
         return json.dumps({"status": "idle", "message": "No active simulation loop currently loaded"})
 

@@ -58,7 +58,7 @@ SLICE_METADATA: dict[int, dict[str, Any]] = {
         "description": "Double-buffered Gaussian convolution, semi-Lagrangian advection, FTZ/DAZ truncation.",
         "paths": [
             "src/phids/engine/core/biotope.py",
-            "src/phids/engine/core/flow_field.py",
+            "src/phids/engine/core/flow/",
             "src/phids/engine/systems/signaling/spatial.py",
         ],
     },

@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from phids.mcp_server import (
+from phids.mcp import (
     active_draft_resource,
     inspect_live_simulation,
     inspect_telemetry_schema,
@@ -94,7 +94,7 @@ def test_mcp_resources() -> None:
 def test_validate_simulation_config_valid() -> None:
     """Test validate_simulation_config with valid config."""
     from phids.io.scenario import load_scenario_from_json
-    from phids.mcp_server import validate_simulation_config
+    from phids.mcp import validate_simulation_config
 
     config = load_scenario_from_json("examples/ecosystem_equilibrium_benchmark_256x256.json")
     valid_json = config.model_dump_json()
@@ -105,7 +105,7 @@ def test_validate_simulation_config_valid() -> None:
 
 def test_validate_simulation_config_invalid() -> None:
     """Test validate_simulation_config with invalid config."""
-    from phids.mcp_server import validate_simulation_config
+    from phids.mcp import validate_simulation_config
 
     invalid_json = '{"grid_width": 3}'  # Not a power of two
     result = validate_simulation_config(invalid_json)
@@ -115,12 +115,12 @@ def test_validate_simulation_config_invalid() -> None:
 
 def test_query_telemetry_schema_success() -> None:
     """Test query_telemetry_schema tool."""
-    from phids.mcp_server import query_telemetry_schema
+    from phids.mcp import query_telemetry_schema
 
     mock_loop = MagicMock()
     mock_loop.telemetry._rows = [{"col1": 1, "col2": 2}]
 
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=mock_loop):
         res = query_telemetry_schema()
         assert res["status"] == "success"
         assert "col1" in res["columns"]
@@ -129,12 +129,12 @@ def test_query_telemetry_schema_success() -> None:
 
 def test_query_telemetry_schema_empty() -> None:
     """Test query_telemetry_schema tool when empty."""
-    from phids.mcp_server import query_telemetry_schema
+    from phids.mcp import query_telemetry_schema
 
     mock_loop = MagicMock()
     mock_loop.telemetry._rows = []
 
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=mock_loop):
         res = query_telemetry_schema()
         assert res["status"] == "success"
         assert "No telemetry recorded yet" in res["message"]
@@ -142,19 +142,19 @@ def test_query_telemetry_schema_empty() -> None:
 
 def test_export_telemetry_data_error_no_loop() -> None:
     """Test export_telemetry_data error handling."""
-    from phids.mcp_server import export_telemetry_data
+    from phids.mcp import export_telemetry_data
 
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=None):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=None):
         res = export_telemetry_data("csv")
         assert res["status"] == "error"
 
 
 def test_export_telemetry_data_invalid_params() -> None:
     """Test export_telemetry_data validation."""
-    from phids.mcp_server import export_telemetry_data
+    from phids.mcp import export_telemetry_data
 
     mock_loop = MagicMock()
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=mock_loop):
         res = export_telemetry_data("csv", data_type="invalid")
         assert res["status"] == "error"
         assert "Invalid data_type" in res["message"]
@@ -166,12 +166,12 @@ def test_export_telemetry_data_invalid_params() -> None:
 
 def test_export_telemetry_data_csv() -> None:
     """Test export_telemetry_data csv output."""
-    from phids.mcp_server import export_telemetry_data
+    from phids.mcp import export_telemetry_data
 
     mock_loop = MagicMock()
     mock_loop.telemetry._rows = [{"test": 1}]
 
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=mock_loop):
         with patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=[{"test": 1}]):
             mock_df = MagicMock()
             mock_df.to_csv.return_value = "test_csv_data"
@@ -186,14 +186,14 @@ def test_export_telemetry_data_png(mock_export: MagicMock) -> None:
     """Test export_telemetry_data png output."""
     import base64
 
-    from phids.mcp_server import export_telemetry_data
+    from phids.mcp import export_telemetry_data
 
     mock_loop = MagicMock()
     mock_loop.telemetry._rows = [{"test": 1}]
     mock_export.return_value = b"test_png_data"
     expected_b64 = base64.b64encode(b"test_png_data").decode("utf-8")
 
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=mock_loop):
         with patch("phids.telemetry.export.core.filter_telemetry_rows", return_value=[{"test": 1}]):
             res = export_telemetry_data("png", data_type="timeseries")
             assert res["status"] == "success"

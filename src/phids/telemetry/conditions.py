@@ -55,21 +55,6 @@ class FloraMetrics:
     total_energy: float
     any_alive: bool
 
-    @property
-    def flora_species_alive(self) -> frozenset[int]:
-        """Alias for backwards compatibility."""
-        return self.species_alive
-
-    @property
-    def total_flora_energy(self) -> float:
-        """Alias for backwards compatibility."""
-        return self.total_energy
-
-    @property
-    def flora_alive(self) -> bool:
-        """Alias for backwards compatibility."""
-        return self.any_alive
-
 
 @dataclass(slots=True, frozen=True)
 class HerbivoreMetrics:
@@ -78,21 +63,6 @@ class HerbivoreMetrics:
     species_alive: frozenset[int]
     total_population: int
     any_alive: bool
-
-    @property
-    def herbivore_species_alive(self) -> frozenset[int]:
-        """Alias for backwards compatibility."""
-        return self.species_alive
-
-    @property
-    def total_herbivore_population(self) -> int:
-        """Alias for backwards compatibility."""
-        return self.total_population
-
-    @property
-    def herbivores_alive(self) -> bool:
-        """Alias for backwards compatibility."""
-        return self.any_alive
 
 
 def _gather_flora_metrics(world: ECSWorld, tick_metrics: TickMetrics | None) -> FloraMetrics:
@@ -140,7 +110,7 @@ def _gather_herbivore_metrics(world: ECSWorld, tick_metrics: TickMetrics | None)
     if tick_metrics is not None:
         return HerbivoreMetrics(
             species_alive=frozenset(tick_metrics.herbivore_species_alive),
-            total_population=tick_metrics.total_herbivore_population,
+            total_population=tick_metrics.herbivore_population,
             any_alive=tick_metrics.herbivores_alive,
         )
 

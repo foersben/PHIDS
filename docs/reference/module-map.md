@@ -270,7 +270,7 @@ Narrative docs:
 
 * `docs/technical_architecture/engine_execution.md`
 
-### `phids.engine.core.flow_field`
+### `phids.engine.core.flow`
 
 Primary responsibility:
 

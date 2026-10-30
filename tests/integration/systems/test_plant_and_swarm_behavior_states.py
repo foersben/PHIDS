@@ -184,8 +184,8 @@ def test_plant_last_energy_loss_cause_herbivory_attribution() -> None:
     assert plant_death_causes.get("death_herbivore_feeding", 0) == 1
 
 
-def test_plant_airborne_seed_flight_parameters() -> None:
-    """Verify seed_drop_height and seed_terminal_velocity are retained on PlantComponent instances."""
+def test_plant_default_parameters() -> None:
+    """Verify default parameters are retained on PlantComponent instances."""
     plant = PlantComponent(
         entity_id=1,
         species_id=0,
@@ -200,12 +200,8 @@ def test_plant_airborne_seed_flight_parameters() -> None:
         seed_min_dist=1.0,
         seed_max_dist=4.0,
         seed_energy_cost=3.0,
-        seed_drop_height=2.5,
-        seed_terminal_velocity=0.4,
     )
 
-    assert plant.seed_drop_height == 2.5
-    assert plant.seed_terminal_velocity == 0.4
     assert plant.camouflage is False
     assert plant.camouflage_factor == 1.0
 

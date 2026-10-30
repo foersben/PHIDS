@@ -18,7 +18,7 @@ sources:
 - id: lifecycle
   resource: src/phids/engine/systems/lifecycle/
 - id: flow_field
-  resource: src/phids/engine/core/flow_field.py
+  resource: src/phids/engine/core/flow/solvers.py
 - id: source
   resource: src/phids/engine/systems/interaction/
 - id: signaling_

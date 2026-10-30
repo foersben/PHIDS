@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from phids.engine.core.flow_field import (
+from phids.engine.core.flow import (
     _compute_flow_field_impl,
     apply_camouflage,
     compute_flow_field,
@@ -242,7 +242,7 @@ def test_flow_field_truncates_subnormals() -> None:
 
 def test_propagate_iteration_jit_pow2_parity() -> None:
     """Verify bitwise AND power-of-two propagation produces bit-exact results matching modulo propagation."""
-    from phids.engine.core.flow_field import _propagate_iteration_jit, _propagate_iteration_jit_pow2
+    from phids.engine.core.flow import _propagate_iteration_jit, _propagate_iteration_jit_pow2
 
     width, height = 16, 16
     mask_x, mask_y = width - 1, height - 1

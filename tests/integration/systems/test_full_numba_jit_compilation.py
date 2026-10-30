@@ -26,7 +26,7 @@ from phids.engine.components.plant import PlantComponent
 from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
-from phids.engine.core.flow_field import _compute_flow_field_impl, compute_flow_field
+from phids.engine.core.flow import _compute_flow_field_impl, compute_flow_field
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.interaction.movement import (
     _choose_neighbour_by_flow_probability_jit,

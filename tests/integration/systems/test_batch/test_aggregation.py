@@ -317,9 +317,6 @@ def test_extract_species_ids_returns_frozen_dataclass() -> None:
     assert isinstance(result, SpeciesIdSets)
     assert result.flora_ids == frozenset({1, 2, 3})
     assert result.herbivore_ids == frozenset({0, 1, 2})
-    assert result.all_flora_ids == frozenset({1, 2, 3})
-    assert result.all_herb_ids == frozenset({0, 1, 2})
-    assert result.herb_ids == frozenset({0, 1, 2})
 
     # Verify frozen immutability
     with pytest.raises(FrozenInstanceError):

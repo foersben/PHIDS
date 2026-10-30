@@ -65,7 +65,7 @@ def test_main_routes_mcp_flag_to_mcp_server(monkeypatch: pytest.MonkeyPatch) -> 
         calls["mcp"] += 1
 
     monkeypatch.setattr(cli, "_run_server", _fake_run_server)
-    monkeypatch.setattr("phids.mcp_server.run_mcp_server", _fake_run_mcp_server)
+    monkeypatch.setattr("phids.mcp.run_mcp_server", _fake_run_mcp_server)
 
     cli.main(["--mcp"])
 

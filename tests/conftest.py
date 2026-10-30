@@ -312,14 +312,12 @@ def add_swarm() -> Callable[..., int]:
         x: int,
         y: int,
         species_id: int = 0,
-        population: int | None = None,
-        pop: int | None = None,
+        population: int = 10,
         energy: float = 0.0,
         energy_min: float = 1.0,
         velocity: int = 1,
         consumption_rate: float = 1.0,
-        reproduction_divisor: float = 1.0,
-        reproduction_energy_divisor: float | None = None,
+        reproduction_energy_divisor: float = 1.0,
         split_population_threshold: int = 1000,
     ) -> int:
         """Spawn a swarm entity in the ECS world.
@@ -329,29 +327,17 @@ def add_swarm() -> Callable[..., int]:
             x: Grid coordinate along the X-axis.
             y: Grid coordinate along the Y-axis.
             species_id: Identifier index of the herbivore species.
-            population: Initial population headcount. Alias of `pop`.
-            pop: Initial population headcount. Alias of `population`.
+            population: Initial population headcount.
             energy: Initial energy reserve for the swarm entity.
             energy_min: Minimum energy threshold per individual.
             velocity: Movement cooldown period in ticks.
             consumption_rate: Feeding speed multiplier per individual.
-            reproduction_divisor: Reproduction throttle divisor.
-            reproduction_energy_divisor: Explicit reproduction threshold override.
+            reproduction_energy_divisor: Explicit reproduction threshold divisor.
             split_population_threshold: Mitosis split population size limit.
 
         Returns:
             The unique integer entity ID of the spawned swarm.
-
-        Raises:
-            ValueError: If both pop and population are specified with conflicting values.
         """
-        if pop is not None and population is not None and pop != population:
-            raise ValueError("Specify either 'pop' or 'population' with the same value")
-        final_population: int = population if population is not None else (pop if pop is not None else 10)
-        final_reproduction_divisor: float = (
-            reproduction_energy_divisor if reproduction_energy_divisor is not None else reproduction_divisor
-        )
-
         entity = world.create_entity()
         world.add_component(
             entity.entity_id,
@@ -360,13 +346,13 @@ def add_swarm() -> Callable[..., int]:
                 species_id=species_id,
                 x=x,
                 y=y,
-                population=final_population,
-                initial_population=max(1, final_population // 2),
+                population=population,
+                initial_population=max(1, population // 2),
                 energy=energy,
                 energy_min=energy_min,
                 velocity=velocity,
                 consumption_rate=consumption_rate,
-                reproduction_energy_divisor=final_reproduction_divisor,
+                reproduction_energy_divisor=reproduction_energy_divisor,
                 split_population_threshold=split_population_threshold,
             ),
         )

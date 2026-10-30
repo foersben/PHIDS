@@ -472,7 +472,7 @@ def _build_structural_edges(
 
 
 def _collect_markdown_files(root_path: Path, directories: list[str]) -> list[Path]:
-    """Collect valid markdown files across target directories, excluding archive/legacy/site files."""
+    """Collect valid markdown files across target directories, excluding archive/site files."""
     files: list[Path] = []
     for dir_name in directories:
         dir_path = root_path / dir_name
@@ -480,7 +480,7 @@ def _collect_markdown_files(root_path: Path, directories: list[str]) -> list[Pat
             continue
         for md_file in sorted(dir_path.rglob("*.md")):
             file_posix = md_file.as_posix()
-            if "docs/.archive/" not in file_posix and "docs/legacy/" not in file_posix and "site/" not in file_posix:
+            if "docs/.archive/" not in file_posix and "site/" not in file_posix:
                 files.append(md_file)
     return files
 

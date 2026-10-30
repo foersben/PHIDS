@@ -22,7 +22,7 @@ sources:
 - id: feeding
   resource: src/phids/engine/systems/interaction/feeding.py
 - id: flow_field
-  resource: src/phids/engine/core/flow_field.py
+  resource: src/phids/engine/core/flow/solvers.py
 - id: trace_tests
   resource: tests/integration/scientific_invariants/test_causal_data_flow_matrices.py
 ---

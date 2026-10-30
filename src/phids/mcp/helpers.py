@@ -13,7 +13,6 @@ from __future__ import annotations
 import dataclasses
 import json
 import subprocess
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -34,15 +33,10 @@ def get_project_root() -> Path:
     Returns:
         Path: Filesystem path to the root of the PHIDS workspace.
     """
-    mod = sys.modules.get("phids.mcp_server")
-    if mod:
-        val = getattr(mod, "_PROJECT_ROOT", None)
-        if val is not None:
-            return cast("Path", val)
-    return _DEFAULT_PROJECT_ROOT
+    return _PROJECT_ROOT
 
 
-def _default_get_active_sim_loop() -> Any | None:
+def get_active_sim_loop() -> Any | None:
     """Safely return the active live SimulationLoop instance if loaded under FastAPI.
 
     Returns:
@@ -56,33 +50,12 @@ def _default_get_active_sim_loop() -> Any | None:
         return None
 
 
-def get_active_sim_loop() -> Any | None:
-    """Resolve the active live SimulationLoop instance dynamically.
-
-    Checks `phids.mcp_server._get_active_sim_loop` first to honor test patches.
-
-    Returns:
-        Any | None: The active simulation loop instance or None.
-    """
-    mod = sys.modules.get("phids.mcp_server")
-    if mod:
-        fn = getattr(mod, "_get_active_sim_loop", None)
-        if callable(fn):
-            return fn()
-    return _default_get_active_sim_loop()
-
-
 def get_current_draft() -> DraftState:
     """Resolve the active draft state dynamically.
 
     Returns:
         DraftState: Active configuration draft state instance.
     """
-    mod = sys.modules.get("phids.mcp_server")
-    if mod:
-        fn = getattr(mod, "get_draft", None)
-        if callable(fn):
-            return cast("DraftState", fn())
     return get_draft()
 
 
@@ -95,11 +68,6 @@ def get_logs(limit: int = 80) -> list[dict[str, str]]:
     Returns:
         list[dict[str, str]]: List of structured diagnostic log records.
     """
-    mod = sys.modules.get("phids.mcp_server")
-    if mod:
-        fn = getattr(mod, "get_recent_logs", None)
-        if callable(fn):
-            return cast("list[dict[str, str]]", fn(limit=limit))
     return get_recent_logs(limit=limit)
 
 
@@ -113,11 +81,6 @@ def run_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any
     Returns:
         subprocess.CompletedProcess[Any]: Result of the command invocation.
     """
-    mod = sys.modules.get("phids.mcp_server")
-    if mod:
-        sub_mod = getattr(mod, "subprocess", None)
-        if sub_mod and hasattr(sub_mod, "run"):
-            return cast("subprocess.CompletedProcess[Any]", sub_mod.run(*args, **kwargs))
     return subprocess.run(*args, **kwargs)
 
 

@@ -23,11 +23,6 @@ class PlantMetrics:
     fragility_pct: float
     incidental_risk_level: str
 
-    @property
-    def risk_level(self) -> str:
-        """Alias for incidental_risk_level for presenter compatibility."""
-        return self.incidental_risk_level
-
 
 def _compute_plant_metrics(p: PlantComponent) -> PlantMetrics:
     max_struct = p.max_structural_mass if p.max_structural_mass > 0.0 else p.max_energy

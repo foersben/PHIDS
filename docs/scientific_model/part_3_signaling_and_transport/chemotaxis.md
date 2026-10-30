@@ -10,7 +10,7 @@ generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: flow_field
-  resource: src/phids/engine/core/flow_field.py
+  resource: src/phids/engine/core/flow/solvers.py
 ---
 
 Herbivore swarms navigate the PHIDS biotope via a unified scalar guidance field, simulating a sensory-driven process called **chemotaxis**.

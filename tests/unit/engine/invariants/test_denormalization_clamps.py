@@ -8,7 +8,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from phids.engine.core.flow_field import _compute_flow_field
+from phids.engine.core.flow import _compute_flow_field
 
 
 @pytest.mark.scientific_invariant

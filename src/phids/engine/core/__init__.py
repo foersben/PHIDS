@@ -9,7 +9,7 @@ registry and O(1) spatial hash grid that enable efficient co-locality queries wi
 distance scans. The :mod:`~phids.engine.core.biotope` module implements the double-buffered
 ``GridEnvironment``, which maintains pre-allocated NumPy arrays for plant energy, airborne signal,
 and toxin layers and performs Gaussian diffusion via 2-D convolution each tick. The
-:mod:`~phids.engine.core.flow_field` module implements the iterative Jacobi propagation kernel,
+:mod:`~phids.engine.core.flow` package implements the iterative Jacobi propagation kernel,
 JIT-compiled with Numba for hot-path performance, that converts aggregated plant energy and toxin
 concentrations into the scalar attraction field driving swarm navigation.
 

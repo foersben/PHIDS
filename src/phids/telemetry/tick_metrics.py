@@ -57,7 +57,6 @@ class TickMetrics:
     herbivore_clusters: int = 0
     herbivore_population: int = 0
     total_flora_energy: float = 0.0
-    total_herbivore_population: int = 0
     flora_alive: bool = False
     herbivores_alive: bool = False
     flora_species_alive: set[int] = field(default_factory=set)
@@ -68,6 +67,11 @@ class TickMetrics:
     defense_cost_by_species: dict[int, float] = field(default_factory=dict)
     plant_death_causes: dict[str, int] = field(default_factory=dict)
     herbivore_death_causes: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def total_herbivore_population(self) -> int:
+        """Alias for herbivore_population."""
+        return self.herbivore_population
 
 
 def _collect_plant_metrics(metrics: TickMetrics, plant_components: list[PlantComponent]) -> None:
@@ -110,7 +114,6 @@ def _collect_swarm_metrics(metrics: TickMetrics, swarm_components: list[SwarmCom
         species_id = int(swarm.species_id)
         population = int(swarm.population)
         metrics.herbivore_population += population
-        metrics.total_herbivore_population += population
         metrics.herbivore_species_alive.add(species_id)
         metrics.swarm_pop_by_species[species_id] = metrics.swarm_pop_by_species.get(species_id, 0) + population
 

@@ -58,8 +58,6 @@ class PlantComponent:
         seed_min_dist: Minimum seed dispersal distance.
         seed_max_dist: Maximum seed dispersal distance.
         seed_energy_cost: Energy cost paid for reproduction.
-        seed_drop_height: Effective release height used to estimate airborne seed flight time.
-        seed_terminal_velocity: Effective terminal velocity used in wind-shift estimation.
         camouflage: Whether constitutive camouflage is active.
         camouflage_factor: Gradient multiplier when camouflaged.
         last_reproduction_tick: Tick of the most recent reproduction.
@@ -89,8 +87,6 @@ class PlantComponent:
     seed_min_dist: float
     seed_max_dist: float
     seed_energy_cost: float
-    seed_drop_height: float = 1.25
-    seed_terminal_velocity: float = 0.8
     camouflage: bool = False
     camouflage_factor: float = 1.0
     last_reproduction_tick: int = 0
@@ -158,8 +154,6 @@ class PlantComponent:
             seed_min_dist=params.seed_min_dist,
             seed_max_dist=params.seed_max_dist,
             seed_energy_cost=params.seed_energy_cost,
-            seed_drop_height=params.seed_drop_height,
-            seed_terminal_velocity=params.seed_terminal_velocity,
             camouflage=params.camouflage,
             camouflage_factor=params.camouflage_factor,
             last_reproduction_tick=last_reproduction_tick,

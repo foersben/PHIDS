@@ -125,8 +125,6 @@ Simulation state transformations inside `src/phids/engine/` operate on pre-alloc
 
 ::: phids.engine.core.ecs
 
-::: phids.engine.core.flow_field
-
 ::: phids.engine.core.flow
 
 ::: phids.engine.core.placement
@@ -180,8 +178,6 @@ Simulation state transformations inside `src/phids/engine/` operate on pre-alloc
 ::: phids.io.replay_types
 
 ## Integration
-
-::: phids.mcp_server
 
 ::: phids.mcp
 

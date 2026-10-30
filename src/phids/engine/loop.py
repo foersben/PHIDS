@@ -30,7 +30,7 @@ import numpy.typing as npt
 from phids.engine.components.plant import PlantComponent
 from phids.engine.core.biotope import GridEnvironment
 from phids.engine.core.ecs import ECSWorld
-from phids.engine.core.flow_field import apply_camouflage, compute_flow_field
+from phids.engine.core.flow import apply_camouflage, compute_flow_field
 from phids.engine.spawner import spawn_initial_entities
 from phids.engine.systems.interaction import run_interaction
 from phids.engine.systems.lifecycle import run_lifecycle

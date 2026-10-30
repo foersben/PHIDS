@@ -12,7 +12,7 @@ verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 role: Engine Developer
 sources:
 - id: flow_field
-  resource: src/phids/engine/core/flow_field.py
+  resource: src/phids/engine/core/flow/solvers.py
 - id: constants
   resource: src/phids/shared/constants.py
 ---
@@ -20,7 +20,7 @@ sources:
 # Directives
 
 * **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays; Systems contain all logic and operate on component arrays. Ban classes with behavior/state inside engine core.
-* **Numba JIT:** Compiling all hot-path numerical loops (`flow_field.py`) with `@njit`. Ban Python objects (`dict`, `list`, custom classes) inside JIT functions.
+* **Numba JIT:** Compiling all hot-path numerical loops (`flow/`) with `@njit`. Ban Python objects (`dict`, `list`, custom classes) inside JIT functions.
 * **Rule of 16:** Enforce array capacity limits defined in `src/phids/shared/constants.py`.
 * **Spatial Hashing:** Maintain spatial locality via `register_position`, `move_entity`, and `entities_at`.
 * **Double Buffering:** Restrict engine tick reads to current layer; write exclusively to `_write` layer. Perform state swaps on tick completion.

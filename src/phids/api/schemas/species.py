@@ -21,8 +21,6 @@ from phids.shared.constants import (
     MAX_FLORA_SPECIES,
     MAX_HERBIVORE_SPECIES,
     MAX_SUBSTANCE_TYPES,
-    SEED_DROP_HEIGHT_DEFAULT,
-    SEED_TERMINAL_VELOCITY_DEFAULT,
 )
 
 
@@ -39,16 +37,6 @@ class FloraSpeciesParams(StrictBaseModel):
     seed_min_dist: float = Field(default=1.0, ge=0.0)
     seed_max_dist: float = Field(default=3.0, gt=0.0)
     seed_energy_cost: float = Field(default=5.0, ge=0.0)
-    seed_drop_height: float = Field(
-        default=SEED_DROP_HEIGHT_DEFAULT,
-        gt=0.0,
-        description=("Approximate seed release height used for wind-flight-time estimation in anemochorous dispersal."),
-    )
-    seed_terminal_velocity: float = Field(
-        default=SEED_TERMINAL_VELOCITY_DEFAULT,
-        gt=0.0,
-        description=("Approximate seed terminal fall velocity used for wind-driven downwind shift estimation."),
-    )
     camouflage: bool = False
     camouflage_factor: float = Field(default=1.0, ge=0.0, le=1.0)
     translocation_rate: float = Field(

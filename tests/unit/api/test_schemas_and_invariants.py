@@ -28,8 +28,11 @@ def _create_dummy_herbivore(species_id: int) -> HerbivoreSpeciesParams:
 def _create_dummy_flora(species_id: int, num_triggers: int = 0) -> FloraSpeciesParams:
     triggers = [
         {
-            "herbivore_species_id": 0,
-            "min_herbivore_population": 5,
+            "initiator": {
+                "type": "herbivore_attack",
+                "herbivore_species_id": 0,
+                "min_herbivore_population": 5,
+            },
             "action": {
                 "type": "synthesize_substance",
                 "substance_id": i,

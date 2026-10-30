@@ -11,7 +11,7 @@ generated: {by: process:okf-updater, at: "2026-07-26T18:53:00Z"}
 verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
 sources:
 - id: flow_field
-  resource: src/phids/engine/core/flow_field.py
+  resource: src/phids/engine/core/flow/solvers.py
 - id: biotope
   resource: src/phids/engine/core/biotope.py
 - id: ecs
@@ -63,6 +63,6 @@ To guarantee structural determinism and maintain safety within the compiled hot-
 
 Edits to the following files require extreme caution. They sit on the critical execution path of the simulation tick, and sub-optimal $O(N)$ logic here will catastrophically degrade the continuous rendering capability:
 
-* `src/phids/engine/core/flow_field.py` (Global guidance gradient logic)
+* `src/phids/engine/core/flow/` (Global guidance gradient logic)
 * `src/phids/engine/core/biotope.py` (Gaussian diffusion arrays)
 * `src/phids/engine/core/ecs.py` (Spatial hashing and collision checks)

@@ -12,9 +12,9 @@ and an optional compound activation-condition predicate tree.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field
 
 from phids.api.schemas.base import HerbivoreId, StrictBaseModel, SubstanceId
 from phids.api.schemas.conditions import ConditionNode
@@ -114,19 +114,6 @@ class TriggerConditionSchema(StrictBaseModel):
         ),
     )
     action: TriggerAction = Field(..., description="The action to perform when triggered.")
-
-    @model_validator(mode="before")
-    @classmethod
-    def _map_legacy_trigger_fields(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Maps legacy `herbivore_species_id` and `min_herbivore_population` to `initiator`."""
-        if isinstance(data, dict) and "initiator" not in data:
-            if "herbivore_species_id" in data:
-                data["initiator"] = {
-                    "type": "herbivore_attack",
-                    "herbivore_species_id": data.pop("herbivore_species_id"),
-                    "min_herbivore_population": data.pop("min_herbivore_population", 5),
-                }
-        return data
 
 
 class PassiveDefensesSchema(StrictBaseModel):

@@ -70,7 +70,7 @@ def test_interaction_diet_matrix_blocks_incompatible_feeding(
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
     plant_id = add_plant(world, 1, 1, species_id=0, energy=10.0)
-    swarm_id = add_swarm(world, 1, 1, species_id=0, pop=5, energy=1.0)
+    swarm_id = add_swarm(world, 1, 1, species_id=0, population=5, energy=1.0)
     plant = world.get_entity(plant_id).get_component(PlantComponent)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     initial_energy = plant.energy
@@ -83,7 +83,7 @@ def test_interaction_reproduction_can_trigger_same_tick_mitosis(add_swarm: Calla
     """Verify reproduction can trigger immediate mitosis when thresholds are exceeded."""
     world = ECSWorld()
     env = GridEnvironment(width=4, height=4, num_signals=1, num_toxins=1)
-    sid = add_swarm(world, 1, 1, species_id=0, pop=9)
+    sid = add_swarm(world, 1, 1, species_id=0, population=9)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.initial_population = 5
     swarm.split_population_threshold = 10
@@ -104,7 +104,7 @@ def test_interaction_flow_field_movement_chooses_strongest_gradient(
     env.flow_field[0, 0] = 9.0
     env.flow_field[1, 0] = 1.0
     env.flow_field[2, 0] = 10.0
-    sid = add_swarm(world, 1, 0, species_id=0, pop=4)
+    sid = add_swarm(world, 1, 0, species_id=0, population=4)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     monkeypatch.setattr(random, "choices", lambda seq, weights, **_: [seq[weights.index(max(weights))]])
     run_interaction(world, env, diet_matrix=[[False]], tick=0)
@@ -122,7 +122,7 @@ def test_interaction_moved_swarm_does_not_feed_in_same_tick(
     env.flow_field[1, 0] = 1.0
     env.flow_field[2, 0] = 5.0
     plant_id = add_plant(world, 2, 0, species_id=0, energy=10.0)
-    swarm_id = add_swarm(world, 1, 0, species_id=0, pop=5)
+    swarm_id = add_swarm(world, 1, 0, species_id=0, population=5)
     swarm = world.get_entity(swarm_id).get_component(SwarmComponent)
     swarm.energy_upkeep_per_individual = 0.0
     monkeypatch.setattr(random, "choices", lambda seq, weights, **_: [seq[weights.index(max(weights))]])
@@ -140,8 +140,8 @@ def test_interaction_velocity_scaled_grazing_prevents_cooldown_hyper_feeding(
     world = ECSWorld()
     env = GridEnvironment(width=4, height=1, num_signals=1, num_toxins=1)
     plant_id = add_plant(world, 1, 0, species_id=0, energy=100.0)
-    slow_swarm_id = add_swarm(world, 1, 0, species_id=0, pop=10)
-    fast_swarm_id = add_swarm(world, 2, 0, species_id=0, pop=10)
+    slow_swarm_id = add_swarm(world, 1, 0, species_id=0, population=10)
+    fast_swarm_id = add_swarm(world, 2, 0, species_id=0, population=10)
     slow_swarm = world.get_entity(slow_swarm_id).get_component(SwarmComponent)
     fast_swarm = world.get_entity(fast_swarm_id).get_component(SwarmComponent)
     slow_swarm.velocity = 5
@@ -166,8 +166,8 @@ def test_interaction_feeding_ignores_stale_plant_entity_ids(
     world = ECSWorld()
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
     add_plant(world, 1, 1, species_id=0, energy=1.0)
-    first_swarm_id = add_swarm(world, 1, 1, species_id=0, pop=2)
-    second_swarm_id = add_swarm(world, 1, 1, species_id=0, pop=2)
+    first_swarm_id = add_swarm(world, 1, 1, species_id=0, population=2)
+    second_swarm_id = add_swarm(world, 1, 1, species_id=0, population=2)
     first_swarm = world.get_entity(first_swarm_id).get_component(SwarmComponent)
     second_swarm = world.get_entity(second_swarm_id).get_component(SwarmComponent)
     first_swarm.energy_upkeep_per_individual = 0.0
@@ -185,7 +185,7 @@ def test_repelled_swarm_performs_random_walk(add_swarm: Callable[..., int], monk
     """Verify repelled swarms follow random-walk displacement and decrement repel duration."""
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
-    sid = add_swarm(world, 2, 2, species_id=0, pop=6)
+    sid = add_swarm(world, 2, 2, species_id=0, population=6)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.repelled = True
     swarm.repelled_ticks_remaining = 2
@@ -202,7 +202,7 @@ def test_incompatible_plant_encounter_triggers_repulsion_constant(
     world = ECSWorld()
     env = GridEnvironment(width=3, height=3, num_signals=1, num_toxins=1)
     add_plant(world, 1, 1, species_id=0, energy=10.0)
-    sid = add_swarm(world, 1, 1, species_id=0, pop=5)
+    sid = add_swarm(world, 1, 1, species_id=0, population=5)
     swarm = world.get_entity(sid).get_component(SwarmComponent)
     swarm.energy_upkeep_per_individual = 0.0
     swarm.move_cooldown = 1

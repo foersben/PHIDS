@@ -118,21 +118,6 @@ class SpeciesIdSets:
     flora_ids: frozenset[int]
     herbivore_ids: frozenset[int]
 
-    @property
-    def all_flora_ids(self) -> frozenset[int]:
-        """Alias for backward compatibility."""
-        return self.flora_ids
-
-    @property
-    def all_herb_ids(self) -> frozenset[int]:
-        """Alias for backward compatibility."""
-        return self.herbivore_ids
-
-    @property
-    def herb_ids(self) -> frozenset[int]:
-        """Alias for backward compatibility."""
-        return self.herbivore_ids
-
 
 def _extract_species_ids(aligned: list[list[TelemetryRow]]) -> SpeciesIdSets:
     """Collect all unique flora and herbivore species identifiers seen across runs.

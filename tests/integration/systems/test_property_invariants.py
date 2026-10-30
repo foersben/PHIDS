@@ -134,7 +134,7 @@ def test_double_buffering_read_layer_immutability() -> None:
     """Assert grid current_layer is immutable during tick execution (written to _write layer only)."""
     import numpy as np
 
-    from phids.engine.core.flow_field import compute_flow_field
+    from phids.engine.core.flow import compute_flow_field
 
     env = GridEnvironment(width=10, height=10)
 
@@ -164,7 +164,7 @@ def test_zero_python_heap_allocation_during_tick() -> None:
 
     import numpy as np
 
-    from phids.engine.core.flow_field import _compute_flow_field
+    from phids.engine.core.flow import _compute_flow_field
 
     width, height = 20, 20
     plant_energy = np.zeros((width, height), dtype=np.float64, order="C")

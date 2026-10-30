@@ -39,8 +39,6 @@ async def config_flora_add(
     seed_min_dist: Annotated[float, Form()] = 1.0,
     seed_max_dist: Annotated[float, Form()] = 3.0,
     seed_energy_cost: Annotated[float, Form()] = 5.0,
-    seed_drop_height: Annotated[float, Form()] = 0.5,
-    seed_terminal_velocity: Annotated[float, Form()] = 1.0,
     camouflage: Annotated[str, Form()] = "off",
     camouflage_factor: Annotated[float, Form()] = 1.0,
     translocation_rate: Annotated[float, Form()] = 0.2,
@@ -61,8 +59,6 @@ async def config_flora_add(
         seed_min_dist: The minimum distance between seeds of the flora species.
         seed_max_dist: The maximum distance between seeds of the flora species.
         seed_energy_cost: The energy cost of seeding for the flora species.
-        seed_drop_height: Canopy release height for wind advection.
-        seed_terminal_velocity: Downward terminal fall velocity.
         camouflage: Whether the flora species has camouflage.
         camouflage_factor: The camouflage factor of the flora species.
         translocation_rate: Phloem nutrient translocation rate during withdrawal.
@@ -89,8 +85,6 @@ async def config_flora_add(
         seed_min_dist=max(0.0, seed_min_dist),
         seed_max_dist=max(seed_min_dist, seed_max_dist),
         seed_energy_cost=max(0.0, seed_energy_cost),
-        seed_drop_height=max(0.01, seed_drop_height),
-        seed_terminal_velocity=max(0.01, seed_terminal_velocity),
         camouflage=camouflage == "on",
         camouflage_factor=max(0.0, min(1.0, camouflage_factor)),
         translocation_rate=max(0.0, min(1.0, translocation_rate)),
@@ -144,8 +138,6 @@ def _build_spatial_and_morphological_updates(
     *,
     seed_min_dist: float | None,
     seed_max_dist: float | None,
-    seed_drop_height: float | None,
-    seed_terminal_velocity: float | None,
     structural_mass_max: float | None,
     structural_growth_rate: float | None,
     translocation_rate: float | None,
@@ -160,10 +152,6 @@ def _build_spatial_and_morphological_updates(
     if seed_max_dist is not None:
         min_d = float(updates.get("seed_min_dist", fp.seed_min_dist))  # type: ignore[arg-type]
         updates["seed_max_dist"] = max(min_d, seed_max_dist)
-    if seed_drop_height is not None:
-        updates["seed_drop_height"] = max(0.01, seed_drop_height)
-    if seed_terminal_velocity is not None:
-        updates["seed_terminal_velocity"] = max(0.01, seed_terminal_velocity)
     if structural_mass_max is not None:
         updates["structural_mass_max"] = max(0.0, structural_mass_max)
     if structural_growth_rate is not None:
@@ -213,8 +201,6 @@ async def config_flora_update(
     seed_min_dist: Annotated[float | None, Form()] = None,
     seed_max_dist: Annotated[float | None, Form()] = None,
     seed_energy_cost: Annotated[float | None, Form()] = None,
-    seed_drop_height: Annotated[float | None, Form()] = None,
-    seed_terminal_velocity: Annotated[float | None, Form()] = None,
     camouflage: Annotated[str | None, Form()] = None,
     camouflage_factor: Annotated[float | None, Form()] = None,
     translocation_rate: Annotated[float | None, Form()] = None,
@@ -243,8 +229,6 @@ async def config_flora_update(
         seed_min_dist: The minimum distance between seeds of the flora species.
         seed_max_dist: The maximum distance between seeds of the flora species.
         seed_energy_cost: The energy cost of seeding for the flora species.
-        seed_drop_height: Canopy release height for wind advection.
-        seed_terminal_velocity: Downward terminal fall velocity.
         camouflage: Whether the flora species has camouflage.
         camouflage_factor: The camouflage factor of the flora species.
         translocation_rate: Phloem nutrient translocation rate during withdrawal.
@@ -274,8 +258,6 @@ async def config_flora_update(
             lookup.params,
             seed_min_dist=seed_min_dist,
             seed_max_dist=seed_max_dist,
-            seed_drop_height=seed_drop_height,
-            seed_terminal_velocity=seed_terminal_velocity,
             structural_mass_max=structural_mass_max,
             structural_growth_rate=structural_growth_rate,
             translocation_rate=translocation_rate,

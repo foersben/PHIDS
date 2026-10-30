@@ -13,7 +13,7 @@ sources:
 - id: loop
   resource: src/phids/engine/loop.py
 - id: flow_field
-  resource: src/phids/engine/core/flow_field.py
+  resource: src/phids/engine/core/flow/solvers.py
 - id: ecs
   resource: src/phids/engine/core/ecs.py
 - id: biotope
@@ -190,9 +190,9 @@ flowchart LR
 
 To achieve maximum computational throughput on CPU hardware without reliance on CUDA or GPU hardware acceleration, PHIDS implements target non-architectural optimizations across hot-path array kernels, transport solvers, and system evaluation loops. These optimizations preserve bit-exact numerical parity, biological behavior, and deterministic replayability.
 
-### 1. Vectorized SIMD Matrix Initialization (`flow_field.py`)
+### 1. Vectorized SIMD Matrix Initialization (`flow/stencils.py`)
 
-In multi-layer environmental flow field resolution (`_init_base_and_current_jit` in `src/phids/engine/core/flow_field.py`), the attraction landscape calculation combines flora photosynthetic energy, apparent nutrition factors, and toxic zone arrays.
+In multi-layer environmental flow field resolution (`_init_base_and_current_jit` in `src/phids/engine/core/flow/stencils.py`), the attraction landscape calculation combines flora photosynthetic energy, apparent nutrition factors, and toxic zone arrays.
 
 #### 256-Bit AVX2 SIMD Vectorization Mechanics & Zero-Cost Target Feature Discovery
 
@@ -472,9 +472,9 @@ def _accumulate_tile_population_jit(
 
 Bypassing per-swarm spatial hash traversals and Python list allocations yields a **~10% - 18%** reduction in movement resolution latency under high swarm density scenarios.
 
-### 15. Power-of-2 Bitwise Neighbor Masking in Jacobi Flow Relaxation (`flow_field.py`)
+### 15. Power-of-2 Bitwise Neighbor Masking in Jacobi Flow Relaxation (`flow/solvers.py`)
 
-Global attraction flow fields converge via multi-iteration Jacobi relaxation passes in `_compute_flow_field_impl` (`src/phids/engine/core/flow_field.py`).
+Global attraction flow fields converge via multi-iteration Jacobi relaxation passes in `_compute_flow_field_impl` (`src/phids/engine/core/flow/solvers.py`).
 
 #### Contiguous 2D Bitwise AND JIT Pass
 

@@ -136,7 +136,7 @@ def test_tick_metrics_path_does_not_query_world() -> None:
         flora_species_alive={0},
         herbivore_species_alive={0},
         total_flora_energy=12.0,
-        total_herbivore_population=5,
+        herbivore_population=5,
     )
 
     result = check_termination(
@@ -247,9 +247,6 @@ def test_flora_and_herbivore_metrics_frozen_dataclasses() -> None:
     assert flora.species_alive == frozenset({1})
     assert flora.total_energy == 15.0
     assert flora.any_alive is True
-    assert flora.flora_species_alive == frozenset({1})
-    assert flora.total_flora_energy == 15.0
-    assert flora.flora_alive is True
 
     # Check frozen immutability
     with pytest.raises(FrozenInstanceError):
@@ -260,9 +257,6 @@ def test_flora_and_herbivore_metrics_frozen_dataclasses() -> None:
     assert herbivore.species_alive == frozenset({2})
     assert herbivore.total_population == 8
     assert herbivore.any_alive is True
-    assert herbivore.herbivore_species_alive == frozenset({2})
-    assert herbivore.total_herbivore_population == 8
-    assert herbivore.herbivores_alive is True
 
     # Check frozen immutability
     with pytest.raises(FrozenInstanceError):

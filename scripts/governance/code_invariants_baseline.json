@@ -43,7 +43,7 @@
   },
   {
     "file_path": "src/phids/api/routers/config/flora.py",
-    "line_number": 161,
+    "line_number": 153,
     "rule_id": "NI-01-BYPASS",
     "message": "Bypass comment: '# type: ignore[arg-type]'"
   },
@@ -51,13 +51,13 @@
     "file_path": "src/phids/api/routers/config/flora.py",
     "line_number": 31,
     "rule_id": "NI-06-ARITY",
-    "message": "Public function 'config_flora_add' arity 18 exceeds threshold 4"
+    "message": "Public function 'config_flora_add' arity 16 exceeds threshold 4"
   },
   {
     "file_path": "src/phids/api/routers/config/flora.py",
-    "line_number": 203,
+    "line_number": 191,
     "rule_id": "NI-06-ARITY",
-    "message": "Public function 'config_flora_update' arity 22 exceeds threshold 4"
+    "message": "Public function 'config_flora_update' arity 20 exceeds threshold 4"
   },
   {
     "file_path": "src/phids/api/routers/config/herbivores.py",
@@ -319,7 +319,7 @@
   },
   {
     "file_path": "src/phids/telemetry/conditions.py",
-    "line_number": 162,
+    "line_number": 132,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'check_termination' arity 10 exceeds threshold 4"
   }

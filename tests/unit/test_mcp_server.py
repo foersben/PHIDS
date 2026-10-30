@@ -6,7 +6,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
-from phids.mcp_server import (
+from phids.mcp import (
     active_draft_resource,
     inspect_live_simulation,
     inspect_telemetry_schema,
@@ -77,7 +77,7 @@ def test_live_simulation_tools_with_active_loop() -> None:
     mock_loop.world.query.side_effect = query_mock
     mock_loop.world._entities = {1: mock_entity1, 2: mock_entity2, 3: mock_entity3}
 
-    with patch("phids.mcp_server._get_active_sim_loop", return_value=mock_loop):
+    with patch("phids.mcp.helpers.get_active_sim_loop", return_value=mock_loop):
         res = json.loads(live_simulation_resource())
         assert res["status"] == "running"
         assert res["tick"] == 168
@@ -122,7 +122,7 @@ def test_inspect_telemetry_schema_error() -> None:
     assert "Store path does not exist" in result["message"]
 
 
-@patch("phids.mcp_server.subprocess.run")
+@patch("phids.mcp.helpers.subprocess.run")
 def test_validate_okf_compliance_success(mock_run: MagicMock) -> None:
     """Test OKF compliance tool success path."""
     mock_run.return_value = MagicMock(returncode=0, stdout="OKF passed", stderr="")
@@ -131,7 +131,7 @@ def test_validate_okf_compliance_success(mock_run: MagicMock) -> None:
     assert "OKF passed" in result["output"]
 
 
-@patch("phids.mcp_server.subprocess.run")
+@patch("phids.mcp.helpers.subprocess.run")
 def test_validate_okf_compliance_failure(mock_run: MagicMock) -> None:
     """Test OKF compliance tool failure path."""
     mock_run.return_value = MagicMock(returncode=1, stdout="Fail", stderr="OKF failed")
@@ -140,7 +140,7 @@ def test_validate_okf_compliance_failure(mock_run: MagicMock) -> None:
     assert "Fail" in result["output"]
 
 
-@patch("phids.mcp_server.get_recent_logs")
+@patch("phids.mcp.helpers.get_logs")
 def test_query_diagnostic_logs(mock_get_logs: MagicMock) -> None:
     """Test diagnostic logs tool."""
     mock_get_logs.return_value = [{"message": "Log 1"}, {"message": "Log 2"}]
@@ -148,7 +148,7 @@ def test_query_diagnostic_logs(mock_get_logs: MagicMock) -> None:
     assert result == [{"message": "Log 1"}, {"message": "Log 2"}]
 
 
-@patch("phids.mcp_server.get_draft")
+@patch("phids.mcp.helpers.get_current_draft")
 def test_query_batch_jobs(mock_get_draft: MagicMock) -> None:
     """Test query_batch_jobs returns a dictionary."""
     from phids.api.schemas.responses import BatchJobState
@@ -166,7 +166,7 @@ def test_query_batch_jobs(mock_get_draft: MagicMock) -> None:
     assert result["job_1"]["total_runs"] == 10
 
 
-@patch("phids.mcp_server._PROJECT_ROOT")
+@patch("phids.mcp.helpers._PROJECT_ROOT")
 def test_read_batch_summary_success(mock_root: MagicMock) -> None:
     """Test read_batch_summary tool success path."""
     mock_path = MagicMock()
@@ -182,7 +182,7 @@ def test_read_batch_summary_success(mock_root: MagicMock) -> None:
         assert result["data"]["dummy"] == "data"
 
 
-@patch("phids.mcp_server._PROJECT_ROOT")
+@patch("phids.mcp.helpers._PROJECT_ROOT")
 def test_read_batch_summary_not_found(mock_root: MagicMock) -> None:
     """Test read_batch_summary tool failure path."""
     mock_path = MagicMock()
@@ -195,7 +195,7 @@ def test_read_batch_summary_not_found(mock_root: MagicMock) -> None:
     assert "Summary file not found" in result["message"]
 
 
-@patch("phids.mcp_server._PROJECT_ROOT")
+@patch("phids.mcp.helpers._PROJECT_ROOT")
 def test_read_batch_summary_exception(mock_root: MagicMock) -> None:
     """Test read_batch_summary tool exception handling."""
     mock_path = MagicMock()
@@ -230,23 +230,23 @@ def test_active_draft_resource_serialization() -> None:
         )
     )
 
-    with patch("phids.mcp_server.get_draft", return_value=draft):
+    with patch("phids.mcp.helpers.get_current_draft", return_value=draft):
         result = active_draft_resource()
         assert "Test" in result
 
 
 def test_analyze_simulation_drift() -> None:
     """Test prompt retrieval."""
-    from phids.mcp_server import analyze_simulation_drift
+    from phids.mcp import analyze_simulation_drift
 
     result = analyze_simulation_drift()
     assert "stochastic drift" in result
 
 
-@patch("phids.mcp_server.mcp.run")
+@patch("phids.mcp.app.mcp.run")
 def test_run_mcp_server(mock_run: MagicMock) -> None:
     """Test MCP server entry point."""
-    from phids.mcp_server import run_mcp_server
+    from phids.mcp import run_mcp_server
 
     run_mcp_server()
     mock_run.assert_called_once()
@@ -259,7 +259,7 @@ def test_active_draft_resource_serialization_error() -> None:
     draft = DraftState()
     draft.flora_placement_strategy = lambda x: x  # type: ignore  # Unserializable
 
-    with patch("phids.mcp_server.get_draft", return_value=draft):
+    with patch("phids.mcp.helpers.get_current_draft", return_value=draft):
         import pytest
 
         with pytest.raises(TypeError):
@@ -279,7 +279,7 @@ def test_active_draft_resource_serialization_nested_dataclass() -> None:
 
     draft.flora_placement_strategy = Nested(value="test")  # type: ignore
 
-    with patch("phids.mcp_server.get_draft", return_value=draft):
+    with patch("phids.mcp.helpers.get_current_draft", return_value=draft):
         result = active_draft_resource()
         assert "test" in result
 

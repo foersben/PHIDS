@@ -34,7 +34,7 @@ def test_signaling_spawns_configured_toxin_and_applies_properties(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
     plant_id = add_plant(world, 2, 2, species_id=0, energy=12.0)
-    add_swarm(world, 2, 2, species_id=0, pop=10)
+    add_swarm(world, 2, 2, species_id=0, population=10)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=5),
         aftereffect_ticks=2,
@@ -85,8 +85,8 @@ def test_signaling_aggregates_co_located_swarm_population_for_trigger_threshold(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
     add_plant(world, 2, 2, species_id=0, energy=12.0)
-    add_swarm(world, 2, 2, species_id=0, pop=3)
-    add_swarm(world, 2, 2, species_id=0, pop=3)
+    add_swarm(world, 2, 2, species_id=0, population=3)
+    add_swarm(world, 2, 2, species_id=0, population=3)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=5),
         action=SynthesizeSubstanceAction(substance_id=1, synthesis_duration=1, is_toxin=True),
@@ -120,8 +120,8 @@ def test_signaling_toxin_deactivates_when_trigger_species_is_gone(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
     add_plant(world, 2, 2, species_id=0, energy=12.0)
-    triggering_swarm_id = add_swarm(world, 2, 2, species_id=0, pop=6)
-    add_swarm(world, 2, 2, species_id=1, pop=10)
+    triggering_swarm_id = add_swarm(world, 2, 2, species_id=0, population=6)
+    add_swarm(world, 2, 2, species_id=1, population=10)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=5),
         aftereffect_ticks=0,
@@ -175,7 +175,7 @@ def test_signaling_toxin_lingers_for_aftereffect_then_deactivates(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
     add_plant(world, 2, 2, species_id=0, energy=12.0)
-    swarm_id = add_swarm(world, 2, 2, species_id=0, pop=6)
+    swarm_id = add_swarm(world, 2, 2, species_id=0, population=6)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=5),
         aftereffect_ticks=2,
@@ -247,7 +247,7 @@ def test_signaling_irreversible_toxin_stays_active_after_trigger_loss(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
     add_plant(world, 2, 2, species_id=0, energy=12.0)
-    swarm_id = add_swarm(world, 2, 2, species_id=0, pop=6)
+    swarm_id = add_swarm(world, 2, 2, species_id=0, population=6)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=5),
         aftereffect_ticks=0,
@@ -302,7 +302,7 @@ def test_signaling_toxin_lethal_kill_garbage_collects_swarm_immediately(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=2)
     add_plant(world, 2, 2, species_id=0, energy=20.0)
-    swarm_id = add_swarm(world, 2, 2, species_id=0, pop=5)
+    swarm_id = add_swarm(world, 2, 2, species_id=0, population=5)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=1),
         action=SynthesizeSubstanceAction(
@@ -343,7 +343,7 @@ async def test_signaling_relay_splits_fixed_budget_across_air_and_roots(
     n2 = add_plant(world, 4, 2, species_id=0, energy=20.0)
     source = world.get_entity(source_id).get_component(PlantComponent)
     source.mycorrhizal_connections = {n1, n2}
-    add_swarm(world, 3, 2, species_id=0, pop=3)
+    add_swarm(world, 3, 2, species_id=0, population=3)
     trigger = TriggerConditionSchema(
         initiator=HerbivoreAttackInitiator(herbivore_species_id=0, min_herbivore_population=1),
         action=SynthesizeSubstanceAction(substance_id=0, synthesis_duration=1, is_toxin=False),
@@ -377,7 +377,7 @@ def test_signaling_aborts_incomplete_synthesis_when_trigger_leaves(
     world = ECSWorld()
     env = GridEnvironment(width=5, height=5, num_signals=2, num_toxins=2)
     add_plant(world, 2, 2, species_id=0, energy=12.0)
-    swarm_id = add_swarm(world, 2, 2, species_id=0, pop=6)
+    swarm_id = add_swarm(world, 2, 2, species_id=0, population=6)
 
     # Synthesis duration is 3 ticks
     trigger = TriggerConditionSchema(

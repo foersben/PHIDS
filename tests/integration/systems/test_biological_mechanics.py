@@ -283,7 +283,7 @@ def test_mechanical_attrition_enforces_integer_casualties() -> None:
 
 def test_flow_field_toxin_additive_stacking() -> None:
     """Verify that the flow field stacks multiple toxin layers additively."""
-    from phids.engine.core.flow_field import compute_flow_field
+    from phids.engine.core.flow import compute_flow_field
 
     width = 5
     height = 5

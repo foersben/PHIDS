@@ -101,7 +101,7 @@ cache_dir = ".cache/mypy"
 
 [tool.mutmut]
 source_paths = [
-    "src/phids/engine/core/flow_field.py",
+    "src/phids/engine/core/flow/solvers.py",
     "src/phids/engine/core/ecs.py",
     "src/phids/engine/core/biotope.py",
 ]

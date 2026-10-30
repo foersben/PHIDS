@@ -10,8 +10,8 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from phids.mcp import helpers
 from phids.mcp.app import mcp
-from phids.mcp.helpers import get_active_sim_loop
 
 
 def _extract_frame_count(root: Any) -> int:
@@ -91,7 +91,7 @@ def query_telemetry_schema() -> dict[str, Any]:
     Returns:
         dict[str, Any]: Available columns and structural layout.
     """
-    loop = get_active_sim_loop()
+    loop = helpers.get_active_sim_loop()
     if loop is None:
         return {"status": "error", "message": "No active simulation loop loaded."}
 
@@ -325,7 +325,7 @@ def export_telemetry_data(
             For binary formats (png), ``data`` is a base64 encoded string.
             For text formats (csv, tex_table, tex_tikz), ``data`` is a UTF-8 string.
     """
-    loop = get_active_sim_loop()
+    loop = helpers.get_active_sim_loop()
     if loop is None:
         return {"status": "error", "message": "No active simulation loop loaded."}
 

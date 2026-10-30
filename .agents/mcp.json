@@ -6,7 +6,7 @@
         "run",
         "python",
         "-m",
-        "phids.mcp_server"
+        "phids.mcp"
       ],
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src"

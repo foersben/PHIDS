@@ -95,7 +95,7 @@ def serve(
         return
 
     if mcp:
-        from phids.mcp_server import run_mcp_server
+        from phids.mcp import run_mcp_server
 
         run_mcp_server()
         return

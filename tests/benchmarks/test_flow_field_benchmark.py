@@ -17,7 +17,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from phids.engine.core.flow_field import compute_flow_field
+from phids.engine.core.flow import compute_flow_field
 
 
 @pytest.mark.benchmark

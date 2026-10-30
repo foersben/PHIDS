@@ -136,7 +136,7 @@ Moving away from legacy `msgpack` serialization for high-density outputs, PHIDS 
 
 ### Agentic Integration: Model Context Protocol (MCP) Server & Diagnostic Observers
 
-PHIDS is natively engineered for autonomous operation by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server (`src/phids/mcp_server.py`) enables external LLMs and IDE assistants to programmatically orchestrate simulations:
+PHIDS is natively engineered for autonomous operation by AI agents. A specialized, stdio-based **Model Context Protocol (MCP)** server package (`src/phids/mcp/`) enables external LLMs and IDE assistants to programmatically orchestrate simulations:
 
 * **Runtime Inspection & Observability:** Live ECS population metrics, grid fields, entity states, and execution step telemetry (`runtime_snapshot`, `inspect_live_simulation`).
 * **Invariant & Schema Verification:** Formal checks for physical conservation bounds, Pydantic V2 schema correctness, and OKF documentation compliance (`validate_biological_invariants`, `validate_simulation_config`, `validate_okf_compliance`).
@@ -430,7 +430,7 @@ src/
 │   ├── io/             High-performance Zarr replay serialization & scenario ingestion
 │   ├── telemetry/      Tick analytics, batch export routines, and Polars handlers
 │   ├── shared/         Common constants, rule-of-16 limits, and logging configurations
-│   ├── mcp_server.py   Model Context Protocol (MCP) stdio entrypoint for AI agents
+│   ├── mcp/            Model Context Protocol (MCP) modular package for AI agents
 │   └── __main__.py     Command-line interface (Typer CLI) entry point
 └── data_pipeline/      Empirical trait extraction & normalization pipeline (BIEN, LEDA, GIFT, TRY, PanTHERIA)
 .agents/                AI agent ecosystem (OKF AGENTS.md, role definitions, skills & workflows)

@@ -41,8 +41,6 @@ class PlantComponentSchema(StrictBaseModel):
     withdrawal_ticks_remaining: int = Field(
         default=0, ge=0, description="[Ticks] Ticks until apparent_nutrition_factor resets to 1.0."
     )
-    seed_drop_height: float = Field(default=1.25, description="[Absolute] Effective release height.")
-    seed_terminal_velocity: float = Field(default=0.8, description="[Absolute] Effective terminal velocity.")
     last_energy_loss_cause: str | None = Field(default=None, description="[String] Death diagnostic cause.")
     mycorrhizal_connections: list[int] = Field(default_factory=list, description="[List] Connected plant entity IDs.")
     mycorrhizal_tax_per_link: float = Field(default=0.0, ge=0.0, description="[Absolute] Continuous carbon tax.")

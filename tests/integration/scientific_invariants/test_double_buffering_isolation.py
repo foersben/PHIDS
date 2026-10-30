@@ -11,7 +11,7 @@ import pytest
 from phids.api.schemas.simulation import SimulationConfig
 from phids.api.schemas.species import FloraSpeciesParams, HerbivoreResistancesSchema, HerbivoreSpeciesParams
 from phids.api.schemas.triggers import PassiveDefensesSchema
-from phids.engine.core.flow_field import compute_flow_field
+from phids.engine.core.flow import compute_flow_field
 from phids.engine.loop import SimulationLoop
 
 

@@ -49,7 +49,7 @@ def test_numba_jit_gather_neighbours_parity() -> None:
 @pytest.mark.jit_parity
 def test_numba_jit_flow_field_pow2_parity() -> None:
     """Verify flow field relaxation with power-of-two bitwise AND masking matches modulo relaxation exactly."""
-    from phids.engine.core.flow_field import (
+    from phids.engine.core.flow import (
         _propagate_iteration_jit,
         _propagate_iteration_jit_pow2,
     )

@@ -76,8 +76,6 @@ Each flora species in PHIDS models an autotrophic organism with distinct caloric
 | `seed_energy_cost` | Primary Table | Calories | `5.0` | Energy reserve ($E_{\text{seed}}$) deducted from parent upon seed drop. |
 | `seed_min_dist` | Species Drawer | Grid cells | `1.0` | Minimum dispersal radius ($d_{\text{min}}$) for polar raycasting. |
 | `seed_max_dist` | Primary Table | Grid cells | `3.0` | Maximum dispersal radius ($d_{\text{max}}$) for polar raycasting. |
-| `seed_drop_height` | Species Drawer | Meters | `0.5` | Canopy release height used for wind-flight duration estimation. |
-| `seed_terminal_velocity` | Species Drawer | m/s | `1.0` | Gravitational terminal fall velocity in horizontal wind currents. |
 | `translocation_rate` | Species Drawer | Fraction / tick | `0.2` | Rate of vascular phloem nutrient withdrawal to root sinks under stress. |
 | `mycorrhizal_tax_per_link` | Species Drawer | Calories / tick | `0.0` | Continuous metabolic fee deducted per active root conduit link. |
 | `camouflage` | Primary Table | Boolean | `False` | Semiochemical olfactory masking flag. |

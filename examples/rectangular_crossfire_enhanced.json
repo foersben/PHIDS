@@ -19,8 +19,6 @@
       "seed_min_dist": 1.0,
       "seed_max_dist": 3.0,
       "seed_energy_cost": 4.5,
-      "seed_drop_height": 1.25,
-      "seed_terminal_velocity": 0.8,
       "camouflage": false,
       "camouflage_factor": 1.0,
       "passive_defenses": {
@@ -71,8 +69,6 @@
       "seed_min_dist": 0.8,
       "seed_max_dist": 2.6,
       "seed_energy_cost": 3.8,
-      "seed_drop_height": 1.25,
-      "seed_terminal_velocity": 0.8,
       "camouflage": true,
       "camouflage_factor": 0.45,
       "passive_defenses": {
@@ -129,8 +125,6 @@
       "seed_min_dist": 0.8,
       "seed_max_dist": 2.2,
       "seed_energy_cost": 3.1,
-      "seed_drop_height": 1.25,
-      "seed_terminal_velocity": 0.8,
       "camouflage": false,
       "camouflage_factor": 1.0,
       "passive_defenses": {

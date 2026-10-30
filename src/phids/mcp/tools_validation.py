@@ -12,8 +12,8 @@ from typing import Any
 from pydantic import ValidationError
 
 from phids.api.schemas.simulation import SimulationConfig
+from phids.mcp import helpers
 from phids.mcp.app import mcp
-from phids.mcp.helpers import get_active_sim_loop, get_logs, get_project_root, run_subprocess
 
 
 def _validate_plant_invariants(plants: list[Any], active_eids: set[int], violations: list[str]) -> None:
@@ -84,7 +84,7 @@ def validate_biological_invariants() -> dict[str, Any]:
     Returns:
         dict[str, Any]: Verification status, violation count, and list of error details.
     """
-    loop = get_active_sim_loop()
+    loop = helpers.get_active_sim_loop()
     if loop is None:
         return {"status": "error", "message": "Simulation loop must be active to validate invariants"}
 
@@ -122,9 +122,9 @@ def validate_okf_compliance() -> dict[str, Any]:
     uv_bin = shutil.which("uv") or "uv"
 
     try:
-        result = run_subprocess(
+        result = helpers.run_subprocess(
             [uv_bin, "run", "python", "scripts/validate_okf.py"],
-            cwd=get_project_root(),
+            cwd=helpers.get_project_root(),
             capture_output=True,
             text=True,
             timeout=30,
@@ -169,4 +169,4 @@ def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
         list[dict[str, str]]: Structured entries with ``timestamp``, ``level``,
             ``logger``, ``module``, and ``message`` keys.
     """
-    return get_logs(limit=limit)
+    return helpers.get_logs(limit=limit)
