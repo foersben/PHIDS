@@ -1,7 +1,14 @@
 ---
 type: Agent Rule
+title: "Rule 07: Hardware & SIMD Invariants"
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
 trigger: always_on
 description: Hardware, cache alignment, branchless SIMD masking, and zero-allocation hot-path invariants.
+tags: [hardware, simd, avx2, cache, alignment, numba, zero-allocation]
+generated: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 # Hardware & SIMD Invariants

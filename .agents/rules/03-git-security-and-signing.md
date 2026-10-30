@@ -1,7 +1,14 @@
 ---
 type: Agent Rule
+title: "Rule 03: Git Security & Commit Signing Invariants"
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
 trigger: always_on
 description: Mandatory cryptographic commit signing and git security invariants.
+tags: [git, security, gpg, ssh, signing]
+generated: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 # Git Security & Commit Signing Invariants

@@ -7,6 +7,7 @@ version: 1.0
 description: Synthesized findings from the Epistemic Soundness Audit across all 10 thematic slices.
 tags: [audit, soundness, rules]
 generated: {by: process:orchestrator, at: "2026-09-29T15:16:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 # Epistemic Soundness Audit Report

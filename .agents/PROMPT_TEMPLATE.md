@@ -10,6 +10,7 @@ description: >
   role selection from the first token.
 tags: [agents, jules, prompt-template, token-guardrail]
 generated: {by: process:agent-config-refactor, at: "2026-09-28T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 # Jules Standard Prompt Appendix

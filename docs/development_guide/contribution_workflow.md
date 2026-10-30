@@ -25,8 +25,9 @@ Modifying the Plant-Herbivore Interaction & Defense Simulator requires strict ad
 Development is exclusively managed by the `uv` toolchain, ensuring extremely fast dependency resolution and deterministic virtual environments.
 
 ```bash
-uv sync --all-extras --dev
-uv run phids --reload
+uv sync --all-groups
+# or bootstrap the complete development environment via:
+just setup
 ```
 
 ## The Quality Gate Sequence

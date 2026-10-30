@@ -1,7 +1,7 @@
 {
-  "timestamp_utc": "2026-10-30T01:42:44Z",
+  "timestamp_utc": "2026-10-30T01:49:33Z",
   "overall_status": "PASSED",
-  "total_elapsed_seconds": 24.65,
+  "total_elapsed_seconds": 23.98,
   "gate_count": 9,
   "passed_count": 9,
   "gates": [
@@ -17,56 +17,56 @@
       "name": "Strict Mypy Core & Scripts",
       "command": "uv run mypy src/phids scripts",
       "passed": true,
-      "duration_seconds": 0.77
+      "duration_seconds": 0.71
     },
     {
       "gate_id": 3,
       "name": "Cognitive Complexity Ceiling (<=15)",
       "command": "just complexity",
       "passed": true,
-      "duration_seconds": 0.4
+      "duration_seconds": 0.47
     },
     {
       "gate_id": 4,
       "name": "Rule 04 Markdown Formatting",
       "command": "uv run python scripts/governance/verify_markdown_rules.py",
       "passed": true,
-      "duration_seconds": 0.16
+      "duration_seconds": 0.11
     },
     {
       "gate_id": 5,
       "name": "OKF v0.2 Graph & Metadata",
       "command": "uv run python scripts/validate_okf.py",
       "passed": true,
-      "duration_seconds": 0.41
+      "duration_seconds": 0.31
     },
     {
       "gate_id": 6,
       "name": "Data-Flow Matrix Trace Parity",
       "command": "uv run python scripts/verify_matrix_trace_parity.py --all",
       "passed": true,
-      "duration_seconds": 0.93
+      "duration_seconds": 0.75
     },
     {
       "gate_id": 7,
       "name": "Data-Flow Matrix Coverage Audit",
       "command": "uv run python scripts/audit_matrix_coverage.py",
       "passed": true,
-      "duration_seconds": 0.18
+      "duration_seconds": 0.14
     },
     {
       "gate_id": 8,
       "name": "Code Invariants & Bypass Ratchet",
       "command": "uv run python scripts/governance/verify_code_invariants.py",
       "passed": true,
-      "duration_seconds": 0.74
+      "duration_seconds": 0.53
     },
     {
       "gate_id": 9,
       "name": "Engine Unit Test Suite",
       "command": "uv run pytest tests/unit/ -q -o \"addopts=\"",
       "passed": true,
-      "duration_seconds": 21.01
+      "duration_seconds": 20.9
     }
   ]
 }

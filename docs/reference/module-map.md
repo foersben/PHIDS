@@ -42,12 +42,73 @@ The active runtime package is `phids.*` under `src/phids/`.
 
 Its top-level subpackages are:
 
+* `phids.analytics`
 * `phids.api`
 * `phids.engine`
 * `phids.io`
 * `phids.mcp`
 * `phids.shared`
 * `phids.telemetry`
+
+## `phids.analytics`
+
+This package houses the Evolutionary Design Space Exploration (DSE) framework, analytical genome pruning, and empirical biological database integration.
+
+### `phids.analytics.dse_optimizer`
+
+Primary responsibility:
+
+* multi-objective genetic algorithm optimization (NSGA-II) for exploring stable Lotka-Volterra ecosystem configurations.
+
+Key symbols:
+
+* `DSEOptimizer`
+* `OptimizationConfig`
+* `ParetoFrontResult`
+
+### `phids.analytics.dse_pruning`
+
+Primary responsibility:
+
+* analytical pre-pruning of infeasible ecological genotypes prior to simulation evaluation.
+
+Key symbols:
+
+* `AnalyticalPruner`
+* `PruningViolation`
+
+### `phids.analytics.dse_genotype`
+
+Primary responsibility:
+
+* Mixed-Integer Non-Linear Programming (MINLP) parameter encoding for ecological phenotypes.
+
+Key symbols:
+
+* `DSEGenotype`
+* `GenotypeSpace`
+
+### `phids.analytics.bio_database`
+
+Primary responsibility:
+
+* embedded DuckDB (`bio_database.duckdb`) query interface and JSON archetype catalog supporting nearest-species matching (Mode A) and clamped parameter mutations (Mode B).
+
+Key symbols:
+
+* `BioDatabase`
+* `SpeciesArchetype`
+
+### `phids.analytics.tuning`
+
+Primary responsibility:
+
+* parameter sensitivity evaluation and empirical trait calibration routines.
+
+Key symbols:
+
+* `SensitivityAnalyzer`
+* `TraitCalibrator`
 
 ## `phids.api`
 

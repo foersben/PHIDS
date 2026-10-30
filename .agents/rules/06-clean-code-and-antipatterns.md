@@ -1,7 +1,14 @@
 ---
 type: Agent Rule
+title: "Rule 06: Clean Code & Architectural Invariants"
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.1
 trigger: always_on
-description: Clean code standards, parameter arity limits, docstring formats, and antipattern prohibitions.
+description: Clean code standards, parameter arity limits, docstring formats, RAII lifecycle scoping, and antipattern prohibitions.
+tags: [clean-code, architecture, raii, docstrings, invariants]
+generated: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 # Clean Code & Architectural Invariants

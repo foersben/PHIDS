@@ -7,6 +7,7 @@ version: 1.0
 description: Quick-reference documentation and markdown formatting constraints for the docs domain.
 tags: [docs, okf, guidelines]
 generated: {by: process:agent-config-refactor, at: "2026-09-28T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 sources:
   - id: rule_04
     resource: .agents/rules/04-markdown-formatting.md

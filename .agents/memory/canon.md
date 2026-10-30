@@ -1,6 +1,12 @@
 ---
 type: Agent Memory
 title: "Canon Memory"
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
+tags: [memory, canon, lessons-learned, documentation, okf]
+generated: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 ## 2026-08-04 - Documentation Integrity Audit

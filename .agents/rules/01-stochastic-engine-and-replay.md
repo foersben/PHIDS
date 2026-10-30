@@ -1,7 +1,14 @@
 ---
 type: Agent Rule
+title: "Rule 01: Stochastic Engine & Replay Invariants"
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
 trigger: always_on
 description: Stochastic engine, PRNG seed streams, and telemetry replay invariants.
+tags: [stochastic, prng, replay, zarr, determinism]
+generated: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
+verified: {by: "process:agent-os-refactor", at: "2026-10-30T00:00:00Z"}
 ---
 
 # Stochastic Engine & Replay Invariants

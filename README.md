@@ -315,7 +315,7 @@ PHIDS provides an automated task runner configured in `Justfile`, backed by 16 v
 
 ```bash
 # Full local CI pass covering linting, two-pass tests, and strict docs build
-./scripts/local_ci.sh all
+./scripts/ci/local_ci.sh all
 
 # Hook-only verification across all repository files
 uv run pre-commit run --all-files
