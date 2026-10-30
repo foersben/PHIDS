@@ -9,18 +9,18 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/local_ci.sh [quality|tests|docs|all]
+Usage: ./scripts/ci/local_ci.sh [quality|tests|docs|all]
 
 Runs the main PHIDS CI commands on the current local interpreter.
 
 Examples:
-  ./scripts/local_ci.sh quality
-  ./scripts/local_ci.sh tests
-  ./scripts/local_ci.sh docs
-  ./scripts/local_ci.sh all
+  ./scripts/ci/local_ci.sh quality
+  ./scripts/ci/local_ci.sh tests
+  ./scripts/ci/local_ci.sh docs
+  ./scripts/ci/local_ci.sh all
 
 Environment variables:
-  PHIDS_SKIP_SYNC=1  Skip 'uv sync --all-extras --dev' before running checks.
+  PHIDS_SKIP_SYNC=1  Skip 'uv sync --all-groups' before running checks.
 EOF
 }
 
@@ -42,10 +42,22 @@ run_sync() {
 }
 
 run_quality() {
-  echo ">>> Running Ruff lint"
+  echo ">>> 1. Running Ruff lint"
   uv run ruff check .
-  echo ">>> Running Ruff format check"
+  echo ">>> 2. Running Ruff format check"
   uv run ruff format --check .
+  echo ">>> 3. Running strict Mypy across src/phids and scripts"
+  uv run mypy src/phids scripts
+  echo ">>> 4. Checking Rule 04 Markdown formatting"
+  uv run python scripts/governance/verify_markdown_rules.py
+  echo ">>> 5. Validating OKF v0.2 graph and metadata"
+  uv run python scripts/governance/validate_okf.py
+  echo ">>> 6. Verifying code invariants and bypass ratchet"
+  uv run python scripts/governance/verify_code_invariants.py
+  echo ">>> 7. Auditing Data-Flow Matrix coverage"
+  uv run python scripts/governance/audit_matrix_coverage.py
+  echo ">>> 8. Verifying Data-Flow Matrix trace parity"
+  uv run python scripts/governance/verify_matrix_trace_parity.py --all
 }
 
 run_tests() {
@@ -55,12 +67,11 @@ run_tests() {
   echo ">>> Pass 2: Numba Compilation Verification"
   uv run pytest tests/integration/systems/test_full_numba_jit_compilation.py tests/integration/systems/test_interaction_invariants/ \
     -x -q -o "addopts="
-
 }
 
 run_docs() {
-  echo ">>> Building docs in strict mode"
-  uv run zensical build
+  echo ">>> Building static docs in strict mode"
+  uv run zensical build --strict
 }
 
 case "$job" in

@@ -34,3 +34,17 @@ Mandates governing code structure, parameter arity, docstring completeness, and 
   * Parity: `just test-parity`
   * Replay: `just test-replay`
   * Zero Allocation: `uv run pytest --no-cov -m heap_allocation`
+
+## 5. RAII Lifecycle Scoping for External Resources
+
+* **Deterministic Context Scoping:** Stateful external sessions, database connections (DuckDB trait queries), Zarr array stores, and WebSocket manager connection pools must always be encapsulated in native Python context managers (`with` statements or `@contextmanager`).
+* **Zero Orphaned Resources:** Manual tracking via boolean state flags (`is_active: bool`) is prohibited. The context manager must guarantee deterministic teardown, flush pending writes, and release resources on unhandled exceptions.
+
+## 6. Zero Silent Error Masking
+
+* **Catch-All Prohibition:** Broad catch-all exception handlers (`except Exception:`) that silently swallow critical failures or substitute synthetic dummy outputs in production paths are strictly forbidden.
+* **Traceback Preservation:** Unexpected exceptions during simulation ticks, trait conversions, or serialization must be logged with full tracebacks (`logger.exception`) or raised immediately to prevent disguised conservation law violations.
+
+## 7. Structural Sibling Topology
+
+* **Flat De-monolithization:** When decomposing monolithic modules exceeding 400 lines of code, partition the logic into focused single-responsibility sibling modules within the same directory (e.g. `core.py`, `helpers.py`, `types.py`) rather than introducing deep nested packages.

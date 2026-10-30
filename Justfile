@@ -1,3 +1,6 @@
+# Shell settings: strict bash execution
+set shell := ["bash", "-uc"]
+
 # List all available recipes categorized by group
 default:
     @just --list
@@ -43,10 +46,10 @@ test-parity:
 test-replay:
     uv run --all-groups pytest --no-cov tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
 
-# Run local CI test orchestration script (scripts/local_ci.sh tests)
+# Run local CI test orchestration script (scripts/ci/local_ci.sh tests)
 [group("testing")]
 ci-test:
-    ./scripts/local_ci.sh tests
+    ./scripts/ci/local_ci.sh tests
 
 # Run mutation testing with Mutmut across core simulation kernels
 [group("testing")]
@@ -93,12 +96,22 @@ lint-markdown:
 fix-markdown:
     uv run python scripts/governance/verify_markdown_rules.py --fix
 
+# Statically verify shell script syntax across scripts/ci/
+[group("quality")]
+verify-contracts:
+    @echo ">>> Checking shell script syntax across scripts/ci/..."
+    bash -n scripts/ci/local_ci.sh
+    bash -n scripts/ci/target_cov.sh
+    bash -n scripts/ci/find_large_tests.sh
+    bash -n scripts/ci/run_ci_with_act.sh
+    @echo ">>> All shell script contracts verified successfully."
+
 # Run Ruff linter (--fix), Ruff formatter, and strict Mypy type validation
 [group("quality")]
 lint:
     uv run ruff check --fix .
     uv run ruff format .
-    uv run mypy src/phids/
+    uv run mypy src/phids scripts
 
 # Format all Python source code with Ruff
 [group("quality")]
@@ -133,12 +146,12 @@ run:
 # Build static scientific and architectural documentation with Zensical
 [group("simulation-and-docs")]
 docs:
-    uv run zensical build
+    uv run zensical build --strict
 
 # Build and serve live Zensical documentation on localhost:9000
 [group("simulation-and-docs")]
 serve:
-    uv run zensical build
+    uv run zensical build --strict
     uv run zensical serve -a localhost:9000
 
 # Execute pytest-benchmark performance suite with Numba JIT enabled

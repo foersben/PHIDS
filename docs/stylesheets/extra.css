@@ -1,0 +1,363 @@
+/* ==============================================================================
+   PHIDS Documentation & Engineering Portal Custom Stylesheet
+   SPDX-FileCopyrightText: 2026 Benjamin Förster
+   SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+   ============================================================================== */
+
+:root {
+    --phids-primary: #2e7d32;
+    --phids-primary-hover: #1b5e20;
+    --phids-accent: #ff6e40;
+    --phids-accent-cyan: #00e5ff;
+    --phids-accent-purple: #b388ff;
+    --phids-accent-green: #00e676;
+    --phids-border-subtle: rgba(0, 0, 0, 0.08);
+    --phids-card-bg: rgba(255, 255, 255, 0.95);
+    --phids-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+[data-md-color-scheme="slate"] {
+    --phids-primary: #4caf50;
+    --phids-primary-hover: #81c784;
+    --phids-accent: #ff6e40;
+    --phids-accent-cyan: #18ffff;
+    --phids-accent-purple: #d1c4e9;
+    --phids-accent-green: #69f0ae;
+    --phids-border-subtle: rgba(255, 255, 255, 0.08);
+    --phids-card-bg: rgba(30, 41, 59, 0.7);
+    --phids-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* ==========================================================================
+   Wide Mode (Desktop & High-Resolution Displays)
+   ========================================================================== */
+
+/* Apply wide-mode adjustments on desktop viewports to give tables and graphs space */
+@media screen and (min-width: 76.25em) {
+    :root {
+        --md-container-width: 100%;
+        --md-typeset-width: 100%;
+    }
+    .md-container,
+    .md-main__inner,
+    .md-content {
+        max-width: 100% !important;
+        width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Interactive Visualizer & Iframe Containers
+   ========================================================================== */
+
+.visualizer-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 1.5rem 0 2rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--phids-border-subtle);
+    background: var(--md-code-bg-color);
+    box-shadow: var(--phids-card-shadow);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.visualizer-wrapper:hover {
+    border-color: var(--phids-primary);
+    box-shadow: 0 8px 30px rgba(46, 125, 50, 0.15);
+}
+
+.visualizer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    background: var(--md-default-bg-color);
+    border-bottom: 1px solid var(--phids-border-subtle);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.visualizer-header .title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--md-typeset-color);
+}
+
+.visualizer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-fullscreen {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid var(--phids-border-subtle);
+    background: var(--md-default-bg-color);
+    color: var(--md-typeset-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-fullscreen:hover {
+    background: var(--phids-primary);
+    color: #ffffff;
+    border-color: var(--phids-primary);
+}
+
+.visualizer-iframe {
+    width: 100%;
+    height: 720px;
+    border: none;
+    display: block;
+    background: #0b0f19;
+}
+
+/* Fullscreen mode for iframe container */
+.visualizer-wrapper.is-fullscreen,
+.visualizer-wrapper:fullscreen,
+.visualizer-wrapper:-webkit-full-screen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-width: none !important;
+    background: #0b0f19;
+}
+
+.visualizer-wrapper.is-fullscreen .visualizer-iframe,
+.visualizer-wrapper:fullscreen .visualizer-iframe,
+.visualizer-wrapper:-webkit-full-screen .visualizer-iframe {
+    height: calc(100vh - 46px) !important;
+}
+
+/* ==========================================================================
+   Dashboard Metric Cards & Architectural Grids
+   ========================================================================== */
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.metric-card {
+    background: var(--phids-card-bg);
+    border: 1px solid var(--phids-border-subtle);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: var(--phids-card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    backdrop-filter: blur(8px);
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--phids-primary);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.metric-val {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.35rem;
+    color: var(--md-typeset-color);
+    font-feature-settings: "tnum";
+}
+
+.metric-lbl {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--md-default-fg-color--light);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Mermaid.js Interactive Pan, Zoom & Fullscreen Styling
+   ========================================================================== */
+
+.mermaid-interactive-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 1.5rem 0 2rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--phids-border-subtle);
+    background: var(--md-code-bg-color);
+    box-shadow: var(--phids-card-shadow);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mermaid-interactive-wrapper:hover {
+    border-color: var(--phids-primary);
+    box-shadow: 0 6px 24px rgba(46, 125, 50, 0.12);
+}
+
+.mermaid-viewport {
+    position: relative;
+    width: 100%;
+    min-height: 180px;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.mermaid-viewport.is-dragging {
+    cursor: grabbing;
+}
+
+.mermaid-viewport .mermaid {
+    transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+    will-change: transform;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.mermaid-viewport.is-dragging .mermaid,
+.mermaid-viewport.is-wheeling .mermaid {
+    transition: none !important;
+}
+
+/* Floating HUD Toolbar */
+.mermaid-toolbar {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 6px;
+    background: var(--md-default-bg-color);
+    border: 1px solid var(--phids-border-subtle);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    opacity: 0.35;
+    backdrop-filter: blur(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mermaid-interactive-wrapper:hover .mermaid-toolbar,
+.mermaid-interactive-wrapper.is-fullscreen .mermaid-toolbar,
+.mermaid-interactive-wrapper:fullscreen .mermaid-toolbar {
+    opacity: 1;
+}
+
+.mermaid-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--md-typeset-color);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mermaid-tool-btn:hover {
+    background: var(--phids-primary);
+    color: #ffffff;
+    border-color: var(--phids-primary);
+}
+
+.mermaid-tool-btn:focus-visible {
+    outline: 2px solid var(--phids-primary);
+    outline-offset: 1px;
+}
+
+/* Scroll Hint Overlay */
+.mermaid-scroll-hint {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: rgba(15, 23, 42, 0.88);
+    color: #f8fafc;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.mermaid-scroll-hint.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Fullscreen Mode */
+.mermaid-interactive-wrapper.is-fullscreen,
+.mermaid-interactive-wrapper:fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    max-width: none !important;
+}
+
+[data-md-color-scheme="slate"] .mermaid-interactive-wrapper.is-fullscreen,
+[data-md-color-scheme="slate"] .mermaid-interactive-wrapper:fullscreen {
+    background: #0b0f19 !important;
+}
+
+[data-md-color-scheme="default"] .mermaid-interactive-wrapper.is-fullscreen,
+[data-md-color-scheme="default"] .mermaid-interactive-wrapper:fullscreen {
+    background: #ffffff !important;
+}
+
+.mermaid-interactive-wrapper.is-fullscreen .mermaid-viewport,
+.mermaid-interactive-wrapper:fullscreen .mermaid-viewport {
+    height: 100vh !important;
+    width: 100vw !important;
+    padding: 2.5rem !important;
+    touch-action: none;
+}
+
+.mermaid-interactive-wrapper.is-fullscreen .mermaid-toolbar,
+.mermaid-interactive-wrapper:fullscreen .mermaid-toolbar {
+    top: 1.25rem;
+    right: 1.25rem;
+    padding: 0.35rem;
+}
+
+.mermaid-interactive-wrapper.is-fullscreen .mermaid-tool-btn,
+.mermaid-interactive-wrapper:fullscreen .mermaid-tool-btn {
+    width: 32px;
+    height: 32px;
+}

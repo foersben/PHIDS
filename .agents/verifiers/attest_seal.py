@@ -96,7 +96,7 @@ def emit_attestation_artifacts(
         ],
     }
     receipt_path = RECEIPTS_DIR / "phase5_receipt.json"
-    receipt_path.write_text(json.dumps(receipt_data, indent=2), encoding="utf-8")
+    receipt_path.write_text(json.dumps(receipt_data, indent=2) + "\n", encoding="utf-8")
 
     # 2. Formal OKF Attested Computation concept document (§10.2)
     rows_md = "\n".join(

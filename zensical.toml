@@ -4,18 +4,29 @@ site_description = "Plant-Herbivore Interaction & Defense Simulator"
 site_url = "https://foersben.github.io/PHIDS/"
 repo_name = "foersben/PHIDS"
 repo_url = "https://github.com/foersben/PHIDS"
+edit_uri = "edit/develop/docs/"
 docs_dir = "docs"
 site_dir = "site"
 language = "en"
 
-extra_css = ["https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"]
+watch = [
+    "Justfile",
+    "src/phids/",
+    ".agents/",
+]
+
+extra_css = [
+    "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css",
+    "stylesheets/extra.css",
+]
 
 extra_javascript = [
+    "javascripts/katex.js",
     "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js",
     "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js",
-    "https://unpkg.com/mermaid@10/dist/mermaid.min.js",
-    "javascripts/katex.js",
-    # "javascripts/mermaid.js"
+    "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js",
+    "javascripts/mermaid.js",
+    "javascripts/widgets/applet_viewport.js",
 ]
 
 [project.theme]
@@ -25,18 +36,35 @@ favicon = "assets/logo.png"
 features = [
     "navigation.tabs",
     "navigation.sections",
+    "navigation.path",
+    "navigation.indexes",
     "navigation.top",
     "toc.integrate",
     "search.suggest",
     "search.highlight",
+    "content.action.edit",
+    "content.action.view",
     "content.code.copy",
+    "content.code.select",
+    "content.code.annotate",
+    "content.tabs.link",
 ]
 
-[project.theme.palette]
+[[project.theme.palette]]
+scheme = "default"
+primary = "green"
+accent = "deep-orange"
+[project.theme.palette.toggle]
+icon = "material/brightness-7"
+name = "Switch to dark mode"
+
+[[project.theme.palette]]
 scheme = "slate"
 primary = "black"
 accent = "deep-orange"
-
+[project.theme.palette.toggle]
+icon = "material/brightness-4"
+name = "Switch to light mode"
 
 [project.theme.icon]
 repo = "fontawesome/brands/github"
@@ -44,10 +72,23 @@ repo = "fontawesome/brands/github"
 [project.markdown_extensions]
 admonition = {}
 attr_list = {}
-"pymdownx.highlight" = { anchor_linenums = true }
+def_list = {}
+footnotes = {}
+md_in_html = {}
+tables = {}
+toc = { permalink = true, toc_depth = 4 }
+"pymdownx.details" = {}
 "pymdownx.inlinehilite" = {}
+"pymdownx.keys" = {}
+"pymdownx.caret" = {}
+"pymdownx.mark" = {}
+"pymdownx.tilde" = {}
+"pymdownx.tabbed" = { alternate_style = true }
+"pymdownx.tasklist" = { custom_checkbox = true }
 "pymdownx.arithmatex" = { generic = true }
-"pymdownx.superfences" = { custom_fences = [
+"pymdownx.highlight" = { anchor_linenums = true, line_spans = "__span", pygments_lang_class = true }
+"pymdownx.snippets" = { base_path = [".", "docs"], check_paths = true }
+"pymdownx.superfences" = { preserve_tabs = true, custom_fences = [
     { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
 ] }
 
