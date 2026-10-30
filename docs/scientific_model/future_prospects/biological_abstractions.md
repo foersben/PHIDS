@@ -149,9 +149,9 @@ Calculating hit-box collisions (checking exactly where every animal's foot lands
 
 Rather than a collision engine, collateral damage is evaluated probabilistically during coordinate transition in `_resolve_incidental_mortality` in `movement.py`:
 
-- When a swarm moves to a new coordinate $(nx, ny)$, the engine calculates the destruction probability $P(\text{destroy}) = \min(P_{max}, \text{population} \times k_{\text{incidental}} \times \max(0, 1 - \frac{M_{structural}}{M_{max}}))$. Default $P_{max} = 0.50$.
-- If `random.random() < P`, the seedling is culled, cleared from GridEnvironment write layers, unregistered from the spatial hash, and queued for garbage collection under death cause `"death_collateral_trampling"` or `"death_incidental_consumption"`.
-- **Hot Path Impact:** Heavy herds act as natural plows through early-succession biomes. The heavier the swarm and the smaller the plant's $M_{structural}$, the higher the likelihood of seedling mortality.
+* When a swarm moves to a new coordinate $(nx, ny)$, the engine calculates the destruction probability $P(\text{destroy}) = \min(P_{max}, \text{population} \times k_{\text{incidental}} \times \max(0, 1 - \frac{M_{structural}}{M_{max}}))$. Default $P_{max} = 0.50$.
+* If `random.random() < P`, the seedling is culled, cleared from GridEnvironment write layers, unregistered from the spatial hash, and queued for garbage collection under death cause `"death_collateral_trampling"` or `"death_incidental_consumption"`.
+* **Hot Path Impact:** Heavy herds act as natural plows through early-succession biomes. The heavier the swarm and the smaller the plant's $M_{structural}$, the higher the likelihood of seedling mortality.
 
 ---
 
@@ -257,27 +257,27 @@ To bridge the backend Numba JIT N-dimensional array engine with the user interfa
 When hovering over any cell containing plant entities:
 
 1. **Caloric Health ($E$) Bar**:
-   - Displays current caloric energy vs. species maximum energy ($E / E_{\text{max}}$).
-   - Rendered with an emerald-to-teal gradient (`bg-gradient-to-r from-emerald-500 to-teal-400`).
-   - Percentage formula: $\text{Energy \%} = \min\left(100, \max\left(0, \frac{E}{E_{\text{max}}} \times 100\right)\right)$.
+    * Displays current caloric energy vs. species maximum energy ($E / E_{\text{max}}$).
+    * Rendered with an emerald-to-teal gradient (`bg-gradient-to-r from-emerald-500 to-teal-400`).
+    * Percentage formula: $\text{Energy \%} = \min\left(100, \max\left(0, \frac{E}{E_{\text{max}}} \times 100\right)\right)$.
 2. **Structural Biomass ($M$) Bar**:
-   - Displays permanent structural mass vs. species ceiling ($M_{\text{structural}} / M_{\text{max}}$).
-   - Rendered with an amber-to-yellow gradient (`bg-gradient-to-r from-amber-600 to-yellow-500`).
-   - Percentage formula: $\text{Biomass \%} = \min\left(100, \max\left(0, \frac{M_{\text{structural}}}{M_{\text{max}}} \times 100\right)\right)$.
+    * Displays permanent structural mass vs. species ceiling ($M_{\text{structural}} / M_{\text{max}}$).
+    * Rendered with an amber-to-yellow gradient (`bg-gradient-to-r from-amber-600 to-yellow-500`).
+    * Percentage formula: $\text{Biomass \%} = \min\left(100, \max\left(0, \frac{M_{\text{structural}}}{M_{\text{max}}} \times 100\right)\right)$.
 3. **Dynamic Fragility ($\mathcal{F}$) & Risk Badges**:
-   - **Woody Maturity Structure:** If $M_{\text{max}} > 0$ and $M_{\text{structural}} \ge M_{\text{max}}$, badge displays `🛡️ Woody Structure` (`bg-emerald-500/20 text-emerald-300`).
-   - **Fragility Percentage:** If $M_{\text{structural}} < M_{\text{max}}$, badge displays `⚠️ Fragility % (Risk Level)`:
-     - **High Risk:** Fragility $> 60\%$ (`bg-amber-500/20 text-amber-300`).
-     - **Medium Risk:** $20\% < \text{Fragility} \le 60\%$.
-     - **Low Risk:** $\text{Fragility} \le 20\%$.
+    * **Woody Maturity Structure:** If $M_{\text{max}} > 0$ and $M_{\text{structural}} \ge M_{\text{max}}$, badge displays `🛡️ Woody Structure` (`bg-emerald-500/20 text-emerald-300`).
+    * **Fragility Percentage:** If $M_{\text{structural}} < M_{\text{max}}$, badge displays `⚠️ Fragility % (Risk Level)`:
+    * **High Risk:** Fragility $> 60\%$ (`bg-amber-500/20 text-amber-300`).
+    * **Medium Risk:** $20\% < \text{Fragility} \le 60\%$.
+    * **Low Risk:** $\text{Fragility} \le 20\%$.
 
 ### 8.2 Plan 1 Compatibility Fallback Rule ($M_{\text{max}} = E_{\text{max}}$)
 
 In legacy scenarios or built-in benchmarks where `structural_mass_max` is zero or unspecified (`0.0`), the system strictly enforces the **Plan 1 Compatibility Rule**:
 
-- The engine and presenter pipeline set $M_{\text{max}} = E_{\text{max}}$ (e.g. $100.0\text{ J}$ or $60.0\text{ J}$).
-- Placed initial plants receive initial structural mass proportional to their starting placement energy ratio ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
-- This prevents mature initial plants in benchmark scenarios from incorrectly spawning as $100\%$ fragile stubs.
+* The engine and presenter pipeline set $M_{\text{max}} = E_{\text{max}}$ (e.g. $100.0\text{ J}$ or $60.0\text{ J}$).
+* Placed initial plants receive initial structural mass proportional to their starting placement energy ratio ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
+* This prevents mature initial plants in benchmark scenarios from incorrectly spawning as $100\%$ fragile stubs.
 
 ### 8.3 Unified Primary Action Control Button State Machine
 
@@ -293,17 +293,17 @@ stateDiagram-v2
     Paused --> Stopped: Click ↺ Reset
 ```
 
-- **▶ Start (Emerald `bg-emerald-500`):** Simulation stopped/loaded/reset. Triggers `POST /api/simulation/start`.
-- **⏸ Pause (Amber `bg-amber-500`):** Simulation actively running. Triggers `POST /api/simulation/pause`.
-- **▶ Resume (Indigo `bg-indigo-500`):** Simulation paused. Triggers `POST /api/simulation/pause` (or `start`) to resume.
+* **▶ Start (Emerald `bg-emerald-500`):** Simulation stopped/loaded/reset. Triggers `POST /api/simulation/start`.
+* **⏸ Pause (Amber `bg-amber-500`):** Simulation actively running. Triggers `POST /api/simulation/pause`.
+* **▶ Resume (Indigo `bg-indigo-500`):** Simulation paused. Triggers `POST /api/simulation/pause` (or `start`) to resume.
 
 ### 8.4 Mycorrhizal Overlay Invariants
 
-- **Render Layer Order:** `drawMycorrhizalLinks()` executes *after* `drawFlora()` in `dashboard.html` to guarantee root links render clearly on top of plant tiles.
-- **Engine Link Validation:** Live canvas rendering strictly displays real engine-established connections (`data.mycorrhizal_links`).
-- **Tooltip Disambiguation:** Tooltip entries replace ambiguous `*` asterisks with explicit badges:
-  - **Inter-species link:** `<span class="text-amber-400"> (inter-species)</span>`
-  - **Intra-species link:** `<span class="text-sky-400/70"> (intra-species)</span>`
+* **Render Layer Order:** `drawMycorrhizalLinks()` executes *after* `drawFlora()` in `dashboard.html` to guarantee root links render clearly on top of plant tiles.
+* **Engine Link Validation:** Live canvas rendering strictly displays real engine-established connections (`data.mycorrhizal_links`).
+* **Tooltip Disambiguation:** Tooltip entries replace ambiguous `*` asterisks with explicit badges:
+  * **Inter-species link:** `<span class="text-amber-400"> (inter-species)</span>`
+  * **Intra-species link:** `<span class="text-sky-400/70"> (intra-species)</span>`
 
 ## Data-Flow Matrix Specifications
 

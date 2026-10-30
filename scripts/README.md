@@ -19,24 +19,28 @@ The scripts in this directory are governed by strict operational principles:
 
 ## 2. Script Taxonomy & Execution Matrix
 
-| Script | Category | Execution Stage | Runtime | Governing Invariant / Policy |
+Scripts are structured into focused domain directories (`governance/`, `ci/`, `simulation/`, `maintenance/`). Root-level scripts act as transparent forwarder shims for backwards compatibility with existing pipelines.
+
+| Script | Domain Subdirectory | Execution Stage | Runtime | Governing Invariant / Policy |
 | :--- | :--- | :--- | :--- | :--- |
-| [`validate_okf.py`](#1-validate_okfpy) | Knowledge & Documentation | **Pre-Commit & CI** | < 0.2s | OKF v0.2 Specification (§4-§11) |
-| [`audit_matrix_coverage.py`](#2-audit_matrix_coveragepy) | Causal Invariants & Matrices | **Pre-Commit & CI** | < 0.1s | Rule 05-A, Rule 05-C, Rule 05-D |
-| [`verify_matrix_trace_parity.py`](#3-verify_matrix_trace_paritypy) | Causal Invariants & Matrices | **Pre-Commit & CI** | ~ 0.5s | Rule 05-A, Rule 05-D (Table-to-Trace Parity) |
-| [`check_no_extended_imports.py`](#4-check_no_extended_importspy) | IP & Licensing Security | **Pre-Commit & CI** | < 0.1s | Non-Commercial (NC) License Guard |
-| [`visualize_okf.py`](#5-visualize_okfpy) | Knowledge & Visualization | **CI (`deploy-docs`) & On-Demand** | ~ 0.3s | OKF v0.2 Graph Visualization (`docs/viz.html`) |
-| [`run_sim_benchmark.py`](#6-run_sim_benchmarkpy) | Performance Benchmarking | **CI & On-Demand** (`just benchmark`) | 10s - 5m | Performance Degradation Guard |
-| [`inspect_zarr.py`](#7-inspect_zarrpy) | Telemetry & Storage | **On-Demand** (`.agents/skills/analyze-zarr`) | < 0.2s | Rule 01 (Stochastic Replay Buffers) |
-| [`bootstrap.py`](#8-bootstrappy) | Developer Environment | **On-Demand** (`just setup`) | < 0.1s | Local CI / `act` Configuration |
-| [`phids_request_trace.py`](#9-phids_request_tracepy) | API Diagnostics | **On-Demand & Smoke Testing** | ~ 0.5s | FastAPI / HTMX Lifecycle Validation |
-| [`clean_branches.py`](#10-clean_branchespy) | Git Housekeeping | **On-Demand** | Interactive | Git Repository Hygiene |
-| [`find_large_tests.sh`](#11-find_large_testssh) | Code Quality | **On-Demand & Audit** | < 0.1s | Test Modularity (Threshold: 750 LOC) |
-| [`local_ci.sh`](#12-local_cish) | Local Orchestration | **On-Demand** | 30s - 2m | Fast Local CI Simulation |
-| [`run_ci_with_act.sh`](#13-run_ci_with_actsh) | Local Orchestration | **On-Demand** (`just act-*`) | 1m - 5m | Containerized Local GitHub Actions Rehearsal |
-| [`target_cov.sh`](#14-target_covsh) | Code Quality & TDD | **On-Demand** | 1s - 5s | Subsystem Isolated Coverage Verification |
-| [`jules_setup.sh`](#15-jules_setupsh) | Cloud Agent Environment | **Jules Sandbox Snapshot** | ~ 60s | Jules Cloud Environment Bootstrap |
-| [`audit_epistemic_integrity.py`](#16-audit_epistemic_integritypy) | Epistemic Soundness | **CI & On-Demand** | ~ 1s | Rule 02, Rule 05-B, Epistemic Integrity |
+| `validate_okf.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.2s | OKF v0.2 Specification (§4-§11) |
+| `audit_matrix_coverage.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.1s | Rule 05-A, Rule 05-C, Rule 05-D |
+| `verify_matrix_trace_parity.py` | `scripts/governance/` | **Pre-Commit & CI** | ~ 0.5s | Rule 05-A, Rule 05-D (Table-to-Trace Parity) |
+| `verify_code_invariants.py` | `scripts/governance/` | **Pre-Commit & CI** | ~ 0.5s | NI-01, NI-06 (AST Invariants & Ratchet) |
+| `verify_markdown_rules.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.2s | Rule 04 (Markdown & Typography Linter) |
+| `check_no_extended_imports.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.1s | Non-Commercial (NC) License Guard |
+| `visualize_okf.py` | `scripts/governance/` | **CI (`deploy-docs`) & On-Demand** | ~ 0.3s | OKF v0.2 Graph Visualization (`docs/viz.html`) |
+| `audit_epistemic_integrity.py` | `scripts/governance/` | **CI & On-Demand** | ~ 1s | Rule 02, Rule 05-B, Epistemic Integrity |
+| `run_sim_benchmark.py` | `scripts/simulation/` | **CI & On-Demand** (`just benchmark`) | 10s - 5m | Performance Degradation Guard |
+| `inspect_zarr.py` | `scripts/simulation/` | **On-Demand** (`.agents/skills/analyze-zarr`) | < 0.2s | Rule 01 (Stochastic Replay Buffers) |
+| `phids_request_trace.py` | `scripts/simulation/` | **On-Demand & Smoke Testing** | ~ 0.5s | FastAPI / HTMX Lifecycle Validation |
+| `bootstrap.py` | `scripts/maintenance/` | **On-Demand** (`just setup`) | < 0.1s | Local CI / `act` Configuration |
+| `clean_branches.py` | `scripts/maintenance/` | **On-Demand** | Interactive | Git Repository Hygiene |
+| `local_ci.sh` | `scripts/ci/` | **On-Demand** | 30s - 2m | Fast Local CI Simulation |
+| `run_ci_with_act.sh` | `scripts/ci/` | **On-Demand** (`just act-*`) | 1m - 5m | Containerized Local GitHub Actions Rehearsal |
+| `find_large_tests.sh` | `scripts/ci/` | **On-Demand & Audit** | < 0.1s | Test Modularity (Threshold: 750 LOC) |
+| `target_cov.sh` | `scripts/ci/` | **On-Demand** | 1s - 5s | Subsystem Isolated Coverage Verification |
+| `jules_setup.sh` | `scripts/` (retained) | **Jules Sandbox Snapshot** | ~ 60s | Jules Cloud Environment Bootstrap |
 
 ---
 

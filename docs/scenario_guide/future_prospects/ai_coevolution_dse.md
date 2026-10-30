@@ -13,7 +13,7 @@ sources:
 - id: design_space_exploration
   resource: docs/scenario_guide/work_in_progress/design_space_exploration.md
 - id: source
-  resource: 
+  resource:
     docs/scientific_model/future_prospects/parameter_calibration_strategy.md
 ---
 
@@ -33,7 +33,7 @@ For detailed touchpoints on human vs. AI intervention gates across the pipeline,
 ```mermaid
 flowchart LR
     Flora_Pop["Flora Population<br><i>Defense Investment Strategy</i>"] <-->|Coevolutionary Feedback| Herbivore_Pop["Herbivore Population<br><i>Neutralization Strategy</i>"]
-    
+
     SubGraph_Ray["Ray / Tune Distributed Cluster<br><i>Parallel Multi-Scenario Execution</i>"] --> Pareto["Pareto Optimal Front<br><i>Evolutionary Stable Strategies (ESS)</i>"]
 ```
 
@@ -43,9 +43,9 @@ flowchart LR
 
 1. **Distributed Cluster Parallelism**: Utilizing **Ray/Tune** to scale scenario evaluations across HPC compute clusters ($O(N_{\text{simulations}})$ concurrent workers).
 2. **NSGA-III & Multi-Objective Pareto Optimization**: Replaces single scalar cost functions with non-dominated sorting algorithms (NSGA-III via `pymoo`) targeting three concurrent objectives:
-   * **Ecological Stability ($S_{\text{LV}}$)**: Spectral FFT limit cycle endurance.
-   * **Empirical Distance ($D_{\text{bio}}$)**: Log-space Mahalanobis distance from empirical trait distributions (TRY/PanTHERIA).
-   * **Defensive Diversity ($H_{\text{chem}}$)**: Shannon entropy of active plant secondary metabolites.
+    * **Ecological Stability ($S_{\text{LV}}$)**: Spectral FFT limit cycle endurance.
+    * **Empirical Distance ($D_{\text{bio}}$)**: Log-space Mahalanobis distance from empirical trait distributions (TRY/PanTHERIA).
+    * **Defensive Diversity ($H_{\text{chem}}$)**: Shannon entropy of active plant secondary metabolites.
 3. **Reinforcement Learning Agent Policies**: Modeling herbivore swarms as MARL (Multi-Agent Reinforcement Learning) policies adapting foraging heuristics under dynamic plant defense induction.
 
 ---

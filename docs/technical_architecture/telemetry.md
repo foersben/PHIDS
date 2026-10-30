@@ -25,8 +25,8 @@ After the completion of the `signaling` phase, the engine consolidates critical 
 ### Telemetry Time-Series Continuity (Phase-Staggered Cohorts)
 
 To ensure that telemetry charts, exported DataFrames, and UI line plots remain clean and scientifically interpretable:
-- **Continuous $C^0$ Macro Curves**: Plant photosynthetic growth ($168\text{-tick}$ stride) and swarm metabolic rate ($24\text{-tick}$ stride) update via Phase-Staggered Cohorts (`(entity_id % S) == (tick % S)`). On each tick $t$, exactly $\frac{1}{S}$-th of all entities update their reserves.
-- **No Sawtooth Artifacts**: Because biological updates are evenly staggered across every tick rather than dumped in a single bulk tick every 24 or 168 ticks, aggregate system metrics (such as total flora energy, total herbivore biomass, and active mycorrhizal links) advance smoothly without artificial sawtooth impulse spikes.
+* **Continuous $C^0$ Macro Curves**: Plant photosynthetic growth ($168\text{-tick}$ stride) and swarm metabolic rate ($24\text{-tick}$ stride) update via Phase-Staggered Cohorts (`(entity_id % S) == (tick % S)`). On each tick $t$, exactly $\frac{1}{S}$-th of all entities update their reserves.
+* **No Sawtooth Artifacts**: Because biological updates are evenly staggered across every tick rather than dumped in a single bulk tick every 24 or 168 ticks, aggregate system metrics (such as total flora energy, total herbivore biomass, and active mycorrhizal links) advance smoothly without artificial sawtooth impulse spikes.
 
 ## Polars Data Aggregation
 

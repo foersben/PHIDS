@@ -71,14 +71,14 @@ As depicted in the flowchart, the engine does not evaluate every biological proc
 
 1. **Flow-Field Generation & Camouflage (Fast Loop - Every Tick)**: Utilizes Numba `@njit` compilation to compute the singular global guidance gradient based on plant energy, apparent nutrition, and toxic zones, immediately followed by camouflage attenuation which masks local guidance gradients for flora utilizing camouflage traits.
 2. **Lifecycle (`run_lifecycle`) (Slow Loop - Weekly / 168-Tick Stride)**:
-    - **Photosynthetic Growth**: Applies accumulated weekly photosynthetic biomass growth scaled by `SLOW_TICK_STRIDE` (168x). This prevents FPU microcode traps caused by microscopic per-tick increments ($<10^{-4}$).
-    - **$O(1)$ Stochastic Raycasting Dispersal**: Replaces legacy $O(N \times r^2)$ grid spatial convolution with constant-time vector projection along wind unit vector $\mathbf{u} = \mathbf{w} / \|\mathbf{w}\|$ combined with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$.
-    - **Mycorrhizal Symbiosis**: Establishes bidirectional root connections between adjacent plants on slow-loop gates, applying continuous carbon maintenance taxes (`mycorrhizal_tax_per_link`).
-    - **Threshold Culling & Garbage Collection**: Removes plants whose energy drops below `survival_threshold`.
+    * **Photosynthetic Growth**: Applies accumulated weekly photosynthetic biomass growth scaled by `SLOW_TICK_STRIDE` (168x). This prevents FPU microcode traps caused by microscopic per-tick increments ($<10^{-4}$).
+    * **$O(1)$ Stochastic Raycasting Dispersal**: Replaces legacy $O(N \times r^2)$ grid spatial convolution with constant-time vector projection along wind unit vector $\mathbf{u} = \mathbf{w} / \|\mathbf{w}\|$ combined with single-axis turbulent Gaussian scatter $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$.
+    * **Mycorrhizal Symbiosis**: Establishes bidirectional root connections between adjacent plants on slow-loop gates, applying continuous carbon maintenance taxes (`mycorrhizal_tax_per_link`).
+    * **Threshold Culling & Garbage Collection**: Removes plants whose energy drops below `survival_threshold`.
 3. **Interaction (`run_interaction`) (Fast / Medium / Slow Gated)**:
-    - **Movement & Chemotaxis (Fast Loop - Every Tick)**: Micro-swarm kinetic movement and spatial repulsion.
-    - **Metabolism & Foraging (Medium Loop - Daily / 24-Tick Stride)**: Swarm feeding and daily metabolic cost drain scaled by 24x stride ($\text{cost} = \text{pop} \times E_{\text{min}} \times \text{upkeep} \times 24$).
-    - **Colony Fission / Mitosis (Slow Loop - Weekly / 168-Tick Stride)**: Swarms with substantial caloric surpluses split into new entities.
+    * **Movement & Chemotaxis (Fast Loop - Every Tick)**: Micro-swarm kinetic movement and spatial repulsion.
+    * **Metabolism & Foraging (Medium Loop - Daily / 24-Tick Stride)**: Swarm feeding and daily metabolic cost drain scaled by 24x stride ($\text{cost} = \text{pop} \times E_{\text{min}} \times \text{upkeep} \times 24$).
+    * **Colony Fission / Mitosis (Slow Loop - Weekly / 168-Tick Stride)**: Swarms with substantial caloric surpluses split into new entities.
 4. **Signaling (`run_signaling`) & Energy Rebuild (Fast Loop - Every Tick)**: Evaluates trigger rules via continuous dose-dependent Hill kinetics ($S(c) = \frac{c^n}{K^n + c^n}$) or threshold predicates. Manages airborne advection-diffusion, mycorrhizal signal propagation, and lethal toxin casualties. Then immediately rebuilds the double-buffered energy layer (`rebuild_energy_layer()`) to commit all energy depletion from feeding and defense upkeep.
 5. **Telemetry**: Records a metrics snapshot of the current tick, and appends raw arrays to the Zarr replay buffer and Polars telemetry exporter.
 6. **Termination Check**: Evaluates configured extinction ($Z_2, Z_4$), max energy ($Z_6$), max tick, and population ($Z_7$) threshold limits.
@@ -117,14 +117,14 @@ To avoid catastrophic $O(N^2)$ distance polling, `ECSWorld` maintains a Spatial 
 
 To eliminate boundary edge-effect distortions and enforce strict physical mass conservation across arbitrary grid dimensions, PHIDS implements a **Toroidal (periodic wrap-around) Topology** across both discrete entity space and continuous biotope fields:
 
-- **Branchless Coordinate Wrapping**: All spatial coordinate updates enforce branchless modulo arithmetic: $x_{\text{wrapped}} = (x + \Delta x) \pmod W$ and $y_{\text{wrapped}} = (y + \Delta y) \pmod H$, completely eliminating branch mispredictions in Numba `@njit` loop kernels.
-- **Toroidal Spatial Distance**: Spatial distance between points $(x_1, y_1)$ and $(x_2, y_2)$ accounts for wrap-around seam boundaries:
+* **Branchless Coordinate Wrapping**: All spatial coordinate updates enforce branchless modulo arithmetic: $x_{\text{wrapped}} = (x + \Delta x) \pmod W$ and $y_{\text{wrapped}} = (y + \Delta y) \pmod H$, completely eliminating branch mispredictions in Numba `@njit` loop kernels.
+* **Toroidal Spatial Distance**: Spatial distance between points $(x_1, y_1)$ and $(x_2, y_2)$ accounts for wrap-around seam boundaries:
 
     $$\Delta x_{\text{toroidal}} = \min(|x_1 - x_2|, W - |x_1 - x_2|)$$
 
     $$\Delta y_{\text{toroidal}} = \min(|y_1 - y_2|, H - |y_1 - y_2|)$$
 
-- **Shortest-Seam Inertia Vector Alignment**: When swarms cross boundary seams (e.g. from $x=W-1$ to $x=0$), inertia deltas are normalized to $\Delta x = -1$ rather than $-(W-1)$, ensuring smooth kinematic trajectory continuation across wrap boundaries.
+* **Shortest-Seam Inertia Vector Alignment**: When swarms cross boundary seams (e.g. from $x=W-1$ to $x=0$), inertia deltas are normalized to $\Delta x = -1$ rather than $-(W-1)$, ensuring smooth kinematic trajectory continuation across wrap boundaries.
 
 ### Active Garbage Collection
 
@@ -443,8 +443,8 @@ Chemical defense emission passes (`_apply_toxin_to_swarms` in `src/phids/engine/
 
 To avoid iterating over all swarms in the ECS world during localized chemical defense emissions, PHIDS extracts active non-zero toxin grid coordinates via `np.argwhere(env.toxin_layers[sub_id] > 0.0)`.
 
-- **Localized Toxin Exposure (`num_active_cells < num_swarms`)**: Evaluates Spatial Hash occupancy (`world.entities_at(x, y)`) restricted strictly to grid cells with non-zero toxin concentration, bypassing $O(N_\text{swarms})$ iteration across un-exposed regions.
-- **Saturated Toxin Exposure Fallback (`num_active_cells >= num_swarms`)**: Automatically falls back to direct `world.query(SwarmComponent)` when toxin plumes are fully saturated across the grid, preventing spatial cell iteration overhead.
+* **Localized Toxin Exposure (`num_active_cells < num_swarms`)**: Evaluates Spatial Hash occupancy (`world.entities_at(x, y)`) restricted strictly to grid cells with non-zero toxin concentration, bypassing $O(N_\text{swarms})$ iteration across un-exposed regions.
+* **Saturated Toxin Exposure Fallback (`num_active_cells >= num_swarms`)**: Automatically falls back to direct `world.query(SwarmComponent)` when toxin plumes are fully saturated across the grid, preventing spatial cell iteration overhead.
 
 This optimization yields a **~15% - 25%** speedup in signaling phase execution for localized chemical defense emissions while guaranteeing zero performance degradation during global plume saturation.
 

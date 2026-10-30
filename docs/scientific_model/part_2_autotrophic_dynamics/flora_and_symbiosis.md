@@ -85,18 +85,18 @@ flowchart TD
 
     A["<b>Parent Seed Drop</b><br/>Coordinate: (x_0, y_0)"]:::base --> B
     B["<b>Sample Distance (d)</b><br/>d ~ U(d_min, d_max)"]:::process --> C
-    
+
     C{"<b>Wind Velocity</b><br/>||w|| > 1e-9?"}:::decision
     C -- Yes --> D["<b>Advective Vector (u)</b><br/>u = w / ||w||"]:::process
     C -- No --> E["<b>Isotropic Angle (theta)</b><br/>theta ~ U(0, 2pi)"]:::process
-    
+
     D --> F["<b>Turbulent Scatter</b><br/>delta_perp ~ N(0, sigma^2)"]:::process
     E --> F
-    
+
     F --> G["<b>Map to Discrete Grid</b><br/>Target: (x_target, y_target)"]:::process
-    
+
     G --> H{"<b>Space Occupied?</b><br/>O(1) Hash Lookup"}:::decision
-    
+
     H -- Yes --> I["<b>Germination Failure</b><br/>Seed Cost Expended"]:::fail
     H -- No --> J["<b>Successful Germination</b><br/>Spawn Entity at (x_target, y_target)"]:::result
 ```

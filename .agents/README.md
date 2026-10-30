@@ -240,22 +240,22 @@ All agents (local or cloud) must strictly adhere to the rules located in `.agent
 
 ---
 
-## 5. Active Workflows & Slash Commands
+## 5. Active Skills & Slash Commands
 
-Workflows in `.agents/workflows/` coordinate multi-phase tasks:
+Skills in `.agents/skills/` coordinate multi-phase tasks:
 
-| Slash Command | Workflow Document | Primary Roles | Description |
+| Slash Command | Skill / Workflow Document | Primary Roles | Description |
 | :--- | :--- | :--- | :--- |
 | `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, generates HITL reviews, and enforces session lifecycle cleanup (deletion upon merge/discard). |
-| `/epistemic-soundness-audit` | [epistemic-soundness-audit.md](workflows/epistemic-soundness-audit.md) | `02`, `09`, `10` | 10-slice relational audit verifying biological fidelity, mathematical rigor, and HPC invariants across docs and code. |
-| `/matrix-tdd-refactor` | [matrix-tdd-refactor.md](workflows/matrix-tdd-refactor.md) | `03`, `04`, `09` | Translates conceptual behavior to Data-Flow Matrix tables, Pytest traces, branchless Numba kernels, and verified OKF links. |
-| `/validate-full-stack` | [validate-full-stack.md](workflows/validate-full-stack.md) | All | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
-| `/implement-scientific-model` | [implement-scientific-model.md](workflows/implement-scientific-model.md) | `02`, `03` | Protocol for introducing new ecological/mathematical behaviors into ECS arrays and simulation loop. |
-| `/matrix-drift-reconciliation` | [matrix-drift-reconciliation.md](workflows/matrix-drift-reconciliation.md) | `09`, `10` | Automated detection and reconciliation of drifted Data-Flow Matrices against runtime simulation traces. |
-| `/vertical-slice-development` | [vertical-slice-development.md](workflows/vertical-slice-development.md) | `01` + All | Coordinated pipeline for building full-stack simulation features across models, kernels, telemetry, and UI. |
-| `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` | Structured markdown escalation checklist for human operators when agents encounter manual confirmation gates. |
-| `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` | Safely refactors cold-path control plane modules while preserving DOD/JIT hot-path immutability. |
-| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline.md](workflows/doc-synchronization-pipeline.md) | `01`, `05`, `09`, `10` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical docs with optional triple Jules dispatch. |
+| `/epistemic-soundness-audit` | [epistemic-soundness-audit](skills/epistemic-soundness-audit/SKILL.md) | `02`, `09`, `10` | 10-slice relational audit verifying biological fidelity, mathematical rigor, and HPC invariants across docs and code. |
+| `/matrix-tdd-refactor` | [matrix-tdd-refactor](skills/matrix-tdd-refactor/SKILL.md) | `03`, `04`, `09` | Translates conceptual behavior to Data-Flow Matrix tables, Pytest traces, branchless Numba kernels, and verified OKF links. |
+| `/validate-full-stack` | [validate-full-stack](skills/validate-full-stack/SKILL.md) | All | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
+| `/implement-scientific-model` | [implement-scientific-model](skills/implement-scientific-model/SKILL.md) | `02`, `03` | Protocol for introducing new ecological/mathematical behaviors into ECS arrays and simulation loop. |
+| `/auto-reconcile-matrix-drift` | [auto-reconcile-matrix-drift](skills/auto-reconcile-matrix-drift/SKILL.md) | `09`, `10` | Automated detection and reconciliation of drifted Data-Flow Matrices against runtime simulation traces. |
+| `/vertical-slice-development` | [vertical-slice-development](skills/vertical-slice-development/SKILL.md) | `01` + All | Coordinated pipeline for building full-stack simulation features across models, kernels, telemetry, and UI. |
+| `/delegation-protocol` | [delegation-protocol](skills/delegation-protocol/SKILL.md) | `01` | Structured markdown escalation checklist for human operators when agents encounter manual confirmation gates. |
+| `/ecs-refactor-pipeline` | [ecs-refactor-pipeline](skills/ecs-refactor-pipeline/SKILL.md) | `03`, `04` | Safely refactors cold-path control plane modules while preserving DOD/JIT hot-path immutability. |
+| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline](skills/doc-synchronization-pipeline/SKILL.md) | `01`, `05`, `09`, `10` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical docs with optional triple Jules dispatch. |
 
 ### Highlighted Workflow: Documentation Synchronization (`/doc-synchronization-pipeline`)
 

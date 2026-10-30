@@ -1,0 +1,17 @@
+# Ripgrep and Agent search exclusions
+.venv/
+.cache/
+.complexipy_cache/
+.agents/receipts/
+.archive/
+mutants/
+site/
+docs/viz.html
+uv.lock
+complexipy-snapshot.json
+src/phids/api/static/js/htmx.min.js
+src/phids/api/static/vendor/
+*.parquet
+*.zarr/
+htmlcov/
+coverage.xml

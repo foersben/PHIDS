@@ -29,16 +29,16 @@ PHIDS operates as a headless FastAPI backend, equipped with RESTful configuratio
 
 The simulator exposes operational boundaries required to drive experiments programmatically without relying on the browser UI. The primary simulation controls include:
 
-- `POST /api/scenario/load`: Ingests a validated `SimulationConfig`, destroying any running execution loops and staging the system for initialization.
-- `POST /api/simulation/start|pause`: Toggles execution state of the live simulation loop.
-- `PUT /api/simulation/wind`: Injects meteorological forcing dynamics into the environment layers while the simulation runs.
+* `POST /api/scenario/load`: Ingests a validated `SimulationConfig`, destroying any running execution loops and staging the system for initialization.
+* `POST /api/simulation/start|pause`: Toggles execution state of the live simulation loop.
+* `PUT /api/simulation/wind`: Injects meteorological forcing dynamics into the environment layers while the simulation runs.
 
 ## Draft vs Live State
 
 PHIDS establishes a strict barrier between the simulation currently under construction and the simulation actively executing. This prevents configuration adjustments from inadvertently modifying active scientific experiments mid-run.
 
-- **`DraftState`**: A persistent, mutable scenario configuration stored on the server and auto-saved to `data/draft_autosave.json`. This is heavily edited via the UI endpoints (e.g., toggling diet matrix compatibility, modifying reproduction bounds, adding species). Disk persistence ensures draft configurations survive Uvicorn process reloads and server restarts. Modifying the Draft State has zero ecological impact on any running live model.
-- **`SimulationLoop` (Live Runtime)**: Created only when the operator explicitly "loads" the draft configuration into the engine. Once initialized, the runtime strictly divorces from the Draft State.
+* **`DraftState`**: A persistent, mutable scenario configuration stored on the server and auto-saved to `data/draft_autosave.json`. This is heavily edited via the UI endpoints (e.g., toggling diet matrix compatibility, modifying reproduction bounds, adding species). Disk persistence ensures draft configurations survive Uvicorn process reloads and server restarts. Modifying the Draft State has zero ecological impact on any running live model.
+* **`SimulationLoop` (Live Runtime)**: Created only when the operator explicitly "loads" the draft configuration into the engine. Once initialized, the runtime strictly divorces from the Draft State.
 
 ## UI Control Center (HTMX + Jinja)
 
@@ -79,9 +79,9 @@ This dual-channel architecture strictly isolates administrative interactions fro
 
 Execution controls in the dashboard toolbar are consolidated into a single primary action button (`#sim-main-action-btn`) driven by `window.phidsSyncMainActionButton(running, paused)`:
 
-- **▶ Start (Emerald `bg-emerald-500`):** Displayed when the simulation is stopped, loaded, or reset. Triggers `POST /api/simulation/start`.
-- **⏸ Pause (Amber `bg-amber-500`):** Displayed when the simulation is actively running. Triggers `POST /api/simulation/pause`.
-- **▶ Resume (Indigo `bg-indigo-500`):** Displayed when the simulation is paused. Triggers `POST /api/simulation/pause` (or `start`) to resume background task execution.
+* **▶ Start (Emerald `bg-emerald-500`):** Displayed when the simulation is stopped, loaded, or reset. Triggers `POST /api/simulation/start`.
+* **⏸ Pause (Amber `bg-amber-500`):** Displayed when the simulation is actively running. Triggers `POST /api/simulation/pause`.
+* **▶ Resume (Indigo `bg-indigo-500`):** Displayed when the simulation is paused. Triggers `POST /api/simulation/pause` (or `start`) to resume background task execution.
 
 The backend endpoint `/api/simulation/pause` safely handles pause, resume, and background task recovery without orphaned processes or 400 errors on terminated loops.
 
@@ -93,15 +93,15 @@ The live dashboard is the primary workspace for observing an actively running si
 
 To prevent operator confusion between scenario editing and active experiment execution, the UI explicitly distinguishes two canvas modes:
 
-- **Placement Preview (Draft State)**: Rendered when editing draft scenario parameters, placing plants, or generating auto-assigned populations before a scenario is loaded. The placement preview displays initial spatial layouts fetched from `/api/config/placements/data`.
-- **Live Simulation Grid (Active Runtime)**: Triggered when the operator clicks **▶ Start** or **Load Draft**. Real-time spatial matrices are streamed continuously via `/ws/ui/stream`. Unrelated HTMX UI updates (such as updating species parameters, toggling tab views, or adjusting live speed) are strictly isolated and will **never** reset the live canvas or overwrite live streaming data with static preview frames.
+* **Placement Preview (Draft State)**: Rendered when editing draft scenario parameters, placing plants, or generating auto-assigned populations before a scenario is loaded. The placement preview displays initial spatial layouts fetched from `/api/config/placements/data`.
+* **Live Simulation Grid (Active Runtime)**: Triggered when the operator clicks **▶ Start** or **Load Draft**. Real-time spatial matrices are streamed continuously via `/ws/ui/stream`. Unrelated HTMX UI updates (such as updating species parameters, toggling tab views, or adjusting live speed) are strictly isolated and will **never** reset the live canvas or overwrite live streaming data with static preview frames.
 
 #### Live Simulation Speed (Hz) Adjustments
 
 Operators can dynamically adjust the simulation execution speed using the `Speed (Hz)` control (ranging from `0.1 Hz`-1 tick every 10 seconds-up to `30 Hz` or higher):
 
-- Adjusting the live speed updates both the background `SimulationLoop` tick interval and the WebSocket streaming manager sleep cadence (`max(0.1, tick_rate_hz)`).
-- Speed changes take effect **immediately in real time** without stopping the simulation, reloading the scenario, or clearing the live canvas grid.
+* Adjusting the live speed updates both the background `SimulationLoop` tick interval and the WebSocket streaming manager sleep cadence (`max(0.1, tick_rate_hz)`).
+* Speed changes take effect **immediately in real time** without stopping the simulation, reloading the scenario, or clearing the live canvas grid.
 
 #### Canvas Grid Resize Feature
 
@@ -112,10 +112,10 @@ To accommodate varying screen sizes and grid dimensions, the dashboard provides 
 When hovering over any cell in the live grid:
 
 1. **Dual-Proxy Live Snapshot Rendering**: The tooltip renders zero-latency dual-proxy health bars and structural parameters extracted from the columnar stream payload (`simPlantsColumnar`):
-   - **Caloric Health ($E$) Bar:** Visualizes active caloric energy vs maximum energy ($E / E_{\text{max}}$) with an emerald-to-teal gradient.
-   - **Structural Biomass ($M$) Bar:** Visualizes permanent structural mass vs maximum ceiling ($M_{\text{structural}} / M_{\text{max}}$) with an amber-to-yellow gradient.
-   - **Plan 1 Compatibility Fallback:** If `structural_mass_max` is unspecified (`0.0`), $M_{\text{max}} = E_{\text{max}}$ and initial structural mass is populated proportional to placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
-   - **Dynamic Fragility Badges:** Displays `🛡️ Woody Structure` ($M_{\text{structural}} \ge M_{\text{max}}$) or `⚠️ Fragility % (High/Medium/Low Risk)`.
+    * **Caloric Health ($E$) Bar:** Visualizes active caloric energy vs maximum energy ($E / E_{\text{max}}$) with an emerald-to-teal gradient.
+    * **Structural Biomass ($M$) Bar:** Visualizes permanent structural mass vs maximum ceiling ($M_{\text{structural}} / M_{\text{max}}$) with an amber-to-yellow gradient.
+    * **Plan 1 Compatibility Fallback:** If `structural_mass_max` is unspecified (`0.0`), $M_{\text{max}} = E_{\text{max}}$ and initial structural mass is populated proportional to placement energy ($M_{\text{structural}} = M_{\text{max}} \times \frac{E_{\text{initial}}}{E_{\text{max}}}$).
+    * **Dynamic Fragility Badges:** Displays `🛡️ Woody Structure` ($M_{\text{structural}} \ge M_{\text{max}}$) or `⚠️ Fragility % (High/Medium/Low Risk)`.
 2. **Mycorrhizal Overlay Disambiguation**: Root links render on top of plant tiles (`drawMycorrhizalLinks()` after `drawFlora()`), displaying explicit `<span class="text-amber-400"> (inter-species)</span>` vs `<span class="text-sky-400/70"> (intra-species)</span>` badges.
 3. **Asynchronous Backend Enrichment**: If the pointer rests on a cell for $>60\text{ ms}$, the browser asynchronously fetches detailed entity genetics and condition-rule triggers via `GET /ui/dashboard/cell-details?x=X&y=Y&expected_tick=T`. If the live simulation advances to a new tick before the response arrives, the client rejects the stale response to ensure inspectable telemetry never desynchronizes from the live grid.
 
@@ -135,7 +135,7 @@ For live visualizations and diagnostics, PHIDS emits simulation state matrices a
 
 To achieve this, the architecture employs the `extract_ui_snapshot` pattern. Instead of locking the engine for the entire payload generation phase, the backend performs a lightweight, synchronous, $O(N)$ thread-safe shallow copy of primitive state arrays (the snapshot). The heavy serialization and socket dispatch are then offloaded to a background thread (`asyncio.to_thread`), allowing the main engine loop to resume executing the physics simulation entirely unimpeded.
 
-- `/ws/ui/stream`: Operates alongside HTMX. It pushes JSON diagnostic updates, such as the live tick counter, aggregated dashboard metadata, and specific cell inspection tooltips.
+* `/ws/ui/stream`: Operates alongside HTMX. It pushes JSON diagnostic updates, such as the live tick counter, aggregated dashboard metadata, and specific cell inspection tooltips.
 
 ### `WS /ws/ui/stream` Diagnostics Payload
 
@@ -145,8 +145,8 @@ The top-level fields include generic simulation flags (`tick`, `running`, `pause
 
 Furthermore, it streams two columnar tables for entity diagnostics:
 
-- **Plants Columnar Table**: Transmits a list of plant objects containing the fields: `entity_id`, `species_id`, `name`, `x`, `y`, `energy`, `root_link_count`, `active_signal_ids`, and `active_toxin_ids`.
-- **Swarms Columnar Table**: Transmits a list of swarm objects containing the fields: `species_id`, `name`, `x`, `y`, `population`, `energy`, `energy_deficit`, `repelled`, `repelled_ticks_remaining`, `toxin_level`, and `intoxicated`.
+* **Plants Columnar Table**: Transmits a list of plant objects containing the fields: `entity_id`, `species_id`, `name`, `x`, `y`, `energy`, `root_link_count`, `active_signal_ids`, and `active_toxin_ids`.
+* **Swarms Columnar Table**: Transmits a list of swarm objects containing the fields: `species_id`, `name`, `x`, `y`, `population`, `energy`, `energy_deficit`, `repelled`, `repelled_ticks_remaining`, `toxin_level`, and `intoxicated`.
 
 ## Metric Translation & UI Relativization
 
@@ -162,9 +162,9 @@ While absolute metrics are computationally optimal, they are cognitively opaque 
 
 To solve this, the backend API presenter layer (e.g., `cell_details.py`) acts as a normalization boundary. Before JSON payloads are dispatched to the browser, the presenter injects **relative and synthesized metrics** alongside the raw data:
 
-- `energy_ratio` and `energy_label` (e.g. `45.0 / 50.0 (90%)`).
-- `mitosis_progress` (population evaluated against its genetic splitting threshold).
-- `value_pct` for chemical concentrations relative to local saturation caps.
+* `energy_ratio` and `energy_label` (e.g. `45.0 / 50.0 (90%)`).
+* `mitosis_progress` (population evaluated against its genetic splitting threshold).
+* `value_pct` for chemical concentrations relative to local saturation caps.
 
 This architectural pattern guarantees that the heavy-lifting of percentage calculations, floating-point formatting, and tooltip string generation never pollutes the core simulation loop, while ensuring the UI is highly readable and "normalized" for scientists exploring the data.
 

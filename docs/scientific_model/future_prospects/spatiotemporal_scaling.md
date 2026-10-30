@@ -194,14 +194,14 @@ The following state diagram demonstrates how the $k$-tick evasion mechanic tempo
 stateDiagram-v2
     [*] --> GradientTracking : Default Behavior
     GradientTracking --> PhysicalJostling : Tile Population > Capacity
-    
+
     state PhysicalJostling {
         [*] --> InitializeEvasion
         InitializeEvasion --> EvasionWalk : repelled_ticks_remaining = k
         EvasionWalk --> EvasionWalk : repelled_ticks_remaining -= 1
         EvasionWalk --> [*] : repelled_ticks_remaining == 0
     }
-    
+
     PhysicalJostling --> GradientTracking : Evaded Overcrowding
 ```
 

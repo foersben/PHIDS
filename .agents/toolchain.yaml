@@ -1,0 +1,8 @@
+repo: "PHIDS"
+toolchain: "uv"
+toolchain_run: "uv run"
+toolchain_fast_test: "uv run pytest tests/unit/ -q -o addopts="
+task_runner: "just"
+complexity_runner: "just complexity"
+mypy_target: "src/phids"
+mcp_server_path: "src/phids/mcp_server.py"

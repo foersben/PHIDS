@@ -34,15 +34,15 @@ $$P(\text{move to } j) = \frac{\exp\left(\frac{F_j}{\tau}\right)}{\sum_{k \in \m
 
 Where:
 
-- $F_j$ is the combined chemotactic Flow Field potential of neighbor $j$.
-- $\tau$ (Temperature) is a tunable parameter controlling deterministic versus stochastic behavior.
+* $F_j$ is the combined chemotactic Flow Field potential of neighbor $j$.
+* $\tau$ (Temperature) is a tunable parameter controlling deterministic versus stochastic behavior.
 
 ### The Biological Impact of Temperature ($\tau$)
 
 The $\tau$ parameter directly controls the swarm's foraging paradigm:
 
-- **Low Temperature ($\tau \to 0$):** Exploitation mode. The swarm moves almost deterministically to the cell with the highest potential. This mimics highly starved or strongly driven insects locked onto a rich pheromone trail.
-- **High Temperature ($\tau > 1.0$):** Exploration mode. The swarm moves more randomly, ignoring slight variations in the gradient. This simulates exploratory grazing or movement in an environment filled with noisy, conflicting scent profiles.
+* **Low Temperature ($\tau \to 0$):** Exploitation mode. The swarm moves almost deterministically to the cell with the highest potential. This mimics highly starved or strongly driven insects locked onto a rich pheromone trail.
+* **High Temperature ($\tau > 1.0$):** Exploration mode. The swarm moves more randomly, ignoring slight variations in the gradient. This simulates exploratory grazing or movement in an environment filled with noisy, conflicting scent profiles.
 
 By continuously evaluating the landscape via this stochastic weighting on every tick, swarms naturally exhibit density-dependent herd dispersion and realistic patch-abandonment kinetics without relying on artificial state-locking routines.
 
@@ -56,8 +56,8 @@ A critical edge case occurs in the engine when the entire gradient is mathematic
 
 To prevent unnatural paralysis when $F_t(u,v) \approx 0$, the swarm relies on **movement inertia** stored from its previous tick (`last_dx`, `last_dy`).
 
-- A 10:1 directional momentum preference weight ($\text{ORTHOKINETIC\_MOMENTUM\_WEIGHT} = 10.0$) is given to continue moving in the current heading.
-- If no previous heading exists, isotropic random dispersal (Random Walk) is applied until a new scent gradient is found.
+* A 10:1 directional momentum preference weight ($\text{ORTHOKINETIC\_MOMENTUM\_WEIGHT} = 10.0$) is given to continue moving in the current heading.
+* If no previous heading exists, isotropic random dispersal (Random Walk) is applied until a new scent gradient is found.
 
 ## 3. Capacity Limits & Physical Repulsion
 
@@ -168,12 +168,12 @@ $$\text{Casualties} = \lfloor \text{mechanical\_damage\_per\_bite} \cdot (1.0 - 
 
 Where:
 
-- $\Delta e_{\text{raw}}$: Gross raw caloric intake extracted from the plant.
-- $\Delta e_{\text{real}}$: Net energy actually digested and absorbed by the swarm.
-- $\text{digestibility\_modifier}$: Scaler ($0.0 - 1.0$) representing constitutive defense reduction of calorie extraction.
-- $\text{Casualties}$: The exact integer count of swarm members killed by physical trauma.
-- $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
-- $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
+* $\Delta e_{\text{raw}}$: Gross raw caloric intake extracted from the plant.
+* $\Delta e_{\text{real}}$: Net energy actually digested and absorbed by the swarm.
+* $\text{digestibility\_modifier}$: Scaler ($0.0 - 1.0$) representing constitutive defense reduction of calorie extraction.
+* $\text{Casualties}$: The exact integer count of swarm members killed by physical trauma.
+* $\text{mechanical\_damage\_per\_bite}$: Absolute damage values inflicted by physical armaments (e.g., thorns).
+* $\text{resistance}_{\text{mechanical}}$: Herbivore counter-adaptation scaler ($0.0 - 1.0$) mitigating incoming physical damage.
 
 ## Co-Evolutionary Adaptations & Resistance Matrices
 
@@ -187,9 +187,9 @@ In nature, herbivores do not passively accept plant defenses; they co-evolve spe
 
 These are represented by three primary parameters:
 
-- `morphological_adaptation`: Resistance to physical trauma.
-- `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
-- `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
+* `morphological_adaptation`: Resistance to physical trauma.
+* `chemical_neutralization`: Metabolic ability to neutralize ingested active toxins.
+* `digestive_efficiency`: Ability to extract calories from tough or high-lignin plant matter.
 
 The resistances mapping allows swarms to mathematically mitigate incoming damage or digestibility penalties. A swarm with a `morphological_adaptation` (i.e. $\text{resistance}_{\text{mechanical}}$) of 0.9 will effectively ignore 90% of the damage from a thorny plant, giving them an exclusive ecological niche and a massive competitive advantage over non-resistant swarms.
 

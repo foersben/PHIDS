@@ -21,7 +21,7 @@ sources:
 - id: emission
   resource: ../../src/phids/engine/systems/signaling/emission.py
 - id: source
-  resource: 
+  resource:
     ../../tests/integration/scientific_invariants/test_double_buffering_isolation.py
 ---
 
@@ -176,7 +176,7 @@ flowchart TD
     S2["STAGE 2: Pytest Trace Gate (QA Automator)<br>Write Pytest Trace Test asserting table column shifts (Test FAILS)"]
     S3["STAGE 3: Vectorized Implementation (Engine Developer)<br>Implement branchless Numba JIT array masks until Trace Test PASSES"]
     S4["STAGE 4: OKF Audit & Merge (Docs Librarian & Git Operator)<br>Verify OKF resources mapping and execute git sign & merge"]
-    
+
     S1 --> S2 --> S3 --> S4
 ```
 

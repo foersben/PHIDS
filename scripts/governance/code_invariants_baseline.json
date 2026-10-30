@@ -1,0 +1,326 @@
+[
+  {
+    "file_path": "src/phids/__main__.py",
+    "line_number": 14,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: TC003'"
+  },
+  {
+    "file_path": "src/phids/__main__.py",
+    "line_number": 65,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'serve' arity 6 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/__main__.py",
+    "line_number": 107,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'tune' arity 5 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/analytics/tuning.py",
+    "line_number": 18,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore'"
+  },
+  {
+    "file_path": "src/phids/api/main.py",
+    "line_number": 21,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: TC003'"
+  },
+  {
+    "file_path": "src/phids/api/routers/batch.py",
+    "line_number": 318,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'batch_export' arity 8 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/biotope.py",
+    "line_number": 21,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_biotope' arity 19 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/flora.py",
+    "line_number": 161,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore[arg-type]'"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/flora.py",
+    "line_number": 31,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_flora_add' arity 18 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/flora.py",
+    "line_number": 203,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_flora_update' arity 22 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/herbivores.py",
+    "line_number": 22,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_herbivore_add' arity 8 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/herbivores.py",
+    "line_number": 76,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_herbivore_update' arity 12 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/placements.py",
+    "line_number": 105,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_placement_plant_add' arity 5 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/placements.py",
+    "line_number": 133,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_placement_swarm_add' arity 6 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/substances.py",
+    "line_number": 28,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_substance_add' arity 11 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/substances.py",
+    "line_number": 78,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_substance_update' arity 10 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/trigger_rules.py",
+    "line_number": 118,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_trigger_rule_add' arity 13 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/trigger_rules.py",
+    "line_number": 164,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_trigger_rule_update' arity 14 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/config/trigger_rules.py",
+    "line_number": 262,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'config_trigger_rule_condition_node_update' arity 9 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/simulation/scenario.py",
+    "line_number": 97,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: B008'"
+  },
+  {
+    "file_path": "src/phids/api/routers/telemetry/chartjs.py",
+    "line_number": 40,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore'"
+  },
+  {
+    "file_path": "src/phids/api/routers/telemetry/chartjs.py",
+    "line_number": 69,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore'"
+  },
+  {
+    "file_path": "src/phids/api/routers/telemetry/chartjs.py",
+    "line_number": 236,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore'"
+  },
+  {
+    "file_path": "src/phids/api/routers/telemetry/exports.py",
+    "line_number": 218,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'export_telemetry_format' arity 13 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/telemetry/html.py",
+    "line_number": 25,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'telemetry_table_preview' arity 6 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/routers/ui/database.py",
+    "line_number": 15,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: TC001'"
+  },
+  {
+    "file_path": "src/phids/api/services/draft/placements.py",
+    "line_number": 23,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'add_plant_placement' arity 5 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/services/draft/placements.py",
+    "line_number": 42,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'add_swarm_placement' arity 6 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/api/services/draft/trigger_rules/core.py",
+    "line_number": 25,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'add_trigger_rule' arity 13 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/batch/orchestrator.py",
+    "line_number": 67,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'execute_batch' arity 7 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/core/ecs.py",
+    "line_number": 49,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore[return-value]'"
+  },
+  {
+    "file_path": "src/phids/engine/core/ecs.py",
+    "line_number": 285,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'move_entity' arity 5 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/core/flow/solvers.py",
+    "line_number": 356,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'compute_flow_field' arity 12 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/loop.py",
+    "line_number": 228,
+    "rule_id": "NI-06-REFLECTION",
+    "message": "Dynamic reflection 'hasattr' prohibited in engine. Use typed fields or protocols."
+  },
+  {
+    "file_path": "src/phids/engine/spawner.py",
+    "line_number": 35,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'spawn_initial_entities' arity 5 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/systems/interaction/__init__.py",
+    "line_number": 204,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: ARG001'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/interaction/__init__.py",
+    "line_number": 198,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'run_interaction' arity 15 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/systems/lifecycle/__init__.py",
+    "line_number": 123,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'run_lifecycle' arity 9 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/systems/lifecycle/growth.py",
+    "line_number": 20,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/lifecycle/growth.py",
+    "line_number": 31,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/lifecycle/growth.py",
+    "line_number": 37,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/lifecycle/growth.py",
+    "line_number": 63,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/signaling/__init__.py",
+    "line_number": 56,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: ARG001'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/signaling/__init__.py",
+    "line_number": 50,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'run_signaling' arity 9 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/systems/signaling/emission.py",
+    "line_number": 27,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# noqa: ARG001'"
+  },
+  {
+    "file_path": "src/phids/engine/systems/signaling/spatial.py",
+    "line_number": 67,
+    "rule_id": "NI-06-OOP",
+    "message": "Stateful class 'SwarmPopulationIndex' with methods ['get'] in engine systems"
+  },
+  {
+    "file_path": "src/phids/engine/systems/signaling/spatial.py",
+    "line_number": 208,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'toroidal_distance' arity 6 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/engine/systems/signaling/triggers.py",
+    "line_number": 379,
+    "rule_id": "NI-06-REFLECTION",
+    "message": "Dynamic reflection 'getattr' prohibited in engine. Use typed fields or protocols."
+  },
+  {
+    "file_path": "src/phids/mcp/tools_telemetry.py",
+    "line_number": 34,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover'"
+  },
+  {
+    "file_path": "src/phids/mcp/tools_telemetry.py",
+    "line_number": 55,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover'"
+  },
+  {
+    "file_path": "src/phids/mcp/tools_telemetry.py",
+    "line_number": 134,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# type: ignore[arg-type]'"
+  },
+  {
+    "file_path": "src/phids/mcp/tools_telemetry.py",
+    "line_number": 288,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'export_telemetry_data' arity 13 exceeds threshold 4"
+  },
+  {
+    "file_path": "src/phids/shared/logging_config.py",
+    "line_number": 57,
+    "rule_id": "NI-01-BYPASS",
+    "message": "Bypass comment: '# pragma: no cover - logging must never fail app code'"
+  },
+  {
+    "file_path": "src/phids/telemetry/conditions.py",
+    "line_number": 162,
+    "rule_id": "NI-06-ARITY",
+    "message": "Public function 'check_termination' arity 10 exceeds threshold 4"
+  }
+]

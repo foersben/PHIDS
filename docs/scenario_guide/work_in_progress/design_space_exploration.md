@@ -90,25 +90,25 @@ flowchart TD
     S21["Stage 2.1: Structural Carbon (MILP)"]
     S22["Stage 2.2: Trophic Interaction Matrix (Graph)"]
     S23["Stage 2.3: Chemical Defense Kinetics (MINLP)"]
-    
+
     G --> S21
     G --> S22
     G --> S23
-    
+
     P1["Sub-Pareto Front"]
     P2["Sub-Pareto Front"]
     P3["Sub-Pareto Front"]
-    
+
     S21 --> P1
     S22 --> P2
     S23 --> P3
-    
+
     Prop["Pareto-Front Propagation"]
-    
+
     P1 --> Prop
     P2 --> Prop
     P3 --> Prop
-    
+
     class S21 milp
     class S22 graphstyle
     class S23 minlp
@@ -640,7 +640,7 @@ While single-objective and multi-stage EEDSE locate robust equilibrium parameter
 ```mermaid
 flowchart LR
     Flora_Pop["Flora Population<br><i>Defense Investment Strategy</i>"] <-->|Coevolutionary Feedback| Herbivore_Pop["Herbivore Population<br><i>Neutralization Strategy</i>"]
-    
+
     SubGraph_Ray["Ray / Tune Distributed Cluster<br><i>Parallel Multi-Scenario Execution</i>"] --> Pareto["Pareto Optimal Front<br><i>Evolutionary Stable Strategies (ESS)</i>"]
 ```
 

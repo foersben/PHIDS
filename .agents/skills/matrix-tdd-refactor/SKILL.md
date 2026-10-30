@@ -1,21 +1,28 @@
 ---
-type: Agent Workflow
+name: matrix-tdd-refactor
+type: Agent Skill
 title: Matrix-Driven TDD Refactoring
 status: stable
 stale_after: "2027-01-01T00:00:00Z"
 version: 1.0
-description: Coordinated pipeline for translating conceptual behavior to
-  Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba
-  kernels, and verified audits.
+description: Coordinated pipeline for translating conceptual behavior to Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba kernels, and verified audits.
 tags: [workflow, data-flow-matrix, tdd, refactoring]
-generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
-verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+generated: {by: process:agent-os-refactor, at: "2026-10-30T00:00:00Z"}
+verified: {by: process:agent-os-refactor, at: "2026-10-30T00:00:00Z"}
 sources:
 - id: okf_data_flow_matrices
   resource: docs/development_guide/okf_data_flow_matrices.md
 ---
 
-# Sequence
+# Matrix-Driven TDD Refactoring
+
+Coordinated pipeline for translating conceptual behavior to Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba kernels, and verified audits.
+
+## Trigger
+
+Run via `/matrix-tdd-refactor` when refactoring or introducing behavioral cascades governed by Rule 05 invariants.
+
+## Sequence
 
 1. **Specification (`@scientific-architect` & `@docs-librarian`):** Read target theory and source code. Construct the Data-Flow Matrix Table (Ticks $t_0 \dots t_n$, NumPy array columns, branchless float masks). Save under `## Data-Flow Matrix Specifications` in the target doc. *Pause for human review and approval.*
 2. **Pytest Trace Gate (`@qa-automator` & `@matrix-auditor`):** Translate the Data-Flow Matrix Table into a time-series trace test in `tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`. Run Pytest and confirm the tests fail (TDD gate).

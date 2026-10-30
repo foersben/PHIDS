@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from scripts.validate_okf import (
+from scripts.governance.validate_okf import (
     OKFAuditStats,
     auto_fix_timestamps,
     validate_concept_document,

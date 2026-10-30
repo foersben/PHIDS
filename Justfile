@@ -61,22 +61,37 @@ test-matrix:
 # Audit scientific model docs for Data-Flow Matrix coverage and bilateral links
 [group("data-flow-matrix")]
 audit-matrix:
-    uv run python scripts/audit_matrix_coverage.py
+    uv run python scripts/governance/audit_matrix_coverage.py
 
 # Verify 1:1 point-by-point numerical parity between doc tables and runtime traces
 [group("data-flow-matrix")]
 verify-matrix:
-    uv run python scripts/verify_matrix_trace_parity.py --all
+    uv run python scripts/governance/verify_matrix_trace_parity.py --all
 
 # Generate interactive OKF knowledge graph visualization (docs/viz.html)
 [group("data-flow-matrix")]
 visualize-okf:
-    uv run python scripts/visualize_okf.py
+    uv run python scripts/governance/visualize_okf.py
 
 # Validate Open Knowledge Format (OKF v0.2) frontmatter, paths, and freshness across docs
 [group("data-flow-matrix")]
 validate-okf:
-    uv run python scripts/validate_okf.py
+    uv run python scripts/governance/validate_okf.py
+
+# Run full 9-gate quality and invariant attestation seal
+[group("quality")]
+attest:
+    uv run python .agents/verifiers/attest_seal.py
+
+# Enforce Rule 04 Markdown syntax and formatting
+[group("quality")]
+lint-markdown:
+    uv run python scripts/governance/verify_markdown_rules.py
+
+# Enforce Rule 04 Markdown syntax and automatically fix issues
+[group("quality")]
+fix-markdown:
+    uv run python scripts/governance/verify_markdown_rules.py --fix
 
 # Run Ruff linter (--fix), Ruff formatter, and strict Mypy type validation
 [group("quality")]
@@ -134,7 +149,7 @@ benchmark:
 [doc("Compare simulation performance between two git refs or scenarios.\nUsage: just bench-compare <ref1> <ref2> <scenario_or_dir> [ticks='100'] [repeats='2'] [warmup='10'] [extra_args='']\nExample: just bench-compare main develop scenarios/ 100 2")]
 [group("benchmarks")]
 bench-compare ref1 ref2 scenario_or_dir ticks="100" repeats="2" warmup="10" extra_args="":
-    uv run python scripts/run_sim_benchmark.py --compare {{ ref1 }} {{ ref2 }} {{ scenario_or_dir }} {{ ticks }} --repeats {{ repeats }} --warmup {{ warmup }} {{ extra_args }}
+    uv run python scripts/simulation/run_sim_benchmark.py --compare {{ ref1 }} {{ ref2 }} {{ scenario_or_dir }} {{ ticks }} --repeats {{ repeats }} --warmup {{ warmup }} {{ extra_args }}
 
 [doc("Compare JIT-only simulation benchmark performance between two git refs.\nUsage: just bench-compare-jit <ref1> <ref2> <scenario_or_dir> [ticks='100'] [repeats='2'] [warmup='10']")]
 [group("benchmarks")]

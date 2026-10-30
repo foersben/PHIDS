@@ -52,21 +52,35 @@ repos:
 
       - id: validate-okf
         name: Enforce Google Open Knowledge Format
-        entry: uv run python scripts/validate_okf.py
+        entry: uv run python scripts/governance/validate_okf.py
         language: system
         files: ^(docs/|\.agents/).*\.md$
         pass_filenames: true
 
+      - id: verify-markdown-rules
+        name: Enforce Markdown Rule 04 Formatting
+        entry: uv run python scripts/governance/verify_markdown_rules.py --fix
+        language: system
+        files: ^(docs/|\.agents/|README\.md|AGENTS\.md)
+        pass_filenames: false
+
+      - id: verify-code-invariants
+        name: Enforce AST and Lexical Code Invariants
+        entry: uv run python scripts/governance/verify_code_invariants.py
+        language: system
+        files: ^src/phids/
+        pass_filenames: false
+
       - id: audit-matrix-coverage
         name: Audit OKF Data-Flow Matrix Coverage
-        entry: uv run python scripts/audit_matrix_coverage.py
+        entry: uv run python scripts/governance/audit_matrix_coverage.py
         language: system
         pass_filenames: false
         always_run: true
 
       - id: verify-matrix-parity
         name: Verify OKF Data-Flow Matrix Parity
-        entry: uv run python scripts/verify_matrix_trace_parity.py --all
+        entry: uv run python scripts/governance/verify_matrix_trace_parity.py --all
         language: system
         pass_filenames: false
         always_run: true
@@ -74,7 +88,7 @@ repos:
 
       - id: nc-license-guard
         name: NC License Guard (no extended imports in core pipeline)
-        entry: uv run python scripts/check_no_extended_imports.py
+        entry: uv run python scripts/governance/check_no_extended_imports.py
         language: system
         pass_filenames: false
         always_run: true

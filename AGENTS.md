@@ -1,42 +1,38 @@
 # PHIDS Master Agent Router
 
-<!-- UNIVERSAL RULES: apply to all AI agents (Antigravity, Jules, Copilot, etc.) -->
+<!-- UNIVERSAL AGENT CONSTRAINTS -->
+* Toolchain: Execute all Python commands exclusively via `uv run` or `just`. Never bare `python`, `pip`, `uvx`, or `poetry`.
+* Commits: Workstation agents MUST GPG/SSH sign (`git commit -S`). Escalate on signature failure.
+* Architecture: ECS data-oriented. Components are contiguous NumPy arrays. Systems are pure functions. OOP inside engine core is banned.
+* JIT & SIMD: Hot paths use Numba `@njit`. Ban Python objects (`dict`, `list`, closures) and allocations in inner loops. Float masks (0.0/1.0) only.
+* Replay & Invariants: Simulation outcomes stream to Zarr replay buffers. Read from historical Zarr buffers for playback.
+* Cognitive Complexity: Ceiling <= 15 (`just complexity`).
 
-* All Python commands MUST use `uv run` or `just`. Never bare `python`, `pip`, `uvx`, or `poetry`.
-* Never run `act` in agent sandboxes; `act` is for local workstation Docker runs only.
-* Commit signing:
-  * **Local agents (Antigravity) & human developers:** Commits MUST be GPG/SSH signed (`git commit -S`). Stop and escalate if signing fails.
-  * **Cloud sandbox agents (Jules):** Creates PR feature branches without `-S`. Commits are signed upon PR merge via GitHub Web-Flow.
-* Pre-commit gates (run before ANY commit to `engine/` or `api/schemas/`):
-
+## Mandatory Pre-Commit Gates
+Run before any commit to `src/phids/engine/` or `src/phids/api/schemas/`:
 ```bash
-uv run python scripts/audit_matrix_coverage.py
-uv run python scripts/verify_matrix_trace_parity.py --all
+uv run python scripts/governance/audit_matrix_coverage.py
+uv run python scripts/governance/verify_matrix_trace_parity.py --all
 uv run ruff check src/ && uv run mypy src/phids
 ```
 
-<!-- JULES-SPECIFIC: session routing and token guardrail instructions.
-     Antigravity IDE: these sections are Jules session-management metadata.
-     They do not override or contradict .agents/AGENTS.md. -->
+## Fast Module & Test Routing Map
+| Domain | Path Scope | Primary Rule | Key Tests / Commands |
+| :--- | :--- | :--- | :--- |
+| **Engine Core & JIT** | `src/phids/engine/core/` | `02-numba-constraints.md` | `just test-parity`, `just test-replay` |
+| **ECS Systems** | `src/phids/engine/systems/` | `05-data-flow-invariants.md`, `07-hardware-and-simd-invariants.md` | `just test-matrix` |
+| **API & Schemas** | `src/phids/api/` | `06-clean-code-and-antipatterns.md` | `uv run pytest tests/unit/api/` |
+| **Telemetry & Zarr** | `src/phids/telemetry/` | `01-stochastic-engine-and-replay.md` | `uv run pytest tests/unit/telemetry/` |
+| **Documentation** | `docs/` | `04-markdown-formatting.md` | `just validate-okf` |
 
-## Jules: Mandatory First Step
-
-Open `.agents/index.md` and follow its decision matrix before touching any file.
-Stop loading additional files once you have a role assignment.
-
-## Jules: Hard Routing Rules
-
-1. **Route first.** Read `.agents/index.md` decision matrix before any action.
-2. **Path-scoped roles.** Load only the role file for the paths you are modifying.
-   Domain-specific rules auto-load from sub-directory AGENTS.md files:
-   `src/phids/engine/AGENTS.md`, `src/phids/api/AGENTS.md`, `docs/AGENTS.md`.
-3. **Commit protocol.** Push PR feature branch directly without `git commit -S`.
-4. **Restricted directories.** Do NOT open `.agents/memory/` or `.agents/manifesto/`
-   unless the user prompt uses the words `historical`, `manifesto`, or `canon`.
-5. **Do NOT crawl `.agents/` blindly** or pre-load all role files.
-
-## Agent Resources & Capability Manifest
-
-* **Skills Directory:** Programmatic verification skills reside in `.agents/skills/` (`validate-okf`, `run-benchmarks`, `audit-okf-matrix-coverage`, `verify-matrix-trace-parity`, `auto-reconcile-matrix-drift`, `analyze-zarr`, `visualize-okf`).
-* **Jules Prompt Templates:** Standardized canned prompts for autonomous background personas (`Chisel`, `Bolt`, `Canon`, `Complexity`, `Sentinel`, `Vigil`) are defined in `.agents/PROMPT_TEMPLATE.md`.
-* **Task Offloading:** Antigravity agents should evaluate whether broad or token-intensive tasks (complexity refactors, multi-scenario JIT benchmarks, mutation testing) should be offloaded to cloud Jules agents to conserve workstation context tokens.
+## On-Demand Skills & Slash Commands
+Detailed runbooks reside in `.agents/skills/<name>/SKILL.md`:
+* `/epistemic-soundness-audit`: 10-slice relational review of biological & HPC invariants.
+* `/matrix-tdd-refactor`: Coordinated Data-Flow Matrix TDD pipeline.
+* `/validate-full-stack`: Full-stack pre-commit, trace parity, and Zensical build gate.
+* `/implement-scientific-model`: Adding ecological behaviors to ECS arrays.
+* `/auto-reconcile-matrix-drift`: Automatic capture and update of drifted Data-Flow Matrix tables.
+* `/vertical-slice-development`: Building full-stack simulation features across layers.
+* `/ecs-refactor-pipeline`: Safe refactoring of cold-path modules without hot-path regressions.
+* `/delegation-protocol`: Structured escalation checklist for human confirmation gates.
+* `/doc-synchronization-pipeline`: Synchronization of workspace READMEs and docs.

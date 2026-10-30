@@ -20,8 +20,8 @@ The overall epistemic integrity of the PHIDS simulation engine is extremely stro
 
 The automated diagnostic scan (`scripts/audit_epistemic_integrity.py --all`) successfully traversed the engine and isolated only **one (1)** informational finding under Slice 9 (Empirical Data Pipeline & Allometric Scaling).
 
-### 🟢 Slices 1–8: Clean
-Slices 1 through 8—covering Spatiotemporal Anchoring, Continuous Transport PDEs, Autotrophic/Heterotrophic Kinematics, Loop Orchestration, and Data-Flow Matrices—are mathematically and biologically sound. 
+### 🟢 Slices 1-8: Clean
+Slices 1 through 8-covering Spatiotemporal Anchoring, Continuous Transport PDEs, Autotrophic/Heterotrophic Kinematics, Loop Orchestration, and Data-Flow Matrices-are mathematically and biologically sound.
 * Branchless SIMD floating-point conversions (`delta * alive_mask`) are correctly implemented.
 * The 100% Data-Flow Matrix parity guarantee prevents documentation drift.
 * ECS Double-buffering immutability boundaries are fully intact.

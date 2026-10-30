@@ -1,12 +1,18 @@
 ---
 type: Agent Rule
 trigger: always_on
-description: Stochastic engine and telemetry replay mandates
+description: Stochastic engine, PRNG seed streams, and telemetry replay invariants.
 ---
 
-# Mandates
+# Stochastic Engine & Replay Invariants
 
-- **Telemetry Replay:** Record all tick outcomes (deterministic & stochastic) tick-by-tick into Zarr replay buffers.
-- **Bypass Engine:** Playback must read historical Zarr matrices directly, bypassing all engine loop logic.
-- **Immutable Tick:** Enforce double-buffering. Read states are immutable during ticks; write all outcomes (including random ones) to the `_write` layer.
-- **Controlled RNG:** Seed PRNGs per Biotope region or Swarm component for reproducible debugging.
+Mandates governing reproducibility, PRNG streams, and bit-exact replay in the PHIDS simulation engine.
+
+## Core Mandates
+
+* **PRNG Streams:** All stochastic sampling must derive from explicit `numpy.random.Generator` instances (PCG64 bit generator). Global `numpy.random.*` or bare `random.*` calls are strictly banned.
+* **Deterministic Seeding:** Seeds must be deterministically partitioned per Biotope coordinate tile or Swarm component slice. Given the same scenario definition and master seed, tick trajectories must be bit-identical across runs.
+* **Zarr Replay Buffering:** Every simulation evaluation (deterministic kinetics and stochastic outcomes alike) must serialize tick-by-tick into Zarr replay buffers (`/replay/{scenario_id}/{seed}/tick_{N}`).
+* **Engine-Bypassing Playback:** Replay inspection and frontend trajectory scrubbing must query historical Zarr arrays directly, strictly bypassing all engine calculation and loop logic.
+* **Double-Buffering Immutability:** Engine components read strictly from current layer arrays and write exclusively to `_write` layers. Read buffers remain immutable throughout the tick phase.
+* **State Hash Invariance:** Key invariant tests must compute state hashes (BLAKE3/SHA-256 over contiguous component buffers) at defined checkpoint intervals to assert bit-level reproducibility.

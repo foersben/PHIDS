@@ -29,7 +29,7 @@ While Numba `@njit` JIT loops achieve sub-millisecond execution times for 2D gri
 ```mermaid
 flowchart TD
     CPU_Loop["Numba CPU Loop<br><i>2D/3D Stencil Iteration</i>"] -->|Memory Bandwidth Cap| CPU_Stall["CPU Cache Misses<br><i>Grid Sizes > 1024x1024</i>"]
-    
+
     GPU_Offload["GPU CUDA Engine<br><i>PyTorch Tensor Parallelism</i>"] -->|Zero Copy Zero Latency| GPU_Speed["Massive Grid Execution<br><i>< 0.20 ms/tick @ 4096x4096</i>"]
 ```
 

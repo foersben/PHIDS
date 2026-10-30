@@ -252,13 +252,13 @@ When processed through rigorous taxonomic alignment, K-Nearest Neighbors imputat
 
 ## Phase 6: Database Versioning and Hugging Face Hub Integration
 
-While the simulation engine consumes the compiled `bio_database.json` payload, the continuous evolution of the empirical data pipeline necessitates a robust, programmatic versioning strategy. Distributing raw biological datasets alongside the engine source code in the primary Git repository severely inflates repository size and mixes structural code with volatile data. 
+While the simulation engine consumes the compiled `bio_database.json` payload, the continuous evolution of the empirical data pipeline necessitates a robust, programmatic versioning strategy. Distributing raw biological datasets alongside the engine source code in the primary Git repository severely inflates repository size and mixes structural code with volatile data.
 
 To resolve this, the pipeline leverages the **Hugging Face Hub** as the primary storage and versioning backend for the compiled biological artifacts.
 
 ### Dataset Versioning Strategy via Git Infrastructure
 
-Hugging Face datasets are inherently backed by Git infrastructure, meaning they natively support branching, tagging, and commit-based versioning. 
+Hugging Face datasets are inherently backed by Git infrastructure, meaning they natively support branching, tagging, and commit-based versioning.
 
 * When the ETL pipeline executes and generates a mutated `bio_database.json`, the artifact is programmatically pushed to the Hugging Face Hub and tagged with a semantic version (e.g., `v1.2.0`).
 * Within the PHIDS application architecture, the `huggingface_hub` Python client can utilize the `revision` parameter to fetch a precise, immutable version of the database. This guarantees absolute reproducibility for EEDSE experiments; researchers can pin their simulations to a specific commit hash of the biological data, ensuring that future updates to the underlying trait databases do not retroactively invalidate their discovered Lotka-Volterra equilibria.
@@ -314,7 +314,7 @@ jobs:
     permissions:
       id-token: write # CRITICAL: Required for OIDC JWT authentication
       contents: read
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

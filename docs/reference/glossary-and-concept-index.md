@@ -142,10 +142,10 @@ The core biological modeling pattern introduced in Plan 1 of the architectural r
 entity in the ECS spatial hash is defined by exactly two contiguous, branchless float arrays rather
 than a single energy scalar:
 
-- **`E_current` (Energetic Health, `float64`)** - short-term, volatile caloric storage (leaves,
+* **`E_current` (Energetic Health, `float64`)** - short-term, volatile caloric storage (leaves,
   accessible sugars, phloem). Increases through photosynthesis; decreases from grazing and
   mycorrhizal taxes. Used for starvation and death decisions.
-- **`M_structural` (Structural Mass, `float32`)** - long-term, permanent physical growth (lignin,
+* **`M_structural` (Structural Mass, `float32`)** - long-term, permanent physical growth (lignin,
   woodiness, deep roots). Monotonically non-decreasing; never reduced by herbivory. Used for
   trampling vulnerability and morphological defense calculations.
 
@@ -430,7 +430,7 @@ See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical
 
 ### Surplus Energy
 
-The energy a swarm holds above its `baseline_energy` (`energy − population × energy_min`). Only
+The energy a swarm holds above its `baseline_energy` (`energy - population × energy_min`). Only
 surplus energy is convertible into new individuals during the interaction phase's reproduction step.
 
 See: [`engine/interaction.md`](../scientific_model/part_1_foundations/mathematical_framework.md), [Baseline Energy](#baseline-energy)
@@ -526,7 +526,7 @@ See: [`engine/signaling.md`](../scientific_model/part_1_foundations/mathematical
 
 ### WebSocket Streams
 
-- `/ws/ui/stream` - emits JSON biotope grid snapshots and diagnostic updates directly for HTML5 `<canvas>` rendering in the browser control center.
+* `/ws/ui/stream` - emits JSON biotope grid snapshots and diagnostic updates directly for HTML5 `<canvas>` rendering in the browser control center.
 
 See: [`interfaces/rest-and-websocket-surfaces.md`](../technical_architecture/interfaces_and_ui.md)
 

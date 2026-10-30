@@ -1,9 +1,25 @@
 ---
-type: Agent Workflow
-description: Coordinated pipeline for building full-stack simulation features.
+name: vertical-slice-development
+type: Agent Skill
+title: Vertical Slice Development
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
+description: Coordinated pipeline for building full-stack simulation features spanning models, ECS, telemetry, and UI.
+tags: [vertical-slice, ecs, full-stack, pipeline]
+generated: {by: process:agent-os-refactor, at: "2026-10-30T00:00:00Z"}
+verified: {by: process:agent-os-refactor, at: "2026-10-30T00:00:00Z"}
 ---
 
-# Sequence
+# Vertical Slice Development
+
+Coordinated pipeline for building full-stack simulation features.
+
+## Trigger
+
+Run via `/vertical-slice-development` when creating an end-to-end feature integrating scientific kinetics, ECS arrays, Zarr telemetry, and HTMX UI views.
+
+## Sequence
 
 1. **Theory (Scientific Architect):** Define mathematical decay/interactions, substance parameters, and biotope array structures.
 2. **Core (Engine Developer):** Implement JIT-compiled `@njit` ECS systems. Enforce double-buffering (`_write` layer) and array capacities.

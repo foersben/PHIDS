@@ -58,22 +58,22 @@ sequenceDiagram
     participant E as ECS Systems
     participant R as Read Buffer (State_t)
     participant W as Write Buffer (State_t+1)
-    
+
     Note over E,W: Tick Execution Begins
-    
+
     E->>R: Read Flora Energy at (x, y)
     R-->>E: Return 45.0 Joules
-    
+
     E->>R: Read Swarm Population at (x, y)
     R-->>E: Return 12 Entities
-    
+
     Note over E: Compute Local<br/>Interaction Kinetics
-    
+
     E->>W: Write Updated Energy: 38.0
     E->>W: Write Updated Population: 13
-    
+
     Note over E,W: Tick Finalization
-    
+
     W->>R: Swap Pointers (Commit State)
     Note over R: State_t now holds new values
 ```
@@ -183,7 +183,7 @@ flowchart TD
         LC["LifecycleSystem (lifecycle/)"]
         INT["InteractionSystem (interaction.py)"]
         SIG["SignalingSystem (signaling.py)"]
-        
+
         LC --> INT --> SIG
     end
 
@@ -202,13 +202,13 @@ flowchart TD
     %% Straight Vertical Pipeline Flows
     A1 & A2 & A3 & A4 & A5 --> Component_Registry
     Component_Registry -->|Bootstrap Allocation| L
-    
+
     L --> BIO & ECS & FF
     BIO & ECS & FF --> LC
-    
+
     SIG -->|Double-Buffered Write Back| BIO
     SIG --> AN
-    
+
     AN --> COND --> REP --> A6
 
     %% Style Assignments
@@ -237,6 +237,6 @@ The Signaling System reads from the active `read_buffer` and writes chemical con
 
 ## Numba JIT Array Access
 
-Spatial arrays rely on native 2D NumPy float arrays (e.g., `layer[x, y]`) inside Numba `@njit(parallel=True)` pre-compiled kernels. 
+Spatial arrays rely on native 2D NumPy float arrays (e.g., `layer[x, y]`) inside Numba `@njit(parallel=True)` pre-compiled kernels.
 
 Rather than relying on abstract multi-dimensional indices or object-oriented coordinate classes, the engine evaluates ecological phenomena-like flow-field diffusion and reaction kinetics-using explicit, parallelized `prange` loops over these pre-allocated 2D matrices. This ensures optimal memory access patterns and L1/L3 cache coherence across the double-buffered layers without the massive allocation overhead of creating intermediate objects per grid cell.

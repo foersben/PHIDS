@@ -63,14 +63,14 @@ flowchart TD
     classDef result fill:#064E3B, stroke:#10B981, stroke-width:2px, color:#F8FAFC, rx:8px, ry:8px
 
     A["<b>Swarm Location (x, y)</b><br/>Tick t"]:::base --> B
-    
+
     B{"<b>Gradient Exists?</b><br/>max - min > 1e-6"}:::decision
-    
+
     B -- Yes --> C["<b>Extract Neighborhood</b><br/>N, S, E, W, Center"]:::process
     C --> D["<b>Normalize & Weight</b><br/>Apply epsilon"]:::process
     D --> E["<b>Stochastic Draw</b><br/>Probability proportional to weight"]:::process
     E --> F["<b>Transition Target</b><br/>(x', y')"]:::result
-    
+
     B -- No --> G["<b>Zero-Gradient State</b>"]:::process
     G --> H{"<b>Has Momentum?</b>"}:::decision
     H -- Yes --> I["<b>Orthokinesis</b><br/>Weight previous heading"]:::process

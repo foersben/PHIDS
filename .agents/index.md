@@ -8,37 +8,37 @@
 
 ## Quick-Route: Identify Your Task Type
 
-| If you are modifying... | Adopt role | Matrix gate? | Sub-AGENTS.md auto-loads? |
+| If you are modifying... | Adopt role | Matrix gate? | Primary Behavioral Rule |
 | --- | --- | --- | --- |
-| `src/phids/engine/systems/` or `engine/core/` | `03-engine-developer` | YES | `src/phids/engine/AGENTS.md` |
-| `src/phids/api/schemas/` or `api/services/` | `02-scientific-architect` | YES | `src/phids/api/AGENTS.md` |
-| `src/phids/api/routers/` or `api/presenters/` or `templates/` | `07-api-and-ui-developer` | NO | `src/phids/api/AGENTS.md` |
-| `tests/` | `04-qa-automator` | YES (matrix tests) | - |
-| `docs/` | `05-docs-librarian` | NO | `docs/AGENTS.md` |
-| `.agents/` | `05-docs-librarian` | NO | - |
-| `scripts/` | `04-qa-automator` | NO | - |
-| `.github/` or `pyproject.toml` | `06-git-operator` | NO | - |
-| Cross-cutting / planning | `01-orchestrator` | DEPENDS | - |
-| Zarr / Polars / telemetry | `08-telemetry-and-data-engineer` | NO | - |
-| Matrix coverage audit | `09-matrix-auditor` | YES | - |
-| Branchless mask verification | `10-causal-verifier` | YES | - |
+| `src/phids/engine/systems/` or `engine/core/` | `03-engine-developer` | YES | `rules/02-numba-constraints.md` |
+| `src/phids/api/schemas/` or `api/services/` | `02-scientific-architect` | YES | `rules/05-data-flow-invariants.md` |
+| `src/phids/api/routers/` or `api/presenters/` or `templates/` | `07-api-and-ui-developer` | NO | `rules/06-clean-code-and-antipatterns.md` |
+| `tests/` | `04-qa-automator` | YES (matrix tests) | `rules/05-data-flow-invariants.md` |
+| `docs/` | `05-docs-librarian` | NO | `rules/04-markdown-formatting.md` |
+| `.agents/` | `05-docs-librarian` | NO | `rules/04-markdown-formatting.md` |
+| `scripts/` | `04-qa-automator` | NO | `rules/00-python-modernization.md` |
+| `.github/` or `pyproject.toml` | `06-git-operator` | NO | `rules/03-git-security-and-signing.md` |
+| Cross-cutting / planning | `01-orchestrator` | DEPENDS | `rules/00-python-modernization.md` |
+| Zarr / Polars / telemetry | `08-telemetry-and-data-engineer` | NO | `rules/01-stochastic-engine-and-replay.md` |
+| Matrix coverage audit | `09-matrix-auditor` | YES | `rules/05-data-flow-invariants.md` |
+| Branchless mask verification | `10-causal-verifier` | YES | `rules/07-hardware-and-simd-invariants.md` |
 
 ---
 
-## Workflow Dispatch
+## Workflow & Skill Dispatch
 
-| Slash Command | Workflow File | Pre-load roles |
+| Slash Command | Skill / Workflow File | Pre-load roles |
 | --- | --- | --- |
-| `/epistemic-soundness-audit` | [epistemic-soundness-audit.md](workflows/epistemic-soundness-audit.md) | `02`, `09`, `10` |
-| `/matrix-tdd-refactor` | [matrix-tdd-refactor.md](workflows/matrix-tdd-refactor.md) | `03`, `04`, `09` |
-| `/validate-full-stack` | [validate-full-stack.md](workflows/validate-full-stack.md) | all |
-| `/implement-scientific-model` | [implement-scientific-model.md](workflows/implement-scientific-model.md) | `02`, `03` |
-| `/matrix-drift-reconciliation` | [matrix-drift-reconciliation.md](workflows/matrix-drift-reconciliation.md) | `09`, `10` |
-| `/vertical-slice-development` | [vertical-slice-development.md](workflows/vertical-slice-development.md) | `01` + all |
-| `/delegation-protocol` | [delegation-protocol.md](workflows/delegation-protocol.md) | `01` |
-| `/ecs-refactor-pipeline` | [ecs-refactor-pipeline.md](workflows/ecs-refactor-pipeline.md) | `03`, `04` |
+| `/epistemic-soundness-audit` | [epistemic-soundness-audit](skills/epistemic-soundness-audit/SKILL.md) | `02`, `09`, `10` |
+| `/matrix-tdd-refactor` | [matrix-tdd-refactor](skills/matrix-tdd-refactor/SKILL.md) | `03`, `04`, `09` |
+| `/validate-full-stack` | [validate-full-stack](skills/validate-full-stack/SKILL.md) | all |
+| `/implement-scientific-model` | [implement-scientific-model](skills/implement-scientific-model/SKILL.md) | `02`, `03` |
+| `/auto-reconcile-matrix-drift` | [auto-reconcile-matrix-drift](skills/auto-reconcile-matrix-drift/SKILL.md) | `09`, `10` |
+| `/vertical-slice-development` | [vertical-slice-development](skills/vertical-slice-development/SKILL.md) | `01` + all |
+| `/delegation-protocol` | [delegation-protocol](skills/delegation-protocol/SKILL.md) | `01` |
+| `/ecs-refactor-pipeline` | [ecs-refactor-pipeline](skills/ecs-refactor-pipeline/SKILL.md) | `03`, `04` |
 | `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` |
-| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline.md](workflows/doc-synchronization-pipeline.md) | `01`, `05`, `09`, `10` |
+| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline](skills/doc-synchronization-pipeline/SKILL.md) | `01`, `05`, `09`, `10` |
 
 ---
 
@@ -123,15 +123,18 @@ This directory houses the autonomous agent architecture, role specializations, h
 
 ---
 
-## Operational Workflows
+## Operational Skills & Workflows
 
-* [Delegation Protocol](workflows/delegation-protocol.md) - Step-by-step checklist for human escalation when autonomous agents encounter structural barriers.
-* [Implement Scientific Model](workflows/implement-scientific-model.md) - Formal pipeline for introducing new biological mechanisms from ODEs/PDEs to SIMD ECS kernels.
-* [Matrix Drift Reconciliation](workflows/matrix-drift-reconciliation.md) - Automated detection and updating of Data-Flow Matrices when engine kinetics intentionally drift.
-* [Matrix TDD Refactor](workflows/matrix-tdd-refactor.md) - Test-driven development loop translating matrix tables into Pytest traces and JIT kernels.
-* [Validate Full-Stack Integrity](workflows/validate-full-stack.md) - Coordinated full-stack verification pipeline covering OKF, matrix coverage, parity, and Zensical builds.
-* [Vertical Slice Development](workflows/vertical-slice-development.md) - End-to-end coordinated pipeline for building full-stack simulation features across all layers.
-* [Documentation & README Synchronization Pipeline](workflows/doc-synchronization-pipeline.md) - Multi-phase audit and synchronization pipeline for detecting, triaging, and updating workspace READMEs and Zensical documentation across code changes, with an optional triple-parallel Jules cloud dispatch.
+* [Delegation Protocol](skills/delegation-protocol/SKILL.md) - Step-by-step checklist for human escalation when autonomous agents encounter structural barriers.
+* [Implement Scientific Model](skills/implement-scientific-model/SKILL.md) - Formal pipeline for introducing new biological mechanisms from ODEs/PDEs to SIMD ECS kernels.
+* [Auto Reconcile Matrix Drift](skills/auto-reconcile-matrix-drift/SKILL.md) - Automated detection and updating of Data-Flow Matrices when engine kinetics intentionally drift.
+* [Matrix TDD Refactor](skills/matrix-tdd-refactor/SKILL.md) - Test-driven development loop translating matrix tables into Pytest traces and JIT kernels.
+* [Validate Full-Stack Integrity](skills/validate-full-stack/SKILL.md) - Coordinated full-stack verification pipeline covering OKF, matrix coverage, parity, and Zensical builds.
+* [Vertical Slice Development](skills/vertical-slice-development/SKILL.md) - End-to-end coordinated pipeline for building full-stack simulation features across all layers.
+* [Documentation & README Synchronization Pipeline](skills/doc-synchronization-pipeline/SKILL.md) - Multi-phase audit and synchronization pipeline for detecting, triaging, and updating workspace READMEs and Zensical documentation across code changes.
+* [ECS Code-Smell Refactoring Pipeline](skills/ecs-refactor-pipeline/SKILL.md) - Autonomous, performance-safe workflow for eliminating code smells from cold-path modules while respecting DOD/JIT constraints.
+* [Epistemic Soundness Audit](skills/epistemic-soundness-audit/SKILL.md) - 10-slice relational audit workflow verifying biological fidelity, mathematical rigor, and computational constraints.
+* [Jules Session Triage](workflows/jules-session-triage.md) - Autonomous protocol for evaluating and unblocking Jules sessions (retained for lifecycle phase-out).
 
 ---
 

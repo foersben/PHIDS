@@ -1,28 +1,5 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 Benjamin Förster
 # SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
-#
-# Diagnostic utility to identify oversized test modules (> 750 lines of code).
-# Helps maintain test suite modularity, isolation, and cognitive simplicity.
-#
-# Usage:
-#   ./scripts/find_large_tests.sh
-#   THRESHOLD=500 ./scripts/find_large_tests.sh
-
-set -euo pipefail
-
-THRESHOLD="${THRESHOLD:-750}"
-
-echo "=== Individual Test Files > $THRESHOLD LOC ==="
-find tests -type f \( -name "test_*.py" -o -name "*_test.py" \) -exec wc -l {} + \
-  | awk -v threshold="$THRESHOLD" '$1 > threshold && $2 != "total" {printf "%-6d %s\n", $1, $2}' \
-  | sort -nr
-
-echo ""
-echo "=== Test Subdirectories/Modules > $THRESHOLD LOC ==="
-find tests -mindepth 1 -type d | while read -r dir; do
-  total_loc=$(find "$dir" -maxdepth 1 -type f \( -name "test_*.py" -o -name "*_test.py" \) -exec wc -l {} + 2>/dev/null | awk 'END {print $1}')
-  if [ -n "$total_loc" ] && [ "$total_loc" -gt "$THRESHOLD" ]; then
-    printf "%-6d %s\n" "$total_loc" "$dir"
-  fi
-done | sort -nr
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$DIR/ci/find_large_tests.sh" "$@"

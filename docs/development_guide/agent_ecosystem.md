@@ -12,7 +12,7 @@ sources:
   - id: agents_routing
     resource: .agents/AGENTS.md
   - id: epistemic_workflow
-    resource: .agents/workflows/epistemic-soundness-audit.md
+    resource: .agents/skills/epistemic-soundness-audit/SKILL.md
 ---
 
 To manage documentation, testing, and lifecycle operations reproducibly, PHIDS integrates an explicit human-and-agent governance model based on the Model Context Protocol (MCP).
@@ -29,9 +29,9 @@ To keep implementation truth, documentation truth, and verification truth separa
 * **`test-ops`**: Triggers, evaluates, and resolves failures in the test suites, typing coverage, and benchmark outputs, isolating the smallest valid failing slice before pushing fixes upstream.
 * **`dse-log-observer`**: Asynchronous telemetry observer performing generational DSE journaling and high-precision systemic anomaly detection. See [Agentic Diagnostic Log Writer](../scenario_guide/future_prospects/agentic_log_writer.md).
 
-## Agent Workflows
+## Agent Skills & Workflows
 
-PHIDS coordinates multi-agent operations via formal workflows defined under `.agents/workflows/`:
+PHIDS coordinates multi-agent operations via formal skills defined under `.agents/skills/`:
 
 * **Full-Stack Validation (`/validate-full-stack`)**: Coordinates pre-commit quality gates, OKF compliance, matrix trace parity, and Zensical documentation builds.
 * **Epistemic Soundness & Computational Integrity Audit (`/epistemic-soundness-audit`)**: Multi-pass relational audit workflow verifying biological fidelity, mathematical rigor, and HPC/ECS computational constraints across documentation and runtime code.

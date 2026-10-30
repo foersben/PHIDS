@@ -275,8 +275,8 @@ Every multi-tick behavioral cascade, resource translocation, and temporal state 
    OKF frontmatter `sources:` for any scientific model doc containing a Data-Flow Matrix must explicitly declare both the underlying system file (e.g. `src/phids/engine/systems/signaling/emission.py`) and the corresponding trace test file (`tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`).
 4. **Continuous Agentic Synchronization Gate (Rule 05-D)**:
    Automated verification scripts enforce compliance in local development and CI:
-   * `scripts/audit_matrix_coverage.py`: Verifies that all dynamic concept documents contain valid matrix specifications and bilateral OKF links.
-   * `scripts/verify_matrix_trace_parity.py --all`: Extracts Markdown tables, runs canonical simulation traces, and asserts 1:1 point-by-point numerical parity.
+    * `scripts/audit_matrix_coverage.py`: Verifies that all dynamic concept documents contain valid matrix specifications and bilateral OKF links.
+    * `scripts/verify_matrix_trace_parity.py --all`: Extracts Markdown tables, runs canonical simulation traces, and asserts 1:1 point-by-point numerical parity.
 
 ### Verified Behavioral Cascades (11 Total)
 
@@ -309,64 +309,64 @@ $$\frac{\partial c(x,y,t)}{\partial t} + \vec{v}(x,y) \cdot \nabla c(x,y,t) = D 
 where $\vec{v}(x,y)$ is the wind velocity field, $D$ is the isotropic diffusion coefficient, and $\lambda$ is the chemical decay rate.
 
 1. **Non-Divergent Wind Mass Conservation ($\nabla \cdot \vec{v} = 0$):**
-   * **Mechanism:** Under a uniform wind field $\vec{v}(x,y) = (v_x, v_y)$, spatial velocity divergence is identically zero ($\nabla \cdot \vec{v} = 0$). In a continuous, closed toroidal domain, the total integrated chemical mass $M(t) = \iint_{\Omega} c(x,y,t) \,dx\,dy$ must be strictly conserved across advection steps.
-   * **Implementation & Tolerance:** Tested in [test_advection_mass_conservation.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py#L18-L46) using `_numba_advect_signal_layer`. Total floating-point mass before and after backward Semi-Lagrangian advection must match to machine precision ($\text{rtol} \le 1\times 10^{-5}$).
-   * **Divergent Wind Upper Bounds:** When wind vectors vary spatially ($\nabla \cdot \vec{v} \neq 0$), discrete backward interpolation introduces local numerical volume compression or expansion. We enforce a hard upper bound of $\le 2.0\%$ mass drift per step.
+    * **Mechanism:** Under a uniform wind field $\vec{v}(x,y) = (v_x, v_y)$, spatial velocity divergence is identically zero ($\nabla \cdot \vec{v} = 0$). In a continuous, closed toroidal domain, the total integrated chemical mass $M(t) = \iint_{\Omega} c(x,y,t) \,dx\,dy$ must be strictly conserved across advection steps.
+    * **Implementation & Tolerance:** Tested in [test_advection_mass_conservation.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/pde_conservation/test_advection_mass_conservation.py#L18-L46) using `_numba_advect_signal_layer`. Total floating-point mass before and after backward Semi-Lagrangian advection must match to machine precision ($\text{rtol} \le 1\times 10^{-5}$).
+    * **Divergent Wind Upper Bounds:** When wind vectors vary spatially ($\nabla \cdot \vec{v} \neq 0$), discrete backward interpolation introduces local numerical volume compression or expansion. We enforce a hard upper bound of $\le 2.0\%$ mass drift per step.
 
 2. **Positivity Invariant ($c(x,y,t) \ge 0.0$):**
-   * **Mechanism:** Chemical concentrations represent non-negative physical quantities (moles/$m^2$). Combined advection, Gaussian convolution, and decay must never produce negative concentrations anywhere on the grid ($c(x,y,t) \ge 0.0, \forall x,y,t$).
-   * **Implementation:** Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L17-L49).
+    * **Mechanism:** Chemical concentrations represent non-negative physical quantities (moles/$m^2$). Combined advection, Gaussian convolution, and decay must never produce negative concentrations anywhere on the grid ($c(x,y,t) \ge 0.0, \forall x,y,t$).
+    * **Implementation:** Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L17-L49).
 
 3. **Subnormal Float Clamping (`SIGNAL_EPSILON`):**
-   * **Mechanism:** As chemical signals decay exponentially, concentration values drop into IEEE 754 subnormal (denormalized) floating-point ranges ($< 10^{-308}$). On x86_64 CPUs, processing subnormal floats in Numba FPU pipelines triggers microcode fallbacks, causing a 10x-100x performance penalty.
-   * **Implementation:** `_numba_diffuse_signal_layer` explicitly zeroes out any concentration falling below `SIGNAL_EPSILON` ($1\times 10^{-4}$). Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L52-L80) to prove zero tail leakage.
+    * **Mechanism:** As chemical signals decay exponentially, concentration values drop into IEEE 754 subnormal (denormalized) floating-point ranges ($< 10^{-308}$). On x86_64 CPUs, processing subnormal floats in Numba FPU pipelines triggers microcode fallbacks, causing a 10x-100x performance penalty.
+    * **Implementation:** `_numba_diffuse_signal_layer` explicitly zeroes out any concentration falling below `SIGNAL_EPSILON` ($1\times 10^{-4}$). Tested in [test_chemical_positivity_and_clamping.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/pde_conservation/test_chemical_positivity_and_clamping.py#L52-L80) to prove zero tail leakage.
 
 #### Thermodynamic First Law & Non-Linear Kinetics
 
 1. **First Law of Thermodynamics Energy Balance:**
-   * **Mechanism:** In herbivory feeding interactions, energy extracted from a target plant ($\Delta E_{\text{plant\_consumed}}$) must equal the sum of net metabolized energy gained by the herbivore swarm ($\Delta E_{\text{herbivore}}$) and unassimilated digestive loss ($E_{\text{digestive\_loss}}$):
+    * **Mechanism:** In herbivory feeding interactions, energy extracted from a target plant ($\Delta E_{\text{plant\_consumed}}$) must equal the sum of net metabolized energy gained by the herbivore swarm ($\Delta E_{\text{herbivore}}$) and unassimilated digestive loss ($E_{\text{digestive\_loss}}$):
 
      $$\Delta E_{\text{herbivore}} + E_{\text{digestive\_loss}} = \Delta E_{\text{plant\_consumed}}$$
 
-   * **Implementation:** Tested in [test_feeding_first_law.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py#L18-L98) with digestibility modifiers ($0.8$) and digestive efficiency ($0.9$). Energy conservation is verified to $\text{rel\_tol} \le 1\times 10^{-6}$.
+    * **Implementation:** Tested in [test_feeding_first_law.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/thermodynamics/test_feeding_first_law.py#L18-L98) with digestibility modifiers ($0.8$) and digestive efficiency ($0.9$). Energy conservation is verified to $\text{rel\_tol} \le 1\times 10^{-6}$.
 
 2. **Holling Type II Functional Response Saturation:**
-   * **Mechanism:** The per-individual intake rate $I(N)$ as a function of plant energy density $N$ is governed by Holling Type II kinetics:
+    * **Mechanism:** The per-individual intake rate $I(N)$ as a function of plant energy density $N$ is governed by Holling Type II kinetics:
 
      $$I(N) = \frac{a N}{1 + a T_h N}$$
 
      where $a$ is the search rate and $T_h$ is the handling time per unit biomass. As $N \to \infty$, intake rate asymptotically approaches the handling time saturation ceiling $\lim_{N \to \infty} I(N) = \frac{1}{T_h}$.
-   * **Implementation:** Tested in [test_holling_type_ii_bounds.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py#L14-L40) using Hypothesis property testing to verify $I(N) \le \frac{1}{T_h} + 10^{-9}$ unconditionally.
+    * **Implementation:** Tested in [test_holling_type_ii_bounds.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/thermodynamics/test_holling_type_ii_bounds.py#L14-L40) using Hypothesis property testing to verify $I(N) \le \frac{1}{T_h} + 10^{-9}$ unconditionally.
 
 3. **Monotone Hill Equation Responses:**
-   * **Mechanism:** Plant defensive signaling sensitivity is modeled via the Hill equation $S(c) = \frac{c^n}{K^n + c^n}$. Physical realism requires strict monotonicity: increasing concentration $c_1 \le c_2$ must never reduce response $S(c_1) \le S(c_2)$.
-   * **Implementation:** Tested in [test_hill_kinetics_monotonicity.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py#L14-L40).
+    * **Mechanism:** Plant defensive signaling sensitivity is modeled via the Hill equation $S(c) = \frac{c^n}{K^n + c^n}$. Physical realism requires strict monotonicity: increasing concentration $c_1 \le c_2$ must never reduce response $S(c_1) \le S(c_2)$.
+    * **Implementation:** Tested in [test_hill_kinetics_monotonicity.py](https://github.com/foersben/PHIDS/blob/develop/tests/integration/scientific_invariants/thermodynamics/test_hill_kinetics_monotonicity.py#L14-L40).
 
 #### Stochastic Spatial Isotropy & Cohort Gating
 
 1. **Kolmogorov-Smirnov Spatial Isotropy:**
-   * **Mechanism:** O(1) polar seed raycasting projects seed dispersal vectors at angles $\theta \sim U(-\pi, \pi)$. To prevent directional grid alignment bias, Cartesian reconstructed angles $\theta = \arctan2(\Delta y, \Delta x)$ over $10,000$ draws are evaluated using a two-sample Kolmogorov-Smirnov test against a continuous uniform distribution.
-   * **Implementation:** Tested in [test_seed_dispersal_isotropy.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/systems/test_seed_dispersal_isotropy.py#L18-L40) to enforce $p > 0.01$.
+    * **Mechanism:** O(1) polar seed raycasting projects seed dispersal vectors at angles $\theta \sim U(-\pi, \pi)$. To prevent directional grid alignment bias, Cartesian reconstructed angles $\theta = \arctan2(\Delta y, \Delta x)$ over $10,000$ draws are evaluated using a two-sample Kolmogorov-Smirnov test against a continuous uniform distribution.
+    * **Implementation:** Tested in [test_seed_dispersal_isotropy.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/systems/test_seed_dispersal_isotropy.py#L18-L40) to enforce $p > 0.01$.
 
 2. **Phase-Staggered Cohort Completeness:**
-   * **Mechanism:** To eliminate per-tick CPU load spikes, flora lifecycle updates are phase-staggered across a 168-tick simulation window using modulo gating `(entity_id % 168) == (tick % 168)`.
-   * **Implementation:** Tested in [test_phase_staggered_cohorts.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/systems/test_phase_staggered_cohorts.py#L14-L38) to prove 100% of active entities are processed exactly once per 168 ticks.
+    * **Mechanism:** To eliminate per-tick CPU load spikes, flora lifecycle updates are phase-staggered across a 168-tick simulation window using modulo gating `(entity_id % 168) == (tick % 168)`.
+    * **Implementation:** Tested in [test_phase_staggered_cohorts.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/systems/test_phase_staggered_cohorts.py#L14-L38) to prove 100% of active entities are processed exactly once per 168 ticks.
 
 #### Toroidal Topological Invariants & Softmax Temperature Scaling
 
 1. **Toroidal Coordinate Wrapping Mathematical Proof:**
-   * **Mechanism:** For power-of-two grid dimensions ($W = 2^k$), bitwise AND coordinate masking is mathematically identical to modular arithmetic:
+    * **Mechanism:** For power-of-two grid dimensions ($W = 2^k$), bitwise AND coordinate masking is mathematically identical to modular arithmetic:
 
      $$x \ \& \ (W - 1) \equiv x \pmod{W} \quad \forall x \in [-2W, 3W]$$
 
-   * **Implementation:** Tested in [test_toroidal_topological_invariants.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/invariants/test_toroidal_topological_invariants.py) across all integer coordinates including negative crossings.
+    * **Implementation:** Tested in [test_toroidal_topological_invariants.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/invariants/test_toroidal_topological_invariants.py) across all integer coordinates including negative crossings.
 
 2. **Softmax Temperature-Scaled Movement:**
-   * **Mechanism:** Klinokinetic departure probabilities from nutrient tiles follow a temperature-scaled Softmax distribution over adjacent chemical gradients:
+    * **Mechanism:** Klinokinetic departure probabilities from nutrient tiles follow a temperature-scaled Softmax distribution over adjacent chemical gradients:
 
      $$P_i = \frac{\exp(w_i / T)}{\sum_j \exp(w_j / T)}$$
 
-   * **Implementation:** Tested in [test_movement_softmax.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/systems/test_movement_softmax.py), asserting temperature scaling, persistence vectors, and stochastic departure curves.
+    * **Implementation:** Tested in [test_movement_softmax.py](https://github.com/foersben/PHIDS/blob/develop/tests/unit/engine/systems/test_movement_softmax.py), asserting temperature scaling, persistence vectors, and stochastic departure curves.
 
 ### 2. Rationale: Why and How We Implemented Scientific Invariant Tests
 
