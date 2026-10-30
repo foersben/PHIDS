@@ -8,8 +8,8 @@
 set -euo pipefail
 
 if [[ $# -lt 2 ]]; then
-  echo "Usage: scripts/target_cov.sh <test-path-or-node> <cov-module> [extra pytest args...]" >&2
-  echo "Example: scripts/target_cov.sh tests/integration/api/test_api_simulation_and_scenario_routes.py phids.api.routers.simulation" >&2
+  echo "Usage: scripts/ci/target_cov.sh <test-path-or-node> <cov-module> [extra pytest args...]" >&2
+  echo "Example: scripts/ci/target_cov.sh tests/integration/api/test_api_simulation_and_scenario_routes.py phids.api.routers.simulation" >&2
   exit 2
 fi
 

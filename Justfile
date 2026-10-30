@@ -46,10 +46,25 @@ test-parity:
 test-replay:
     uv run --all-groups pytest --no-cov tests/e2e/replay_and_io/test_zarr_replay_bit_exactness.py
 
+# Run local CI passes on native host (options: all, quality, tests, docs)
+[group("testing")]
+ci job="all":
+    ./scripts/ci/local_ci.sh {{ job }}
+
 # Run local CI test orchestration script (scripts/ci/local_ci.sh tests)
 [group("testing")]
 ci-test:
     ./scripts/ci/local_ci.sh tests
+
+# Run unit test suite
+[group("testing")]
+test-unit:
+    uv run pytest --no-cov tests/unit/ -q -o "addopts="
+
+# Run integration test suite
+[group("testing")]
+test-integration:
+    uv run pytest --no-cov tests/integration/ -q -o "addopts="
 
 # Run mutation testing with Mutmut across core simulation kernels
 [group("testing")]

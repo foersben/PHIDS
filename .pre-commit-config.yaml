@@ -1,6 +1,6 @@
 minimum_pre_commit_version: "3.7.0"
 default_stages: [pre-commit]
-exclude: ^(site/|docs/legacy/|__pycache__/)
+exclude: ^(site/|docs/legacy/|docs/viz\.html|\.cache/|scratch/|__pycache__/)
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -31,7 +31,9 @@ repos:
       - id: codespell
         additional_dependencies:
           - tomli
-        args: [--ignore-words=.codespell-ignore-words.txt]
+        args:
+          - --ignore-words=.codespell-ignore-words.txt
+          - --skip=*.lock,*.json,./site/*,./docs/viz.html,*.min.js
 
   - repo: https://github.com/fsfe/reuse-tool
     rev: v6.1.2  # The stable 2026 release version

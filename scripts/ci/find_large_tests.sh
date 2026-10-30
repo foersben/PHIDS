@@ -6,8 +6,8 @@
 # Helps maintain test suite modularity, isolation, and cognitive simplicity.
 #
 # Usage:
-#   ./scripts/find_large_tests.sh
-#   THRESHOLD=500 ./scripts/find_large_tests.sh
+#   ./scripts/ci/find_large_tests.sh
+#   THRESHOLD=500 ./scripts/ci/find_large_tests.sh
 
 set -euo pipefail
 

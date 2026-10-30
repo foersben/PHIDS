@@ -9,14 +9,14 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/run_ci_with_act.sh [--dryrun] [--event <event>] [--job <job>]
+Usage: ./scripts/ci/run_ci_with_act.sh [--dryrun] [--event <event>] [--job <job>]
 
 Rehearse the GitHub Actions workflow locally with 'act'.
 
 Examples:
-  ./scripts/run_ci_with_act.sh --dryrun
-  ./scripts/run_ci_with_act.sh --job quality
-  ./scripts/run_ci_with_act.sh --event push --job docs
+  ./scripts/ci/run_ci_with_act.sh --dryrun
+  ./scripts/ci/run_ci_with_act.sh --job quality
+  ./scripts/ci/run_ci_with_act.sh --event push --job docs
 EOF
 }
 
