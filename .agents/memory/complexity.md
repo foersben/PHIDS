@@ -146,3 +146,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Performance Assessment:** Extracting logic executes strictly in the API response formatting path. No effect on the core simulation engine. Performance regression is strictly avoided.
 >>>>>>> develop
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-31 - Complexity Refactoring Report
+* **Target Function:** scripts/governance/visualize_okf.py -> _extract_doc_metadata
+* **Selection Rationale:** This function failed complexity checks with a score of 18 due to nested logic for parsing YAML frontmatter and scanning source arrays for OKF claims. Since it runs only in the documentation generation pipeline, extracting this logic into helpers poses zero performance risk to the engine hotpath.
+* **Before/After Score:** 18 vs. 2
+* **Performance Assessment:** The script operates only as an external visualization generation step in the documentation pipeline and has zero direct effect on simulation engine performance. The overhead of helper function calls here is completely negligible.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, matrix parity gates, and OKF scripts passed.

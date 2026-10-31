@@ -485,6 +485,43 @@ def _collect_markdown_files(root_path: Path, directories: list[str]) -> list[Pat
     return files
 
 
+def _parse_frontmatter(content: str) -> dict[str, Any]:
+    """Parse YAML frontmatter from markdown content."""
+    if not content.startswith("---"):
+        return {}
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return {}
+    try:
+        loaded = yaml.safe_load(parts[1])
+        if isinstance(loaded, dict):
+            return loaded
+    except Exception:
+        pass
+    return {}
+
+
+def _extract_source_claims(fm_dict: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract claims from 'sources' listed in frontmatter."""
+    claims: list[dict[str, Any]] = []
+    if "sources" not in fm_dict or not isinstance(fm_dict["sources"], list):
+        return claims
+
+    for src_item in fm_dict["sources"]:
+        if not isinstance(src_item, dict) or "resource" not in src_item:
+            continue
+        res_path = str(src_item["resource"]).replace("repo://", "").strip()
+        claims.append(
+            {
+                "claim": f"Verified OKF resource link: {src_item.get('id', res_path)}",
+                "file": res_path,
+                "lines": "",
+                "ast_target": "",
+            }
+        )
+    return claims
+
+
 def _extract_doc_metadata(
     f: Path,
     root_path: Path,
@@ -493,16 +530,7 @@ def _extract_doc_metadata(
     """Extract frontmatter and attributes for a single markdown file."""
     rel_id = f.relative_to(root_path).as_posix()
     content = f.read_text(encoding="utf-8")
-    fm_dict: dict[str, Any] = {}
-    if content.startswith("---"):
-        parts = content.split("---", 2)
-        if len(parts) >= 3:
-            try:
-                loaded = yaml.safe_load(parts[1])
-                if isinstance(loaded, dict):
-                    fm_dict = loaded
-            except Exception:
-                pass
+    fm_dict = _parse_frontmatter(content)
 
     title = _resolve_node_title(fm_dict.get("title"), content, rel_id, f)
     node_type = _determine_node_type(rel_id, fm_dict.get("type"))
@@ -513,19 +541,10 @@ def _extract_doc_metadata(
     stale_after = str(fm_dict.get("stale_after", ""))
     description = str(fm_dict.get("description", "")) or _extract_first_paragraph(content)
     portal_url = _compute_portal_url(rel_id)
+
     claims = list(claims_map.get(rel_id, []))
-    if not claims and "sources" in fm_dict and isinstance(fm_dict["sources"], list):
-        for src_item in fm_dict["sources"]:
-            if isinstance(src_item, dict) and "resource" in src_item:
-                res_path = str(src_item["resource"]).replace("repo://", "").strip()
-                claims.append(
-                    {
-                        "claim": f"Verified OKF resource link: {src_item.get('id', res_path)}",
-                        "file": res_path,
-                        "lines": "",
-                        "ast_target": "",
-                    }
-                )
+    if not claims:
+        claims.extend(_extract_source_claims(fm_dict))
 
     return {
         "id": rel_id,
