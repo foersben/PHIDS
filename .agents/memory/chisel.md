@@ -127,3 +127,7 @@ Action: When dismantling large API presenter files, ensure that __init__.py re-e
 ## 2024-11-20 - Extracting Matplotlib Monoliths (Telemetry Export)
 Learning: When refactoring a large Matplotlib rendering monolith (like `telemetry/export/png.py`), extracting the `_plot_*` routines into individual submodules (`timeseries.py`, `phasespace.py`, etc.) effectively isolates the logic. We must ensure `matplotlib.axes.Axes` is properly scoped inside `if TYPE_CHECKING:` in each file to maintain strict type compliance without triggering runtime `ModuleNotFoundError`s, while re-exporting the main generator function via `__init__.py`.
 Action: Future extractions of visualization files must adhere to isolating the orchestration from specific routines while carefully maintaining type hint imports.
+
+## 2024-11-01 - Extraction of Cell Details Live Presenter
+Learning: Splitting a large UI state extraction module (cell_details/live.py) into smaller modules like substances, plants, swarms, collections, and core helps improve maintainability.
+Action: When dismantling large API presenter files, ensure that `__init__.py` re-exports the exact same functions and types to preserve downstream imports. Ensure all imports are strictly updated, removing unused `typing.Any` across separated files, to prevent `F401` linting errors.
