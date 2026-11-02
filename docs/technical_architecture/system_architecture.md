@@ -82,7 +82,7 @@ As illustrated above, during the tick, the Engine relies strictly on the `State_
 
 ## Memory Bounding: The "Rule of 16"
 
-Dynamic memory allocation during the hot simulation loop introduces prohibitive latency. The architecture imposes a strict upper bound constraint: the system accommodates a maximum of 16 distinct flora species, 16 herbivore species, and 16 substance mechanisms. Matrices (such as diet compatibility or trigger relationships) are pre-allocated at a fixed $(16 \times 16)$ scale during bootstrapping.
+Dynamic memory allocation during the hot simulation loop introduces prohibitive latency. The architecture imposes a strict upper bound constraint: the system accommodates a maximum of 16 distinct flora species, 16 herbivore species, and 16 substance mechanisms. Matrices (such as the diet compatibility matrix) are pre-allocated at a fixed $(16 \times 16)$ scale, while defensive behaviors use bounded `list[TriggerConditionSchema]` per flora species.
 
 ## 256-Bit AVX2 SIMD & Numba JIT Accelerated Kernels
 
