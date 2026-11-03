@@ -294,3 +294,14 @@ def test_structural_mass_in_to_dict() -> None:
     arr = np.array(snapshot["structural_mass_layer"])
     assert arr.shape == (5, 5)
     assert arr[1, 1] == pytest.approx(7.0, abs=1e-4)
+
+
+def test_set_plant_energy_fractional_value() -> None:
+    """Validate that fractional plant energy > 0.0 but < 1.0 is not incorrectly clamped to 1.0."""
+    env = GridEnvironment(width=5, height=5, num_signals=1, num_toxins=1)
+
+    # Write a fractional energy value < 1.0
+    env.set_plant_energy(1, 1, 0, 0.5)
+
+    # Assert that it correctly stores 0.5, rather than clamping to 1.0
+    assert env._plant_energy_by_species_write[0, 1, 1] == 0.5
