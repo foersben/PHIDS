@@ -7,17 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from phids.engine.components.swarm import SwarmComponent
-
 if TYPE_CHECKING:
-    from phids.api.schemas.simulation import HerbivoreSpeciesConfig
-
+    from phids.api.schemas.species import HerbivoreSpeciesParams
+    from phids.engine.components.swarm import SwarmComponent
 
 
 def _build_live_swarm_payload(
     swarm: SwarmComponent,
     herbivore_names: dict[int, str],
-    herbivore_params: dict[int, HerbivoreSpeciesConfig] | None = None,
+    herbivore_params: dict[int, HerbivoreSpeciesParams] | None = None,
     cell_toxin_peak: float = 0.0,
     cell_signal_peak: float = 0.0,
     cell_plant_energy: float = 0.0,

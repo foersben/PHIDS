@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 from phids.api.presenters.dashboard.shared import (
     calculate_structural_fragility_and_risk,
 )
-from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.core.biotope import GridEnvironment
 
 if TYPE_CHECKING:
+    from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.core.biotope import GridEnvironment
 from phids.api.presenters.dashboard.cell_details.live.substances import _get_live_substances

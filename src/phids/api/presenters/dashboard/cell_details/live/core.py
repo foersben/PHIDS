@@ -20,7 +20,7 @@ from phids.engine.components.swarm import SwarmComponent
 from phids.engine.core.biotope import GridEnvironment
 
 if TYPE_CHECKING:
-    from phids.api.schemas.simulation import HerbivoreSpeciesConfig
+    from phids.api.schemas.species import HerbivoreSpeciesParams
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
@@ -36,7 +36,7 @@ def _collect_live_plants_and_swarms(
     env: GridEnvironment,
     flora_names: dict[int, str],
     herbivore_names: dict[int, str],
-    herbivore_params: dict[int, HerbivoreSpeciesConfig],
+    herbivore_params: dict[int, HerbivoreSpeciesParams],
     plant_lookup: dict[int, PlantComponent],
     owned_substances: dict[int, list[SubstanceComponent]],
     substance_names: dict[int, str],

@@ -15,11 +15,11 @@ from phids.api.presenters.dashboard.substances import (
     _is_live_substance_visible,
     _serialize_live_substance,
 )
-from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.core.biotope import GridEnvironment
 
 if TYPE_CHECKING:
+    from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.core.biotope import GridEnvironment
 
@@ -86,6 +86,15 @@ def _add_environmental_signals(
     visible_substances: list[dict[str, object]],
     substance_names: dict[int, str],
 ) -> None:
+    """Helper to add diffused environmental signals to the visible substances list.
+
+    Args:
+        env: The grid environment.
+        plant: The plant component.
+        visible_keys: The set of already visible substance keys.
+        visible_substances: The list of visible substances to append to.
+        substance_names: The mapping of substance IDs to names.
+    """
     for signal_id in range(env.num_signals):
         if float(env.signal_layers[signal_id, plant.x, plant.y]) <= 0.0:
             continue
@@ -105,6 +114,15 @@ def _add_environmental_toxins(
     visible_substances: list[dict[str, object]],
     substance_names: dict[int, str],
 ) -> None:
+    """Helper to add diffused environmental toxins to the visible substances list.
+
+    Args:
+        env: The grid environment.
+        plant: The plant component.
+        visible_keys: The set of already visible substance keys.
+        visible_substances: The list of visible substances to append to.
+        substance_names: The mapping of substance IDs to names.
+    """
     for toxin_id in range(env.num_toxins):
         if float(env.toxin_layers[toxin_id, plant.x, plant.y]) <= 0.0:
             continue
