@@ -131,20 +131,25 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 14 vs. 1
 * **Performance Assessment:** The extracted logic executes strictly in the API response formatting path. The time series append operation retains zero overhead in hot paths and does not modify the runtime structure. Benchmark performance indicates no regressions on `test_telemetry_export_bytes_json_benchmark`.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
-<<<<<<< HEAD
 ## 2026-10-22 - Complexity Refactoring Report
 * **Target Function:** `src/phids/api/ui_state/state/convert.py` - `from_sim_config`
 * **Selection Rationale:** The main function reached a complexity of 14 due to deep loops scanning flora specs and their respective condition configurations. Extracting the trigger mapping loop to `_extract_triggers` reduces the module-level function down to just 0 in cognitive complexity while retaining exactly the same data-flow semantics.
 * **Before/After Score:** 14 vs. 0
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of a helper function call here is completely negligible.
-=======
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-10-30 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/services/draft/species.py` -> `remove_flora`
+* **Selection Rationale:** This function accumulated a cognitive complexity score of 14 due to multiple nested loops to iterate through the diet matrix and trigger rules to compact flora references upon removal. Since it was near the threshold limit, isolating this compacting block of state modification into a helper cleanly separates iteration logic out of the main endpoint execution flow.
+* **Before/After Score:** 14 vs. 4
+* **Performance Assessment:** The extraction strictly runs logic on in-memory lists representing the draft state configuration layer out of the hot path of the core simulation engine. It does not regress engine loops or metrics.
+* **Test Verification:** Confirmed that all `ruff` formatting, linting, `complexipy` checks, type checks, schema trace parities and tests (`uv run pytest`) run flawlessly without regressions.
 
 ## 2026-11-28 - Complexity Refactoring Report
 * **Target Function:** `src/phids/api/presenters/dashboard/cell_details/live.py` - `_get_live_substances`
 * **Selection Rationale:** The function `_get_live_substances` accumulated a cognitive complexity score of 14 due to its two iterative loops that extract and format environmental signals and toxins to add to the `visible_substances` payload list. Given it's part of the API payload presentation, it does not impact engine performance.
 * **Before/After Score:** 14 vs. 4
 * **Performance Assessment:** Extracting logic executes strictly in the API response formatting path. No effect on the core simulation engine. Performance regression is strictly avoided.
->>>>>>> develop
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
 
 ## 2026-11-29 - Complexity Refactoring Report
