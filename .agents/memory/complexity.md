@@ -146,3 +146,16 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Performance Assessment:** Extracting logic executes strictly in the API response formatting path. No effect on the core simulation engine. Performance regression is strictly avoided.
 >>>>>>> develop
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
+
+## 2026-11-05 - Complexity Refactoring Report
+* **Target Function:** `scripts/governance/visualize_okf.py` - `_extract_doc_metadata`
+* **Selection Rationale:** The main function had a complexity of 18 due to frontmatter parsing and deeply nested loops scanning sources to build claims. Given its role as a documentation/reporting script, extracting logic to helper methods `_parse_frontmatter` and `_extract_claims_from_fm` flattens the execution flow without affecting performance on hot paths.
+* **Before/After Score:** 18 vs. lower (see complexipy output below)
+    _extract_doc_metadata 2  ✅  PASSED
+    _parse_claim_evidence 1  ✅  PASSED
+    _build_all_edges 1  ✅  PASSED
+    main 0  ✅  PASSED
+    _format_stem_title 0  ✅  PASSED
+    _format_node_element 0  ✅  PASSED
+* **Performance Assessment:** The extracted logic evaluates file-level metadata during documentation processing. The overhead of calling two helper functions in a build-time script is negligible and there is zero performance risk to the core simulation engine.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, matrix parity gates, and complexipy checks passed.

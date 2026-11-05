@@ -485,36 +485,26 @@ def _collect_markdown_files(root_path: Path, directories: list[str]) -> list[Pat
     return files
 
 
-def _extract_doc_metadata(
-    f: Path,
-    root_path: Path,
-    claims_map: dict[str, list[dict[str, Any]]],
-) -> dict[str, Any]:
-    """Extract frontmatter and attributes for a single markdown file."""
-    rel_id = f.relative_to(root_path).as_posix()
-    content = f.read_text(encoding="utf-8")
-    fm_dict: dict[str, Any] = {}
-    if content.startswith("---"):
-        parts = content.split("---", 2)
-        if len(parts) >= 3:
-            try:
-                loaded = yaml.safe_load(parts[1])
-                if isinstance(loaded, dict):
-                    fm_dict = loaded
-            except Exception:
-                pass
+def _parse_frontmatter(content: str) -> dict[str, Any]:
+    """Parse frontmatter from markdown content."""
+    if not content.startswith("---"):
+        return {}
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return {}
+    try:
+        loaded = yaml.safe_load(parts[1])
+        if isinstance(loaded, dict):
+            return loaded
+    except Exception:
+        pass
+    return {}
 
-    title = _resolve_node_title(fm_dict.get("title"), content, rel_id, f)
-    node_type = _determine_node_type(rel_id, fm_dict.get("type"))
-    domain = _determine_domain(rel_id)
-    trust_tier = _extract_trust_tier(fm_dict.get("verified"), rel_id)
-    status = str(fm_dict.get("status", "stable"))
-    version = str(fm_dict.get("version", "1.0"))
-    stale_after = str(fm_dict.get("stale_after", ""))
-    description = str(fm_dict.get("description", "")) or _extract_first_paragraph(content)
-    portal_url = _compute_portal_url(rel_id)
-    claims = list(claims_map.get(rel_id, []))
-    if not claims and "sources" in fm_dict and isinstance(fm_dict["sources"], list):
+
+def _extract_claims_from_fm(fm_dict: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract claims from frontmatter sources."""
+    claims = []
+    if "sources" in fm_dict and isinstance(fm_dict["sources"], list):
         for src_item in fm_dict["sources"]:
             if isinstance(src_item, dict) and "resource" in src_item:
                 res_path = str(src_item["resource"]).replace("repo://", "").strip()
@@ -526,6 +516,31 @@ def _extract_doc_metadata(
                         "ast_target": "",
                     }
                 )
+    return claims
+
+
+def _extract_doc_metadata(
+    f: Path,
+    root_path: Path,
+    claims_map: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Extract frontmatter and attributes for a single markdown file."""
+    rel_id = f.relative_to(root_path).as_posix()
+    content = f.read_text(encoding="utf-8")
+    fm_dict = _parse_frontmatter(content)
+
+    title = _resolve_node_title(fm_dict.get("title"), content, rel_id, f)
+    node_type = _determine_node_type(rel_id, fm_dict.get("type"))
+    domain = _determine_domain(rel_id)
+    trust_tier = _extract_trust_tier(fm_dict.get("verified"), rel_id)
+    status = str(fm_dict.get("status", "stable"))
+    version = str(fm_dict.get("version", "1.0"))
+    stale_after = str(fm_dict.get("stale_after", ""))
+    description = str(fm_dict.get("description", "")) or _extract_first_paragraph(content)
+    portal_url = _compute_portal_url(rel_id)
+    claims = list(claims_map.get(rel_id, []))
+    if not claims:
+        claims = _extract_claims_from_fm(fm_dict)
 
     return {
         "id": rel_id,
