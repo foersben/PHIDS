@@ -158,3 +158,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 18 vs. 2
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of helper function calls here is completely negligible.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, matrix coverage, and matrix parity gates passed, and that `complexipy` reports 0 failures.
+## 2026-11-06 - Complexity Refactoring Report
+* **Target Function:** `src/phids/api/presenters/dashboard/cell_details/live/core.py` - `build_live_cell_details`
+* **Selection Rationale:** The main function reached a complexity of 13 due to extracting signal and toxin concentrations using list comprehensions with inline conditionals. Extracting the list comprehensions into `_extract_signal_concentrations` and `_extract_toxin_concentrations` flattens the metadata extraction.
+* **Before/After Score:** 13 vs. 9
+* **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of helper function calls here is completely negligible.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed, and that complexipy reports 0 failures.

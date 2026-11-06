@@ -97,6 +97,36 @@ def _collect_live_plants_and_swarms(
     return plants, swarms
 
 
+def _extract_signal_concentrations(
+    env: GridEnvironment, x: int, y: int, substance_names: dict[int, str]
+) -> list[dict[str, object]]:
+    return [
+        {
+            "substance_id": signal_id,
+            "name": substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False)),
+            "value": float(env.signal_layers[signal_id, x, y]),
+            "value_pct": min(100.0, float(env.signal_layers[signal_id, x, y]) * 100.0),
+        }
+        for signal_id in range(env.num_signals)
+        if float(env.signal_layers[signal_id, x, y]) > 0.0
+    ]
+
+
+def _extract_toxin_concentrations(
+    env: GridEnvironment, x: int, y: int, substance_names: dict[int, str]
+) -> list[dict[str, object]]:
+    return [
+        {
+            "substance_id": toxin_id,
+            "name": substance_names.get(toxin_id, _default_substance_name(toxin_id, is_toxin=True)),
+            "value": float(env.toxin_layers[toxin_id, x, y]),
+            "value_pct": min(100.0, float(env.toxin_layers[toxin_id, x, y]) * 100.0),
+        }
+        for toxin_id in range(env.num_toxins)
+        if float(env.toxin_layers[toxin_id, x, y]) > 0.0
+    ]
+
+
 def build_live_cell_details(
     loop: SimulationLoop,
     x: int,
@@ -176,26 +206,8 @@ def build_live_cell_details(
         cell_signal_peak,
     )
 
-    signal_concentrations = [
-        {
-            "substance_id": signal_id,
-            "name": substance_names.get(signal_id, _default_substance_name(signal_id, is_toxin=False)),
-            "value": float(env.signal_layers[signal_id, x, y]),
-            "value_pct": min(100.0, float(env.signal_layers[signal_id, x, y]) * 100.0),
-        }
-        for signal_id in range(env.num_signals)
-        if float(env.signal_layers[signal_id, x, y]) > 0.0
-    ]
-    toxin_concentrations = [
-        {
-            "substance_id": toxin_id,
-            "name": substance_names.get(toxin_id, _default_substance_name(toxin_id, is_toxin=True)),
-            "value": float(env.toxin_layers[toxin_id, x, y]),
-            "value_pct": min(100.0, float(env.toxin_layers[toxin_id, x, y]) * 100.0),
-        }
-        for toxin_id in range(env.num_toxins)
-        if float(env.toxin_layers[toxin_id, x, y]) > 0.0
-    ]
+    signal_concentrations = _extract_signal_concentrations(env, x, y, substance_names)
+    toxin_concentrations = _extract_toxin_concentrations(env, x, y, substance_names)
 
     return {
         "mode": "live",
