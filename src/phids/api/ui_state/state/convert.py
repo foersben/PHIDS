@@ -10,12 +10,12 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from phids.api.ui_state.state.models import DraftState
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.api.ui_state.triggers import TriggerRule
 
 if TYPE_CHECKING:
     from phids.api.schemas.simulation import SimulationConfig
     from phids.api.schemas.triggers import TriggerConditionSchema
-    from phids.api.ui_state.substances import SubstanceDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +220,6 @@ def _build_single_trigger_rule(flora_species_id: int, trig: Any) -> TriggerRule:
 
 
 def _build_single_substance_definition(trig: Any) -> SubstanceDefinition:
-    from phids.api.ui_state.substances import SubstanceDefinition
 
     return SubstanceDefinition(
         substance_id=trig.action.substance_id,
@@ -242,6 +241,7 @@ def _extract_triggers(
 ) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
     """Extract trigger rules and substance definitions from simulation config."""
     from phids.api.schemas.triggers import SynthesizeSubstanceAction
+    from phids.api.ui_state.substances import SubstanceDefinition  # noqa: F401
 
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
