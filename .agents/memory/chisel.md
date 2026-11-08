@@ -130,3 +130,7 @@ Action: Future extractions of visualization files must adhere to isolating the o
 ## 2024-11-20 - Extracting Live Cell Details Presenter Monolith
 Learning: Splitting a large UI state extraction module (`cell_details/live.py`) into smaller modules (`substances`, `plants`, `swarms`, `core`) helps improve maintainability. The script-based generation of new submodules must be explicitly verified to ensure the original AST structure is maintained.
 Action: When dismantling large API presenter files, ensure that `__init__.py` re-exports the exact same functions and types to preserve downstream imports.
+
+## 2026-11-08 - Extracting TikZ Monoliths (Telemetry Export)
+Learning: When extracting a large chart generation monolith like `telemetry/export/tikz.py` into smaller pieces, splitting the chart routines into `timeseries.py`, `phasespace.py`, etc. and re-exporting the main generator in `core.py` and then out of `__init__.py` successfully resolves the monolithic structure without breaking downstream imports.
+Action: Always use `__init__.py` to re-export the public API exactly as it was when breaking down these types of exporters.
