@@ -242,7 +242,6 @@ def _extract_triggers(
 ) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
     """Extract trigger rules and substance definitions from simulation config."""
     from phids.api.schemas.triggers import SynthesizeSubstanceAction
-    from phids.api.ui_state.substances import SubstanceDefinition
 
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
