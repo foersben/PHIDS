@@ -10,12 +10,12 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from phids.api.ui_state.state.models import DraftState
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.api.ui_state.triggers import TriggerRule
 
 if TYPE_CHECKING:
     from phids.api.schemas.simulation import SimulationConfig
     from phids.api.schemas.triggers import TriggerConditionSchema
-    from phids.api.ui_state.substances import SubstanceDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -188,12 +188,61 @@ def build_sim_config(state: DraftState) -> SimulationConfig:
     return config
 
 
+def _build_single_trigger_rule(flora_species_id: int, trig: Any) -> TriggerRule:
+    from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
+
+    i_type: Literal["herbivore_attack", "environmental_signal"]
+    if isinstance(trig.initiator, HerbivoreAttackInitiator):
+        i_type = "herbivore_attack"
+        h_id = trig.initiator.herbivore_species_id
+        min_pop = trig.initiator.min_herbivore_population
+        sig_id = -1
+        min_conc = 0.0
+    else:
+        i_type = "environmental_signal"
+        h_id = -1
+        min_pop = 0
+        sig_id = trig.initiator.signal_id
+        min_conc = trig.initiator.min_concentration
+
+    return TriggerRule(
+        flora_species_id=flora_species_id,
+        initiator_type=i_type,
+        herbivore_species_id=h_id,
+        min_herbivore_population=min_pop,
+        initiator_signal_id=sig_id,
+        initiator_min_concentration=min_conc,
+        substance_id=(trig.action.substance_id if isinstance(trig.action, SynthesizeSubstanceAction) else -1),
+        activation_condition=(
+            trig.activation_condition.model_dump(mode="json") if trig.activation_condition is not None else None
+        ),
+    )
+
+
+def _build_single_substance_definition(trig: Any) -> SubstanceDefinition:
+
+    return SubstanceDefinition(
+        substance_id=trig.action.substance_id,
+        name=f"Substance {trig.action.substance_id}",
+        is_toxin=trig.action.is_toxin,
+        lethal=trig.action.lethal,
+        repellent=trig.action.repellent,
+        synthesis_duration=trig.action.synthesis_duration,
+        aftereffect_ticks=trig.aftereffect_ticks,
+        lethality_rate=trig.action.lethality_rate,
+        repellent_walk_ticks=trig.action.repellent_walk_ticks,
+        energy_cost_per_tick=trig.action.energy_cost_per_tick,
+        irreversible=trig.action.irreversible,
+    )
+
+
 def _extract_triggers(
     config: SimulationConfig,
-) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
+) -> tuple[list[TriggerRule], list["SubstanceDefinition"]]:  # noqa: UP037
     """Extract trigger rules and substance definitions from simulation config."""
-    from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
+    from phids.api.schemas.triggers import SynthesizeSubstanceAction
     from phids.api.ui_state.substances import SubstanceDefinition
+    _ = SubstanceDefinition
 
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
@@ -201,57 +250,13 @@ def _extract_triggers(
 
     for flora_spec in config.flora_species:
         for trig in flora_spec.triggers:
-            i_type: Literal["herbivore_attack", "environmental_signal"]
-            if isinstance(trig.initiator, HerbivoreAttackInitiator):
-                i_type = "herbivore_attack"
-                h_id = trig.initiator.herbivore_species_id
-                min_pop = trig.initiator.min_herbivore_population
-                sig_id = -1
-                min_conc = 0.0
-            else:
-                i_type = "environmental_signal"
-                h_id = -1
-                min_pop = 0
-                sig_id = trig.initiator.signal_id
-                min_conc = trig.initiator.min_concentration
-
-            imported_trigger_rules.append(
-                TriggerRule(
-                    flora_species_id=flora_spec.species_id,
-                    initiator_type=i_type,
-                    herbivore_species_id=h_id,
-                    min_herbivore_population=min_pop,
-                    initiator_signal_id=sig_id,
-                    initiator_min_concentration=min_conc,
-                    substance_id=(
-                        trig.action.substance_id if isinstance(trig.action, SynthesizeSubstanceAction) else -1
-                    ),
-                    activation_condition=(
-                        trig.activation_condition.model_dump(mode="json")
-                        if trig.activation_condition is not None
-                        else None
-                    ),
-                )
-            )
+            imported_trigger_rules.append(_build_single_trigger_rule(flora_spec.species_id, trig))
 
             if isinstance(trig.action, SynthesizeSubstanceAction):
                 if trig.action.substance_id not in seen_substance_ids:
                     seen_substance_ids.add(trig.action.substance_id)
-                    imported_substances.append(
-                        SubstanceDefinition(
-                            substance_id=trig.action.substance_id,
-                            name=f"Substance {trig.action.substance_id}",
-                            is_toxin=trig.action.is_toxin,
-                            lethal=trig.action.lethal,
-                            repellent=trig.action.repellent,
-                            synthesis_duration=trig.action.synthesis_duration,
-                            aftereffect_ticks=trig.aftereffect_ticks,
-                            lethality_rate=trig.action.lethality_rate,
-                            repellent_walk_ticks=trig.action.repellent_walk_ticks,
-                            energy_cost_per_tick=trig.action.energy_cost_per_tick,
-                            irreversible=trig.action.irreversible,
-                        )
-                    )
+                    imported_substances.append(_build_single_substance_definition(trig))
+
     return imported_trigger_rules, imported_substances
 
 

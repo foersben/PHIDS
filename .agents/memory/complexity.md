@@ -164,3 +164,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 13 vs. 9
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of helper function calls here is completely negligible.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed, and that complexipy reports 0 failures.
+
+## 2026-11-08 - Complexity Refactoring Report
+* **Target Function:** src/phids/api/ui_state/state/convert.py:_extract_triggers
+* **Selection Rationale:** Selected due to a complexity score of 14, approaching the threshold. The logic consisted of cohesive rule extraction and substance synthesis parsing, which are ideal for private helper extraction.
+* **Before/After Score:** 14 vs. 10
+* **Performance Assessment:** The refactoring purely reorganizes dictionary and object creation for an API draft state converter, completely off the hot-path with zero performance impact.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
