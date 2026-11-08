@@ -238,10 +238,11 @@ def _build_single_substance_definition(trig: Any) -> SubstanceDefinition:
 
 def _extract_triggers(
     config: SimulationConfig,
-) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
+) -> tuple[list[TriggerRule], list["SubstanceDefinition"]]:  # noqa: UP037
     """Extract trigger rules and substance definitions from simulation config."""
     from phids.api.schemas.triggers import SynthesizeSubstanceAction
-    from phids.api.ui_state.substances import SubstanceDefinition  # noqa: F401
+    from phids.api.ui_state.substances import SubstanceDefinition
+    _ = SubstanceDefinition
 
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
