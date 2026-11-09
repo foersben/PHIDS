@@ -86,6 +86,27 @@ def resolve_ast_node_lines(file_path: Path, ast_target: str) -> tuple[int, int] 
     return scope.lineno, scope.end_lineno or scope.lineno
 
 
+def _validate_claims_in_file(json_file: Path, root_path: Path, errors: list[str]) -> None:
+    """Validate all claims in a single JSON file."""
+    try:
+        data = json.loads(json_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        errors.append(f"{json_file.relative_to(root_path)}: invalid JSON ({exc})")
+        return
+
+    for claim in data.get("claims", []):
+        target = claim.get("ast_target")
+        if not target:
+            continue
+        evidence = claim.get("evidence") or [{}]
+        resource = str(evidence[0].get("resource", "")).replace("repo://", "").split("#", 1)[0]
+        src = root_path / resource
+        if not resource.endswith(".py") or not src.is_file():
+            errors.append(f"{json_file.name}: claim {claim.get('id')} ast_target needs a Python primary file")
+        elif resolve_ast_node_lines(src, target) is None:
+            errors.append(f"{json_file.name}: claim {claim.get('id')} ast_target {target!r} not found in {resource}")
+
+
 def validate_claim_ast_targets(root_path: Path) -> list[str]:
     """Verify every ast_target in openwiki/.claims/**/*.json resolves in its primary Python file."""
     errors: list[str] = []
@@ -93,24 +114,7 @@ def validate_claim_ast_targets(root_path: Path) -> list[str]:
     if not claims_dir.exists():
         return errors
     for json_file in sorted(claims_dir.rglob("*.json")):
-        try:
-            data = json.loads(json_file.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            errors.append(f"{json_file.relative_to(root_path)}: invalid JSON ({exc})")
-            continue
-        for claim in data.get("claims", []):
-            target = claim.get("ast_target")
-            if not target:
-                continue
-            evidence = claim.get("evidence") or [{}]
-            resource = str(evidence[0].get("resource", "")).replace("repo://", "").split("#", 1)[0]
-            src = root_path / resource
-            if not resource.endswith(".py") or not src.is_file():
-                errors.append(f"{json_file.name}: claim {claim.get('id')} ast_target needs a Python primary file")
-            elif resolve_ast_node_lines(src, target) is None:
-                errors.append(
-                    f"{json_file.name}: claim {claim.get('id')} ast_target {target!r} not found in {resource}"
-                )
+        _validate_claims_in_file(json_file, root_path, errors)
     return errors
 
 
