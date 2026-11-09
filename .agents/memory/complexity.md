@@ -164,3 +164,9 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 13 vs. 9
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of helper function calls here is completely negligible.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed, and that complexipy reports 0 failures.
+## 2026-11-09 - Complexity Refactoring Report
+* **Target Function:** `scripts/governance/validate_okf.py` -> `validate_claim_ast_targets`
+* **Selection Rationale:** Selected due to a complexity score of 15. The function iterated through all claims files and checked each claim inside nested loops, making it an excellent candidate for extracting the inner file processing logic to a private helper `_validate_claims_in_file`. This drastically reduces the complexity. Given this is part of the governance scripts, refactoring it poses zero risk to engine performance.
+* **Before/After Score:** 15 vs. 2 (Maximum score among helpers is 9)
+* **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of a helper function call here is completely negligible.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed, and that `complexipy` reports 0 failures.
