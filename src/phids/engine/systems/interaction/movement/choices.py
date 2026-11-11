@@ -21,7 +21,7 @@ from phids.engine.systems.interaction.movement.neighbors import (
     _gather_neighbours_jit,
     _gather_neighbours_jit_pow2,
 )
-from phids.shared.constants import ORTHOKINETIC_MOMENTUM_WEIGHT, TILE_CARRYING_CAPACITY
+from phids.shared.constants import ORTHOKINETIC_MOMENTUM_WEIGHT, SIGNAL_EPSILON, TILE_CARRYING_CAPACITY
 
 if TYPE_CHECKING:
     from phids.engine.components.swarm import SwarmComponent
@@ -138,7 +138,7 @@ def _weighted_field_choice_jit(
 
     total_w = 0.0
     for i in range(count):
-        weights[i] = (adjusted_scores[i] - min_score) + 1e-6
+        weights[i] = (adjusted_scores[i] - min_score) + SIGNAL_EPSILON
         total_w += weights[i]
 
     if tile_populations is not None and width > 0 and current_x >= 0 and current_y >= 0:
@@ -279,7 +279,7 @@ def _choose_neighbour_by_flow_probability_jit(
         min_score = min(min_score, scores[i])
 
     # Flat fields provide no directional signal; preserve prior heading as inertia.
-    if max_score - min_score < 1e-6:
+    if max_score - min_score < SIGNAL_EPSILON:
         return _flat_field_choice_jit(count, x, y, last_dx, last_dy, c_x, c_y, weights, rand_val)
 
     if tau > 0.0:
@@ -356,7 +356,7 @@ def _python_weighted_field_choice(
     """
     adjusted_scores = [-score for score in scores] if invert else scores
     min_score = min(adjusted_scores)
-    weights = [(score - min_score) + 1e-6 for score in adjusted_scores]
+    weights = [(score - min_score) + SIGNAL_EPSILON for score in adjusted_scores]
     return random.choices(candidates, weights=weights, k=1)[0]
 
 
@@ -390,7 +390,7 @@ def _choose_neighbour_by_flow_probability_python(
     max_score = max(scores)
     min_score = min(scores)
 
-    if max_score - min_score < 1e-6:
+    if max_score - min_score < SIGNAL_EPSILON:
         return _python_flat_field_choice(swarm, candidates)
 
     return _python_weighted_field_choice(scores, candidates, invert)
