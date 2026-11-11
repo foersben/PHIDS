@@ -143,6 +143,19 @@ def _parse_species_ids(raw: str | None) -> set[int] | None:
     return out if out else None
 
 
+def _filter_species_dict(data: dict[int, object], keep: set[int]) -> dict[int, object]:
+    """Filter a species dictionary to retain only specified ids.
+
+    Args:
+        data: The dictionary to filter.
+        keep: The set of keys to retain.
+
+    Returns:
+        A new dictionary containing only the kept keys.
+    """
+    return {k: v for k, v in data.items() if k in keep}
+
+
 def _filter_single_row(
     row: TelemetryRow,
     flora_keep: set[int] | None,
@@ -159,16 +172,16 @@ def _filter_single_row(
         The filtered telemetry row.
     """
     clone = dict(row)
-    plant_pop = _species_map(row, "plant_pop_by_species")
-    plant_energy = _species_map(row, "plant_energy_by_species")
-    defense_cost = _species_map(row, "defense_cost_by_species")
-    swarm_pop = _species_map(row, "swarm_pop_by_species")
     if flora_keep is not None:
-        clone["plant_pop_by_species"] = {sid: val for sid, val in plant_pop.items() if sid in flora_keep}
-        clone["plant_energy_by_species"] = {sid: val for sid, val in plant_energy.items() if sid in flora_keep}
-        clone["defense_cost_by_species"] = {sid: val for sid, val in defense_cost.items() if sid in flora_keep}
+        clone["plant_pop_by_species"] = _filter_species_dict(_species_map(row, "plant_pop_by_species"), flora_keep)
+        clone["plant_energy_by_species"] = _filter_species_dict(
+            _species_map(row, "plant_energy_by_species"), flora_keep
+        )
+        clone["defense_cost_by_species"] = _filter_species_dict(
+            _species_map(row, "defense_cost_by_species"), flora_keep
+        )
     if herbivore_keep is not None:
-        clone["swarm_pop_by_species"] = {sid: val for sid, val in swarm_pop.items() if sid in herbivore_keep}
+        clone["swarm_pop_by_species"] = _filter_species_dict(_species_map(row, "swarm_pop_by_species"), herbivore_keep)
     return clone
 
 
