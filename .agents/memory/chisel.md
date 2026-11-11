@@ -130,3 +130,8 @@ Action: Future extractions of visualization files must adhere to isolating the o
 ## 2024-11-20 - Extracting Live Cell Details Presenter Monolith
 Learning: Splitting a large UI state extraction module (`cell_details/live.py`) into smaller modules (`substances`, `plants`, `swarms`, `core`) helps improve maintainability. The script-based generation of new submodules must be explicitly verified to ensure the original AST structure is maintained.
 Action: When dismantling large API presenter files, ensure that `__init__.py` re-exports the exact same functions and types to preserve downstream imports.
+
+## $(date +%Y-%m-%d) - Extracting Movement Choices Monolith
+
+Learning: When extracting a pure free function module (`choices.py`) containing both `@njit` kernels and Python fallbacks, separating them into `jit.py` and `python.py` while re-exporting the exact same symbols via `__init__.py` successfully eliminates the monolith without breaking backward compatibility or down-stream dependencies.
+Action: Next time you isolate Numba JIT logic from Python orchestration, use the `__init__.py` facade pattern to shield the broader application from the internal package structure, maintaining the identical API signature for `_choose_neighbour_by_flow_probability`.
