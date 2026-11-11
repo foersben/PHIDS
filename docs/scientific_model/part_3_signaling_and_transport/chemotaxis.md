@@ -64,7 +64,7 @@ flowchart TD
 
     A["<b>Swarm Location (x, y)</b><br/>Tick t"]:::base --> B
 
-    B{"<b>Gradient Exists?</b><br/>max - min > 1e-6"}:::decision
+    B{"<b>Gradient Exists?</b><br/>max - min > 1e-4"}:::decision
 
     B -- Yes --> C["<b>Extract Neighborhood</b><br/>N, S, E, W, Center"]:::process
     C --> D["<b>Normalize & Weight</b><br/>Apply epsilon"]:::process
@@ -81,7 +81,7 @@ flowchart TD
 
 ## Neighborhood Gradient Normalization & Stochastic Selection
 
-When a swarm at coordinate $(x, y)$ evaluates candidate positions across its 5-cell Von-Neumann neighborhood (center cell plus North, South, East, and West), the raw scalar flow-field values are extracted from $F_t$. To convert raw scalar gradients into an operational probability distribution, the engine shifts all neighborhood values relative to the local neighborhood minimum and adds a computational epsilon ($\epsilon = 1 \times 10^{-6}$). This normalization guarantees non-zero selection probabilities for all valid adjacent tiles, ensuring that while high-gradient coordinates command the highest statistical likelihood of selection, alternative headings and stationary resting states remain viable options within the stochastic draw.
+When a swarm at coordinate $(x, y)$ evaluates candidate positions across its 5-cell Von-Neumann neighborhood (center cell plus North, South, East, and West), the raw scalar flow-field values are extracted from $F_t$. To convert raw scalar gradients into an operational probability distribution, the engine shifts all neighborhood values relative to the local neighborhood minimum and adds a computational epsilon ($\epsilon = 1 \times 10^{-4}$). This normalization guarantees non-zero selection probabilities for all valid adjacent tiles, ensuring that while high-gradient coordinates command the highest statistical likelihood of selection, alternative headings and stationary resting states remain viable options within the stochastic draw.
 
 ```mermaid
 flowchart TD
@@ -101,7 +101,7 @@ flowchart TD
 
     subgraph Probabilistic ["Probabilistic Taxis (Accepted)"]
         P1["Normalize relative to min (0.1)"]:::accept
-        P2["Apply epsilon (1e-6)"]:::accept
+        P2["Apply epsilon (1e-4)"]:::accept
         P3["Stochastic draw from weighted distribution"]:::accept
         P4["Result: Organic dispersion (klinokinesis)"]:::accept
         P1 --> P2 --> P3 --> P4
@@ -134,7 +134,7 @@ During the engineering of the PHIDS interaction system, several navigation parad
 
 A critical edge case in spatial ecology occurs when an organism is entirely outside the sensory horizon of any resource or predator. Mathematically, this happens when the entire neighborhood evaluates to a flat zero-gradient:
 
-$$\max_{(u,v)} F_t(u,v) - \min_{(u,v)} F_t(u,v) < 1 \times 10^{-6}$$
+$$\max_{(u,v)} F_t(u,v) - \min_{(u,v)} F_t(u,v) < 1 \times 10^{-4}$$
 
 If a swarm relied strictly on gradient ascent, a zero-gradient would result in indefinite paralysis. In biological systems, when an organism loses a scent trail, it transitions from directed movement (taxis) to undirected, exploratory movement (kinesis).
 
