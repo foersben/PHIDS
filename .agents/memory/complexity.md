@@ -164,3 +164,10 @@ Action: Prioritize refactoring pure configuration data mutation logic over HTTP 
 * **Before/After Score:** 13 vs. 9
 * **Performance Assessment:** The script operates only as an external verification step in the pre-commit pipeline and has zero direct effect on simulation engine performance. The overhead of helper function calls here is completely negligible.
 * **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed, and that complexipy reports 0 failures.
+
+## 2026-11-11 - Complexity Refactoring Report
+* **Target Function:** `src/phids/telemetry/export/core.py` - `_filter_single_row`
+* **Selection Rationale:** Selected due to a complexity score of 14. The function performed multiple dict comprehensions for filtering species maps sequentially. By extracting the dictionary comprehension into a cohesive helper `_filter_species_dict`, we significantly reduced the cognitive complexity while maintaining clarity.
+* **Before/After Score:** 14 vs. 2 (with helper at 2)
+* **Performance Assessment:** The extracted logic executes strictly in the telemetry export phase (cold path) and introduces negligible overhead from helper calls. It avoids hot paths and maintains robust performance.
+* **Test Verification:** Confirmed that ruff, mypy, pytest, and matrix parity gates passed.
