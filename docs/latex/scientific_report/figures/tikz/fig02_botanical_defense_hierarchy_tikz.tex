@@ -1,0 +1,98 @@
+\begin{tikzpicture}[
+    >=Stealth,
+    font=\scriptsize,
+    card/.style={draw=#1!65!black, fill=#1!5, rounded corners=2pt, line width=0.65pt, inner sep=6pt, align=left, text width=4.65cm, minimum height=2.1cm},
+    tallcard/.style={draw=#1!65!black, fill=#1!5, rounded corners=2pt, line width=0.65pt, inner sep=6pt, align=left, text width=4.95cm, minimum height=3.4cm},
+    panel/.style={draw=black!45, dashed, fill=black!2, rounded corners=3pt, line width=0.6pt, inner sep=10pt},
+    badge/.style={draw=#1!65!black, fill=white, rounded corners=1.5pt, line width=0.5pt, inner sep=2pt, font=\scriptsize\bfseries, text=#1!55!black}
+  ]
+
+  % Panel (a) Attack site stacked cleanly with relative positioning
+  \node[card=purple] (a1) {%
+    \centering\textbf{\footnotesize\color{purple!65!black}1. Mechanical Foliar Grazing}\\[3pt]
+    \raggedright
+    $\bullet$ Swarm oral elicitor trigger\\
+    $\bullet$ Foliar trauma $\Delta E_{\mathrm{leaf}} < 0$\\
+    $\bullet$ Intracellular $\mathrm{Ca}^{2+}$ wave%
+  };
+  \node[card=orange, below=0.55cm of a1] (a2) {%
+    \centering\textbf{\footnotesize\color{orange!65!black}2. Synthesis Latency Window}\\[3pt]
+    \raggedright
+    $\bullet$ Delay $\theta_{\mathrm{synth}} \in [8, 12]$ ticks\\
+    $\bullet$ Vulnerability exposure gap\\
+    $\bullet$ Proteinase inhibitor induction%
+  };
+  \node[card=cyan, below=0.55cm of a2] (a3) {%
+    \centering\textbf{\footnotesize\color{cyan!55!black}3. Phloem Translocation $\eta(t)$}\\[3pt]
+    \raggedright
+    $\bullet$ Foliar palatability withdrawal\\
+    $\bullet$ Attractiveness drops: $\eta \to \eta_{\min}$\\
+    $\bullet$ Accelerates MVT patch exit%
+  };
+  \draw[->, line width=0.75pt, color=purple!65!black] (a1.south) -- (a2.north);
+  \draw[->, line width=0.75pt, color=orange!65!black] (a2.south) -- (a3.north);
+
+  % Panel (b) Dual Signalling Pathways (ample horizontal corridor 2.15cm for arrow badges)
+  \node[tallcard=blue, right=2.15cm of a1, anchor=north west, yshift=0cm] (b1) at (a1.north east) {%
+    \centering\textbf{\footnotesize\color{blue!60!black}Airborne Channel (Atmosphere)}\\[4pt]
+    \raggedright
+    $\bullet$ GLV volatiles \& terpenoids\\
+    $\bullet$ Advection-diffusion PDE:\\
+    \hspace*{0.2em}$\partial_t C_s + \mathbf{u}\cdot\nabla C_s = D\nabla^2 C_s - \lambda_s C_s$\\
+    $\bullet$ Fast downwind propagation ($\mathbf{u}_{\mathrm{wind}}$)\\
+    $\bullet$ Spatial dilution \& eavesdropping%
+  };
+  \node[tallcard=brown, below=0.75cm of b1] (b2) {%
+    \centering\textbf{\footnotesize\color{brown!60!black}Subterranean Hyphal Conduit}\\[4pt]
+    \raggedright
+    $\bullet$ Hyphal network graph $\mathbf{A}_{uv}$\\
+    $\bullet$ Direct relay gain $g_{\mathrm{relay}} \ge 1$\\
+    $\bullet$ Unattenuated upwind alerts\\
+    $\bullet$ Wind-vector invariant routing\\
+    $\bullet$ Symbiotic carbon tax $\delta_E^{\mathrm{tax}}$%
+  };
+
+  % Panel (c) Neighbour Priming (ample horizontal corridor 2.15cm)
+  \node[card=teal, right=2.15cm of b1.north east, anchor=north west] (c1) {%
+    \centering\textbf{\footnotesize\color{teal!55!black}1. Hill Receptor Perception}\\[3pt]
+    \raggedright
+    $\bullet$ Sigmoidal: $S(C) = C^n / (K_d^n + C^n)$\\
+    $\bullet$ Inactive MAPK accumulation\\
+    $\bullet$ Baseline upkeep tax ($\approx 1\%$)%
+  };
+  \node[card=teal, below=0.55cm of c1] (c2) {%
+    \centering\textbf{\footnotesize\color{teal!55!black}2. Latency Compression}\\[3pt]
+    \raggedright
+    $\bullet$ Primed: $\theta_{\mathrm{primed}} \ll \theta_{\mathrm{synth}}$\\
+    $\bullet$ Pre-conditioned enzyme pool\\
+    $\bullet$ Rapid toxin onset upon attack%
+  };
+  \node[card=violet, below=0.55cm of c2] (c3) {%
+    \centering\textbf{\footnotesize\color{violet!65!black}3. Repellent Barrier Deployed}\\[3pt]
+    \raggedright
+    $\bullet$ Secondary allelochemical surge\\
+    $\bullet$ Inverts chemotactic field $F_t$\\
+    $\bullet$ Swarm cluster deflected/culled%
+  };
+  \draw[->, line width=0.75pt, color=teal!65!black] (c1.south) -- (c2.north);
+  \draw[->, line width=0.75pt, color=teal!65!black] (c2.south) -- (c3.north);
+
+  \begin{scope}[on background layer]
+    \node[panel, fit=(a1)(a3), inner ysep=14pt] (pa) {};
+    \node[panel, fit=(b1)(b2), inner ysep=14pt] (pb) {};
+    \node[panel, fit=(c1)(c3), inner ysep=14pt] (pc) {};
+  \end{scope}
+
+  \node[fill=white, anchor=center, font=\small\bfseries, inner xsep=4pt, inner ysep=2pt] (pa_lbl) at (pa.north) {(a) Localised Attack Site $\mathcal{E}_{\mathrm{host}}$};
+  \node[fill=white, anchor=center, font=\small\bfseries, inner xsep=4pt, inner ysep=2pt] (pb_lbl) at (pb.north) {(b) Dual Signalling Pathways};
+  \node[fill=white, anchor=center, font=\small\bfseries, inner xsep=4pt, inner ysep=2pt] (pc_lbl) at (pc.north) {(c) Neighbour Priming $\mathcal{E}_{\mathrm{primed}}$};
+
+  % Inter-panel horizontal conduits with centred pills inside the 2.15cm gap
+  \draw[->, line width=0.8pt, color=blue!60!black] (a1.east) -- node[above=2pt, badge=blue] {VOC Plumes} (b1.west |- a1.east);
+  \draw[->, line width=0.8pt, color=blue!60!black] (b1.east |- c1.west) -- node[above=2pt, badge=blue] {Plume Inflow} (c1.west);
+  \draw[->, line width=0.8pt, color=brown!60!black] (a3.east) -- node[above=2pt, badge=brown] {Hyphal Pulse} (b2.west |- a3.east);
+  \draw[->, line width=0.8pt, color=brown!60!black] (b2.east |- c3.west) -- node[above=2pt, badge=brown] {Hyphal Relay} (c3.west);
+
+  % Explicit top padding so above-panel titles never clip
+  \path ([yshift=0.30cm]pa_lbl.north) ([yshift=0.30cm]pb_lbl.north) ([yshift=0.30cm]pc_lbl.north);
+\end{tikzpicture}

@@ -1,0 +1,33 @@
+% ==============================================================================
+% Appendix A: Reproducibility Protocol and Cross-Thread Verification
+% ==============================================================================
+
+\section{Reproducibility Protocol and Cross-Thread Verification}
+\label{app:reproducibility}
+
+\renewcommand{\thetable}{A.\arabic{table}}
+\setcounter{table}{0}
+
+All simulation ensembles and sensitivity designs in this study execute headlessly under deterministic master PRNG stream partitioning across tiles and swarm slices. Global variance decomposition evaluates a scrambled quasi-random Sobol sequence of dimension ten split into independent base and complementary sample matrices under Common Random Numbers, paired with unbiased sample variance estimation across pooled baseline rows. Cross-thread reproducibility checks compare telemetry trajectories and contiguous buffer checksums across one, four, and twelve OpenMP worker threads, verifying bit-exact equivalence ($\max|\Delta| = 0.0$) across every reference lattice and calibrated ecotone workload (Table~\ref{tab:determinism_digests}).
+
+\begin{table*}[t]
+\caption{Cross-Thread SHA-256 Telemetry Verification Digests ($p \in \{1, 4, 12\}$).}
+\label{tab:determinism_digests}
+\vspace{4pt}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c l @{}}
+\toprule
+\textbf{Benchmark Workload} & \textbf{Ticks} & \textbf{SHA-256 Digest (Identical Across $p \in \{1, 4, 12\}$)} \\
+\midrule
+Orchard Reference ($64 \times 32$)                     & $400$ & \texttt{ac1f321e0b83a65706ded502284b00ec844f9dfa563c8f6e186ff36132e53806} \\
+Canopy Reference ($128 \times 128$)                    & $200$ & \texttt{d32b4d2ac737b083fdc7e38b63bf1035294cdef6aff4b310f496faacf9a1323e} \\
+Equilibrium Benchmark ($256 \times 256$)               & $50$  & \texttt{e01569e5b0129a0bc544b65b3798c4f1d009f9c2f004833af5949ac0f9b9c26f} \\
+Pre-Calibration Twin ($128 \times 64$)                 & $200$ & \texttt{359ffdfa92c8808e06c5aabd832e25c9fb47b16ede96fb7235d63dea5eac2665} \\
+Pre-Calibration Ecotone ($256 \times 256$)             & $50$  & \texttt{45bdf4e7614eebba17c9bec25cae26405010367ee7d934fb3fe2e282721c654f} \\
+Calibrated Twin ($128 \times 64$, seed $42$)           & $400$ & \texttt{f5504cded71e053d20e568f6208524976bf135f0e4207ede1ae067c0f7cae667} \\
+Calibrated Ecotone ($256 \times 256$, seed $42$)       & $200$ & \texttt{2d9a0a175e9424663659541531ef1961927e027ced05c9476cc99115881dfead} \\
+\bottomrule
+\end{tabular*}
+\end{table*}

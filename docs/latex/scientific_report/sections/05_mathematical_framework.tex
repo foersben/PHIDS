@@ -1,0 +1,334 @@
+% ==============================================================================
+% Section 5: The Mathematical Framework: Coupled Hybrid Dynamical System
+% ==============================================================================
+
+\section{The Mathematical Framework: Coupled Hybrid Dynamical System}
+\label{sec:mathematical_framework}
+
+\begin{figure*}[t]
+  \input{figures/fig05_operator_splitting_pipeline.tex}
+  \caption{Operator-Splitting Numerical Scheme and Multi-Scale Temporal Decoupling Architecture. \textbf{(a)} Continuous airborne volatile transport is decomposed into a five-stage operator-splitting pipeline across double-buffered cellular tensors, coupling unconditionally stable semi-Lagrangian wind advection with isotropic Gaussian convolution and macroscopic sparsity clamping. \textbf{(b)} The multi-scale temporal hierarchy decouples execution across Fast ($1\,\text{h}$), Medium ($24\,\text{h}$), and Slow ($168\,\text{h}$) loops, resolving the rate disparity between hourly insect taxis and gradual vegetative growth while cutting per-tick plant-growth write traffic $168\times$ through phase-staggered cohort scheduling.}
+  \label{fig:operator_splitting_pipeline}
+\end{figure*}
+
+To resolve plant--herbivore coevolutionary interactions with finite spatial lag and continuous chemical transport, PHIDS is formulated as a \textbf{coupled hybrid dynamical system}.
+
+The simulation couples two operational layers: a discrete Lagrangian Entity--Component--System (ECS) governing mobile agent kinematics, somatic growth, and metabolic allocation, and a continuous Eulerian grid layer resolving parabolic reaction--diffusion--advection partial differential equations (PDEs), potential flow fields, and subterranean graph conduits. Below we formalise the global state space, continuous atmospheric transport, operator-splitting numerical integration, multi-scale temporal scheduling, and trophic kinetic laws.
+
+% ------------------------------------------------------------------------------
+\subsection{Global State Space and Domain Topology}
+\label{subsec:state_space_topology}
+% ------------------------------------------------------------------------------
+
+The global ecosystem state at any discrete simulation epoch (tick) $t \in \mathbb{N}_0$ is represented by the unified state tuple:
+\begin{equation}
+  \mathcal{X}_t = \left( \mathcal{E}_t, \; \mathcal{G}_t, \; \mathcal{G}_{\text{myco}}, \; \mathcal{P} \right)
+  \label{eq:global_state_tuple}
+\end{equation}
+where:
+\begin{itemize}
+  \item $\mathcal{E}_t = \{ e_1, e_2, \dots, e_{N(t)} \}$ denotes the discrete set of active biological entities instantiated within the Entity-Component-System (autotrophic flora anchors and mobile heterotrophic herbivore swarms), stored in contiguous Structure-of-Arrays (SoA) memory buffers.
+  \item $\mathcal{G}_t \in \mathbb{R}^{W \times H \times K}$ represents the double-buffered Eulerian cellular field tensor over the spatial lattice $\Lambda$, tracking localised caloric densities, airborne volatile organic compound (VOC) concentrations across $K_{\text{voc}}$ channels, and defensive toxin layers across $K_{\text{tox}}$ channels.
+  \item $\mathcal{G}_{\text{myco}} = (\mathcal{V}_{\text{flora}}, \mathcal{E}_{\text{hyphae}})$ defines the subterranean mycorrhizal fungal network, modelled as an unweighted, undirected nearest-neighbour lattice graph (cardinal adjacency) where vertices correspond to sessile root systems and edges represent active hyphal links.
+  \item $\mathcal{P}$ represents the immutable global biophysical parameter set governing thermodynamic conversion efficiencies, kinetic rate constants, and environmental constants.
+\end{itemize}
+
+The spatial biotope spans a flat two-dimensional periodic domain $\Omega = [0, L_x) \times [0, L_y)$ ($\mathbb{T}^2$), discretised into an orthogonal cellular lattice $\Lambda = \{ (x, y) \in \mathbb{Z}^2 \mid 0 \le x < W, \; 0 \le y < H \}$ with uniform cell spacing $h = \Delta x = \Delta y$ and periodic toroidal wrapping across boundaries (accelerated via bitwise \texttt{AND} masking when $W, H$ are powers of two; Section~\ref{subsec:branchless_toroidal}). The discrete entity layer $\mathcal{E}_t$ advances synchronously with the Eulerian field layer $\mathcal{G}_t$ at fixed hourly ticks ($\Delta t = 1\,\text{h}$) without an asynchronous event queue: plants sample local volatile concentrations $C_s(x, y)$ against trigger thresholds and inject emissions $Q_s$ back into $\mathcal{G}_t$, while feeding, starvation culling, mitosis, somatic growth, and seed dispersal execute under deterministic diurnal ($24\,\text{h}$) and weekly ($168\,\text{h}$) strides.
+
+% ------------------------------------------------------------------------------
+\subsection{Continuous Atmospheric Transport Dynamics}
+\label{subsec:atmospheric_transport}
+% ------------------------------------------------------------------------------
+
+Airborne communication between autotrophs relies on the atmospheric dispersion of volatile organic compounds (VOCs). Macroscopic transport of scalar substance $s \in \{1, \dots, K_{\text{voc}}\}$ across the periodic 2D domain is governed by the reaction-diffusion-advection Partial Differential Equation (PDE):
+\begin{equation}
+  \frac{\partial C_s}{\partial t} + \mathbf{u}_{\text{wind}} \cdot \nabla C_s = D_s \nabla^2 C_s - \lambda_s C_s + Q_s(\mathbf{x}, t),
+  \label{eq:reaction_diffusion_pde}
+\end{equation}
+where $C_s(\mathbf{x}, t) \ge 0$ is local concentration, $\mathbf{u}_{\text{wind}} = (u_x, u_y)^{\top}$ in $\text{cells}\cdot\text{tick}^{-1}$ denotes the effective hourly plume-drift displacement rate capturing net canopy-trapped advection, sorption, and turbulent boundary-layer mixing rather than unattenuated meteorological velocity, $D_s > 0$ is the isotropic turbulent diffusivity, $\nabla^2 = \partial_x^2 + \partial_y^2$ is the planar Laplacian under periodic boundary conditions, $\lambda_s \ge 0$ is the photolytic clearance rate, and $Q_s(\mathbf{x}, t) = \sum_{i} q_{s,i}(t)\,\delta(\mathbf{x} - \mathbf{x}_i)$ aggregates active botanical emissions. Without clearance ($\lambda_s = 0$) and sources ($Q_s = 0$), periodic boundaries conserve total atmospheric mass identically.
+
+% ------------------------------------------------------------------------------
+\subsection{Operator Splitting and Numerical Scheme}
+\label{subsec:operator_splitting}
+% ------------------------------------------------------------------------------
+
+Solving the coupled PDE~\eqref{eq:reaction_diffusion_pde} concurrently with tens of thousands of discrete kinematic agents over long time horizons requires an unconditionally stable numerical integration scheme. PHIDS employs a five-stage \textbf{operator-splitting method} (fractional step method), injecting active sources into the read buffer and decomposing continuous transport into discrete sequential operators:
+\begin{equation}
+  C_s^{t+1} = \left( \mathcal{S}_{\text{clamp}} \circ \mathcal{S}_{\text{decay}} \circ \mathcal{S}_{\text{diff}} \circ \mathcal{S}_{\text{adv}} \circ \mathcal{S}_{\text{source}} \right) \left( C_s^t \right)
+  \label{eq:operator_splitting_pipeline}
+\end{equation}
+The mathematical formulation and algorithmic execution of each operator are defined as follows:
+
+\paragraph{Stage 1: Localised Point Mass Injection ($\mathcal{S}_{\text{source}}$).}
+Prior to atmospheric transport within the signalling step, botanical emissions synthesised by damaged host entities are added algebraically into the cellular lattice:
+\begin{equation}
+  C_{s,\text{source}}^t(x, y) = C_s^t(x, y) + \frac{Q_s^t(x, y) \Delta t}{h^2}
+  \label{eq:mass_injection_step}
+\end{equation}
+where $Q_s^t(x, y)$ represents the aggregated volatile flux released by all active autotrophic emitters residing within cell $(x, y)$.
+
+\paragraph{Stage 2: Semi-Lagrangian Advection ($\mathcal{S}_{\text{adv}}$).}
+Traditional explicit finite-difference upwind schemes for hyperbolic advection are constrained by the Courant-Friedrichs-Lewy (CFL) stability criterion:
+\begin{equation}
+  \text{CFL} = \frac{\|\mathbf{u}_{\text{wind}}\|_{\infty} \Delta t}{h} \le 1.0
+  \label{eq:cfl_condition}
+\end{equation}
+In high-velocity wind gusts, satisfying Equation~\eqref{eq:cfl_condition} requires sub-cycling the time step, increasing per-tick compute overhead. PHIDS bypasses the CFL ceiling through an unconditionally stable \textbf{semi-Lagrangian advection scheme} that traces incoming air parcels backwards to their upwind departure origin and interpolates concentration there.
+
+For each lattice site $(x, y) \in \Lambda$, the algorithm traces the wind trajectory backwards in continuous time by displacement vector $\Delta \mathbf{x} = \mathbf{u}_{\text{wind}}(x, y) \Delta t$. The characteristic departure point is computed as:
+\begin{align}
+  x^* &= \text{wrap}\left( x - u_x(x, y) \Delta t, \; W \right) \label{eq:departure_point_x} \\
+  y^* &= \text{wrap}\left( y - u_y(x, y) \Delta t, \; H \right) \label{eq:departure_point_y}
+\end{align}
+The advected scalar field $\tilde{C}_s^t(x, y)$ is evaluated via bilinear spatial interpolation across the four surrounding source-injected lattice anchors:
+\begin{equation}
+  \tilde{C}_s^t(x, y) = \sum_{i=0}^1 \sum_{j=0}^1 \omega_{ij} \, C_{s,\text{source}}^t\left( \lfloor x^* \rfloor + i, \; \lfloor y^* \rfloor + j \right)
+  \label{eq:bilinear_interpolation}
+\end{equation}
+where the bilinear interpolation weights satisfy $\omega_{ij} \ge 0$ and $\sum_{i,j} \omega_{ij} = 1.0$. Because bilinear interpolation represents a convex combination of lattice values, the semi-Lagrangian operator is unconditionally $L^\infty$-stable:
+\begin{equation}
+  \|\tilde{C}_s^t\|_{\infty} \le \|C_{s,\text{source}}^t\|_{\infty} \quad \forall \; \Delta t > 0
+  \label{eq:linfty_stability}
+\end{equation}
+completely eliminating numerical oscillations or explosive divergence regardless of wind velocity. Because bilinear backward interpolation forms a Bernoulli convex combination across adjacent lattice nodes along each axis with fractional Courant displacement $\alpha \in [0, 1)$, it introduces implicit numerical diffusion with per-step variance $\sigma_{\text{num}}^2(\alpha) = \alpha(1 - \alpha)$ \cite{staniforth1991semi}. This implicit diffusivity vanishes at integer displacements ($\alpha = 0$) and peaks at $\sigma_{\text{num}}^2(0.5) = 0.25$ for $\|\mathbf{u}_{\text{wind}}\| = 0.50\,\text{cells/tick}$ --- $56\%$ larger than the explicit Gaussian kernel variance $\sigma^2 = 0.16$ in Stage~3 --- creating slight additional lateral smoothing at half-cell Courant displacements.
+
+\paragraph{Stage 3: Isotropic Gaussian Diffusion ($\mathcal{S}_{\text{diff}}$).}
+Following advective displacement, spatial diffusion is resolved via discrete two-dimensional spatial convolution using a uniform diffusivity kernel shared across channels ($D_s \equiv D$), evaluated over a symmetric, odd-sized isotropic Gaussian stencil $\mathcal{K}_{\text{iso}} \in \mathbb{R}^{5 \times 5}$:
+\begin{align}
+  C_{s,\text{diff}}^{*}(x, y) &= \left( \mathcal{K}_{\text{iso}} * \tilde{C}_s^t \right)(x, y) \nonumber \\
+  &= \sum_{u=-2}^2 \sum_{v=-2}^2 \mathcal{K}_{\text{iso}}[u, v] \, \tilde{C}_s^t(x - u, y - v)
+  \label{eq:gaussian_convolution}
+\end{align}
+The discrete stencil $\mathcal{K}_{\text{iso}}[u, v] = w_{u,v} / \sum_{i,j=-2}^{2} w_{i,j}$ normalises bivariate Gaussian weights $w_{u,v} = \exp\!\left(-(u^2 + v^2) / (2\sigma^2)\right)$ over the odd-sized $5 \times 5$ window ($u, v \in \{-2, \dots, 2\}$) with default $\sigma = 0.40$. Centring an odd-sized stencil on $(0, 0)$ eliminates the half-cell diagonal phase drift ($+0.5h, +0.5h$) inherent to even-sized kernels while unit normalisation ($\sum_{u,v}\mathcal{K}_{\text{iso}}[u,v]=1.0$) preserves volatile mass; at $\sigma = 0.40$, outer weights beyond radius $2$ fall below $\epsilon_{\text{signal}} = 10^{-4}$ (yielding compact $3 \times 3$ effective dispersion while retaining $5 \times 5$ stencil support for broader diffusivities).
+
+\paragraph{Stage 4: Photolytic Chemical Clearance ($\mathcal{S}_{\text{decay}}$).}
+Atmospheric degradation is integrated via the first-order exponential decay operator:
+\begin{align}
+  C_{s,\text{decay}}^{*}(x, y) &= \gamma_s \cdot C_{s,\text{diff}}^{*}(x, y) \nonumber \\
+  \text{where } \gamma_s &= \exp\left( -\lambda_s \Delta t \right) \approx 1 - \lambda_s \Delta t
+  \label{eq:photolytic_decay_step}
+\end{align}
+The linear approximation $\gamma_s = 1 - \lambda_s \Delta t$ is accurate to first order in $\lambda_s \Delta t$ (with $\mathcal{O}((\lambda_s \Delta t)^2)$ truncation error) when $\lambda_s \Delta t \ll 1$; the compiled solver evaluates this multiplicative retention factor directly across vectorised registers.
+
+\paragraph{Stage 5: Macroscopic Sparsity Cutoff ($\mathcal{S}_{\text{clamp}}$).}
+Under multiplicative clearance ($\gamma_s < 1$), exponential decay tails persist indefinitely across the periodic torus at negligible amplitude, causing unphysical background accumulation over thousands of ticks and preventing fast sparse checks ($\max C_s < \epsilon_{\text{signal}}$). To enforce finite-horizon plume extinction and maintain sparse active signal sets in double-precision field buffers, PHIDS applies a branchless threshold mask against $\epsilon_{\text{signal}} = 1.0 \times 10^{-4}$:
+\begin{equation}
+  C_s^{t+1}(x, y) = \mathbf{1}_{\{ C_{s,\text{decay}}^{*}(x, y) \ge \epsilon_{\text{signal}} \}} \cdot C_{s,\text{decay}}^{*}(x, y),
+  \label{eq:subnormal_clamping}
+\end{equation}
+clamping sub-threshold residues directly to exact floating-point zero.
+
+The sequential composition in Equation~\eqref{eq:operator_splitting_pipeline} constitutes a first-order Lie-Trotter operator splitting scheme. Let $\mathcal{A} = -\mathbf{u} \cdot \nabla$ and $\mathcal{B} = D \nabla^2 - \lambda$; applying $\mathcal{A}$ prior to $\mathcal{B}$ corresponds to the composition $\exp(\mathcal{B}\Delta t)\exp(\mathcal{A}\Delta t)$. By the Baker-Campbell-Hausdorff (BCH) formula:
+\begin{align}
+  \exp\left( (\mathcal{A} + \mathcal{B})\Delta t \right) &= \exp(\mathcal{B}\Delta t) \exp(\mathcal{A}\Delta t) \nonumber \\
+  &\quad + \frac{\Delta t^2}{2} [\mathcal{A}, \mathcal{B}] + \mathcal{O}(\Delta t^3)
+  \label{eq:bch_splitting_error}
+\end{align}
+where $[\mathcal{A}, \mathcal{B}] = \mathcal{A}\mathcal{B} - \mathcal{B}\mathcal{A}$ is the Lie commutator bracket. Because advection and diffusion do not commute in general non-uniform wind fields ($[\mathcal{A}, \mathcal{B}] \neq 0$), splitting introduces a local truncation error of $\mathcal{O}(\Delta t^2)$ and a global error of $\mathcal{O}(\Delta t)$ (vanishing when $\mathbf{u}_{\text{wind}}$ is spatially uniform as in the orchard reference runs, since constant-coefficient advection and Laplacian diffusion commute).
+
+% ------------------------------------------------------------------------------
+\subsection{Chemotactic Potential and Jacobi Relaxation}
+\label{subsec:chemotactic_potential}
+% ------------------------------------------------------------------------------
+
+Herbivore swarms navigate heterogeneous biotopes through chemotaxis -- orienting along spatial gradients of chemical attractants and repellents. To avoid computing individual $A^*$ or Dijkstra shortest paths for thousands of swarms ($\mathcal{O}(N_{\text{swarms}} \cdot W H \log(WH))$), PHIDS constructs a single \textbf{unified chemotactic flow field} $F_t(x, y)$ per tick, which all agents query locally in $\mathcal{O}(1)$ time. At the start of each hourly tick, an un-diffused baseline desirability surface $G_t(x, y)$ is constructed by weighting local plant energy with foliar apparent nutrition $\eta(x, y)$ and subtracting accumulated toxins:
+\begin{equation}
+  G_t(x, y) = \alpha \, E_{\text{plant}}(x, y) \, \eta(x, y) - \beta \sum_{k=1}^{K_{\text{tox}}} T_{k,t}(x, y)
+  \label{eq:baseline_gradient}
+\end{equation}
+where $E_{\text{plant}}(x, y)$ is the host plant energy at coordinate $(x, y)$ (zero on unoccupied cells), $\eta(x, y) \in [\eta_{\min}, 1.0]$ is the local vascular palatability multiplier, $T_{k,t}(x, y)$ is the concentration of the $k$-th defensive toxin channel, and $\alpha > 0$, $\beta > 0$ are attraction and aversion coupling weights. Linear summation over toxin channels $\sum_k T_k$ enforces sensory non-masking so overlapping chemical defences build repulsive barriers.
+
+To turn point sources into a long-range sensory surface detectable across empty space, $G_t(x, y)$ undergoes iterative diffusion via Jacobi relaxation. On lattice spacing $h = 1$, the continuous screened Poisson counterpart with screening constant $\kappa$ reads:
+\begin{equation}
+  \nabla^2 F(\mathbf{x}) - \kappa^2 F(\mathbf{x}) = -\frac{4}{\delta h^2} G_t(\mathbf{x}),
+  \label{eq:screened_poisson}
+\end{equation}
+whose 4-point central-difference steady-state fixed point $(1-\delta) F - \frac{\delta}{4}\Delta_5 F = G_t$ with spatial decay factor $\delta \in (0, 1)$ yields the iterative Jacobi update rule implemented in the engine:
+\begin{align}
+  F^{(m+1)}[x, y] &= G_t[x, y] + \frac{\delta}{4} \Big( F^{(m)}[x+1, y] \nonumber \\
+  &\quad + F^{(m)}[x-1, y] + F^{(m)}[x, y+1] \nonumber \\
+  &\quad + F^{(m)}[x, y-1] \Big)
+  \label{eq:jacobi_iteration_rule}
+\end{align}
+where $\kappa^2 = \frac{4(1-\delta)}{\delta h^2}$ links the discrete decay factor $\delta$ to continuous screening, iterates initialise directly from the baseline surface ($F^{(0)} = G_t$), coordinate offsets use periodic toroidal wrapping, and sweeps stop at $M_{\max} = W + H$ iterations (switching automatically to OpenMP parallel kernels when $W \cdot H \ge 128^2$). The iteration terminates when the maximum absolute grid residual falls below the convergence tolerance $\epsilon_{\text{jacobi}}$ or when the maximum iteration limit $M_{\max}$ is reached:
+\begin{align}
+  \max_{(x, y) \in \Lambda} \left| F^{(m+1)}[x, y] - F^{(m)}[x, y] \right| &< \epsilon_{\text{jacobi}} = 10^{-4} \nonumber \\
+  &\quad \text{or } m \ge M_{\max}
+  \label{eq:jacobi_stopping_criterion}
+\end{align}
+Equation~\eqref{eq:jacobi_iteration_rule} is compiled into multithreaded native machine code for large lattices ($W \cdot H \ge 128^2$) and serial compiled loops on smaller grids. After relaxation converges, host camouflage attenuates local surface attractiveness in-place via $F_t(x, y) \gets \Phi_{\text{camo}}(x, y)\,F_t(x, y)$ ($\Phi_{\text{camo}} \in [0, 1]$), hiding masked flora from nearby foragers. Because each update for cell $(x, y)$ depends strictly on the read buffer $F^{(m)}$ and writes exclusively to $F^{(m+1)}$, inner loops execute with zero write-after-read hazards.
+
+% ------------------------------------------------------------------------------
+\subsection{Swarm Kinematics and Stochastic Taxis}
+\label{subsec:swarm_kinematics}
+% ------------------------------------------------------------------------------
+
+Heterotrophic herbivore swarms navigate the relaxed potential field $F_t(x, y)$ through local sampling. Sensory perception in biological foragers is noisy rather than deterministic gradient ascent ($\arg\max F$), which would produce artificial single-file trajectories. A swarm with integer movement period $v_i \in \mathbb{N}^+$ moves whenever its movement cooldown ($v_i - 1\,\text{ticks}$ after each step) reaches zero, corresponding to step cadence $1/v_i \in (0, 1]\,\text{cells/h}$, sampling $F_t$ over its 5-cell \textbf{von Neumann neighbourhood}:
+\begin{align}
+  \mathcal{V}(x, y) = \big\{ &(x, y), \; (x+1, y), \; (x-1, y), \nonumber \\
+  &(x, y+1), \; (x, y-1) \big\}
+  \label{eq:von_neumann_neighborhood}
+\end{align}
+where spatial indices wrap toroidally. Restricting candidate moves to orthogonal nearest neighbours enforces an exact $1:1$ grid step ($h$) without diagonal $\sqrt{2}h$ step-length distortion. Scalar potential differences map to transition probabilities via \textbf{Boltzmann softmax action selection}:
+\begin{equation}
+  P(u, v \mid x, y) = \frac{\exp\left( \frac{F_t(u, v) - F_{\max}}{\tau} \right)}{\sum_{(u', v') \in \mathcal{V}(x, y)} \exp\left( \frac{F_t(u', v') - F_{\max}}{\tau} \right)}
+  \label{eq:boltzmann_softmax}
+\end{equation}
+where $F_{\max} = \max_{(u, v) \in \mathcal{V}} F_t(u, v)$ prevents exponential overflow and $\tau > 0$ sets sensory temperature (in the engine's alternative $\tau = 0$ linear-weighted mode, weights equal $F_t(u, v) - F_{\min}$). Calibrating $\tau \in [0.15, 0.40]$ balances chemotactic gradient ascent ($\tau \to 0^+$) against exploratory dispersal ($\tau \to \infty$, $P = 0.20$).
+
+Across depleted terrain where chemical gradients vanish ($\max F_t - \min F_t < 1.0 \times 10^{-6}$), swarms preserve their movement heading through \textbf{orthokinetic persistence}: letting $\mathbf{d}_t = (dx_t, dy_t)$ denote the previous step vector, candidate weights are biased forward by $W_{\text{ortho}} = 10.0$:
+\begin{equation}
+  w(u, v) = \begin{cases}
+    W_{\text{ortho}}, & \text{if } (u - x, v - y) = (dx_t, dy_t) \\
+    1.0, & \text{otherwise}
+  \end{cases}
+  \label{eq:orthokinetic_weight}
+\end{equation}
+giving $P_{\text{forward}} = 10/14 \approx 0.714$ and turning probability $0.071$ per orthogonal/reverse edge. Once situated on a host, patch departure uses a strictly local $\mathcal{O}(1)$ MVT-inspired logistic heuristic based on the intake-to-upkeep ratio $\mathcal{R}_{\text{intake}} = \Delta E_{\text{consumed}} / E_{\text{upkeep}}$ (rather than solving a global MVT habitat optimisation):
+\begin{equation}
+  P_{\text{depart}} = \frac{1}{1 + \exp\left( k_{\text{mvt}} \left( \mathcal{R}_{\text{intake}} - 1.0 \right) \right)}
+  \label{eq:mvt_logistic_departure}
+\end{equation}
+with steepness $k_{\text{mvt}} = 5.0$, keeping swarms anchored while feeding is plentiful ($\mathcal{R}_{\text{intake}} \gg 1$) and driving departure once reserves drop ($P_{\text{depart}} \approx 0.993$ as $\mathcal{R}_{\text{intake}} \to 0$). Finally, movement prevents overcrowding via a branchless tile carrying-capacity mask zeroed prior to sampling:
+\begin{equation}
+  M_{\text{cap}}(u, v) = \mathbf{1}_{\left\{ N_{\text{pop}}(u, v) < C_{\max} \right\}},
+  \label{eq:capacity_mask}
+\end{equation}
+compelling surplus agents to divert to adjacent spatial refugia.
+
+% ------------------------------------------------------------------------------
+\subsection{Multi-Scale Temporal Decoupling}
+\label{subsec:temporal_decoupling}
+% ------------------------------------------------------------------------------
+
+Ecological systems operate across vastly divergent temporal scales. Herbivore taxis and atmospheric plume dispersion occur on the order of seconds to hours ($\Delta \tau \approx 1\,\text{h}$), whereas circadian feeding and digestive cycles operate on a diurnal cadence ($24\,\text{h}$), and autotrophic vegetative growth, seed germination, and mycorrhizal development require weeks ($168\,\text{h}$).
+
+In classical simulation architectures, integrating all biological rates at hourly resolution ($\Delta t = 1\,\text{h}$) forces slow-growing species parameterised with low hourly growth percentages $g$ (e.g. $g = 0.05\%\,\text{h}^{-1}$) to apply small per-tick increments:
+\begin{align}
+  \Delta E_{\text{hourly}} &= E_{\text{base}} \cdot \frac{g}{100} \nonumber \\
+  &\approx 100 \cdot 0.0005 = 0.05\,\text{cal}\,\text{h}^{-1}
+  \label{eq:microscopic_increment}
+\end{align}
+where $E_{\text{base}} = 100\,\text{cal}$ denotes a nominal vegetative reserve and $g$ is the species-specific hourly growth percentage (high-turnover orchard benchmarks use elevated $g = 4.5\%\,\text{h}^{-1}$, whereas slow forest flora exhibit small hourly fractions). Although double-precision (\texttt{float64}) energy arrays add $\Delta E_{\text{hourly}}$ to mature reserves ($E_{\text{plant}} \sim 10^3\,\text{cal}$) without precision loss, scanning and mutating thousands of dormant plant entities every hourly tick wastes memory bandwidth and evicts active field slices from L1/L3 caches.
+
+To avoid redundant per-tick writes while preventing macro-telemetry sawtooth shocks, PHIDS uses a \textbf{multi-scale temporal decoupling hierarchy} partitioned across three nested clock cycles alongside a configurable root-link interval:
+\begin{enumerate}
+  \item \textbf{Fast Loop ($\Delta t = 1\,\text{h}$, every tick):} Evaluates Jacobi potential relaxation, camouflage attenuation, MVT-inspired host anchoring checks, Boltzmann softmax swarm taxis, Hill defence triggers, toxin lethality and eviction walks, aftereffect timers, vascular phloem translocation and recovery ($\eta(t)$), semi-Lagrangian advection, Gaussian diffusion, and photolytic clearance.
+  \item \textbf{Symbiotic Graph Interval ($\Delta t = 8\,\text{h}$, configurable):} Evaluates dynamic mycorrhizal cardinal root-link establishment ($8$-tick default interval) and prunes links attached to culled hosts.
+  \item \textbf{Medium Loop ($\Delta t = 24\,\text{h}$, diurnal stride):} Evaluates Holling Type~II herbivory on stationary non-repelled swarms, diurnal metabolic upkeep ($24 U$), starvation culling, and surplus-energy swarm reproduction.
+  \item \textbf{Slow Loop ($\Delta t = 168\,\text{h}$, weekly stride):} Executes phase-staggered plant cohort growth, structural tissue accretion and maintenance, weekly CMN link upkeep, and seed dispersal (gated per species by reproduction intervals $868\text{--}1{,}737\,\text{ticks}$), alongside weekly swarm binary fission.
+\end{enumerate}
+
+To avoid synchronous execution shocks where all plants update simultaneously on tick $t = 168, 336, \dots$ (causing periodic frame-time spikes), the autotrophic population is partitioned into $168$ disjoint \textbf{phase-staggered cohorts}. Let $\Delta E_{\mathrm{wk}} = 168\,\Delta E_{\text{hourly}}$. Entity $e_i$ executes its weekly update solely on cohort ticks $i \equiv t \pmod{168}$, remaining read-only otherwise:
+\begin{equation}
+  E_{i}^{t+1} =
+  \begin{cases}
+    \min(E_i^t + \Delta E_{\mathrm{wk}},\, E_{\max}), & i \equiv t \pmod{168}, \\
+    E_i^t, & \text{otherwise}.
+  \end{cases}
+  \label{eq:full_weekly_growth}
+\end{equation}
+This cohort stride distributes the computational workload evenly across all $168$ ticks of the week, reducing per-tick plant-growth memory writes by a factor of $168$ while preserving macroscopic weekly continuity and cache locality.
+
+% ------------------------------------------------------------------------------
+\subsection{Multi-Trophic Kinetics and Defence Stoichiometry}
+\label{subsec:trophic_kinetics}
+% ------------------------------------------------------------------------------
+
+On each weekly cohort tick ($i \equiv t \pmod{168}$), plants with positive structural ceiling $M_{\max, j} > 0$ also accrue permanent structural tissue mass and pay cohort-scaled structural upkeep together with weekly mycorrhizal link maintenance:
+\begin{align}
+  M_j^{t+168} &= \min\!\left(M_{\max, j},\; M_j^t + 168\,g_{\text{struct}, j}\right), \nonumber \\
+  \Delta E_{\text{struct}, j} &= 0.5\,E_{\min, j}\,\frac{M_j^{t+168}}{M_{\max, j}}, \nonumber \\
+  \Delta E_{\text{myco}, j} &= \delta_E^{\text{tax}} \cdot \deg_{\mathcal{G}_{\text{myco}}}(e_j),
+  \label{eq:structural_mass_growth}
+\end{align}
+deducted from $E_j$ prior to survival culling at $E_j < E_{\min, j}$ (with dead hosts removed and incident edges pruned from $\mathcal{G}_{\text{myco}}$). Every $8$ ticks (or if equal to a weekly boundary), disjoint adjacent plant pairs $(e_j, e_k)$ at Manhattan distance $1$ satisfying $E - c_{\text{conn}} \ge E_{\min}$ establish an undirected edge in $\mathcal{G}_{\text{myco}}$ at symmetrical carbon expenditure $E_j \gets E_j - c_{\text{conn}}$, $E_k \gets E_k - c_{\text{conn}}$.
+
+On diurnal feeding ticks ($t \bmod 24 = 0$), stationary, non-repelled swarms extract biomass from a co-located compatible host $e_j$ via the \textbf{Holling Type~II functional response}~\cite{holling1959components} scaled by step cadence $1/\max(1, v_i)$:
+\begin{align}
+  a_{\text{eff}, i} &= \frac{a_i}{\max(1, v_i)}, \nonumber \\
+  \Delta E_{i \leftarrow j} &= \min\!\left(E_j,\; \frac{a_{\text{eff}, i}\, E_j}{1 + a_{\text{eff}, i}\, T_h^{\text{stride}}\, E_j} \cdot N_i\right),
+  \label{eq:math_holling_type_ii}
+\end{align}
+where $a_i$ ($\mathrm{stride}^{-1}$) and $T_h^{\text{stride}}$ ($\mathrm{stride}\cdot\mathrm{cal}^{-1}$) act at unit diurnal stride multiplier ($\Delta_{\text{stride}} = 1.0$, setting the per-event intake ceiling at $1/T_h^{\text{stride}}$ calories per individual), $N_i$ is swarm headcount, and dividing by movement period $\max(1, v_i)$ reduces effective attack rate monotonically as step cadence $1/v_i$ slows; in the worst-case hourly regime of Proposition~\ref{thm:critical_synthesis_delay}, $v_i = 1$ and Eq.~\eqref{eq:math_holling_type_ii} acts every hour. Assimilated energy increments swarm reserve by $e_{\text{eff}}(1 - \delta_{\mathrm{morph}, j})\Delta E_{i \leftarrow j}$. In parallel, constitutive mechanical wear inflicts stochastic per-bite casualties governed by damage parameter $c_{\mathrm{bite},j} \ge 0$ and morphological adaptation $\alpha_{\mathrm{morph},i} \in [0, 1]$:
+\begin{align}
+  d_{ij} &= c_{\mathrm{bite},j}\,(1 - \alpha_{\mathrm{morph},i}), \nonumber \\
+  \Delta N_{\text{mech}} &= \lfloor d_{ij} \rfloor + \operatorname{Bernoulli}\!\left(d_{ij} - \lfloor d_{ij} \rfloor\right).
+  \label{eq:mechanical_wear}
+\end{align}
+
+Diurnally (unless temporarily evicted by a repellent toxin), active swarms deduct $24$-hour metabolic respiration $\Delta E_{\text{upkeep}, i} = 24\,N_i\,E_{\min, i}\,U_i$. Surplus energy above baseline maintenance $N_i E_{\min, i}$ funds net-assimilation headcount reproduction, while oversized swarms split symmetrically via binary fission on weekly Slow Loop boundaries ($t \bmod 168 = 0$ when $N_i \ge N_{\text{split}, i}$):
+\begin{align}
+  \Delta N_{\text{birth}, i} &= \left\lfloor \frac{\max\!\left(0,\, E_i - N_i E_{\min, i}\right)}{\max\!\left(E_{\min, i},\, d_{\text{rep}, i} E_{\min, i}\right)} \right\rfloor, \nonumber \\
+  N_{\text{child}} &= \left\lfloor \frac{N_i}{2} \right\rfloor, \qquad E_{\text{child}} = \frac{E_i}{2},
+  \label{eq:swarm_repro_mitosis}
+\end{align}
+placing the daughter swarm onto an adjacent von Neumann cell.
+
+Neighbouring flora sense airborne VOC concentrations through non-linear cooperative binding via the \textbf{Hill function}:
+\begin{equation}
+  S(C_{\text{voc}}) = \frac{C_{\text{voc}}^n}{K_d^n + C_{\text{voc}}^n},
+  \label{eq:hill_priming_function}
+\end{equation}
+where $n \in [2, 4]$ denotes cooperativity, $K_d$ is the half-saturation threshold, and $C_{\text{voc}}$ is local signal concentration. Exceeding $S(C_{\text{voc}}) \ge \tau_{\text{prim}}$ activates downstream priming triggers, compressing inducible synthesis delay from $\theta_{\text{synth}}$ to $\theta_{\text{primed}} \ll \theta_{\text{synth}}$. While its activation trigger remains true, an active chemical substance refreshes its persistence window to $\tau_{\text{aft}}$ ticks; once the trigger clears, reversible synthesis remains active and decrements $\tau_{\text{aft}}$ by $1$ per tick until deactivation at zero (or aborts immediately if maintenance cost $c_{\text{synth}}$ would drive host energy below $E_{\min, j}$). When an active toxin channel $T_s(x, y) \le 1.0$ contacts a co-located swarm with lethality rate $\mu_{\text{tox}, s} \ge 0$, casualties and repellent eviction follow:
+\begin{align}
+  \Delta N_{\text{tox}} &= \left\lfloor \mu_{\text{tox}, s}\,T_s(x, y)\,N_i \right\rfloor, \nonumber \\
+  E_i &\gets \max\!\left(0,\, E_i - \Delta N_{\text{tox}}\,E_{\min, i}\right), \nonumber \\
+  t_{\text{rep}, i} &\gets \tau_{\text{walk}, s},
+  \label{eq:toxin_casualties_repulsion}
+\end{align}
+where lethal losses decrement $N_i \gets \max(0, N_i - \Delta N_{\text{tox}})$ and non-repelled swarms entering a repellent barrier ($\tau_{\text{walk}, s} > 0$) execute an undirected 5-cell von Neumann random walk for $\tau_{\text{walk}, s}$ ticks while diurnal metabolism and reproduction pause.
+
+When an injured host emits warning signal flux $S_{\text{emit}}$, the engine partitions the budget between the airborne field and subterranean cardinal neighbours in $\mathcal{G}_{\text{myco}}$ ($N_{\text{relay}} = \deg_{\mathcal{G}_{\text{myco}}}(e_j)$):
+\begin{align}
+  S_{\text{airborne}} &= \frac{S_{\text{emit}}}{N_{\text{relay}} + 1}, \label{eq:myco_airborne} \\
+  S_{\text{relay,total}} &= S_{\text{emit}} \cdot \frac{N_{\text{relay}}}{N_{\text{relay}} + 1}. \label{eq:myco_subterranean}
+\end{align}
+Each connected neighbour $k \in \{1, \dots, N_{\text{relay}}\}$ receives an unattenuated direct increment scaled by the dimensionless hyphal relay gain $g_{\text{relay}} \ge 1$:
+\begin{equation}
+  \Delta S_{\text{relay}, k} = \left( \frac{S_{\text{emit}}}{N_{\text{relay}} + 1} \right) \cdot g_{\text{relay}}.
+  \label{eq:myco_neighbor_flux}
+\end{equation}
+Strict mass conservation holds at $g_{\text{relay}} = 1$, whereas $g_{\text{relay}} > 1$ applies an amplified relay multiplier at weekly per-link carbon upkeep $\delta_E^{\text{tax}}$. Every tick during the signalling phase, vascular phloem withdrawal adjusts apparent foliar nutrition $\eta(t) \in [\eta_{\min}, 1.0]$ toward $\eta_{\text{target}}$ via $\eta(t+1) = \eta(t) + (\eta_{\text{target}} - \eta(t))\,\gamma_{\text{translocation}}$; once withdrawal expires, palatability recovers monotonically via:
+\begin{equation}
+  \eta(t+1) = \eta(t) + \left( 1.0 - \eta(t) \right) \cdot \gamma_{\text{translocation}},
+  \label{eq:phloem_recovery_recurrence}
+\end{equation}
+with translocation rate $\gamma_{\text{translocation}} \in (0, 1)$.
+
+Plant reproduction uses an $\mathcal{O}(1)$ \textbf{stochastic polar ray-casting kernel} motivated by Okubo and Levin~\cite{okubo2001diffusion}: sampling $d \sim U(d_{\min}, d_{\max})$, computing normalised wind vector $\mathbf{u} = \mathbf{u}_{\text{wind}} / \|\mathbf{u}_{\text{wind}}\|$ (or isotropic $\theta \sim U(0, 2\pi)$ under calm wind $\|\mathbf{u}_{\text{wind}}\| \le 10^{-9}$), drawing lateral dispersion $\delta_\perp \sim \mathcal{N}(0, \sigma_\perp^2)$ with $\sigma_\perp = \max(0.15, 0.35 d)$, and placing seedlings at:
+\begin{align}
+  x_{\text{target}} &= \text{round}\left( x_0 + d u_x - \delta_\perp u_y \right), \label{eq:seed_projection_x} \\
+  y_{\text{target}} &= \text{round}\left( y_0 + d u_y + \delta_\perp u_x \right), \label{eq:seed_projection_y}
+\end{align}
+deducting $E_{\text{seed}}$ from the parent and initialising unoccupied seedlings at $E_{\text{base}}$ and $M_j = 0$; whenever a parameterisation sets $E_{\text{base}} > E_{\text{seed}}$, the difference $E_{\text{base}} - E_{\text{seed}}$ represents an explicit establishment-carbon subsidy from seedbank or early cotyledon reserves (Proposition~\ref{prop:capacity_boundedness}). Conversely, whenever a swarm's energy $E_i$ drops below zero during diurnal upkeep, integer casualties are cleared immediately and remaining fractional debt is discarded:
+\begin{align}
+  \Delta N_{\text{starve}} &= \left\lceil \frac{-E_i}{E_{\text{min}}} \right\rceil, \nonumber \\
+  N_i &\gets \max\!\left(0,\, N_i - \Delta N_{\text{starve}}\right), \qquad E_i \gets 0.0,
+  \label{eq:integer_casualty_clearing}
+\end{align}
+preventing ghost metabolic debt and unregistering empty swarms.
+
+% ------------------------------------------------------------------------------
+\subsection{Global Deterministic System Composition}
+\label{subsec:system_composition}
+% ------------------------------------------------------------------------------
+
+The temporal advancement of the entire coupled ecosystem from epoch $t$ to $t+1$ is formalised by the ordered composition of phase operators:
+\begin{align}
+  \mathcal{X}_{t+1} = \big( &\mathcal{T}_{\text{term}} \circ \mathcal{T}_{\text{telem}} \circ \mathcal{T}_{\text{rebuild}} \circ \mathcal{T}_{\text{signal}} \nonumber \\
+  &\circ \mathcal{T}_{\text{interact}} \circ \mathcal{T}_{\text{life}} \circ \mathcal{T}_{\text{flow}} \big) \left( \mathcal{X}_t \right)
+  \label{eq:phase_operator_chain}
+\end{align}
+The causal precedence of this sequence is strictly non-commutative:
+\begin{enumerate}
+  \item $\mathcal{T}_{\text{flow}}$: Solves the Jacobi potential equation over $\mathcal{G}_t$ and applies autotrophic camouflage attenuation to construct the unified chemotactic field $F_t(x, y)$.
+  \item $\mathcal{T}_{\text{life}}$: Integrates phase-staggered autotrophic caloric and structural growth, structural maintenance, weekly mycorrhizal link tax, 8-tick CMN growth, and stochastic seed dispersal.
+  \item $\mathcal{T}_{\text{interact}}$: Executes Boltzmann softmax swarm taxis, resolves diurnal Holling Type~II grazing extractions, applies mechanical damage, and enforces integer starvation culling and weekly binary swarm mitosis.
+  \item $\mathcal{T}_{\text{signal}}$: Evaluates defence triggers, updates phloem nutrition withdrawal/recovery, injects botanical volatile and mycorrhizal emissions $Q_s$, applies toxin lethality and repulsion, decrements aftereffect windows, and advances the five-stage PDE operator-splitting scheme.
+  \item $\mathcal{T}_{\text{rebuild}}$: Recomputes aggregate plant energy and structural mass layers from per-species write buffers and commits double-buffered array swaps.
+  \item $\mathcal{T}_{\text{telem}}$: Serialises component metrics and field tensors into chunked replay buffers.
+  \item $\mathcal{T}_{\text{term}}$: Evaluates macroscopic stopping criteria (e.g. total biotope defoliation or herbivore extinction).
+\end{enumerate}
+
+By partitioning lattice field updates between read-only source buffers and pre-allocated write buffers, Equation~\eqref{eq:phase_operator_chain} supports deterministic thread-count-invariant execution under upfront PRNG seeding (Section~\ref{subsec:double_buffering_zarr}).

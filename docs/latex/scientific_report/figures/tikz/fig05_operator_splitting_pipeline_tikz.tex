@@ -1,0 +1,91 @@
+\begin{tikzpicture}[
+    >=Stealth,
+    font=\scriptsize,
+    stage/.style={draw=#1!65!black, fill=#1!5, rounded corners=2pt, line width=0.65pt, inner sep=4.5pt, align=center, text width=7.2cm},
+    buf/.style={draw=#1!65!black, fill=#1!8, rounded corners=2pt, line width=0.75pt, inner sep=4.5pt, align=center, text width=7.2cm},
+    loopcard/.style={draw=#1!65!black, fill=#1!5, rounded corners=2pt, line width=0.65pt, inner sep=6pt, align=left, text width=7.2cm},
+    panel/.style={draw=black!45, dashed, fill=black!2, rounded corners=3pt, line width=0.6pt, inner sep=10pt},
+    badge/.style={draw=#1!65!black, fill=white, rounded corners=1.5pt, line width=0.5pt, inner sep=2.2pt, font=\scriptsize\bfseries, text=#1!55!black}
+  ]
+
+  % Panel (a): Relative vertical chain so zero box overlap
+  \node[buf=blue] (r_buf) {\textbf{Read Buffer (Ingress):}\ $C^t(\mathbf{x}) \in \mathbb{R}^{W \times H}$};
+
+  \node[stage=purple, below=0.32cm of r_buf] (s1) {%
+    \textbf{Stage 1: Point Mass Injection}\\
+    $C^{*}_{\mathrm{source}}(\mathbf{x}) = C^t(\mathbf{x}) + Q_s^t(\mathbf{x})\Delta t / h^2$\\
+    {\scriptsize\color{black!70}Synthesised volatile flux added prior to transport}%
+  };
+  \node[stage=blue, below=0.32cm of s1] (s2) {%
+    \textbf{Stage 2: Semi-Lagrangian Advection}\\
+    $\tilde{C}^t(\mathbf{x}) = C^{*}_{\mathrm{source}}(\mathbf{x} - \mathbf{u}_{\mathrm{wind}}\Delta t)$\\
+    {\scriptsize\color{black!70}Unconditionally stable bilinear characteristic back-trace}%
+  };
+  \node[stage=cyan, below=0.32cm of s2] (s3) {%
+    \textbf{Stage 3: Isotropic Gaussian Diffusion}\\
+    $C^{*}_{\mathrm{diff}}(\mathbf{x}) = (\mathcal{K}_{\mathrm{iso}} * \tilde{C}^t)(\mathbf{x}) \quad (5 \times 5,\; \sigma = 0.40)$\\
+    {\scriptsize\color{black!70}Odd-sized symmetric stencil; zero half-cell phase drift}%
+  };
+  \node[stage=orange, below=0.32cm of s3] (s4) {%
+    \textbf{Stage 4: Photolytic Clearance}\\
+    $C^{*}_{\mathrm{decay}}(\mathbf{x}) = \gamma_s \cdot C^{*}_{\mathrm{diff}}(\mathbf{x}) \quad (\gamma_s = \exp(-\lambda_s\Delta t))$\\
+    {\scriptsize\color{black!70}Multiplicative decay factor across field slices}%
+  };
+  \node[stage=violet, below=0.32cm of s4] (s5) {%
+    \textbf{Stage 5: Macroscopic Sparsity Cutoff}\\
+    $C^{t+1}(\mathbf{x}) = \mathbf{1}_{\{C^{*}_{\mathrm{decay}} \ge 10^{-4}\}} \cdot C^{*}_{\mathrm{decay}}(\mathbf{x})$\\
+    {\scriptsize\color{black!70}Clamps trace tails below $10^{-4}$ to zero; keeps fields sparse}%
+  };
+  \node[buf=teal, below=0.32cm of s5] (w_buf) {\textbf{Write Buffer (Egress):}\ $C^{t+1}(\mathbf{x}) \in \mathbb{R}^{W \times H}$};
+
+  \draw[->, line width=0.7pt, color=blue!60!black] (r_buf) -- (s1);
+  \draw[->, line width=0.7pt, color=purple!65!black] (s1) -- (s2);
+  \draw[->, line width=0.7pt, color=blue!60!black] (s2) -- (s3);
+  \draw[->, line width=0.7pt, color=cyan!55!black] (s3) -- (s4);
+  \draw[->, line width=0.7pt, color=orange!65!black] (s4) -- (s5);
+  \draw[->, line width=0.7pt, color=violet!65!black] (s5) -- (w_buf);
+
+  % Panel (b): Relative vertical chain with generous 0.95cm connector gap for badges
+  \node[loopcard=blue, right=0.85cm of r_buf.north east, anchor=north west] (b1) {%
+    \centering\textbf{\footnotesize\color{blue!60!black}Fast Loop: Hourly Stride ($\Delta t = 1\,\mathrm{h}$)}\\[4pt]
+    \raggedright
+    $\bullet$ Semi-Lagrangian advection \& $5\times 5$ Gaussian blur\\
+    $\bullet$ Jacobi relaxation for chemotactic potential $F_t(x, y)$\\
+    $\bullet$ Swarm stochastic taxis \& MVT-inspired anchoring\\
+    $\bullet$ Hill priming triggers, phloem shift \& 8-tick CMN links\\
+    $\bullet$ $\mathcal{O}(W\cdot H)$ double-buffered compiled array updates%
+  };
+
+  \node[loopcard=orange, below=0.95cm of b1] (b2) {%
+    \centering\textbf{\footnotesize\color{orange!65!black}Medium Loop: Circadian Stride ($\Delta t = 24\,\mathrm{h}$)}\\[4pt]
+    \raggedright
+    $\bullet$ Holling Type~II saturating herbivory \& wear $c_{\mathrm{bite}}$\\
+    $\bullet$ Circadian basal metabolic upkeep ($24 U$)\\
+    $\bullet$ Starvation culling \& zero-energy liquidation\\
+    $\bullet$ MVT-inspired patch departure checks\\
+    $\bullet$ Surplus-energy swarm headcount reproduction%
+  };
+
+  \node[loopcard=teal, below=0.95cm of b2] (b3) {%
+    \centering\textbf{\footnotesize\color{teal!55!black}Slow Loop: Weekly Stride ($\Delta t = 168\,\mathrm{h}$)}\\[4pt]
+    \raggedright
+    $\bullet$ Vegetative \& structural growth via $168$ cohorts\\
+    $\bullet$ Structural upkeep, CMN tax $\delta_E^{\mathrm{tax}}$, $168\times$ write drop\\
+    $\bullet$ Polar seed dispersal ($\mathbf{u}$) on $\mathbb{T}^2$\\
+    $\bullet$ Weekly herbivore colony binary fission (mitosis)%
+  };
+
+  \draw[->, line width=0.8pt, color=orange!65!black] (b1.south) -- node[badge=orange] {$24\times$ Hourly Ticks (Diurnal)} (b2.north);
+  \draw[->, line width=0.8pt, color=teal!65!black] (b2.south) -- node[badge=teal] {$7\times$ Diurnal Cycles (Weekly)} (b3.north);
+
+  \begin{scope}[on background layer]
+    \node[panel, fit=(r_buf)(w_buf), inner ysep=14pt] (pa) {};
+    \node[panel, fit=(b1)(b3), inner ysep=14pt] (pb) {};
+  \end{scope}
+
+  \node[fill=white, anchor=center, font=\small\bfseries, inner xsep=4pt, inner ysep=2pt] (pa_lbl) at (pa.north) {(a) Operator-Splitting Transport Pipeline};
+  \node[fill=white, anchor=center, font=\small\bfseries, inner xsep=4pt, inner ysep=2pt] (pb_lbl) at (pb.north) {(b) Multi-Scale Temporal Decoupling};
+
+  % Explicit top/bottom padding so panel headers never clip
+  \path ([yshift=0.30cm]pa_lbl.north) ([yshift=0.30cm]pb_lbl.north) ([yshift=-0.25cm]pa.south) ([yshift=-0.25cm]pb.south);
+\end{tikzpicture}

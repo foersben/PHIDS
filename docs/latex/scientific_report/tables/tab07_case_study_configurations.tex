@@ -1,0 +1,86 @@
+% ==============================================================================
+% Table 4 (LaTeX tab07): Calibrated Central European Ecotone Parameterisation
+% Placed at bottom [b] of page, caption above table
+% ==============================================================================
+
+\begin{table*}[b]
+\caption{Calibrated Parameterisation of the Central European Riparian-to-Floodplain-Meadow Ecotone ($256 \times 256$ Flagship and $128 \times 64$ Reduced-Lattice Twin).}
+\label{tab:case_study_configurations}
+\vspace{4pt}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{1.6pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c c c c c c c c @{}}
+\toprule
+\multicolumn{9}{@{}l}{\textbf{Panel A: Six Sympatric Flora Guilds ($p_0$--$p_5$)} --- Cohort growth $r_p$, seed dist.\ $[d_{\min},d_{\max}]$ ($p_0{:}6\text{--}28$, $p_1{:}5\text{--}22$, $p_2{:}1\text{--}5$, $p_3{:}1\text{--}8$, $p_4{:}1\text{--}6$, $p_5{:}1\text{--}4$)} \\
+\midrule
+\textbf{Flora Species} &
+\textbf{$E_{\mathrm{b}}/E_{\max}/E_{\min}$} &
+\textbf{$r_p$} &
+\textbf{Repro / $E_{\text{seed}}$} &
+\textbf{$c_{\text{bite}}$ / $(1{-}\delta_m)$} &
+\textbf{$\Phi_{\text{camo}}$} &
+\textbf{$\eta_{\min}$ / $\gamma_{\text{tr}}$} &
+\textbf{$\delta_E^{\text{tax}}$} &
+\textbf{$N_0$ / $\overline{\deg}_{\text{CMN}}$} \\
+\midrule
+$p_0$ \textit{Populus nigra}     & $70/140/14$ & $0.1500$ & $1303$ / $56.00$ & $0.05$ / $0.88$ & $1.00$ & $0.45$ / $0.08$ & $0.65$ & $2{,}755$ / $1.59$ \\
+$p_1$ \textit{Salix purpurea}    & $60/120/12$ & $0.0935$ & $1737$ / $48.00$ & $0.15$ / $0.62$ & $1.00$ & $0.70$ / $0.05$ & $0.55$ & $1{,}698$ / $1.87$ \\
+$p_2$ \textit{Trifolium repens}  & $45/85/9$   & $0.3000$ & $1086$ / $34.15$ & $0.00$ / $0.96$ & $1.00$ & $0.55$ / $0.10$ & $0.50$ & $3{,}552$ / $1.88$ \\
+$p_3$ \textit{Lolium perenne}    & $55/105/11$ & $0.3200$ & $1086$ / $42.69$ & $0.22$ / $0.68$ & $1.00$ & $---$ / $0.06$  & $0.50$ & $4{,}346$ / $1.48$ \\
+$p_4$ \textit{Tanacetum vulgare} & $50/100/10$ & $0.1800$ & $1737$ / $40.00$ & $0.04$ / $0.86$ & $0.35$ & $---$ / $0.05$  & $0.35$ & $1{,}871$ / $1.11$ \\
+$p_5$ \textit{Brassica nigra}    & $35/68/7$   & $0.5200$ & $868$ / $24.40$  & $0.00$ / $0.97$ & $1.00$ & $---$ / $0.05$  & $0.00$ & $457$ / $0.00$ \\
+\bottomrule
+\end{tabular*}
+
+\vspace{3pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c c c c c c c c @{}}
+\toprule
+\multicolumn{9}{@{}l}{\textbf{Panel B: Five Herbivore Guilds ($h_0$--$h_4$) \& Diet Matrix $\mathbf{D}$} --- Per-stride $a$ ($\mathrm{stride}^{-1}$), $T_h^{\mathrm{stride}}$ ($\mathrm{stride}\cdot\mathrm{cal}^{-1}$), $\Delta_{\mathrm{stride}}{=}1.0$; hourly $U$} \\
+\midrule
+\textbf{Herbivore Guild} &
+\textbf{Diet Hosts} &
+\textbf{$v$} &
+\textbf{$a$} &
+\textbf{$T_h^{\mathrm{stride}}$} &
+\textbf{$E_{\min}$ / $U$} &
+\textbf{Div. / Split} &
+\textbf{$(\alpha_m, \alpha_c, e_{\text{eff}})$} &
+\textbf{Swarms} \\
+\midrule
+$h_0$ \textit{Lymantria dispar}   & $\{p_0, p_1\}$         & $2$ & $3.3337$ & $0.1140$ & $1.40$ / $.00843$ & $2.1$ / $26$ & $(.10, .05, .38)$ & $14{\times}18$ / $4{\times}9$ \\
+$h_1$ \textit{Phratora vitellinae}& $\{p_0, p_1\}$         & $2$ & $2.3523$ & $0.1726$ & $1.00$ / $.00991$ & $2.5$ / $24$ & $(.35, .20, .42)$ & $12{\times}16$ / $4{\times}8$ \\
+$h_2$ \textit{Acyrthosiphon pisum}& $\{p_2\}$              & $1$ & $2.6664$ & $0.1268$ & $1.10$ / $.01215$ & $2.0$ / $46$ & $(.15, .05, .65)$ & $18{\times}35$ / $4{\times}18$ \\
+$h_3$ \textit{Noctua pronuba}     & $\{p_2..p_5\}$         & $3$ & $1.5139$ & $0.3342$ & $1.10$ / $.01055$ & $2.4$ / $26$ & $(.15, .10, .48)$ & $16{\times}18$ / $4{\times}9$ \\
+$h_4$ \textit{Pieris brassicae}   & $\{p_5\}$              & $2$ & $2.7064$ & $0.1633$ & $1.00$ / $.00981$ & $2.4$ / $24$ & $(.20, .15, .44)$ & $12{\times}16$ / $4{\times}8$ \\
+\bottomrule
+\end{tabular*}
+
+\vspace{3pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l l c c c c c l @{}}
+\toprule
+\multicolumn{8}{@{}l}{\textbf{Panel C: Chemical Channels ($s_0$--$s_8$) \& $31$-Rule Cascade} --- $\mathbf{u}=(0.878,0.364)\,\mathrm{cells/tick}$, decay $0.82$, emit $0.55$, $c_{\mathrm{conn}}=0.5$, $g_{\mathrm{relay}}=2$} \\
+\midrule
+\textbf{ID} &
+\textbf{Compound \& Functional Class} &
+\textbf{Sources} &
+\textbf{Hill / Lethal} &
+\textbf{Walk} &
+\textbf{$\theta_{\text{p}}/\theta_{\text{u}}$} &
+\textbf{Aft.} &
+\textbf{Trigger Gating Summary} \\
+\midrule
+$s_0$ & (Z)-3-Hexenyl Acetate (GLV signal)      & $p_0,p_1,p_4,p_5$ & $K_d{=}0.133, n{=}3$ & $---$ & $---/1$ & $6$  & Stage-1 attack ($p_0,p_1,p_4,p_5$) \\
+$s_1$ & (E)-$\beta$-Ocimene / DMNT (relay)      & $p_0,p_1$         & $K_d{=}0.093, n{=}3$ & $---$ & $1/---$ & $8$  & Gated on $C_{s_0}\ge 0.05$ \\
+$s_2$ & MeSA + CMN Jasmonate (VOC/hyphal)       & $p_0,p_1,p_2,p_3$ & $K_d{=}0.109, n{=}2$ & $---$ & $---/3$ & $12$ & Stage-1 attack ($p_0,p_1,p_2,p_3$) \\
+$s_3$ & Benzyl Cyanide (repellent toxin)        & $p_0$             & $c_{\text{synth}}{=}0.11$ & $5$ & $2/12$ & $14$ & $s_0$ active or $h_0$/$s_1$ primed \\
+$s_4$ & Kunitz TI / Salicinoids (lethal toxin)  & $p_0,p_1$         & $0.0625$ / $0.0547$  & $---$ & $2/12$  & $18$ & Composite conjunctive/disjunctive gates \\
+$s_5$ & $\beta$-Thujone / Camphor (repellent)   & $p_4$             & $c_{\text{synth}}{=}0.10$ & $8$ & $1/3$  & $16$ & $s_0$/$s_2$ curtain or $h_3$ + $s_0$ \\
+$s_6$ & \textit{Trifolium} HCN (lethal+repel.)  & $p_2$             & $0.0839$             & $5$   & $1/8$   & $12$ & $s_2$ + $h_3$ primed/attack gate \\
+$s_7$ & Allyl Isothiocyanate (lethal AITC)      & $p_5$             & $0.0671$             & $---$ & $2/8$   & $16$ & Gated solely to generalist $h_3$ \\
+$s_8$ & \textit{Lolium} PPO + Silica (lethal)   & $p_3$             & $0.0923$             & $---$ & $2/10$  & $16$ & $s_2$ + $h_3$ primed/attack gate \\
+\bottomrule
+\end{tabular*}
+\par\vspace{2pt}
+\raggedright\scriptsize\textit{Note:} Woody taxa ($p_0,p_1$) represent juvenile floodplain saplings/clonal ramets ($1\,\mathrm{m}^2$ cells; $g_{\mathrm{struct}} \in \{0.008, 0.010, 0.006, 0.008, 0.007, 0.005\}$ with $M_{\max}=E_{\max}$). Herbivore integer period $v$ gives step cadence $1/v \in \{0.33, 0.50, 1.00\}\,\mathrm{cells/h}$; feeding parameters $a$ and $T_h^{\mathrm{stride}}$ govern each diurnal feeding stride ($\Delta_{\mathrm{stride}} = 1.0$, Eq.~\eqref{eq:math_holling_type_ii}). Setting $E_{\mathrm{base}} > E_{\mathrm{seed}}$ imparts an establishment-carbon subsidy $E_{\mathrm{base}}-E_{\mathrm{seed}}$ per germination (Proposition~\ref{prop:capacity_boundedness}). Global constants: $C_{\max}=60$, $24\,\mathrm{h}$ diurnal feeding cadence, chemotaxis $(\alpha,\beta,\delta)=(1.0,1.8,0.65)$ with truncation $10^{-4}$, mycorrhizal growth interval $8\,\mathrm{ticks}$, inter-species CMN enabled (initial totals: $14{,}679$ plants [$22.40\%$], $72$ swarms [$1{,}554$ heads] on $256\times 256$; $1{,}941$ plants [$23.69\%$], $20$ swarms [$208$ heads] on $128\times 64$). Signal hourly costs are $0.03$ ($s_0$) and $0.05$ ($s_1, s_2$); toxin costs are $0.16$ ($s_4$), $0.13$ ($s_6$), $0.17$ ($s_7$), and $0.12$ ($s_8$).
+\end{table*}

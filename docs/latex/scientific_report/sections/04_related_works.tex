@@ -1,0 +1,40 @@
+% ==============================================================================
+% Section 3: Related Works & Methodological Benchmarking
+% ==============================================================================
+
+\section{Related Works and Methodological Benchmarking}
+\label{sec:related_works}
+
+Computational models of ecosystem dynamics, plant physiology, and consumer--resource interactions have historically developed within separate scale regimes \cite{okubo2001diffusion, swat2012multiscale}. Existing platforms generally target either regional biogeochemical crop balances, coarse-grained landscape wildlife populations, or sub-cellular tissue morphogenesis. Table~\ref{tab:simulator_benchmarking} positions PHIDS relative to these frameworks across spatial resolution, PDE transport capability, and execution throughput.
+
+\subsection{Continuous Macro Biogeochemical Models}
+\label{sec:related_biogeochem}
+
+At landscape and regional scales ($> 100\,\text{m}$), computational agronomy and forestry rely on biogeochemical suites such as SIMPLACE \cite{enders2023simplace}, MONICA \cite{nendel2011monica}, and LANDIS-II \cite{scheller2007landis}. These tools forecast crop yields, soil water transport, and carbon--nitrogen turnover using one-dimensional vertical soil columns solving Richards water percolation and Century/RothC-style mineralisation ODEs. Although well validated for abiotic crop--soil budgets, they operate without autonomous foraging agents (reducing herbivory to exogenous defoliation scalars), resolve only daily $\Delta t = 24\,\text{h}$ steps too coarse for $1\text{--}3\,\text{h}$ plume dispersion and taxis, and exclude horizontal 2D reaction--diffusion--advection PDE solvers.
+
+\subsection{Agent-Based Landscape and Trophic Frameworks}
+\label{sec:related_abm}
+
+Spatially explicit Agent-Based Models (ABMs) and Individual-Based Models (IBMs) capture individual movement over heterogeneous habitat maps, exemplified by ALMaSS (Animal, Landscape and Man Simulation System) \cite{topping2003almass}. ALMaSS simulates wildlife demography and pesticide exposure via procedural state machines over GIS rasters. At densities of $10^4\text{--}10^5$ interacting plants and insect swarms, however, traditional object-oriented ABMs incur pointer chasing and cache misses across scattered heap instances, and ALMaSS relies on static or piecewise-constant environmental rasters without coupled continuous semiochemical PDE solvers. General-purpose frameworks such as NetLogo \cite{wilensky1999netlogo} and Mesa \cite{kazil2020mesa} are treated separately from Table~\ref{tab:simulator_benchmarking} because they are unspecialised programming toolkits lacking built-in biophysical PDE solvers, calibrated kinetic modules, or contiguous SoA memory layouts.
+
+\subsection{Cellular Biophysics Simulators}
+\label{sec:related_cpm}
+
+At microscopic tissue scales ($1\text{--}100\,\mu\text{m}$), hybrid continuous--discrete simulators such as CompuCell3D (CC3D) \cite{swat2012multiscale}, the Hybrid Automata Library (HAL) \cite{bravo2020hybrid}, and MCell4 \cite{husar2024mcell4} couple lattice automata or molecular Brownian particles with continuum reaction--diffusion PDEs for morphogenesis and tumour biology. In CC3D, cells span many lattice pixels evolved via Monte Carlo Step spin flips under a global Hamiltonian:
+\begin{equation}
+  \mathcal{H} = \sum_{\text{interfaces}} J(\tau(\sigma_i), \tau(\sigma_j)) + \sum_{\text{cells}} \lambda_{\text{vol}} (v_\sigma - V_t)^2,
+  \label{eq:cc3d_hamiltonian}
+\end{equation}
+where $J(\tau(\sigma_i), \tau(\sigma_j))$ is interfacial contact energy, $\lambda_{\text{vol}}$ volume elasticity, $v_\sigma$ cell volume, and $V_t$ target volume. Because computational effort is dominated by sub-cellular boundary fluctuations or molecular collisions, these frameworks do not scale directly to meso-scale ecosystems requiring foraging momentum, multi-rate diurnal/weekly strides, and dual airborne--mycorrhizal signalling.
+
+\begin{table*}[b]
+  \centering
+  \caption{Methodological Comparison Across Domain-Specific Ecological and Biophysical Simulation Architectures.}
+  \label{tab:simulator_benchmarking}
+  \input{tables/tab04_simulator_benchmarking.tex}
+\end{table*}
+
+\subsection{PHIDS Architectural Niche and Throughput}
+\label{sec:related_phids_niche}
+
+Addressing meso-scale ($1\text{--}100\,\text{m}$) semiochemical plant--herbivore dynamics alongside abstract energy-allocation trade-offs relevant to sensor-network DSE requires combining continuum transport with high-density discrete ecology (Table~\ref{tab:simulator_benchmarking}) \cite{dietrich2025visual}. PHIDS bridges this gap through three architectural choices: (i) storing continuous fields and species slices in contiguous Structure-of-Arrays (SoA) NumPy buffers compiled via Numba with zero inner-loop heap allocation \cite{harris2020array, lam2015numba}; (ii) solving 2D parabolic VOC advection--diffusion on a double-buffered torus $\Omega = \mathbb{T}^2$ for thread-safe determinism (Section~\ref{subsec:double_buffering_zarr}); and (iii) decoupling hourly taxis ($\Delta t = 1\,\text{h}$), diurnal feeding ($24\,\text{h}$), and phase-staggered weekly plant growth ($168\,\text{h}$ cohorts), reducing per-tick growth memory write traffic by $168\times$ while preserving contiguous SIMD vectorisation. Benchmark measurements detailed in Section~\ref{sec:computational_realisation} sustain median tick latencies of $1.25\text{--}2.59\,\text{ms}$ on $64 \times 32$ and $128 \times 128$ grids ($84\text{--}92\%$ frame headroom relative to a $16.67\,\text{ms}$ $60\,\text{Hz}$ budget), $36.6\text{--}57.2\,\text{ms}$ on 3-species $256 \times 256$ canopies, and $137.0\,\text{ms}$ mean per tick on the full 11-species, 9-channel $256 \times 256$ ecotone.

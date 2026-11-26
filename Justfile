@@ -160,7 +160,7 @@ run:
 
 # Run headless Monte Carlo batch simulation and write UI-compatible summary JSON
 [group("simulation-and-docs")]
-batch scenario="docs/latex/scientific_report/data/ecotone_256x256/riparian_meadow_ecotone_128x64_twin.json" runs="5" max_ticks="500" label="" export="none":
+batch scenario="examples/scenarios/riparian_meadow_ecotone_128x64_twin.json" runs="5" max_ticks="500" label="" export="none":
     uv run phids batch "{{scenario}}" --runs "{{runs}}" --max-ticks "{{max_ticks}}" --label "{{label}}" --export "{{export}}"
 
 # Inspect and optionally export aggregate telemetry from a completed batch summary
@@ -273,3 +273,24 @@ docker-clean:
     @docker rm -f phids-local 2>/dev/null || true
     @docker rmi -f phids:test phids:local 2>/dev/null || true
     @docker image prune -f
+
+# Build the SIMPAT scientific report PDF via latexmk
+[group("paper")]
+paper-build:
+    make -C docs/latex/scientific_report
+
+# Clean auxiliary build outputs for the SIMPAT scientific report
+[group("paper")]
+paper-clean:
+    make -C docs/latex/scientific_report clean
+
+# Regenerate data-driven paper figures and spatial ecotone snapshot
+[group("paper")]
+paper-figures:
+    uv run python scripts/experiments/generate_paper_figures.py
+    uv run python scripts/experiments/generate_ecotone_spatial_figure.py
+
+# Run reproducible reference-scenario paper experiments
+[group("paper")]
+paper-experiments:
+    uv run python scripts/experiments/paper_experiments.py all

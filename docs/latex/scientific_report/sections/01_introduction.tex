@@ -1,0 +1,61 @@
+% ==============================================================================
+% Section 1: Introduction, System Overview & Methodological Motivation
+% ==============================================================================
+
+\section{Introduction}
+\label{sec:introduction}
+
+Sessile autotrophs must partition finite photosynthetic income among vegetative growth, reproductive dispersal, and defence \cite{gatehouse2002plant, farmer2001surface, baldwin2006volatile}. Allocating carbon to constitutive morphological barriers --- lignified cell walls, trichomes, and biogenic silica --- or to the de-novo synthesis of volatile organic compounds (VOCs) and secondary toxic metabolites lowers somatic growth rates and seed output \cite{gatehouse2002plant, babikova2013underground, arimura2025cracking}. Minimal defence investment, in contrast, leaves plants exposed to severe defoliation and mortality under sustained herbivore outbreaks \cite{holling1959components, charnov1976optimal, rosenzweig1963graphical}.
+
+\subsection{Limitations of Classical Population Models}
+\label{sec:intro_fallacy_mixing}
+
+Mathematical biology has long modelled consumer--resource dynamics primarily through continuous-time ordinary differential equations (ODEs), following Lotka \cite{lotka1925elements}, Volterra \cite{volterra1926fluctuations}, and Rosenzweig and MacArthur \cite{rosenzweig1963graphical}. Although mean-field formulations offer analytical tractability and closed-orbit limit cycles, they assume instantaneous, spatially homogeneous mass-action mixing that collapses the biotope into a single point.
+
+In spatial ecosystems, three physical factors invalidate homogeneous mixing \cite{skellam1951random, turing1952chemical, okubo2001diffusion}. First, sessile hosts occupy fixed coordinates, generating localised grazing clusters and spatial refugia in which vegetation recovers while herbivores cross barren ground \cite{charnov1976optimal}. Second, heterotrophic insects lack global resource awareness and navigate boundary layers via local olfactory chemotaxis \cite{keller1970initiation, okubo2001diffusion}, sampling nearby attractants and deterrent toxins. Third, inter-plant warning propagation incurs physical delays across two distinct media: airborne plumes governed by advection--diffusion--reaction partial differential equations (PDEs) \cite{farmer2001surface, aratani2023green, arimura2025cracking}, and subterranean common mycelial networks (CMNs) governed by a cardinal-adjacent dynamic root-link graph \cite{babikova2013underground, karst2023positive, henriksson2023reexamining}. Once spatial lag, finite transit speed, and synthesis latencies become material, purely non-spatial ODE approximations lose predictive accuracy.
+
+\begin{figure*}[t]
+  \centering
+  \input{figures/fig01_architectural_paradigm.tex}
+  \caption{The Coupled Hybrid Dynamical Architecture of PHIDS. Discrete biological entities stored in the data-oriented Entity--Component--System (ECS) layer $\mathcal{E}_t$ interact via localised grazing and damage triggers, sourcing continuous chemical concentration fields $C_s$ and guidance potentials $F_t$ evaluated across double-buffered cellular layers $\mathcal{G}_t$ on a toroidal topology $\mathbb{T}^2$.}
+  \label{fig:architectural_paradigm}
+\end{figure*}
+
+\subsection{Coupled Hybrid Architecture}
+\label{sec:intro_architectural_vision}
+
+To combine spatial--biochemical detail with predictable execution throughput, we present \textbf{PHIDS} (Plant--Herbivore Interaction \& Defence Simulator). Extending our earlier discrete-event prototype \cite{dietrich2025visual}, PHIDS implements a coupled hybrid dynamical system \cite{swat2012multiscale, topping2003almass, bravo2020hybrid, husar2024mcell4} partitioned into two synchronised layers (Fig.~\ref{fig:architectural_paradigm}):
+\begin{enumerate}
+  \item \textbf{Discrete Lagrangian Entity Layer ($\mathcal{E}_t$):} Sessile plants and mobile herbivore swarms reside in a data-oriented Entity--Component--System (ECS) backed by contiguous Structure-of-Arrays (SoA) memory buffers \cite{lam2015numba, harris2020array}, avoiding per-organism pointer chasing and supporting $\mathcal{O}(1)$ spatial lookups.
+  \item \textbf{Continuous Eulerian Field Layer ($\mathcal{G}_t$):} Semiochemicals, volatile concentrations, and sensory fields are stored as 2D scalar arrays on a periodic toroidal lattice $\Omega = \mathbb{T}^2$. Airborne transport evolves via operator-split Reaction--Diffusion--Advection PDEs \cite{strang1968construction, leveque2002finite}, whereas chemotactic navigation potentials are computed via compiled Jacobi iterative relaxation kernels \cite{lam2015numba}.
+\end{enumerate}
+
+By coupling discrete agent transitions with continuous field operators at hourly resolution, PHIDS resolves Holling Type~II intake saturation \cite{holling1959components}, an MVT-inspired local patch-departure heuristic \cite{charnov1976optimal}, sigmoidal Hill receptor priming, and vascular phloem withdrawal \cite{schwachtje2006snf1} across tens of thousands of interacting organisms.
+
+\subsection{Structural Homomorphism to Distributed WSN Security}
+\label{sec:intro_wsn_paradigm}
+
+Beyond spatial systems biology, the dynamical architecture of PHIDS shares a formal structural homomorphism and computational Design Space Exploration (DSE) methodology with distributed resilience planning in large-scale static Wireless Sensor Networks (WSNs) \cite{forster2023novel, forster2024determining, forster2024topology, dressler2010survey}. Static sensor deployments face a parallel energy-allocation trade-off to sessile flora (Table~\ref{tab:energetic_allocation_tradeoffs}): continuous cryptographic checks deplete constrained battery reserves, whereas passive sleep states expose networks to multi-hop disruption during activation delays \cite{forster2023novel, forster2024determining}. Building on our prior WSN security and EEDSE work \cite{forster2023novel, forster2024determining, forster2024topology, dietrich2025visual}, Section~\ref{sec:wsn_isomorphism} formalises this structural mapping --- including explicit non-isomorphism boundaries --- and transfers the multi-fidelity calibration, sensitivity screening, and deterministic SoA workflows across both domains.
+
+\begin{table*}[b]
+  \centering
+  \caption{Energetic Allocation Trade-offs Across Autotrophic Phenotypic Strategies in Meso-Scale Biotopes.}
+  \label{tab:energetic_allocation_tradeoffs}
+  \input{tables/tab01_energetic_allocation_tradeoffs.tex}
+\end{table*}
+
+\subsection{Summary of Contributions}
+\label{sec:intro_contributions}
+
+The contributions of this work are fourfold:
+\begin{enumerate}
+  \item \textbf{Coupled Hybrid Simulator Architecture:} A data-oriented SoA Entity--Component--System paired with operator-split 2D reaction--diffusion--advection PDEs, Jacobi flow relaxation, and dynamic cardinal root graphs, compiled to LLVM native kernels with bit-exact thread determinism and Zarr compression (Section~\ref{sec:computational_realisation}).
+  \item \textbf{Multi-Channel Botanical Defence Kinetics:} Parameterised operational equations for constitutive armour, structural tissue upkeep, airborne volatile dispersion, Hill receptor priming, subterranean mycorrhizal relays, and phloem palatability withdrawal.
+  \item \textbf{Analytical System Bounds:} Three analytical propositions establishing carrying-capacity boundedness and non-reproductive dissipation, the closed-form continuous-grazing critical synthesis delay $\theta_{\text{crit}}$, and a mean-field delay-bifurcation criterion ($\tau^* = 2.38\,\text{h} > 1.0\,\text{h}$), checked against empirical cross-thread invariance.
+  \item \textbf{In-Silico Case Studies and Structural DSE Mapping:} Evaluation on a $256 \times 256$ Central European ecotone spanning multi-fidelity Bayesian calibration, $10$-seed single-season zero-shot transfer, continuous-vs-diurnal bound diagnostics, $90$-run dual-channel wind ablations ($+21$-run upwind relay), and $1{,}792 + 224$-run CRN Sobol sensitivity analyses alongside formal structural mapping to static WSN DSE pipelines.
+\end{enumerate}
+
+\subsection{Article Organisation}
+\label{sec:intro_organization}
+
+Section~\ref{sec:biological_domain} introduces the biological defence tiers and foraging kinematics, and Section~\ref{sec:related_works} positions PHIDS relative to existing simulation frameworks. Section~\ref{sec:mathematical_framework} formulates the coupled hybrid mathematical model, Section~\ref{sec:theoretical_invariants} derives the analytical bounds and stability properties, and Section~\ref{sec:case_studies} evaluates the framework on the Central European ecotone. Section~\ref{sec:computational_realisation} details the ECS memory layout, JIT kernel design, Roofline scaling, double-buffered determinism, and Zarr replay storage; Section~\ref{sec:discussion} synthesises ecological buffering, the structural WSN homomorphism and DSE transfer, and model assumptions; and Section~\ref{sec:conclusion} concludes.

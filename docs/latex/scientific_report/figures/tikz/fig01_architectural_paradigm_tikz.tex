@@ -1,0 +1,93 @@
+\begin{tikzpicture}[
+    >=Stealth,
+    font=\scriptsize,
+    card/.style={draw=#1!65!black, fill=#1!5, rounded corners=2pt, line width=0.65pt, inner sep=6pt, align=left, text width=5.05cm, minimum height=2.55cm},
+    layer/.style={draw=black!45, dashed, fill=black!2, rounded corners=3pt, line width=0.6pt, inner xsep=10pt, inner ysep=10pt},
+    badge/.style={draw=#1!65!black, fill=white, rounded corners=1.5pt, line width=0.5pt, inner sep=2pt, font=\scriptsize\bfseries, text=#1!55!black}
+  ]
+
+  % Top Layer: Discrete ECS Cards
+  \node[card=teal] (flora) {%
+    \centering\textbf{\footnotesize\color{teal!55!black}Autotrophic Flora Entities}\\[4pt]
+    \raggedright
+    $\bullet$ Contiguous 1D/2D SoA buffers\\
+    $\bullet$ Reserve $E_i(t) \in [0, E_{\max}]$\\
+    $\bullet$ Armour $\delta_{\mathrm{morph}} \in [0, 0.50]$\\
+    $\bullet$ Delay $\theta_{\mathrm{synth}} \in [8, 12]$ ticks%
+  };
+
+  \node[card=orange, right=1.85cm of flora] (def) {%
+    \centering\textbf{\footnotesize\color{orange!65!black}Biotic Defence Engine}\\[4pt]
+    \raggedright
+    $\bullet$ Holling Type~II \& wear $c_{\mathrm{bite}}$\\
+    $\bullet$ Elicitor trigger $\to$ alert state\\
+    $\bullet$ Primed: $\theta_{\mathrm{primed}} \ll \theta_{\mathrm{synth}}$\\
+    $\bullet$ Symbiotic tax $\delta_E^{\mathrm{tax}}$ allocation%
+  };
+
+  \node[card=purple, right=1.85cm of def] (herb) {%
+    \centering\textbf{\footnotesize\color{purple!65!black}Heterotrophic Swarms}\\[4pt]
+    \raggedright
+    $\bullet$ Kinematic trajectory arrays\\
+    $\bullet$ Headcount $N_j(t)$, reserve $E_j(t)$\\
+    $\bullet$ Displacement $\mathbf{d}_t$, period $v_j$\\
+    $\bullet$ MVT-inspired patch departure%
+  };
+
+  % Bottom Layer: Continuous Eulerian Cards (ample vertical gap for conduits & Layer 2 label)
+  \node[card=blue, below=2.35cm of flora] (voc) {%
+    \centering\textbf{\footnotesize\color{blue!60!black}Atmospheric VOC Dispersion}\\[4pt]
+    \raggedright
+    $\bullet$ Wind advection $\mathbf{u}_{\mathrm{wind}}$\\
+    $\bullet$ $5 \times 5$ Gaussian stencil $\mathcal{K}_{\mathrm{iso}}$\\
+    $\bullet$ Photolytic clearance $\lambda_s$\\
+    $\bullet$ Downwind conspecific plumes%
+  };
+
+  \node[card=cyan, below=2.35cm of def] (myco) {%
+    \centering\textbf{\footnotesize\color{cyan!55!black}Vascular \& Hyphal Conduits}\\[4pt]
+    \raggedright
+    $\bullet$ Phloem shift $\eta(t) \to \eta_{\min}$\\
+    $\bullet$ Hyphal graph $\mathbf{A}_{uv}$, gain $g_{\mathrm{relay}}$\\
+    $\bullet$ Direct unattenuated warning\\
+    $\bullet$ Symbiotic link tax $\delta_E^{\mathrm{tax}}$%
+  };
+
+  \node[card=violet, below=2.35cm of herb] (chemo) {%
+    \centering\textbf{\footnotesize\color{violet!65!black}Chemotactic Potential Field}\\[4pt]
+    \raggedright
+    $\bullet$ Surface $G_t = \alpha E_{\mathrm{plant}}\eta - \beta\sum T_k$\\
+    $\bullet$ Jacobi flow $F_t$ \& camo $\Phi_{\mathrm{camo}}$\\
+    $\bullet$ Softmax heading over $\mathcal{V}$\\
+    $\bullet$ Dynamic sensory landscape%
+  };
+
+  % Outer layer frames via background
+  \begin{scope}[on background layer]
+    \node[layer, fit=(flora)(def)(herb), inner ysep=14pt] (L1) {};
+    \node[layer, fit=(voc)(myco)(chemo), inner ysep=14pt] (L2) {};
+  \end{scope}
+
+  % Explicit foreground layer titles positioned clearly outside/above and below frame borders
+  \node[fill=white, anchor=south west, font=\small\bfseries, text=black!85, inner xsep=4pt, inner ysep=2pt] (L1_lbl) at ([xshift=10pt, yshift=3pt]L1.north west) {Lagrangian Discrete ECS Layer $\mathcal{E}_t$ (Contiguous SoA Buffers)};
+  \node[fill=white, anchor=north west, font=\small\bfseries, text=black!85, inner xsep=4pt, inner ysep=2pt] (L2_lbl) at ([xshift=10pt, yshift=-3pt]L2.south west) {Eulerian Continuous Field Layer $\mathcal{G}_t$ (Double-Buffered Torus $\Omega = \mathbb{T}^2$)};
+
+  % Intra-layer horizontal arrows
+  \draw[->, line width=0.8pt, color=purple!65!black] (herb.west) -- node[badge=purple] {Grazing} (def.east);
+  \draw[->, line width=0.8pt, color=teal!65!black] (def.west) -- node[badge=teal] {Feedback} (flora.east);
+  \draw[<->, line width=0.8pt, color=cyan!55!black] (voc.east) -- node[badge=cyan] {Conduits} (myco.west);
+  \draw[->, line width=0.8pt, color=violet!65!black] (myco.east) -- node[badge=violet] {Guidance} (chemo.west);
+
+  % Inter-layer vertical coupling arrows cleanly separated in the 2.35cm middle corridor
+  \draw[->, dashed, line width=0.75pt, color=teal!65!black] ([xshift=-1.2cm]flora.south) -- node[badge=teal] {$Q_s$ Emit} ([xshift=-1.2cm]voc.north);
+  \draw[->, dashed, line width=0.75pt, color=blue!60!black] ([xshift=1.2cm]voc.north) -- node[badge=blue] {Priming $S(C)$} ([xshift=1.2cm]flora.south);
+
+  \draw[->, dashed, line width=0.75pt, color=orange!65!black] ([xshift=-1.2cm]def.south) -- node[badge=orange] {Phloem $\Delta\eta$} ([xshift=-1.2cm]myco.north);
+  \draw[->, dashed, line width=0.75pt, color=cyan!55!black] ([xshift=1.2cm]myco.north) -- node[badge=cyan] {Hyphal Alert} ([xshift=1.2cm]def.south);
+
+  \draw[->, dashed, line width=0.75pt, color=violet!65!black] ([xshift=-1.2cm]chemo.north) -- node[badge=violet] {Olfaction $\nabla F_t$} ([xshift=-1.2cm]herb.south);
+  \draw[->, dashed, line width=0.75pt, color=purple!65!black] ([xshift=1.2cm]herb.south) -- node[badge=purple] {Depletion $\Delta E$} ([xshift=1.2cm]chemo.north);
+
+  % Explicit vertical padding so outer north/south layer headers never clip
+  \path ([yshift=10pt]current bounding box.north) ([yshift=-10pt]current bounding box.south);
+\end{tikzpicture}

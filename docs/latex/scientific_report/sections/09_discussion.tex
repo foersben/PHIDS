@@ -1,0 +1,50 @@
+% ==============================================================================
+% Section 8: Discussion and Cross-Domain Synthesis
+% ==============================================================================
+
+\input{tables/tab09_wsn_protocol_translation.tex}
+
+\section{Discussion and Cross-Domain Synthesis}
+\label{sec:discussion}
+
+Sections~\ref{sec:mathematical_framework}--\ref{sec:computational_realisation} show how coupling Eulerian continuum transport with Lagrangian agent-based foraging in a double-buffered pipeline resolves spatially lagged plant--herbivore dynamics absent from lumped-parameter ODEs. This section synthesises the observed spatial and temporal buffering mechanisms, establishes a formal structural homomorphism connecting PHIDS to Wireless Sensor Network (WSN) Design Space Exploration (DSE), documents non-isomorphism boundaries, and examines the principal assumptions of the model.
+
+\subsection{Multi-Scale Spatial and Temporal Buffering}
+\label{subsec:spatial_temporal_buffering}
+
+Although all $10$ isolated host--herbivore pairs fail the non-spatial fixed-point stability prerequisite of Proposition~\ref{thm:hopf_limit_cycle} ($\alpha > 0$ at $\tau = 0$), the spatial ecotone ensemble maintains $10/10$ full-community persistence over a $4{,}000$-tick ($166.7$-day) growing season. Persistence relies on two coupled buffering mechanisms. First, $24$-tick diurnal feeding strides together with spatial inter-patch transit intervals grant foliar targets recovery periods even where continuous per-hour grazing at high local swarm densities ($N_0 = 16$) would deplete hosts prior to toxin deployment. Second, spatial gradients in volatile and root-link signals partition biochemical expenditure across the lattice: directly grazed hosts incur full enzyme synthesis costs, while unattacked neighbours pay minimal resting structural upkeep until local signal concentration exceeds their Hill priming threshold.
+
+\subsection{Structural Homomorphism and DSE Transfer to Static WSNs}
+\label{sec:wsn_isomorphism}
+\label{subsec:wsn_actionable_protocols}
+
+\subsubsection{Formal Structural Homomorphism ($\Psi: \mathcal{X}_{\text{eco}} \to \mathcal{X}_{\text{wsn}}$)}
+Building directly on the bio-inspired WSN security lineage of Förster et al.~\cite{forster2023novel, forster2024determining, forster2024topology} and Dietrich et al.~\cite{dietrich2025visual}, let $\Psi: \mathcal{X}_{\text{eco}} \to \mathcal{X}_{\text{wsn}}$ map the dynamical primitives of PHIDS onto static battery-constrained sensor deployments ($10^2\text{--}10^4$ nodes on $\varepsilon$-precision unit-disk graphs augmented with secondary out-of-band links \cite{forster2024topology}). Under $\Psi$: (i) immobile plant coordinates and cardinal mycorrhizal edges ($\mathcal{G}_{\text{myco}}$, upkeep $\delta_E^{\text{tax}}$) map onto static sensor topologies and auxiliary point-to-point mesh backhauls; (ii) bounded autotrophic energy reserves ($E_i \in [0, E_{\max}]$) map onto finite battery states subject to monotonic depletion during unharvested sensing cycles (matching the dissipation structure of Proposition~\ref{prop:capacity_boundedness}); (iii) constitutive armour and olfactory camouflage ($\delta_{\mathrm{morph}}, \Phi_{\mathrm{camo}}$) map onto static baseline hardening and moving-target address/channel obfuscation; and (iv) airborne priming and inducible toxin synthesis ($\theta_{\mathrm{primed}} < \theta_{\mathrm{crit}}$, Proposition~\ref{thm:critical_synthesis_delay}) correspond to lightweight broadcast neighbourhood-watch warnings that pre-stage runtime-toggleable anomaly filters or control-flow protection before persistent battery exhaustion occurs \cite{forster2024determining}. Similarly, the onset of multi-hop delay oscillations under Proposition~\ref{thm:hopf_limit_cycle} parallels feedback oscillations in lagged distributed alerting. Table~\ref{tab:wsn_protocol_translation} summarises this homomorphism alongside its formal limits.
+
+\subsubsection{Explicit Non-Isomorphism Boundaries}
+A structural homomorphism $\Psi$ preserves abstract energy-budgeting topology rather than hardware physics, creating three explicit breaking points:
+\begin{enumerate}
+  \item \textbf{Absence of Hardware Self-Replication:} Real static WSN nodes do not regenerate physical silicon or multiply via spatial seed dispersal; ecological regeneration and seed-establishment subsidies ($E_{\text{base}} > E_{\text{seed}}$) therefore fall outside the WSN interpretation, which tracks strictly battery longevity and topological coverage.
+  \item \textbf{Non-Rational Adversary Behaviour:} Biological foragers abandon low-utility leaves under the MVT-inspired departure rule (Eq.~\eqref{eq:mvt_logistic_departure}) once foliar palatability drops ($\eta(t) \to \eta_{\min}$). Automated cyber-adversaries and denial-of-sleep flood sources remain insensitive to reduced local service utility alone; in sensor networks, service shedding must therefore be paired with active ingress filtering or upstream isolation.
+  \item \textbf{Transport Physics Divergence:} Continuous 2D advection--diffusion PDEs capture slow chemical dilution in planar boundary layers rather than electromagnetic RF propagation. Upwind loss of VOC warnings under directional drift ($\|\mathbf{u}_{\text{wind}}\| \ge 0.95\,\text{cells/tick}$) mirrors only the topological symptom --- asymmetric primary link failure motivating redundant fallback links --- rather than physical propagation laws.
+\end{enumerate}
+
+\subsubsection{Methodological Transfer to EEDSE}
+Beyond conceptual analogies, three computational components transfer directly into the Evolutionary Encapsulated Design Space Exploration (EEDSE) toolchain \cite{forster2024topology, dietrich2025visual}:
+\begin{enumerate}
+  \item \textbf{CRN Variance Screening for Dimension Reduction:} Common Random Numbers Sobol screening (Section~\ref{sec:ecotone_sobol}) isolates dominant sensitivity factors ($S_T > 0.30$) from saturated parameters ($S_1 \approx 0$), pruning uninformative chromosomes prior to multi-objective evolutionary search over large sensor graphs.
+  \item \textbf{Multi-Fidelity Surrogate Transfer:} The Optuna TPE+ASHA zero-shot scale transfer established across $128 \times 64 \to 256 \times 256$ ($\mathcal{J} = 0.7892$ with zero violations) directly informs hierarchical DSE evaluation across small $10^2$-node surrogates before verifying candidate security schedules on $10^3\text{--}10^4$-node WSN deployments \cite{forster2024topology}.
+  \item \textbf{Deterministic SoA and Zarr Phenotype Archiving:} Thread-count-invariant execution ($\max|\Delta| = 0.0$) combined with $10.5\times\text{--}12.1\times$ compressed Zarr state stores guarantees exact reproducibility of multi-generational fitness evaluations across parallel worker pools.
+\end{enumerate}
+
+\subsection{Modelling Assumptions and Limitations}
+\label{subsec:model_limitations}
+
+Five modelling assumptions define the physical and ecological scope of the present simulator:
+\begin{enumerate}
+  \item \textbf{Effective Atmospheric Drift Proxy:} Atmospheric advection runs on a planar 2D torus under spatially uniform drift $\mathbf{u}_{\text{wind}}$. The calibrated ecotone value $\|\mathbf{u}_{\text{wind}}\| = 0.95\,\text{cells/tick} \equiv 0.95\,\text{m/h}$ ($2.6 \times 10^{-4}\,\text{m/s}$) represents a time-compressed effective canopy plume displacement rate rather than instantaneous unattenuated meteorological wind velocity.
+  \item \textbf{Semi-Lagrangian Numerical Diffusion:} As derived in Section~\ref{subsec:operator_splitting}, bilinear backward interpolation introduces Courant-dependent implicit diffusivity $\sigma_{\text{num}}^2(\alpha) = \alpha(1 - \alpha)$ \cite{staniforth1991semi}, peaking at $\sigma_{\text{num}}^2 = 0.25$ at $\|\mathbf{u}_{\text{wind}}\| = 0.50\,\text{cells/tick}$ and explaining slightly enhanced lateral smoothing and reduced intact grazing deaths ($5{,}446.5$) at half-cell drift.
+  \item \textbf{Unified Chemotactic Field and Specialist Foraging Gaps:} All five herbivore guilds share a single Jacobi chemotactic potential surface $F_t(x, y)$ scaled primarily by plant biomass, palatability, and toxins. Because gradients are not guild-specific, specialist herbivores searching for sparse patchy hosts --- exemplified by \textit{Pieris brassicae} ($h_4$) navigating between isolated \textit{Brassica nigra} patches --- can experience starvation mortality during inter-patch transit ($23$ starved swarms on the instrumented trajectory).
+  \item \textbf{Single-Season Persistence vs.\ Multi-Year Equilibrium:} The $4{,}000$-tick flagship ensemble evaluates single-season ($166.7$-day) persistence with woody saplings modelled as clonal ramets recruiting within one season; over multi-year runs without seasonal reset or overwinter diapause, slow successional dominance (such as riparian woody decline and perennial grass expansion observed in Table~\ref{tab:ecotone_ensemble_summary}) requires dedicated demographic parameterisation.
+  \item \textbf{Two-Trophic Closure and Seed Subsidies:} The ecotone resolves primary producers and primary herbivores across two explicit trophic levels, folding indirect third-trophic parasitoid effects into volatile deterrence and contact lethality. Furthermore, parameterisations with $E_{\text{base}} > E_{\text{seed}}$ (Table~\ref{tab:case_study_configurations}) introduce an explicit establishment-carbon subsidy on every successful germination, remaining bounded globally by Proposition~\ref{prop:capacity_boundedness}.
+\end{enumerate}

@@ -1,0 +1,115 @@
+% ==============================================================================
+% Table 4: Comprehensive Methodological Comparison Across Simulators
+% Placed at [b] (bottom of page)
+% Narrative Story:
+% This table systematically justifies the architectural necessity of PHIDS against
+% established ecological, agronomic, and biophysical simulation platforms.
+% It illustrates the historical compromise: existing tools either model regional
+% crop yields without biotic predators (SIMPLACE, MONICA), landscape succession
+% without reactive semiochemical transport (LANDIS-II, ALMaSS), or micro-scale
+% tissue morphogenesis without macroscopic animals (CompuCell3D).
+% Blank-canvas toolkits (NetLogo, Mesa) are excluded from the comparison matrix
+% because their unspecialized nature produces uninformative "User-Defined" entries.
+% ==============================================================================
+
+\scriptsize
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{
+  >{\raggedright\arraybackslash\hsize=1.05\hsize}X
+  >{\raggedright\arraybackslash\hsize=1.15\hsize}X
+  >{\raggedright\arraybackslash\hsize=0.90\hsize}X
+  >{\raggedright\arraybackslash\hsize=0.95\hsize}X
+  >{\raggedright\arraybackslash\hsize=0.95\hsize}X
+  >{\raggedright\arraybackslash\hsize=0.98\hsize}X
+  >{\raggedright\arraybackslash\hsize=1.02\hsize}X
+}
+  \toprule
+  \textbf{Capability / Dimension} &
+  \textbf{PHIDS (This Work)} &
+  \textbf{SIMPLACE} &
+  \textbf{MONICA} &
+  \textbf{LANDIS-II} &
+  \textbf{ALMaSS} &
+  \textbf{CompuCell3D} \\
+  \midrule
+  \textbf{Primary Domain} &
+  Meso-scale plant--herbivore semiochemical dynamics &
+  Crop phenology \& agricultural yields &
+  Agro-ecosystem carbon \& nitrogen kinetics &
+  Forest succession \& disturbance ecology &
+  Wildlife landscape population dynamics &
+  Cellular tissue morphogenesis \& tumours \\
+  \addlinespace[2.5pt]
+  \textbf{Spatial Topology} &
+  2D Toroidal $\mathbb{T}^2$ (power-of-two grids $32^2\text{--}1024^2$) &
+  1D Vertical soil profile columns &
+  1D Vertical layered soil columns &
+  2D Raster grid ($10\text{--}100\,\text{m}$ cells) &
+  2D Heterogeneous vector/raster landscape &
+  2D/3D Cellular lattice ($\mu\text{m}$ domain) \\
+  \addlinespace[2.5pt]
+  \textbf{Temporal Stride} &
+  Multi-rate strides ($1\,\text{h}, 24\,\text{h}, 168\,\text{h}$) &
+  Daily discrete steps ($\Delta t = 24\,\text{h}$) &
+  Daily agronomic steps ($\Delta t = 24\,\text{h}$) &
+  Seasonal to multi-year increments &
+  Daily to hourly animal steps &
+  Monte Carlo Steps (MCS sub-second) \\
+  \addlinespace[2.5pt]
+  \textbf{Entity Architecture} &
+  Data-Oriented SoA ECS (Contiguous field buffers) &
+  Monolithic Java class hierarchy &
+  Procedural C++ crop modules &
+  Object-oriented C\# cohorts &
+  Object-oriented C++ polymorphic agents &
+  Cellular Potts Model (Generalised Ising) \\
+  \addlinespace[2.5pt]
+  \textbf{Continuous Fields} &
+  Operator-split 2D Reaction-Diffusion PDEs &
+  None (1D Richards ODE water flow) &
+  None (1D ODE nitrogen percolation) &
+  None (Coarse spatial rasters) &
+  None (Static GIS habitat maps) &
+  Finite difference diffusion solver \\
+  \addlinespace[2.5pt]
+  \textbf{Defence Signalling} &
+  Airborne VOC plumes \& non-linear Hill priming &
+  None (Abiotic crop growth only) &
+  None (Abiotic fertiliser response) &
+  None (Static species growth tables) &
+  None (Static vegetation foraging map) &
+  Local morphogen chemical secretion \\
+  \addlinespace[2.5pt]
+  \textbf{Subterranean Conduits} &
+  Cardinal-adjacent dynamic root-link graph ($\mathbf{A}_{uv}$) &
+  None &
+  None &
+  None &
+  None &
+  None (Contact energy matrix only) \\
+  \addlinespace[2.5pt]
+  \textbf{Foraging Kinematics} &
+  Jacobi chemotaxis, MVT-inspired exit heuristic, heading persistence &
+  None (No animal consumers) &
+  None (No animal consumers) &
+  Stochastic dispersal kernel &
+  Rule-based behavioural state machines &
+  Hamiltonian energy minimisation $\Delta \mathcal{H}$ \\
+  \addlinespace[2.5pt]
+  \textbf{Hardware \& Execution} &
+  Compiled SIMD kernels ($1.25\text{--}2.59\,\text{ms}$/tick; $64\times 32\text{--}128^2$) &
+  JVM threaded multi-run execution &
+  Single-threaded native C++ executable &
+  .NET runtime batch processor &
+  Single-threaded native C++ engine &
+  C++/OpenMP parallel Potts solver \\
+  \addlinespace[2.5pt]
+  \textbf{Replay Buffering} &
+  Deterministic chunked Zarr array replay &
+  Tabular CSV / SQL relational loggers &
+  NetCDF / CSV output text dump &
+  Output raster GIS files &
+  Custom binary event logs &
+  VTK / image frame sequential dumps \\
+  \bottomrule
+\end{tabularx}

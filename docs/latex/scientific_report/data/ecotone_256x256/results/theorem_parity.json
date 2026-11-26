@@ -1,0 +1,406 @@
+{
+  "theorem1_trial2_matrix": [
+    {
+      "flora": "p0 (Populus nigra)",
+      "herb": "h0 (Lymantria dispar)",
+      "E0": 70.0,
+      "E_min": 14.0,
+      "a_hourly_runtime": 1.6668,
+      "a_diurnal_runtime": 40.0044,
+      "T_h": 0.113987,
+      "toxin_delays": "[2, 12]",
+      "theta_crit_hr_N16": 0.4593,
+      "theta_crit_hr_Nsplit": 0.2826,
+      "theta_crit_diurnal_N16": 0.4015
+    },
+    {
+      "flora": "p1 (Salix purpurea)",
+      "herb": "h0 (Lymantria dispar)",
+      "E0": 60.0,
+      "E_min": 12.0,
+      "a_hourly_runtime": 1.6668,
+      "a_diurnal_runtime": 40.0044,
+      "T_h": 0.113987,
+      "toxin_delays": "[2, 12]",
+      "theta_crit_hr_N16": 0.4023,
+      "theta_crit_hr_Nsplit": 0.2476,
+      "theta_crit_diurnal_N16": 0.3445
+    },
+    {
+      "flora": "p0 (Populus nigra)",
+      "herb": "h1 (Phratora vitellinae)",
+      "E0": 70.0,
+      "E_min": 14.0,
+      "a_hourly_runtime": 1.1761,
+      "a_diurnal_runtime": 28.2273,
+      "T_h": 0.172599,
+      "toxin_delays": "[2, 12]",
+      "theta_crit_hr_N16": 0.6896,
+      "theta_crit_hr_Nsplit": 0.4597,
+      "theta_crit_diurnal_N16": 0.6077
+    },
+    {
+      "flora": "p1 (Salix purpurea)",
+      "herb": "h1 (Phratora vitellinae)",
+      "E0": 60.0,
+      "E_min": 12.0,
+      "a_hourly_runtime": 1.1761,
+      "a_diurnal_runtime": 28.2273,
+      "T_h": 0.172599,
+      "toxin_delays": "[2, 12]",
+      "theta_crit_hr_N16": 0.6033,
+      "theta_crit_hr_Nsplit": 0.4022,
+      "theta_crit_diurnal_N16": 0.5214
+    },
+    {
+      "flora": "p2 (Trifolium repens)",
+      "herb": "h2 (Acyrthosiphon pisum)",
+      "E0": 45.0,
+      "E_min": 9.0,
+      "a_hourly_runtime": 2.6664,
+      "a_diurnal_runtime": 63.9929,
+      "T_h": 0.126764,
+      "toxin_delays": "[1, 8]",
+      "theta_crit_hr_N16": 0.3229,
+      "theta_crit_hr_Nsplit": 0.1123,
+      "theta_crit_diurnal_N16": 0.2868
+    },
+    {
+      "flora": "p2 (Trifolium repens)",
+      "herb": "h3 (Noctua pronuba)",
+      "E0": 45.0,
+      "E_min": 9.0,
+      "a_hourly_runtime": 0.5046,
+      "a_diurnal_runtime": 12.1114,
+      "T_h": 0.334232,
+      "toxin_delays": "[1, 8]",
+      "theta_crit_hr_N16": 0.9514,
+      "theta_crit_hr_Nsplit": 0.5854,
+      "theta_crit_diurnal_N16": 0.7603
+    },
+    {
+      "flora": "p3 (Lolium perenne)",
+      "herb": "h3 (Noctua pronuba)",
+      "E0": 55.0,
+      "E_min": 11.0,
+      "a_hourly_runtime": 0.5046,
+      "a_diurnal_runtime": 12.1114,
+      "T_h": 0.334232,
+      "toxin_delays": "[2, 10]",
+      "theta_crit_hr_N16": 1.1185,
+      "theta_crit_hr_Nsplit": 0.6883,
+      "theta_crit_diurnal_N16": 0.9274
+    },
+    {
+      "flora": "p4 (Tanacetum vulgare)",
+      "herb": "h3 (Noctua pronuba)",
+      "E0": 50.0,
+      "E_min": 10.0,
+      "a_hourly_runtime": 0.5046,
+      "a_diurnal_runtime": 12.1114,
+      "T_h": 0.334232,
+      "toxin_delays": "[1, 3]",
+      "theta_crit_hr_N16": 1.0349,
+      "theta_crit_hr_Nsplit": 0.6369,
+      "theta_crit_diurnal_N16": 0.8439
+    },
+    {
+      "flora": "p5 (Brassica nigra)",
+      "herb": "h3 (Noctua pronuba)",
+      "E0": 35.0,
+      "E_min": 7.0,
+      "a_hourly_runtime": 0.5046,
+      "a_diurnal_runtime": 12.1114,
+      "T_h": 0.334232,
+      "toxin_delays": "[2, 8]",
+      "theta_crit_hr_N16": 0.7842,
+      "theta_crit_hr_Nsplit": 0.4826,
+      "theta_crit_diurnal_N16": 0.5932
+    },
+    {
+      "flora": "p5 (Brassica nigra)",
+      "herb": "h4 (Pieris brassicae)",
+      "E0": 35.0,
+      "E_min": 7.0,
+      "a_hourly_runtime": 1.3532,
+      "a_diurnal_runtime": 32.4764,
+      "T_h": 0.163319,
+      "toxin_delays": "[2, 8]",
+      "theta_crit_hr_N16": 0.3601,
+      "theta_crit_hr_Nsplit": 0.2401,
+      "theta_crit_diurnal_N16": 0.2889
+    }
+  ],
+  "theorem2_trial2_matrix": [
+    {
+      "flora": "p0",
+      "herb": "h0",
+      "r_h": 0.00075,
+      "K": 140.0,
+      "a_hourly": 1.6668,
+      "T_h": 0.113987,
+      "e_eff": 0.3344,
+      "m_herb_h": 0.011802,
+      "feasible": true,
+      "E_star": 0.0213,
+      "N_star": 0.0005,
+      "alpha": 3e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p1",
+      "herb": "h0",
+      "r_h": 0.000468,
+      "K": 120.0,
+      "a_hourly": 1.6668,
+      "T_h": 0.113987,
+      "e_eff": 0.2356,
+      "m_herb_h": 0.011802,
+      "feasible": true,
+      "E_star": 0.0302,
+      "N_star": 0.0003,
+      "alpha": 3e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p0",
+      "herb": "h1",
+      "r_h": 0.00075,
+      "K": 140.0,
+      "a_hourly": 1.1761,
+      "T_h": 0.172599,
+      "e_eff": 0.3696,
+      "m_herb_h": 0.009907,
+      "feasible": true,
+      "E_star": 0.0229,
+      "N_star": 0.0006,
+      "alpha": 3e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p1",
+      "herb": "h1",
+      "r_h": 0.000468,
+      "K": 120.0,
+      "a_hourly": 1.1761,
+      "T_h": 0.172599,
+      "e_eff": 0.2604,
+      "m_herb_h": 0.009907,
+      "feasible": true,
+      "E_star": 0.0326,
+      "N_star": 0.0004,
+      "alpha": 3e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p2",
+      "herb": "h2",
+      "r_h": 0.001588,
+      "K": 85.0,
+      "a_hourly": 2.6664,
+      "T_h": 0.126764,
+      "e_eff": 0.624,
+      "m_herb_h": 0.013367,
+      "feasible": true,
+      "E_star": 0.0081,
+      "N_star": 0.0006,
+      "alpha": 4e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p2",
+      "herb": "h3",
+      "r_h": 0.001588,
+      "K": 85.0,
+      "a_hourly": 0.5046,
+      "T_h": 0.334232,
+      "e_eff": 0.4608,
+      "m_herb_h": 0.011602,
+      "feasible": true,
+      "E_star": 0.0503,
+      "N_star": 0.0032,
+      "alpha": 1.2e-05,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p3",
+      "herb": "h3",
+      "r_h": 0.001676,
+      "K": 105.0,
+      "a_hourly": 0.5046,
+      "T_h": 0.334232,
+      "e_eff": 0.3264,
+      "m_herb_h": 0.011602,
+      "feasible": true,
+      "E_star": 0.0713,
+      "N_star": 0.0034,
+      "alpha": 1.9e-05,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p4",
+      "herb": "h3",
+      "r_h": 0.0009,
+      "K": 100.0,
+      "a_hourly": 0.5046,
+      "T_h": 0.334232,
+      "e_eff": 0.4128,
+      "m_herb_h": 0.011602,
+      "feasible": true,
+      "E_star": 0.0562,
+      "N_star": 0.0018,
+      "alpha": 8e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p5",
+      "herb": "h3",
+      "r_h": 0.002676,
+      "K": 68.0,
+      "a_hourly": 0.5046,
+      "T_h": 0.334232,
+      "e_eff": 0.4656,
+      "m_herb_h": 0.011602,
+      "feasible": true,
+      "E_star": 0.0498,
+      "N_star": 0.0053,
+      "alpha": 2e-05,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    },
+    {
+      "flora": "p5",
+      "herb": "h4",
+      "r_h": 0.002676,
+      "K": 68.0,
+      "a_hourly": 1.3532,
+      "T_h": 0.163319,
+      "e_eff": 0.4268,
+      "m_herb_h": 0.009814,
+      "feasible": true,
+      "E_star": 0.0171,
+      "N_star": 0.002,
+      "alpha": 9e-06,
+      "hopf_regime": "already_unstable_at_tau0",
+      "tau_star": 0.0
+    }
+  ],
+  "theorem2_analytical_reference_dde": {
+    "feasible": true,
+    "E_star": 22.2222,
+    "N_star": 10.3704,
+    "alpha": -0.013889,
+    "beta": 0.833333,
+    "gamma": 0.175,
+    "omega_0": 0.381755,
+    "tau_star": 0.095259,
+    "hopf_regime": "supercritical_at_tau_star"
+  },
+  "harness_cor1_reference": {
+    "theta_crit_h": 1.552959,
+    "sweep": [
+      {
+        "theta_ticks": 1,
+        "plant_survived": true,
+        "final_plant_energy": 10.5263,
+        "plant_death_tick": null,
+        "herb_extinct_tick": 0
+      },
+      {
+        "theta_ticks": 2,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 1,
+        "herb_extinct_tick": null
+      },
+      {
+        "theta_ticks": 3,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 1,
+        "herb_extinct_tick": null
+      },
+      {
+        "theta_ticks": 4,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 1,
+        "herb_extinct_tick": null
+      }
+    ]
+  },
+  "harness_trial2_p3_h3_N5": {
+    "theta_crit_h": 3.579097,
+    "sweep": [
+      {
+        "theta_ticks": 2,
+        "plant_survived": true,
+        "final_plant_energy": 28.4065,
+        "plant_death_tick": null,
+        "herb_extinct_tick": 1
+      },
+      {
+        "theta_ticks": 3,
+        "plant_survived": true,
+        "final_plant_energy": 16.03,
+        "plant_death_tick": null,
+        "herb_extinct_tick": 2
+      },
+      {
+        "theta_ticks": 4,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 3,
+        "herb_extinct_tick": null
+      },
+      {
+        "theta_ticks": 10,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 3,
+        "herb_extinct_tick": null
+      }
+    ]
+  },
+  "harness_trial2_p0_h0_N4": {
+    "theta_crit_h": 1.837207,
+    "sweep": [
+      {
+        "theta_ticks": 1,
+        "plant_survived": true,
+        "final_plant_energy": 37.3623,
+        "plant_death_tick": null,
+        "herb_extinct_tick": 0
+      },
+      {
+        "theta_ticks": 2,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 1,
+        "herb_extinct_tick": null
+      },
+      {
+        "theta_ticks": 3,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 1,
+        "herb_extinct_tick": null
+      },
+      {
+        "theta_ticks": 12,
+        "plant_survived": false,
+        "final_plant_energy": 0.0,
+        "plant_death_tick": 1,
+        "herb_extinct_tick": null
+      }
+    ]
+  }
+}

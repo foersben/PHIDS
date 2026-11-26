@@ -1,0 +1,76 @@
+% ==============================================================================
+% Section 2: The Biological Problem Domain & Botanical Defence Kinetics
+% ==============================================================================
+
+\section{Biological Problem Domain and Defence Kinetics}
+\label{sec:biological_domain}
+
+\begin{figure*}[t]
+  \centering
+  \input{figures/fig02_botanical_defense_hierarchy.tex}
+  \caption{Multi-Layer Botanical Defence Hierarchy and Dual-Channel Communication Cascades. Attacked plants activate localised induced defences while transmitting airborne VOC plumes and subterranean mycorrhizal signals to prime both downwind neighbours (via airborne VOCs) and upwind or adjacent cardinal neighbours (via subterranean CMNs), simultaneously withdrawing mobile phloem nutrients to reduce palatability.}
+  \label{fig:botanical_defense_hierarchy}
+\end{figure*}
+
+Terrestrial plant communities persist through layered morphological, biochemical, and vascular defences \cite{gatehouse2002plant}. Incapable of fleeing foraging herbivores, plants partition photosynthetic energy between somatic vegetative growth and defensive barriers \cite{charnov1976optimal, gatehouse2002plant}. Classical Lotka--Volterra formulations \cite{lotka1925elements, volterra1926fluctuations} treat plant susceptibility as a static scalar, obscuring non-linear synthesis delays, spatial refugia, and dual-channel warning cascades. Below we introduce the conceptual physiological abstractions for the five biological mechanisms implemented in PHIDS; their exact discrete operational recurrences and conservation laws are formalised in Section~\ref{sec:mathematical_framework} (Section~\ref{subsec:trophic_kinetics}).
+
+\subsection{Botanical Defence Hierarchy}
+\label{subsec:defense_hierarchy}
+
+Autotrophic defences operate across three functional tiers (Fig.~\ref{fig:botanical_defense_hierarchy}). First, constitutive morphological defences -- lignified cell walls, glandular trichomes, epidermal waxes, and biogenic silica phytoliths -- are built permanently into mature tissue \cite{gatehouse2002plant}. Conceptually, they represent a sunken structural allocation:
+\begin{equation}
+  E_{\text{somatic}} = E_{\text{total}} \cdot (1 - \delta_{\text{morph}}), \quad \delta_{\text{morph}} \in [0, 0.50],
+\end{equation}
+where $\delta_{\text{morph}}$ denotes the effective fraction by which physical reinforcement attenuates digestibility, complemented in discrete cohorts by structural tissue accretion and maintenance (Eq.~\eqref{eq:structural_mass_growth}).
+
+Second, inducible chemical defences remain metabolically inactive at rest and are synthesised \textit{de novo} only after mechanical wounding or herbivore oral elicitors \cite{gatehouse2002plant}. Conceptually, foliar energy balance follows:
+\begin{equation}
+  \frac{\mathrm{d}E_{\text{reserve}}}{\mathrm{d}t} = P_i(t) - R_{\text{maint}} - \mathbb{I}_{\text{induced}} \cdot C_{\text{synth}},
+\end{equation}
+where $P_i(t)$ represents photosynthetic intake, $R_{\text{maint}}$ structural maintenance respiration, $\mathbb{I}_{\text{induced}} \in \{0, 1\}$ the active induction indicator, and $C_{\text{synth}}$ enzymatic synthesis expenditure (realised discretely per tick and weekly cohort in Section~\ref{subsec:trophic_kinetics}).
+
+Third, physiological priming bridges constitutive and inducible strategies \cite{farmer2001surface, baldwin2006volatile, babikova2013underground, arimura2025cracking}. Detecting low-level airborne or subterranean cues from damaged neighbours places an unattacked plant in a primed alert state without immediate investment in full toxin synthesis. Primed tissues accumulate cytosolic calcium ($\text{Ca}^{2+}$) transients \cite{aratani2023green}, inactive mitogen-activated protein kinases (MAPKs), and chromatin marks on jasmonate-responsive promoters \cite{gatehouse2002plant, arimura2025cracking} at minor energetic cost ($\approx 1\%$ of baseline reserve), enabling rapid toxin deployment upon subsequent grazing.
+
+\subsection{Dual-Channel Communication Networks}
+\label{subsec:communication_networks}
+
+Sessile flora exchange stress cues across two contrasting physical media (Fig.~\ref{fig:botanical_defense_hierarchy}). In the atmospheric channel, foliar wounding releases green leaf volatiles such as $(Z)$-3-hexenal and $(E)$-2-hexenal together with terpenoids including $(E)$-$\beta$-ocimene and $(E)$-4,8-dimethyl-1,3,7-nonatriene \cite{farmer2001surface, baldwin2006volatile, aratani2023green}. Wind advection and turbulent diffusion carry these plumes rapidly downwind \cite{okubo2001diffusion}, yet airborne warning suffers three structural constraints:
+\begin{enumerate}
+  \item \textbf{Directional Asymmetry:} Plumes travel downwind along $\mathbf{u}_{\text{wind}}$, leaving upwind and crosswind plants unwarned.
+  \item \textbf{Atmospheric Dilution:} Airborne concentration $C_{\text{voc}}(\mathbf{x}, t)$ attenuates via advection, dispersion, and photolytic clearance (Section~\ref{subsec:atmospheric_transport}, Eq.~\ref{eq:reaction_diffusion_pde}).
+  \item \textbf{Herbivore Eavesdropping:} Specialised herbivores exploit unencrypted VOC gradients as chemotactic beacons toward stressed hosts \cite{baldwin2006volatile, arimura2025cracking}.
+\end{enumerate}
+
+To compensate for directional wind asymmetry, plants form subterranean common mycelial networks (CMNs) linking adjacent root systems \cite{babikova2013underground}. Upon elicitation, stressed hosts partition emitted warning cues between airborne plumes and a cardinal-adjacent dynamic root-link graph as formalised in Section~\ref{subsec:trophic_kinetics} (Eq.~\ref{eq:myco_neighbor_flux}) \cite{babikova2013underground}. Subterranean conduction operates independently of wind direction and atmospheric dilution, remaining hidden from foliar herbivores. Empirical syntheses, however, note that CMN maintenance imposes measurable carbon-for-nutrient costs and depends on intact hyphal topology \cite{karst2023positive, henriksson2023reexamining}. PHIDS therefore models the CMN as a metabolically taxed nearest-neighbour lattice graph requiring sustained host carbon allocation ($\delta_E^{\text{tax}} \approx 0.5\text{--}1.5\%$ of baseline reserve) \cite{babikova2013underground, henriksson2023reexamining}; interrupting this carbon supply severs hyphal links.
+
+\input{tables/tab02_biochemical_parameters.tex}
+
+\subsection{Synthesis Latency and Vulnerability Window}
+\label{subsec:latency_window}
+
+De-novo secondary metabolite synthesis is delayed by octadecanoid signalling, transcription, ribosomal translation, and enzymatic conversion, creating a physiological latency $\theta$ \cite{gatehouse2002plant}:
+\begin{equation}
+  T_i(t) =
+  \begin{cases}
+    0, & t < t_{\text{attack}} + \theta_i, \\
+    \delta_{\text{chem}} \cdot E_i(t), & t \ge t_{\text{attack}} + \theta_i,
+  \end{cases}
+  \label{eq:toxin_latency}
+\end{equation}
+where $\delta_{\text{chem}} \in [0.15, 0.40]$ is the inducible chemical investment fraction and $E_i(t)$ host reserve. Unprimed latencies span $\theta_{\text{synth}} \in [8, 12]\,\text{ticks}$ in analytical survival regimes ($6\text{--}24\,\text{h}$ in empirical physiology, scaled to $1\text{--}3\,\text{ticks}$ in high-turnover orchard benchmarks) \cite{gatehouse2002plant}, leaving unprimed hosts unprotected during initial grazing. Pre-primed neighbours accelerate toxin mobilisation to:
+\begin{equation}
+  \theta_{\text{primed}} = \max\left(1, \, \lfloor \theta_{\text{synth}} \cdot \kappa_{\text{prime}} \rfloor\right),
+\end{equation}
+with acceleration factor $\kappa_{\text{prime}} \in [0.10, 0.25]$ yielding $\theta_{\text{primed}} \in [1, 3]\,\text{ticks}$ from an $8\text{--}12\,\text{tick}$ baseline -- a $75\text{--}90\%$ latency compression.
+
+\subsection{Phloem Vascular Resource Reallocation}
+\label{subsec:phloem_translocation}
+
+Beyond direct toxicity, grazed plants activate SNF1-related protein kinases (e.g. SnRK1) to translocate mobile sucrose and amino acids through phloem sieve elements into root parenchyma (Table~\ref{tab:biochemical_parameters}) \cite{schwachtje2006snf1}. To avoid tracking a separate subterranean biomass compartment, PHIDS models this translocation phenomenologically through a bounded foliar palatability factor $\eta_i(t) \in [\eta_{\min}, 1.0]$. Under intact conditions $\eta_i = 1.0$; grazing depresses apparent nutrition towards $\eta_{\text{target}} \ge \eta_{\min}$ before asymptotic post-grazing recovery via Eq.~\eqref{eq:phloem_recovery_recurrence} (Section~\ref{subsec:trophic_kinetics}). Lowering $\eta_i(t)$ reduces foliar attractiveness in the chemotactic field without destroying structural mass ($M_{\text{structural}}$), accelerating patch abandonment by foraging herbivores.
+
+\subsection{Herbivore Swarm Kinematics}
+\label{subsec:herbivore_kinematics}
+
+Herbivores are modelled as discrete Lagrangian larval or wingless-colony foraging aggregations $\mathcal{E}_{\text{herb}}$ \cite{okubo2001diffusion, topping2003almass}, moving via an integer step period $v_j \in \mathbb{N}^+$ (giving step cadences $1/v_j \in \{0.33, 0.50, 1.00\}\,\text{cells/h}$; Section~\ref{subsec:swarm_kinematics}). Caloric extraction follows Holling's Type~II functional response \cite{holling1959components} (Eq.~\eqref{eq:math_holling_type_ii}), scaled post-intake by constitutive digestibility $(1 - \delta_{\mathrm{morph}, i})$ and assimilation efficiency $e_{\mathrm{eff}}$, whereas active host toxins ($T_i(t) > 0$) inflict mortality or forced dispersal. For navigation, swarms sample the chemotactic flow field $F_t(x, y)$ across their 5-cell von Neumann neighbourhood $\mathcal{V}(x, y)$ (Sections~\ref{subsec:chemotactic_potential}--\ref{subsec:swarm_kinematics}) using Boltzmann softmax selection (Eq.~\eqref{eq:boltzmann_softmax}) and a $10:1$ forward heading weight on vanishing gradients.
+
+Patch departure follows an $\mathcal{O}(1)$ local logistic heuristic inspired by Charnov's Marginal Value Theorem (MVT) \cite{charnov1976optimal}: departure probability rises smoothly via the intake-to-upkeep ratio $\mathcal{R}_{\text{intake}} = \Delta E_{\text{consumed}} / E_{\text{upkeep}}$ (Eq.~\ref{eq:mvt_logistic_departure}), avoiding global habitat reductions. Each swarm maintains an internal caloric reserve $E_{\text{swarm}, j}(t)$ decremented by basal upkeep $U_j$ per diurnal cycle; reserves above $E_{\text{split}}$ trigger binary fission into two child swarms of size $N_j / 2$, whereas depletion below zero causes starvation mortality and ECS removal.

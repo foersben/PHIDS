@@ -203,7 +203,7 @@ marimo/_lsp/
 __marimo__/
 
 # Batch processing results
-data/
+/data/
 # PHIDS Archived files
 .archive/
 .github/workflows/secrets.env
@@ -232,7 +232,23 @@ src/data_pipeline/manifest.json
 # Benchmarking Scenarios
 examples/benchmarking_*.json
 
-# Docs & LaTeX
-docs/latex/
-latex/
+# LaTeX build artifacts, compiled PDFs, and heavy simulation caches
+docs/latex/**/*.aux
+docs/latex/**/*.bbl
+docs/latex/**/*.blg
+docs/latex/**/*.fdb_latexmk
+docs/latex/**/*.fls
+docs/latex/**/*.log
+docs/latex/**/*.nav
+docs/latex/**/*.out
+docs/latex/**/*.snm
+docs/latex/**/*.synctex.gz
+docs/latex/**/*.toc
+docs/latex/**/*.vrb
+docs/latex/scientific_report/main.pdf
+docs/latex/presentations/**/*.pdf
+docs/latex/scientific_report/figures/*.png
+docs/latex/scientific_report/data/**/ablation_cache/
+docs/latex/scientific_report/data/**/*.journal
+docs/latex/scientific_report/data/**/*_cache.jsonl
 *.zip

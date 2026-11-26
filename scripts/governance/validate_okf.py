@@ -697,7 +697,12 @@ def _is_valid_target_file(md_file: Path) -> bool:
     if md_file.name == "INSTRUCTIONS.md":
         return False
     file_posix = md_file.as_posix()
-    return "site/" not in file_posix
+    return (
+        "docs/latex/" not in file_posix
+        and "docs/.archive/" not in file_posix
+        and "openwiki/" not in file_posix
+        and "site/" not in file_posix
+    )
 
 
 def _print_file_errors(md_file: Path, file_errors: list[str], root_path: Path) -> None:

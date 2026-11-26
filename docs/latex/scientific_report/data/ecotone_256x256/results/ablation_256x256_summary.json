@@ -1,0 +1,3787 @@
+{
+  "max_ticks": 2500,
+  "summary": [
+    {
+      "wind_speed": 0.0,
+      "treatment": "intact",
+      "n_runs": 6,
+      "herb_deaths_mean": 6108.0,
+      "herb_deaths_se": 146.41,
+      "herb_heads_tail_mean": 12728.21,
+      "herb_heads_end_mean": 13314.67,
+      "flora_energy_tail_mean": 1532107.87,
+      "j_flora_mean": 0.7408,
+      "j_herb_mean": 0.8225,
+      "killed_p0_mean": 2605.33,
+      "killed_p1_mean": 1462.17,
+      "killed_p2_mean": 1153.67,
+      "killed_p3_mean": 647.83,
+      "killed_p4_mean": 8.5,
+      "killed_p5_mean": 230.5
+    },
+    {
+      "wind_speed": 0.0,
+      "treatment": "cmn_severed",
+      "n_runs": 6,
+      "herb_deaths_mean": 6404.17,
+      "herb_deaths_se": 107.48,
+      "herb_heads_tail_mean": 13788.89,
+      "herb_heads_end_mean": 13522.67,
+      "flora_energy_tail_mean": 1532045.73,
+      "j_flora_mean": 0.7303,
+      "j_herb_mean": 0.8093,
+      "killed_p0_mean": 2840.83,
+      "killed_p1_mean": 1517.67,
+      "killed_p2_mean": 1160.0,
+      "killed_p3_mean": 649.67,
+      "killed_p4_mean": 10.33,
+      "killed_p5_mean": 225.67
+    },
+    {
+      "wind_speed": 0.0,
+      "treatment": "fully_ablated",
+      "n_runs": 6,
+      "herb_deaths_mean": 16310.17,
+      "herb_deaths_se": 122.58,
+      "herb_heads_tail_mean": 26951.92,
+      "herb_heads_end_mean": 23990.17,
+      "flora_energy_tail_mean": 902411.83,
+      "j_flora_mean": 0.8252,
+      "j_herb_mean": 0.7182,
+      "killed_p0_mean": 3099.0,
+      "killed_p1_mean": 1536.33,
+      "killed_p2_mean": 4660.67,
+      "killed_p3_mean": 6235.83,
+      "killed_p4_mean": 197.33,
+      "killed_p5_mean": 581.0
+    },
+    {
+      "wind_speed": 0.5,
+      "treatment": "intact",
+      "n_runs": 6,
+      "herb_deaths_mean": 5446.5,
+      "herb_deaths_se": 86.25,
+      "herb_heads_tail_mean": 11296.61,
+      "herb_heads_end_mean": 11621.5,
+      "flora_energy_tail_mean": 1503252.02,
+      "j_flora_mean": 0.7335,
+      "j_herb_mean": 0.8248,
+      "killed_p0_mean": 2167.67,
+      "killed_p1_mean": 1341.17,
+      "killed_p2_mean": 1088.67,
+      "killed_p3_mean": 602.83,
+      "killed_p4_mean": 15.5,
+      "killed_p5_mean": 230.67
+    },
+    {
+      "wind_speed": 0.5,
+      "treatment": "cmn_severed",
+      "n_runs": 6,
+      "herb_deaths_mean": 6214.33,
+      "herb_deaths_se": 117.49,
+      "herb_heads_tail_mean": 13089.34,
+      "herb_heads_end_mean": 13563.0,
+      "flora_energy_tail_mean": 1501741.68,
+      "j_flora_mean": 0.7275,
+      "j_herb_mean": 0.8274,
+      "killed_p0_mean": 2529.33,
+      "killed_p1_mean": 1417.17,
+      "killed_p2_mean": 1291.0,
+      "killed_p3_mean": 702.67,
+      "killed_p4_mean": 13.67,
+      "killed_p5_mean": 260.5
+    },
+    {
+      "wind_speed": 0.5,
+      "treatment": "fully_ablated",
+      "n_runs": 6,
+      "herb_deaths_mean": 16351.17,
+      "herb_deaths_se": 177.59,
+      "herb_heads_tail_mean": 27210.55,
+      "herb_heads_end_mean": 23674.17,
+      "flora_energy_tail_mean": 873991.34,
+      "j_flora_mean": 0.8121,
+      "j_herb_mean": 0.7249,
+      "killed_p0_mean": 3216.5,
+      "killed_p1_mean": 1464.17,
+      "killed_p2_mean": 4650.17,
+      "killed_p3_mean": 6205.67,
+      "killed_p4_mean": 224.83,
+      "killed_p5_mean": 589.83
+    },
+    {
+      "wind_speed": 0.95,
+      "treatment": "intact",
+      "n_runs": 6,
+      "herb_deaths_mean": 5782.5,
+      "herb_deaths_se": 116.74,
+      "herb_heads_tail_mean": 11909.82,
+      "herb_heads_end_mean": 11844.67,
+      "flora_energy_tail_mean": 1464045.04,
+      "j_flora_mean": 0.7178,
+      "j_herb_mean": 0.7864,
+      "killed_p0_mean": 2332.0,
+      "killed_p1_mean": 1309.83,
+      "killed_p2_mean": 1253.83,
+      "killed_p3_mean": 622.0,
+      "killed_p4_mean": 11.17,
+      "killed_p5_mean": 253.67
+    },
+    {
+      "wind_speed": 0.95,
+      "treatment": "cmn_severed",
+      "n_runs": 6,
+      "herb_deaths_mean": 6007.67,
+      "herb_deaths_se": 119.78,
+      "herb_heads_tail_mean": 12263.52,
+      "herb_heads_end_mean": 11309.5,
+      "flora_energy_tail_mean": 1481597.22,
+      "j_flora_mean": 0.7102,
+      "j_herb_mean": 0.8314,
+      "killed_p0_mean": 2643.5,
+      "killed_p1_mean": 1402.0,
+      "killed_p2_mean": 1077.67,
+      "killed_p3_mean": 643.67,
+      "killed_p4_mean": 9.67,
+      "killed_p5_mean": 231.17
+    },
+    {
+      "wind_speed": 0.95,
+      "treatment": "fully_ablated",
+      "n_runs": 6,
+      "herb_deaths_mean": 16351.17,
+      "herb_deaths_se": 177.59,
+      "herb_heads_tail_mean": 27210.55,
+      "herb_heads_end_mean": 23674.17,
+      "flora_energy_tail_mean": 873991.34,
+      "j_flora_mean": 0.8121,
+      "j_herb_mean": 0.7249,
+      "killed_p0_mean": 3216.5,
+      "killed_p1_mean": 1464.17,
+      "killed_p2_mean": 4650.17,
+      "killed_p3_mean": 6205.67,
+      "killed_p4_mean": 224.83,
+      "killed_p5_mean": 589.83
+    },
+    {
+      "wind_speed": 1.25,
+      "treatment": "intact",
+      "n_runs": 6,
+      "herb_deaths_mean": 6059.0,
+      "herb_deaths_se": 185.73,
+      "herb_heads_tail_mean": 12657.42,
+      "herb_heads_end_mean": 12243.33,
+      "flora_energy_tail_mean": 1443013.79,
+      "j_flora_mean": 0.7185,
+      "j_herb_mean": 0.789,
+      "killed_p0_mean": 2564.5,
+      "killed_p1_mean": 1279.17,
+      "killed_p2_mean": 1246.83,
+      "killed_p3_mean": 713.17,
+      "killed_p4_mean": 22.5,
+      "killed_p5_mean": 232.83
+    },
+    {
+      "wind_speed": 1.25,
+      "treatment": "cmn_severed",
+      "n_runs": 6,
+      "herb_deaths_mean": 6590.33,
+      "herb_deaths_se": 218.66,
+      "herb_heads_tail_mean": 13254.48,
+      "herb_heads_end_mean": 13301.33,
+      "flora_energy_tail_mean": 1473232.96,
+      "j_flora_mean": 0.7112,
+      "j_herb_mean": 0.8168,
+      "killed_p0_mean": 2893.17,
+      "killed_p1_mean": 1388.5,
+      "killed_p2_mean": 1307.33,
+      "killed_p3_mean": 720.5,
+      "killed_p4_mean": 25.17,
+      "killed_p5_mean": 255.67
+    },
+    {
+      "wind_speed": 1.25,
+      "treatment": "fully_ablated",
+      "n_runs": 6,
+      "herb_deaths_mean": 16351.17,
+      "herb_deaths_se": 177.59,
+      "herb_heads_tail_mean": 27210.55,
+      "herb_heads_end_mean": 23674.17,
+      "flora_energy_tail_mean": 873991.34,
+      "j_flora_mean": 0.8121,
+      "j_herb_mean": 0.7249,
+      "killed_p0_mean": 3216.5,
+      "killed_p1_mean": 1464.17,
+      "killed_p2_mean": 4650.17,
+      "killed_p3_mean": 6205.67,
+      "killed_p4_mean": 224.83,
+      "killed_p5_mean": 589.83
+    },
+    {
+      "wind_speed": 2.0,
+      "treatment": "intact",
+      "n_runs": 6,
+      "herb_deaths_mean": 6297.17,
+      "herb_deaths_se": 155.55,
+      "herb_heads_tail_mean": 13630.55,
+      "herb_heads_end_mean": 13269.5,
+      "flora_energy_tail_mean": 1429903.61,
+      "j_flora_mean": 0.7162,
+      "j_herb_mean": 0.8091,
+      "killed_p0_mean": 2671.83,
+      "killed_p1_mean": 1261.33,
+      "killed_p2_mean": 1359.33,
+      "killed_p3_mean": 737.83,
+      "killed_p4_mean": 24.0,
+      "killed_p5_mean": 242.83
+    },
+    {
+      "wind_speed": 2.0,
+      "treatment": "cmn_severed",
+      "n_runs": 6,
+      "herb_deaths_mean": 6641.5,
+      "herb_deaths_se": 129.17,
+      "herb_heads_tail_mean": 13946.16,
+      "herb_heads_end_mean": 13943.67,
+      "flora_energy_tail_mean": 1462944.75,
+      "j_flora_mean": 0.7075,
+      "j_herb_mean": 0.8174,
+      "killed_p0_mean": 2957.17,
+      "killed_p1_mean": 1406.33,
+      "killed_p2_mean": 1215.5,
+      "killed_p3_mean": 778.0,
+      "killed_p4_mean": 26.67,
+      "killed_p5_mean": 257.83
+    },
+    {
+      "wind_speed": 2.0,
+      "treatment": "fully_ablated",
+      "n_runs": 6,
+      "herb_deaths_mean": 16351.17,
+      "herb_deaths_se": 177.59,
+      "herb_heads_tail_mean": 27210.55,
+      "herb_heads_end_mean": 23674.17,
+      "flora_energy_tail_mean": 873991.34,
+      "j_flora_mean": 0.8121,
+      "j_herb_mean": 0.7249,
+      "killed_p0_mean": 3216.5,
+      "killed_p1_mean": 1464.17,
+      "killed_p2_mean": 4650.17,
+      "killed_p3_mean": 6205.67,
+      "killed_p4_mean": 224.83,
+      "killed_p5_mean": 589.83
+    }
+  ],
+  "runs": [
+    {
+      "treatment": "intact",
+      "wind_speed": 0.0,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 483.87,
+      "killed_by_flora": [
+        2540,
+        1432,
+        1315,
+        592,
+        6,
+        224
+      ],
+      "death_herbivory_total": 6109,
+      "death_defense_total": 839,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1491156.38,
+      "mean_herb_heads_tail": 12598.55,
+      "final_plants": [
+        371,
+        566,
+        5566,
+        10496,
+        3563,
+        1047
+      ],
+      "final_heads": [
+        2987,
+        3049,
+        4928,
+        666,
+        336
+      ],
+      "final_flora_total": 21609,
+      "final_herb_total": 11966,
+      "final_j_flora": 0.7307,
+      "final_j_herb": 0.8209
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.0,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 492.07,
+      "killed_by_flora": [
+        2618,
+        1413,
+        871,
+        541,
+        10,
+        246
+      ],
+      "death_herbivory_total": 5699,
+      "death_defense_total": 758,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1569067.94,
+      "mean_herb_heads_tail": 11600.77,
+      "final_plants": [
+        638,
+        614,
+        6280,
+        10532,
+        3560,
+        1015
+      ],
+      "final_heads": [
+        2903,
+        4429,
+        4115,
+        539,
+        343
+      ],
+      "final_flora_total": 22639,
+      "final_herb_total": 12329,
+      "final_j_flora": 0.748,
+      "final_j_herb": 0.8146
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.0,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 502.94,
+      "killed_by_flora": [
+        2525,
+        1470,
+        971,
+        510,
+        8,
+        238
+      ],
+      "death_herbivory_total": 5722,
+      "death_defense_total": 854,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1592486.4,
+      "mean_herb_heads_tail": 11828.25,
+      "final_plants": [
+        753,
+        557,
+        6299,
+        10556,
+        3549,
+        1095
+      ],
+      "final_heads": [
+        2685,
+        4680,
+        4245,
+        1052,
+        346
+      ],
+      "final_flora_total": 22809,
+      "final_herb_total": 13008,
+      "final_j_flora": 0.7537,
+      "final_j_herb": 0.8443
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.0,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 505.71,
+      "killed_by_flora": [
+        2693,
+        1472,
+        1115,
+        739,
+        11,
+        188
+      ],
+      "death_herbivory_total": 6218,
+      "death_defense_total": 891,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1529271.39,
+      "mean_herb_heads_tail": 13008.49,
+      "final_plants": [
+        453,
+        534,
+        6051,
+        10274,
+        3519,
+        1089
+      ],
+      "final_heads": [
+        2707,
+        5335,
+        5127,
+        903,
+        159
+      ],
+      "final_flora_total": 21920,
+      "final_herb_total": 14231,
+      "final_j_flora": 0.7389,
+      "final_j_herb": 0.7931
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.0,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 502.29,
+      "killed_by_flora": [
+        2557,
+        1459,
+        1250,
+        731,
+        8,
+        244
+      ],
+      "death_herbivory_total": 6249,
+      "death_defense_total": 900,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1503601.68,
+      "mean_herb_heads_tail": 13430.25,
+      "final_plants": [
+        438,
+        515,
+        5823,
+        10285,
+        3582,
+        1021
+      ],
+      "final_heads": [
+        2125,
+        5286,
+        5169,
+        1013,
+        337
+      ],
+      "final_flora_total": 21664,
+      "final_herb_total": 13930,
+      "final_j_flora": 0.7345,
+      "final_j_herb": 0.8096
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.0,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 492.36,
+      "killed_by_flora": [
+        2699,
+        1527,
+        1400,
+        774,
+        8,
+        243
+      ],
+      "death_herbivory_total": 6651,
+      "death_defense_total": 893,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1507063.43,
+      "mean_herb_heads_tail": 13902.96,
+      "final_plants": [
+        440,
+        559,
+        5512,
+        10158,
+        3560,
+        1028
+      ],
+      "final_heads": [
+        3839,
+        3450,
+        5417,
+        1404,
+        314
+      ],
+      "final_flora_total": 21257,
+      "final_herb_total": 14424,
+      "final_j_flora": 0.7392,
+      "final_j_herb": 0.8527
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.0,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 436.43,
+      "killed_by_flora": [
+        2963,
+        1590,
+        1089,
+        644,
+        12,
+        220
+      ],
+      "death_herbivory_total": 6518,
+      "death_defense_total": 540,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1556875.6,
+      "mean_herb_heads_tail": 14463.07,
+      "final_plants": [
+        505,
+        401,
+        6070,
+        10362,
+        3555,
+        1053
+      ],
+      "final_heads": [
+        4531,
+        3627,
+        5632,
+        741,
+        338
+      ],
+      "final_flora_total": 21946,
+      "final_herb_total": 14869,
+      "final_j_flora": 0.7313,
+      "final_j_herb": 0.8136
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.0,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 412.81,
+      "killed_by_flora": [
+        2982,
+        1527,
+        990,
+        449,
+        8,
+        243
+      ],
+      "death_herbivory_total": 6199,
+      "death_defense_total": 449,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1560357.34,
+      "mean_herb_heads_tail": 13333.5,
+      "final_plants": [
+        402,
+        466,
+        6184,
+        10634,
+        3557,
+        1075
+      ],
+      "final_heads": [
+        4335,
+        2453,
+        5085,
+        619,
+        305
+      ],
+      "final_flora_total": 22318,
+      "final_herb_total": 12797,
+      "final_j_flora": 0.726,
+      "final_j_herb": 0.7988
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.0,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 424.72,
+      "killed_by_flora": [
+        2775,
+        1527,
+        1038,
+        488,
+        7,
+        220
+      ],
+      "death_herbivory_total": 6055,
+      "death_defense_total": 529,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1555541.18,
+      "mean_herb_heads_tail": 13708.07,
+      "final_plants": [
+        467,
+        386,
+        6140,
+        10582,
+        3568,
+        1069
+      ],
+      "final_heads": [
+        2452,
+        5667,
+        4610,
+        624,
+        206
+      ],
+      "final_flora_total": 22212,
+      "final_herb_total": 13559,
+      "final_j_flora": 0.7256,
+      "final_j_herb": 0.7742
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.0,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 425.3,
+      "killed_by_flora": [
+        2804,
+        1460,
+        1201,
+        618,
+        10,
+        198
+      ],
+      "death_herbivory_total": 6291,
+      "death_defense_total": 578,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1539948.17,
+      "mean_herb_heads_tail": 13903.29,
+      "final_plants": [
+        412,
+        599,
+        5746,
+        10432,
+        3544,
+        1109
+      ],
+      "final_heads": [
+        4106,
+        3591,
+        4601,
+        1014,
+        164
+      ],
+      "final_flora_total": 21842,
+      "final_herb_total": 13476,
+      "final_j_flora": 0.739,
+      "final_j_herb": 0.8262
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.0,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 502.43,
+      "killed_by_flora": [
+        2850,
+        1513,
+        1272,
+        750,
+        10,
+        244
+      ],
+      "death_herbivory_total": 6639,
+      "death_defense_total": 600,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1505462.3,
+      "mean_herb_heads_tail": 14284.72,
+      "final_plants": [
+        401,
+        426,
+        5571,
+        10354,
+        3568,
+        1077
+      ],
+      "final_heads": [
+        2099,
+        6212,
+        4635,
+        1123,
+        314
+      ],
+      "final_flora_total": 21397,
+      "final_herb_total": 14383,
+      "final_j_flora": 0.7274,
+      "final_j_herb": 0.8021
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.0,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 491.63,
+      "killed_by_flora": [
+        2671,
+        1489,
+        1370,
+        949,
+        15,
+        229
+      ],
+      "death_herbivory_total": 6723,
+      "death_defense_total": 610,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1474089.77,
+      "mean_herb_heads_tail": 13040.67,
+      "final_plants": [
+        371,
+        493,
+        5680,
+        9983,
+        3539,
+        1025
+      ],
+      "final_heads": [
+        3460,
+        2612,
+        4624,
+        1133,
+        223
+      ],
+      "final_flora_total": 21091,
+      "final_herb_total": 12052,
+      "final_j_flora": 0.7326,
+      "final_j_herb": 0.8409
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.0,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 187.33,
+      "killed_by_flora": [
+        3147,
+        1530,
+        4782,
+        6269,
+        220,
+        588
+      ],
+      "death_herbivory_total": 16536,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 856727.21,
+      "mean_herb_heads_tail": 25857.34,
+      "final_plants": [
+        316,
+        482,
+        978,
+        1614,
+        3282,
+        474
+      ],
+      "final_heads": [
+        4713,
+        3185,
+        1143,
+        13054,
+        79
+      ],
+      "final_flora_total": 7146,
+      "final_herb_total": 22174,
+      "final_j_flora": 0.8178,
+      "final_j_herb": 0.6789
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.0,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 188.95,
+      "killed_by_flora": [
+        3111,
+        1526,
+        4652,
+        6358,
+        211,
+        527
+      ],
+      "death_herbivory_total": 16385,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 921898.64,
+      "mean_herb_heads_tail": 26963.37,
+      "final_plants": [
+        498,
+        474,
+        1060,
+        1789,
+        3309,
+        672
+      ],
+      "final_heads": [
+        6390,
+        3102,
+        1842,
+        12553,
+        246
+      ],
+      "final_flora_total": 7802,
+      "final_herb_total": 24133,
+      "final_j_flora": 0.8537,
+      "final_j_herb": 0.7448
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.0,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 186.84,
+      "killed_by_flora": [
+        2793,
+        1490,
+        4471,
+        6296,
+        157,
+        598
+      ],
+      "death_herbivory_total": 15805,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 959319.03,
+      "mean_herb_heads_tail": 26892.68,
+      "final_plants": [
+        895,
+        601,
+        1267,
+        1729,
+        3378,
+        443
+      ],
+      "final_heads": [
+        2728,
+        7747,
+        1705,
+        11008,
+        79
+      ],
+      "final_flora_total": 8313,
+      "final_herb_total": 23267,
+      "final_j_flora": 0.8736,
+      "final_j_herb": 0.7347
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.0,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 186.05,
+      "killed_by_flora": [
+        3031,
+        1593,
+        4726,
+        5992,
+        204,
+        544
+      ],
+      "death_herbivory_total": 16090,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 999696.5,
+      "mean_herb_heads_tail": 25478.74,
+      "final_plants": [
+        718,
+        354,
+        1114,
+        2609,
+        3338,
+        516
+      ],
+      "final_heads": [
+        4224,
+        5885,
+        2005,
+        16788,
+        37
+      ],
+      "final_flora_total": 8649,
+      "final_herb_total": 28939,
+      "final_j_flora": 0.8364,
+      "final_j_herb": 0.6923
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.0,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 180.84,
+      "killed_by_flora": [
+        3248,
+        1561,
+        4749,
+        6130,
+        193,
+        654
+      ],
+      "death_herbivory_total": 16535,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 778253.14,
+      "mean_herb_heads_tail": 27182.08,
+      "final_plants": [
+        178,
+        367,
+        774,
+        1596,
+        3328,
+        352
+      ],
+      "final_heads": [
+        3294,
+        4859,
+        906,
+        10339,
+        207
+      ],
+      "final_flora_total": 6595,
+      "final_herb_total": 19605,
+      "final_j_flora": 0.756,
+      "final_j_herb": 0.7288
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.0,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 188.34,
+      "killed_by_flora": [
+        3264,
+        1518,
+        4584,
+        6370,
+        199,
+        575
+      ],
+      "death_herbivory_total": 16510,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 898576.46,
+      "mean_herb_heads_tail": 29337.31,
+      "final_plants": [
+        229,
+        483,
+        1152,
+        1904,
+        3335,
+        525
+      ],
+      "final_heads": [
+        3959,
+        6363,
+        1807,
+        13614,
+        80
+      ],
+      "final_flora_total": 7628,
+      "final_herb_total": 25823,
+      "final_j_flora": 0.8136,
+      "final_j_herb": 0.7296
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.5,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 569.6,
+      "killed_by_flora": [
+        2255,
+        1347,
+        1361,
+        555,
+        12,
+        229
+      ],
+      "death_herbivory_total": 5759,
+      "death_defense_total": 1511,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1482482.41,
+      "mean_herb_heads_tail": 12103.58,
+      "final_plants": [
+        321,
+        554,
+        5439,
+        10434,
+        3490,
+        973
+      ],
+      "final_heads": [
+        2031,
+        3845,
+        4774,
+        1323,
+        284
+      ],
+      "final_flora_total": 21211,
+      "final_herb_total": 12257,
+      "final_j_flora": 0.7227,
+      "final_j_herb": 0.8427
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.5,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 567.85,
+      "killed_by_flora": [
+        2103,
+        1380,
+        965,
+        637,
+        11,
+        240
+      ],
+      "death_herbivory_total": 5336,
+      "death_defense_total": 1447,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1509417.82,
+      "mean_herb_heads_tail": 11146.96,
+      "final_plants": [
+        458,
+        509,
+        6073,
+        10197,
+        3491,
+        996
+      ],
+      "final_heads": [
+        3362,
+        2972,
+        4092,
+        528,
+        409
+      ],
+      "final_flora_total": 21724,
+      "final_herb_total": 11363,
+      "final_j_flora": 0.7343,
+      "final_j_herb": 0.8333
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.5,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 522.56,
+      "killed_by_flora": [
+        2242,
+        1335,
+        1089,
+        425,
+        7,
+        252
+      ],
+      "death_herbivory_total": 5350,
+      "death_defense_total": 1298,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1529858.89,
+      "mean_herb_heads_tail": 11080.21,
+      "final_plants": [
+        358,
+        612,
+        6042,
+        10546,
+        3500,
+        960
+      ],
+      "final_heads": [
+        2354,
+        3283,
+        5338,
+        582,
+        350
+      ],
+      "final_flora_total": 22018,
+      "final_herb_total": 11907,
+      "final_j_flora": 0.7272,
+      "final_j_herb": 0.7994
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.5,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 547.15,
+      "killed_by_flora": [
+        2031,
+        1356,
+        1054,
+        630,
+        20,
+        237
+      ],
+      "death_herbivory_total": 5328,
+      "death_defense_total": 1358,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1527311.36,
+      "mean_herb_heads_tail": 10614.6,
+      "final_plants": [
+        644,
+        589,
+        5909,
+        10276,
+        3477,
+        957
+      ],
+      "final_heads": [
+        3053,
+        3211,
+        4405,
+        644,
+        382
+      ],
+      "final_flora_total": 21852,
+      "final_herb_total": 11695,
+      "final_j_flora": 0.7474,
+      "final_j_herb": 0.8355
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.5,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 526.54,
+      "killed_by_flora": [
+        2217,
+        1310,
+        857,
+        577,
+        23,
+        257
+      ],
+      "death_herbivory_total": 5241,
+      "death_defense_total": 1259,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1495450.64,
+      "mean_herb_heads_tail": 11061.96,
+      "final_plants": [
+        272,
+        627,
+        6251,
+        10228,
+        3497,
+        956
+      ],
+      "final_heads": [
+        1803,
+        3895,
+        4043,
+        932,
+        161
+      ],
+      "final_flora_total": 21831,
+      "final_herb_total": 10834,
+      "final_j_flora": 0.7257,
+      "final_j_herb": 0.8125
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.5,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 558.33,
+      "killed_by_flora": [
+        2158,
+        1319,
+        1206,
+        793,
+        20,
+        169
+      ],
+      "death_herbivory_total": 5665,
+      "death_defense_total": 1373,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1474991.0,
+      "mean_herb_heads_tail": 11772.33,
+      "final_plants": [
+        421,
+        615,
+        5550,
+        10055,
+        3485,
+        1072
+      ],
+      "final_heads": [
+        3560,
+        2361,
+        4560,
+        1015,
+        177
+      ],
+      "final_flora_total": 21198,
+      "final_herb_total": 11673,
+      "final_j_flora": 0.7439,
+      "final_j_herb": 0.8254
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.5,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 479.0,
+      "killed_by_flora": [
+        2420,
+        1471,
+        1524,
+        654,
+        27,
+        279
+      ],
+      "death_herbivory_total": 6375,
+      "death_defense_total": 1057,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1464509.5,
+      "mean_herb_heads_tail": 13787.95,
+      "final_plants": [
+        325,
+        563,
+        5172,
+        10179,
+        3505,
+        907
+      ],
+      "final_heads": [
+        2990,
+        3511,
+        6127,
+        1074,
+        249
+      ],
+      "final_flora_total": 20651,
+      "final_herb_total": 13951,
+      "final_j_flora": 0.724,
+      "final_j_herb": 0.8127
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.5,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 458.61,
+      "killed_by_flora": [
+        2468,
+        1414,
+        1145,
+        555,
+        8,
+        283
+      ],
+      "death_herbivory_total": 5873,
+      "death_defense_total": 982,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1497871.04,
+      "mean_herb_heads_tail": 12333.27,
+      "final_plants": [
+        244,
+        521,
+        5754,
+        10400,
+        3522,
+        964
+      ],
+      "final_heads": [
+        2867,
+        2940,
+        4351,
+        1313,
+        446
+      ],
+      "final_flora_total": 21405,
+      "final_herb_total": 11917,
+      "final_j_flora": 0.7154,
+      "final_j_herb": 0.8835
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.5,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 458.81,
+      "killed_by_flora": [
+        2631,
+        1439,
+        1055,
+        711,
+        9,
+        197
+      ],
+      "death_herbivory_total": 6042,
+      "death_defense_total": 1070,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1550347.32,
+      "mean_herb_heads_tail": 12456.91,
+      "final_plants": [
+        462,
+        479,
+        5919,
+        10217,
+        3521,
+        1002
+      ],
+      "final_heads": [
+        3133,
+        5060,
+        4581,
+        763,
+        194
+      ],
+      "final_flora_total": 21600,
+      "final_herb_total": 13731,
+      "final_j_flora": 0.7332,
+      "final_j_herb": 0.8028
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.5,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 463.07,
+      "killed_by_flora": [
+        2590,
+        1399,
+        1531,
+        877,
+        10,
+        282
+      ],
+      "death_herbivory_total": 6689,
+      "death_defense_total": 1156,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1477172.18,
+      "mean_herb_heads_tail": 13649.49,
+      "final_plants": [
+        308,
+        553,
+        5324,
+        9982,
+        3521,
+        973
+      ],
+      "final_heads": [
+        3966,
+        2215,
+        5539,
+        1432,
+        273
+      ],
+      "final_flora_total": 20661,
+      "final_herb_total": 13425,
+      "final_j_flora": 0.7289,
+      "final_j_herb": 0.833
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.5,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 477.27,
+      "killed_by_flora": [
+        2573,
+        1394,
+        1172,
+        761,
+        22,
+        300
+      ],
+      "death_herbivory_total": 6222,
+      "death_defense_total": 1058,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1517100.85,
+      "mean_herb_heads_tail": 13184.35,
+      "final_plants": [
+        327,
+        587,
+        5780,
+        10116,
+        3501,
+        916
+      ],
+      "final_heads": [
+        2208,
+        5138,
+        4903,
+        1252,
+        366
+      ],
+      "final_flora_total": 21227,
+      "final_herb_total": 13867,
+      "final_j_flora": 0.7277,
+      "final_j_herb": 0.8333
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.5,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 459.62,
+      "killed_by_flora": [
+        2494,
+        1386,
+        1319,
+        658,
+        6,
+        222
+      ],
+      "death_herbivory_total": 6085,
+      "death_defense_total": 961,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1503449.17,
+      "mean_herb_heads_tail": 13124.09,
+      "final_plants": [
+        405,
+        579,
+        5460,
+        10256,
+        3524,
+        1017
+      ],
+      "final_heads": [
+        2909,
+        4119,
+        6369,
+        658,
+        432
+      ],
+      "final_flora_total": 21241,
+      "final_herb_total": 14487,
+      "final_j_flora": 0.7356,
+      "final_j_herb": 0.7993
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.5,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 152.39,
+      "killed_by_flora": [
+        3246,
+        1455,
+        5065,
+        6334,
+        249,
+        602
+      ],
+      "death_herbivory_total": 16951,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 792207.66,
+      "mean_herb_heads_tail": 27610.37,
+      "final_plants": [
+        162,
+        546,
+        469,
+        1407,
+        3215,
+        397
+      ],
+      "final_heads": [
+        3390,
+        4406,
+        822,
+        11547,
+        169
+      ],
+      "final_flora_total": 6196,
+      "final_herb_total": 20334,
+      "final_j_flora": 0.7578,
+      "final_j_herb": 0.6964
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.5,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 167.17,
+      "killed_by_flora": [
+        3244,
+        1485,
+        4371,
+        6375,
+        206,
+        607
+      ],
+      "death_herbivory_total": 16288,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 902867.22,
+      "mean_herb_heads_tail": 26663.4,
+      "final_plants": [
+        422,
+        505,
+        1291,
+        1543,
+        3301,
+        534
+      ],
+      "final_heads": [
+        7360,
+        2435,
+        1256,
+        11132,
+        97
+      ],
+      "final_flora_total": 7596,
+      "final_herb_total": 22280,
+      "final_j_flora": 0.8453,
+      "final_j_herb": 0.7085
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.5,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 155.87,
+      "killed_by_flora": [
+        2856,
+        1410,
+        4754,
+        6185,
+        215,
+        603
+      ],
+      "death_herbivory_total": 16023,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 944333.73,
+      "mean_herb_heads_tail": 27405.95,
+      "final_plants": [
+        792,
+        642,
+        893,
+        1869,
+        3282,
+        483
+      ],
+      "final_heads": [
+        3328,
+        7112,
+        2640,
+        14030,
+        116
+      ],
+      "final_flora_total": 7961,
+      "final_herb_total": 27226,
+      "final_j_flora": 0.8671,
+      "final_j_herb": 0.7448
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.5,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 161.24,
+      "killed_by_flora": [
+        3315,
+        1468,
+        4549,
+        5895,
+        216,
+        541
+      ],
+      "death_herbivory_total": 15984,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 954515.18,
+      "mean_herb_heads_tail": 26120.92,
+      "final_plants": [
+        388,
+        500,
+        1096,
+        2476,
+        3289,
+        513
+      ],
+      "final_heads": [
+        6774,
+        3999,
+        1315,
+        14906,
+        77
+      ],
+      "final_flora_total": 8262,
+      "final_herb_total": 27071,
+      "final_j_flora": 0.827,
+      "final_j_herb": 0.6967
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.5,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 155.69,
+      "killed_by_flora": [
+        3349,
+        1489,
+        4546,
+        5861,
+        190,
+        591
+      ],
+      "death_herbivory_total": 16026,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 786683.65,
+      "mean_herb_heads_tail": 25797.91,
+      "final_plants": [
+        135,
+        454,
+        933,
+        1796,
+        3306,
+        397
+      ],
+      "final_heads": [
+        3774,
+        5117,
+        697,
+        9608,
+        195
+      ],
+      "final_flora_total": 7021,
+      "final_herb_total": 19391,
+      "final_j_flora": 0.7742,
+      "final_j_herb": 0.7356
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.5,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 160.15,
+      "killed_by_flora": [
+        3289,
+        1478,
+        4616,
+        6584,
+        273,
+        595
+      ],
+      "death_herbivory_total": 16835,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 863340.57,
+      "mean_herb_heads_tail": 29664.73,
+      "final_plants": [
+        166,
+        517,
+        1031,
+        1451,
+        3241,
+        474
+      ],
+      "final_heads": [
+        3863,
+        6683,
+        1919,
+        12909,
+        369
+      ],
+      "final_flora_total": 6880,
+      "final_herb_total": 25743,
+      "final_j_flora": 0.8014,
+      "final_j_herb": 0.7675
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.95,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 517.65,
+      "killed_by_flora": [
+        2383,
+        1318,
+        1291,
+        825,
+        9,
+        241
+      ],
+      "death_herbivory_total": 6067,
+      "death_defense_total": 1275,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1440659.93,
+      "mean_herb_heads_tail": 12084.47,
+      "final_plants": [
+        151,
+        644,
+        5533,
+        10061,
+        3505,
+        995
+      ],
+      "final_heads": [
+        1362,
+        4007,
+        4642,
+        1159,
+        450
+      ],
+      "final_flora_total": 20889,
+      "final_herb_total": 11620,
+      "final_j_flora": 0.7206,
+      "final_j_herb": 0.8331
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.95,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 500.12,
+      "killed_by_flora": [
+        2353,
+        1318,
+        1063,
+        341,
+        13,
+        269
+      ],
+      "death_herbivory_total": 5357,
+      "death_defense_total": 1141,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1496978.6,
+      "mean_herb_heads_tail": 11190.46,
+      "final_plants": [
+        186,
+        561,
+        6010,
+        10625,
+        3495,
+        983
+      ],
+      "final_heads": [
+        1307,
+        3728,
+        4729,
+        426,
+        405
+      ],
+      "final_flora_total": 21860,
+      "final_herb_total": 10595,
+      "final_j_flora": 0.7104,
+      "final_j_herb": 0.7703
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.95,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 514.18,
+      "killed_by_flora": [
+        2391,
+        1259,
+        1240,
+        447,
+        6,
+        224
+      ],
+      "death_herbivory_total": 5567,
+      "death_defense_total": 1165,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1522475.8,
+      "mean_herb_heads_tail": 11556.36,
+      "final_plants": [
+        341,
+        644,
+        5826,
+        10469,
+        3512,
+        1013
+      ],
+      "final_heads": [
+        1095,
+        4826,
+        5653,
+        424,
+        313
+      ],
+      "final_flora_total": 21805,
+      "final_herb_total": 12311,
+      "final_j_flora": 0.7315,
+      "final_j_herb": 0.714
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.95,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 515.26,
+      "killed_by_flora": [
+        2307,
+        1381,
+        1377,
+        774,
+        9,
+        250
+      ],
+      "death_herbivory_total": 6098,
+      "death_defense_total": 1244,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1429949.38,
+      "mean_herb_heads_tail": 13174.56,
+      "final_plants": [
+        134,
+        590,
+        5357,
+        10138,
+        3509,
+        921
+      ],
+      "final_heads": [
+        1949,
+        4085,
+        5556,
+        1255,
+        340
+      ],
+      "final_flora_total": 20649,
+      "final_herb_total": 13185,
+      "final_j_flora": 0.7107,
+      "final_j_herb": 0.8251
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.95,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 500.91,
+      "killed_by_flora": [
+        2241,
+        1306,
+        1168,
+        784,
+        22,
+        287
+      ],
+      "death_herbivory_total": 5808,
+      "death_defense_total": 1281,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1448273.16,
+      "mean_herb_heads_tail": 11100.22,
+      "final_plants": [
+        169,
+        624,
+        5801,
+        10120,
+        3488,
+        922
+      ],
+      "final_heads": [
+        1638,
+        2868,
+        4874,
+        1071,
+        340
+      ],
+      "final_flora_total": 21124,
+      "final_herb_total": 10791,
+      "final_j_flora": 0.7167,
+      "final_j_herb": 0.8298
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 0.95,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 516.72,
+      "killed_by_flora": [
+        2317,
+        1277,
+        1384,
+        561,
+        8,
+        251
+      ],
+      "death_herbivory_total": 5798,
+      "death_defense_total": 1236,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1445933.37,
+      "mean_herb_heads_tail": 12352.83,
+      "final_plants": [
+        179,
+        614,
+        5371,
+        10358,
+        3534,
+        986
+      ],
+      "final_heads": [
+        1212,
+        4054,
+        6244,
+        684,
+        372
+      ],
+      "final_flora_total": 21042,
+      "final_herb_total": 12566,
+      "final_j_flora": 0.7167,
+      "final_j_herb": 0.746
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.95,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 449.21,
+      "killed_by_flora": [
+        2613,
+        1442,
+        865,
+        686,
+        5,
+        190
+      ],
+      "death_herbivory_total": 5801,
+      "death_defense_total": 793,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1498108.92,
+      "mean_herb_heads_tail": 11787.83,
+      "final_plants": [
+        190,
+        520,
+        6307,
+        10180,
+        3535,
+        1013
+      ],
+      "final_heads": [
+        2727,
+        2975,
+        3897,
+        679,
+        394
+      ],
+      "final_flora_total": 21745,
+      "final_herb_total": 10672,
+      "final_j_flora": 0.7162,
+      "final_j_herb": 0.851
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.95,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 451.1,
+      "killed_by_flora": [
+        2771,
+        1404,
+        1067,
+        526,
+        20,
+        245
+      ],
+      "death_herbivory_total": 6033,
+      "death_defense_total": 754,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1501269.09,
+      "mean_herb_heads_tail": 12642.93,
+      "final_plants": [
+        113,
+        516,
+        6079,
+        10408,
+        3490,
+        965
+      ],
+      "final_heads": [
+        2480,
+        3190,
+        5272,
+        680,
+        397
+      ],
+      "final_flora_total": 21571,
+      "final_herb_total": 12019,
+      "final_j_flora": 0.7027,
+      "final_j_herb": 0.8166
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.95,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 455.26,
+      "killed_by_flora": [
+        2630,
+        1396,
+        1054,
+        645,
+        12,
+        244
+      ],
+      "death_herbivory_total": 5981,
+      "death_defense_total": 732,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1467637.03,
+      "mean_herb_heads_tail": 12536.1,
+      "final_plants": [
+        189,
+        533,
+        5856,
+        10277,
+        3526,
+        973
+      ],
+      "final_heads": [
+        1533,
+        4667,
+        4066,
+        990,
+        192
+      ],
+      "final_flora_total": 21354,
+      "final_herb_total": 11448,
+      "final_j_flora": 0.7137,
+      "final_j_herb": 0.7971
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.95,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 468.34,
+      "killed_by_flora": [
+        2725,
+        1357,
+        1313,
+        819,
+        6,
+        273
+      ],
+      "death_herbivory_total": 6493,
+      "death_defense_total": 833,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1458588.98,
+      "mean_herb_heads_tail": 13355.97,
+      "final_plants": [
+        136,
+        554,
+        5625,
+        10065,
+        3514,
+        909
+      ],
+      "final_heads": [
+        1917,
+        3952,
+        4908,
+        1413,
+        406
+      ],
+      "final_flora_total": 20803,
+      "final_herb_total": 12596,
+      "final_j_flora": 0.7097,
+      "final_j_herb": 0.8534
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.95,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 448.83,
+      "killed_by_flora": [
+        2543,
+        1409,
+        961,
+        482,
+        11,
+        226
+      ],
+      "death_herbivory_total": 5632,
+      "death_defense_total": 857,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1505036.21,
+      "mean_herb_heads_tail": 11521.52,
+      "final_plants": [
+        150,
+        524,
+        6110,
+        10500,
+        3489,
+        1030
+      ],
+      "final_heads": [
+        2108,
+        3559,
+        3770,
+        1056,
+        244
+      ],
+      "final_flora_total": 21803,
+      "final_herb_total": 10737,
+      "final_j_flora": 0.7086,
+      "final_j_herb": 0.8495
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 0.95,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 430.97,
+      "killed_by_flora": [
+        2579,
+        1404,
+        1206,
+        704,
+        4,
+        209
+      ],
+      "death_herbivory_total": 6106,
+      "death_defense_total": 806,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1458943.1,
+      "mean_herb_heads_tail": 11736.75,
+      "final_plants": [
+        125,
+        502,
+        5670,
+        10118,
+        3510,
+        1030
+      ],
+      "final_heads": [
+        2250,
+        3028,
+        4094,
+        887,
+        126
+      ],
+      "final_flora_total": 20955,
+      "final_herb_total": 10385,
+      "final_j_flora": 0.7102,
+      "final_j_herb": 0.821
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.95,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 166.29,
+      "killed_by_flora": [
+        3246,
+        1455,
+        5065,
+        6334,
+        249,
+        602
+      ],
+      "death_herbivory_total": 16951,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 792207.66,
+      "mean_herb_heads_tail": 27610.37,
+      "final_plants": [
+        162,
+        546,
+        469,
+        1407,
+        3215,
+        397
+      ],
+      "final_heads": [
+        3390,
+        4406,
+        822,
+        11547,
+        169
+      ],
+      "final_flora_total": 6196,
+      "final_herb_total": 20334,
+      "final_j_flora": 0.7578,
+      "final_j_herb": 0.6964
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.95,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 179.14,
+      "killed_by_flora": [
+        3244,
+        1485,
+        4371,
+        6375,
+        206,
+        607
+      ],
+      "death_herbivory_total": 16288,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 902867.22,
+      "mean_herb_heads_tail": 26663.4,
+      "final_plants": [
+        422,
+        505,
+        1291,
+        1543,
+        3301,
+        534
+      ],
+      "final_heads": [
+        7360,
+        2435,
+        1256,
+        11132,
+        97
+      ],
+      "final_flora_total": 7596,
+      "final_herb_total": 22280,
+      "final_j_flora": 0.8453,
+      "final_j_herb": 0.7085
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.95,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 176.82,
+      "killed_by_flora": [
+        2856,
+        1410,
+        4754,
+        6185,
+        215,
+        603
+      ],
+      "death_herbivory_total": 16023,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 944333.73,
+      "mean_herb_heads_tail": 27405.95,
+      "final_plants": [
+        792,
+        642,
+        893,
+        1869,
+        3282,
+        483
+      ],
+      "final_heads": [
+        3328,
+        7112,
+        2640,
+        14030,
+        116
+      ],
+      "final_flora_total": 7961,
+      "final_herb_total": 27226,
+      "final_j_flora": 0.8671,
+      "final_j_herb": 0.7448
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.95,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 179.55,
+      "killed_by_flora": [
+        3315,
+        1468,
+        4549,
+        5895,
+        216,
+        541
+      ],
+      "death_herbivory_total": 15984,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 954515.18,
+      "mean_herb_heads_tail": 26120.92,
+      "final_plants": [
+        388,
+        500,
+        1096,
+        2476,
+        3289,
+        513
+      ],
+      "final_heads": [
+        6774,
+        3999,
+        1315,
+        14906,
+        77
+      ],
+      "final_flora_total": 8262,
+      "final_herb_total": 27071,
+      "final_j_flora": 0.827,
+      "final_j_herb": 0.6967
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.95,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 167.0,
+      "killed_by_flora": [
+        3349,
+        1489,
+        4546,
+        5861,
+        190,
+        591
+      ],
+      "death_herbivory_total": 16026,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 786683.65,
+      "mean_herb_heads_tail": 25797.91,
+      "final_plants": [
+        135,
+        454,
+        933,
+        1796,
+        3306,
+        397
+      ],
+      "final_heads": [
+        3774,
+        5117,
+        697,
+        9608,
+        195
+      ],
+      "final_flora_total": 7021,
+      "final_herb_total": 19391,
+      "final_j_flora": 0.7742,
+      "final_j_herb": 0.7356
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 0.95,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 166.52,
+      "killed_by_flora": [
+        3289,
+        1478,
+        4616,
+        6584,
+        273,
+        595
+      ],
+      "death_herbivory_total": 16835,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 863340.57,
+      "mean_herb_heads_tail": 29664.73,
+      "final_plants": [
+        166,
+        517,
+        1031,
+        1451,
+        3241,
+        474
+      ],
+      "final_heads": [
+        3863,
+        6683,
+        1919,
+        12909,
+        369
+      ],
+      "final_flora_total": 6880,
+      "final_herb_total": 25743,
+      "final_j_flora": 0.8014,
+      "final_j_herb": 0.7675
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 1.25,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 469.36,
+      "killed_by_flora": [
+        2470,
+        1228,
+        1305,
+        530,
+        25,
+        221
+      ],
+      "death_herbivory_total": 5779,
+      "death_defense_total": 951,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1431372.43,
+      "mean_herb_heads_tail": 12883.86,
+      "final_plants": [
+        132,
+        685,
+        5556,
+        10363,
+        3461,
+        1028
+      ],
+      "final_heads": [
+        1241,
+        4305,
+        5373,
+        1208,
+        174
+      ],
+      "final_flora_total": 21225,
+      "final_herb_total": 12301,
+      "final_j_flora": 0.7175,
+      "final_j_herb": 0.7759
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 1.25,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 474.18,
+      "killed_by_flora": [
+        2663,
+        1295,
+        1003,
+        391,
+        19,
+        184
+      ],
+      "death_herbivory_total": 5555,
+      "death_defense_total": 933,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1482997.68,
+      "mean_herb_heads_tail": 13030.33,
+      "final_plants": [
+        103,
+        620,
+        5961,
+        10522,
+        3473,
+        1081
+      ],
+      "final_heads": [
+        1475,
+        4867,
+        5284,
+        363,
+        211
+      ],
+      "final_flora_total": 21760,
+      "final_herb_total": 12200,
+      "final_j_flora": 0.7115,
+      "final_j_herb": 0.7203
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 1.25,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 492.82,
+      "killed_by_flora": [
+        2543,
+        1288,
+        1228,
+        938,
+        26,
+        309
+      ],
+      "death_herbivory_total": 6332,
+      "death_defense_total": 1020,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1405919.0,
+      "mean_herb_heads_tail": 12422.86,
+      "final_plants": [
+        116,
+        598,
+        5596,
+        9940,
+        3486,
+        850
+      ],
+      "final_heads": [
+        1429,
+        3506,
+        4212,
+        1450,
+        316
+      ],
+      "final_flora_total": 20586,
+      "final_herb_total": 10913,
+      "final_j_flora": 0.7088,
+      "final_j_herb": 0.8507
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 1.25,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 512.63,
+      "killed_by_flora": [
+        2625,
+        1290,
+        1221,
+        763,
+        22,
+        203
+      ],
+      "death_herbivory_total": 6124,
+      "death_defense_total": 1180,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1468847.38,
+      "mean_herb_heads_tail": 12410.32,
+      "final_plants": [
+        235,
+        638,
+        5669,
+        10042,
+        3493,
+        1014
+      ],
+      "final_heads": [
+        3723,
+        2902,
+        5554,
+        915,
+        165
+      ],
+      "final_flora_total": 21091,
+      "final_herb_total": 13259,
+      "final_j_flora": 0.7289,
+      "final_j_herb": 0.8032
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 1.25,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 487.29,
+      "killed_by_flora": [
+        2590,
+        1279,
+        1579,
+        1039,
+        22,
+        285
+      ],
+      "death_herbivory_total": 6794,
+      "death_defense_total": 1066,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1415982.26,
+      "mean_herb_heads_tail": 12998.98,
+      "final_plants": [
+        186,
+        667,
+        5165,
+        9608,
+        3498,
+        912
+      ],
+      "final_heads": [
+        943,
+        5076,
+        4853,
+        2184,
+        160
+      ],
+      "final_flora_total": 20036,
+      "final_herb_total": 13216,
+      "final_j_flora": 0.7277,
+      "final_j_herb": 0.792
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 1.25,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 471.26,
+      "killed_by_flora": [
+        2496,
+        1295,
+        1145,
+        618,
+        21,
+        195
+      ],
+      "death_herbivory_total": 5770,
+      "death_defense_total": 1000,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1452964.0,
+      "mean_herb_heads_tail": 12198.14,
+      "final_plants": [
+        80,
+        709,
+        5797,
+        10244,
+        3470,
+        1053
+      ],
+      "final_heads": [
+        1390,
+        4283,
+        4609,
+        1132,
+        157
+      ],
+      "final_flora_total": 21353,
+      "final_herb_total": 11571,
+      "final_j_flora": 0.7166,
+      "final_j_herb": 0.7921
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 1.25,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 424.53,
+      "killed_by_flora": [
+        2817,
+        1364,
+        1440,
+        803,
+        25,
+        246
+      ],
+      "death_herbivory_total": 6695,
+      "death_defense_total": 645,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1449754.58,
+      "mean_herb_heads_tail": 13106.93,
+      "final_plants": [
+        145,
+        565,
+        5370,
+        10000,
+        3495,
+        974
+      ],
+      "final_heads": [
+        2004,
+        4114,
+        5619,
+        1315,
+        298
+      ],
+      "final_flora_total": 20549,
+      "final_herb_total": 13350,
+      "final_j_flora": 0.7148,
+      "final_j_herb": 0.8232
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 1.25,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 422.5,
+      "killed_by_flora": [
+        2920,
+        1381,
+        1086,
+        560,
+        22,
+        226
+      ],
+      "death_herbivory_total": 6195,
+      "death_defense_total": 506,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1469597.69,
+      "mean_herb_heads_tail": 13904.9,
+      "final_plants": [
+        107,
+        591,
+        5940,
+        10371,
+        3491,
+        962
+      ],
+      "final_heads": [
+        2207,
+        4372,
+        4913,
+        739,
+        160
+      ],
+      "final_flora_total": 21462,
+      "final_herb_total": 12391,
+      "final_j_flora": 0.7071,
+      "final_j_herb": 0.7866
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 1.25,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 438.25,
+      "killed_by_flora": [
+        2857,
+        1390,
+        1106,
+        409,
+        24,
+        243
+      ],
+      "death_herbivory_total": 6029,
+      "death_defense_total": 550,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1515972.15,
+      "mean_herb_heads_tail": 13225.5,
+      "final_plants": [
+        121,
+        559,
+        6028,
+        10562,
+        3489,
+        1000
+      ],
+      "final_heads": [
+        2965,
+        4051,
+        6020,
+        585,
+        300
+      ],
+      "final_flora_total": 21759,
+      "final_herb_total": 13921,
+      "final_j_flora": 0.7057,
+      "final_j_herb": 0.7872
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 1.25,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 452.84,
+      "killed_by_flora": [
+        3008,
+        1400,
+        1641,
+        1031,
+        17,
+        297
+      ],
+      "death_herbivory_total": 7394,
+      "death_defense_total": 661,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1435020.27,
+      "mean_herb_heads_tail": 13440.59,
+      "final_plants": [
+        95,
+        488,
+        5108,
+        9707,
+        3530,
+        918
+      ],
+      "final_heads": [
+        1950,
+        4304,
+        5010,
+        2127,
+        279
+      ],
+      "final_flora_total": 19846,
+      "final_herb_total": 13670,
+      "final_j_flora": 0.7061,
+      "final_j_herb": 0.8565
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 1.25,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 443.03,
+      "killed_by_flora": [
+        2910,
+        1394,
+        1381,
+        1001,
+        40,
+        279
+      ],
+      "death_herbivory_total": 7005,
+      "death_defense_total": 658,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1486096.61,
+      "mean_herb_heads_tail": 12586.96,
+      "final_plants": [
+        352,
+        499,
+        5501,
+        9747,
+        3491,
+        877
+      ],
+      "final_heads": [
+        2165,
+        5768,
+        3722,
+        2030,
+        261
+      ],
+      "final_flora_total": 20467,
+      "final_herb_total": 13946,
+      "final_j_flora": 0.7275,
+      "final_j_herb": 0.8462
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 1.25,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 432.23,
+      "killed_by_flora": [
+        2847,
+        1402,
+        1190,
+        519,
+        23,
+        243
+      ],
+      "death_herbivory_total": 6224,
+      "death_defense_total": 610,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1482956.45,
+      "mean_herb_heads_tail": 13262.02,
+      "final_plants": [
+        161,
+        516,
+        5676,
+        10453,
+        3502,
+        950
+      ],
+      "final_heads": [
+        2338,
+        3666,
+        5533,
+        559,
+        434
+      ],
+      "final_flora_total": 21258,
+      "final_herb_total": 12530,
+      "final_j_flora": 0.7059,
+      "final_j_herb": 0.8009
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 1.25,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 164.45,
+      "killed_by_flora": [
+        3246,
+        1455,
+        5065,
+        6334,
+        249,
+        602
+      ],
+      "death_herbivory_total": 16951,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 792207.66,
+      "mean_herb_heads_tail": 27610.37,
+      "final_plants": [
+        162,
+        546,
+        469,
+        1407,
+        3215,
+        397
+      ],
+      "final_heads": [
+        3390,
+        4406,
+        822,
+        11547,
+        169
+      ],
+      "final_flora_total": 6196,
+      "final_herb_total": 20334,
+      "final_j_flora": 0.7578,
+      "final_j_herb": 0.6964
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 1.25,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 169.68,
+      "killed_by_flora": [
+        3244,
+        1485,
+        4371,
+        6375,
+        206,
+        607
+      ],
+      "death_herbivory_total": 16288,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 902867.22,
+      "mean_herb_heads_tail": 26663.4,
+      "final_plants": [
+        422,
+        505,
+        1291,
+        1543,
+        3301,
+        534
+      ],
+      "final_heads": [
+        7360,
+        2435,
+        1256,
+        11132,
+        97
+      ],
+      "final_flora_total": 7596,
+      "final_herb_total": 22280,
+      "final_j_flora": 0.8453,
+      "final_j_herb": 0.7085
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 1.25,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 173.73,
+      "killed_by_flora": [
+        2856,
+        1410,
+        4754,
+        6185,
+        215,
+        603
+      ],
+      "death_herbivory_total": 16023,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 944333.73,
+      "mean_herb_heads_tail": 27405.95,
+      "final_plants": [
+        792,
+        642,
+        893,
+        1869,
+        3282,
+        483
+      ],
+      "final_heads": [
+        3328,
+        7112,
+        2640,
+        14030,
+        116
+      ],
+      "final_flora_total": 7961,
+      "final_herb_total": 27226,
+      "final_j_flora": 0.8671,
+      "final_j_herb": 0.7448
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 1.25,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 169.01,
+      "killed_by_flora": [
+        3315,
+        1468,
+        4549,
+        5895,
+        216,
+        541
+      ],
+      "death_herbivory_total": 15984,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 954515.18,
+      "mean_herb_heads_tail": 26120.92,
+      "final_plants": [
+        388,
+        500,
+        1096,
+        2476,
+        3289,
+        513
+      ],
+      "final_heads": [
+        6774,
+        3999,
+        1315,
+        14906,
+        77
+      ],
+      "final_flora_total": 8262,
+      "final_herb_total": 27071,
+      "final_j_flora": 0.827,
+      "final_j_herb": 0.6967
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 1.25,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 166.07,
+      "killed_by_flora": [
+        3349,
+        1489,
+        4546,
+        5861,
+        190,
+        591
+      ],
+      "death_herbivory_total": 16026,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 786683.65,
+      "mean_herb_heads_tail": 25797.91,
+      "final_plants": [
+        135,
+        454,
+        933,
+        1796,
+        3306,
+        397
+      ],
+      "final_heads": [
+        3774,
+        5117,
+        697,
+        9608,
+        195
+      ],
+      "final_flora_total": 7021,
+      "final_herb_total": 19391,
+      "final_j_flora": 0.7742,
+      "final_j_herb": 0.7356
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 1.25,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 165.24,
+      "killed_by_flora": [
+        3289,
+        1478,
+        4616,
+        6584,
+        273,
+        595
+      ],
+      "death_herbivory_total": 16835,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 863340.57,
+      "mean_herb_heads_tail": 29664.73,
+      "final_plants": [
+        166,
+        517,
+        1031,
+        1451,
+        3241,
+        474
+      ],
+      "final_heads": [
+        3863,
+        6683,
+        1919,
+        12909,
+        369
+      ],
+      "final_flora_total": 6880,
+      "final_herb_total": 25743,
+      "final_j_flora": 0.8014,
+      "final_j_herb": 0.7675
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 2.0,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 496.7,
+      "killed_by_flora": [
+        2728,
+        1326,
+        1506,
+        789,
+        36,
+        212
+      ],
+      "death_herbivory_total": 6597,
+      "death_defense_total": 875,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1402077.05,
+      "mean_herb_heads_tail": 14124.17,
+      "final_plants": [
+        94,
+        531,
+        5222,
+        10113,
+        3472,
+        948
+      ],
+      "final_heads": [
+        1443,
+        4272,
+        5915,
+        1374,
+        203
+      ],
+      "final_flora_total": 20380,
+      "final_herb_total": 13207,
+      "final_j_flora": 0.7036,
+      "final_j_herb": 0.7868
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 2.0,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 498.86,
+      "killed_by_flora": [
+        2649,
+        1277,
+        1187,
+        571,
+        15,
+        225
+      ],
+      "death_herbivory_total": 5924,
+      "death_defense_total": 815,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1462525.84,
+      "mean_herb_heads_tail": 12993.36,
+      "final_plants": [
+        216,
+        545,
+        5722,
+        10292,
+        3493,
+        993
+      ],
+      "final_heads": [
+        2885,
+        3751,
+        4476,
+        1215,
+        241
+      ],
+      "final_flora_total": 21261,
+      "final_herb_total": 12568,
+      "final_j_flora": 0.7171,
+      "final_j_herb": 0.85
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 2.0,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 507.47,
+      "killed_by_flora": [
+        2645,
+        1217,
+        1335,
+        628,
+        16,
+        263
+      ],
+      "death_herbivory_total": 6104,
+      "death_defense_total": 902,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1444992.95,
+      "mean_herb_heads_tail": 13621.47,
+      "final_plants": [
+        138,
+        677,
+        5637,
+        10258,
+        3499,
+        935
+      ],
+      "final_heads": [
+        2191,
+        4292,
+        5899,
+        1242,
+        193
+      ],
+      "final_flora_total": 21144,
+      "final_herb_total": 13817,
+      "final_j_flora": 0.7155,
+      "final_j_herb": 0.8045
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 2.0,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 503.72,
+      "killed_by_flora": [
+        2707,
+        1275,
+        1325,
+        696,
+        34,
+        245
+      ],
+      "death_herbivory_total": 6282,
+      "death_defense_total": 737,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1440555.27,
+      "mean_herb_heads_tail": 13750.75,
+      "final_plants": [
+        177,
+        645,
+        5598,
+        10122,
+        3452,
+        973
+      ],
+      "final_heads": [
+        1837,
+        3709,
+        5797,
+        750,
+        399
+      ],
+      "final_flora_total": 20967,
+      "final_herb_total": 12492,
+      "final_j_flora": 0.7205,
+      "final_j_herb": 0.7938
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 2.0,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 517.05,
+      "killed_by_flora": [
+        2664,
+        1212,
+        1630,
+        1080,
+        22,
+        288
+      ],
+      "death_herbivory_total": 6896,
+      "death_defense_total": 822,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1396755.67,
+      "mean_herb_heads_tail": 13955.24,
+      "final_plants": [
+        111,
+        787,
+        5103,
+        9672,
+        3475,
+        898
+      ],
+      "final_heads": [
+        1548,
+        4561,
+        6138,
+        1766,
+        308
+      ],
+      "final_flora_total": 20046,
+      "final_herb_total": 14321,
+      "final_j_flora": 0.7248,
+      "final_j_herb": 0.8131
+    },
+    {
+      "treatment": "intact",
+      "wind_speed": 2.0,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 496.29,
+      "killed_by_flora": [
+        2638,
+        1261,
+        1173,
+        663,
+        21,
+        224
+      ],
+      "death_herbivory_total": 5980,
+      "death_defense_total": 852,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1432514.91,
+      "mean_herb_heads_tail": 13338.28,
+      "final_plants": [
+        157,
+        617,
+        5605,
+        10243,
+        3487,
+        969
+      ],
+      "final_heads": [
+        2845,
+        3872,
+        5418,
+        895,
+        182
+      ],
+      "final_flora_total": 21078,
+      "final_herb_total": 13212,
+      "final_j_flora": 0.7155,
+      "final_j_herb": 0.8061
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 2.0,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 433.08,
+      "killed_by_flora": [
+        2863,
+        1453,
+        1065,
+        731,
+        23,
+        273
+      ],
+      "death_herbivory_total": 6408,
+      "death_defense_total": 479,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1458618.89,
+      "mean_herb_heads_tail": 12720.8,
+      "final_plants": [
+        126,
+        455,
+        5974,
+        10116,
+        3480,
+        915
+      ],
+      "final_heads": [
+        2238,
+        4362,
+        4067,
+        1080,
+        268
+      ],
+      "final_flora_total": 21066,
+      "final_herb_total": 12015,
+      "final_j_flora": 0.7014,
+      "final_j_herb": 0.8381
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 2.0,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 448.92,
+      "killed_by_flora": [
+        2996,
+        1415,
+        1002,
+        682,
+        20,
+        232
+      ],
+      "death_herbivory_total": 6347,
+      "death_defense_total": 552,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1510377.01,
+      "mean_herb_heads_tail": 13757.19,
+      "final_plants": [
+        174,
+        506,
+        6141,
+        10151,
+        3498,
+        944
+      ],
+      "final_heads": [
+        3203,
+        5483,
+        4042,
+        1094,
+        237
+      ],
+      "final_flora_total": 21414,
+      "final_herb_total": 14059,
+      "final_j_flora": 0.7106,
+      "final_j_herb": 0.8265
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 2.0,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 461.04,
+      "killed_by_flora": [
+        3118,
+        1397,
+        1164,
+        663,
+        20,
+        249
+      ],
+      "death_herbivory_total": 6611,
+      "death_defense_total": 402,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1505177.78,
+      "mean_herb_heads_tail": 14956.16,
+      "final_plants": [
+        215,
+        551,
+        5801,
+        10268,
+        3516,
+        983
+      ],
+      "final_heads": [
+        2105,
+        7249,
+        5544,
+        1135,
+        233
+      ],
+      "final_flora_total": 21334,
+      "final_herb_total": 16266,
+      "final_j_flora": 0.7176,
+      "final_j_herb": 0.7694
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 2.0,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 467.98,
+      "killed_by_flora": [
+        2954,
+        1415,
+        1461,
+        1020,
+        22,
+        220
+      ],
+      "death_herbivory_total": 7092,
+      "death_defense_total": 486,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1407203.29,
+      "mean_herb_heads_tail": 14737.06,
+      "final_plants": [
+        108,
+        473,
+        5451,
+        9746,
+        3475,
+        1003
+      ],
+      "final_heads": [
+        1979,
+        5270,
+        4665,
+        1744,
+        229
+      ],
+      "final_flora_total": 20256,
+      "final_herb_total": 13887,
+      "final_j_flora": 0.71,
+      "final_j_herb": 0.8326
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 2.0,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 375.55,
+      "killed_by_flora": [
+        2817,
+        1406,
+        1433,
+        948,
+        42,
+        323
+      ],
+      "death_herbivory_total": 6969,
+      "death_defense_total": 682,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1435191.2,
+      "mean_herb_heads_tail": 13136.05,
+      "final_plants": [
+        91,
+        475,
+        5641,
+        9889,
+        3457,
+        824
+      ],
+      "final_heads": [
+        2426,
+        3579,
+        5031,
+        2028,
+        218
+      ],
+      "final_flora_total": 20377,
+      "final_herb_total": 13282,
+      "final_j_flora": 0.697,
+      "final_j_herb": 0.8612
+    },
+    {
+      "treatment": "cmn_severed",
+      "wind_speed": 2.0,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 361.8,
+      "killed_by_flora": [
+        2995,
+        1352,
+        1168,
+        624,
+        33,
+        250
+      ],
+      "death_herbivory_total": 6422,
+      "death_defense_total": 480,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 1461100.3,
+      "mean_herb_heads_tail": 14369.73,
+      "final_plants": [
+        121,
+        603,
+        5616,
+        10234,
+        3457,
+        924
+      ],
+      "final_heads": [
+        2237,
+        5031,
+        5861,
+        823,
+        201
+      ],
+      "final_flora_total": 20955,
+      "final_herb_total": 14153,
+      "final_j_flora": 0.7086,
+      "final_j_herb": 0.7768
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 2.0,
+      "seed": 0,
+      "ticks": 2500,
+      "elapsed_s": 181.52,
+      "killed_by_flora": [
+        3246,
+        1455,
+        5065,
+        6334,
+        249,
+        602
+      ],
+      "death_herbivory_total": 16951,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 792207.66,
+      "mean_herb_heads_tail": 27610.37,
+      "final_plants": [
+        162,
+        546,
+        469,
+        1407,
+        3215,
+        397
+      ],
+      "final_heads": [
+        3390,
+        4406,
+        822,
+        11547,
+        169
+      ],
+      "final_flora_total": 6196,
+      "final_herb_total": 20334,
+      "final_j_flora": 0.7578,
+      "final_j_herb": 0.6964
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 2.0,
+      "seed": 1,
+      "ticks": 2500,
+      "elapsed_s": 184.89,
+      "killed_by_flora": [
+        3244,
+        1485,
+        4371,
+        6375,
+        206,
+        607
+      ],
+      "death_herbivory_total": 16288,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 902867.22,
+      "mean_herb_heads_tail": 26663.4,
+      "final_plants": [
+        422,
+        505,
+        1291,
+        1543,
+        3301,
+        534
+      ],
+      "final_heads": [
+        7360,
+        2435,
+        1256,
+        11132,
+        97
+      ],
+      "final_flora_total": 7596,
+      "final_herb_total": 22280,
+      "final_j_flora": 0.8453,
+      "final_j_herb": 0.7085
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 2.0,
+      "seed": 2,
+      "ticks": 2500,
+      "elapsed_s": 183.43,
+      "killed_by_flora": [
+        2856,
+        1410,
+        4754,
+        6185,
+        215,
+        603
+      ],
+      "death_herbivory_total": 16023,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 944333.73,
+      "mean_herb_heads_tail": 27405.95,
+      "final_plants": [
+        792,
+        642,
+        893,
+        1869,
+        3282,
+        483
+      ],
+      "final_heads": [
+        3328,
+        7112,
+        2640,
+        14030,
+        116
+      ],
+      "final_flora_total": 7961,
+      "final_herb_total": 27226,
+      "final_j_flora": 0.8671,
+      "final_j_herb": 0.7448
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 2.0,
+      "seed": 3,
+      "ticks": 2500,
+      "elapsed_s": 182.71,
+      "killed_by_flora": [
+        3315,
+        1468,
+        4549,
+        5895,
+        216,
+        541
+      ],
+      "death_herbivory_total": 15984,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 954515.18,
+      "mean_herb_heads_tail": 26120.92,
+      "final_plants": [
+        388,
+        500,
+        1096,
+        2476,
+        3289,
+        513
+      ],
+      "final_heads": [
+        6774,
+        3999,
+        1315,
+        14906,
+        77
+      ],
+      "final_flora_total": 8262,
+      "final_herb_total": 27071,
+      "final_j_flora": 0.827,
+      "final_j_herb": 0.6967
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 2.0,
+      "seed": 4,
+      "ticks": 2500,
+      "elapsed_s": 173.11,
+      "killed_by_flora": [
+        3349,
+        1489,
+        4546,
+        5861,
+        190,
+        591
+      ],
+      "death_herbivory_total": 16026,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 786683.65,
+      "mean_herb_heads_tail": 25797.91,
+      "final_plants": [
+        135,
+        454,
+        933,
+        1796,
+        3306,
+        397
+      ],
+      "final_heads": [
+        3774,
+        5117,
+        697,
+        9608,
+        195
+      ],
+      "final_flora_total": 7021,
+      "final_herb_total": 19391,
+      "final_j_flora": 0.7742,
+      "final_j_herb": 0.7356
+    },
+    {
+      "treatment": "fully_ablated",
+      "wind_speed": 2.0,
+      "seed": 5,
+      "ticks": 2500,
+      "elapsed_s": 176.02,
+      "killed_by_flora": [
+        3289,
+        1478,
+        4616,
+        6584,
+        273,
+        595
+      ],
+      "death_herbivory_total": 16835,
+      "death_defense_total": 0,
+      "death_mycorrhiza_total": 0,
+      "mean_flora_energy_tail": 863340.57,
+      "mean_herb_heads_tail": 29664.73,
+      "final_plants": [
+        166,
+        517,
+        1031,
+        1451,
+        3241,
+        474
+      ],
+      "final_heads": [
+        3863,
+        6683,
+        1919,
+        12909,
+        369
+      ],
+      "final_flora_total": 6880,
+      "final_herb_total": 25743,
+      "final_j_flora": 0.8014,
+      "final_j_herb": 0.7675
+    }
+  ]
+}

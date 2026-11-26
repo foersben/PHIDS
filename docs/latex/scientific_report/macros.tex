@@ -1,0 +1,131 @@
+% ==============================================================================
+% Macros & Typography Configuration for PHIDS Journal Manuscript
+% Formatted for Springer Nature Two-Column Journal Layout
+% ==============================================================================
+
+\usepackage{cmap}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{microtype}
+
+% --- Mathematical Typography ---
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{bm}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% --- Tables & Booktabs ---
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+\renewcommand{\arraystretch}{0.90}
+\linespread{0.945}
+
+% --- Graphics & Visualization ---
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds, decorations.pathmorphing}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% --- Float & Placement Discipline ---
+% Mandate: Figures at top [t], Tables at bottom [b]
+\usepackage{dblfloatfix}
+\renewcommand{\topfraction}{0.90}
+\renewcommand{\dbltopfraction}{0.90}
+\renewcommand{\bottomfraction}{0.90}
+\renewcommand{\textfraction}{0.10}
+\renewcommand{\floatpagefraction}{0.85}
+\renewcommand{\dblfloatpagefraction}{0.85}
+\setlength{\floatsep}{6pt plus 2pt minus 1pt}
+\setlength{\textfloatsep}{7pt plus 2pt minus 1pt}
+\setlength{\intextsep}{6pt plus 2pt minus 1pt}
+
+% --- Captions & Table Spacing ---
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\captionsetup[table]{position=above,skip=4pt}
+\captionsetup[figure]{position=below,skip=4pt}
+
+% --- Citations & Cross-Referencing ---
+\usepackage{cite}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!80!black
+}
+
+% --- Last Page Column Balancing ---
+\usepackage{balance}
+
+% --- List & Display Spacing (Journal Compactness) ---
+\usepackage{enumitem}
+\setlist{nosep,topsep=1.5pt,leftmargin=1.1em}
+
+\setlength{\abovedisplayskip}{3.0pt plus 1pt minus 1pt}
+\setlength{\belowdisplayskip}{3.0pt plus 1pt minus 1pt}
+\setlength{\abovedisplayshortskip}{1.0pt plus 1pt}
+\setlength{\belowdisplayshortskip}{1.0pt plus 1pt}
+
+% --- Section & Heading Styling (Compact Journal Discipline) ---
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.5em}{}
+\titlespacing*{\section}{0pt}{0.7ex plus 0.1ex minus 0.1ex}{0.25ex plus 0.1ex}
+
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.4em}{}
+\titlespacing*{\subsection}{0pt}{0.5ex plus 0.1ex minus 0.1ex}{0.2ex plus 0.1ex}
+
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.4em}{}
+\titlespacing*{\subsubsection}{0pt}{0.4ex plus 0.1ex minus 0.1ex}{0.15ex plus 0.1ex}
+
+\titleformat{\paragraph}[runin]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{0.35ex plus 0.1ex minus 0.1ex}{0.45em}
+
+% --- Domain-Specific Mathematical Notations ---
+\newcommand{\StateTuple}{\mathcal{X}}
+\newcommand{\EntitySet}{\mathcal{E}}
+\newcommand{\GridSet}{\mathcal{G}}
+\newcommand{\ParamSet}{\mathcal{P}}
+\newcommand{\PhaseOp}{\mathcal{T}}
+\newcommand{\SplitOp}{\mathcal{S}}
+\newcommand{\ConvKernel}{\mathcal{K}_{\text{iso}}}
+\newcommand{\Torus}{\mathbb{T}^2}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Nat}{\mathbb{N}}
+
+% --- Visual Placeholder Environment ---
+\newcommand{\placeholderdiagram}[3]{%
+  \begin{tikzpicture}
+    \node[
+      draw=black!40,
+      dashed,
+      fill=black!3,
+      rounded corners=4pt,
+      minimum width=\linewidth,
+      minimum height=#1,
+      align=center,
+      inner sep=10pt
+    ] (box) {
+      \textbf{#2}\\[4pt]
+      \parbox{0.9\linewidth}{\centering\footnotesize\color{black!70}#3}
+    };
+  \end{tikzpicture}%
+}

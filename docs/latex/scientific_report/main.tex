@@ -1,0 +1,98 @@
+\documentclass[twocolumn,10pt,a4paper]{article}
+
+\usepackage[a4paper,left=15mm,right=15mm,top=18mm,bottom=12mm,includefoot,footskip=9mm,columnsep=5mm]{geometry}
+\input{macros}
+
+\title{\textbf{\Large PHIDS -- Plant-Herbivore Interaction \& Defence Simulator}}
+
+\author{
+  \textbf{Benjamin Förster}$^{1,2}$ \and
+  \textbf{Peter Langendörfer}$^{1,2}$ \and
+  \textbf{Thomas Hinze}$^{2}$\\[0.5em]
+  \small $^{1}$IHP -- Leibniz-Institut für innovative Mikroelektronik, Frankfurt (Oder), Germany\\
+  \small $^{2}$Brandenburg University of Technology (BTU) Cottbus-Senftenberg, Germany\\
+  \small Correspondence: \texttt{benjamin-foerster@b-tu.de}
+}
+
+\date{\today}
+
+\begin{document}
+
+\twocolumn[
+  \begin{@twocolumnfalse}
+    \maketitle
+    \begin{abstract}
+      \noindent Terrestrial plant--herbivore interactions depend on allocation trade-offs among somatic growth, physiological synthesis latencies, and spatial semiochemical signalling. Classical mean-field population models neglect individual kinematics and spatial transport, whereas conventional object-oriented agent frameworks incur high memory overhead when coupled to continuous reaction--diffusion fields. We present PHIDS (Plant--Herbivore Interaction \& Defence Simulator), a coupled hybrid dynamical simulator for meso-scale botanical defence kinetics across spatial biotopes. PHIDS pairs a data-oriented Lagrangian Entity--Component--System (ECS) with double-buffered Eulerian cellular fields solving parabolic reaction--diffusion--advection partial differential equations (PDEs), Jacobi chemotactic potentials, and cardinal-adjacent dynamic root-link graphs. Beyond spatial systems biology, the same coupled resource-allocation formulation establishes a structural homomorphism and shared Design Space Exploration (DSE) workflow linking botanical defence trade-offs to battery-constrained static Wireless Sensor Networks (WSNs). Three analytical properties --- bounded carrying capacity with non-reproductive dissipation, a closed-form critical synthesis delay threshold ($\theta_{\text{crit}}$), and a delayed mean-field Hopf bifurcation criterion ($\tau^* = 2.38\,\text{h} > \Delta t = 1.0\,\text{h}$) --- are derived and checked alongside thread-count-invariant execution. Evaluated on a $256 \times 256$ Central European riparian-to-meadow ecotone ($6$ flora guilds, $5$ herbivore guilds, $9$ chemical channels), calibrated $10$-seed $4{,}000$-tick ensembles demonstrate $100\%$ single-season $11$-species persistence under zero-shot spatial scale transfer, $90$-run dual-channel wind ablations show $2.6\times\text{--}3.0\times$ grazing mortality suppression paired with a $21$-run upwind relay sweep, and Common Random Numbers Sobol analyses ($1{,}792 + 224$ runs) isolate plume drift and starvation thresholds as dominant variance drivers. Contiguous Structure-of-Arrays (SoA) execution sustains $1.25\text{--}137\,\text{ms/tick}$ across $64 \times 32$ reference lattices ($138\times\text{--}262\times$ JIT speedups) through to the full $11$-species $256^2$ ecotone, with $10.5\times\text{--}12.1\times$ compressed Zarr state archival.
+    \end{abstract}
+    \vspace{0.6em}
+    \noindent\textbf{Keywords:} Coupled Hybrid Dynamical Systems, Reaction--Diffusion PDEs, Botanical Defence Cascades, Chemotaxis, Design Space Exploration, Bio-Inspired Distributed Systems, Operator Splitting.
+    \vspace{1.0em}
+  \end{@twocolumnfalse}
+]
+
+% ==============================================================================
+% Section 1: Introduction, System Overview & Methodological Motivation
+% ==============================================================================
+\input{sections/01_introduction.tex}
+
+% ==============================================================================
+% Section 2: The Biological Problem Domain & Botanical Defence Kinetics
+% ==============================================================================
+\input{sections/02_biological_domain.tex}
+
+% ==============================================================================
+% Section 3: Related Works & Methodological Benchmarking
+% ==============================================================================
+\input{sections/04_related_works.tex}
+
+% ==============================================================================
+% Section 4: The Mathematical Framework: Coupled Hybrid Dynamical System
+% ==============================================================================
+\input{sections/05_mathematical_framework.tex}
+
+% ==============================================================================
+% Section 5: Analytical Properties, Bounds & Formal Proofs
+% ==============================================================================
+\input{sections/06_theoretical_invariants.tex}
+
+% ==============================================================================
+% Section 6: In-Silico Case Studies & Dynamic Trajectory Analysis
+% ==============================================================================
+\input{sections/07_case_studies.tex}
+
+% ==============================================================================
+% Section 7: Computational Realisation & Execution Engine
+% ==============================================================================
+\input{sections/08_computational_realisation.tex}
+
+% ==============================================================================
+% Section 8: Discussion and Cross-Domain Synthesis
+% ==============================================================================
+\input{sections/09_discussion.tex}
+
+% ==============================================================================
+% Section 9: Conclusion and Availability
+% ==============================================================================
+\input{sections/10_conclusion.tex}
+
+% ==============================================================================
+% Appendix A: Reproducibility Protocol and Cross-Thread Verification
+% ==============================================================================
+\appendix
+\input{sections/appendix_reproducibility.tex}
+
+% ==============================================================================
+% Bibliography
+% ==============================================================================
+\let\oldbibliography\thebibliography
+\renewcommand{\thebibliography}[1]{%
+  \balance%
+  \oldbibliography{#1}%
+  \footnotesize\linespread{0.92}\selectfont
+  \setlength{\itemsep}{1pt}%
+  \setlength{\parskip}{0pt}%
+}
+\bibliographystyle{unsrt}
+\bibliography{bibliography}
+
+\end{document}

@@ -1,0 +1,16 @@
+metric,factor,range,S1,S1_ci_low,S1_ci_high,ST,ST_ci_low,ST_ci_high
+mean_flora_reserve,consumption_rate_mult,"[0.8, 1.4]",0.01076,-0.09929,0.13385,0.04377,0.02425,0.0795
+mean_flora_reserve,energy_min_mult,"[0.7, 1.3]",0.38518,0.10993,0.75756,0.55512,0.28182,0.9835
+mean_flora_reserve,defense_cmn_cost_mult,"[0.5, 1.5]",0.26781,0.04591,0.50202,0.25746,0.15893,0.43779
+mean_flora_reserve,wind_magnitude,"[0.0, 2.0]",0.0782,-0.17424,0.3818,0.31368,0.18743,0.56235
+mean_flora_reserve,p4_camo_repellent_strength,"[0.2, 1.0]",-0.11082,-0.2074,-0.01274,0.04838,0.03,0.08785
+terminal_j_flora,consumption_rate_mult,"[0.8, 1.4]",0.06264,-0.06203,0.19578,0.12757,0.05999,0.20781
+terminal_j_flora,energy_min_mult,"[0.7, 1.3]",0.43478,0.17899,0.66833,0.50206,0.31023,0.75043
+terminal_j_flora,defense_cmn_cost_mult,"[0.5, 1.5]",0.04036,-0.1309,0.19502,0.17058,0.10679,0.26975
+terminal_j_flora,wind_magnitude,"[0.0, 2.0]",0.27873,0.008,0.56355,0.56071,0.34064,0.87762
+terminal_j_flora,p4_camo_repellent_strength,"[0.2, 1.0]",-0.04018,-0.18676,0.08426,0.10917,0.05761,0.17563
+terminal_herb_heads,consumption_rate_mult,"[0.8, 1.4]",-0.05038,-0.14896,0.05631,0.03343,0.0165,0.05782
+terminal_herb_heads,energy_min_mult,"[0.7, 1.3]",0.59286,0.24722,0.98476,0.67448,0.38792,1.0252
+terminal_herb_heads,defense_cmn_cost_mult,"[0.5, 1.5]",-0.03938,-0.19227,0.13961,0.09762,0.05437,0.15609
+terminal_herb_heads,wind_magnitude,"[0.0, 2.0]",0.08541,-0.10697,0.28965,0.17598,0.11287,0.26715
+terminal_herb_heads,p4_camo_repellent_strength,"[0.2, 1.0]",-0.0729,-0.17046,0.04185,0.0625,0.03581,0.09938

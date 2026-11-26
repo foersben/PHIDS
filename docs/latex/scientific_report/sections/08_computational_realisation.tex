@@ -1,0 +1,52 @@
+% ==============================================================================
+% Section 7: Computational Realisation & Execution Engine
+% ==============================================================================
+
+\section{Computational Realisation and Execution Engine}
+\label{sec:computational_realisation}
+
+Coupled hybrid simulations combining thousands of mobile agents with continuous reaction--diffusion--advection PDEs incur severe interpreter and allocation overhead in pointer-based frameworks. To eliminate dynamic heap jitter and cache thrashing, PHIDS employs a data-oriented Entity--Component--System (ECS) whose PDE stencils, flow-field relaxation, and spatial indexing loops compile to native machine code via Just-In-Time (JIT) compilation on an Intel Core i7-10750H testbed ($6$ cores, $12$ threads, $2.60\,\text{GHz}$ base clock, AVX2/FMA, $192\,\text{KiB}$ L1d, $192\,\text{KiB}$ L1i, $1.5\,\text{MiB}$ L2, $12\,\text{MiB}$ shared L3, $31\,\text{GiB}$ RAM) running Linux~6.18.64, Python~3.13.12, NumPy~2.5.3 \cite{harris2020array}, and Numba~0.67.0 (LLVM~22.1.0) \cite{lam2015numba}. Table~\ref{tab:hardware_execution_benchmarks} gathers measured internal kernel ablations, lattice scaling, OpenMP threading, and per-stage profiling; below we detail the array layout, zero-allocation compilation, scaling bottlenecks, thread determinism, and compressed replay storage.
+
+\input{tables/tab08_hardware_execution_benchmarks.tex}
+
+% ==============================================================================
+\subsection{Data-Oriented Entity--Component--System Architecture}
+\label{subsec:data_oriented_ecs}
+% ==============================================================================
+
+Instead of fragmenting state across per-entity heap objects, PHIDS stores continuous field tensors and species slices in contiguous C-order NumPy arrays --- double-precision (\texttt{float64}) for energy, volatile signals, toxins, nutrition, and chemotactic flow fields, and single-precision (\texttt{float32}) for structural mass layers \cite{harris2020array}:
+\begin{align}
+  \mathbf{E}_{\mathrm{flora}}, \bm{\eta}_{\mathrm{nutr}}, \mathbf{F}_{\mathrm{flow}} &\in \mathbb{R}^{W \times H}, \\
+  \mathbf{C}_{\mathrm{sig}}, \mathbf{T}_{\mathrm{tox}} &\in \mathbb{R}^{16 \times W \times H}, \quad \mathbf{M}_{\mathrm{struct}} \in \mathbb{R}_{\mathrm{f32}}^{16 \times W \times H}.
+\end{align}
+Per-entity attributes reside in slotted containers indexed over integer entity identifiers via an $\mathcal{O}(1)$ spatial hash. To bound tensor widths and preserve predictable L1-cache footprints without runtime array resizing, PHIDS pre-allocates static leading dimension $K \le 16$ across interaction tensors: the diet matrix $\mathbf{D} \in \{0, 1\}^{16 \times 16}$ occupies a contiguous $256\,\text{bytes}$, and signal and toxin layers pre-allocate $16$ channels for $\mathcal{O}(1)$ slice indexing.
+
+% ==============================================================================
+\subsection{Zero-Allocation JIT Compilation and Branchless Masking}
+\label{subsec:jit_compilation_simd}
+% ==============================================================================
+
+Spatial inner loops --- semi-Lagrangian backward interpolation, $5 \times 5$ Gaussian convolution, Jacobi potential relaxation (OpenMP-parallelised across rows for $W \cdot H \ge 128^2$ and serial on smaller grids), and chemotactic neighbour scoring --- compile to native machine code via Numba/LLVM \cite{lam2015numba}. Write buffers, advection scratch planes, and 5-cell candidate arrays are pre-allocated once at initialisation and mutated in place without inner-loop heap allocation. To allow LLVM loop vectorisation without branch divergence, threshold gating and clamping execute via arithmetic saturation and $0.0/1.0$ float masks (Eqs.~\eqref{eq:subnormal_clamping} and~\eqref{eq:capacity_mask}). Disabling JIT compilation slows execution by $138.0\times$ on the $64 \times 32$ orchard and $262.0\times$ on the $128 \times 128$ canopy (Table~\ref{tab:hardware_execution_benchmarks}, Panel~A).
+
+% ==============================================================================
+\subsection{Power-of-Two Toroidal Wrapping and Per-Stage Scaling}
+\label{subsec:branchless_toroidal}
+% ==============================================================================
+
+Restricting toroidal lattice dimensions to powers of two ($W = 2^k, H = 2^m$, e.g.\ $W, H \in \{32, \dots, 1024\}$) allows compiled kernels to replace integer modulo division with bitwise \texttt{AND} wrapping:
+\begin{equation}
+  x_{\mathrm{wrap}} = x \mathrel{\&} (W - 1), \quad y_{\mathrm{wrap}} = y \mathrel{\&} (H - 1).
+  \label{eq:bitwise_masking}
+\end{equation}
+Across $2 \times 10^7$ compiled evaluations, bitwise masking achieves a $13.0\times$ wrapping speedup over integer modulo arithmetic with bit-identical coordinates (Table~\ref{tab:hardware_execution_benchmarks}, Panel~A).
+
+Across full simulations on $12$ threads (Table~\ref{tab:hardware_execution_benchmarks}, Panel~B), steady-state latency scales from $1.25\,\text{ms}$ on $64 \times 32$ and $2.59\,\text{ms}$ on $128 \times 128$ up to $36.62\text{--}57.23\,\text{ms}$ median on populated 3-species $256 \times 256$ canopies and $137.0\,\text{ms}$ mean across $4{,}000$ ticks of the full 11-species ecotone. Per-stage profiling isolates three architectural causes behind the steep jump from $128 \times 128$ to densely populated $256 \times 256$ grids: (i) Jacobi iteration ceilings scale linearly ($M_{\max} = W + H = 512$) over tensor working sets that spill the $12\,\text{MiB}$ shared L3 cache; (ii) non-JIT Python evaluation of plant trigger predicates and substance allocations scales with entity count and rule depth, consuming $44.2\%$ of early ecotone tick latency ($28.56\,\text{ms}$ across $31$ rules and $2{,}262$ active substances) before flora biomass roughly doubles; and (iii) periodic $8$-tick mycorrhizal graph construction drives sparse upper-tail spikes in lifecycle cost. OpenMP thread scaling on the $256 \times 256$ equilibrium grid reduces median latency by $1.37\times$ between $p = 1$ and $p = 6$ before plateauing at $p = 12$ (Table~\ref{tab:hardware_execution_benchmarks}, Panel~A). Consistent with the Roofline model \cite{williams2009roofline}, low operational intensity stencil sweeps saturate DRAM bandwidth near $4\text{--}6$ physical cores, freeing remaining concurrency for batch workers or replay serialisation.
+
+% ==============================================================================
+\subsection{Double-Buffered Thread Determinism and Replay Storage}
+\label{subsec:double_buffering_zarr}
+% ==============================================================================
+
+To eliminate write-after-read hazards and ensure thread-count invariance, PHIDS maintains ping-pong double buffers ($\mathbf{A}_{\mathrm{read}}$ immutable throughout each sweep; $\mathbf{A}_{\mathrm{write}}$ exclusive write target) swapped via $\mathcal{O}(1)$ pointer exchange at tick boundaries. Each spatial update reads immutable sources and mutates disjoint targets ($\mathbf{A}_{\mathrm{read}} \cap \mathbf{A}_{\mathrm{write}} = \emptyset$), satisfying Bernstein's independence conditions. Jacobi termination (Eq.~\eqref{eq:jacobi_stopping_criterion}) uses a fixed four-neighbour stencil and associative IEEE-754 $\max$ reduction so varying $p$ preserves reduction order, while agent actions draw sequentially upfront from a seeded PRNG. Cross-thread validation across $p \in \{1, 4, 12\}$ confirms identical SHA-256 telemetry digests and zero maximum field discrepancy ($\max|\Delta| = 0.0$) across all benchmark grids ($64 \times 32$, $128 \times 128$, $256 \times 256$) as well as the calibrated $128 \times 64$ and $256 \times 256$ ecotone workloads (full digests are archived in Appendix~\ref{app:reproducibility}, Table~\ref{tab:determinism_digests}).
+
+For offline inspection, field tensors stream as single-precision floats into chunked Zarr arrays \cite{miles2020zarr} compressed with Zstandard \cite{collet2021zstd}. Compression reduces raw volumes by $10.5\times$ on a 400-tick $64 \times 32$ recording ($39.32 \to 3.76\,\text{MB}$) and by $12.07\times$ across a 360-tick $256 \times 256$ ecotone recording ($1{,}710.0 \to 141.69\,\text{MB}$ growing to $25{,}030$ active plants and $23{,}291$ root links; Table~\ref{tab:hardware_execution_benchmarks}), supporting decoupled trajectory scrubbing directly from disk (a spatial state snapshot is shown in Fig.~\ref{fig:ecotone_spatial_snapshot}; the interactive web console for offline replay inspection is included in the open-source repository).

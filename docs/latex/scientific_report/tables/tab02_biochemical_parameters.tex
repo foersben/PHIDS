@@ -1,0 +1,112 @@
+% ==============================================================================
+% Table 2: Biochemical Parameters of Botanical Defenses and Signals
+% Placed at bottom [b] of page, caption above table
+% ==============================================================================
+%
+% NARRATIVE STORY OF TABLE 2:
+% This table establishes the empirical calibration underpinning the biological
+% simulation engine in PHIDS. It bridges established empirical literature in plant
+% physiology and chemical ecology with the formal computational parameters used across
+% the coupled hybrid system.
+%
+% The narrative progresses through five functional tiers of plant defence:
+% 1. Constitutive Morphological Barriers: Static structures (trichomes, biogenic
+%    silica, lignified secondary cell walls) that require upfront energetic allocation
+%    during tissue maturation but impose zero ongoing synthesis delay upon attack.
+% 2. Airborne VOC Signals (Green Leaf Volatiles & Terpenoids): Rapidly emitted semiochemical
+%    plumes that diffuse through the turbulent atmospheric boundary layer to prime downwind
+%    conspecifics, characterised by high dispersion and finite photochemical half-lives.
+% 3. Subterranean Mycorrhizal Networks (CMNs): Underground hyphal networks that provide
+%    shielded, out-of-band communication conduits connecting root systems, operating at a
+%    continuous metabolic maintenance fee (carbon tax) paid by the host plant.
+% 4. Inducible Allochemical Defenses (Glucosinolates, Alkaloids, Proteinase Inhibitors):
+%    Metabolically expensive secondary toxins synthesized de novo upon tissue wounding,
+%    subject to a critical physiological lag phase (synthesis delay theta_synth).
+% 5. Vascular Phloem Translocation (Carbon/Nitrogen Sinks): Rapid enzymatic reallocation
+%    of mobile sugars and amino acids away from grazed foliar tissue into subterranean root
+%    storage, dynamically reducing apparent tissue nutrition factor eta(t).
+%
+% ==============================================================================
+
+\begin{table*}[b]
+\caption{Biochemical, Physiological, and Kinetic Parameters Governing Botanical Defence Cascades in PHIDS.}
+\label{tab:biochemical_parameters}
+\vspace{4pt}
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{
+  >{\raggedright\hsize=0.90\hsize}X
+  >{\raggedright\hsize=1.00\hsize}X
+  >{\centering\hsize=0.95\hsize}X
+  >{\centering\hsize=0.80\hsize}X
+  >{\centering\hsize=0.90\hsize}X
+  >{\raggedright\hsize=1.15\hsize}X
+  >{\raggedright\arraybackslash\hsize=1.30\hsize}X
+}
+\toprule
+\textbf{Defence Modality} &
+\textbf{Biochemical Basis} &
+\textbf{Metabolic Cost} &
+\textbf{Latency ($\bm{\theta}$)} &
+\textbf{Decay / Half-Life} &
+\textbf{Empirical Basis} &
+\textbf{Model Symbol / Role} \\
+\midrule
+
+\textbf{Constitutive Armour} &
+Lignin, cellulose, silica trichomes &
+Continuous fraction \newline $\delta_{\mathrm{morph}} \in [0, 0.50]$ &
+$0\,\text{ticks}$ (Permanent) &
+$\tau_{1/2} \to \infty$ (Permanent) &
+Gatehouse \cite{gatehouse2002plant} &
+$\delta_{\mathrm{morph}}$ (digestibility), \newline
+$c_{\mathrm{bite}}$ (mechanical wear) \\
+
+\textbf{Airborne VOC Plumes} &
+$(E)$-$\beta$-ocimene, green leaf volatiles &
+Signal emission $Q_{\mathrm{emit}}$; zero resting tax &
+$1\text{--}3\,\text{ticks}$ (Plume onset) &
+Clearance $\gamma_s \approx 1 - \lambda_s\Delta t$ (diffusion $\sigma = 0.40$) &
+Farmer \cite{farmer2001surface} &
+$Q_{\mathrm{emit}}$ (emission flux), \newline
+$\gamma_s$ (clearance retention) \\
+
+\textbf{Mycelial Conduction} &
+Hyphal action potentials, jasmonates &
+Link upkeep $\delta_E^{\mathrm{tax}}$ / link &
+$1\,\text{tick/hop}$ ($1\text{--}3\,\text{ticks}$) &
+Unattenuated across cardinal links &
+Babikova et al. \cite{babikova2013underground} &
+$\delta_E^{\mathrm{tax}}$ (link carbon tax), \newline
+$g_{\mathrm{relay}}$ (relay gain) \\
+
+\textbf{Inducible Toxins} &
+Glucosinolates, nicotine, proteinase inhibitors &
+Active synthesis tax $c_{\mathrm{synth}}$ / tick &
+$8\text{--}12\,\text{ticks}$ ($1\text{--}2$ in compact orchard runs; $\theta_{\mathrm{synth}}$) &
+Active persistence $\tau_{\mathrm{aft}}$ ticks &
+Gatehouse \cite{gatehouse2002plant} &
+$\theta_{\mathrm{synth}}$ (induction lag), \newline
+$\mu_{\mathrm{tox}}$ (lethality rate) \\
+
+\textbf{Primed Acceleration} &
+Pre-transcribed mRNA, inactive enzyme pools &
+$\approx 1\%$ resting alert upkeep &
+$1\text{--}3\,\text{ticks}$ ($\theta_{\mathrm{primed}}$) &
+Gated by Hill saturation $S(C) \ge \tau_{\mathrm{prim}}$ &
+Gatehouse \cite{gatehouse2002plant} &
+$n$ (Hill exponent), \newline
+$K_d$ (half-saturation) \\
+
+\textbf{Phloem Translocation} &
+Apparent foliar nutrition withdrawal &
+Stress withdrawal without biomass loss &
+Rate-limited recovery ($\gamma_{\text{trans}}$) &
+Relaxation: $\eta(t+1) = \eta(t) + \Delta \eta$ &
+Schwachtje et al. \cite{schwachtje2006snf1} &
+$\gamma_{\mathrm{trans}}$ (recovery rate), \newline
+$\eta(t)$ (palatability factor) \\
+
+\bottomrule
+\end{tabularx}
+\end{table*}

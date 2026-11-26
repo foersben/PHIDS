@@ -1,0 +1,11 @@
+flora,herb,E0,E_min,a_hourly_runtime,a_diurnal_runtime,T_h,toxin_delays,theta_crit_hr_N16,theta_crit_hr_Nsplit,theta_crit_diurnal_N16
+p0 (Populus nigra),h0 (Lymantria dispar),70.0,14.0,1.6668,40.0044,0.113987,"[2, 12]",0.4593,0.2826,0.4015
+p1 (Salix purpurea),h0 (Lymantria dispar),60.0,12.0,1.6668,40.0044,0.113987,"[2, 12]",0.4023,0.2476,0.3445
+p0 (Populus nigra),h1 (Phratora vitellinae),70.0,14.0,1.1761,28.2273,0.172599,"[2, 12]",0.6896,0.4597,0.6077
+p1 (Salix purpurea),h1 (Phratora vitellinae),60.0,12.0,1.1761,28.2273,0.172599,"[2, 12]",0.6033,0.4022,0.5214
+p2 (Trifolium repens),h2 (Acyrthosiphon pisum),45.0,9.0,2.6664,63.9929,0.126764,"[1, 8]",0.3229,0.1123,0.2868
+p2 (Trifolium repens),h3 (Noctua pronuba),45.0,9.0,0.5046,12.1114,0.334232,"[1, 8]",0.9514,0.5854,0.7603
+p3 (Lolium perenne),h3 (Noctua pronuba),55.0,11.0,0.5046,12.1114,0.334232,"[2, 10]",1.1185,0.6883,0.9274
+p4 (Tanacetum vulgare),h3 (Noctua pronuba),50.0,10.0,0.5046,12.1114,0.334232,"[1, 3]",1.0349,0.6369,0.8439
+p5 (Brassica nigra),h3 (Noctua pronuba),35.0,7.0,0.5046,12.1114,0.334232,"[2, 8]",0.7842,0.4826,0.5932
+p5 (Brassica nigra),h4 (Pieris brassicae),35.0,7.0,1.3532,32.4764,0.163319,"[2, 8]",0.3601,0.2401,0.2889

@@ -1,0 +1,144 @@
+{
+  "scenario": "Central European Riparian-to-Floodplain-Meadow Ecotone",
+  "grid_width": 256,
+  "grid_height": 256,
+  "ticks_simulated": 360,
+  "showcase_tick": 331,
+  "showcase_state": {
+    "tick": 331,
+    "score": 1220.6,
+    "nonzero_channels": 9,
+    "active_substances": {
+      "0": 42,
+      "1": 240,
+      "2": 41,
+      "3": 193,
+      "4": 778,
+      "5": 49,
+      "6": 525,
+      "7": 3,
+      "8": 197
+    },
+    "flora_counts": {
+      "0": 4396,
+      "1": 2534,
+      "2": 5193,
+      "3": 6705,
+      "4": 2963,
+      "5": 3239
+    },
+    "herbivore_pops": {
+      "0": 203,
+      "1": 138,
+      "2": 306,
+      "3": 140,
+      "4": 73
+    },
+    "myco_links": 23291,
+    "withdrawals": 836
+  },
+  "inspector_cell": {
+    "x": 92,
+    "y": 22,
+    "species_id": 1,
+    "plant_energy": 33.627,
+    "cmn_links": 4,
+    "active_substances": [
+      0,
+      1,
+      2,
+      4
+    ],
+    "signal_sum": 0.3778,
+    "toxin_sum": 0.55,
+    "apparent_nutrition_factor": 0.709,
+    "swarms": [
+      {
+        "species_id": 1,
+        "population": 6
+      }
+    ]
+  },
+  "latency_ms": {
+    "median": 162.551,
+    "p95": 245.706,
+    "mean": 174.026
+  },
+  "zarr_replay": {
+    "frames": 360,
+    "raw_float32_mb": 1710.0,
+    "compressed_mb": 141.692,
+    "compression_ratio": 12.07
+  },
+  "telemetry_rows": 360,
+  "telemetry_columns": [
+    "tick",
+    "total_flora_energy",
+    "flora_population",
+    "herbivore_clusters",
+    "herbivore_population",
+    "death_reproduction",
+    "death_mycorrhiza",
+    "death_defense_maintenance",
+    "death_herbivore_feeding",
+    "death_background_deficit",
+    "death_starvation",
+    "plant_0_pop",
+    "plant_0_energy",
+    "defense_cost_0",
+    "plant_1_pop",
+    "plant_1_energy",
+    "defense_cost_1",
+    "plant_2_pop",
+    "plant_2_energy",
+    "defense_cost_2",
+    "plant_3_pop",
+    "plant_3_energy",
+    "defense_cost_3",
+    "plant_4_pop",
+    "plant_4_energy",
+    "defense_cost_4",
+    "plant_5_pop",
+    "plant_5_energy",
+    "defense_cost_5",
+    "swarm_0_pop",
+    "swarm_1_pop",
+    "swarm_2_pop",
+    "swarm_3_pop",
+    "swarm_4_pop"
+  ],
+  "determinism": {
+    "twin_128x64": {
+      "ticks": 200,
+      "threads_tested": [
+        1,
+        4,
+        12,
+        1
+      ],
+      "hashes": {
+        "p1": "359ffdfa92c8808e06c5aabd832e25c9fb47b16ede96fb7235d63dea5eac2665",
+        "p4": "359ffdfa92c8808e06c5aabd832e25c9fb47b16ede96fb7235d63dea5eac2665",
+        "p12": "359ffdfa92c8808e06c5aabd832e25c9fb47b16ede96fb7235d63dea5eac2665"
+      },
+      "digest": "359ffdfa92c8808e06c5aabd832e25c9fb47b16ede96fb7235d63dea5eac2665",
+      "identical": true
+    },
+    "flagship_256x256": {
+      "ticks": 50,
+      "threads_tested": [
+        1,
+        4,
+        12,
+        1
+      ],
+      "hashes": {
+        "p1": "45bdf4e7614eebba17c9bec25cae26405010367ee7d934fb3fe2e282721c654f",
+        "p4": "45bdf4e7614eebba17c9bec25cae26405010367ee7d934fb3fe2e282721c654f",
+        "p12": "45bdf4e7614eebba17c9bec25cae26405010367ee7d934fb3fe2e282721c654f"
+      },
+      "digest": "45bdf4e7614eebba17c9bec25cae26405010367ee7d934fb3fe2e282721c654f",
+      "identical": true
+    }
+  }
+}
