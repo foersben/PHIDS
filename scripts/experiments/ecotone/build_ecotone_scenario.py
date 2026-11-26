@@ -607,28 +607,18 @@ def _place_thomas_species(
     return placed
 
 
-def generate_spatial_layout(
-    width: int, height: int, flora: list[FloraSpeciesParams], herbivores: list[HerbivoreSpeciesParams], seed: int = 42
-) -> tuple[list[InitialPlantPlacement], list[InitialSwarmPlacement], dict[str, Any]]:
-    """Generate stratified spatial plant and herbivore placements matching the ecotone report."""
-    rng = np.random.default_rng(seed)
-    occupied = np.full((width, height), -1, dtype=np.int32)
-    scale_x = width / 256.0
-    scale_area = (width * height) / (256.0 * 256.0)
-
-    def sx(val: int) -> int:
-        return max(0, min(width - 1, round(val * scale_x)))
-
-    p0_cells = _place_thomas_species(
-        rng, occupied, 0, (sx(22), sx(88)), max(4, round(55 * scale_area)), 65.0, 4.2, width, height
-    )
-    p1_cells = _place_thomas_species(
-        rng, occupied, 1, (sx(66), sx(110)), max(3, round(42 * scale_area)), 55.0, 3.8, width, height
-    )
-
+def _place_p4_strip(
+    rng: np.random.Generator,
+    occupied: np.ndarray,
+    width: int,
+    height: int,
+    scale_x: float,
+) -> list[tuple[int, int]]:
+    """Place herbaceous stripe p4 along dual Gaussian longitudinal bands."""
     p4_cells: list[tuple[int, int]] = []
     xs = np.arange(width, dtype=np.float64)
-    c1, c2 = sx(112), sx(16)
+    c1 = max(0, min(width - 1, round(112 * scale_x)))
+    c2 = max(0, min(width - 1, round(16 * scale_x)))
     d1 = np.minimum(np.abs(xs - c1), width - np.abs(xs - c1))
     d2 = np.minimum(np.abs(xs - c2), width - np.abs(xs - c2))
     prob_x = np.clip(
@@ -645,94 +635,108 @@ def generate_spatial_layout(
             if occupied[x, y] < 0 and rolls[x, y] < px_val:
                 occupied[x, y] = 4
                 p4_cells.append((x, y))
+    return p4_cells
 
-    p2_cells = _place_thomas_species(
-        rng, occupied, 2, (sx(114), sx(244)), max(5, round(65 * scale_area)), 75.0, 3.6, width, height
-    )
-    p3_cells = _place_thomas_species(
-        rng, occupied, 3, (sx(106), sx(248)), max(6, round(85 * scale_area)), 70.0, 4.5, width, height
-    )
 
+def _scatter_patch_checkerboard(
+    rng: np.random.Generator,
+    occupied: np.ndarray,
+    cx: int,
+    cy: int,
+    width: int,
+    height: int,
+    out: list[tuple[int, int]],
+) -> None:
+    """Populate diagonal non-CMN checkerboard points for species 5 within radius 4."""
+    radius = 4
+    for dx in range(-radius, radius + 1):
+        for dy in range(-radius, radius + 1):
+            if (dx + dy) % 2 != 0 or dx * dx + dy * dy > radius * radius or rng.random() > 0.72:
+                continue
+            tx = (cx + dx) % width
+            ty = (cy + dy) % height
+            if occupied[tx, ty] < 0 and not _has_cardinal_neighbor(occupied, tx, ty, width, height):
+                occupied[tx, ty] = 5
+                out.append((tx, ty))
+
+
+def _place_p5_patches(
+    rng: np.random.Generator,
+    occupied: np.ndarray,
+    width: int,
+    height: int,
+    scale_x: float,
+    scale_area: float,
+) -> list[tuple[int, int]]:
+    """Place isolated Brassica p5 disturbance patches without cardinal neighbours."""
     p5_cells: list[tuple[int, int]] = []
-    gap_e1, gap_e2 = sx(95), sx(25)
+    gap_e1 = max(0, min(width - 1, round(95 * scale_x)))
+    gap_e2 = max(0, min(width - 1, round(25 * scale_x)))
     n_gap_patches = max(8, round(48 * scale_area))
     n_core_patches = max(3, round(12 * scale_area))
     gap_xs = np.concatenate([np.arange(0, gap_e2 + 1), np.arange(gap_e1, width)])
     core_xs = np.arange(gap_e2 + 1, gap_e1)
     patch_centers: list[tuple[int, int]] = []
     if len(gap_xs) > 0:
-        for cx in rng.choice(gap_xs, size=n_gap_patches, replace=True):
-            patch_centers.append((int(cx), int(rng.integers(0, height))))
+        patch_centers.extend(
+            (int(cx), int(rng.integers(0, height))) for cx in rng.choice(gap_xs, size=n_gap_patches, replace=True)
+        )
     if len(core_xs) > 0:
-        for cx in rng.choice(core_xs, size=n_core_patches, replace=True):
-            patch_centers.append((int(cx), int(rng.integers(0, height))))
-
-    radius = 4
+        patch_centers.extend(
+            (int(cx), int(rng.integers(0, height))) for cx in rng.choice(core_xs, size=n_core_patches, replace=True)
+        )
     for cx, cy in patch_centers:
-        for dx in range(-radius, radius + 1):
-            for dy in range(-radius, radius + 1):
-                if (dx + dy) % 2 != 0 or dx * dx + dy * dy > radius * radius:
-                    continue
-                if rng.random() > 0.72:
-                    continue
-                tx = (cx + dx) % width
-                ty = (cy + dy) % height
-                if occupied[tx, ty] < 0 and not _has_cardinal_neighbor(occupied, tx, ty, width, height):
-                    occupied[tx, ty] = 5
-                    p5_cells.append((tx, ty))
+        _scatter_patch_checkerboard(rng, occupied, cx, cy, width, height, p5_cells)
+    return p5_cells
 
-    cells_by_sp = {0: p0_cells, 1: p1_cells, 2: p2_cells, 3: p3_cells, 4: p4_cells, 5: p5_cells}
-    plant_placements: list[InitialPlantPlacement] = [
-        InitialPlantPlacement(species_id=sp_id, x=x, y=y, energy=flora[sp_id].base_energy)
-        for sp_id, coords in cells_by_sp.items()
-        for x, y in coords
-    ]
 
+def _cardinal_cmn_degree(occupied: np.ndarray, x: int, y: int, width: int, height: int) -> int:
+    """Count cardinal neighbours belonging to CMN-compatible guild IDs ``0..4``."""
+    return sum(
+        1 for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)) if 0 <= occupied[(x + dx) % width, (y + dy) % height] <= 4
+    )
+
+
+def _compute_cmn_stats(
+    cells_by_sp: dict[int, list[tuple[int, int]]],
+    occupied: np.ndarray,
+    width: int,
+    height: int,
+) -> dict[int, dict[str, float]]:
+    """Compute per-species mean CMN degree and connected percentage."""
     cmn_stats: dict[int, dict[str, float]] = {}
     for sp_id, coords in cells_by_sp.items():
         if sp_id == 5:
             cmn_stats[sp_id] = {"count": len(coords), "mean_deg": 0.0, "connected_pct": 0.0}
             continue
-        degs = [
-            sum(
-                1
-                for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1))
-                if 0 <= occupied[(x + dx) % width, (y + dy) % height] <= 4
-            )
-            for x, y in coords
-        ]
+        degs = [_cardinal_cmn_degree(occupied, x, y, width, height) for x, y in coords]
         cmn_stats[sp_id] = {
             "count": len(coords),
             "mean_deg": float(np.mean(degs)) if degs else 0.0,
             "connected_pct": float(100.0 * np.mean([d > 0 for d in degs])) if degs else 0.0,
         }
+    return cmn_stats
 
-    swarm_placements: list[InitialSwarmPlacement] = []
-    is_flagship = width == 256 and height == 256
-    # The 128 x 64 twin keeps the same proportional founder headcounts as the flagship but
-    # splits them into four smaller swarms per guild (instead of two) so that stochastic
-    # founder extinction does not dominate the trophic signal during parameter tuning.
-    h0_n = 14 if is_flagship else 4
-    h1_n = 12 if is_flagship else 4
-    h2_n = 18 if is_flagship else 4
-    h4_n = 12 if is_flagship else 4
+
+def _build_swarm_placements(
+    rng: np.random.Generator,
+    cells_by_sp: dict[int, list[tuple[int, int]]],
+    occupied: np.ndarray,
+    herbivores: list[HerbivoreSpeciesParams],
+    width: int,
+    height: int,
+) -> list[InitialSwarmPlacement]:
+    """Generate stratified initial herbivore swarms matched to ecotone host guilds."""
 
     def _pick_cells(pool: list[tuple[int, int]], count: int) -> list[tuple[int, int]]:
         chosen = rng.choice(len(pool), size=min(count, len(pool)), replace=False)
         return [pool[int(idx)] for idx in chosen]
 
-    # Preferentially place h2 on CMN-connected Trifolium (degree >= 2)
-    connected_p2 = [
-        (x, y)
-        for x, y in p2_cells
-        if sum(
-            1
-            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1))
-            if 0 <= occupied[(x + dx) % width, (y + dy) % height] <= 4
-        )
-        >= 2
-    ]
-    # Stratified host assignment for h3 (Noctua pronuba) guarantees immediate s7 activation on p5
+    is_flagship = width == 256 and height == 256
+    h0_n, h1_n, h2_n, h4_n = (14, 12, 18, 12) if is_flagship else (4, 4, 4, 4)
+    p0_cells, p1_cells, p2_cells = cells_by_sp[0], cells_by_sp[1], cells_by_sp[2]
+    p3_cells, p4_cells, p5_cells = cells_by_sp[3], cells_by_sp[4], cells_by_sp[5]
+    connected_p2 = [(x, y) for x, y in p2_cells if _cardinal_cmn_degree(occupied, x, y, width, height) >= 2]
     if is_flagship:
         h3_coords = (
             _pick_cells(p2_cells, 4) + _pick_cells(p3_cells, 5) + _pick_cells(p4_cells, 3) + _pick_cells(p5_cells, 4)
@@ -740,8 +744,6 @@ def generate_spatial_layout(
     else:
         h3_coords = _pick_cells(p3_cells, 2) + _pick_cells(p5_cells, 2)
 
-    # Per-swarm founder populations (flagship: one fixed population per swarm; twin: the
-    # flagship per-swarm population is halved across twice as many swarms).
     pop_scale = 1.0 if is_flagship else 0.5
     guild_coords: list[tuple[int, int, list[tuple[int, int]]]] = [
         (0, round(18 * pop_scale), _pick_cells(p0_cells + p1_cells, h0_n)),
@@ -750,19 +752,85 @@ def generate_spatial_layout(
         (3, round(18 * pop_scale), h3_coords),
         (4, round(16 * pop_scale), _pick_cells(p5_cells, h4_n)),
     ]
-
+    swarm_placements: list[InitialSwarmPlacement] = []
     for h_id, pop, coords in guild_coords:
         e_init = round(pop * herbivores[h_id].energy_min * 1.4, 4)
         for sx_pos, sy_pos in coords:
             swarm_placements.append(
-                InitialSwarmPlacement(
-                    species_id=h_id,
-                    x=sx_pos,
-                    y=sy_pos,
-                    population=pop,
-                    energy=e_init,
-                )
+                InitialSwarmPlacement(species_id=h_id, x=sx_pos, y=sy_pos, population=pop, energy=e_init)
             )
+    return swarm_placements
+
+
+def _scale_coord(val: int, scale_x: float, width: int) -> int:
+    """Scale an x-coordinate from the 256-cell canonical layout onto ``width``."""
+    return max(0, min(width - 1, round(val * scale_x)))
+
+
+def generate_spatial_layout(
+    width: int, height: int, flora: list[FloraSpeciesParams], herbivores: list[HerbivoreSpeciesParams], seed: int = 42
+) -> tuple[list[InitialPlantPlacement], list[InitialSwarmPlacement], dict[str, Any]]:
+    """Generate stratified spatial plant and herbivore placements matching the ecotone report."""
+    rng = np.random.default_rng(seed)
+    occupied = np.full((width, height), -1, dtype=np.int32)
+    scale_x = width / 256.0
+    scale_area = (width * height) / (256.0 * 256.0)
+
+    p0_cells = _place_thomas_species(
+        rng,
+        occupied,
+        0,
+        (_scale_coord(22, scale_x, width), _scale_coord(88, scale_x, width)),
+        max(4, round(55 * scale_area)),
+        65.0,
+        4.2,
+        width,
+        height,
+    )
+    p1_cells = _place_thomas_species(
+        rng,
+        occupied,
+        1,
+        (_scale_coord(66, scale_x, width), _scale_coord(110, scale_x, width)),
+        max(3, round(42 * scale_area)),
+        55.0,
+        3.8,
+        width,
+        height,
+    )
+    p4_cells = _place_p4_strip(rng, occupied, width, height, scale_x)
+    p2_cells = _place_thomas_species(
+        rng,
+        occupied,
+        2,
+        (_scale_coord(114, scale_x, width), _scale_coord(244, scale_x, width)),
+        max(5, round(65 * scale_area)),
+        75.0,
+        3.6,
+        width,
+        height,
+    )
+    p3_cells = _place_thomas_species(
+        rng,
+        occupied,
+        3,
+        (_scale_coord(106, scale_x, width), _scale_coord(248, scale_x, width)),
+        max(6, round(85 * scale_area)),
+        70.0,
+        4.5,
+        width,
+        height,
+    )
+    p5_cells = _place_p5_patches(rng, occupied, width, height, scale_x, scale_area)
+
+    cells_by_sp = {0: p0_cells, 1: p1_cells, 2: p2_cells, 3: p3_cells, 4: p4_cells, 5: p5_cells}
+    plant_placements: list[InitialPlantPlacement] = [
+        InitialPlantPlacement(species_id=sp_id, x=x, y=y, energy=flora[sp_id].base_energy)
+        for sp_id, coords in cells_by_sp.items()
+        for x, y in coords
+    ]
+    cmn_stats = _compute_cmn_stats(cells_by_sp, occupied, width, height)
+    swarm_placements = _build_swarm_placements(rng, cells_by_sp, occupied, herbivores, width, height)
 
     summary = {
         "grid_width": width,

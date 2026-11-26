@@ -322,12 +322,27 @@ def run_priming() -> None:
     )
 
 
+def _crossover_active_coords(loop: Any, substance_comp_cls: Any, plant_comp_cls: Any) -> set[tuple[int, int]]:
+    """Collect ``(x, y)`` coordinates of plants actively synthesising signal channel 0."""
+    active_coords: set[tuple[int, int]] = set()
+    for ent in loop.world.query(substance_comp_cls):
+        sub = ent.get_component(substance_comp_cls)
+        if not (sub.active and sub.substance_id == 0):
+            continue
+        owner = loop.world.get_entity(sub.owner_plant_id)
+        if owner is not None:
+            pc = owner.get_component(plant_comp_cls)
+            active_coords.add((pc.x, pc.y))
+    return active_coords
+
+
 def _crossover_case(wind_x: float, mycorrhiza_enabled: bool) -> dict[str, Any]:
     """Run airborne VOC + optional mycorrhizal relay across directional wind in phids.engine."""
     import random
 
     logging.disable(logging.CRITICAL)
     from phids.api.schemas.simulation import SimulationConfig
+    from phids.engine.components.plant import PlantComponent
     from phids.engine.components.substances import SubstanceComponent
     from phids.engine.loop import SimulationLoop
 
@@ -438,43 +453,26 @@ def _crossover_case(wind_x: float, mycorrhiza_enabled: bool) -> dict[str, Any]:
     np.random.seed(0)
     loop = SimulationLoop(SimulationConfig.model_validate(cfg_dict), disable_replay=True)
 
-    upwind_first_tick: int | None = None
-    downwind_first_tick: int | None = None
-    upwind_peak_c = 0.0
-    downwind_peak_c = 0.0
+    state: dict[str, Any] = {
+        "upwind_first_tick": None,
+        "downwind_first_tick": None,
+        "upwind_peak_c": 0.0,
+        "downwind_peak_c": 0.0,
+    }
 
     async def drive() -> None:
-        nonlocal upwind_first_tick, downwind_first_tick, upwind_peak_c, downwind_peak_c
         for tick in range(20):
             await loop.step()
-            up_c = float(loop.env.signal_layers[0, 29, 16])
-            dn_c = float(loop.env.signal_layers[0, 35, 16])
-            upwind_peak_c = max(upwind_peak_c, up_c)
-            downwind_peak_c = max(downwind_peak_c, dn_c)
-            active_coords: set[tuple[int, int]] = set()
-            for ent in loop.world.query(SubstanceComponent):
-                sub = ent.get_component(SubstanceComponent)
-                if sub.active and sub.substance_id == 0:
-                    owner = loop.world.get_entity(sub.owner_plant_id)
-                    if owner is not None:
-                        from phids.engine.components.plant import PlantComponent
-
-                        pc = owner.get_component(PlantComponent)
-                        active_coords.add((pc.x, pc.y))
-            if (29, 16) in active_coords and upwind_first_tick is None:
-                upwind_first_tick = tick
-            if (35, 16) in active_coords and downwind_first_tick is None:
-                downwind_first_tick = tick
+            state["upwind_peak_c"] = max(state["upwind_peak_c"], float(loop.env.signal_layers[0, 29, 16]))
+            state["downwind_peak_c"] = max(state["downwind_peak_c"], float(loop.env.signal_layers[0, 35, 16]))
+            active_coords = _crossover_active_coords(loop, SubstanceComponent, PlantComponent)
+            if (29, 16) in active_coords and state["upwind_first_tick"] is None:
+                state["upwind_first_tick"] = tick
+            if (35, 16) in active_coords and state["downwind_first_tick"] is None:
+                state["downwind_first_tick"] = tick
 
     asyncio.run(drive())
-    return {
-        "wind_x": wind_x,
-        "mycorrhiza": mycorrhiza_enabled,
-        "upwind_first_tick": upwind_first_tick,
-        "downwind_first_tick": downwind_first_tick,
-        "upwind_peak_c": upwind_peak_c,
-        "downwind_peak_c": downwind_peak_c,
-    }
+    return {"wind_x": wind_x, "mycorrhiza": mycorrhiza_enabled, **state}
 
 
 def run_crossover() -> None:

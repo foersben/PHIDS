@@ -220,6 +220,56 @@ class Sample:
     cum_withdraw: list[int]
 
 
+def _take_sample(loop: Any, area: float, swarm_comp_cls: Any) -> Sample | None:
+    """Snapshot per-guild plant, herbivore, and signaling tallies from live telemetry."""
+    row = loop.telemetry.get_latest_metrics()
+    if row is None:
+        return None
+    raw_plants = row.get("plant_pop_by_species", {}) or {}
+    plant_map = {int(k): int(v) for k, v in dict(raw_plants).items()}
+    plants = [plant_map.get(i, 0) for i in range(N_FLORA)]
+    heads = [0] * N_HERB
+    swarms = [0] * N_HERB
+    for entity in loop.world.query(swarm_comp_cls):
+        sw = entity.get_component(swarm_comp_cls)
+        if 0 <= sw.species_id < N_HERB:
+            heads[sw.species_id] += sw.population
+            swarms[sw.species_id] += 1
+    return Sample(
+        tick=loop.tick,
+        occ_pct=100.0 * sum(plants) / area,
+        plants=plants,
+        heads=heads,
+        swarms=swarms,
+        cum_subs=[_SUB_ACT.get(i, 0) for i in range(N_SUB)],
+        cum_withdraw=[_WITHDRAW.get(i, 0) for i in (0, 1, 2)],
+    )
+
+
+async def _drive_simulation(
+    loop: Any,
+    area: float,
+    swarm_comp_cls: Any,
+    max_ticks: int,
+    sample_every: int,
+    observer: Any,
+) -> list[Sample]:
+    """Step the simulation loop up to ``max_ticks`` while collecting periodic samples."""
+    samples: list[Sample] = []
+    for _ in range(max_ticks):
+        result = await loop.step()
+        if loop.tick % sample_every != 0 and not result.terminated:
+            continue
+        sample = _take_sample(loop, area, swarm_comp_cls)
+        if sample is not None:
+            samples.append(sample)
+            if observer is not None:
+                observer(sample, samples)
+        if result.terminated:
+            break
+    return samples
+
+
 def simulate(
     cfg_dict: dict[str, Any],
     seed: int,
@@ -245,46 +295,7 @@ def simulate(
     cfg.max_ticks = max_ticks + 1
     loop = SimulationLoop(cfg, disable_replay=True)
     area = float(cfg.grid_width * cfg.grid_height)
-    samples: list[Sample] = []
-
-    def take_sample() -> Sample | None:
-        row = loop.telemetry.get_latest_metrics()
-        if row is None:
-            return None
-        raw_plants = row.get("plant_pop_by_species", {}) or {}
-        plant_map = {int(k): int(v) for k, v in dict(raw_plants).items()}
-        plants = [plant_map.get(i, 0) for i in range(N_FLORA)]
-        heads = [0] * N_HERB
-        swarms = [0] * N_HERB
-        for entity in loop.world.query(SwarmComponent):
-            sw = entity.get_component(SwarmComponent)
-            if 0 <= sw.species_id < N_HERB:
-                heads[sw.species_id] += sw.population
-                swarms[sw.species_id] += 1
-        return Sample(
-            tick=loop.tick,
-            occ_pct=100.0 * sum(plants) / area,
-            plants=plants,
-            heads=heads,
-            swarms=swarms,
-            cum_subs=[_SUB_ACT.get(i, 0) for i in range(N_SUB)],
-            cum_withdraw=[_WITHDRAW.get(i, 0) for i in (0, 1, 2)],
-        )
-
-    async def run() -> None:
-        for _ in range(max_ticks):
-            result = await loop.step()
-            if loop.tick % sample_every == 0 or result.terminated:
-                sample = take_sample()
-                if sample is not None:
-                    samples.append(sample)
-                    if observer is not None:
-                        observer(sample, samples)
-            if result.terminated:
-                break
-
-    asyncio.run(run())
-    return samples
+    return asyncio.run(_drive_simulation(loop, area, SwarmComponent, max_ticks, sample_every, observer))
 
 
 # ---------------------------------------------------------------------------
@@ -402,30 +413,36 @@ def proxy_window(tick: int) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 
 
+def _evaluate_sample_pruning(trial: optuna.Trial, sample: Sample, samples: list[Sample]) -> None:
+    """Enforce hard ecological rules and ASHA intermediate pruning checks on a sample."""
+    reason = hard_rule(sample)
+    if reason is not None:
+        partial = summarize(samples, max(0, sample.tick - 1000), sample.tick)
+        trial.report((partial["score"] if partial else 0.0) - 1.0, sample.tick)
+        trial.set_user_attr("reason", f"{reason}@{sample.tick}")
+        raise optuna.TrialPruned(reason)
+    if sample.tick not in CHECKPOINTS:
+        return
+    t0, t1 = proxy_window(sample.tick)
+    partial = summarize(samples, t0, t1)
+    trial.report(partial["score"] if partial else 0.0, sample.tick)
+    if sample.tick < MAX_TICKS and trial.should_prune():
+        trial.set_user_attr("reason", f"asha@{sample.tick}")
+        raise optuna.TrialPruned("asha")
+
+
 def objective(trial: optuna.Trial, base_cfg: dict[str, Any]) -> float:
     """Evaluate one parameter set with ASHA checkpoints and hard-rule pruning."""
     params = {name: trial.suggest_float(name, lo, hi) for name, (lo, hi) in SEARCH_SPACE.items()}
     cfg = apply_params(base_cfg, params)
     t_start = time.perf_counter()
 
-    def observer(sample: Sample, samples: list[Sample]) -> None:
-        reason = hard_rule(sample)
-        if reason is not None:
-            partial = summarize(samples, max(0, sample.tick - 1000), sample.tick)
-            trial.report((partial["score"] if partial else 0.0) - 1.0, sample.tick)
-            trial.set_user_attr("reason", f"{reason}@{sample.tick}")
-            raise optuna.TrialPruned(reason)
-        if sample.tick in CHECKPOINTS:
-            t0, t1 = proxy_window(sample.tick)
-            partial = summarize(samples, t0, t1)
-            value = partial["score"] if partial else 0.0
-            trial.report(value, sample.tick)
-            if sample.tick < MAX_TICKS and trial.should_prune():
-                trial.set_user_attr("reason", f"asha@{sample.tick}")
-                raise optuna.TrialPruned("asha")
-
     try:
-        samples = simulate(cfg, TUNE_SEED, observer=observer)
+        samples = simulate(
+            cfg,
+            TUNE_SEED,
+            observer=lambda sample, hist: _evaluate_sample_pruning(trial, sample, hist),
+        )
     except optuna.TrialPruned:
         trial.set_user_attr("elapsed_s", round(time.perf_counter() - t_start, 1))
         raise

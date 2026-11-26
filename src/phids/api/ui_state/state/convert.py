@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
-from typing import Any, Literal, cast
+from typing import Any, Literal, NamedTuple, cast
 
 from phids.api.schemas.placement import (
     InitialPlantPlacement,
@@ -30,6 +30,64 @@ from phids.api.ui_state.triggers import TriggerRule
 logger = logging.getLogger(__name__)
 
 
+class _ResolvedTriggerAction(NamedTuple):
+    """Typed pair binding a compiled trigger action to its resolved aftereffect duration."""
+
+    action: ResourceWithdrawalAction | SynthesizeSubstanceAction
+    aftereffect: int
+
+
+def _build_trigger_initiator(rule: TriggerRule) -> EnvironmentalSignalInitiator | HerbivoreAttackInitiator:
+    """Construct the schema initiator node corresponding to a UI trigger rule."""
+    if rule.initiator_type == "environmental_signal":
+        return EnvironmentalSignalInitiator(
+            signal_id=rule.initiator_signal_id,
+            min_concentration=rule.initiator_min_concentration,
+            response_curve=rule.initiator_response_curve,
+            hill_cooperativity=rule.initiator_hill_cooperativity,
+            half_saturation=rule.initiator_half_saturation,
+        )
+    return HerbivoreAttackInitiator(
+        herbivore_species_id=rule.herbivore_species_id,
+        min_herbivore_population=rule.min_herbivore_population,
+    )
+
+
+def _build_trigger_action(
+    rule: TriggerRule, subs_by_id: dict[int, SubstanceDefinition]
+) -> _ResolvedTriggerAction | None:
+    """Resolve trigger action schema and aftereffect ticks, returning ``None`` when substance ID is absent."""
+    if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
+        return _ResolvedTriggerAction(
+            action=ResourceWithdrawalAction(
+                apparent_nutrition_factor=rule.apparent_nutrition_factor,
+                withdrawal_duration=rule.withdrawal_duration,
+            ),
+            aftereffect=rule.aftereffect_ticks,
+        )
+    sd = subs_by_id.get(rule.substance_id)
+    if sd is None:
+        return None
+    synth_dur = rule.synthesis_duration if rule.synthesis_duration is not None else sd.synthesis_duration
+    aftereffect = (
+        rule.aftereffect_ticks_override if rule.aftereffect_ticks_override is not None else sd.aftereffect_ticks
+    )
+    return _ResolvedTriggerAction(
+        action=SynthesizeSubstanceAction(
+            substance_id=rule.substance_id,
+            synthesis_duration=synth_dur,
+            is_toxin=sd.is_toxin,
+            lethal=sd.lethal,
+            lethality_rate=sd.lethality_rate,
+            repellent=sd.repellent,
+            repellent_walk_ticks=sd.repellent_walk_ticks,
+            energy_cost_per_tick=sd.energy_cost_per_tick,
+            irreversible=sd.irreversible,
+        ),
+        aftereffect=aftereffect,
+    )
+
+
 def _build_triggers_by_flora(
     trigger_rules: list[TriggerRule], subs_by_id: dict[int, SubstanceDefinition]
 ) -> dict[int, list[TriggerConditionSchema]]:
@@ -44,53 +102,15 @@ def _build_triggers_by_flora(
     """
     triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
     for rule in trigger_rules:
-        initiator: EnvironmentalSignalInitiator | HerbivoreAttackInitiator
-        if rule.initiator_type == "environmental_signal":
-            initiator = EnvironmentalSignalInitiator(
-                signal_id=rule.initiator_signal_id,
-                min_concentration=rule.initiator_min_concentration,
-                response_curve=rule.initiator_response_curve,
-                hill_cooperativity=rule.initiator_hill_cooperativity,
-                half_saturation=rule.initiator_half_saturation,
-            )
-        else:
-            initiator = HerbivoreAttackInitiator(
-                herbivore_species_id=rule.herbivore_species_id,
-                min_herbivore_population=rule.min_herbivore_population,
-            )
-        action: ResourceWithdrawalAction | SynthesizeSubstanceAction
-        if rule.action_type == "resource_withdrawal" or rule.substance_id == -1:
-            action = ResourceWithdrawalAction(
-                apparent_nutrition_factor=rule.apparent_nutrition_factor,
-                withdrawal_duration=rule.withdrawal_duration,
-            )
-            aftereffect = rule.aftereffect_ticks
-        else:
-            sd = subs_by_id.get(rule.substance_id)
-            if sd is None:
-                continue
-            action = SynthesizeSubstanceAction(
-                substance_id=rule.substance_id,
-                synthesis_duration=(
-                    rule.synthesis_duration if rule.synthesis_duration is not None else sd.synthesis_duration
-                ),
-                is_toxin=sd.is_toxin,
-                lethal=sd.lethal,
-                lethality_rate=sd.lethality_rate,
-                repellent=sd.repellent,
-                repellent_walk_ticks=sd.repellent_walk_ticks,
-                energy_cost_per_tick=sd.energy_cost_per_tick,
-                irreversible=sd.irreversible,
-            )
-            aftereffect = (
-                rule.aftereffect_ticks_override if rule.aftereffect_ticks_override is not None else sd.aftereffect_ticks
-            )
+        resolved = _build_trigger_action(rule, subs_by_id)
+        if resolved is None:
+            continue
         triggers_by_flora.setdefault(rule.flora_species_id, []).append(
             TriggerConditionSchema(
-                initiator=initiator,
-                aftereffect_ticks=aftereffect,
+                initiator=_build_trigger_initiator(rule),
+                aftereffect_ticks=resolved.aftereffect,
                 activation_condition=cast("Any", deepcopy(rule.activation_condition)),
-                action=action,
+                action=resolved.action,
             )
         )
     return triggers_by_flora
@@ -194,6 +214,106 @@ def build_sim_config(state: DraftState) -> SimulationConfig:
     return config
 
 
+class _ExtractedInitiatorFields(NamedTuple):
+    """Flattened UI draft initiator fields decoded from a simulation trigger schema."""
+
+    initiator_type: Literal["herbivore_attack", "environmental_signal"]
+    herbivore_species_id: int
+    min_herbivore_population: int
+    initiator_signal_id: int
+    initiator_min_concentration: float
+    initiator_response_curve: Literal["step", "hill", "logarithmic"]
+    initiator_hill_cooperativity: float
+    initiator_half_saturation: float
+
+
+class _ExtractedActionFields(NamedTuple):
+    """Flattened UI draft action fields decoded from a simulation trigger schema."""
+
+    action_type: Literal["synthesize_substance", "resource_withdrawal"]
+    substance_id: int
+    synthesis_duration: int | None
+    apparent_nutrition_factor: float
+    withdrawal_duration: int
+
+
+def _initiator_to_fields(
+    initiator: EnvironmentalSignalInitiator | HerbivoreAttackInitiator,
+) -> _ExtractedInitiatorFields:
+    """Flatten a trigger initiator schema into draft UI rule attributes."""
+    if isinstance(initiator, HerbivoreAttackInitiator):
+        return _ExtractedInitiatorFields(
+            initiator_type="herbivore_attack",
+            herbivore_species_id=initiator.herbivore_species_id,
+            min_herbivore_population=initiator.min_herbivore_population,
+            initiator_signal_id=-1,
+            initiator_min_concentration=0.0,
+            initiator_response_curve="step",
+            initiator_hill_cooperativity=2.0,
+            initiator_half_saturation=0.05,
+        )
+    return _ExtractedInitiatorFields(
+        initiator_type="environmental_signal",
+        herbivore_species_id=-1,
+        min_herbivore_population=0,
+        initiator_signal_id=initiator.signal_id,
+        initiator_min_concentration=initiator.min_concentration,
+        initiator_response_curve=initiator.response_curve,
+        initiator_hill_cooperativity=initiator.hill_cooperativity,
+        initiator_half_saturation=initiator.half_saturation,
+    )
+
+
+def _action_to_fields(
+    action: ResourceWithdrawalAction | SynthesizeSubstanceAction,
+) -> _ExtractedActionFields:
+    """Flatten a trigger action schema into draft UI rule attributes."""
+    if isinstance(action, SynthesizeSubstanceAction):
+        return _ExtractedActionFields(
+            action_type="synthesize_substance",
+            substance_id=action.substance_id,
+            synthesis_duration=action.synthesis_duration,
+            apparent_nutrition_factor=0.2,
+            withdrawal_duration=10,
+        )
+    return _ExtractedActionFields(
+        action_type="resource_withdrawal",
+        substance_id=-1,
+        synthesis_duration=None,
+        apparent_nutrition_factor=action.apparent_nutrition_factor,
+        withdrawal_duration=action.withdrawal_duration,
+    )
+
+
+def _record_substance_definition(
+    action: ResourceWithdrawalAction | SynthesizeSubstanceAction,
+    aftereffect_ticks: int,
+    seen_ids: set[int],
+    out: list[SubstanceDefinition],
+) -> None:
+    """Collect a unique UI substance definition when the trigger action synthesises a substance."""
+    if not isinstance(action, SynthesizeSubstanceAction):
+        return
+    if action.substance_id in seen_ids:
+        return
+    seen_ids.add(action.substance_id)
+    out.append(
+        SubstanceDefinition(
+            substance_id=action.substance_id,
+            name=f"Substance {action.substance_id}",
+            is_toxin=action.is_toxin,
+            lethal=action.lethal,
+            repellent=action.repellent,
+            synthesis_duration=action.synthesis_duration,
+            aftereffect_ticks=aftereffect_ticks,
+            lethality_rate=action.lethality_rate,
+            repellent_walk_ticks=action.repellent_walk_ticks,
+            energy_cost_per_tick=action.energy_cost_per_tick,
+            irreversible=action.irreversible,
+        )
+    )
+
+
 def _extract_triggers(
     config: SimulationConfig,
 ) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
@@ -204,83 +324,33 @@ def _extract_triggers(
 
     for flora_spec in config.flora_species:
         for trig in flora_spec.triggers:
-            i_type: Literal["herbivore_attack", "environmental_signal"]
-            if isinstance(trig.initiator, HerbivoreAttackInitiator):
-                i_type = "herbivore_attack"
-                h_id = trig.initiator.herbivore_species_id
-                min_pop = trig.initiator.min_herbivore_population
-                sig_id = -1
-                min_conc = 0.0
-                resp_curve: Literal["step", "hill", "logarithmic"] = "step"
-                hill_n = 2.0
-                hill_k = 0.05
-            else:
-                i_type = "environmental_signal"
-                h_id = -1
-                min_pop = 0
-                sig_id = trig.initiator.signal_id
-                min_conc = trig.initiator.min_concentration
-                resp_curve = trig.initiator.response_curve
-                hill_n = trig.initiator.hill_cooperativity
-                hill_k = trig.initiator.half_saturation
-
-            if isinstance(trig.action, SynthesizeSubstanceAction):
-                a_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
-                sub_id = trig.action.substance_id
-                synth_dur: int | None = trig.action.synthesis_duration
-                app_nut = 0.2
-                wd_dur = 10
-            else:
-                a_type = "resource_withdrawal"
-                sub_id = -1
-                synth_dur = None
-                app_nut = trig.action.apparent_nutrition_factor
-                wd_dur = trig.action.withdrawal_duration
-
+            init_f = _initiator_to_fields(trig.initiator)
+            act_f = _action_to_fields(trig.action)
+            activation = (
+                trig.activation_condition.model_dump(mode="json") if trig.activation_condition is not None else None
+            )
             imported_trigger_rules.append(
                 TriggerRule(
                     flora_species_id=flora_spec.species_id,
-                    initiator_type=i_type,
-                    herbivore_species_id=h_id,
-                    min_herbivore_population=min_pop,
-                    initiator_signal_id=sig_id,
-                    initiator_min_concentration=min_conc,
-                    initiator_response_curve=resp_curve,
-                    initiator_hill_cooperativity=hill_n,
-                    initiator_half_saturation=hill_k,
-                    substance_id=sub_id,
-                    action_type=a_type,
-                    synthesis_duration=synth_dur,
-                    apparent_nutrition_factor=app_nut,
-                    withdrawal_duration=wd_dur,
+                    initiator_type=init_f.initiator_type,
+                    herbivore_species_id=init_f.herbivore_species_id,
+                    min_herbivore_population=init_f.min_herbivore_population,
+                    initiator_signal_id=init_f.initiator_signal_id,
+                    initiator_min_concentration=init_f.initiator_min_concentration,
+                    initiator_response_curve=init_f.initiator_response_curve,
+                    initiator_hill_cooperativity=init_f.initiator_hill_cooperativity,
+                    initiator_half_saturation=init_f.initiator_half_saturation,
+                    substance_id=act_f.substance_id,
+                    action_type=act_f.action_type,
+                    synthesis_duration=act_f.synthesis_duration,
+                    apparent_nutrition_factor=act_f.apparent_nutrition_factor,
+                    withdrawal_duration=act_f.withdrawal_duration,
                     aftereffect_ticks=trig.aftereffect_ticks,
                     aftereffect_ticks_override=trig.aftereffect_ticks,
-                    activation_condition=(
-                        trig.activation_condition.model_dump(mode="json")
-                        if trig.activation_condition is not None
-                        else None
-                    ),
+                    activation_condition=activation,
                 )
             )
-
-            if isinstance(trig.action, SynthesizeSubstanceAction):
-                if trig.action.substance_id not in seen_substance_ids:
-                    seen_substance_ids.add(trig.action.substance_id)
-                    imported_substances.append(
-                        SubstanceDefinition(
-                            substance_id=trig.action.substance_id,
-                            name=f"Substance {trig.action.substance_id}",
-                            is_toxin=trig.action.is_toxin,
-                            lethal=trig.action.lethal,
-                            repellent=trig.action.repellent,
-                            synthesis_duration=trig.action.synthesis_duration,
-                            aftereffect_ticks=trig.aftereffect_ticks,
-                            lethality_rate=trig.action.lethality_rate,
-                            repellent_walk_ticks=trig.action.repellent_walk_ticks,
-                            energy_cost_per_tick=trig.action.energy_cost_per_tick,
-                            irreversible=trig.action.irreversible,
-                        )
-                    )
+            _record_substance_definition(trig.action, trig.aftereffect_ticks, seen_substance_ids, imported_substances)
     return imported_trigger_rules, imported_substances
 
 

@@ -84,28 +84,34 @@ def _set_wind(cfg: dict[str, Any], speed: float) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
-    """Run a 20-tick cardinal 7-plant relay line under headwind ``wind_x``."""
-    from phids.api.schemas.simulation import SimulationConfig
-    from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.substances import SubstanceComponent
-    from phids.engine.loop import SimulationLoop
+def _scan_crossover_active_x(loop: Any, substance_comp_cls: Any, plant_comp_cls: Any) -> set[int]:
+    """Return x-coordinates of relay plants with active substance channel 2."""
+    active_x: set[int] = set()
+    for ent in loop.world.query(substance_comp_cls):
+        sub = ent.get_component(substance_comp_cls)
+        if not (sub.active and sub.substance_id == 2):
+            continue
+        owner = loop.world.get_entity(sub.owner_plant_id)
+        if owner is not None:
+            active_x.add(owner.get_component(plant_comp_cls).x)
+    return active_x
 
-    random.seed(0)
-    np.random.seed(0)
 
-    is_p5_ctrl = regime == "p5_non_cmn_control"
-    cmn_on = regime == "p2_p3_cmn_intact"
-    flora_id = 1 if is_p5_ctrl else 0
-
-    # Alternating p2 / p3 along cardinal x in [29, 35] or isolated non-CMN p5 control
-    if is_p5_ctrl:
-        plants = [{"species_id": 1, "x": x, "y": 16, "energy": 35.0} for x in range(29, 36)]
-    else:
-        plants = [{"species_id": 0 if x == 32 else (x % 2), "x": x, "y": 16, "energy": 55.0} for x in range(29, 36)]
-
-    # Use locked Trial #2 transport scalars (emit=0.55, decay=0.82, v_cmn=2, s2 synth=1 for clean relay timing)
-    relay_trig = [
+def _crossover_relay_triggers() -> list[dict[str, Any]]:
+    """Build direct attack and environmental signal relay triggers for channel 2."""
+    synth_action = {
+        "type": "synthesize_substance",
+        "substance_id": 2,
+        "synthesis_duration": 1,
+        "is_toxin": False,
+        "lethal": False,
+        "lethality_rate": 0.0,
+        "repellent": False,
+        "repellent_walk_ticks": 0,
+        "energy_cost_per_tick": 0.05,
+        "irreversible": True,
+    }
+    return [
         {
             "aftereffect_ticks": 20,
             "activation_condition": {
@@ -113,18 +119,7 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
                 "herbivore_species_id": 0,
                 "min_herbivore_population": 1,
             },
-            "action": {
-                "type": "synthesize_substance",
-                "substance_id": 2,
-                "synthesis_duration": 1,
-                "is_toxin": False,
-                "lethal": False,
-                "lethality_rate": 0.0,
-                "repellent": False,
-                "repellent_walk_ticks": 0,
-                "energy_cost_per_tick": 0.05,
-                "irreversible": True,
-            },
+            "action": dict(synth_action),
             "initiator": {
                 "type": "herbivore_attack",
                 "herbivore_species_id": 0,
@@ -134,18 +129,7 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
         {
             "aftereffect_ticks": 20,
             "activation_condition": None,
-            "action": {
-                "type": "synthesize_substance",
-                "substance_id": 2,
-                "synthesis_duration": 1,
-                "is_toxin": False,
-                "lethal": False,
-                "lethality_rate": 0.0,
-                "repellent": False,
-                "repellent_walk_ticks": 0,
-                "energy_cost_per_tick": 0.05,
-                "irreversible": True,
-            },
+            "action": dict(synth_action),
             "initiator": {
                 "type": "environmental_signal",
                 "signal_id": 2,
@@ -157,7 +141,20 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
         },
     ]
 
-    cfg_dict: dict[str, Any] = {
+
+def _crossover_cfg_dict(wind_x: float, regime: str) -> dict[str, Any]:
+    """Construct scenario configuration for the 7-plant relay crossover test."""
+    is_p5_ctrl = regime == "p5_non_cmn_control"
+    cmn_on = regime == "p2_p3_cmn_intact"
+    if is_p5_ctrl:
+        plants = [{"species_id": 1, "x": x, "y": 16, "energy": 35.0} for x in range(29, 36)]
+        p0_name, p1_name, p1_base_e, p1_tax = "Unused", "Brassica_p5_ctrl", 35.0, 0.0
+    else:
+        plants = [{"species_id": 0 if x == 32 else (x % 2), "x": x, "y": 16, "energy": 55.0} for x in range(29, 36)]
+        p0_name, p1_name, p1_base_e = "Trifolium_p2", "Lolium_p3", 55.0
+        p1_tax = 0.5 if cmn_on else 0.0
+    relay_trig = _crossover_relay_triggers()
+    return {
         "grid_width": 64,
         "grid_height": 32,
         "max_ticks": 25,
@@ -175,7 +172,7 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
         "flora_species": [
             {
                 "species_id": 0,
-                "name": "Trifolium_p2" if not is_p5_ctrl else "Unused",
+                "name": p0_name,
                 "base_energy": 55.0,
                 "max_energy": 105.0,
                 "growth_rate": 0.0,
@@ -191,8 +188,8 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
             },
             {
                 "species_id": 1,
-                "name": "Brassica_p5_ctrl" if is_p5_ctrl else "Lolium_p3",
-                "base_energy": 35.0 if is_p5_ctrl else 55.0,
+                "name": p1_name,
+                "base_energy": p1_base_e,
                 "max_energy": 105.0,
                 "growth_rate": 0.0,
                 "survival_threshold": 5.0,
@@ -202,7 +199,7 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
                 "seed_energy_cost": 20.0,
                 "camouflage": False,
                 "camouflage_factor": 1.0,
-                "mycorrhizal_tax_per_link": 0.0 if is_p5_ctrl else (0.5 if cmn_on else 0.0),
+                "mycorrhizal_tax_per_link": p1_tax,
                 "triggers": relay_trig,
             },
         ],
@@ -223,39 +220,43 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
         "initial_plants": plants,
         "initial_swarms": [{"species_id": 0, "x": 32, "y": 16, "population": 2, "energy": 20.0}],
     }
-    _ = flora_id
-    loop = SimulationLoop(SimulationConfig.model_validate(cfg_dict), disable_replay=True)
 
+
+async def _drive_crossover_ticks(
+    loop: Any,
+    substance_comp_cls: Any,
+    plant_comp_cls: Any,
+    hop_first_tick: dict[str, int | None],
+    metrics: dict[str, float],
+) -> None:
+    """Step 20 ticks of the relay line and record signal peaks and first activation ticks."""
+    for tick in range(20):
+        await loop.step()
+        metrics["peak_c_up3"] = max(metrics["peak_c_up3"], float(loop.env.signal_layers[2, 29, 16]))
+        metrics["peak_c_up1"] = max(metrics["peak_c_up1"], float(loop.env.signal_layers[2, 31, 16]))
+        metrics["peak_c_dn3"] = max(metrics["peak_c_dn3"], float(loop.env.signal_layers[2, 35, 16]))
+        active_x = _scan_crossover_active_x(loop, substance_comp_cls, plant_comp_cls)
+        for x in (29, 30, 31, 33, 34, 35):
+            if x in active_x and hop_first_tick[f"x{x}"] is None:
+                hop_first_tick[f"x{x}"] = tick
+    metrics["cmn_links_end"] = float(
+        sum(len(e.get_component(plant_comp_cls).mycorrhizal_connections) for e in loop.world.query(plant_comp_cls)) // 2
+    )
+
+
+def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
+    """Run a 20-tick cardinal 7-plant relay line under headwind ``wind_x``."""
+    from phids.api.schemas.simulation import SimulationConfig
+    from phids.engine.components.plant import PlantComponent
+    from phids.engine.components.substances import SubstanceComponent
+    from phids.engine.loop import SimulationLoop
+
+    random.seed(0)
+    np.random.seed(0)
+    loop = SimulationLoop(SimulationConfig.model_validate(_crossover_cfg_dict(wind_x, regime)), disable_replay=True)
     hop_first_tick: dict[str, int | None] = {f"x{x}": None for x in (29, 30, 31, 33, 34, 35)}
-    peak_c_up3 = 0.0
-    peak_c_up1 = 0.0
-    peak_c_dn3 = 0.0
-    cmn_links_end = 0
-
-    async def _drive() -> None:
-        nonlocal peak_c_up3, peak_c_up1, peak_c_dn3, cmn_links_end
-        for tick in range(20):
-            await loop.step()
-            peak_c_up3 = max(peak_c_up3, float(loop.env.signal_layers[2, 29, 16]))
-            peak_c_up1 = max(peak_c_up1, float(loop.env.signal_layers[2, 31, 16]))
-            peak_c_dn3 = max(peak_c_dn3, float(loop.env.signal_layers[2, 35, 16]))
-            active_x: set[int] = set()
-            for ent in loop.world.query(SubstanceComponent):
-                sub = ent.get_component(SubstanceComponent)
-                if sub.active and sub.substance_id == 2:
-                    owner = loop.world.get_entity(sub.owner_plant_id)
-                    if owner is not None:
-                        pc = owner.get_component(PlantComponent)
-                        active_x.add(pc.x)
-            for x in (29, 30, 31, 33, 34, 35):
-                if x in active_x and hop_first_tick[f"x{x}"] is None:
-                    hop_first_tick[f"x{x}"] = tick
-        cmn_links_end = (
-            sum(len(e.get_component(PlantComponent).mycorrhizal_connections) for e in loop.world.query(PlantComponent))
-            // 2
-        )
-
-    asyncio.run(_drive())
+    metrics = {"peak_c_up3": 0.0, "peak_c_up1": 0.0, "peak_c_dn3": 0.0, "cmn_links_end": 0.0}
+    asyncio.run(_drive_crossover_ticks(loop, SubstanceComponent, PlantComponent, hop_first_tick, metrics))
     return {
         "wind_x": wind_x,
         "regime": regime,
@@ -265,10 +266,10 @@ def _crossover_case(wind_x: float, regime: str) -> dict[str, Any]:
         "dn_1hop_tick": hop_first_tick["x33"],
         "dn_2hop_tick": hop_first_tick["x34"],
         "dn_3hop_tick": hop_first_tick["x35"],
-        "peak_s2_up3": round(peak_c_up3, 6),
-        "peak_s2_up1": round(peak_c_up1, 6),
-        "peak_s2_dn3": round(peak_c_dn3, 6),
-        "cmn_links_end": cmn_links_end,
+        "peak_s2_up3": round(metrics["peak_c_up3"], 6),
+        "peak_s2_up1": round(metrics["peak_c_up1"], 6),
+        "peak_s2_dn3": round(metrics["peak_c_dn3"], 6),
+        "cmn_links_end": int(metrics["cmn_links_end"]),
     }
 
 
@@ -615,6 +616,57 @@ def cmd_theorems(_args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _configure_ablation_case(wind_speed: float, treatment: str) -> dict[str, Any]:
+    """Load the 256x256 scenario and apply wind and ablation perturbations."""
+    cfg_dict = _load_json(SCENARIO_256)
+    _set_wind(cfg_dict, wind_speed)
+    if treatment in ("cmn_severed", "fully_ablated"):
+        cfg_dict["mycorrhizal_connection_cost"] = 1_000_000.0
+        cfg_dict["mycorrhizal_growth_interval_ticks"] = 256
+    if treatment == "fully_ablated":
+        for sp in cfg_dict["flora_species"]:
+            sp["triggers"] = []
+    return cfg_dict
+
+
+def _summarise_ablation_rows(
+    treatment: str,
+    wind_speed: float,
+    seed: int,
+    elapsed: float,
+    rows: list[dict[str, Any]],
+    killed_by_flora: Counter[int],
+) -> dict[str, Any]:
+    """Aggregate final population, energy reserve, and death metrics from ablation telemetry."""
+    half = len(rows) // 2
+    mean_reserve_tail = float(np.mean([float(r["total_flora_energy"]) for r in rows[half:]])) if rows else 0.0
+    late_herb_mean = float(np.mean([float(r["herbivore_population"]) for r in rows[half:]])) if rows else 0.0
+    last = rows[-1] if rows else {}
+    p_map = {int(k): int(v) for k, v in dict(last.get("plant_pop_by_species", {}) or {}).items()}
+    h_map = {int(k): int(v) for k, v in dict(last.get("swarm_pop_by_species", {}) or {}).items()}
+    plants_end = [p_map.get(i, 0) for i in range(N_FLORA)]
+    heads_end = [h_map.get(i, 0) for i in range(N_HERB)]
+    return {
+        "treatment": treatment,
+        "wind_speed": wind_speed,
+        "seed": seed,
+        "ticks": len(rows),
+        "elapsed_s": elapsed,
+        "killed_by_flora": [killed_by_flora.get(i, 0) for i in range(N_FLORA)],
+        "death_herbivory_total": int(sum(float(r.get("death_herbivore_feeding", 0.0)) for r in rows)),
+        "death_defense_total": int(sum(float(r.get("death_defense_maintenance", 0.0)) for r in rows)),
+        "death_mycorrhiza_total": int(sum(float(r.get("death_mycorrhiza", 0.0)) for r in rows)),
+        "mean_flora_energy_tail": round(mean_reserve_tail, 2),
+        "mean_herb_heads_tail": round(late_herb_mean, 2),
+        "final_plants": plants_end,
+        "final_heads": heads_end,
+        "final_flora_total": sum(plants_end),
+        "final_herb_total": sum(heads_end),
+        "final_j_flora": round(_shannon_j(plants_end), 4),
+        "final_j_herb": round(_shannon_j(heads_end), 4),
+    }
+
+
 def _ablation_worker(job: tuple[str, float, int, int, str]) -> dict[str, Any]:
     treatment, wind_speed, seed, max_ticks, cache_file_str = job
     cache_path = Path(cache_file_str)
@@ -629,16 +681,7 @@ def _ablation_worker(job: tuple[str, float, int, int, str]) -> dict[str, Any]:
     from phids.engine.loop import SimulationLoop
     from phids.engine.systems.interaction import feeding as sys_feed
 
-    cfg_dict = _load_json(SCENARIO_256)
-    _set_wind(cfg_dict, wind_speed)
-    if treatment in ("cmn_severed", "fully_ablated"):
-        cfg_dict["mycorrhizal_connection_cost"] = 1_000_000.0
-        cfg_dict["mycorrhizal_growth_interval_ticks"] = 256
-    if treatment == "fully_ablated":
-        for sp in cfg_dict["flora_species"]:
-            sp["triggers"] = []
-
-    cfg = SimulationConfig.model_validate(cfg_dict)
+    cfg = SimulationConfig.model_validate(_configure_ablation_case(wind_speed, treatment))
     cfg.max_ticks = max_ticks + 1
     loop = SimulationLoop(cfg, disable_replay=True)
 
@@ -653,7 +696,6 @@ def _ablation_worker(job: tuple[str, float, int, int, str]) -> dict[str, Any]:
         return metab, killed
 
     sys_feed._feed_on_single_plant = wrapped_feed
-
     t0 = time.perf_counter()
 
     async def _run() -> None:
@@ -663,41 +705,9 @@ def _ablation_worker(job: tuple[str, float, int, int, str]) -> dict[str, Any]:
                 break
 
     asyncio.run(_run())
-    elapsed = round(time.perf_counter() - t0, 2)
-
-    rows = loop.telemetry._rows
-    half = len(rows) // 2
-    mean_reserve_tail = float(np.mean([float(r["total_flora_energy"]) for r in rows[half:]])) if rows else 0.0
-    late_herb_mean = float(np.mean([float(r["herbivore_population"]) for r in rows[half:]])) if rows else 0.0
-    tot_herb_deaths = int(sum(float(r.get("death_herbivore_feeding", 0.0)) for r in rows))
-    tot_def_deaths = int(sum(float(r.get("death_defense_maintenance", 0.0)) for r in rows))
-    tot_myc_deaths = int(sum(float(r.get("death_mycorrhiza", 0.0)) for r in rows))
-
-    last = rows[-1] if rows else {}
-    p_map = {int(k): int(v) for k, v in dict(last.get("plant_pop_by_species", {}) or {}).items()}
-    h_map = {int(k): int(v) for k, v in dict(last.get("swarm_pop_by_species", {}) or {}).items()}
-    plants_end = [p_map.get(i, 0) for i in range(N_FLORA)]
-    heads_end = [h_map.get(i, 0) for i in range(N_HERB)]
-
-    out = {
-        "treatment": treatment,
-        "wind_speed": wind_speed,
-        "seed": seed,
-        "ticks": len(rows),
-        "elapsed_s": elapsed,
-        "killed_by_flora": [killed_by_flora.get(i, 0) for i in range(N_FLORA)],
-        "death_herbivory_total": tot_herb_deaths,
-        "death_defense_total": tot_def_deaths,
-        "death_mycorrhiza_total": tot_myc_deaths,
-        "mean_flora_energy_tail": round(mean_reserve_tail, 2),
-        "mean_herb_heads_tail": round(late_herb_mean, 2),
-        "final_plants": plants_end,
-        "final_heads": heads_end,
-        "final_flora_total": sum(plants_end),
-        "final_herb_total": sum(heads_end),
-        "final_j_flora": round(_shannon_j(plants_end), 4),
-        "final_j_herb": round(_shannon_j(heads_end), 4),
-    }
+    out = _summarise_ablation_rows(
+        treatment, wind_speed, seed, round(time.perf_counter() - t0, 2), loop.telemetry._rows, killed_by_flora
+    )
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(out), encoding="utf-8")
     return out
@@ -865,50 +875,46 @@ def _sobol_indices(f_a: np.ndarray, f_b: np.ndarray, f_ab: np.ndarray, rng: np.r
     }
 
 
-def cmd_sobol(args: argparse.Namespace) -> None:
-    """Run CRN Sobol GSA on 128x64 (or 256x256 cross-check) with checkpoint cache."""
-    scen_path = SCENARIO_256 if args.grid == "256x256" else SCENARIO_128
-    d = len(SOBOL_FACTORS)
-    n_base = args.n_base
-    sample = qmc.Sobol(d=2 * d, scramble=True, seed=7).random(n_base)
-    lo = np.array([f[1] for f in SOBOL_FACTORS])
-    hi = np.array([f[2] for f in SOBOL_FACTORS])
-    mat_a = lo + sample[:, :d] * (hi - lo)
-    mat_b = lo + sample[:, d:] * (hi - lo)
-    blocks = [mat_a, mat_b] + [np.where(np.arange(d) == i, mat_b, mat_a) for i in range(d)]
-    thetas = [row.tolist() for blk in blocks for row in blk]
-
-    cache_path = RESULTS_DIR / f"sobol_{args.grid}_n{n_base}_t{args.max_ticks}_cache.jsonl"
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+def _load_sobol_cache(cache_path: Path) -> dict[int, dict[str, Any]]:
+    """Read already-computed Sobol worker outputs from a JSONL checkpoint."""
     cached: dict[int, dict[str, Any]] = {}
-    if cache_path.exists():
-        for ln in cache_path.read_text(encoding="utf-8").splitlines():
-            if ln.strip():
-                rec = json.loads(ln)
-                cached[int(rec["idx"])] = rec
+    if not cache_path.exists():
+        return cached
+    for ln in cache_path.read_text(encoding="utf-8").splitlines():
+        if ln.strip():
+            rec = json.loads(ln)
+            cached[int(rec["idx"])] = rec
+    return cached
 
-    pending = [(i, str(scen_path), th, args.max_ticks, args.crn_seed) for i, th in enumerate(thetas) if i not in cached]
-    print(
-        f"SOBOL_START grid={args.grid} n_base={n_base} total={len(thetas)} cached={len(cached)} pending={len(pending)}",
-        flush=True,
-    )
-    t0 = time.perf_counter()
-    if pending:
-        with cache_path.open("a", encoding="utf-8") as fp:
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=args.workers, mp_context=mp.get_context("spawn")
-            ) as ex:
-                for done_cnt, res in enumerate(ex.map(_sobol_worker, pending, chunksize=2), start=1):
-                    cached[int(res["idx"])] = res
-                    fp.write(json.dumps(res) + "\n")
-                    if done_cnt % 50 == 0 or done_cnt == len(pending):
-                        fp.flush()
-                        print(
-                            f"SOBOL_PROGRESS {len(cached)}/{len(thetas)} elapsed={time.perf_counter() - t0:.1f}s",
-                            flush=True,
-                        )
 
-    ordered = [cached[i] for i in range(len(thetas))]
+def _execute_pending_sobol(
+    pending: list[tuple[int, str, list[float], int, int]],
+    cache_path: Path,
+    cached: dict[int, dict[str, Any]],
+    total_runs: int,
+    workers: int,
+    t0: float,
+) -> None:
+    """Execute uncached Saltelli Sobol sample evaluations via spawn multiprocessing."""
+    if not pending:
+        return
+    with cache_path.open("a", encoding="utf-8") as fp:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers, mp_context=mp.get_context("spawn")) as ex:
+            for done_cnt, res in enumerate(ex.map(_sobol_worker, pending, chunksize=2), start=1):
+                cached[int(res["idx"])] = res
+                fp.write(json.dumps(res) + "\n")
+                if done_cnt % 50 == 0 or done_cnt == len(pending):
+                    fp.flush()
+                    print(
+                        f"SOBOL_PROGRESS {len(cached)}/{total_runs} elapsed={time.perf_counter() - t0:.1f}s",
+                        flush=True,
+                    )
+
+
+def _aggregate_sobol_metrics(
+    ordered: list[dict[str, Any]], n_base: int, d: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Compute bootstrap Sobol sensitivity indices and CSV summary rows per metric."""
     rng = np.random.default_rng(11)
     outputs: dict[str, Any] = {}
     csv_rows: list[dict[str, Any]] = []
@@ -934,7 +940,35 @@ def cmd_sobol(args: argparse.Namespace) -> None:
                     "ST_ci_high": idx_res["ST_ci_high"][fi],
                 }
             )
+    return outputs, csv_rows
 
+
+def cmd_sobol(args: argparse.Namespace) -> None:
+    """Run CRN Sobol GSA on 128x64 (or 256x256 cross-check) with checkpoint cache."""
+    scen_path = SCENARIO_256 if args.grid == "256x256" else SCENARIO_128
+    d = len(SOBOL_FACTORS)
+    n_base = args.n_base
+    sample = qmc.Sobol(d=2 * d, scramble=True, seed=7).random(n_base)
+    lo = np.array([f[1] for f in SOBOL_FACTORS])
+    hi = np.array([f[2] for f in SOBOL_FACTORS])
+    mat_a = lo + sample[:, :d] * (hi - lo)
+    mat_b = lo + sample[:, d:] * (hi - lo)
+    blocks = [mat_a, mat_b] + [np.where(np.arange(d) == i, mat_b, mat_a) for i in range(d)]
+    thetas = [row.tolist() for blk in blocks for row in blk]
+
+    cache_path = RESULTS_DIR / f"sobol_{args.grid}_n{n_base}_t{args.max_ticks}_cache.jsonl"
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    cached = _load_sobol_cache(cache_path)
+    pending = [(i, str(scen_path), th, args.max_ticks, args.crn_seed) for i, th in enumerate(thetas) if i not in cached]
+    print(
+        f"SOBOL_START grid={args.grid} n_base={n_base} total={len(thetas)} cached={len(cached)} pending={len(pending)}",
+        flush=True,
+    )
+    t0 = time.perf_counter()
+    _execute_pending_sobol(pending, cache_path, cached, len(thetas), args.workers, t0)
+
+    ordered = [cached[i] for i in range(len(thetas))]
+    outputs, csv_rows = _aggregate_sobol_metrics(ordered, n_base, d)
     stem = f"sobol_{args.grid}_n{n_base}_t{args.max_ticks}"
     _save_json(
         stem,

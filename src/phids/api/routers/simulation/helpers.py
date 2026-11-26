@@ -66,6 +66,16 @@ def _form_float(form_data: FormData, key: str) -> float | None:
         ) from exc
 
 
+def _pick[T](value: T | None, fallback: T) -> T:
+    """Return an override value when provided, otherwise retain the draft fallback."""
+    return fallback if value is None else value
+
+
+def _resolve_inter_species(raw_value: str | None, fallback: bool) -> bool:
+    """Resolve checkbox string overrides for inter-species mycorrhizal connectivity."""
+    return fallback if raw_value is None else raw_value == "on"
+
+
 def _apply_optional_biotope_overrides(
     *,
     grid_width: int | None,
@@ -117,52 +127,34 @@ def _apply_optional_biotope_overrides(
     draft = get_draft()
     draft_update_biotope(
         draft,
-        grid_width=grid_width if grid_width is not None else draft.grid_width,
-        grid_height=grid_height if grid_height is not None else draft.grid_height,
-        max_ticks=max_ticks if max_ticks is not None else draft.max_ticks,
-        tick_rate_hz=tick_rate_hz if tick_rate_hz is not None else draft.tick_rate_hz,
-        wind_x=wind_x if wind_x is not None else draft.wind_x,
-        wind_y=wind_y if wind_y is not None else draft.wind_y,
-        num_signals=num_signals if num_signals is not None else draft.num_signals,
-        num_toxins=num_toxins if num_toxins is not None else draft.num_toxins,
-        z2_flora_species_extinction=(
-            z2_flora_species_extinction
-            if z2_flora_species_extinction is not None
-            else draft.z2_flora_species_extinction
+        grid_width=_pick(grid_width, draft.grid_width),
+        grid_height=_pick(grid_height, draft.grid_height),
+        max_ticks=_pick(max_ticks, draft.max_ticks),
+        tick_rate_hz=_pick(tick_rate_hz, draft.tick_rate_hz),
+        wind_x=_pick(wind_x, draft.wind_x),
+        wind_y=_pick(wind_y, draft.wind_y),
+        num_signals=_pick(num_signals, draft.num_signals),
+        num_toxins=_pick(num_toxins, draft.num_toxins),
+        z2_flora_species_extinction=_pick(z2_flora_species_extinction, draft.z2_flora_species_extinction),
+        z4_herbivore_species_extinction=_pick(
+            z4_herbivore_species_extinction,
+            draft.z4_herbivore_species_extinction,
         ),
-        z4_herbivore_species_extinction=(
-            z4_herbivore_species_extinction
-            if z4_herbivore_species_extinction is not None
-            else draft.z4_herbivore_species_extinction
+        z6_max_total_flora_energy=_pick(z6_max_total_flora_energy, draft.z6_max_total_flora_energy),
+        z7_max_total_herbivore_population=_pick(
+            z7_max_total_herbivore_population,
+            draft.z7_max_total_herbivore_population,
         ),
-        z6_max_total_flora_energy=(
-            z6_max_total_flora_energy if z6_max_total_flora_energy is not None else draft.z6_max_total_flora_energy
+        mycorrhizal_inter_species=_resolve_inter_species(
+            mycorrhizal_inter_species,
+            draft.mycorrhizal_inter_species,
         ),
-        z7_max_total_herbivore_population=(
-            z7_max_total_herbivore_population
-            if z7_max_total_herbivore_population is not None
-            else draft.z7_max_total_herbivore_population
+        mycorrhizal_connection_cost=_pick(mycorrhizal_connection_cost, draft.mycorrhizal_connection_cost),
+        mycorrhizal_growth_interval_ticks=_pick(
+            mycorrhizal_growth_interval_ticks,
+            draft.mycorrhizal_growth_interval_ticks,
         ),
-        mycorrhizal_inter_species=(
-            (mycorrhizal_inter_species or "off") == "on"
-            if mycorrhizal_inter_species is not None
-            else draft.mycorrhizal_inter_species
-        ),
-        mycorrhizal_connection_cost=(
-            mycorrhizal_connection_cost
-            if mycorrhizal_connection_cost is not None
-            else draft.mycorrhizal_connection_cost
-        ),
-        mycorrhizal_growth_interval_ticks=(
-            mycorrhizal_growth_interval_ticks
-            if mycorrhizal_growth_interval_ticks is not None
-            else draft.mycorrhizal_growth_interval_ticks
-        ),
-        mycorrhizal_signal_velocity=(
-            mycorrhizal_signal_velocity
-            if mycorrhizal_signal_velocity is not None
-            else draft.mycorrhizal_signal_velocity
-        ),
+        mycorrhizal_signal_velocity=_pick(mycorrhizal_signal_velocity, draft.mycorrhizal_signal_velocity),
     )
 
 
