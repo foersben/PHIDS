@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Benjamin Förster
+# SPDX-License-Identifier: EUPL-1.2 OR LicenseRef-PHIDS-Commercial
+# GitGuardian Configuration
+# Whitelists committed development fixtures and example environment templates
+
+version: 2
+secret:
+  ignored_paths:
+    - "docker-compose.yml"
+    - ".github/workflows/secrets.env.example"
+    - "scripts/ci/*"

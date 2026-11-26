@@ -1,0 +1,10 @@
+uv.lock
+data/**
+docs/latex/**/*.pdf
+docs/latex/**/build/**
+docs/latex/scientific_report/data/dynamics.json
+docs/assets/**
+docs/viz.html
+docs/architecture_visualizer.html
+site/**
+.cache/**

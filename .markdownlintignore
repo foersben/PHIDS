@@ -1,0 +1,8 @@
+# LaTeX sources and generated outputs are outside Zensical/Markdown gates
+docs/latex/
+
+# OpenWiki generated knowledge base
+openwiki/
+
+# Built documentation site
+site/

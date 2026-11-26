@@ -36,6 +36,9 @@ jobs:
       - name: Run Pre-Commit Hooks
         run: SKIP=ruff,ruff-format,check-identity,enforce-author-identity uv run pre-commit run --all-files
 
+      - name: Check REUSE License Compliance
+        run: uvx reuse lint
+
       - name: Pass 1 - Logic & Coverage
         env:
           NUMBA_DISABLE_JIT: "1"
