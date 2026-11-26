@@ -162,11 +162,14 @@ For software engineers and data interface developers, this section maps the math
     # Phloem translocation update during signaling lifecycle phase
     if plant.withdrawal_ticks_remaining > 0:
         plant.withdrawal_ticks_remaining -= 1
-        plant.apparent_nutrition_factor += (
-            plant.target_nutrition_factor - plant.apparent_nutrition_factor
-        ) * plant.translocation_rate
+        # Rate-limited translocation toward target factor
+        target = plant.target_nutrition_factor
+        rate = plant.translocation_rate
+        plant.apparent_nutrition_factor += (target - plant.apparent_nutrition_factor) * rate
     else:
-        plant.apparent_nutrition_factor += (1.0 - plant.apparent_nutrition_factor) * plant.translocation_rate
+        # Rate-limited translocation recovery toward baseline 1.0
+        rate = plant.translocation_rate
+        plant.apparent_nutrition_factor += (1.0 - plant.apparent_nutrition_factor) * rate
     ```
 
 ---

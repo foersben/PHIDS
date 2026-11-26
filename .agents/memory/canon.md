@@ -53,3 +53,8 @@ Action: When evaluating documentation vs. code discrepancies regarding bounded a
 
 Learning: The morphological defenses documentation incorrectly indicated that the rate-limited phloem translocation logic (`apparent_nutrition_factor` recovery) occurred in the `lifecycle` system (`src/phids/engine/systems/lifecycle/`). In the optimized architecture, since this metric is inherently coupled to trigger-induced stress (e.g. `resource_withdrawal`), its execution natively belongs to and operates within the `signaling` system phase (`src/phids/engine/systems/signaling/lifecycle.py`).
 Action: When evaluating documentation drift involving trigger responses, recognize that physiological recoveries driven by environmental signals are resolved in the signaling system loop. Update the architectural Markdown diagrams and paths to reflect this separation of concerns.
+
+## 2026-11-20 - Update Phloem Translocation Code Snippets in Documentation
+
+Learning: When codebase optimizations restructure logic inside core lifecycle and signaling passes (e.g. by hoisting attributes into local `target` and `rate` variables to remove dot-accessor overhead), corresponding Markdown code blocks can become out of sync.
+Action: Identify stale code blocks inside `docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md` and `docs/scientific_model/computations/phloem_translocation.md` representing execution pipelines, and explicitly update them to mirror the optimized source code to maintain documentation-to-code alignment.

@@ -41,11 +41,14 @@ This attested computation models botanical nutrient translocation kinetics. When
 # Rate-limited asymptotic relaxation update per lifecycle tick
 if plant.withdrawal_ticks_remaining > 0:
     plant.withdrawal_ticks_remaining -= 1
-    plant.apparent_nutrition_factor += (
-        plant.target_nutrition_factor - plant.apparent_nutrition_factor
-    ) * plant.translocation_rate
+    # Rate-limited translocation toward target factor
+    target = plant.target_nutrition_factor
+    rate = plant.translocation_rate
+    plant.apparent_nutrition_factor += (target - plant.apparent_nutrition_factor) * rate
 else:
-    plant.apparent_nutrition_factor += (1.0 - plant.apparent_nutrition_factor) * plant.translocation_rate
+    # Rate-limited translocation recovery toward baseline 1.0
+    rate = plant.translocation_rate
+    plant.apparent_nutrition_factor += (1.0 - plant.apparent_nutrition_factor) * rate
 ```
 
 ---
