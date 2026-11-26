@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 import phids.api.main as api_main
+from phids.shared.coercion import coerce_int
 
 router = APIRouter()
 
@@ -37,7 +38,7 @@ def _filter_telemetry_rows_for_chart(
 ) -> list[dict[str, object]]:
     """Filter telemetry rows based on client synchronization state."""
     if run_id == current_run_id and since_tick is not None and rows:
-        return [row for row in rows if int(row.get("tick", -1)) > since_tick]  # type: ignore
+        return [row for row in rows if coerce_int(row.get("tick"), default=-1) > since_tick]
     return rows
 
 
@@ -66,7 +67,7 @@ def _append_row_to_series(
 ) -> None:
     """Extract data from a single telemetry row and append it to the time series."""
     # Note: We must retain original exact values where possible; some tests assert strict arrays.
-    tick_val = int(r.get("tick", 0))  # type: ignore
+    tick_val = coerce_int(r.get("tick"), default=0)
     labels.append(tick_val)
     series["flora_population"].append(_safe_float(r.get("flora_population", 0)))
     series["herbivore_population"].append(_safe_float(r.get("herbivore_population", 0)))
@@ -233,7 +234,7 @@ def _overlay_with_labels(
     """Overlay per-species metrics matched by explicit tick labels."""
     tick_to_idx = {tick: idx for idx, tick in enumerate(labels)}
     for r in raw_rows_for_species:
-        tick_val = int(r.get("tick", -1))  # type: ignore
+        tick_val = coerce_int(r.get("tick"), default=-1)
         idx = tick_to_idx.get(tick_val)
         if idx is not None:
             _overlay_single_row(series, r, idx, flora_ids, herbivore_ids)

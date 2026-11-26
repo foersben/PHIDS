@@ -12,6 +12,7 @@ from phids.engine.batch.orchestrator import BatchRunner
 from phids.engine.batch.runner import _run_and_save, _run_single_headless
 from phids.engine.batch.types import (
     BatchAggregate,
+    BatchExecutionRequest,
     BatchResult,
     TelemetryRow,
     TelemetryRuns,
@@ -19,6 +20,7 @@ from phids.engine.batch.types import (
 
 __all__ = [
     "BatchAggregate",
+    "BatchExecutionRequest",
     "BatchResult",
     "BatchRunner",
     "TelemetryRow",

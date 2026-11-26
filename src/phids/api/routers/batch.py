@@ -31,6 +31,7 @@ from phids.api.schemas.responses import (
 from phids.api.ui_state.state import get_draft
 from phids.api.ui_state.state.convert import build_sim_config
 from phids.engine.batch.orchestrator import BatchRunner
+from phids.engine.batch.types import BatchExecutionRequest
 from phids.telemetry.export.core import aggregate_to_dataframe, decimate_dataframe, filter_dataframe_columns
 from phids.telemetry.export.tikz import generate_tikz_str
 
@@ -163,13 +164,15 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
             await loop.run_in_executor(
                 None,
                 lambda: runner.execute_batch(
-                    scenario_dict,
-                    payload.runs,
-                    payload.max_ticks,
-                    job_id,
-                    api_main._BATCH_DIR,
-                    _progress,
-                    scenario_name=scenario_name,
+                    BatchExecutionRequest(
+                        scenario_dict=scenario_dict,
+                        runs=payload.runs,
+                        max_ticks=payload.max_ticks,
+                        job_id=job_id,
+                        output_dir=api_main._BATCH_DIR,
+                        on_progress=_progress,
+                        scenario_name=scenario_name,
+                    )
                 ),
             )
             job.status = "done"

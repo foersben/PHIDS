@@ -33,12 +33,12 @@ from phids.api.schemas.triggers import (
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.systems.signaling.conditions import _check_activation_condition
+from phids.engine.systems.signaling.spatial import SwarmPopulationIndex
 from phids.shared.constants import HILL_PRIMING_THRESHOLD
 
 if TYPE_CHECKING:
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld, Entity
-    from phids.engine.systems.signaling.spatial import SwarmPopulationIndex
     from phids.engine.systems.signaling.types import CompiledTrigger
 
 
@@ -380,7 +380,11 @@ def _phase_evaluate_triggers(
 ) -> None:
     plants_by_species = _group_plants_by_species(world)
     curve_map = {"step": 0, "hill": 1, "logarithmic": 2}
-    swarm_grid = getattr(swarm_population_by_cell_species, "_grid", None)
+    swarm_grid = (
+        swarm_population_by_cell_species._grid
+        if isinstance(swarm_population_by_cell_species, SwarmPopulationIndex)
+        else None
+    )
 
     for species_id, triggers in trigger_conditions.items():
         plants = plants_by_species.get(species_id)

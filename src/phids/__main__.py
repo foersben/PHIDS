@@ -278,18 +278,21 @@ def _execute_batch_cli(cfg: _BatchExecutionConfig) -> None:
     """Run BatchRunner headlessly from a validated CLI configuration bundle."""
     # Lazy import: heavy optional dependency kept off the startup path.
     from phids.engine.batch.orchestrator import BatchRunner
+    from phids.engine.batch.types import BatchExecutionRequest
 
     scenario_dict, flora_names, herbivore_names = _load_validated_scenario(cfg.scenario_path)
     resolved_label = cfg.label.strip() or cfg.scenario_path.stem
     runner = BatchRunner()
     result = runner.execute_batch(
-        scenario_dict=scenario_dict,
-        runs=cfg.runs,
-        max_ticks=cfg.max_ticks,
-        job_id=cfg.job_id,
-        output_dir=cfg.output_dir,
-        scenario_name=resolved_label,
-        seed_offset=cfg.seed_offset,
+        BatchExecutionRequest(
+            scenario_dict=scenario_dict,
+            runs=cfg.runs,
+            max_ticks=cfg.max_ticks,
+            job_id=cfg.job_id,
+            output_dir=cfg.output_dir,
+            scenario_name=resolved_label,
+            seed_offset=cfg.seed_offset,
+        )
     )
     aggregate = dict(result.aggregate)
     summary_path = cfg.output_dir / f"{cfg.job_id}_summary.json"

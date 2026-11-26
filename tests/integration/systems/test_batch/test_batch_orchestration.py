@@ -95,12 +95,14 @@ def test_execute_batch_handles_success_and_failure_and_writes_strict_json(
     progress: list[int] = []
     runner = batch_mod.BatchRunner()
     result = runner.execute_batch(
-        minimal_scenario,
-        runs=2,
-        max_ticks=3,
-        job_id="jobmix",
-        output_dir=tmp_path,
-        on_progress=progress.append,
+        batch_mod.BatchExecutionRequest(
+            scenario_dict=minimal_scenario,
+            runs=2,
+            max_ticks=3,
+            job_id="jobmix",
+            output_dir=tmp_path,
+            on_progress=progress.append,
+        )
     )
 
     assert result.job_id == "jobmix"

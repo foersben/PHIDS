@@ -64,14 +64,12 @@ def _patch_completed_batch_execution(
 
     def _fake_execute_batch(
         _self: batch_engine.BatchRunner,
-        _scenario_dict: dict[str, object],
-        runs: int,
-        _max_ticks: int,
-        job_id: str,
-        output_dir: Path,
-        on_progress: object | None = None,
-        scenario_name: str | None = None,  # noqa: ARG001
+        request: batch_engine.BatchExecutionRequest,
     ) -> batch_engine.BatchResult:
+        runs = request.runs
+        job_id = request.job_id
+        output_dir = request.output_dir or tmp_path
+        on_progress = request.on_progress
         if callable(on_progress):
             on_progress(1)
             on_progress(runs)

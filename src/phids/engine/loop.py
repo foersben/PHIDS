@@ -225,7 +225,7 @@ class SimulationLoop:
 
     def _append_replay_frame(self) -> None:
         """Append one replay frame using the backend-specific ingestion path."""
-        if hasattr(self.replay, "append_raw_arrays"):
+        if isinstance(self.replay, (ReplayBuffer, NoOpReplayBuffer)):
             self.replay.append_raw_arrays(
                 tick=self.tick,
                 env=self.env,

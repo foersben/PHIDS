@@ -19,12 +19,10 @@ from typing import TYPE_CHECKING, cast
 
 from phids.engine.batch.aggregation import aggregate_batch_telemetry
 from phids.engine.batch.runner import _run_and_save
-from phids.engine.batch.types import BatchResult
+from phids.engine.batch.types import BatchExecutionRequest, BatchResult
 from phids.engine.batch.utils import _sanitize_for_json
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from phids.engine.batch.types import BatchAggregate, TelemetryRuns
 
 logger = logging.getLogger(__name__)
@@ -66,17 +64,9 @@ class BatchRunner:
 
     def execute_batch(
         self,
-        scenario_dict: dict[str, object],
-        runs: int,
-        max_ticks: int,
-        job_id: str,
-        output_dir: Path | None = None,
-        on_progress: Callable[[int], None] | None = None,
-        scenario_name: str | None = None,
-        *,
-        seed_offset: int = 0,
+        request: BatchExecutionRequest,
     ) -> BatchResult:
-        """Execute ``runs`` independent simulation trajectories in parallel.
+        """Execute ``request.runs`` independent simulation trajectories in parallel.
 
         Dispatches all runs to a :class:`concurrent.futures.ProcessPoolExecutor`
         using the ``spawn`` start method, collects telemetry as futures complete,
@@ -84,21 +74,16 @@ class BatchRunner:
         ``{output_dir}/{job_id}_summary.json``.
 
         Args:
-            scenario_dict: JSON-serialisable ``SimulationConfig`` representation.
-            runs: Number of independent simulation runs to execute.
-            max_ticks: Maximum tick count per run.
-            job_id: Unique batch job identifier for file naming.
-            output_dir: Directory for output files; defaults to ``data/batches``.
-            on_progress: Optional callback invoked with completed count as each
-                future resolves.
-            scenario_name: Optional display label persisted into the summary so
-                restored ledgers can retain operator-selected names.
-            seed_offset: Starting PRNG seed index for independent run seeds.
+            request: Frozen batch execution configuration bundle.
 
         Returns:
             Completed result with all per-run telemetry and aggregate.
         """
-        save_dir = output_dir or _DEFAULT_BATCH_DIR
+        scenario_dict = request.scenario_dict
+        runs = request.runs
+        max_ticks = request.max_ticks
+        job_id = request.job_id
+        save_dir = request.output_dir or _DEFAULT_BATCH_DIR
         save_dir.mkdir(parents=True, exist_ok=True)
 
         max_workers = min(runs, os.cpu_count() or 1)
@@ -116,7 +101,7 @@ class BatchRunner:
 
         args_list = [
             (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir))
-            for idx, seed in enumerate(range(seed_offset, seed_offset + runs))
+            for idx, seed in enumerate(range(request.seed_offset, request.seed_offset + runs))
         ]
 
         with concurrent.futures.ProcessPoolExecutor(
@@ -132,11 +117,11 @@ class BatchRunner:
                     per_run_telemetry.append([])
 
                 completed += 1
-                if on_progress is not None:
-                    on_progress(completed)
+                if request.on_progress is not None:
+                    request.on_progress(completed)
 
         aggregate = aggregate_batch_telemetry(per_run_telemetry)
-        persisted_scenario_name = (scenario_name or str(scenario_dict.get("scenario_name", ""))).strip()
+        persisted_scenario_name = (request.scenario_name or str(scenario_dict.get("scenario_name", ""))).strip()
         aggregate["scenario_name"] = persisted_scenario_name or "unnamed"
         aggregate = cast("BatchAggregate", _sanitize_for_json(aggregate))
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
@@ -94,7 +95,7 @@ async def scenario_export() -> Response:
 
 
 @router.post("/api/scenario/import", summary="Import scenario from JSON file")
-async def scenario_import(file: UploadFile = File(...)) -> JSONResponse:  # noqa: B008
+async def scenario_import(file: Annotated[UploadFile, File()]) -> JSONResponse:
     """Parse an uploaded scenario JSON document and replace draft state.
 
     Args:

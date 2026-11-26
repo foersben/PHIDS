@@ -148,10 +148,11 @@ def _build_spatial_and_morphological_updates(
 ) -> dict[str, object]:
     """Collect spatial seed dispersal, woody structural, and phloem updates."""
     updates: dict[str, object] = {}
+    min_d: float = fp.seed_min_dist
     if seed_min_dist is not None:
-        updates["seed_min_dist"] = max(0.0, seed_min_dist)
+        min_d = max(0.0, seed_min_dist)
+        updates["seed_min_dist"] = min_d
     if seed_max_dist is not None:
-        min_d = float(updates.get("seed_min_dist", fp.seed_min_dist))  # type: ignore[arg-type]
         updates["seed_max_dist"] = max(min_d, seed_max_dist)
     if structural_mass_max is not None:
         updates["structural_mass_max"] = max(0.0, structural_mass_max)

@@ -1,19 +1,19 @@
 [
   {
     "file_path": "src/phids/__main__.py",
-    "line_number": 14,
+    "line_number": 16,
     "rule_id": "NI-01-BYPASS",
     "message": "Bypass comment: '# noqa: TC003'"
   },
   {
     "file_path": "src/phids/__main__.py",
-    "line_number": 65,
+    "line_number": 72,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'serve' arity 6 exceeds threshold 4"
   },
   {
     "file_path": "src/phids/__main__.py",
-    "line_number": 107,
+    "line_number": 115,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'tune' arity 5 exceeds threshold 4"
   },
@@ -31,7 +31,7 @@
   },
   {
     "file_path": "src/phids/api/routers/batch.py",
-    "line_number": 318,
+    "line_number": 316,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'batch_export' arity 8 exceeds threshold 4"
   },
@@ -43,19 +43,13 @@
   },
   {
     "file_path": "src/phids/api/routers/config/flora.py",
-    "line_number": 153,
-    "rule_id": "NI-01-BYPASS",
-    "message": "Bypass comment: '# type: ignore[arg-type]'"
-  },
-  {
-    "file_path": "src/phids/api/routers/config/flora.py",
-    "line_number": 31,
+    "line_number": 32,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'config_flora_add' arity 16 exceeds threshold 4"
   },
   {
     "file_path": "src/phids/api/routers/config/flora.py",
-    "line_number": 191,
+    "line_number": 193,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'config_flora_update' arity 20 exceeds threshold 4"
   },
@@ -73,13 +67,13 @@
   },
   {
     "file_path": "src/phids/api/routers/config/placements.py",
-    "line_number": 105,
+    "line_number": 110,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'config_placement_plant_add' arity 5 exceeds threshold 4"
   },
   {
     "file_path": "src/phids/api/routers/config/placements.py",
-    "line_number": 133,
+    "line_number": 138,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'config_placement_swarm_add' arity 6 exceeds threshold 4"
   },
@@ -114,30 +108,6 @@
     "message": "Public function 'config_trigger_rule_condition_node_update' arity 9 exceeds threshold 4"
   },
   {
-    "file_path": "src/phids/api/routers/simulation/scenario.py",
-    "line_number": 97,
-    "rule_id": "NI-01-BYPASS",
-    "message": "Bypass comment: '# noqa: B008'"
-  },
-  {
-    "file_path": "src/phids/api/routers/telemetry/chartjs.py",
-    "line_number": 40,
-    "rule_id": "NI-01-BYPASS",
-    "message": "Bypass comment: '# type: ignore'"
-  },
-  {
-    "file_path": "src/phids/api/routers/telemetry/chartjs.py",
-    "line_number": 69,
-    "rule_id": "NI-01-BYPASS",
-    "message": "Bypass comment: '# type: ignore'"
-  },
-  {
-    "file_path": "src/phids/api/routers/telemetry/chartjs.py",
-    "line_number": 236,
-    "rule_id": "NI-01-BYPASS",
-    "message": "Bypass comment: '# type: ignore'"
-  },
-  {
     "file_path": "src/phids/api/routers/telemetry/exports.py",
     "line_number": 218,
     "rule_id": "NI-06-ARITY",
@@ -145,13 +115,13 @@
   },
   {
     "file_path": "src/phids/api/routers/telemetry/html.py",
-    "line_number": 25,
+    "line_number": 26,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'telemetry_table_preview' arity 6 exceeds threshold 4"
   },
   {
     "file_path": "src/phids/api/routers/ui/database.py",
-    "line_number": 15,
+    "line_number": 17,
     "rule_id": "NI-01-BYPASS",
     "message": "Bypass comment: '# noqa: TC001'"
   },
@@ -174,12 +144,6 @@
     "message": "Public function 'add_trigger_rule' arity 13 exceeds threshold 4"
   },
   {
-    "file_path": "src/phids/engine/batch/orchestrator.py",
-    "line_number": 67,
-    "rule_id": "NI-06-ARITY",
-    "message": "Public function 'execute_batch' arity 7 exceeds threshold 4"
-  },
-  {
     "file_path": "src/phids/engine/core/ecs.py",
     "line_number": 49,
     "rule_id": "NI-01-BYPASS",
@@ -196,12 +160,6 @@
     "line_number": 356,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'compute_flow_field' arity 12 exceeds threshold 4"
-  },
-  {
-    "file_path": "src/phids/engine/loop.py",
-    "line_number": 228,
-    "rule_id": "NI-06-REFLECTION",
-    "message": "Dynamic reflection 'hasattr' prohibited in engine. Use typed fields or protocols."
   },
   {
     "file_path": "src/phids/engine/spawner.py",
@@ -282,32 +240,26 @@
     "message": "Public function 'toroidal_distance' arity 6 exceeds threshold 4"
   },
   {
-    "file_path": "src/phids/engine/systems/signaling/triggers.py",
-    "line_number": 379,
-    "rule_id": "NI-06-REFLECTION",
-    "message": "Dynamic reflection 'getattr' prohibited in engine. Use typed fields or protocols."
-  },
-  {
     "file_path": "src/phids/mcp/tools_telemetry.py",
-    "line_number": 34,
+    "line_number": 37,
     "rule_id": "NI-01-BYPASS",
     "message": "Bypass comment: '# pragma: no cover'"
   },
   {
     "file_path": "src/phids/mcp/tools_telemetry.py",
-    "line_number": 55,
+    "line_number": 59,
     "rule_id": "NI-01-BYPASS",
     "message": "Bypass comment: '# pragma: no cover'"
   },
   {
     "file_path": "src/phids/mcp/tools_telemetry.py",
-    "line_number": 134,
+    "line_number": 131,
     "rule_id": "NI-01-BYPASS",
     "message": "Bypass comment: '# type: ignore[arg-type]'"
   },
   {
     "file_path": "src/phids/mcp/tools_telemetry.py",
-    "line_number": 288,
+    "line_number": 282,
     "rule_id": "NI-06-ARITY",
     "message": "Public function 'export_telemetry_data' arity 13 exceeds threshold 4"
   },
