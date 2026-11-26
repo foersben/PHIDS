@@ -96,6 +96,31 @@ visualize-okf:
 validate-okf:
     uv run python scripts/governance/validate_okf.py
 
+# Update OpenWiki documentation and reconcile grounded claims via KeePassXC secrets
+[group("data-flow-matrix")]
+wiki-update:
+    @echo "Fetching credentials from KeePassXC via Secret Service..."
+    OPENWIKI_PROVIDER="gemini" \
+    OPENWIKI_MODEL_ID="gemini-4-hydrogen" \
+    GEMINI_API_KEY=$(secret-tool lookup title gemini_free_key) \
+    LANGSMITH_ENDPOINT="https://eu.api.smith.langchain.com" \
+    LANGCHAIN_API_KEY=$(secret-tool lookup service openwiki key langsmith_api_key) \
+    LANGSMITH_API_KEY=$(secret-tool lookup service openwiki key langsmith_api_key) \
+    LANGCHAIN_TRACING_V2="true" \
+    openwiki code --update
+    rm -f -- openwiki/.run.json
+    sed -i '/<!-- OPENWIKI:START -->/,/<!-- OPENWIKI:END -->/ s/^- /* /' AGENTS.md
+
+# Validate OKF v0.2 structural integrity for docs/, .agents/, and openwiki/
+[group("data-flow-matrix")]
+wiki-validate:
+    @just validate-okf
+
+# Generate interactive OKF and OpenWiki knowledge graph visualization (docs/viz.html)
+[group("data-flow-matrix")]
+wiki-viz:
+    @just visualize-okf
+
 # Run full 9-gate quality and invariant attestation seal
 [group("quality")]
 attest:
