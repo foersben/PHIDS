@@ -161,10 +161,10 @@ To automate the counterchecking, updating, verification, and test alignment of D
 * **Skill 2: `audit-okf-matrix-coverage` (`.agents/skills/audit-okf-matrix-coverage/SKILL.md`):** Scans all `docs/scientific_model/` files and reports any concept document that describes temporal state shifts without a Data-Flow Matrix Table.
 * **Skill 3: `auto-reconcile-matrix-drift` (`.agents/skills/auto-reconcile-matrix-drift/SKILL.md`):** When engine array formulas are updated (e.g., modifying synthesis rate scalars), this skill runs a trace session, captures exact numerical output, and automatically updates the Markdown table rows while flagging the change for user review.
 
-### 4.4 Specialized Agentic Workflows (`.agents/workflows/`)
+### 4.4 Multi-Step Matrix Skills (`.agents/skills/`)
 
-* **Workflow 1: Matrix-Driven TDD Refactoring (`.agents/workflows/matrix-tdd-refactor.md`):** The 4-stage pipeline translating concept docs to failing tests, branchless Numba kernels, and passing audits.
-* **Workflow 2: Automated Matrix Drift Reconciliation (`.agents/workflows/matrix-drift-reconciliation.md`):** Automated recovery when telemetry diverges from documented matrix tables.
+* **Skill 4: Matrix-Driven TDD Refactoring (`.agents/skills/matrix-tdd-refactor/SKILL.md`):** The 4-stage pipeline translating concept docs to failing tests, branchless Numba kernels, and passing audits.
+* **Skill 5: Automated Matrix Drift Reconciliation (`.agents/skills/auto-reconcile-matrix-drift/SKILL.md`):** Automated recovery when telemetry diverges from documented matrix tables.
 
 ---
 

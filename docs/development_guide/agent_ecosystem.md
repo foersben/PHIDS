@@ -37,7 +37,7 @@ PHIDS coordinates multi-agent operations via formal skills defined under `.agent
 * **Epistemic Soundness & Computational Integrity Audit (`/epistemic-soundness-audit`)**: Multi-pass relational audit workflow verifying biological fidelity, mathematical rigor, and HPC/ECS computational constraints across documentation and runtime code.
 * **Matrix TDD Refactor (`/matrix-tdd-refactor`)**: Coordinated pipeline translating conceptual behavior to Data-Flow Matrix specifications, failing Pytest trace tests, branchless Numba kernels, and verified audits.
 * **ECS Code-Smell Refactoring Pipeline (`/ecs-refactor-pipeline`)**: Autonomous, performance-safe workflow for eliminating code smells from cold-path modules while respecting strict DOD/JIT hot-path constraints and zero-byte heap allocation invariants.
-* **Matrix Drift Reconciliation (`/matrix-drift-reconciliation`)**: Automated workflow detecting, reconciling, and updating documented Data-Flow Matrices when engine parameters or telemetry drift.
+* **Matrix Drift Reconciliation (`/auto-reconcile-matrix-drift`)**: Automated workflow detecting, reconciling, and updating documented Data-Flow Matrices when engine parameters or telemetry drift.
 * **Scientific Model Implementation (`/implement-scientific-model`)**: Process for adding ecological and mathematical behaviors with complete biological grounding.
 * **Vertical Slice Development (`/vertical-slice-development`)**: Coordinated pipeline for building full-stack simulation features.
 * **Delegation Protocol (`/delegation-protocol`)**: Escalation checklist for human-assisted tasks when agents encounter structural blocks.

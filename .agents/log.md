@@ -2,6 +2,12 @@
 
 This document records the chronological history of updates to autonomous agent roles, behavioral rules, operational workflows, and collective memory, adhering to OKF v0.2 §9.
 
+## 2026-11-26
+
+* **Migration**: Migrated legacy `.agents/workflows/jules-session-triage.md` to `.agents/skills/jules-session-triage/SKILL.md` with OKF v0.2 frontmatter and retired `.agents/workflows/`.
+* **Governance**: Ported OKF v0.2 Option B subdirectory `index.md` validation into `scripts/governance/validate_okf.py` and updated stale `DOC_FILE_COVERAGE` paths in `scripts/governance/visualize_okf.py`.
+* **Triage & Stabilisation**: Merged PR #462 (`fc3eaa7`), closed stale PRs (`#460, #461, #463-#470`), purged 24 stale Jules sandbox sessions, froze `paper/simpat-v1-freeze` locally (`08b4d0a`), burned down code-invariant baseline (`38237cf`), and aligned Google-style soft-wrapped docstrings (`b48957a`, `8b89943`).
+
 ## 2026-10-30
 * **Update**: Modernized Agentic OS architecture, brownfield cleanup, and progressive disclosure migration.
 * **Update**: Consolidated root `AGENTS.md` into a token-optimal (<1,000 tokens) master router and eliminated sub-directory router overhead.

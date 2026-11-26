@@ -19,11 +19,11 @@ The scripts in this directory are governed by strict operational principles:
 
 ## 2. Script Taxonomy & Execution Matrix
 
-Scripts are structured into focused domain directories (`governance/`, `ci/`, `simulation/`, `maintenance/`). Root-level scripts act as transparent forwarder shims for backwards compatibility with existing pipelines.
+Scripts are structured into focused domain directories (`governance/`, `simulation/`, `experiments/`, `ci/`, `maintenance/`). Root-level scripts act as transparent forwarder shims for backwards compatibility with existing pipelines.
 
 | Script | Domain Subdirectory | Execution Stage | Runtime | Governing Invariant / Policy |
 | :--- | :--- | :--- | :--- | :--- |
-| `validate_okf.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.2s | OKF v0.2 Specification (§4-§11) |
+| `validate_okf.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.2s | OKF v0.2 Specification (§4-§11, Option A/B) |
 | `audit_matrix_coverage.py` | `scripts/governance/` | **Pre-Commit & CI** | < 0.1s | Rule 05-A, Rule 05-C, Rule 05-D |
 | `verify_matrix_trace_parity.py` | `scripts/governance/` | **Pre-Commit & CI** | ~ 0.5s | Rule 05-A, Rule 05-D (Table-to-Trace Parity) |
 | `verify_code_invariants.py` | `scripts/governance/` | **Pre-Commit & CI** | ~ 0.5s | NI-01, NI-06 (AST Invariants & Ratchet) |
@@ -32,6 +32,8 @@ Scripts are structured into focused domain directories (`governance/`, `ci/`, `s
 | `visualize_okf.py` | `scripts/governance/` | **CI (`deploy-docs`) & On-Demand** | ~ 0.3s | OKF v0.2 Graph Visualization (`docs/viz.html`) |
 | `audit_epistemic_integrity.py` | `scripts/governance/` | **CI & On-Demand** | ~ 1s | Rule 02, Rule 05-B, Epistemic Integrity |
 | `run_sim_benchmark.py` | `scripts/simulation/` | **CI & On-Demand** (`just benchmark`) | 10s - 5m | Performance Degradation Guard |
+| `paper_experiments.py` | `scripts/experiments/` | **On-Demand** (`just paper-experiments`) | 10s - 10m | Reproducible SIMPAT Reference Experiments |
+| `generate_paper_figures.py` | `scripts/experiments/` | **On-Demand** (`just paper-figures`) | 2s - 10s | Deterministic Paper & Ecotone Figure Generation |
 | `inspect_zarr.py` | `scripts/simulation/` | **On-Demand** (`.agents/skills/analyze-zarr`) | < 0.2s | Rule 01 (Stochastic Replay Buffers) |
 | `phids_request_trace.py` | `scripts/simulation/` | **On-Demand & Smoke Testing** | ~ 0.5s | FastAPI / HTMX Lifecycle Validation |
 | `bootstrap.py` | `scripts/maintenance/` | **On-Demand** (`just setup`) | < 0.1s | Local CI / `act` Configuration |
@@ -56,7 +58,7 @@ Scripts are structured into focused domain directories (`governance/`, `ci/`, `s
   * Actor string conventions (`human:<id>`, `process:<id>`, `<producer>/<version>`) (§5.2).
   * Source resource path existence resolution against document parent, workspace root, or `docs/` (§5.1).
   * Cross-document Markdown link validity and traversal containment (§6.1).
-  * **Option A Index Document Rules:** Subdirectory `index.md` files must contain **no YAML frontmatter**, retaining rich narrative text, section headings, and navigation directly in the Markdown body. Bundle root `docs/index.md` allows `okf_version: "0.2"` (§8).
+  * **Option A & Option B Index Document Rules:** Subdirectory `index.md` files may either omit frontmatter cleanly (Option A) or declare validated OKF v0.2 metadata (`type`, `title`, `status`, `stale_after`, `version`, `description`, `tags`, `generated`, `verified`, `sources`, `trust_tier`; Option B). Bundle root `docs/index.md` allows `okf_version: "0.2"` (§8).
   * **Update Log Document Rules:** Chronological ordering in `log.md` with newest `## YYYY-MM-DD` entries first (§9).
   * **Attested Computation Requirements:** Mandates explicit `runtime` declarations for computational concepts (§10).
   * Audit statistics output: Computes Trust Tiers (Human-Reviewed, Machine-Confirmed, Unverified) and Freshness.

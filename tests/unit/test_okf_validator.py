@@ -173,8 +173,8 @@ title: Defense Cascade
     assert any("Attested Computation' MUST declare a 'runtime' field" in e for e in errors)
 
 
-def test_validate_index_document_option_a(temp_workspace: Path) -> None:
-    """Assert Option A rules: bundle-root allows okf_version, subdirectory rejects frontmatter."""
+def test_validate_index_document_option_a_and_b(temp_workspace: Path) -> None:
+    """Assert Option A/B rules: bundle-root allows okf_version, sub-index allows clean Option A or valid Option B."""
     # 1. Bundle root index with okf_version
     root_index = temp_workspace / "docs" / "index.md"
     root_index.write_text(
@@ -190,25 +190,42 @@ okf_version: "0.2"
     )
     root_errors = validate_index_document(root_index, temp_workspace, is_bundle_root=True)
     # Target doesn't exist so it will flag broken link, but no frontmatter error
-    assert not any("Subdirectory index.md must not contain YAML frontmatter" in e for e in root_errors)
+    assert not any("Subdirectory index.md" in e for e in root_errors)
 
-    # 2. Subdirectory index WITH frontmatter (must fail per Option A)
+    # 2. Subdirectory index WITH valid Option B frontmatter (must pass)
     sub_index = temp_workspace / "docs" / "scientific_model" / "index.md"
     sub_index.parent.mkdir(parents=True)
     sub_index.write_text(
         """---
-type: Scientific Model
+type: Concept
 title: Sub Overview
+status: stable
 ---
 
 # Subdirectory Overview
 """,
         encoding="utf-8",
     )
-    sub_errors = validate_index_document(sub_index, temp_workspace, is_bundle_root=False)
-    assert any("Subdirectory index.md must not contain YAML frontmatter" in e for e in sub_errors)
+    sub_valid_errors = validate_index_document(sub_index, temp_workspace, is_bundle_root=False)
+    assert sub_valid_errors == []
 
-    # 3. Subdirectory index WITHOUT frontmatter (must pass)
+    # 3. Subdirectory index WITH disallowed key or invalid status (must fail)
+    sub_index.write_text(
+        """---
+type: Concept
+status: realized
+unknown_key: true
+---
+
+# Subdirectory Overview
+""",
+        encoding="utf-8",
+    )
+    sub_invalid_errors = validate_index_document(sub_index, temp_workspace, is_bundle_root=False)
+    assert any("unexpected frontmatter keys" in e for e in sub_invalid_errors)
+    assert any("Invalid status 'realized'" in e for e in sub_invalid_errors)
+
+    # 4. Subdirectory index WITHOUT frontmatter (Option A, must pass)
     sub_index.write_text(
         """# Subdirectory Overview
 

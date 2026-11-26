@@ -1,0 +1,1658 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PHIDS | Interactive Architecture &amp; Dynamical Systems Visualizer</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- KaTeX for Mathematical Equations -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+    />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <!-- Graph Engine: Cytoscape + Dagre -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+
+    <!-- Charts: Plotly -->
+    <script defer src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+
+    <style>
+      :root {
+        --bg-base: #060911;
+        --bg-surface: #0c1220;
+        --bg-card: rgba(14, 21, 38, 0.94);
+        --bg-elevated: #162038;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.18);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+
+        --layer-interface: #00e5ff;
+        --layer-interface-bg: rgba(0, 229, 255, 0.12);
+        --layer-orchestration: #a855f7;
+        --layer-orchestration-bg: rgba(168, 85, 247, 0.14);
+        --layer-kernel: #10b981;
+        --layer-kernel-bg: rgba(16, 185, 129, 0.12);
+        --layer-telemetry: #f59e0b;
+        --layer-telemetry-bg: rgba(245, 158, 11, 0.12);
+
+        --accent-cyan: #00e5ff;
+        --accent-purple: #b388ff;
+        --accent-emerald: #10b981;
+        --accent-amber: #f59e0b;
+        --accent-rose: #f43f5e;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.75);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg-base);
+        color: var(--text-primary);
+        display: flex;
+        flex-direction: column;
+      }
+
+      code,
+      pre {
+        font-family: "JetBrains Mono", monospace;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.16);
+        border-radius: 3px;
+      }
+
+      header {
+        height: 56px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        flex-shrink: 0;
+        z-index: 50;
+      }
+
+      .brand-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-icon {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, #10b981 0%, #00e5ff 100%);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #060911;
+        font-size: 1rem;
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+      }
+      .brand-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .brand-pill {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        background: rgba(16, 185, 129, 0.14);
+        border: 1px solid rgba(16, 185, 129, 0.35);
+        color: var(--accent-emerald);
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .view-tabs {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        padding: 3px;
+        border-radius: var(--radius-md);
+        gap: 4px;
+      }
+      .tab-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.15s ease;
+      }
+      .tab-btn:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .tab-btn.active {
+        background: var(--bg-elevated);
+        color: #fff;
+        border-color: var(--border-strong);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .action-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+        font-size: 0.78rem;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+      }
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--border-strong);
+      }
+      .action-btn.primary {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 255, 0.2));
+        border-color: rgba(0, 229, 255, 0.45);
+        color: #fff;
+      }
+
+      .filter-toolbar {
+        height: 46px;
+        background: rgba(12, 18, 32, 0.96);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        font-size: 0.78rem;
+        flex-shrink: 0;
+        z-index: 40;
+      }
+      .layer-pills {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+      }
+      .layer-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-right: 2px;
+      }
+      .layer-chip {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-subtle);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-secondary);
+        transition: all 0.15s ease;
+        user-select: none;
+      }
+      .layer-chip .chip-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .layer-chip[data-layer="interface"].active {
+        background: var(--layer-interface-bg);
+        color: var(--layer-interface);
+        border-color: rgba(0, 229, 255, 0.45);
+      }
+      .layer-chip[data-layer="interface"] .chip-dot {
+        background: var(--layer-interface);
+      }
+      .layer-chip[data-layer="orchestration"].active {
+        background: var(--layer-orchestration-bg);
+        color: var(--layer-orchestration);
+        border-color: rgba(168, 85, 247, 0.45);
+      }
+      .layer-chip[data-layer="orchestration"] .chip-dot {
+        background: var(--layer-orchestration);
+      }
+      .layer-chip[data-layer="kernel"].active {
+        background: var(--layer-kernel-bg);
+        color: var(--layer-kernel);
+        border-color: rgba(16, 185, 129, 0.45);
+      }
+      .layer-chip[data-layer="kernel"] .chip-dot {
+        background: var(--layer-kernel);
+      }
+      .layer-chip[data-layer="telemetry"].active {
+        background: var(--layer-telemetry-bg);
+        color: var(--layer-telemetry);
+        border-color: rgba(245, 158, 11, 0.45);
+      }
+      .layer-chip[data-layer="telemetry"] .chip-dot {
+        background: var(--layer-telemetry);
+      }
+
+      .quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .text-link {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 0.73rem;
+        font-weight: 500;
+        padding: 3px 6px;
+        border-radius: 4px;
+        transition: all 0.15s;
+      }
+      .text-link:hover {
+        color: var(--accent-cyan);
+        background: rgba(0, 229, 255, 0.08);
+      }
+
+      .graph-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .layout-select {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-strong);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        outline: none;
+      }
+      .search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .search-wrapper i {
+        position: absolute;
+        left: 9px;
+        color: var(--text-muted);
+        font-size: 0.72rem;
+      }
+      .search-input {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        padding: 4px 10px 4px 26px;
+        font-size: 0.75rem;
+        color: #fff;
+        width: 175px;
+        outline: none;
+        transition: all 0.2s;
+      }
+      .search-input:focus {
+        width: 225px;
+        border-color: var(--accent-cyan);
+      }
+      .search-count {
+        position: absolute;
+        right: 8px;
+        font-size: 0.65rem;
+        color: var(--accent-cyan);
+        font-weight: 700;
+      }
+
+      .canvas-btn {
+        width: 30px;
+        height: 30px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: all 0.15s;
+      }
+      .canvas-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+      }
+
+      main {
+        position: relative;
+        flex: 1 1 auto;
+        width: 100%;
+        height: calc(100vh - 102px);
+        overflow: hidden;
+      }
+      .view-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: none !important;
+        overflow: hidden;
+      }
+      .view-container.active {
+        display: flex !important;
+      }
+
+      #cy {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 50% 45%, #0f1930 0%, #060911 100%);
+      }
+
+      #swimlane-headers {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 14px;
+        z-index: 25;
+        pointer-events: none;
+      }
+      .swimlane-badge {
+        padding: 5px 14px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgba(12, 18, 32, 0.88);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--border-strong);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+
+      .floating-canvas-bar {
+        position: absolute;
+        left: 20px;
+        bottom: 20px;
+        background: rgba(12, 18, 32, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        box-shadow: var(--shadow-xl);
+        z-index: 30;
+      }
+
+      .graph-legend {
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        background: rgba(12, 18, 32, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 12px 15px;
+        font-size: 0.72rem;
+        z-index: 30;
+        box-shadow: var(--shadow-xl);
+        width: 245px;
+      }
+      .legend-title {
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+      }
+      .legend-color-box {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      #scaling-view,
+      #workbench-view {
+        flex-direction: column;
+        background: #070b14;
+        overflow-y: auto !important;
+        padding: 24px 32px;
+        gap: 20px;
+      }
+
+      .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .kpi-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 14px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .kpi-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+      .kpi-val {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .kpi-sub {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 20px;
+        min-height: 390px;
+      }
+      .chart-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      .chart-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .chart-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .chart-canvas {
+        flex: 1;
+        width: 100%;
+        min-height: 330px;
+      }
+
+      .bench-cards-grid,
+      .sim-workbench-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      .sim-workbench-grid {
+        grid-template-columns: 1fr 1.25fr;
+      }
+      .panel-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 18px;
+      }
+      .panel-card h3 {
+        font-size: 0.96rem;
+        color: #fff;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .metric-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 10px;
+        border-radius: var(--radius-sm);
+        font-size: 0.78rem;
+      }
+      .metric-k {
+        color: var(--text-muted);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+      }
+      .metric-v {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Right-Hand Slide-Over Inspector Drawer */
+      #sidebar {
+        position: fixed;
+        top: 102px;
+        right: 0;
+        bottom: 0;
+        width: 410px;
+        background: rgba(12, 18, 32, 0.97);
+        backdrop-filter: blur(20px);
+        border-left: 1px solid var(--border-strong);
+        box-shadow: -15px 0 40px rgba(0, 0, 0, 0.65);
+        display: flex;
+        flex-direction: column;
+        z-index: 60;
+        transform: translateX(102%);
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      #sidebar.open {
+        transform: translateX(0);
+      }
+      .sidebar-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .sidebar-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .sidebar-close {
+        background: rgba(255, 255, 255, 0.06);
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sidebar-close:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      .node-header-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 15px;
+        margin-bottom: 16px;
+      }
+      .node-name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+      }
+      .node-subtitle {
+        font-size: 0.76rem;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+      .node-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .badge.layer-badge {
+        background: rgba(0, 229, 255, 0.12);
+        color: var(--accent-cyan);
+        border: 1px solid rgba(0, 229, 255, 0.3);
+      }
+      .badge.role-badge {
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--accent-amber);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .section-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin: 16px 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .node-desc {
+        font-size: 0.83rem;
+        line-height: 1.55;
+        color: #cbd5e1;
+        margin-bottom: 12px;
+      }
+      .path-box {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        padding: 8px 11px;
+        font-size: 0.74rem;
+        color: var(--accent-cyan);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        word-break: break-all;
+      }
+      .path-box button {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        margin-left: 8px;
+      }
+      .path-box button:hover {
+        color: #fff;
+      }
+
+      .formula-card {
+        background: rgba(168, 85, 247, 0.07);
+        border: 1px solid rgba(168, 85, 247, 0.25);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        font-size: 0.82rem;
+        margin-bottom: 12px;
+        color: #e2e8f0;
+        overflow-x: auto;
+      }
+
+      .rel-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .rel-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 10px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        font-size: 0.76rem;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .rel-item:hover {
+        background: rgba(255, 255, 255, 0.07);
+        border-color: var(--accent-cyan);
+      }
+      .rel-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .rel-direction {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+      }
+
+      .sim-slider-row {
+        margin-bottom: 14px;
+      }
+      .sim-slider-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        margin-bottom: 5px;
+      }
+      .sim-slider {
+        width: 100%;
+        accent-color: var(--accent-emerald);
+        cursor: pointer;
+      }
+      .sim-verdict {
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 12px;
+      }
+      .sim-verdict.primed {
+        background: rgba(16, 185, 129, 0.14);
+        color: var(--layer-kernel);
+        border: 1px solid rgba(16, 185, 129, 0.35);
+      }
+      .sim-verdict.transitional {
+        background: rgba(245, 158, 11, 0.14);
+        color: var(--accent-amber);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+      }
+      .sim-verdict.dormant {
+        background: rgba(244, 63, 94, 0.15);
+        color: var(--accent-rose);
+        border: 1px solid rgba(244, 63, 94, 0.4);
+      }
+
+      @media (max-width: 1024px) {
+        .charts-grid,
+        .sim-workbench-grid,
+        .kpi-strip {
+          grid-template-columns: 1fr;
+        }
+        #sidebar {
+          width: 100%;
+          max-width: 380px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand-block">
+        <div class="brand-icon"><i class="fa-solid fa-seedling"></i></div>
+        <div class="brand-title">
+          PHIDS
+          <span class="brand-pill">Architecture Visualizer</span>
+        </div>
+      </div>
+
+      <div class="view-tabs">
+        <button class="tab-btn active" data-view="graph-view">
+          <i class="fa-solid fa-diagram-project"></i> 1. ECS &amp; PDE Graph (26 Nodes)
+        </button>
+        <button class="tab-btn" data-view="scaling-view">
+          <i class="fa-solid fa-gauge-high"></i> 2. Scaling &amp; Zarr Benchmarks
+        </button>
+        <button class="tab-btn" data-view="workbench-view">
+          <i class="fa-solid fa-sliders"></i> 3. Chemotaxis &amp; Hill Lab
+        </button>
+      </div>
+
+      <div class="header-actions">
+        <button class="action-btn" id="btn-export-png" title="Download high-res PNG of graph">
+          <i class="fa-solid fa-image"></i> PNG
+        </button>
+        <button class="action-btn" id="btn-export-json" title="Download full topology JSON">
+          <i class="fa-solid fa-file-code"></i> JSON
+        </button>
+        <button class="action-btn primary" id="btn-toggle-sidebar" title="Toggle component inspector drawer">
+          <i class="fa-solid fa-sliders"></i> Inspector
+        </button>
+      </div>
+    </header>
+
+    <div class="filter-toolbar">
+      <div class="layer-pills">
+        <span class="layer-label">Layers:</span>
+        <div class="layer-chip active" data-layer="interface">
+          <span class="chip-dot"></span> Interface &amp; MCP (6)
+        </div>
+        <div class="layer-chip active" data-layer="orchestration">
+          <span class="chip-dot"></span> Loop &amp; Constraints (6)
+        </div>
+        <div class="layer-chip active" data-layer="kernel">
+          <span class="chip-dot"></span> ECS &amp; Numba PDE (7)
+        </div>
+        <div class="layer-chip active" data-layer="telemetry">
+          <span class="chip-dot"></span> Replay, Batch &amp; DSE (7)
+        </div>
+      </div>
+
+      <div class="quick-filters">
+        <button class="text-link" id="btn-all-layers">All Layers</button>
+        <span style="color: var(--text-muted)">•</span>
+        <button class="text-link" id="btn-hot-path">Hot Tick Path</button>
+        <span style="color: var(--text-muted)">•</span>
+        <button class="text-link" id="btn-offline-loop">Replay &amp; EEDSE</button>
+      </div>
+
+      <div class="graph-controls">
+        <select id="layout-mode-select" class="layout-select" title="Select Graph Layout Pattern">
+          <option value="swimlane" selected>Layout: 4-Column Swimlanes</option>
+          <option value="dagre-lr">Layout: Dagre Widescreen (LR)</option>
+          <option value="dagre-tb">Layout: Dagre Vertical (TB)</option>
+        </select>
+
+        <div class="search-wrapper">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="node-search" class="search-input" placeholder="Filter modules, equations, files..." />
+          <span id="search-match-count" class="search-count"></span>
+        </div>
+
+        <button class="canvas-btn" id="btn-fit" title="Zoom to Fit [Space]">
+          <i class="fa-solid fa-expand"></i>
+        </button>
+      </div>
+    </div>
+
+    <main>
+      <div id="graph-view" class="view-container active">
+        <div id="swimlane-headers">
+          <span class="swimlane-badge" style="color: var(--layer-interface); border-color: rgba(0, 229, 255, 0.4)">Col 1: API, UI &amp; MCP</span>
+          <span class="swimlane-badge" style="color: var(--layer-orchestration); border-color: rgba(168, 85, 247, 0.4)">Col 2: Loop &amp; Bounds</span>
+          <span class="swimlane-badge" style="color: var(--layer-kernel); border-color: rgba(16, 185, 129, 0.4)">Col 3: ECS &amp; Numba Kernels</span>
+          <span class="swimlane-badge" style="color: var(--layer-telemetry); border-color: rgba(245, 158, 11, 0.4)">Col 4: Zarr, Batch &amp; DSE</span>
+        </div>
+        <div id="cy"></div>
+
+        <div class="floating-canvas-bar">
+          <button class="canvas-btn" id="btn-zoom-in" title="Zoom In">+</button>
+          <button class="canvas-btn" id="btn-zoom-out" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+          <button class="canvas-btn" id="btn-reset-zoom" title="Fit Entire Graph"><i class="fa-solid fa-crosshairs"></i></button>
+        </div>
+
+        <div class="graph-legend">
+          <div class="legend-title">
+            <span>Architecture Layers</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 400">Click node to inspect</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color-box" style="background: var(--layer-interface)"></div>
+            <span>Col 1 - FastAPI, DraftState, MCP</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color-box" style="background: var(--layer-orchestration)"></div>
+            <span>Col 2 - SimulationLoop, Rule of 16</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color-box" style="background: var(--layer-kernel)"></div>
+            <span>Col 3 - ECSWorld, Flow &amp; Systems</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color-box" style="background: var(--layer-telemetry)"></div>
+            <span>Col 4 - Zarr, Polars, Batch &amp; DSE</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="scaling-view" class="view-container">
+        <div class="kpi-strip">
+          <div class="kpi-card">
+            <span class="kpi-label">64x32 Orchard Median</span>
+            <span class="kpi-val" style="color: var(--accent-emerald)">1.25 ms/tick</span>
+            <span class="kpi-sub">138x - 262x @njit speedup over pure Python</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">256x256 Equilibrium Median</span>
+            <span class="kpi-val" style="color: var(--accent-cyan)">50.5 ms/tick</span>
+            <span class="kpi-sub">12-thread SHA-256 bit-identical trajectories</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Zarr Zstd Compression</span>
+            <span class="kpi-val" style="color: var(--accent-amber)">10.5x - 12.1x</span>
+            <span class="kpi-sub">3.76 MB compressed vs 39.32 MB raw float32</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Bitwise Toroidal Wrap</span>
+            <span class="kpi-val" style="color: var(--accent-purple)">1.04 ns/op</span>
+            <span class="kpi-sub">12.95x faster than modulo operator (13.48 ns)</span>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-title"><i class="fa-solid fa-layer-group" style="color: var(--accent-emerald)"></i> Grid Scale Tick Cost (Median vs p95 ms/tick)</div>
+            </div>
+            <div id="chart-grid-scale" class="chart-canvas"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-title"><i class="fa-solid fa-microchip" style="color: var(--accent-cyan)"></i> OpenMP / Numba Thread Scaling (256x256 Equilibrium)</div>
+            </div>
+            <div id="chart-thread-scale" class="chart-canvas"></div>
+          </div>
+        </div>
+
+        <div class="bench-cards-grid" id="bench-cards-container"></div>
+      </div>
+
+      <div id="workbench-view" class="view-container">
+        <div class="kpi-strip">
+          <div class="kpi-card">
+            <span class="kpi-label">Delayed Hopf Critical Tau</span>
+            <span class="kpi-val" style="color: var(--accent-purple)">tau* = 2.38 h</span>
+            <span class="kpi-sub">Oscillatory regime when synthesis lag exceeds step dt = 1.0 h</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Wind-Corridor Mortality Drop</span>
+            <span class="kpi-val" style="color: var(--accent-emerald)">2.6x - 3.0x</span>
+            <span class="kpi-sub">90-run dual-channel semiochemical ablation on 256x256 ecotone</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Rule of 16 Static Allocation</span>
+            <span class="kpi-val" style="color: var(--accent-cyan)">[16, H, W]</span>
+            <span class="kpi-sub">Contiguous float32 planes aligned for 256-bit AVX2 lanes</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Subnormal FTZ Clamping</span>
+            <span class="kpi-val" style="color: var(--accent-amber)">eps &lt; 1e-4</span>
+            <span class="kpi-sub">Eliminates FPU denormal stalls &amp; improves Zarr compression</span>
+          </div>
+        </div>
+
+        <div class="sim-workbench-grid">
+          <div class="panel-card">
+            <h3><i class="fa-solid fa-sliders" style="color: var(--accent-emerald)"></i> Interactive Chemotaxis &amp; Hill Signal Explorer</h3>
+            <div class="sim-slider-row">
+              <div class="sim-slider-label">
+                <span>Softmax Temperature (tau)</span>
+                <strong id="lbl-tau">0.60</strong>
+              </div>
+              <input id="sl-tau" class="sim-slider" type="range" min="0.10" max="3.00" step="0.05" value="0.60" />
+            </div>
+            <div class="sim-slider-row">
+              <div class="sim-slider-label">
+                <span>Downwind Flow Potential Advantage dF</span>
+                <strong id="lbl-df">1.40</strong>
+              </div>
+              <input id="sl-df" class="sim-slider" type="range" min="0.00" max="4.00" step="0.10" value="1.40" />
+            </div>
+            <div class="sim-slider-row">
+              <div class="sim-slider-label">
+                <span>Normalized Elicitor Ratio (c / K_H)</span>
+                <strong id="lbl-conc">1.25</strong>
+              </div>
+              <input id="sl-conc" class="sim-slider" type="range" min="0.00" max="4.00" step="0.05" value="1.25" />
+            </div>
+            <div class="sim-slider-row">
+              <div class="sim-slider-label">
+                <span>Hill Cooperativity Coefficient (n)</span>
+                <strong id="lbl-hill">3</strong>
+              </div>
+              <input id="sl-hill" class="sim-slider" type="range" min="1" max="6" step="1" value="3" />
+            </div>
+            <div id="wb-verdict" class="sim-verdict primed">Primed Defense Regime</div>
+            <div class="metric-row">
+              <div><div class="metric-k">Preferred Tile P(N_max)</div><div class="metric-v" id="out-pmax">0.00%</div></div>
+              <div><div class="metric-k">Hill Priming Response S(c)</div><div class="metric-v" id="out-hill">0.000</div></div>
+              <div><div class="metric-k">Shannon Foraging Entropy</div><div class="metric-v" id="out-entropy">0.00 bits</div></div>
+              <div><div class="metric-k">Defense Regimen State</div><div class="metric-v" id="out-regime">Induced</div></div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-title"><i class="fa-solid fa-wave-square" style="color: var(--accent-purple)"></i> Hill Response S(c) &amp; Boltzmann Neighbor Choice Profile</div>
+            </div>
+            <div id="chart-workbench" class="chart-canvas"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title"><i class="fa-solid fa-microchip" style="color: var(--accent-cyan)"></i> Module Inspector</div>
+        <button class="sidebar-close" id="btn-close-sidebar" title="Close Inspector [Esc]"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="sidebar-content" id="sidebar-details"></div>
+    </aside>
+
+    <script>
+      const GRAPH_ELEMENTS = {
+        nodes: [
+          { data: { id: "api_main", layer: "interface", col: 0, row: 0, label: "FastAPI App\nmain.py", subtitle: "Async ASGI Entry & Static Portal", path: "src/phids/api/main.py", role: "@backend-architect", description: "Mounts Jinja2 HTML partials, WebSocket endpoints, lifespan resource management, and engine draft state synchronization without blocking event loops.", invariants: "Zero synchronous disk/Zarr I/O on asyncio thread (asyncio.to_thread).", config: "FastAPI + Uvicorn ASGI" } },
+          { data: { id: "ui_draft", layer: "interface", col: 0, row: 1, label: "UI DraftState\nui_state/", subtitle: "Pydantic Editor State & Conversion", path: "src/phids/api/ui_state/state/convert.py", role: "@ui-maintainer", description: "Owns mutable editor draft state separated cleanly from the immutable runtime engine configuration until Reset/Load Draft transitions.", invariants: "Strict roundtrip conversion with empty trigger bounds guards.", config: "DraftState <-> SimulationConfig" } },
+          { data: { id: "routers_sim", layer: "interface", col: 0, row: 2, label: "REST Routers\napi/routers/", subtitle: "Scenario, Control & Batch Endpoints", path: "src/phids/api/routers/__init__.py", role: "@backend-architect", description: "Flat composition root aggregating simulation lifecycle, batch ensemble execution, scenario upload, and DSE steering endpoints via include_router.", invariants: "Arity <= 4 on public handlers; dataclass parameter bags.", config: "APIRouter Composition" } },
+          { data: { id: "ws_stream", layer: "interface", col: 0, row: 3, label: "WebSocket Stream\napi/ws/", subtitle: "Real-Time Tick Telemetry Push", path: "src/phids/api/ws/", role: "@backend-architect", description: "Streams live grid diffs, population telemetry, and death attribution payloads from active simulations or Zarr playback frames.", invariants: "RAII connection pool teardown; never mutates engine buffers directly.", config: "JSON / Frame Delta Stream" } },
+          { data: { id: "htmx_presenters", layer: "interface", col: 0, row: 4, label: "HTMX Presenters\npresenters/", subtitle: "Fragment Rendering & Mycorrhizal Views", path: "src/phids/api/presenters/", role: "@ui-maintainer", description: "Renders server-driven dashboard inspection drawers, mycorrhizal link overlays, and Chart.js phase-space telemetry partials.", invariants: "No tuple returns; strongly typed TypedDict / frozen dataclass views.", config: "Jinja2 + HTMX 2" } },
+          { data: { id: "mcp_server", layer: "interface", col: 0, row: 5, label: "FastMCP Server\nphids/mcp/", subtitle: "AI Diagnostics, Validation & Tools", path: "src/phids/mcp/", role: "@orchestrator", description: "Exposes read-only draft resources, Zarr schema inspection tools, OKF compliance audits, and headless academic plot export payloads.", invariants: "Deterministic schema verification before simulator execution.", config: "phids://config/draft.json" } },
+
+          { data: { id: "sim_loop", layer: "orchestration", col: 1, row: 0, label: "SimulationLoop\nengine/loop.py", subtitle: "Deterministic 6-Phase Tick Coordinator", path: "src/phids/engine/loop.py", role: "@engine-developer", description: "Executes flow generation, camouflage attenuation, lifecycle, interaction, signaling, telemetry accumulation, and ECS garbage collection in strict sequence.", invariants: "Thread-count invariant execution; strict phase ordering per tick.", formula: "\\tau_{\\text{tick}}: \\text{Flow} \\to \\text{Mask} \\to \\text{Life} \\to \\text{Interact} \\to \\text{Signal} \\to \\text{GC}", config: "dt = 1.0 h discrete step" } },
+          { data: { id: "rule_of_16", layer: "orchestration", col: 1, row: 1, label: "Rule of 16\nconstants.py", subtitle: "Static Capacity & SIMD Alignment Bounds", path: "src/phids/shared/constants.py", role: "@engine-developer", description: "Enforces compile-time array caps (16 flora guilds, 16 herbivore guilds, 16 chemical channels) enabling pre-allocated C-contiguous float32 buffers.", invariants: "Zero dynamic allocations inside @njit inner loops.", config: "MAX_SPECIES = 16, MAX_SUBSTANCES = 16" } },
+          { data: { id: "schema_cfg", layer: "orchestration", col: 1, row: 2, label: "Pydantic Configs\napi/schemas/", subtitle: "Immutable Simulation Contracts", path: "src/phids/api/schemas/", role: "@backend-architect", description: "Validates wind advection, biotic trait tables, Hill triggers, and power-of-two grid geometry prior to ECS allocation.", invariants: "No getattr() reflection in runtime hot paths.", formula: "W = 2^k,\\; H = 2^m", config: "SimulationConfig (frozen bounds)" } },
+          { data: { id: "phase_cohorts", layer: "orchestration", col: 1, row: 3, label: "Staggered Cohorts\n& Buffer Swap", subtitle: "Multi-Scale C0 Macro Decoupling", path: "src/phids/engine/loop.py", role: "@engine-developer", description: "Updates daily herbivore metabolism (S=24) and weekly flora photosynthesis (S=168) across staggered cohorts alongside double-buffer flips.", invariants: "Double-buffering immutability across read and _write layers.", formula: "(\\text{id} \\bmod S) = (t \\bmod S)", config: "S_fast=1, S_med=24, S_slow=168" } },
+          { data: { id: "spawner_prng", layer: "orchestration", col: 1, row: 4, label: "Partitioned PRNG\nspawner.py", subtitle: "Bit-Exact PCG64 Seeding & Mitosis", path: "src/phids/engine/spawner.py", role: "@engine-developer", description: "Partitions numpy.random.Generator (PCG64) streams per coordinate/cohort so stochastic dispersal and chemotaxis replay identically.", invariants: "Global numpy.random.* and stdlib random.* strictly prohibited.", config: "SeedSequence + PCG64" } },
+          { data: { id: "termination", layer: "orchestration", col: 1, row: 5, label: "Termination Checker\nconditions.py", subtitle: "Predicates Z1 - Z7 Guardrails", path: "src/phids/telemetry/conditions.py", role: "@causal-verifier", description: "Evaluates extinction collapse, overpopulation, steady-state equilibria, and horizon limits (Z1-Z7) at each tick boundary.", invariants: "Pure scalar reduction post-tick; zero side effects on physics.", config: "Conditions Z1..Z7" } },
+
+          { data: { id: "ecs_world", layer: "kernel", col: 2, row: 0, label: "ECSWorld Core\nengine/core/ecs.py", subtitle: "O(1) Spatial Hash & SoA Registry", path: "src/phids/engine/core/ecs.py", role: "@engine-developer", description: "Maintains contiguous Structure-of-Arrays component buffers for plant energy, structural biomass, swarm counts, and O(1) tile entity lookup tables.", invariants: "Pure NumPy arrays; OOP entities inside core strictly banned.", formula: "O(1)\\;\\text{lookup}: (x,y) \\mapsto \\text{entity\\_id}[]", config: "Contiguous float32 / int32" } },
+          { data: { id: "biotope_buffers", layer: "kernel", col: 2, row: 1, label: "Biotope Grids\ncore/biotope.py", subtitle: "Double-Buffered Planes & Bitmask Wrap", path: "src/phids/engine/core/biotope.py", role: "@engine-developer", description: "Holds read/write layers for plant energy, 16 signal planes, 16 toxin planes, camouflage fields, and bitwise-AND toroidal boundary indexing.", invariants: "Power-of-two bitwise wrap x & (W - 1) saves 12.95x over modulo.", formula: "x_{\\text{wrap}} = x \\;\\&\\; (W - 1)", config: "C-order contiguous np.float32" } },
+          { data: { id: "flow_solver", layer: "kernel", col: 2, row: 2, label: "Flow-Field Solver\nflow/solvers.py", subtitle: "@njit Jacobi Gradient & FTZ Floor", path: "src/phids/engine/core/flow/solvers.py", role: "@engine-developer", description: "Relaxes scalar attractive and toxic potentials into a global foraging guidance field using Numba prange and branchless FTZ truncation.", invariants: "Zero heap allocations; interval checks instead of abs() in inner loops.", formula: "F = \\alpha E_{\\text{eff}} - \\beta \\sum_k T_k", config: "Numba @njit(parallel=True, fastmath=True)" } },
+          { data: { id: "diffusion_pde", layer: "kernel", col: 2, row: 3, label: "Transport PDEs\ndiffusion.py", subtitle: "Wind Advection & 5x5 Gaussian Stencil", path: "src/phids/engine/core/diffusion.py", role: "@engine-developer", description: "Solves airborne VOC advection along wind vectors via semi-Lagrangian interpolation paired with isotropic 5x5 diffusive convolution and decay.", invariants: "FTZ truncation below 1e-4 prevents subnormal FPU stalls.", formula: "\\frac{\\partial c}{\\partial t} = D\\nabla^2 c - \\mathbf{v}\\cdot\\nabla c - \\lambda c + Q", config: "2.1.40 Operator Splitting" } },
+          { data: { id: "sys_lifecycle", layer: "kernel", col: 2, row: 4, label: "Lifecycle Systems\nsystems/lifecycle/", subtitle: "Growth, Phloem, Mycorrhiza & Culling", path: "src/phids/engine/systems/lifecycle/", role: "@engine-developer", description: "Updates decoupled structural biomass vs labile energy, root-link translocation, anemochorous seed dispersal, and branchless cell culling.", invariants: "Matrix trace parity verified under test_causal_data_flow_matrices.py.", formula: "\\frac{dN}{dt} = -k(N - N_{\\text{target}})", config: "Mycorrhizal Root Graph + Seeds" } },
+          { data: { id: "sys_interaction", layer: "kernel", col: 2, row: 5, label: "Interaction Systems\nsystems/interaction/", subtitle: "Softmax MVT, Holling II & Mitosis", path: "src/phids/engine/systems/interaction/", role: "@engine-developer", description: "Computes Boltzmann chemotaxis over von Neumann neighbors, saturating Holling Type II grazing, mechanical defense wear, starvation attrition, and swarm splitting.", invariants: "Branchless float masking (delta * alive_mask) on all transitions.", formula: "P(j) = \\frac{\\exp(F_j / \\tau)}{\\sum_{k\\in\\mathcal{N}} \\exp(F_k / \\tau)}", config: "MVT + Holling Type II" } },
+          { data: { id: "sys_signaling", layer: "kernel", col: 2, row: 6, label: "Signaling Systems\nsystems/signaling/", subtitle: "Hill Priming, VOC Triggers & Camouflage", path: "src/phids/engine/systems/signaling/", role: "@engine-developer", description: "Evaluates damage thresholds and dose-dependent Hill receptor priming to emit systemic toxins, warning VOCs, and camouflage masks across root and air pathways.", invariants: "Thread-safe trigger write-back via pre-allocated SoA signal masks.", formula: "S(c) = \\frac{c^n}{K_H^n + c^n}", config: "Delayed Synthesis lag tau" } },
+
+          { data: { id: "tick_metrics", layer: "telemetry", col: 3, row: 0, label: "TickMetrics\ntick_metrics.py", subtitle: "Per-Tick Death & Energy Ledger", path: "src/phids/telemetry/tick_metrics.py", role: "@causal-verifier", description: "Captures conservation balance, guild headcounts, and disaggregated death attribution (herbivory, starvation, defense upkeep, reproduction, mycorrhiza).", invariants: "Synchronized strictly at end of tick after garbage collection.", config: "Conservative Accounting" } },
+          { data: { id: "telemetry_polars", layer: "telemetry", col: 3, row: 1, label: "Polars Analytics\nanalytics.py", subtitle: "Lazy Longitudinal Table Materialiser", path: "src/phids/telemetry/analytics.py", role: "@backend-architect", description: "Buffers compact per-tick scalar records and materialises columnar Polars DataFrames lazily to avoid quadratic per-tick DataFrame reallocation.", invariants: "O(1) append during simulation run; zero engine blocking.", config: "Polars Lazy / Columnar" } },
+          { data: { id: "zarr_replay", layer: "telemetry", col: 3, row: 2, label: "Zarr Replay Store\nzarr_replay.py", subtitle: "Chunked Zstd Arrays & ReplaySlice", path: "src/phids/io/zarr_replay.py", role: "@backend-architect", description: "Serializes dense biotope planes and signal grids with Zstandard compression (10.5x-12.1x) and serves zero-copy ReplaySlice playback bypassing the engine.", invariants: "Rule 01 playback bypasses simulation kernels unconditionally.", config: "Zstd Level Compression + _metadata" } },
+          { data: { id: "export_suite", layer: "telemetry", col: 3, row: 3, label: "Export Suite\ntelemetry/export/", subtitle: "TikZ, LaTeX, PNG & CSV Generators", path: "src/phids/telemetry/export/core.py", role: "@docs-scientist", description: "Generates publication-ready figures, LaTeX tables, TikZ plots, and structured CSV summaries directly from historical telemetry buffers.", invariants: "Vectorized export; shared base helpers with zero duplicate formatting.", config: "TikZ / PNG / CSV / JSON" } },
+          { data: { id: "batch_runner", layer: "telemetry", col: 3, row: 4, label: "Batch Orchestrator\nengine/batch/", subtitle: "Spawn-Pool Ensemble & Sobol Sweeps", path: "src/phids/engine/batch/orchestrator.py", role: "@engine-developer", description: "Executes multi-seed Monte Carlo ensembles, ablations, and Common Random Numbers Sobol sensitivity batches via spawn multiprocessing.", invariants: "BatchExecutionRequest parameter bag; isolated worker seeds.", config: "Multiprocessing (spawn)" } },
+          { data: { id: "bio_duckdb", layer: "telemetry", col: 3, row: 5, label: "DuckDB Bio-DB\nbio_database.py", subtitle: "Empirical Traits & Kleiber Scaling", path: "src/phids/analytics/bio_database.py", role: "@docs-scientist", description: "Queries empirical trait catalogues via embedded DuckDB with RAII context scoping and Kleiber metabolic scaling (BMR proportional to M^0.75).", invariants: "RAII context manager teardown; zero orphaned DB cursors.", formula: "\\text{BMR} \\propto M^{0.75}", config: "DuckDB Embedded" } },
+          { data: { id: "dse_optimizer", layer: "telemetry", col: 3, row: 6, label: "EEDSE Optimizer\ndse_optimizer.py", subtitle: "Optuna / NSGA-II Trait Exploration", path: "src/phids/analytics/dse_optimizer.py", role: "@docs-scientist", description: "Explores calibrated phenotypic parameter subspaces combining analytical pruning (dse_pruning.py) with multi-objective Optuna search.", invariants: "Pre-prunes infeasible genotypes prior to costly 256x256 rollouts.", config: "Optuna TPE / NSGA-II" } }
+        ],
+        edges: [
+          { data: { id: "e_api_draft", source: "api_main", target: "ui_draft", label: "editor state" } },
+          { data: { id: "e_api_routers", source: "api_main", target: "routers_sim", label: "include_router" } },
+          { data: { id: "e_ui_cfg", source: "ui_draft", target: "schema_cfg", label: "validate" } },
+          { data: { id: "e_routers_loop", source: "routers_sim", target: "sim_loop", label: "step / reset" } },
+          { data: { id: "e_routers_batch", source: "routers_sim", target: "batch_runner", label: "ensemble job", dashed: true } },
+          { data: { id: "e_mcp_schema", source: "mcp_server", target: "schema_cfg", label: "validate config", dashed: true } },
+          { data: { id: "e_mcp_export", source: "mcp_server", target: "export_suite", label: "render plots", dashed: true } },
+          { data: { id: "e_loop_rule", source: "sim_loop", target: "rule_of_16", label: "pre-alloc cap" } },
+          { data: { id: "e_cfg_loop", source: "schema_cfg", target: "sim_loop", label: "SimulationConfig" } },
+          { data: { id: "e_loop_cohorts", source: "sim_loop", target: "phase_cohorts", label: "stride gate" } },
+          { data: { id: "e_loop_spawner", source: "sim_loop", target: "spawner_prng", label: "PCG64 seed" } },
+          { data: { id: "e_loop_ecs", source: "sim_loop", target: "ecs_world", label: "SoA handles" } },
+          { data: { id: "e_loop_bio", source: "sim_loop", target: "biotope_buffers", label: "swap read/write" } },
+          { data: { id: "e_loop_flow", source: "sim_loop", target: "flow_solver", label: "phase 1 gradient" } },
+          { data: { id: "e_cohorts_life", source: "phase_cohorts", target: "sys_lifecycle", label: "cohort mask" } },
+          { data: { id: "e_cohorts_int", source: "phase_cohorts", target: "sys_interaction", label: "cohort mask" } },
+          { data: { id: "e_spawner_int", source: "spawner_prng", target: "sys_interaction", label: "rng stream" } },
+          { data: { id: "e_bio_flow", source: "biotope_buffers", target: "flow_solver", label: "plant + toxins" } },
+          { data: { id: "e_bio_diff", source: "biotope_buffers", target: "diffusion_pde", label: "VOC planes" } },
+          { data: { id: "e_diff_sig", source: "diffusion_pde", target: "sys_signaling", label: "advected concentration" } },
+          { data: { id: "e_flow_int", source: "flow_solver", target: "sys_interaction", label: "gradient F(r)" } },
+          { data: { id: "e_ecs_life", source: "ecs_world", target: "sys_lifecycle", label: "spatial hash" } },
+          { data: { id: "e_ecs_int", source: "ecs_world", target: "sys_interaction", label: "herbivory & mitosis" } },
+          { data: { id: "e_int_sig", source: "sys_interaction", target: "sys_signaling", label: "grazing triggers" } },
+          { data: { id: "e_sig_bio", source: "sys_signaling", target: "biotope_buffers", label: "_write buffer" } },
+          { data: { id: "e_loop_term", source: "sim_loop", target: "termination", label: "Z1-Z7 check" } },
+          { data: { id: "e_loop_metrics", source: "sim_loop", target: "tick_metrics", label: "tick summary" } },
+          { data: { id: "e_metrics_polars", source: "tick_metrics", target: "telemetry_polars", label: "append dict" } },
+          { data: { id: "e_bio_zarr", source: "biotope_buffers", target: "zarr_replay", label: "FTZ + Zstd flush" } },
+          { data: { id: "e_zarr_ws", source: "zarr_replay", target: "ws_stream", label: "playback frames", dashed: true } },
+          { data: { id: "e_polars_htmx", source: "telemetry_polars", target: "htmx_presenters", label: "phase space", dashed: true } },
+          { data: { id: "e_polars_export", source: "telemetry_polars", target: "export_suite", label: "lazy DataFrame" } },
+          { data: { id: "e_batch_loop", source: "batch_runner", target: "sim_loop", label: "multi-seed worker", dashed: true } },
+          { data: { id: "e_duck_schema", source: "bio_duckdb", target: "schema_cfg", label: "trait presets", dashed: true } },
+          { data: { id: "e_dse_batch", source: "dse_optimizer", target: "batch_runner", label: "trial batch" } }
+        ]
+      };
+
+      const BENCH_SCENARIOS = [
+        { name: "Wind-Tunnel Orchard", grid: "64x32 (2,048 cells)", median: "1.25 ms/tick", p95: "1.40 ms/tick", plants: "15 plants", badge: "Fast Unit Baseline", detail: "Baseline wind corridor validating advection, Hill priming thresholds, and Zarr Zstd 10.47x archival across 400 ticks." },
+        { name: "Eternal Canopy Blueprint", grid: "128x128 (16,384 cells)", median: "2.59 ms/tick", p95: "2.91 ms/tick", plants: "7 plants", badge: "Canopy & Root Graph", detail: "Intermediate spatial domain benchmarking long-range mycorrhizal translocation and bit-exact SHA-256 invariance across 1-12 threads." },
+        { name: "Benchmarking Example", grid: "256x256 (65,536 cells)", median: "36.62 ms/tick", p95: "81.96 ms/tick", plants: "15,714 plants", badge: "Dense Flora Load", detail: "High-density SoA spatial hash workload demonstrating cache-local vectorized lifecycle and interaction sweeps." },
+        { name: "Ecotone Equilibrium", grid: "256x256 (65,536 cells)", median: "50.52 ms/tick (12T)", p95: "122.62 ms/tick", plants: "22,121 plants", badge: "11-Guild Full Ecosystem", detail: "Full 6 flora + 5 herbivore guilds over 9 chemical channels scaling from 68.90 ms (1T) down to 50.46-50.52 ms/tick on multi-core hosts." }
+      ];
+
+      const LAYER_COLORS = {
+        interface: "#00e5ff",
+        orchestration: "#a855f7",
+        kernel: "#10b981",
+        telemetry: "#f59e0b"
+      };
+
+      let cy = null;
+      let activeLayers = new Set(["interface", "orchestration", "kernel", "telemetry"]);
+
+      function getLayoutConfig(mode) {
+        if (mode === "swimlane") {
+          const colSpacing = 330;
+          const rowSpacing = 88;
+          return {
+            name: "preset",
+            positions: (node) => ({
+              x: 160 + (node.data("col") || 0) * colSpacing,
+              y: 90 + (node.data("row") || 0) * rowSpacing
+            }),
+            fit: true,
+            padding: 45,
+            animate: true,
+            animationDuration: 350
+          };
+        }
+        const rankDir = mode === "dagre-tb" ? "TB" : "LR";
+        if (typeof cytoscapeDagre !== "undefined") {
+          return { name: "dagre", rankDir, nodeSep: 42, edgeSep: 22, rankSep: 90, padding: 45, animate: true, animationDuration: 350 };
+        }
+        return { name: "breadthfirst", directed: true, padding: 45, animate: true, animationDuration: 350 };
+      }
+
+      function initCytoscape(retries = 30) {
+        const container = document.getElementById("cy");
+        if (!container) return;
+        if (typeof cytoscape === "undefined") {
+          if (retries > 0) setTimeout(() => initCytoscape(retries - 1), 60);
+          return;
+        }
+        if (cy) return;
+        try {
+          if (typeof cytoscapeDagre !== "undefined") cytoscape.use(cytoscapeDagre);
+        } catch (err) {
+          console.warn("Dagre registration note:", err);
+        }
+
+        cy = cytoscape({
+          container,
+          elements: JSON.parse(JSON.stringify([...GRAPH_ELEMENTS.nodes, ...GRAPH_ELEMENTS.edges])),
+          style: [
+            {
+              selector: "node",
+              style: {
+                label: "data(label)",
+                color: "#f8fafc",
+                "font-size": "11px",
+                "font-family": "Inter, sans-serif",
+                "font-weight": 600,
+                "text-valign": "center",
+                "text-halign": "center",
+                "text-wrap": "wrap",
+                "text-max-width": "185px",
+                "line-height": 1.35,
+                width: 205,
+                height: 54,
+                shape: "round-rectangle",
+                "background-color": "#0d1629",
+                "border-width": 2,
+                "border-color": (ele) => LAYER_COLORS[ele.data("layer")] || "#64748b",
+                "border-opacity": 0.9,
+                "transition-property": "background-color, border-color, border-width, opacity",
+                "transition-duration": "0.18s"
+              }
+            },
+            {
+              selector: "edge",
+              style: {
+                width: 1.8,
+                "line-color": "rgba(148, 163, 184, 0.28)",
+                "target-arrow-color": "rgba(148, 163, 184, 0.5)",
+                "target-arrow-shape": "triangle",
+                "curve-style": "bezier",
+                "arrow-scale": 0.85,
+                label: "data(label)",
+                "font-size": "8.5px",
+                "font-family": "JetBrains Mono, monospace",
+                color: "#94a3b8",
+                "text-background-color": "#060911",
+                "text-background-opacity": 0.88,
+                "text-background-padding": "2px",
+                "text-background-shape": "roundrectangle"
+              }
+            },
+            {
+              selector: "node:selected, node.highlighted",
+              style: { "border-width": 3.5, "border-color": "#ffffff", "background-color": "#172542" }
+            },
+            { selector: "node.dimmed", style: { opacity: 0.16 } },
+            { selector: "edge[?dashed]", style: { "line-style": "dashed", "line-dash-pattern": [6, 4], opacity: 0.65 } },
+            { selector: "edge.dimmed", style: { opacity: 0.07 } },
+            {
+              selector: "edge.highlighted-edge",
+              style: { width: 3, "line-color": "#00e5ff", "target-arrow-color": "#00e5ff", color: "#ffffff", opacity: 1, "z-index": 99 }
+            }
+          ],
+          layout: getLayoutConfig("swimlane")
+        });
+
+        cy.on("tap", "node", (evt) => {
+          renderNodeInspector(evt.target.data(), true);
+          highlightNeighborhood(evt.target);
+        });
+        cy.on("tap", (evt) => {
+          if (evt.target === cy) {
+            cy.elements().removeClass("dimmed highlighted-edge highlighted");
+            document.getElementById("sidebar").classList.remove("open");
+          }
+        });
+
+        const defaultNode = cy.$("#sim_loop");
+        if (defaultNode && defaultNode.length > 0) renderNodeInspector(defaultNode.data(), false);
+      }
+
+      function highlightNeighborhood(node) {
+        if (!cy) return;
+        cy.elements().removeClass("highlighted-edge").addClass("dimmed");
+        node.removeClass("dimmed");
+        const hood = node.neighborhood();
+        hood.nodes().removeClass("dimmed");
+        hood.edges().removeClass("dimmed").addClass("highlighted-edge");
+        node.connectedEdges().removeClass("dimmed").addClass("highlighted-edge");
+      }
+
+      function runSelectedLayout() {
+        if (!cy) return;
+        const mode = document.getElementById("layout-mode-select").value;
+        document.getElementById("swimlane-headers").style.display = mode === "swimlane" ? "flex" : "none";
+        try {
+          cy.layout(getLayoutConfig(mode)).run();
+        } catch (e) {
+          cy.layout(getLayoutConfig("swimlane")).run();
+        }
+      }
+
+      function renderNodeInspector(data, openDrawer = false) {
+        const container = document.getElementById("sidebar-details");
+        if (!container) return;
+        const layerNames = {
+          interface: "API, UI & MCP Ingress",
+          orchestration: "Simulation Loop & Constraints",
+          kernel: "ECS & Numba PDE Kernels",
+          telemetry: "Zarr Replay, Batch & DSE"
+        };
+        const layerColor = LAYER_COLORS[data.layer] || "#00e5ff";
+        const cleanTitle = (data.label || "").replace("\n", " - ");
+        const connectedEdges = GRAPH_ELEMENTS.edges.filter((e) => e.data.source === data.id || e.data.target === data.id);
+        const incoming = connectedEdges.filter((e) => e.data.target === data.id);
+        const outgoing = connectedEdges.filter((e) => e.data.source === data.id);
+
+        let mathHtml = "";
+        if (data.formula) {
+          let rendered = `<code>${data.formula}</code>`;
+          if (typeof katex !== "undefined") {
+            try {
+              rendered = katex.renderToString(data.formula, { throwOnError: false, displayMode: true });
+            } catch (e) {
+              rendered = `<code>${data.formula}</code>`;
+            }
+          }
+          mathHtml = `<div class="section-title"><i class="fa-solid fa-square-root-variable"></i> Mathematical / Structural Relation</div><div class="formula-card">${rendered}</div>`;
+        }
+
+        container.innerHTML = `
+          <div class="node-header-card" style="border-left: 4px solid ${layerColor};">
+            <div class="node-name">${cleanTitle}</div>
+            <div class="node-subtitle">${data.subtitle || ""}</div>
+            <div class="node-badges">
+              <span class="badge layer-badge" style="color:${layerColor}; border-color:${layerColor}; background:${layerColor}1a;">${layerNames[data.layer] || data.layer}</span>
+              <span class="badge role-badge">${data.role || "@architect"}</span>
+            </div>
+            <div class="section-title"><i class="fa-solid fa-file-code"></i> Repository Path</div>
+            <div class="path-box">
+              <code>${data.path}</code>
+              <button id="btn-copy-path" data-path="${data.path}" title="Copy path"><i class="fa-regular fa-copy"></i></button>
+            </div>
+          </div>
+          <div class="section-title"><i class="fa-solid fa-align-left"></i> Architectural Responsibility</div>
+          <div class="node-desc">${data.description}</div>
+          ${data.invariants ? `<div class="section-title"><i class="fa-solid fa-shield-halved"></i> Enforced Invariant</div><div class="node-desc" style="color:var(--accent-amber);">${data.invariants}</div>` : ""}
+          ${mathHtml}
+          ${data.config ? `<div class="section-title"><i class="fa-solid fa-sliders"></i> Contract &amp; Parameters</div><div class="path-box" style="color:#e2e8f0; font-size:0.72rem;"><code>${data.config}</code></div>` : ""}
+          <div class="section-title"><i class="fa-solid fa-diagram-next"></i> Connected Components (${incoming.length + outgoing.length})</div>
+          <div class="rel-list">
+            ${incoming.map((e) => `<div class="rel-item" onclick="focusGraphNode('${e.data.source}')"><div class="rel-label"><i class="fa-solid fa-arrow-right-to-bracket" style="color:var(--accent-cyan);"></i><strong>${e.data.source}</strong></div><span class="rel-direction">in: ${e.data.label}</span></div>`).join("")}
+            ${outgoing.map((e) => `<div class="rel-item" onclick="focusGraphNode('${e.data.target}')"><div class="rel-label"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--accent-purple);"></i><strong>${e.data.target}</strong></div><span class="rel-direction">out: ${e.data.label}</span></div>`).join("")}
+          </div>`;
+
+        const copyBtn = document.getElementById("btn-copy-path");
+        if (copyBtn) {
+          copyBtn.addEventListener("click", (e) => {
+            navigator.clipboard.writeText(e.currentTarget.getAttribute("data-path"));
+            copyBtn.innerHTML = '<i class="fa-solid fa-check" style="color:var(--layer-kernel);"></i>';
+            setTimeout(() => { copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>'; }, 1200);
+          });
+        }
+        if (openDrawer) document.getElementById("sidebar").classList.add("open");
+      }
+
+      function focusGraphNode(nodeId) {
+        if (!cy) return;
+        const target = cy.$(`#${nodeId}`);
+        if (target.length > 0) {
+          cy.elements().removeClass("highlighted");
+          target.addClass("highlighted");
+          cy.animate({ center: { eles: target }, zoom: 1.15, duration: 300 });
+          renderNodeInspector(target.data(), true);
+          highlightNeighborhood(target);
+        }
+      }
+
+      function renderScalingCharts() {
+        if (typeof Plotly === "undefined") return;
+        const view = document.getElementById("scaling-view");
+        if (!view || !view.classList.contains("active")) return;
+
+        const baseLayout = {
+          paper_bgcolor: "rgba(0,0,0,0)",
+          plot_bgcolor: "rgba(0,0,0,0)",
+          font: { color: "#cbd5e1", family: "Inter, sans-serif", size: 11 },
+          margin: { l: 55, r: 20, t: 25, b: 50 },
+          xaxis: { gridcolor: "rgba(255,255,255,0.06)" },
+          yaxis: { gridcolor: "rgba(255,255,255,0.06)", title: "Tick Time (ms)" }
+        };
+
+        Plotly.newPlot("chart-grid-scale", [
+          {
+            name: "Median ms/tick",
+            type: "bar",
+            x: ["64x32 Orchard", "128x128 Canopy", "256x256 Bench", "256x256 Ecotone"],
+            y: [1.253, 2.590, 36.623, 57.229],
+            marker: { color: "#10b981" }
+          },
+          {
+            name: "p95 ms/tick",
+            type: "bar",
+            x: ["64x32 Orchard", "128x128 Canopy", "256x256 Bench", "256x256 Ecotone"],
+            y: [1.404, 2.908, 81.956, 147.966],
+            marker: { color: "#00e5ff" }
+          }
+        ], { ...baseLayout, barmode: "group" }, { responsive: true, displayModeBar: false });
+
+        Plotly.newPlot("chart-thread-scale", [
+          {
+            name: "Median ms/tick",
+            type: "scatter",
+            mode: "lines+markers",
+            x: ["1T", "2T", "4T", "6T", "12T"],
+            y: [68.90, 55.60, 50.76, 50.46, 50.52],
+            line: { color: "#a855f7", width: 3 },
+            marker: { size: 8 }
+          }
+        ], { ...baseLayout, xaxis: { ...baseLayout.xaxis, title: "Numba / OpenMP Threads" } }, { responsive: true, displayModeBar: false });
+      }
+
+      function renderBenchCards() {
+        const container = document.getElementById("bench-cards-container");
+        if (!container) return;
+        container.innerHTML = BENCH_SCENARIOS.map((s) => `
+          <div class="panel-card">
+            <h3><i class="fa-solid fa-cubes" style="color: var(--accent-cyan)"></i> ${s.name}</h3>
+            <span class="badge layer-badge" style="margin-bottom:8px; display:inline-block;">${s.badge}</span>
+            <p class="node-desc" style="margin-top:6px;">${s.detail}</p>
+            <div class="metric-row">
+              <div><div class="metric-k">Lattice</div><div class="metric-v">${s.grid}</div></div>
+              <div><div class="metric-k">Flora Count</div><div class="metric-v">${s.plants}</div></div>
+              <div><div class="metric-k">Median</div><div class="metric-v" style="color:var(--accent-emerald)">${s.median}</div></div>
+              <div><div class="metric-k">p95 Tail</div><div class="metric-v" style="color:var(--accent-cyan)">${s.p95}</div></div>
+            </div>
+          </div>`).join("");
+      }
+
+      function updateWorkbench() {
+        const tau = parseFloat(document.getElementById("sl-tau").value);
+        const df = parseFloat(document.getElementById("sl-df").value);
+        const ratio = parseFloat(document.getElementById("sl-conc").value);
+        const n = parseInt(document.getElementById("sl-hill").value, 10);
+
+        document.getElementById("lbl-tau").innerText = tau.toFixed(2);
+        document.getElementById("lbl-df").innerText = df.toFixed(2);
+        document.getElementById("lbl-conc").innerText = ratio.toFixed(2);
+        document.getElementById("lbl-hill").innerText = String(n);
+
+        // 4 von Neumann cells + current cell: favored downwind tile has potential df, others 0
+        const logits = [df / tau, 0, 0, 0, -0.35 / tau];
+        const maxL = Math.max(...logits);
+        const exps = logits.map((v) => Math.exp(v - maxL));
+        const sumE = exps.reduce((a, b) => a + b, 0);
+        const probs = exps.map((v) => v / sumE);
+        const pMax = probs[0];
+        const entropy = -probs.reduce((acc, p) => (p > 1e-12 ? acc + p * Math.log2(p) : acc), 0);
+
+        const sHill = ratio <= 0 ? 0 : Math.pow(ratio, n) / (1.0 + Math.pow(ratio, n));
+
+        document.getElementById("out-pmax").innerText = (pMax * 100).toFixed(1) + "%";
+        document.getElementById("out-hill").innerText = sHill.toFixed(3);
+        document.getElementById("out-entropy").innerText = entropy.toFixed(2) + " bits";
+
+        const verdictEl = document.getElementById("wb-verdict");
+        const regimeEl = document.getElementById("out-regime");
+        if (sHill >= 0.5) {
+          verdictEl.className = "sim-verdict primed";
+          verdictEl.innerText = "Primed Induced Defense Regime (S >= 0.50)";
+          regimeEl.innerText = "Induced VOC + Toxin";
+        } else if (sHill >= 0.15) {
+          verdictEl.className = "sim-verdict transitional";
+          verdictEl.innerText = "Sub-Threshold Hill Ramp-Up (0.15 <= S < 0.50)";
+          regimeEl.innerText = "Transitional Priming";
+        } else {
+          verdictEl.className = "sim-verdict dormant";
+          verdictEl.innerText = "Basal Constitutive State (S < 0.15)";
+          regimeEl.innerText = "Constitutive Only";
+        }
+
+        if (typeof Plotly !== "undefined" && document.getElementById("workbench-view").classList.contains("active")) {
+          const xs = [];
+          const ys = [];
+          for (let r = 0; r <= 4.001; r += 0.08) {
+            xs.push(r);
+            ys.push(r <= 0 ? 0 : Math.pow(r, n) / (1.0 + Math.pow(r, n)));
+          }
+          Plotly.newPlot("chart-workbench", [
+            { x: xs, y: ys, type: "scatter", mode: "lines", name: "Hill Curve S(c)", line: { color: "#a855f7", width: 3 } },
+            { x: [ratio], y: [sHill], type: "scatter", mode: "markers", name: "Active Operating Point", marker: { color: "#10b981", size: 11 } }
+          ], {
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+            font: { color: "#cbd5e1", family: "Inter, sans-serif", size: 11 },
+            margin: { l: 55, r: 20, t: 25, b: 50 },
+            xaxis: { title: "Normalized Concentration c / K_H", gridcolor: "rgba(255,255,255,0.06)" },
+            yaxis: { title: "Receptor Activation S(c)", range: [0, 1.05], gridcolor: "rgba(255,255,255,0.06)" }
+          }, { responsive: true, displayModeBar: false });
+        }
+      }
+
+      function applyLayerFilters() {
+        if (!cy) return;
+        cy.batch(() => {
+          cy.nodes().forEach((n) => n.style("display", activeLayers.has(n.data("layer")) ? "element" : "none"));
+          cy.edges().forEach((e) => {
+            const vis = activeLayers.has(e.source().data("layer")) && activeLayers.has(e.target().data("layer"));
+            e.style("display", vis ? "element" : "none");
+          });
+        });
+        document.querySelectorAll(".layer-chip").forEach((chip) => {
+          chip.classList.toggle("active", activeLayers.has(chip.getAttribute("data-layer")));
+        });
+      }
+
+      function initControls() {
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+            document.querySelectorAll(".view-container").forEach((v) => v.classList.remove("active"));
+            btn.classList.add("active");
+            const targetId = btn.getAttribute("data-view");
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) targetEl.classList.add("active");
+
+            if (targetId === "graph-view" && cy) {
+              requestAnimationFrame(() => { cy.resize(); cy.fit(undefined, 45); });
+            } else if (targetId === "scaling-view") {
+              requestAnimationFrame(renderScalingCharts);
+            } else if (targetId === "workbench-view") {
+              requestAnimationFrame(updateWorkbench);
+            }
+          });
+        });
+
+        document.getElementById("layout-mode-select").addEventListener("change", runSelectedLayout);
+        document.querySelectorAll(".layer-chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            const layer = chip.getAttribute("data-layer");
+            if (activeLayers.has(layer)) {
+              if (activeLayers.size > 1) activeLayers.delete(layer);
+            } else {
+              activeLayers.add(layer);
+            }
+            applyLayerFilters();
+          });
+        });
+
+        document.getElementById("btn-all-layers").addEventListener("click", () => {
+          activeLayers = new Set(["interface", "orchestration", "kernel", "telemetry"]);
+          applyLayerFilters();
+        });
+        document.getElementById("btn-hot-path").addEventListener("click", () => {
+          activeLayers = new Set(["orchestration", "kernel"]);
+          applyLayerFilters();
+        });
+        document.getElementById("btn-offline-loop").addEventListener("click", () => {
+          activeLayers = new Set(["telemetry", "interface"]);
+          applyLayerFilters();
+        });
+
+        const searchInput = document.getElementById("node-search");
+        const searchCount = document.getElementById("search-match-count");
+        searchInput.addEventListener("input", (e) => {
+          const q = e.target.value.toLowerCase().trim();
+          if (!cy) return;
+          if (!q) {
+            cy.nodes().removeClass("highlighted");
+            searchCount.innerText = "";
+            return;
+          }
+          let matches = 0;
+          let first = null;
+          cy.nodes().forEach((n) => {
+            const d = n.data();
+            const hit = d.label.toLowerCase().includes(q) || (d.path && d.path.toLowerCase().includes(q)) || (d.description && d.description.toLowerCase().includes(q));
+            if (hit) {
+              n.addClass("highlighted");
+              matches++;
+              if (!first) first = n;
+            } else {
+              n.removeClass("highlighted");
+            }
+          });
+          searchCount.innerText = matches ? `${matches}` : "0";
+          if (first) {
+            cy.animate({ center: { eles: first }, zoom: 1.15, duration: 250 });
+            renderNodeInspector(first.data(), true);
+          }
+        });
+
+        document.getElementById("btn-fit").addEventListener("click", () => cy && cy.fit(undefined, 45));
+        document.getElementById("btn-reset-zoom").addEventListener("click", () => cy && cy.fit(undefined, 45));
+        document.getElementById("btn-zoom-in").addEventListener("click", () => cy && cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } }));
+        document.getElementById("btn-zoom-out").addEventListener("click", () => cy && cy.zoom({ level: cy.zoom() * 0.8, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } }));
+        document.getElementById("btn-toggle-sidebar").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
+        document.getElementById("btn-close-sidebar").addEventListener("click", () => document.getElementById("sidebar").classList.remove("open"));
+
+        document.getElementById("btn-export-png").addEventListener("click", () => {
+          if (!cy) return;
+          const a = document.createElement("a");
+          a.download = "phids-architecture.png";
+          a.href = cy.png({ full: true, scale: 2.5, bg: "#060911" });
+          a.click();
+        });
+        document.getElementById("btn-export-json").addEventListener("click", () => {
+          const blob = new Blob([JSON.stringify({ topology: GRAPH_ELEMENTS, benchmarks: BENCH_SCENARIOS }, null, 2)], { type: "application/json" });
+          const a = document.createElement("a");
+          a.download = "phids-topology.json";
+          a.href = URL.createObjectURL(blob);
+          a.click();
+        });
+
+        ["sl-tau", "sl-df", "sl-conc", "sl-hill"].forEach((id) => {
+          document.getElementById(id).addEventListener("input", updateWorkbench);
+        });
+
+        window.addEventListener("keydown", (e) => {
+          if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+          if (e.code === "Space") {
+            e.preventDefault();
+            if (cy) cy.fit(undefined, 45);
+          } else if (e.key === "Escape") {
+            document.getElementById("sidebar").classList.remove("open");
+            if (cy) cy.elements().removeClass("dimmed highlighted-edge highlighted");
+          }
+        });
+      }
+
+      function bootVisualizer() {
+        initCytoscape();
+        renderBenchCards();
+        updateWorkbench();
+        initControls();
+
+        if (typeof ResizeObserver !== "undefined") {
+          const cyEl = document.getElementById("cy");
+          if (cyEl) {
+            const ro = new ResizeObserver(() => {
+              if (cy && document.getElementById("graph-view").classList.contains("active")) {
+                cy.resize();
+                cy.fit(undefined, 45);
+              }
+            });
+            ro.observe(cyEl);
+          }
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootVisualizer);
+      } else {
+        bootVisualizer();
+      }
+    </script>
+  </body>
+</html>

@@ -13,6 +13,7 @@ semantic incoming/outgoing link navigation, and verified code claim inspection.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import re
 import sys
@@ -26,7 +27,10 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.governance.validate_okf import resolve_ast_node_lines as _resolve_ast_node_lines  # noqa: E402
+try:
+    from scripts.governance.validate_okf import resolve_ast_node_lines as _resolve_ast_node_lines
+except ModuleNotFoundError:
+    _resolve_ast_node_lines = importlib.import_module("validate_okf").resolve_ast_node_lines
 
 # Claim files whose claims are shown on a doc node regardless of evidence files.
 DOC_CLAIMS_MAPPING: dict[str, list[str]] = {
@@ -45,23 +49,30 @@ DOC_FILE_COVERAGE: dict[str, list[str]] = {
         "src/phids/engine/core/",
     ],
     "docs/scientific_model/part_2_autotrophic_dynamics/flora_and_symbiosis.md": [
-        "src/phids/engine/systems/flora/",
+        "src/phids/engine/systems/lifecycle/",
+        "src/phids/engine/components/plant.py",
     ],
     "docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md": [
-        "src/phids/engine/systems/defense/",
+        "src/phids/engine/systems/interaction/",
+        "src/phids/engine/systems/signaling/",
+        "src/phids/engine/components/plant.py",
+        "src/phids/engine/components/substances.py",
     ],
     "docs/scientific_model/part_3_signaling_and_transport/reaction_diffusion.md": [
         "src/phids/engine/core/diffusion.py",
         "src/phids/engine/systems/signaling/",
     ],
     "docs/scientific_model/part_3_signaling_and_transport/chemotaxis.md": [
-        "src/phids/engine/systems/herbivore/",
+        "src/phids/engine/core/flow/",
+        "src/phids/engine/systems/interaction/movement/",
     ],
     "docs/scientific_model/part_4_heterotrophic_kinematics/herbivore_behavior.md": [
-        "src/phids/engine/systems/herbivore/",
+        "src/phids/engine/systems/interaction/",
+        "src/phids/engine/components/swarm.py",
     ],
     "docs/scientific_model/part_4_heterotrophic_kinematics/population_dynamics.md": [
-        "src/phids/engine/systems/herbivore/",
+        "src/phids/engine/systems/interaction/population.py",
+        "src/phids/engine/systems/lifecycle/reproduction.py",
     ],
     "docs/scientific_model/part_5_ecosystem_synthesis/ecological_analytics.md": [
         "src/phids/telemetry/",

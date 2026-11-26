@@ -308,7 +308,8 @@ PHIDS provides an automated task runner configured in `Justfile`, backed by 16 v
 | **Setup & Quality** | `just setup`<br>`just lint`<br>`just format`<br>`just check` | Bootstraps environment (`uv sync --all-groups`), configures git hooks, executes Ruff linting/formatting, Mypy validation, and pre-commit gates. |
 | **Test Suites** | `just test`<br>`just test-scientific`<br>`just test-parity`<br>`just test-replay`<br>`just mutate` | Runs standard Pytest, physical invariant conservation proofs, two-pass Numba JIT parity suites, Zarr replay round-trips, and Mutmut mutation testing. |
 | **Causal Matrices & OKF** | `just test-matrix`<br>`just audit-matrix`<br>`just verify-matrix`<br>`just validate-okf`<br>`just visualize-okf` | Governs OKF Data-Flow Matrices: audits coverage, asserts 1:1 table-to-trace parity against live simulation runs, and compiles the interactive knowledge graph (`docs/viz.html`). |
-| **Runtime & Performance** | `just run`<br>`just docs` / `just serve`<br>`just benchmark`<br>`just bench-compare-jit` | Starts the FastAPI simulation loop (`uv run phids --reload`), builds/serves live Zensical docs, and executes micro-benchmarks and comparative JIT phase profiling. |
+| **Runtime & Performance** | `just run`<br>`just batch`<br>`just docs` / `just serve`<br>`just benchmark`<br>`just bench-compare-jit` | Starts the FastAPI simulation server (`uv run phids --reload`), executes headless Monte Carlo batches (`just batch` / `just batch-telemetry`), builds/serves Zensical docs, and runs JIT benchmarks. |
+| **Paper & Experiments** | `just paper-experiments`<br>`just paper-figures`<br>`just paper-build` | Reproduces SIMPAT scientific experiment sweeps, regenerates TikZ/figure assets from data, and compiles `docs/latex/scientific_report/main.pdf`. |
 | **Data Pipeline & Hygiene** | `just etl`<br>`just etl-extended`<br>`just clean`<br>`just act-ci` | Ingests empirical trait databases (DuckDB), cleans build caches, and executes containerized GitHub Actions quality gates locally via `act`. |
 
 #### Fast Local CI Script & Hook-Only Verification
@@ -392,7 +393,7 @@ The documentation is organized into clear domain areas with Open Knowledge Forma
 | 🧪 **Test Architecture** | [`tests/README.md`](tests/README.md) | [Tests](https://github.com/foersben/PHIDS/blob/develop/tests/README.md) | Two-pass Numba testing, physical invariant proofs, mutation testing, and coverage governance. |
 | ⚙️ **Automation Tooling** | [`scripts/README.md`](scripts/README.md) | [Scripts](https://github.com/foersben/PHIDS/blob/develop/scripts/README.md) | Dossiers for all 16 validation, audit, parity, ETL, and benchmarking scripts. |
 | 🤖 **Agent Ecosystem** | [`.agents/README.md`](.agents/README.md) | [Agents Guide](https://github.com/foersben/PHIDS/blob/develop/.agents/README.md) | Autonomous multi-agent ecosystem, OKF routing table, roles, skills, and prompt templates. |
-| 🌐 **Knowledge Graph** | [`docs/viz.html`](docs/viz.html) | [Knowledge Graph](https://foersben.github.io/PHIDS/viz.html) | Interactive Cytoscape.js visual graph of the OKF documentation and agent ecosystem. |
+| 🌐 **Interactive Hub** | [`docs/interactive_hub.md`](docs/interactive_hub.md) | [Interactive Hub](https://foersben.github.io/PHIDS/interactive_hub/) | Unified portal embedding both the 26-node Architecture Visualizer (`docs/architecture_visualizer.html`) and the OKF Knowledge Graph (`docs/viz.html`). |
 | 📖 **Reference & API** | [`docs/reference/index.md`](docs/reference/index.md) | [Reference](https://foersben.github.io/PHIDS/reference/) | Module ownership map, glossary/concept index, requirements traceability, and Python API. |
 
 ### 🔮 Future Prospects & Strategic Enhancements
@@ -433,12 +434,12 @@ src/
 │   ├── mcp/            Model Context Protocol (MCP) modular package for AI agents
 │   └── __main__.py     Command-line interface (Typer CLI) entry point
 └── data_pipeline/      Empirical trait extraction & normalization pipeline (BIEN, LEDA, GIFT, TRY, PanTHERIA)
-.agents/                AI agent ecosystem (OKF AGENTS.md, role definitions, skills & workflows)
+.agents/                AI agent ecosystem (OKF AGENTS.md, role definitions, and native skills)
 data/                   Empirical DuckDB trait database (TRY/PanTHERIA) & batch export ledgers
-docs/                   Zensical documentation corpus with OKF frontmatter & Future Prospects
-examples/               Curated scenario blueprint JSON files
+docs/                   Zensical documentation corpus, interactive visualizers, and LaTeX manuscript sources
+examples/               Curated scenario blueprints (`examples/*.json` & `examples/scenarios/`)
 packaging/              PyInstaller desktop binary packaging configuration
-scripts/                Automation & validation scripts (16 scripts, pre-commit & CI gates; see scripts/README.md)
+scripts/                Automation, validation, and paper experiment scripts (see scripts/README.md)
 tests/                  Hypothesis invariant tests, two-pass Numba tests, and API integration (see tests/README.md)
 ```
 

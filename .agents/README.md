@@ -246,7 +246,7 @@ Skills in `.agents/skills/` coordinate multi-phase tasks:
 
 | Slash Command | Skill / Workflow Document | Primary Roles | Description |
 | :--- | :--- | :--- | :--- |
-| `/jules-session-triage` | [jules-session-triage.md](workflows/jules-session-triage.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, generates HITL reviews, and enforces session lifecycle cleanup (deletion upon merge/discard). |
+| `/jules-session-triage` | [jules-session-triage](skills/jules-session-triage/SKILL.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, generates HITL reviews, and enforces session lifecycle cleanup (deletion upon merge/discard). |
 | `/epistemic-soundness-audit` | [epistemic-soundness-audit](skills/epistemic-soundness-audit/SKILL.md) | `02`, `09`, `10` | 10-slice relational audit verifying biological fidelity, mathematical rigor, and HPC invariants across docs and code. |
 | `/matrix-tdd-refactor` | [matrix-tdd-refactor](skills/matrix-tdd-refactor/SKILL.md) | `03`, `04`, `09` | Translates conceptual behavior to Data-Flow Matrix tables, Pytest traces, branchless Numba kernels, and verified OKF links. |
 | `/validate-full-stack` | [validate-full-stack](skills/validate-full-stack/SKILL.md) | All | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
@@ -267,7 +267,7 @@ Keeping track of which README files and Zensical concept documents require updat
   * **Canon 📜:** Audits Zensical scientific documents against engine math and preserves narrative prose.
   * **Sentinel 🛡️:** Audits and syncs workspace READMEs, CLI commands, and directory trees.
   * **Vigil 👁️:** Asserts OKF frontmatter validity, matrix coverage, and table-to-trace numerical parity.
-* **Composable Workflow Execution:** Can trigger or delegate to `/validate-full-stack`, `/matrix-drift-reconciliation`, `/epistemic-soundness-audit`, or `/jules-session-triage`.
+* **Composable Workflow Execution:** Can trigger or delegate to `/validate-full-stack`, `/auto-reconcile-matrix-drift`, `/epistemic-soundness-audit`, or `/jules-session-triage`.
 * **Static Verification Gate:** Concludes with `uv run zensical build -f zensical.toml -s` to guarantee zero broken links or markdown syntax errors.
 
 ---
@@ -310,19 +310,16 @@ graph TD
     end
 
     subgraph Execution [Operational Execution]
-        Workflows[3. Slash Workflows: .agents/workflows/<br/>Multi-step interactive and background pipelines]
-        Skills[4. Executable Skills: .agents/skills/<br/>Deterministic command cheatsheets and verification runners]
+        Skills[3. Native Antigravity Skills: .agents/skills/<br/>Multi-step playbooks and deterministic verification runners]
     end
 
-    Roles --> Workflows
-    Rules --> Workflows
-    Workflows --> Skills
+    Roles --> Skills
+    Rules --> Skills
 ```
 
 * **Specialist Roles (`.agents/roles/*.md`):** Establish jurisdiction and mental models (e.g., `@engine-developer`, `@matrix-auditor`).
 * **Architectural Rules (`.agents/rules/*.md`):** Hard invariants enforced by pre-commit and CI (e.g., Rule 00 `uv run`, Rule 02 float masks, Rule 05 parity).
-* **Slash Workflows (`.agents/workflows/*.md`):** Multi-step operational pipelines triggered via slash commands (e.g., `/matrix-tdd-refactor`, `/jules-session-triage`).
-* **Specialist Skills (`.agents/skills/*/SKILL.md`):** Atomic, deterministic playbooks that wrap repository verification scripts into standardized AI execution units.
+* **Specialist Skills (`.agents/skills/*/SKILL.md`):** Unified, discoverable playbooks that combine multi-step agent pipelines (e.g. `/matrix-tdd-refactor`, `/jules-session-triage`) and deterministic verification runners into standardised execution units.
 
 ### 6.3. Dynamic Discovery & Agent Registration
 
