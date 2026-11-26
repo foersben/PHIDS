@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from phids.engine.components.plant import PlantComponent
+from phids.engine.components.swarm import SwarmComponent
 from phids.mcp import helpers
 from phids.mcp.app import mcp
 
@@ -86,9 +88,6 @@ def inspect_live_simulation() -> dict[str, Any]:
     loop = helpers.get_active_sim_loop()
     if loop is None:
         return {"status": "inactive", "message": "No live simulation loop currently loaded"}
-
-    from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.swarm import SwarmComponent
 
     plants = [e.get_component(PlantComponent) for e in loop.world.query(PlantComponent)]
     swarms = [e.get_component(SwarmComponent) for e in loop.world.query(SwarmComponent)]

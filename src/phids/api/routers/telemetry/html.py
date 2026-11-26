@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, Response
 import phids.api.main as api_main
 from phids.api.presenters.diagnostics import build_live_summary
 from phids.api.presenters.telemetry import build_telemetry_svg
+from phids.api.ui_state.state import DraftState, get_draft
 from phids.telemetry.export.core import (
     decimate_dataframe,
     filter_dataframe_columns,
@@ -101,8 +102,6 @@ async def telemetry_chart(request: Request) -> Response:
         legend = True
         latest_metrics = api_main._sim_loop.telemetry.get_latest_metrics()
         live_summary = build_live_summary(api_main._sim_loop)
-
-    from phids.api.ui_state.state import DraftState, get_draft
 
     draft: DraftState = get_draft()
     max_x: int = api_main._sim_loop.env.width if api_main._sim_loop is not None else draft.grid_width

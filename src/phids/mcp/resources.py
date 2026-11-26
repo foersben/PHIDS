@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 
+from phids.engine.components.plant import PlantComponent
+from phids.engine.components.swarm import SwarmComponent
 from phids.mcp import helpers
 from phids.mcp.app import mcp
 
@@ -42,9 +44,6 @@ def live_simulation_resource() -> str:
     loop = helpers.get_active_sim_loop()
     if loop is None:
         return json.dumps({"status": "idle", "message": "No active simulation loop currently loaded"})
-
-    from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.swarm import SwarmComponent
 
     plants = [e.get_component(PlantComponent) for e in loop.world.query(PlantComponent)]
     swarms = [e.get_component(SwarmComponent) for e in loop.world.query(SwarmComponent)]

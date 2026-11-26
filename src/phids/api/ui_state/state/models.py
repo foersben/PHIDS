@@ -8,13 +8,14 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Literal
 
+from phids.api.schemas.species import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
+
 if TYPE_CHECKING:
     from phids.api.schemas.placement import PlacementStrategy
     from phids.api.schemas.responses import BatchJobState
-    from phids.api.schemas.species import (
-        FloraSpeciesParams,
-        HerbivoreSpeciesParams,
-    )
     from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
     from phids.api.ui_state.substances import SubstanceDefinition
     from phids.api.ui_state.triggers import TriggerRule
@@ -95,11 +96,6 @@ class DraftState:
         Returns:
             DraftState: The default draft state.
         """
-        from phids.api.schemas.species import (
-            FloraSpeciesParams,
-            HerbivoreSpeciesParams,
-        )
-
         state = cls(
             flora_species=[
                 FloraSpeciesParams(

@@ -237,7 +237,8 @@ def telemetry_to_dataframe(rows: TelemetryRows) -> pd.DataFrame:
         Wide-format DataFrame with one row per tick and one column per
         scalar metric or per-species measurement.
     """
-    import pandas as pd  # local import to keep dependency optional at module load
+    # Lazy import: heavy optional dependency kept off the startup path.
+    import pandas as pd
 
     if not rows:
         return pd.DataFrame()
@@ -298,6 +299,7 @@ def aggregate_to_dataframe(
     Returns:
         Wide-format DataFrame ready for export.
     """
+    # Lazy import: heavy optional dependency kept off the startup path.
     import pandas as pd
 
     ticks_raw = aggregate.get("ticks", [])

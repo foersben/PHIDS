@@ -15,14 +15,14 @@ import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from phids.api.schemas.species import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
 from phids.api.services.draft.helpers import rebuild_species_ids, resize_diet_matrix
 from phids.api.ui_state.triggers import TriggerRule, _remap_condition_references
 
 if TYPE_CHECKING:
-    from phids.api.schemas.species import (
-        FloraSpeciesParams,
-        HerbivoreSpeciesParams,
-    )
     from phids.api.ui_state.state import DraftState
 
 logger = logging.getLogger(__name__)
@@ -82,8 +82,6 @@ def remove_flora(draft: DraftState, species_id: int) -> None:
         ValueError: No flora species with the requested identifier exists.
 
     """
-    from phids.api.schemas.species import FloraSpeciesParams
-
     idx = next(
         (
             i
@@ -136,8 +134,6 @@ def remove_herbivore(draft: DraftState, species_id: int) -> None:
         ValueError: No herbivore species with the requested identifier exists.
 
     """
-    from phids.api.schemas.species import HerbivoreSpeciesParams
-
     idx = next(
         (
             i

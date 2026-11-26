@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+from phids.api import main as api_main
 from phids.api.ui_state.state import get_draft
 from phids.shared.logging_config import get_recent_logs
 
@@ -43,8 +44,6 @@ def get_active_sim_loop() -> Any | None:
         Any | None: Active SimulationLoop instance or None if not initialized.
     """
     try:
-        from phids.api import main as api_main
-
         return getattr(api_main, "_sim_loop", None)
     except (ImportError, AttributeError):
         return None

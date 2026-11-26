@@ -12,6 +12,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 
 import phids.api.main as api_main
+from phids.api.routers.config.trigger_rules import _render_trigger_rules_partial
 from phids.api.schemas.species import FloraSpeciesParams
 from phids.api.services.draft.species import add_flora, remove_flora
 from phids.api.ui_state.state import DraftState, get_draft
@@ -277,8 +278,6 @@ async def config_flora_update(
     draft.flora_species[lookup.index] = lookup.params.model_copy(update=updates)
     api_main.logger.debug("Flora species updated via API (species_id=%d, fields=%s)", species_id, sorted(updates))
     if view == "morphology":
-        from phids.api.routers.config.trigger_rules import _render_trigger_rules_partial
-
         return _render_trigger_rules_partial(request, draft)
 
     return api_main.templates.TemplateResponse(

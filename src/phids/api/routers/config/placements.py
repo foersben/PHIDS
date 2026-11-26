@@ -17,8 +17,13 @@ from phids.api.presenters.dashboard import build_draft_mycorrhizal_links
 from phids.api.services.draft.placements import (
     add_plant_placement,
     add_swarm_placement,
+    clear_plant_placements,
+    clear_swarm_placements,
     remove_plant_placement,
     remove_swarm_placement,
+)
+from phids.api.services.draft.placements import (
+    clear_placements as _clear_placements,
 )
 from phids.api.ui_state.state import DraftState, get_draft
 from phids.engine.core.placement import generate_banded, generate_clustered, generate_uniform
@@ -237,8 +242,6 @@ async def config_placements_clear(request: Request) -> Response:
         HTML response with the updated placement list.
     """
     draft = get_draft()
-    from phids.api.services.draft.placements import clear_placements as _clear_placements
-
     _clear_placements(draft)
     api_main.logger.info("All draft placements cleared via API")
     return _render_placement_list_partial(request, draft)
@@ -255,8 +258,6 @@ async def config_placements_clear_plants(request: Request) -> Response:
         HTML response with the updated placement list.
     """
     draft = get_draft()
-    from phids.api.services.draft.placements import clear_plant_placements
-
     clear_plant_placements(draft)
     api_main.logger.info("All draft plant placements cleared via API")
     return _render_placement_list_partial(request, draft)
@@ -273,8 +274,6 @@ async def config_placements_clear_swarms(request: Request) -> Response:
         HTML response with the updated placement list.
     """
     draft = get_draft()
-    from phids.api.services.draft.placements import clear_swarm_placements
-
     clear_swarm_placements(draft)
     api_main.logger.info("All draft swarm placements cleared via API")
     return _render_placement_list_partial(request, draft)

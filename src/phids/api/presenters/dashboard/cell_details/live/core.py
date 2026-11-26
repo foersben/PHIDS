@@ -17,11 +17,9 @@ from phids.api.presenters.dashboard.shared import (
 from phids.engine.components.plant import PlantComponent
 from phids.engine.components.substances import SubstanceComponent
 from phids.engine.components.swarm import SwarmComponent
-from phids.engine.core.biotope import GridEnvironment
 
 if TYPE_CHECKING:
     from phids.api.schemas.species import HerbivoreSpeciesParams
-    from phids.engine.components.substances import SubstanceComponent
     from phids.engine.core.biotope import GridEnvironment
     from phids.engine.core.ecs import ECSWorld
     from phids.engine.loop import SimulationLoop
@@ -165,9 +163,6 @@ def build_live_cell_details(
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the configured grid bounds.
 
     """
-    from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.substances import SubstanceComponent
-
     env = loop.env
     world = loop.world
     validate_cell_coordinates(x, y, env.width, env.height)

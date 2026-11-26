@@ -8,6 +8,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from phids.api.presenters.dashboard.payloads.metrics import _compute_plant_metrics
+from phids.engine.components.plant import PlantComponent
+from phids.engine.components.substances import SubstanceComponent
+from phids.engine.components.swarm import SwarmComponent
 
 if TYPE_CHECKING:
     from phids.engine.core.ecs import ECSWorld
@@ -23,8 +26,6 @@ def _extract_plants(world: ECSWorld) -> list[dict[str, Any]]:
     Returns:
         A list of dictionaries containing properties of each plant entity.
     """
-    from phids.engine.components.plant import PlantComponent
-
     plants = []
     for entity in world.query(PlantComponent):
         p = entity.get_component(PlantComponent)
@@ -58,8 +59,6 @@ def _extract_swarms(world: ECSWorld) -> list[dict[str, Any]]:
     Returns:
         A list of dictionaries containing properties of each swarm entity.
     """
-    from phids.engine.components.swarm import SwarmComponent
-
     swarms = []
     for entity in world.query(SwarmComponent):
         s = entity.get_component(SwarmComponent)
@@ -87,8 +86,6 @@ def _extract_substances(world: ECSWorld) -> list[dict[str, Any]]:
     Returns:
         A list of dictionaries containing properties of each substance entity.
     """
-    from phids.engine.components.substances import SubstanceComponent
-
     substances = []
     for entity in world.query(SubstanceComponent):
         sub_comp = entity.get_component(SubstanceComponent)

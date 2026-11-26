@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from phids.api.schemas.simulation import SimulationConfig
 from phids.api.ui_state.state.convert import build_sim_config, from_sim_config
 
 if TYPE_CHECKING:
@@ -49,8 +50,6 @@ def restore_draft() -> DraftState | None:
     Returns:
         Restored :class:`DraftState` if the file exists and is valid, otherwise ``None``.
     """
-    from phids.api.schemas.simulation import SimulationConfig
-
     if not _DRAFT_AUTOSAVE_PATH.exists():
         return None
     try:

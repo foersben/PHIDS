@@ -13,6 +13,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from phids.api.schemas.species import (
+    FloraSpeciesParams,
+    HerbivoreSpeciesParams,
+)
+
 if TYPE_CHECKING:
     from phids.api.ui_state.state import DraftState
 
@@ -75,11 +80,6 @@ def rebuild_species_ids(draft: DraftState) -> None:
         draft: Draft state whose species collections require index compaction.
 
     """
-    from phids.api.schemas.species import (
-        FloraSpeciesParams,
-        HerbivoreSpeciesParams,
-    )
-
     draft.flora_species = [
         fp.model_copy(update={"species_id": i})
         for i, fp in enumerate(draft.flora_species)

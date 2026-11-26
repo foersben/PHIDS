@@ -78,6 +78,7 @@ def generate_png_bytes(
     Returns:
         Raw PNG-encoded bytes of the rendered figure.
     """
+    # Lazy import: heavy optional dependency kept off the startup path.
     import matplotlib
     import matplotlib.pyplot as plt
 

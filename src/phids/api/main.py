@@ -44,7 +44,7 @@ from phids.api.presenters.dashboard import (
 from phids.api.presenters.dashboard.shared import (
     _default_substance_name,
 )
-from phids.api.presenters.diagnostics import render_status_badge_html
+from phids.api.presenters.diagnostics import render_main_action_btn_html, render_status_badge_html
 from phids.api.routers import (
     batch_router,
     config_router,
@@ -54,6 +54,7 @@ from phids.api.routers import (
     telemetry_router,
     ui_router,
 )
+from phids.api.schemas.triggers import SynthesizeSubstanceAction
 from phids.api.ui_state.state import DraftState, get_draft
 from phids.api.websockets import SimulationStreamManager, UIStreamManager
 from phids.engine.core.grid_utils import is_power_of_two
@@ -170,8 +171,6 @@ def _set_simulation_substance_names(
             {definition.substance_id: definition.name for definition in draft.substance_definitions}
         )
         return
-
-    from phids.api.schemas.triggers import SynthesizeSubstanceAction
 
     derived_names: dict[int, str] = {}
     for flora in config.flora_species:
@@ -323,8 +322,6 @@ async def ui_main_action_btn() -> HTMLResponse:
     Returns:
         Styled ``<button id="sim-main-action-btn">`` fragment.
     """
-    from phids.api.presenters.diagnostics import render_main_action_btn_html
-
     return HTMLResponse(content=render_main_action_btn_html(_sim_loop))
 
 

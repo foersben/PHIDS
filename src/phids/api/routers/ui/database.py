@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 from pathlib import Path
 
@@ -31,8 +33,6 @@ async def ui_database(request: Request) -> Response:
     Returns:
         TemplateResponse: Rendered `database_dashboard.html` fragment containing database items.
     """
-    import json
-
     db_path = BIO_DB_PATH
     try:
         with open(db_path, encoding="utf-8") as f:
@@ -54,8 +54,6 @@ async def ui_database(request: Request) -> Response:
 @router.post("/api/database/save", summary="Save Bio-Database")
 async def api_database_save(payload: BioDatabaseModel) -> Response:
     """Save the current bio-database payload."""
-    import json
-
     db_path = BIO_DB_PATH
 
     try:
@@ -75,8 +73,6 @@ async def api_database_rebuild() -> Response:
     Returns:
         Response: Success or failure message.
     """
-    import asyncio
-
     try:
         process = await asyncio.create_subprocess_exec(
             "uv",

@@ -126,6 +126,7 @@ def build_telemetry_svg(df: object) -> str:
     """
     global _svg_cache_key, _svg_cache_value
 
+    # Lazy import: heavy optional dependency kept off the startup path.
     import polars as pl
 
     if not isinstance(df, pl.DataFrame) or df.is_empty() or len(df) < 2:

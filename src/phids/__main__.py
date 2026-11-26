@@ -21,6 +21,8 @@ from typing import Annotated, Any
 
 import typer
 
+from phids.telemetry.export.core import aggregate_to_dataframe
+
 
 class LogLevel(StrEnum):
     """Enumerate supported Uvicorn log levels for CLI validation."""
@@ -54,6 +56,7 @@ def _run_server(*, host: str, port: int, reload: bool, log_level: str) -> None:
         log_level: Uvicorn logging verbosity.
 
     """
+    # Lazy import: heavy optional dependency kept off the startup path.
     import uvicorn
 
     uvicorn.run(
@@ -99,6 +102,7 @@ def serve(
         return
 
     if mcp:
+        # Lazy import: heavy optional dependency kept off the startup path.
         from phids.mcp import run_mcp_server
 
         run_mcp_server()
@@ -131,9 +135,7 @@ def tune(
         samples: The number of distinct configuration candidates to sample during optimization.
         ticks: The number of simulation steps (ticks) to run each candidate evaluation.
     """
-    import json
-    from pathlib import Path
-
+    # Lazy import: heavy optional dependency kept off the startup path.
     from phids.analytics.tuning import TrophicOptimizer
 
     path = Path(blueprint_path)
@@ -197,6 +199,7 @@ class _ExportRequest:
 
 def _load_validated_scenario(scenario_path: Path) -> tuple[dict[str, object], dict[int, str], dict[int, str]]:
     """Load, validate, and extract species metadata from a scenario JSON file."""
+    # Lazy import: heavy optional dependency kept off the startup path.
     from pydantic import ValidationError
 
     from phids.api.schemas.simulation import SimulationConfig
@@ -222,8 +225,6 @@ def _write_batch_exports(req: _ExportRequest) -> list[Path]:
     """Export batch aggregate series as CSV and/or LaTeX booktabs tables."""
     if req.export_format == TelemetryExportFormat.NONE:
         return []
-
-    from phids.telemetry.export.core import aggregate_to_dataframe
 
     df = aggregate_to_dataframe(
         req.aggregate,
@@ -275,6 +276,7 @@ def _format_batch_summary_lines(aggregate: dict[str, Any], job_id: str) -> list[
 
 def _execute_batch_cli(cfg: _BatchExecutionConfig) -> None:
     """Run BatchRunner headlessly from a validated CLI configuration bundle."""
+    # Lazy import: heavy optional dependency kept off the startup path.
     from phids.engine.batch.orchestrator import BatchRunner
 
     scenario_dict, flora_names, herbivore_names = _load_validated_scenario(cfg.scenario_path)

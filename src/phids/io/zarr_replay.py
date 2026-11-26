@@ -30,6 +30,7 @@ from __future__ import annotations
 import atexit
 import json
 import logging
+import shutil
 import tempfile
 import uuid
 from pathlib import Path
@@ -522,8 +523,6 @@ class ReplayBuffer:
         """
         destination = Path(path)
         if destination.suffix == ".zarr":
-            import shutil
-
             if destination.exists():
                 shutil.rmtree(destination)
             if self._store_path is not None:
@@ -561,8 +560,6 @@ class ReplayBuffer:
         if self._store_path is None or not self._owns_store:
             return
         try:
-            import shutil
-
             shutil.rmtree(self._store_path, ignore_errors=True)
         except OSError:
             logger.debug("Zarr replay cleanup skipped for %s", self._store_path)

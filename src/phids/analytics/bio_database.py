@@ -109,6 +109,7 @@ class BioDatabase:
             ImportError: If duckdb is not installed.
         """
         try:
+            # Lazy import: heavy optional dependency kept off the startup path.
             import duckdb
         except ImportError:
             raise ImportError("duckdb is required to use from_duckdb()") from None

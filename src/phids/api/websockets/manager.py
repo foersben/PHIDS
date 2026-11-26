@@ -22,6 +22,8 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from phids.api.presenters.dashboard.payloads import extract_ui_snapshot
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -215,8 +217,6 @@ class UIStreamManager:
                 if self._snapshot_extractor is not None:
                     snapshot = self._snapshot_extractor(loop)
                 else:
-                    from phids.api.presenters.dashboard.payloads import extract_ui_snapshot
-
                     snapshot = extract_ui_snapshot(loop)
 
             payload_text = await asyncio.to_thread(self._encoded_payload, snapshot)

@@ -10,14 +10,17 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
+
 from phids.mcp import helpers
 from phids.mcp.app import mcp
+from phids.telemetry.export import core as telemetry_export_core
+from phids.telemetry.export import latex as telemetry_export_latex
+from phids.telemetry.export import tikz as telemetry_export_tikz
 
 
 def _extract_frame_count(root: Any) -> int:
     """Extract frame count from Zarr root group metadata."""
-    import numpy as np
-
     if "_metadata" not in root:
         return 0
 
@@ -51,6 +54,7 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
             ``tree_keys``, and ``store_attrs``. On failure - ``status`` and ``message``.
     """
     try:
+        # Lazy import: heavy optional dependency kept off the startup path.
         import zarr
     except ImportError as exc:  # pragma: no cover
         return {"status": "error", "message": f"Required package not available: {exc}"}
@@ -123,23 +127,16 @@ def _export_csv_telemetry(
     Returns:
         str: Comma-separated tabular CSV string.
     """
-    from phids.telemetry.export.core import (
-        aggregate_to_dataframe,
-        decimate_dataframe,
-        filter_dataframe_columns,
-        telemetry_to_dataframe,
-    )
-
     if data_type in ("timeseries", "defense_economy", "biomass_stack"):
-        df = aggregate_to_dataframe(filtered_rows)  # type: ignore[arg-type]
+        df = telemetry_export_core.aggregate_to_dataframe(filtered_rows)  # type: ignore[arg-type]
     else:
-        df = telemetry_to_dataframe(filtered_rows)
+        df = telemetry_export_core.telemetry_to_dataframe(filtered_rows)
 
     if tick_interval > 1:
-        df = decimate_dataframe(df, tick_interval)
+        df = telemetry_export_core.decimate_dataframe(df, tick_interval)
 
     if columns:
-        df = filter_dataframe_columns(df, columns)
+        df = telemetry_export_core.filter_dataframe_columns(df, columns)
 
     return str(df.to_csv(index=False).encode("utf-8").decode("utf-8"))
 
@@ -163,9 +160,7 @@ def _export_tex_table_telemetry(
     Returns:
         str: LaTeX tabular snippet string.
     """
-    from phids.telemetry.export.latex import export_bytes_tex_table
-
-    bytes_data = export_bytes_tex_table(
+    bytes_data = telemetry_export_latex.export_bytes_tex_table(
         rows,
         columns=columns,
         include_flora_ids=flora_ids,
@@ -210,9 +205,7 @@ def _export_tex_tikz_telemetry(
     Returns:
         str: Self-contained PGFPlots TikZ figure code string.
     """
-    from phids.telemetry.export.tikz import generate_tikz_str
-
-    return generate_tikz_str(
+    return telemetry_export_tikz.generate_tikz_str(
         filtered_rows,
         data_type,
         flora_names=flora_names,
@@ -264,6 +257,7 @@ def _export_png_telemetry(
     Returns:
         str: Base64-encoded PNG image string.
     """
+    # Lazy import: heavy optional dependency kept off the startup path.
     from phids.telemetry.export.png import generate_png_bytes
 
     bytes_data = generate_png_bytes(
@@ -338,13 +332,13 @@ def export_telemetry_data(
         return {"status": "error", "message": "Invalid format. Must be csv, tex_table, tex_tikz, or png."}
 
     try:
-        from phids.telemetry.export.core import filter_telemetry_rows
-
         rows = loop.telemetry._rows
         flora_names = {sp.species_id: sp.name for sp in loop.config.flora_species}
         herbivore_names = {sp.species_id: sp.name for sp in loop.config.herbivore_species}
 
-        filtered_rows = filter_telemetry_rows(rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids)
+        filtered_rows = telemetry_export_core.filter_telemetry_rows(
+            rows, flora_ids=flora_ids, herbivore_ids=herbivore_ids
+        )
 
         if format == "csv":
             data = _export_csv_telemetry(filtered_rows, data_type, tick_interval, columns)

@@ -12,6 +12,8 @@ from typing import Any
 from pydantic import ValidationError
 
 from phids.api.schemas.simulation import SimulationConfig
+from phids.engine.components.plant import PlantComponent
+from phids.engine.components.swarm import SwarmComponent
 from phids.mcp import helpers
 from phids.mcp.app import mcp
 
@@ -87,9 +89,6 @@ def validate_biological_invariants() -> dict[str, Any]:
     loop = helpers.get_active_sim_loop()
     if loop is None:
         return {"status": "error", "message": "Simulation loop must be active to validate invariants"}
-
-    from phids.engine.components.plant import PlantComponent
-    from phids.engine.components.swarm import SwarmComponent
 
     violations: list[str] = []
     plants = [e.get_component(PlantComponent) for e in loop.world.query(PlantComponent)]

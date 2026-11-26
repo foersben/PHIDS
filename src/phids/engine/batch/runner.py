@@ -12,6 +12,9 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
+from phids.api.schemas.simulation import SimulationConfig
+from phids.engine import loop as engine_loop
+
 if TYPE_CHECKING:
     from phids.engine.batch.types import TelemetryRow
 
@@ -54,11 +57,8 @@ def _run_single_headless(
     random.seed(seed)
     np.random.seed(seed)
 
-    from phids.api.schemas.simulation import SimulationConfig
-    from phids.engine.loop import SimulationLoop
-
     config = SimulationConfig.model_validate(scenario_dict)
-    loop = SimulationLoop(config, disable_replay=True)
+    loop = engine_loop.SimulationLoop(config, disable_replay=True)
 
     async def _advance() -> None:
         """Advance the simulation for max_ticks ticks."""

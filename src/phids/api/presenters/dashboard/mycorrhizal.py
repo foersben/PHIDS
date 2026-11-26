@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from phids.engine.components.plant import PlantComponent
+
 if TYPE_CHECKING:
     from phids.api.ui_state.state import DraftState
     from phids.engine.loop import SimulationLoop
@@ -140,8 +142,6 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
         A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
-    from phids.engine.components.plant import PlantComponent
-
     world = loop.world
     plant_lookup = {
         (plant := entity.get_component(PlantComponent)).entity_id: plant for entity in world.query(PlantComponent)
@@ -190,8 +190,6 @@ def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int)
         A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
         ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
-    from phids.engine.components.plant import PlantComponent
-
     world = loop.world
     entities_at_cell = world.entities_at(x, y)
 

@@ -7,15 +7,25 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import Any, Literal, cast
 
+from phids.api.schemas.placement import (
+    InitialPlantPlacement,
+    InitialSwarmPlacement,
+)
+from phids.api.schemas.simulation import SimulationConfig
+from phids.api.schemas.species import DietCompatibilityMatrix, FloraSpeciesParams
+from phids.api.schemas.triggers import (
+    EnvironmentalSignalInitiator,
+    HerbivoreAttackInitiator,
+    ResourceWithdrawalAction,
+    SynthesizeSubstanceAction,
+    TriggerConditionSchema,
+)
+from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
 from phids.api.ui_state.state.models import DraftState
+from phids.api.ui_state.substances import SubstanceDefinition
 from phids.api.ui_state.triggers import TriggerRule
-
-if TYPE_CHECKING:
-    from phids.api.schemas.simulation import SimulationConfig
-    from phids.api.schemas.triggers import TriggerConditionSchema
-    from phids.api.ui_state.substances import SubstanceDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +42,6 @@ def _build_triggers_by_flora(
     Returns:
         The triggers for each flora species.
     """
-    from phids.api.schemas.triggers import (
-        EnvironmentalSignalInitiator,
-        HerbivoreAttackInitiator,
-        ResourceWithdrawalAction,
-        SynthesizeSubstanceAction,
-        TriggerConditionSchema,
-    )
-
     triggers_by_flora: dict[int, list[TriggerConditionSchema]] = {}
     for rule in trigger_rules:
         initiator: EnvironmentalSignalInitiator | HerbivoreAttackInitiator
@@ -106,13 +108,6 @@ def build_sim_config(state: DraftState) -> SimulationConfig:
     Raises:
         ValueError: If no flora or herbivore species defined.
     """
-    from phids.api.schemas.placement import (
-        InitialPlantPlacement,
-        InitialSwarmPlacement,
-    )
-    from phids.api.schemas.simulation import SimulationConfig
-    from phids.api.schemas.species import DietCompatibilityMatrix, FloraSpeciesParams
-
     if not state.flora_species or not state.herbivore_species:
         logger.warning(
             "Draft build rejected because required species are missing (flora=%d, herbivores=%d)",
@@ -199,9 +194,6 @@ def _extract_triggers(
     config: SimulationConfig,
 ) -> tuple[list[TriggerRule], list[SubstanceDefinition]]:
     """Extract trigger rules and substance definitions from simulation config."""
-    from phids.api.schemas.triggers import HerbivoreAttackInitiator, SynthesizeSubstanceAction
-    from phids.api.ui_state.substances import SubstanceDefinition
-
     imported_trigger_rules: list[TriggerRule] = []
     imported_substances: list[SubstanceDefinition] = []
     seen_substance_ids: set[int] = set()
@@ -298,8 +290,6 @@ def from_sim_config(config: SimulationConfig, scenario_name: str = "") -> DraftS
     Returns:
         DraftState: Reconstructed draft ready for use in the builder UI.
     """
-    from phids.api.ui_state.placements import PlacedPlant, PlacedSwarm
-
     imported_trigger_rules, imported_substances = _extract_triggers(config)
 
     return DraftState(

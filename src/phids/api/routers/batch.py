@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
+import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -29,7 +30,8 @@ from phids.api.schemas.responses import (
 )
 from phids.api.ui_state.state import get_draft
 from phids.api.ui_state.state.convert import build_sim_config
-from phids.telemetry.export.core import decimate_dataframe, filter_dataframe_columns
+from phids.engine.batch.orchestrator import BatchRunner
+from phids.telemetry.export.core import aggregate_to_dataframe, decimate_dataframe, filter_dataframe_columns
 from phids.telemetry.export.tikz import generate_tikz_str
 
 if TYPE_CHECKING:
@@ -119,9 +121,6 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
     Raises:
         HTTPException: If the current draft cannot be compiled into a valid simulation config.
     """
-    import datetime
-    import uuid
-
     draft = get_draft()
     try:
         config = build_sim_config(draft)
@@ -150,8 +149,6 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
     scenario_dict = config.model_dump()
 
     async def _run_batch() -> None:
-        from phids.engine.batch.orchestrator import BatchRunner
-
         job.status = "running"
         try:
             api_main._BATCH_DIR.mkdir(parents=True, exist_ok=True)
@@ -181,9 +178,7 @@ async def batch_start(payload: BatchStartPayload) -> JSONResponse:
             api_main.logger.exception("Batch job %s failed", job_id)
             job.status = "failed"
         finally:
-            import datetime as dt
-
-            job.finished_at = dt.datetime.now(tz=dt.UTC).isoformat()
+            job.finished_at = datetime.datetime.now(tz=datetime.UTC).isoformat()
 
     task = asyncio.create_task(_run_batch())
     _background_tasks.add(task)
@@ -335,8 +330,6 @@ async def batch_export(
         raise HTTPException(status_code=404, detail=f"No summary found for job '{job_id}'.")
 
     aggregate = _load_aggregate_json(summary_path)
-
-    from phids.telemetry.export.core import aggregate_to_dataframe
 
     df = aggregate_to_dataframe(aggregate)
     if tick_interval < 1:
