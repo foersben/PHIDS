@@ -41,6 +41,10 @@ def run_signaling(
 ) -> None:
     """Execute one signaling tick, handling synthesis, emission and diffusion.
 
+    Why: Separating trigger predicate evaluation, biosynthetic latency countdowns, active emission with root-network relay, toxin morbidity, and Gaussian advection-diffusion preserves biologically faithful signal delays and prevents subnormal floating-point pollution.
+
+    How: The pass clears stale toxin layers and orphaned substances, indexes per-cell herbivore counts, evaluates 31-rule trigger predicates against immutable read state, advances synthesis latencies, emits VOCs and toxins whilst deducting metabolic upkeep, applies chemical toxicity to swarms, and delegates PDE diffusion plus decay to ``GridEnvironment``.
+
     Args:
         world: The central ECSWorld instance containing all entity component mappings and active systems.
         env: Grid environment holding signal/toxin layers.

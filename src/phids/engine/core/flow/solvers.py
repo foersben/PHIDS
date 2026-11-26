@@ -3,7 +3,9 @@
 
 """Iterative Jacobi relaxation solvers and camouflage attenuation for flow fields.
 
-Provides multi-threaded OpenMP parallel solvers, power-of-2 fast paths, and the public entry points :func:`compute_flow_field` and :func:`apply_camouflage`.
+Why: Chemotactic navigation needs a smooth global attractant-repellent potential over the toroidal lattice without allocating temporary grids or branching inside tight coordinate loops.
+
+How: The module pairs Numba ``@njit`` relaxation kernels with bitmask wrapping for power-of-two grids, switches to OpenMP ``prange`` parallelism at or above ``NUMBA_PARALLEL_THRESHOLD_CELLS``, and exposes ``compute_flow_field`` and ``apply_camouflage``.
 """
 
 from __future__ import annotations
@@ -367,6 +369,10 @@ def compute_flow_field(
     truncate_threshold: float = 1e-4,
 ) -> npt.NDArray[np.float64]:
     """Public wrapper: sum toxin layers and delegate to the Numba kernel.
+
+    Why: Dispatching relaxation into pre-allocated scratch buffers ensures chemotaxis updates incur zero hot-path NumPy allocations whilst transparently exploiting bitmask modulo and OpenMP threading when lattice dimensions permit.
+
+    How: Missing scratch buffers default to zeroed arrays outside the hot path, after which ``_compute_flow_field`` seeds the base potential via ``_init_base_and_current_jit``, iterates Jacobi sweeps until ``max_diff < truncate_threshold`` or ``width + height`` steps, and zeroes subnormal tails.
 
     Args:
         plant_energy: Shape ``(W, H)`` aggregate plant energy.

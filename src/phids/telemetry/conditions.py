@@ -130,6 +130,10 @@ def check_termination(
 ) -> TerminationResult:
     """Evaluate termination conditions and return the first triggered one.
 
+    Why: Ordered short-circuit evaluation over Z1-Z7 stopping predicates ensures deterministic stopping reasons across single-loop and batch runs whilst reusing shared ``TickMetrics`` snapshots avoids redundant ECS rescans.
+
+    How: The check tests tick exhaustion (Z1), then inspects pre-computed or freshly scanned flora metrics (Z2, Z3, Z6), and finally evaluates herbivore species survival and population bounds (Z4, Z5, Z7).
+
     Args:
         world: The central ECSWorld instance containing all entity component mappings and active systems.
         tick: Current simulation tick.

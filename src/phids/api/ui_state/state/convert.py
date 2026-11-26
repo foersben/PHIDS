@@ -99,6 +99,10 @@ def _build_triggers_by_flora(
 def build_sim_config(state: DraftState) -> SimulationConfig:
     """Assemble a :class:`~phids.api.schemas.SimulationConfig`.
 
+    Why: Decoupling UI builder accumulation from frozen engine schemas ensures partial edits in web forms cannot inject invalid species indices, dangling trigger substance IDs, or inconsistent diet matrix dimensions into ``SimulationLoop``.
+
+    How: The translator validates non-empty flora and herbivore species sets, compiles trigger-rule graphs per flora species with resolved substance properties, trims the boolean diet matrix to ``(N_herbivore, N_flora)``, maps initial placements, and validates the resulting Pydantic ``SimulationConfig``.
+
     Args:
         state: The draft state to convert.
 

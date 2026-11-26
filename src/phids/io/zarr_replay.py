@@ -3,11 +3,9 @@
 
 """High-performance chunked replay storage using Zarr for PHIDS simulation snapshots.
 
-This module implements a Zarr-based replay backend that provides identical ``ReplayBuffer`` API semantics while achieving superior memory efficiency and I/O performance for large-scale simulations. Zarr's chunked columnar storage model naturally maps to PHIDS field layers (plant energy per species, signal concentrations, toxin fields, flow-field gradients), enabling selective decompression and random access without materializing entire snapshots into Python memory.
+Why: Persisting full Eulerian field histories for multi-thousand-tick spatial lattices in Python memory causes severe heap exhaustion, while replay scrubbing requires direct disk-backed slicing that bypasses recalculation by the engine.
 
-The Zarr schema employs fixed-depth chunking across the spatial and temporal dimensions, with metadata groups for tick counters and termination state. Metadata (tick index, termination flags) is stored in a separate consolidated JSON array, eliminating the need to read field chunks for iteration or seeking. Field chunks are compressed using Zstd, offering superior compression ratio and speed compared to default Zarr Blosc profiles when applied to dense floating-point arrays. Subnormal tails (values < 1e-4) in signal layers are omitted during serialization via a custom codec or post-hoc masking, further reducing storage overhead without loss of ecological fidelity.
-
-The design aligns with the project's strict data-oriented paradigm: snapshots are decomposed into structured field arrays during checkpoint and reassembled into the dictionary format for re-simulation compatibility. All serialization and field codec logic is stateless, ensuring deterministic round-trip fidelity.
+How: ``ReplayBuffer`` decomposes spatial field layers into Zstd-compressed chunked Zarr arrays alongside consolidated ``_metadata`` records and raw-array append paths, pruning subnormal signal tails below threshold and rolling temporary stores when bounded by ``max_frames``.
 """
 
 from __future__ import annotations
@@ -48,7 +46,9 @@ METADATA_THRESHOLD_BYTES = 4096
 class ReplayBuffer:
     """Append-only Zarr-backed buffer of chunked tick frames.
 
-    Provides backwards-compatible `ReplayBuffer` API semantics over a Zarr store.
+    Why: Direct raw-array ingestion avoids intermediate Python dict materialisation per tick whilst maintaining bounded storage through automatic FIFO eviction and atexit cleanup for ephemeral stores.
+
+    How: Frames append lazily into chunked Zarr groups under ``fields/{name}/data`` with JSON frame metadata persisted at ``_metadata``; reads materialise immutable ``ReplaySlice`` views or single-tick NumPy dictionaries on demand.
 
     The schema is laid out as:
 

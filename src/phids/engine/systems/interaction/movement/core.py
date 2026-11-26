@@ -89,7 +89,9 @@ def _resolve_swarm_movement(
 ) -> bool:
     """Evaluate and execute movement phase for a single swarm, return has_moved.
 
-    This function implements the core movement logic for a herbivore swarm, handling three distinct priority regimes: **anchoring** (staying put on food), **repulsion** (moving off crowded tiles), and **attraction** (moving along the global flow field).
+    Why: Separating overcrowding repulsion, local host anchoring, and global chemotactic gradient following prevents swarms from oscillating off abundant food whilst guaranteeing deterministic spatial-hash and tile-census coherence.
+
+    How: When ``move_cooldown`` reaches zero, the solver decays ``aversion_memory``, prioritises ``_handle_crowding_and_repulsion`` above ``TILE_CARRYING_CAPACITY``, checks probabilistic local feeding retention via ``_is_swarm_anchored``, falls back to softmax neighbour selection over ``env.flow_field`` using pre-allocated scratch buffers, updates ``ECSWorld`` and ``tile_populations``, and evaluates incidental trampling mortality.
 
     Args:
         swarm: The swarm component.

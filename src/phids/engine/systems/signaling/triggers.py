@@ -372,6 +372,12 @@ def _phase_evaluate_triggers(
     active_substance_ids_by_owner: dict[int, set[int]],
     substance_entities: list[Entity],
 ) -> None:
+    """Evaluate compiled trigger rules across living plant species.
+
+    Why: Grouping plants by species and projecting the sparse spatial swarm dictionary into a compact NumPy array avoids redundant rule iteration and Python dictionary hashing across thousands of trigger checks per tick.
+
+    How: Species without active rules or living members are skipped; for populated guilds, compiled condition trees and response curves are evaluated against co-located swarm counts, local VOC concentrations, and owner substance sets to flag synthesis or phloem-withdrawal actions.
+    """
     plants_by_species = _group_plants_by_species(world)
     curve_map = {"step": 0, "hill": 1, "logarithmic": 2}
     swarm_grid = (

@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 class SimulationStreamManager:
     """Manage binary simulation-state stream connections.
 
-    The manager enforces the machine-facing stream contract for ``/ws/simulation/stream``: payloads are derived from ``SimulationLoop`` snapshots, serialized with json, compressed with zlib, and sent only when the tick changes. A single cached compressed payload is retained per ``(loop identity, tick)`` pair to avoid redundant encoding work under multiple subscribers.
+    Why: Serialising and compressing dense grid snapshots redundantly for every connected client wastes CPU cycles whenever multiple subscribers observe the same paused or stepping simulation tick.
+
+    How: The manager binds ``/ws/simulation/stream``, acquires the loop state snapshot, memoises ``zlib.compress(json.dumps(...))`` keyed by ``(id(loop), tick)``, and pushes binary frames only when the simulation tick advances.
 
     Attributes:
         _cache_loop_id: Identity of the loop instance used for the current cache entry.
@@ -119,7 +121,9 @@ class SimulationStreamManager:
 class UIStreamManager:
     """Manage lightweight UI dashboard stream connections.
 
-    The manager enforces rendering-oriented stream behavior for ``/ws/ui/stream``. It polls the active loop provider, emits JSON payloads only when a visible state signature changes, and uses the configured tick rate to regulate cadence. This preserves responsive visual telemetry while avoiding redundant frame emission during static states.
+    Why: High-frequency dashboard WebSocket updates can stall interactive controls if idle or unchanged ticks re-encode and transmit full JSON payloads onto the FastAPI event loop.
+
+    How: The manager polls the active ``SimulationLoop`` signature (``id``, ``tick``, ``state_revision``, running flags), extracts a thread-safe UI snapshot under the loop lock only on state transitions, encodes compact JSON off-thread via ``asyncio.to_thread``, and throttles polling by ``tick_rate_hz``.
 
     Attributes:
         _payload_builder: Callable that assembles dashboard payload dictionaries.

@@ -3,7 +3,9 @@
 
 """Orchestration of parallel Monte Carlo batch simulations.
 
-This module implements the :class:`BatchRunner`, which manages the parallel execution of headless simulation runs using a ProcessPoolExecutor.
+Why: Running Monte Carlo ensembles in parallel threads under Numba and asyncio triggers GIL contention and fork-safety hazards, so multi-seed sweeps require process isolation and explicit single-threaded worker binding.
+
+How: ``BatchRunner`` spawns isolated worker processes with ``NUMBA_NUM_THREADS=1`` via a ``spawn`` ``ProcessPoolExecutor``, collects deterministic per-run telemetry as futures finish, and serialises NaN-sanitised ensemble summaries to disk.
 """
 
 from __future__ import annotations
@@ -59,7 +61,9 @@ class BatchRunner:
     ) -> BatchResult:
         """Execute ``request.runs`` independent simulation trajectories in parallel.
 
-        Dispatches all runs to a :class:`concurrent.futures.ProcessPoolExecutor` using the ``spawn`` start method, collects telemetry as futures complete, and computes statistical aggregates. The summary JSON is written to ``{output_dir}/{job_id}_summary.json``.
+        Why: Separating per-run trajectory computation into spawned worker processes guarantees thread-count invariance and Numba safety while streaming incremental completion counts back to web or CLI progress observers.
+
+        How: Seeds ``range(seed_offset, seed_offset + runs)`` are dispatched via ``_run_and_save`` on a ``spawn`` pool, resolved futures feed ``on_progress`` callbacks, ``aggregate_batch_telemetry`` computes ensemble curves, and the sanitised summary JSON is written to ``{output_dir}/{job_id}_summary.json``.
 
         Args:
             request: Frozen batch execution configuration bundle.

@@ -28,9 +28,9 @@ def _run_single_headless(
 ) -> list[TelemetryRow]:
     """Execute a single deterministic simulation run without WebSocket or replay overhead.
 
-    This function is the fundamental unit of computation for the batch engine. It instantiates a fresh :class:`~phids.api.schemas.SimulationConfig` from ``scenario_dict``, constructs independent :class:`~phids.engine.core.ecs.ECSWorld` and :class:`~phids.engine.core.biotope.GridEnvironment` objects, and advances the simulation through all five ordered phases (flow field, lifecycle, interaction, signaling, telemetry) for ``max_ticks`` steps. The ``seed`` argument is applied to both :mod:`random` and :mod:`numpy.random` before simulation begins, ensuring reproducible trajectories for a given seed while enabling ensemble diversity across seeds.
+    Why: Batch ensemble throughput depends on eliminating Zarr serialisation and WebSocket locking whilst isolating each replicate PRNG stream inside a picklable top-level worker entry point compatible with ``multiprocessing.spawn``.
 
-    The function is intentionally module-level (not a class method) to satisfy ``multiprocessing.spawn`` picklability requirements. No asyncio infrastructure is created in this path; the :class:`~phids.engine.loop.SimulationLoop` is driven synchronously by calling ``asyncio.run`` within this worker process's own event loop.
+    How: The worker seeds both ``random`` and ``numpy.random``, validates ``scenario_dict`` into ``SimulationConfig``, constructs a fresh ``SimulationLoop`` with ``disable_replay=True``, steps synchronously via ``asyncio.run`` until termination or ``max_ticks``, and returns copied telemetry rows.
 
     Args:
         scenario_dict: JSON-serialisable representation of a :class:`~phids.api.schemas.SimulationConfig` instance.

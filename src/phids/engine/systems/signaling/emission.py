@@ -331,6 +331,12 @@ def _phase_emit_signals_and_toxins(
     dead_plants: list[int],
     plant_death_causes: dict[str, int] | None,
 ) -> None:
+    """Emit active volatile signals and defensive toxins across the ECS world.
+
+    Why: Coupling metabolic upkeep charges to active secretion and deferring spatial swarm toxicity until all toxin emissions finish ensures exact energy conservation and order-independent lethality within a tick.
+
+    How: Iterates active substance components to deduct maintenance energy from live owners, writes VOC emissions (including cardinal mycorrhizal relays) or toxin concentrations into environment layers whilst buffering toxin metadata, and finally applies lethality and repellency across co-located swarms with immediate dead-entity cleanup.
+    """
     active_toxin_props: dict[int, _ActiveToxinProps] = {}
 
     for entity in substance_entities:

@@ -3,7 +3,9 @@
 
 """Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
 
-This module implements the principal simulation driver for PHIDS, responsible for advancing the grid environment and ECS world through a rigorously ordered sequence of systems: flow field, lifecycle, interaction, signaling, and telemetry/termination. The simulation loop enforces deterministic update ordering via an ``asyncio.Lock``, ensuring reproducibility and scientific validity. Double-buffering is employed to maintain a strict separation between read and write states, preventing race conditions and guaranteeing the integrity of biological phenomena such as systemic acquired resistance, metabolic attrition, and mitosis. Per-tick snapshots are captured for replay and telemetry, supporting comprehensive analysis of emergent behaviours and ecological dynamics. The architectural design reflects the project's commitment to data-oriented modelling, O(1) spatial hash lookups, and the Rule of 16 for memory allocation, thereby simulating complex plant-herbivore interactions with maximal computational efficiency and biological fidelity.
+Why: Coupled continuous reaction-diffusion fields and discrete agent populations exhibit order-dependent race conditions unless spatial updates, trophic exchanges, and semiochemical synthesis execute against immutable read layers within a single synchronous lock.
+
+How: Each call to ``step`` acquires an ``asyncio.Lock`` and drives ``GridEnvironment`` and ``ECSWorld`` through flow-field relaxation, cohort-staggered flora lifecycle, multi-timescale interaction, semiochemical signalling, shared telemetry collection, Zarr/no-op replay capture, and Z1-Z7 termination evaluation.
 """
 
 from __future__ import annotations
@@ -59,7 +61,9 @@ _metric_int = coerce_int
 class SimulationLoop:
     """Orchestrate deterministic, double-buffered simulation ticks.
 
-    Double-buffering is achieved by keeping a read-copy of the grid state while writing results to live objects; these writes become the read state for the next tick. Concurrent access is protected by ``asyncio.Lock``.
+    Why: Live FastAPI controls, WebSocket frame extractors, and headless batch drivers all observe the same simulation state simultaneously, so lifecycle flags, pre-allocated Numba scratch buffers, and species lookup tables must be synchronised through one authoritative owner.
+
+    How: The instance pre-compiles diet matrices, compiled trigger schemas, and fixed 5-lane chemotaxis scratch arrays on construction, then gates every tick mutation behind ``self._lock`` while incrementing ``_state_revision`` and persisting frames to ``ReplayBuffer`` or ``NoOpReplayBuffer``.
 
     Args:
         config: Validated :class:`~phids.api.schemas.SimulationConfig`.
@@ -371,7 +375,9 @@ class SimulationLoop:
     async def step(self) -> TerminationResult:
         """Execute one deterministic simulation tick.
 
-        The method performs the ordered phases of the simulation (flow-field update, lifecycle, interaction, signaling, telemetry) while holding an asyncio lock to ensure async-safety. After processing it evaluates termination conditions.
+        Why: Enforcing a fixed causal phase pipeline eliminates order bias between chemotactic attraction, feeding attrition, and induced volatile emissions while ensuring telemetry and termination observe the same committed world state.
+
+        How: Under ``self._lock``, the method computes daily (``tick % 24 == 0``) and weekly (``tick % 168 == 0``) cadence flags, invokes flow-field, lifecycle, interaction, and signalling passes, rebuilds aggregate energy layers, records one shared ``TickMetrics`` pass for telemetry and termination, appends a raw-array replay frame, and advances ``self.tick``.
 
         Returns:
             TerminationResult: Termination state after the tick.

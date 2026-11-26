@@ -262,7 +262,9 @@ def _resolve_swarm_feeding(
 ) -> None:
     """Execute feeding phase on target plants at current position.
 
-    Iterates through all co-located entities, identifies compatible plants, and consumes them. Updates the swarm's energy, triggers plant removal if exhausted, and adjusts swarm behavior (stopping repulsion, becoming repelled) based on the feeding outcome.
+    Why: Co-located plants and herbivores interact asymmetrically across species diet compatibility, mechanical abrasion, and assimilation efficiency, so telemetry cause accounting and chemical-repellency feedback depend on resolving all co-located flora inside a single deterministic pass.
+
+    How: The function scans entities at ``(swarm.x, swarm.y)``, skips incompatible hosts whilst flagging non-host encounters, applies Holling biomass intake and mechanical casualties via ``_feed_on_single_plant``, clears repelled state upon successful feeding (or sets ``INCOMPATIBLE_DIET_REPULSION_TICKS`` otherwise), and garbage-collects exhausted plants immediately.
 
     Args:
         swarm: The swarm component.

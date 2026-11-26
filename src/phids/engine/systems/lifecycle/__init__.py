@@ -117,7 +117,9 @@ def run_lifecycle(
 ) -> None:
     """Execute one lifecycle tick: grow, connect, reproduce, and cull.
 
-    Under Phase-Staggered Cohort execution, each plant entity updates its accumulated growth, mycorrhizal tax, reproduction, and survival checks when (entity_id % 168) == (tick % 168). This distributes per-tick computational load evenly across all ticks and eliminates macro telemetry sawtooth spikes while preserving full temporal scale conservation.
+    Why: Botanical biomass accrual, root-graft taxation, and clonal seeding operate on slow physiological timescales; updating every plant synchronously on coarse tick boundaries would create artificial telemetry sawtooth spikes and uneven CPU bursts.
+
+    How: Using Phase-Staggered Cohort execution (``entity_id % 168 == tick % 168`` unless ``force_all_entities`` is set), each plant amortises weekly growth, upkeep, reproduction, and mortality checks deterministically per tick, followed by cardinal mycorrhizal link formation on configured intervals and deferred entity garbage collection.
 
     Args:
         world: The ECS world registry.

@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 class DSETaskManager:
     """Manages the background execution of the DSE Optimizer.
 
+    Why: NSGA-style multi-objective design space exploration runs CPU-bound evaluations that would starve the FastAPI asyncio event loop if executed inline inside HTTP or WebSocket handlers.
+
+    How: ``start_dse_task`` records the running event loop and creates a ``threading.Event`` cancellation signal, offloads ``DSEOptimizer.run`` to a worker thread via ``asyncio.to_thread``, and marshals Pareto-front telemetry updates back through ``asyncio.run_coroutine_threadsafe``.
+
     Attributes:
         websocket_manager: The websocket manager instance used to broadcast generation progress.
         pareto_cache: Cache of the current Pareto front candidate configs.

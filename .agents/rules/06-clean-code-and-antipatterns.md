@@ -28,6 +28,8 @@ Mandates governing code structure, parameter arity, docstring completeness, and 
   2. Architectural context and computational purpose.
   3. Exhaustive `Args:` and `Returns:` with types and physical/biological units where applicable.
   4. `Raises:` documenting thrown exceptions.
+* **Soft-Wrapped Paragraph Formatting:** Docstrings must remain soft-wrapped with one continuous line per prose paragraph or section entry and no manual hard line breaks.
+* **Selective Why/How Rationale:** `Why:` and `How:` lead-in paragraphs are required only for decisive components - specifically the engine loop, core solvers, systems, replay I/O, batch orchestration, and non-trivial services - and are strictly omitted on trivial helpers, DTOs, schemas, and router endpoints to avoid filler.
 
 ## 3. Async Event Loop Safety
 

@@ -182,6 +182,10 @@ class TrophicOptimizer:
     def optimize(self) -> dict[str, Any]:
         """Run the Differential Evolution optimization loop.
 
+        Why: Ecological parameter regimes exhibit non-convex extinction cliffs and delayed oscillatory bifurcations across stochastic seeds, making gradient-based local tuning unreliable.
+
+        How: The method invokes ``scipy.optimize.differential_evolution`` over log-bounded physiological parameters, evaluating each candidate vector in ``_evaluate`` across ``runs_per_eval`` spawned replay-free trajectories and combining extinction penalty with coefficient-of-variation stability.
+
         Returns:
             The optimized configuration blueprint as a dictionary.
         """

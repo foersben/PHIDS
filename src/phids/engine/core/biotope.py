@@ -3,7 +3,9 @@
 
 """GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients, wind fields, and apparent nutrition). It enforces strict read/write double-buffering across all layers to prevent race conditions and maintain exact tick-level determinism during concurrent simulation phases. No allocations are made during the diffusion loop. All layers are pre-allocated according to the Rule of 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The environment employs explicit read/write double-buffering to prevent race conditions and guarantee deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired resistance, and metabolic attrition. The convolution kernel is pre-computed and its tails are truncated to eliminate subnormal floats below ``SIGNAL_EPSILON``, maintaining computational efficiency and scientific accuracy. The architectural design is tightly coupled to the :class:`~phids.engine.core.ecs.ECSWorld` and flow-field systems, supporting O(1) spatial hash lookups and reproducible ecological dynamics.
+Why: Coupling discrete ECS agents with continuous cellular PDEs requires deterministic read-before-write field snapshots, fixed Rule-of-16 memory layout to eliminate tick-time heap allocations, and ``float32``/``float64`` precision separation matched to numerical sensitivity.
+
+How: ``GridEnvironment`` pre-allocates paired read and ``_write`` NumPy arrays for plant energy, structural mass (``float32``), airborne signals, toxins, wind fields, and Jacobi scratch buffers, detects power-of-two dimensions for bitwise toroidal wrapping, and executes pre-computed Gaussian diffusion with ``SIGNAL_EPSILON`` subnormal truncation.
 """
 
 from __future__ import annotations
@@ -42,6 +44,10 @@ from phids.shared.constants import (
 
 class GridEnvironment:
     """Manage vectorised biotope layers and diffusion helpers.
+
+    Why: Keeping spatial biomass aggregates, chemical gradients, and chemotaxis buffers in contiguous NumPy arrays allows Numba JIT diffusion and solver kernels to execute branchlessly at C speed without per-tick allocation jitter.
+
+    How: On initialisation, the environment validates bounds against ``GRID_W_MAX``, ``GRID_H_MAX``, and ``MAX_SUBSTANCE_TYPES``, computes power-of-two wrap masks via ``get_grid_masks``, and allocates double-buffered layers that swap deterministically after diffusion or rebuild steps.
 
     Args:
         width: Grid width W (1 ≤ W ≤ GRID_W_MAX).

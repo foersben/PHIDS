@@ -184,14 +184,16 @@ def run_interaction(
 ) -> None:
     """Execute one interaction tick with modulo-gated temporal decoupling.
 
+    Why: Movement kinematics operate on fast hourly steps whereas grazing attrition, metabolic basal upkeep, and swarm mitosis span daily and weekly biological scales; gating these passes prevents artificial fast-tick compounding while preserving spatial energy conservation.
+
+    How: The pass accumulates per-tile herbivore populations, caches O(1) foraging parameter slots on medium ticks, iterates swarms for gradient-based movement, daily feeding, basal attrition, and weekly mitosis, and invokes deterministic ECS garbage collection.
+
     The interaction cycle is executed in the following deterministic order:
 
     1. **Calculate Tile Populations**: Computes the number of individuals per tile (every tick).
     2. **Movement**: Determines new positions based on flow field chemotaxis (every tick - Fast Loop).
     3. **Feeding**: Consumes local flora and transfers energy (is_medium_tick - Daily Loop, 24-tick stride).
     4. **Metabolism & Reproduction**: Applies energy costs and casualty liquidation (is_medium_tick - Daily Loop). Mitosis (is_slow_tick - Weekly Loop, 168-tick stride).
-
-    This ensures consistent phase-ordering while matching computation frequency to biological timescales. Per-tick rate values are scaled by the stride multiplier inside each gated block.
 
     Args:
         world: The ECS world.

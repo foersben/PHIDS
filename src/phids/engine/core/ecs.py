@@ -3,7 +3,9 @@
 
 """Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
 
-components and pre-allocated buffers (Rule of 16). The spatial hash is central to the simulation's ability to model emergent ecological phenomena with deterministic reproducibility and scientific rigour.
+Why: Separating integer entity identities from dense component maps and coordinate rosters avoids deep object hierarchies while enabling constant-time co-location lookups for herbivory, root linking, and garbage collection across thousands of agents.
+
+How: ``ECSWorld`` pairs a type-indexed component map with bidirectional ``(x, y)`` spatial hash sets and a structural version counter that memoises multi-component queries until entities are created or destroyed.
 """
 
 from __future__ import annotations
@@ -76,7 +78,9 @@ class Entity:
 class ECSWorld:
     """Central ECS registry managing entities, components and spatial hash.
 
-    The world provides helpers for entity lifecycle, component indexing and a spatial hash grid for efficient cell membership queries.
+    Why: Spatial predator-prey encounters and cardinal mycorrhizal neighbours require O(1) cell membership queries without scanning all entities, while repeated ``world.query(...)`` calls across phases must avoid rebuilding result lists when no structural mutations occurred.
+
+    How: The registry maintains ``_component_index`` sets keyed by component class, bidirectional ``_spatial_hash`` and ``_entity_positions`` maps for constant-time movement and cleanup, and a ``_query_cache`` invalidated only on ``_structural_version`` bumps.
     """
 
     def __init__(self) -> None:

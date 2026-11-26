@@ -26,6 +26,12 @@ def _process_advance_single_synthesis(
     active_substance_ids_by_owner: dict[int, set[int]],
     dead_substances: list[int],
 ) -> None:
+    """Advance biosynthesis latency for one inducible substance entity.
+
+    Why: Physiological synthesis delays determine whether plant defences engage before herbivore outbreaks cross critical exhaustion thresholds, while resetting aborted triggers prevents premature reactivation from stale progress.
+
+    How: Active irreversible substances remain latched; un-triggered inactive instances zero out ``synthesis_remaining``; otherwise living owner plants decrement their countdown and activate once remaining latency reaches zero and the attached composite activation condition still holds.
+    """
     if sub.active and sub.irreversible:
         sub.triggered_this_tick = True
 

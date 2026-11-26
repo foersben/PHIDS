@@ -40,7 +40,9 @@ def spawn_initial_entities(
 ) -> tuple[int, int]:
     """Place initial plants and swarms from scenario configuration into the ECS world.
 
-    Instantiates PlantComponent and SwarmComponent entities, registers spatial indices in the ECS world, sets initial energy layers in GridEnvironment, and rebuilds aggregate energy matrices.
+    Why: Initialisation must synchronise discrete ECS entity creation with continuous spatial hashes and initial biomass layers before tick 0 so the first flow-field relaxation and telemetry census observe a valid biotope.
+
+    How: Iterates validated plant and swarm placement entries, registers ``PlantComponent`` and ``SwarmComponent`` entities with their coordinates in ``ECSWorld``, writes plant energy and structural mass slices into ``GridEnvironment``, and rebuilds aggregate read layers.
 
     Args:
         config: Validated SimulationConfig instance.

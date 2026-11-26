@@ -3,9 +3,9 @@
 
 """FastAPI composition root governing live runtime state and API boundary coordination.
 
-This module defines the canonical PHIDS application object and the mutable singleton references that bind operator actions to a live ``SimulationLoop`` instance. The implementation mediates the transition between draft-state configuration and executable simulation state, and wires router modules that partition control, telemetry, and builder responsibilities. WebSocket transport loops are delegated to dedicated manager classes, while this module retains ownership of endpoint registration and runtime state access.
+Why: Isolating mutable builder draft configuration from the live ``SimulationLoop`` singleton prevents partial UI edits from corrupting running simulations whilst centralising HTTP router wiring and WebSocket stream lifecycles.
 
-The architecture enforces the central methodological invariant of the PHIDS interface layer: editable draft configuration remains distinct from live ecological state until explicit load operations occur. This separation preserves deterministic replayability of trophic interaction, signal propagation, and metabolic attrition trajectories.
+How: This module mounts domain sub-routers onto the canonical FastAPI application, delegates real-time binary and UI delta streaming to dedicated WebSocket managers, and exposes explicit scenario load endpoints that freeze validated drafts into new simulation runs.
 """
 
 from __future__ import annotations
