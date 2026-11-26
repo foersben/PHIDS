@@ -3,9 +3,7 @@
 
 """Shared base model and annotated species-id aliases.
 
-All schema submodules import ``StrictBaseModel``, ``SpeciesId``, ``HerbivoreId``,
-and ``SubstanceId`` from here to avoid repetition and ensure consistent Rule-of-16
-bound application across the entire ingress boundary.
+All schema submodules import ``StrictBaseModel``, ``SpeciesId``, ``HerbivoreId``, and ``SubstanceId`` from here to avoid repetition and ensure consistent Rule-of-16 bound application across the entire ingress boundary.
 """
 
 from __future__ import annotations

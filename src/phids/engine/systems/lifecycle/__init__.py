@@ -3,25 +3,9 @@
 
 """Lifecycle system: plant growth, mycorrhizal network formation, reproduction, and death.
 
-This module implements the first of three ordered per-tick simulation phases executed by the
-PHIDS ``SimulationLoop``. The lifecycle phase applies deterministic physiological dynamics to all
-registered plant entities before any herbivore interactions are resolved, ensuring that the energy
-state observed by the interaction and signaling phases reflects the current-tick growth outcome.
+This module implements the first of three ordered per-tick simulation phases executed by the PHIDS ``SimulationLoop``. The lifecycle phase applies deterministic physiological dynamics to all registered plant entities before any herbivore interactions are resolved, ensuring that the energy state observed by the interaction and signaling phases reflects the current-tick growth outcome.
 
-Per-tick growth increments the energy reserve of each plant by ``base_energy * (growth_rate / 100)``,
-clamped to ``max_energy``. Reproduction is attempted on each tick that satisfies the
-``reproduction_interval`` constraint and leaves sufficient energy surplus above ``seed_energy_cost``;
-the seed is dispersed to a randomly sampled polar coordinate within ``[seed_min_dist, seed_max_dist]``
-from the parent, and germination is rejected if the target cell is already occupied by any plant
-entity registered in the spatial hash, preventing overcrowding without requiring dense distance
-scans. Mycorrhizal root-network formation occurs at configurable intervals (``mycorrhizal_growth_interval_ticks``),
-pairing adjacent plants (Manhattan distance 1) that share sufficient energy surplus above their
-respective survival thresholds; each connection costs both participants ``connection_cost`` energy
-units and is bidirectionally recorded in their ``PlantComponent.mycorrhizal_connections`` sets.
-Plants whose energy falls below ``survival_threshold`` are unregistered from the spatial hash,
-removed from the energy layer write buffer, and queued for bulk entity destruction via
-``ECSWorld.collect_garbage``. Per-cause death counts are accumulated in the ``plant_death_causes``
-dict for telemetry attribution.
+Per-tick growth increments the energy reserve of each plant by ``base_energy * (growth_rate / 100)``, clamped to ``max_energy``. Reproduction is attempted on each tick that satisfies the ``reproduction_interval`` constraint and leaves sufficient energy surplus above ``seed_energy_cost``; the seed is dispersed to a randomly sampled polar coordinate within ``[seed_min_dist, seed_max_dist]`` from the parent, and germination is rejected if the target cell is already occupied by any plant entity registered in the spatial hash, preventing overcrowding without requiring dense distance scans. Mycorrhizal root-network formation occurs at configurable intervals (``mycorrhizal_growth_interval_ticks``), pairing adjacent plants (Manhattan distance 1) that share sufficient energy surplus above their respective survival thresholds; each connection costs both participants ``connection_cost`` energy units and is bidirectionally recorded in their ``PlantComponent.mycorrhizal_connections`` sets. Plants whose energy falls below ``survival_threshold`` are unregistered from the spatial hash, removed from the energy layer write buffer, and queued for bulk entity destruction via ``ECSWorld.collect_garbage``. Per-cause death counts are accumulated in the ``plant_death_causes`` dict for telemetry attribution.
 """
 
 from __future__ import annotations
@@ -133,10 +117,7 @@ def run_lifecycle(
 ) -> None:
     """Execute one lifecycle tick: grow, connect, reproduce, and cull.
 
-    Under Phase-Staggered Cohort execution, each plant entity updates its accumulated growth,
-    mycorrhizal tax, reproduction, and survival checks when (entity_id % 168) == (tick % 168).
-    This distributes per-tick computational load evenly across all ticks and eliminates macro
-    telemetry sawtooth spikes while preserving full temporal scale conservation.
+    Under Phase-Staggered Cohort execution, each plant entity updates its accumulated growth, mycorrhizal tax, reproduction, and survival checks when (entity_id % 168) == (tick % 168). This distributes per-tick computational load evenly across all ticks and eliminates macro telemetry sawtooth spikes while preserving full temporal scale conservation.
 
     Args:
         world: The ECS world registry.
@@ -144,8 +125,7 @@ def run_lifecycle(
         tick: Current simulation tick index.
         flora_species_params: Mapping of species_id to species parameters.
         mycorrhizal_connection_cost: Energy cost per new root connection.
-        mycorrhizal_growth_interval_ticks: Ticks between new root-growth
-            attempts. At most one new link is created per attempt.
+        mycorrhizal_growth_interval_ticks: Ticks between new root-growth attempts. At most one new link is created per attempt.
         mycorrhizal_inter_species: Allow inter-species root connections.
         plant_death_causes: Mapping of death causes to their respective counts.
         force_all_entities: Bypass phase-staggering cohort masks and update all entities.

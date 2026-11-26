@@ -3,8 +3,7 @@
 
 """Genotype definitions representing the ecosystem design space.
 
-Defines structural and parametric genes representing discrete choices and
-continuous variables of the Mixed-Integer Non-Linear Programming (MINLP) genotype.
+Defines structural and parametric genes representing discrete choices and continuous variables of the Mixed-Integer Non-Linear Programming (MINLP) genotype.
 """
 
 from pydantic import BaseModel, field_validator

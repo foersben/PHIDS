@@ -3,18 +3,7 @@
 
 """GridEnvironment: NumPy-backed biotope with 2-D convolution diffusion and explicit double-buffering.
 
-This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients,
-wind fields, and apparent nutrition). It enforces strict read/write double-buffering across all layers
-to prevent race conditions and maintain exact tick-level determinism during concurrent simulation phases.
-No allocations are made during the diffusion loop. All layers are pre-allocated according to the Rule of
-16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The
-environment employs explicit read/write double-buffering to prevent race conditions and guarantee
-deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired
-resistance, and metabolic attrition. The convolution kernel is pre-computed and its tails are
-truncated to eliminate subnormal floats below ``SIGNAL_EPSILON``, maintaining computational
-efficiency and scientific accuracy. The architectural design is tightly coupled to the
-:class:`~phids.engine.core.ecs.ECSWorld` and flow-field systems, supporting O(1) spatial hash
-lookups and reproducible ecological dynamics.
+This module manages the continuous environmental state (e.g., plant energy layers, VOC gradients, wind fields, and apparent nutrition). It enforces strict read/write double-buffering across all layers to prevent race conditions and maintain exact tick-level determinism during concurrent simulation phases. No allocations are made during the diffusion loop. All layers are pre-allocated according to the Rule of 16, ensuring fixed memory allocation and avoiding dynamic resizing during simulation. The environment employs explicit read/write double-buffering to prevent race conditions and guarantee deterministic simulation of biological phenomena such as Gaussian diffusion, systemic acquired resistance, and metabolic attrition. The convolution kernel is pre-computed and its tails are truncated to eliminate subnormal floats below ``SIGNAL_EPSILON``, maintaining computational efficiency and scientific accuracy. The architectural design is tightly coupled to the :class:`~phids.engine.core.ecs.ECSWorld` and flow-field systems, supporting O(1) spatial hash lookups and reproducible ecological dynamics.
 """
 
 from __future__ import annotations
@@ -57,10 +46,8 @@ class GridEnvironment:
     Args:
         width: Grid width W (1 ≤ W ≤ GRID_W_MAX).
         height: Grid height H (1 ≤ H ≤ GRID_H_MAX).
-        num_signals: Number of signal substance layers
-            (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
-        num_toxins: Number of toxin substance layers
-            (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
+        num_signals: Number of signal substance layers (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
+        num_toxins: Number of toxin substance layers (1 ≤ n ≤ MAX_SUBSTANCE_TYPES).
     """
 
     def __init__(
@@ -243,22 +230,12 @@ class GridEnvironment:
 
         Active Channel Bitmask Gating & Sparse Spatial PDE Evaluation:
         ------------------------------------------------------------------
-        Multi-layer reaction-diffusion systems track K distinct chemical signaling channels
-        across a spatial biotope grid. In typical ecological scenarios, airborne volatile
-        organic compounds (VOCs) are emitted episodically during herbivore grazing or systemic
-        defense activation, leaving the majority of signal channels at zero concentration (0.0).
+        Multi-layer reaction-diffusion systems track K distinct chemical signaling channels across a spatial biotope grid. In typical ecological scenarios, airborne volatile organic compounds (VOCs) are emitted episodically during herbivore grazing or systemic defense activation, leaving the majority of signal channels at zero concentration (0.0).
 
-        Evaluating full 2D spatial finite-difference stencils or performing dense boolean array scans
-        (`np.any(layer >= SIGNAL_EPSILON)`) across inactive channels wastes CPU memory bandwidth and
-        allocates temporary boolean masks. By using a zero-allocation C-level scalar maximum scan
-        (`np.amax`) combined with an O(1) active channel set (`active_signal_channels`), the diffusion
-        engine gates computation at the layer level, achieving O(K_active * W * H) dynamic
-        operational scaling instead of O(K_total * W * H).
+        Evaluating full 2D spatial finite-difference stencils or performing dense boolean array scans (`np.any(layer >= SIGNAL_EPSILON)`) across inactive channels wastes CPU memory bandwidth and allocates temporary boolean masks. By using a zero-allocation C-level scalar maximum scan (`np.amax`) combined with an O(1) active channel set (`active_signal_channels`), the diffusion engine gates computation at the layer level, achieving O(K_active * W * H) dynamic operational scaling instead of O(K_total * W * H).
 
         Args:
-            signal_decay_factor: Per-tick airborne signal retention (0.0-1.0).
-                Defaults to the ``SIGNAL_DECAY_FACTOR`` module-level constant (0.85).
-                Pass ``loop.config.signal_decay_factor`` to use the scenario-level value.
+            signal_decay_factor: Per-tick airborne signal retention (0.0-1.0). Defaults to the ``SIGNAL_DECAY_FACTOR`` module-level constant (0.85). Pass ``loop.config.signal_decay_factor`` to use the scenario-level value.
         """
         for s in range(self.num_signals):
             layer: npt.NDArray[np.float64] = self.signal_layers[s]
@@ -318,14 +295,9 @@ class GridEnvironment:
 
         256-Bit AVX2 SIMD Matrix Reduction & Zero-Allocation Buffer Swap:
         ------------------------------------------------------------------
-        Aggregates per-species write buffers `[num_species, W, H]` into aggregate 2D write buffers `[W, H]`
-        using single C-level vector reductions `np.sum(..., axis=0, out=...)`. Each operation compiles into
-        256-bit AVX2 vector instructions (e.g. `vaddpd` / `vaddps` across YMM registers), processing four
-        float64 or eight float32 values concurrently per clock cycle without temporary array allocations
-        or Python loop overhead.
+        Aggregates per-species write buffers `[num_species, W, H]` into aggregate 2D write buffers `[W, H]` using single C-level vector reductions `np.sum(..., axis=0, out=...)`. Each operation compiles into 256-bit AVX2 vector instructions (e.g. `vaddpd` / `vaddps` across YMM registers), processing four float64 or eight float32 values concurrently per clock cycle without temporary array allocations or Python loop overhead.
 
-        Swaps both E_current (energy) and M_structural (structural_mass) read/write buffers so that
-        subsequent systems observe post-herbivory states deterministically.
+        Swaps both E_current (energy) and M_structural (structural_mass) read/write buffers so that subsequent systems observe post-herbivory states deterministically.
         """
         # --- E_current (plant energy) ---
         np.sum(self._plant_energy_by_species_write, axis=0, out=self._plant_energy_layer_write)
@@ -397,9 +369,7 @@ class GridEnvironment:
     def set_structural_mass(self, x: int, y: int, species_id: int, value: float) -> None:
         """Write structural mass into the per-species write buffer.
 
-        M_structural is monotonically non-decreasing. Callers must never pass a value
-        lower than the current read-buffer value (except on plant death via
-        ``clear_structural_mass``).
+        M_structural is monotonically non-decreasing. Callers must never pass a value lower than the current read-buffer value (except on plant death via ``clear_structural_mass``).
 
         Args:
             x: The X-axis spatial grid coordinate.
@@ -412,8 +382,7 @@ class GridEnvironment:
     def clear_structural_mass(self, x: int, y: int, species_id: int) -> None:
         """Zero structural mass in the write buffer for a dying or cleared plant.
 
-        Called exclusively from the lifecycle death path. Zeroing M_structural on
-        death allows new seeds to germinate at the coordinate with a clean slate.
+        Called exclusively from the lifecycle death path. Zeroing M_structural on death allows new seeds to germinate at the coordinate with a clean slate.
 
         Args:
             x: The X-axis spatial grid coordinate.
@@ -429,8 +398,7 @@ class GridEnvironment:
     def to_dict(self) -> dict[str, object]:
         """Returns a dict representation of the biotope state suitable for serialization.
 
-        This is used by the streaming interface to serialize the current state of the
-        biotope to a dictionary.
+        This is used by the streaming interface to serialize the current state of the biotope to a dictionary.
 
         Returns:
             Mapping containing numpy arrays converted to nested lists.

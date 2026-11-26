@@ -3,8 +3,7 @@
 
 """Scenario and simulation control router for PHIDS.
 
-This module groups the routes that transition validated configuration data into a live
-`SimulationLoop` and then control that runtime through deterministic lifecycle operations.
+This module groups the routes that transition validated configuration data into a live `SimulationLoop` and then control that runtime through deterministic lifecycle operations.
 """
 
 from fastapi import APIRouter

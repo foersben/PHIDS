@@ -3,8 +3,7 @@
 
 """Orchestration of parallel Monte Carlo batch simulations.
 
-This module implements the :class:`BatchRunner`, which manages the parallel
-execution of headless simulation runs using a ProcessPoolExecutor.
+This module implements the :class:`BatchRunner`, which manages the parallel execution of headless simulation runs using a ProcessPoolExecutor.
 """
 
 from __future__ import annotations
@@ -36,8 +35,7 @@ _DEFAULT_BATCH_DIR = Path("data") / "batches"
 def _init_batch_worker() -> None:
     """Initialize process environment for batch Monte Carlo worker process.
 
-    Enforces single-threaded Numba execution per worker process to prevent thread
-    oversubscription across process pool workers.
+    Enforces single-threaded Numba execution per worker process to prevent thread oversubscription across process pool workers.
     """
     os.environ["NUMBA_NUM_THREADS"] = "1"
 
@@ -50,16 +48,9 @@ def _init_batch_worker() -> None:
 class BatchRunner:
     """Orchestrate parallel Monte Carlo simulation runs using ProcessPoolExecutor.
 
-    The :class:`BatchRunner` dispatches :func:`_run_and_save` to a
-    ``ProcessPoolExecutor`` configured with the ``spawn`` multiprocessing
-    context to avoid Numba/asyncio fork conflicts. Progress is reported via
-    an optional ``on_progress`` callback invoked in the main process after
-    each completed future, enabling the FastAPI background task to update the
-    ``BatchJobState`` without blocking the event loop.
+    The :class:`BatchRunner` dispatches :func:`_run_and_save` to a ``ProcessPoolExecutor`` configured with the ``spawn`` multiprocessing context to avoid Numba/asyncio fork conflicts. Progress is reported via an optional ``on_progress`` callback invoked in the main process after each completed future, enabling the FastAPI background task to update the ``BatchJobState`` without blocking the event loop.
 
-    Aggregate results are written to ``{output_dir}/{job_id}_summary.json``
-    upon completion of all runs, making them available for retrieval via the
-    ``GET /api/batch/view/{job_id}`` endpoint.
+    Aggregate results are written to ``{output_dir}/{job_id}_summary.json`` upon completion of all runs, making them available for retrieval via the ``GET /api/batch/view/{job_id}`` endpoint.
     """
 
     def execute_batch(
@@ -68,10 +59,7 @@ class BatchRunner:
     ) -> BatchResult:
         """Execute ``request.runs`` independent simulation trajectories in parallel.
 
-        Dispatches all runs to a :class:`concurrent.futures.ProcessPoolExecutor`
-        using the ``spawn`` start method, collects telemetry as futures complete,
-        and computes statistical aggregates. The summary JSON is written to
-        ``{output_dir}/{job_id}_summary.json``.
+        Dispatches all runs to a :class:`concurrent.futures.ProcessPoolExecutor` using the ``spawn`` start method, collects telemetry as futures complete, and computes statistical aggregates. The summary JSON is written to ``{output_dir}/{job_id}_summary.json``.
 
         Args:
             request: Frozen batch execution configuration bundle.

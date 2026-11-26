@@ -3,15 +3,7 @@
 
 """Server-side draft state model for the HTMX scenario-builder UI in PHIDS.
 
-This module implements :class:`DraftState`, a server-side configuration accumulator for the PHIDS
-scenario-builder UI. ``DraftState`` stores all operator choices made through the web interface,
-including species definitions, substance properties, trigger rules, diet-matrix entries, and
-initial placements, before committing them to the simulation engine via
-``POST /api/scenario/load-draft``. Imperative mutation procedures are executed by
-the ``phids.api.services.draft`` functions against ``DraftState`` instances, while
-this module retains data structures, condition-tree utilities, schema export logic, and singleton
-draft lifecycle management. No concurrency-safe locking is applied, as the server is designed for
-single-operator workbench usage.
+This module implements :class:`DraftState`, a server-side configuration accumulator for the PHIDS scenario-builder UI. ``DraftState`` stores all operator choices made through the web interface, including species definitions, substance properties, trigger rules, diet-matrix entries, and initial placements, before committing them to the simulation engine via ``POST /api/scenario/load-draft``. Imperative mutation procedures are executed by the ``phids.api.services.draft`` functions against ``DraftState`` instances, while this module retains data structures, condition-tree utilities, schema export logic, and singleton draft lifecycle management. No concurrency-safe locking is applied, as the server is designed for single-operator workbench usage.
 """
 
 from __future__ import annotations

@@ -3,10 +3,7 @@
 
 """Authoritative scalar coercion utilities with robust fallback semantics.
 
-This module provides deterministic conversion functions between loosely-typed runtime objects
-(e.g., deserialized JSON, untyped dictionary values, external inputs) and strict primitive numeric
-types (int, float). It replaces scattered ad-hoc try-except coercion logic across the engine, API,
-and batch pipelines, ensuring uniform handling of boolean edge cases, strings, and missing data.
+This module provides deterministic conversion functions between loosely-typed runtime objects (e.g., deserialized JSON, untyped dictionary values, external inputs) and strict primitive numeric types (int, float). It replaces scattered ad-hoc try-except coercion logic across the engine, API, and batch pipelines, ensuring uniform handling of boolean edge cases, strings, and missing data.
 """
 
 from __future__ import annotations
@@ -15,9 +12,7 @@ from __future__ import annotations
 def coerce_int(value: object, default: int = 0) -> int:
     """Convert an arbitrary value to an integer with stable fallback semantics.
 
-    Handles booleans explicitly (preserving standard integer mapping if boolean, or returning
-    default when strict non-boolean conversion is needed), handles numeric casts, and trims/parses
-    string representations safely without raising exceptions.
+    Handles booleans explicitly (preserving standard integer mapping if boolean, or returning default when strict non-boolean conversion is needed), handles numeric casts, and trims/parses string representations safely without raising exceptions.
 
     Args:
         value: The raw input object to convert (e.g. str, int, float, or None).
@@ -62,8 +57,7 @@ def coerce_int(value: object, default: int = 0) -> int:
 def coerce_float(value: object, default: float = 0.0) -> float:
     """Convert an arbitrary value to a float with stable fallback semantics.
 
-    Safely converts integers, floats, and numeric strings to Python floats while mapping booleans,
-    incompatible types, and unparsable strings to the provided default value.
+    Safely converts integers, floats, and numeric strings to Python floats while mapping booleans, incompatible types, and unparsable strings to the provided default value.
 
     Args:
         value: The raw input object to convert.

@@ -3,13 +3,9 @@
 
 """Telemetry SVG chart presenter.
 
-Module-level memoization ensures that the SVG string is rebuilt at most once per simulation tick.
-The cache key is ``(df.height, latest_tick)``: if the row count and the most recent tick value are
-both unchanged between two consecutive HTMX polls, the cached string is returned immediately,
-completely eliminating the Polars ``.to_list()`` extraction and string-builder overhead.
+Module-level memoization ensures that the SVG string is rebuilt at most once per simulation tick. The cache key is ``(df.height, latest_tick)``: if the row count and the most recent tick value are both unchanged between two consecutive HTMX polls, the cached string is returned immediately, completely eliminating the Polars ``.to_list()`` extraction and string-builder overhead.
 
-Test isolation is supported by :func:`_invalidate_svg_cache`, which resets the cache between test
-runs without touching any production code paths.
+Test isolation is supported by :func:`_invalidate_svg_cache`, which resets the cache between test runs without touching any production code paths.
 """
 
 from __future__ import annotations
@@ -32,10 +28,7 @@ _EMPTY_SVG: str = (
 def _invalidate_svg_cache() -> None:
     """Reset the module-level SVG memoization state.
 
-    This function is a **test seam only**. Production code must never call it.
-    Use it in ``pytest`` fixtures (``autouse=True``) to guarantee a clean cache
-    state between test cases, preventing false-positive cache-hit assertions
-    caused by test-order pollution of module-level globals in this module.
+    This function is a **test seam only**. Production code must never call it. Use it in ``pytest`` fixtures (``autouse=True``) to guarantee a clean cache state between test cases, preventing false-positive cache-hit assertions caused by test-order pollution of module-level globals in this module.
     """
     global _svg_cache_key, _svg_cache_value
     _svg_cache_key = None
@@ -50,9 +43,7 @@ def _invalidate_svg_cache() -> None:
 def _build_svg_uncached(ticks: list[int], flora_pop: list[int], herbivore_pop: list[int], flora_e: list[float]) -> str:
     """Render an SVG line chart from pre-extracted telemetry columns.
 
-    This function is intentionally stateless and cache-free. It exists as a
-    named helper so that tests can verify rendering correctness independently
-    of the memoization layer in :func:`build_telemetry_svg`.
+    This function is intentionally stateless and cache-free. It exists as a named helper so that tests can verify rendering correctness independently of the memoization layer in :func:`build_telemetry_svg`.
 
     Args:
         ticks: Ordered sequence of tick indices.
@@ -100,29 +91,20 @@ def _build_svg_uncached(ticks: list[int], flora_pop: list[int], herbivore_pop: l
 def build_telemetry_svg(df: object) -> str:
     """Generate an inline SVG line chart from telemetry data, with memoization.
 
-    The result is memoized at module level keyed on ``(df.height, latest_tick)``.
-    Repeated calls with an unchanged dataframe (e.g., during a paused simulation)
-    return the cached string immediately without re-running the Polars extraction
-    or string-builder path.
+    The result is memoized at module level keyed on ``(df.height, latest_tick)``. Repeated calls with an unchanged dataframe (e.g., during a paused simulation) return the cached string immediately without re-running the Polars extraction or string-builder path.
 
-    The cache is invalidated automatically when a new tick advances (``df.height``
-    increases) or when the latest tick index changes. A simulation reset produces
-    a new ``df.height = 1``, which also triggers a cache miss naturally.
+    The cache is invalidated automatically when a new tick advances (``df.height`` increases) or when the latest tick index changes. A simulation reset produces a new ``df.height = 1``, which also triggers a cache miss naturally.
 
     Args:
-        df: Tabular telemetry object with columns ``tick``, ``flora_population``,
-            ``herbivore_population``, ``total_flora_energy``.
+        df: Tabular telemetry object with columns ``tick``, ``flora_population``, ``herbivore_population``, ``total_flora_energy``.
 
     Returns:
         SVG markup suitable for ``innerHTML`` injection.
 
     Notes:
-        The chart intentionally overlays flora population, herbivore population, and aggregate flora
-        energy on a shared temporal axis to support rapid diagnosis of trophic oscillation and
-        metabolic collapse onset.
+        The chart intentionally overlays flora population, herbivore population, and aggregate flora energy on a shared temporal axis to support rapid diagnosis of trophic oscillation and metabolic collapse onset.
 
-        Call :func:`_invalidate_svg_cache` in test fixtures to reset module-level state between
-        test cases.
+        Call :func:`_invalidate_svg_cache` in test fixtures to reset module-level state between test cases.
     """
     global _svg_cache_key, _svg_cache_value
 

@@ -3,9 +3,7 @@
 
 """Draft-state mutation module for species configurations.
 
-Provides pure functions to add or remove flora and herbivore species definitions within the draft.
-Species removal automatically compacts dependencies such as the diet matrix, trigger rules,
-and initial placements to maintain a consistent state.
+Provides pure functions to add or remove flora and herbivore species definitions within the draft. Species removal automatically compacts dependencies such as the diet matrix, trigger rules, and initial placements to maintain a consistent state.
 """
 
 from __future__ import annotations

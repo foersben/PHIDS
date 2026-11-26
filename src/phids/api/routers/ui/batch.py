@@ -25,7 +25,6 @@ async def ui_batch_dashboard(request: Request) -> Response:
         request: FastAPI request object used by Jinja to resolve URL and template context state.
 
     Returns:
-        TemplateResponse: Rendered `batch_dashboard.html` surface for batch orchestration and
-        aggregate inspection.
+        TemplateResponse: Rendered `batch_dashboard.html` surface for batch orchestration and aggregate inspection.
     """
     return api_main.templates.TemplateResponse(request, "batch_dashboard.html")

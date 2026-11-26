@@ -3,11 +3,9 @@
 
 """Movement and pathfinding logic for swarms in the interaction system.
 
-This package contains helper functions to move swarms from one tile to another, including flow-field based movement and
-neighbour-based movement.
+This package contains helper functions to move swarms from one tile to another, including flow-field based movement and neighbour-based movement.
 
-Numba `@njit`-compiled helper functions ensure high-performance execution of the critically-threaded movement routines,
-minimising CPU branch mispredictions through branchless SIMD-friendly arithmetic where feasible.
+Numba `@njit`-compiled helper functions ensure high-performance execution of the critically-threaded movement routines, minimising CPU branch mispredictions through branchless SIMD-friendly arithmetic where feasible.
 """
 
 from phids.engine.systems.interaction.movement.anchoring import _is_swarm_anchored as _is_swarm_anchored

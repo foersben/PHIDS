@@ -3,8 +3,7 @@
 
 """Service-layer package for deterministic API-side state mutation.
 
-This package contains imperative orchestration services that mutate validated, server-owned
-state containers used by the PHIDS API surface.
+This package contains imperative orchestration services that mutate validated, server-owned state containers used by the PHIDS API surface.
 """
 
 # Draft state mutation logic has been extracted into the `phids.api.services.draft` sub-package.

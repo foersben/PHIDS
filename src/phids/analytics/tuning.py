@@ -3,8 +3,7 @@
 
 """Automated hyperparameter tuning pipeline using Differential Evolution.
 
-This module provides the :class:`TrophicOptimizer` to autonomously search for
-stable Lotka-Volterra parameters over complex multi-species scenarios.
+This module provides the :class:`TrophicOptimizer` to autonomously search for stable Lotka-Volterra parameters over complex multi-species scenarios.
 """
 
 from __future__ import annotations
@@ -25,9 +24,7 @@ logger = logging.getLogger(__name__)
 class TrophicOptimizer:
     """Hyperparameter tuner utilizing Scipy's Differential Evolution.
 
-    Mutates a given scenario blueprint to find a parameter regime that maximizes
-    ecosystem survival over a large number of ticks, using population CV as a
-    secondary stability metric.
+    Mutates a given scenario blueprint to find a parameter regime that maximizes ecosystem survival over a large number of ticks, using population CV as a secondary stability metric.
 
     Attributes:
         blueprint: The baseline scenario configuration.

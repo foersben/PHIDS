@@ -3,8 +3,7 @@
 
 """Headless Monte Carlo batch processing engine for PHIDS ecosystem simulations.
 
-This package provides components to execute and aggregate ensembles of deterministic
-simulation runs in parallel, facilitating Monte Carlo estimation and stochastic modeling.
+This package provides components to execute and aggregate ensembles of deterministic simulation runs in parallel, facilitating Monte Carlo estimation and stochastic modeling.
 """
 
 from phids.engine.batch.aggregation import aggregate_batch_telemetry

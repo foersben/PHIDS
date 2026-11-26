@@ -3,8 +3,7 @@
 
 """Data structures and type definitions for batch simulation execution.
 
-This module isolates the core types used for orchestrating Monte Carlo ensembles
-and communicating payload structures to external consumers.
+This module isolates the core types used for orchestrating Monte Carlo ensembles and communicating payload structures to external consumers.
 """
 
 from __future__ import annotations
@@ -33,10 +32,8 @@ class BatchExecutionRequest:
         max_ticks: Maximum tick count per run.
         job_id: Unique batch job identifier for file naming.
         output_dir: Directory for output files; defaults to ``data/batches``.
-        on_progress: Optional callback invoked with completed count as each
-            future resolves.
-        scenario_name: Optional display label persisted into the summary so
-            restored ledgers can retain operator-selected names.
+        on_progress: Optional callback invoked with completed count as each future resolves.
+        scenario_name: Optional display label persisted into the summary so restored ledgers can retain operator-selected names.
         seed_offset: Starting PRNG seed index for independent run seeds.
     """
 
@@ -58,8 +55,7 @@ class BatchResult:
         job_id: Unique identifier for the batch job.
         runs: Number of individual simulation runs completed.
         per_run_telemetry: Nested list of raw telemetry row dicts per run.
-        aggregate: Statistical summary produced by
-            :func:`aggregate_batch_telemetry`.
+        aggregate: Statistical summary produced by :func:`aggregate_batch_telemetry`.
     """
 
     job_id: str

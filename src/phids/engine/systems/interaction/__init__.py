@@ -3,42 +3,12 @@
 
 """Interaction system: swarm gradient navigation, herbivory, metabolic attrition, and mitosis.
 
-This module implements the second of three ordered per-tick simulation phases in the PHIDS engine.
-The interaction phase resolves all herbivore-flora encounters after plant lifecycle dynamics have
-been committed to the energy layers, but before chemical-defense substances are emitted and
-diffused. This ordering is a deliberate architectural invariant: herbivory must operate against
-the most current plant-energy state produced by the lifecycle phase, while the chemical-signaling
-phase must be free to observe the post-herbivory energy landscape when computing diffusion
-gradients and systemic acquired resistance signals. Toxin effects on swarm navigation are
-therefore mediated indirectly through the flow-field gradient rather than through direct
-component access, maintaining strict separation between signal propagation and entity mechanics.
+This module implements the second of three ordered per-tick simulation phases in the PHIDS engine. The interaction phase resolves all herbivore-flora encounters after plant lifecycle dynamics have been committed to the energy layers, but before chemical-defense substances are emitted and diffused. This ordering is a deliberate architectural invariant: herbivory must operate against the most current plant-energy state produced by the lifecycle phase, while the chemical-signaling phase must be free to observe the post-herbivory energy landscape when computing diffusion gradients and systemic acquired resistance signals. Toxin effects on swarm navigation are therefore mediated indirectly through the flow-field gradient rather than through direct component access, maintaining strict separation between signal propagation and entity mechanics.
 
-Swarm movement is governed by probabilistic sampling over the 4-connected Von-Neumann
-neighbourhood, weighted by the scalar flow-field gradient encoded in ``GridEnvironment.flow_field``.
-When the local gradient range falls below the numerical threshold of 1x10^-6 - indicating a
-chemically flat or saturated zone - movement inertia encoded in ``SwarmComponent.last_dx`` /
-``SwarmComponent.last_dy`` introduces a directional persistence bias, approximating the
-klinokinetic orientation behaviour observed in real arthropod foragers navigating low-stimulus
-environments. Tile carrying capacity (``TILE_CARRYING_CAPACITY``) imposes a local density ceiling
-analogous to interference competition: swarms occupying a cell whose aggregate population exceeds
-the ceiling enter a transient random-walk dispersal phase, modelling the habitat
-saturation-driven emigration documented in colonial insect foragers. Herbivory is applied
-exclusively to stationary swarms (those that did not relocate during the current tick) via O(1)
-spatial hash lookups; a species-pair diet-compatibility matrix gates energy transfer between each
-herbivore-flora combination, ensuring phylogenetic dietary specificity. Metabolic attrition
-deducts per-individual upkeep energy each tick; energy deficits are resolved as population
-casualties computed by ⌈deficit / energy_min⌉, converting energetic debt directly into
-individual mortality. Surplus energy above the swarm-baseline threshold is converted into new
-individuals at cost ``energy_min * reproduction_energy_divisor``, implementing a simple
-net-assimilation model of reproduction. Mitosis splits an oversized swarm into two equal halves
-and registers both entities in the ECS world and spatial hash, mimicking the colony fission
-events characteristic of social hymenoptera and clonal plant-grazer aggregations.
+Swarm movement is governed by probabilistic sampling over the 4-connected Von-Neumann neighbourhood, weighted by the scalar flow-field gradient encoded in ``GridEnvironment.flow_field``. When the local gradient range falls below the numerical threshold of 1x10^-6 - indicating a chemically flat or saturated zone - movement inertia encoded in ``SwarmComponent.last_dx`` / ``SwarmComponent.last_dy`` introduces a directional persistence bias, approximating the klinokinetic orientation behaviour observed in real arthropod foragers navigating low-stimulus environments. Tile carrying capacity (``TILE_CARRYING_CAPACITY``) imposes a local density ceiling analogous to interference competition: swarms occupying a cell whose aggregate population exceeds the ceiling enter a transient random-walk dispersal phase, modelling the habitat saturation-driven emigration documented in colonial insect foragers. Herbivory is applied exclusively to stationary swarms (those that did not relocate during the current tick) via O(1) spatial hash lookups; a species-pair diet-compatibility matrix gates energy transfer between each herbivore-flora combination, ensuring phylogenetic dietary specificity. Metabolic attrition deducts per-individual upkeep energy each tick; energy deficits are resolved as population casualties computed by ⌈deficit / energy_min⌉, converting energetic debt directly into individual mortality. Surplus energy above the swarm-baseline threshold is converted into new individuals at cost ``energy_min * reproduction_energy_divisor``, implementing a simple net-assimilation model of reproduction. Mitosis splits an oversized swarm into two equal halves and registers both entities in the ECS world and spatial hash, mimicking the colony fission events characteristic of social hymenoptera and clonal plant-grazer aggregations.
 
 Attributes:
-    TILE_CARRYING_CAPACITY: Maximum aggregate individual count permitted on a single grid cell
-        before crowding-induced dispersal is triggered. Acts as an upper bound on local population
-        density, preventing simulation degeneracy under unconstrained growth.
-
+    TILE_CARRYING_CAPACITY: Maximum aggregate individual count permitted on a single grid cell before crowding-induced dispersal is triggered. Acts as an upper bound on local population density, preventing simulation degeneracy under unconstrained growth.
 """
 
 from __future__ import annotations
@@ -219,11 +189,9 @@ def run_interaction(
     1. **Calculate Tile Populations**: Computes the number of individuals per tile (every tick).
     2. **Movement**: Determines new positions based on flow field chemotaxis (every tick - Fast Loop).
     3. **Feeding**: Consumes local flora and transfers energy (is_medium_tick - Daily Loop, 24-tick stride).
-    4. **Metabolism & Reproduction**: Applies energy costs and casualty liquidation
-       (is_medium_tick - Daily Loop). Mitosis (is_slow_tick - Weekly Loop, 168-tick stride).
+    4. **Metabolism & Reproduction**: Applies energy costs and casualty liquidation (is_medium_tick - Daily Loop). Mitosis (is_slow_tick - Weekly Loop, 168-tick stride).
 
-    This ensures consistent phase-ordering while matching computation frequency to biological
-    timescales. Per-tick rate values are scaled by the stride multiplier inside each gated block.
+    This ensures consistent phase-ordering while matching computation frequency to biological timescales. Per-tick rate values are scaled by the stride multiplier inside each gated block.
 
     Args:
         world: The ECS world.

@@ -3,8 +3,7 @@
 
 """Pure functional utilities for herbivore species parameter lookups.
 
-This module provides safe dictionary lookups for :class:`~phids.api.schemas.species.HerbivoreSpeciesParams`
-with sensible fallback defaults to ensure deterministic fallback behaviour when parameters are missing.
+This module provides safe dictionary lookups for :class:`~phids.api.schemas.species.HerbivoreSpeciesParams` with sensible fallback defaults to ensure deterministic fallback behaviour when parameters are missing.
 """
 
 from __future__ import annotations

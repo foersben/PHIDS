@@ -3,8 +3,7 @@
 
 """Iterative Jacobi relaxation solvers and camouflage attenuation for flow fields.
 
-Provides multi-threaded OpenMP parallel solvers, power-of-2 fast paths, and the public
-entry points :func:`compute_flow_field` and :func:`apply_camouflage`.
+Provides multi-threaded OpenMP parallel solvers, power-of-2 fast paths, and the public entry points :func:`compute_flow_field` and :func:`apply_camouflage`.
 """
 
 from __future__ import annotations

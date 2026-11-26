@@ -59,9 +59,7 @@ def _is_swarm_anchored_jit(
 ) -> bool:
     """Numba-compiled fast collision check for swarm anchoring on compatible uneaten flora.
 
-    Evaluates co-located plant energy layers using a pre-compiled boolean diet matrix,
-    eliminating Python list iteration and NumPy `.item()` scalar conversion overhead.
-    Evaluates a stochastic departure curve based on the Marginal Value Theorem (MVT).
+    Evaluates co-located plant energy layers using a pre-compiled boolean diet matrix, eliminating Python list iteration and NumPy `.item()` scalar conversion overhead. Evaluates a stochastic departure curve based on the Marginal Value Theorem (MVT).
 
     Args:
         x: X-coordinate of the swarm.
@@ -96,10 +94,7 @@ def _is_swarm_anchored(
 
     Numba JIT Anchoring Resolution & Array Scalar Extraction Avoidance:
     ------------------------------------------------------------------
-    Evaluating herbivore anchoring via Python list iteration and dynamic NumPy `.item()` scalar calls
-    on every movement tick induces interpreter overhead. Dispatching to `_is_swarm_anchored_jit`
-    evaluates 3D species energy arrays and 2D boolean diet matrices in compiled C, eliminating
-    object creation and scalar extraction overhead in the movement hot path.
+    Evaluating herbivore anchoring via Python list iteration and dynamic NumPy `.item()` scalar calls on every movement tick induces interpreter overhead. Dispatching to `_is_swarm_anchored_jit` evaluates 3D species energy arrays and 2D boolean diet matrices in compiled C, eliminating object creation and scalar extraction overhead in the movement hot path.
 
     Args:
         swarm: The swarm component.

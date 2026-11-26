@@ -3,8 +3,7 @@
 
 """Pydantic schemata mirroring ECS component state for REST and WebSocket serialisation.
 
-These models support inspection endpoints and state queries. They are never used
-to parameterise engine construction - see ``phids.api.schemas.simulation`` for that.
+These models support inspection endpoints and state queries. They are never used to parameterise engine construction - see ``phids.api.schemas.simulation`` for that.
 """
 
 from __future__ import annotations

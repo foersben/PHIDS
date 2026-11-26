@@ -42,16 +42,13 @@ def _extract_frame_count(root: Any) -> int:
 def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
     """Expose Zarr replay store structure to the agent without loading field arrays.
 
-    Allows autonomous MLOps operators to inspect frame counts, top-level tree
-    keys, and store-level metadata before initiating a heavy Polars lazy-frame
-    extraction. The store is opened read-only; no data is mutated.
+    Allows autonomous MLOps operators to inspect frame counts, top-level tree keys, and store-level metadata before initiating a heavy Polars lazy-frame extraction. The store is opened read-only; no data is mutated.
 
     Args:
         zarr_store_path: Filesystem path to a PHIDS ``.zarr`` replay store directory.
 
     Returns:
-        dict[str, Any]: On success - ``status``, ``store_path``, ``frame_count``,
-            ``tree_keys``, and ``store_attrs``. On failure - ``status`` and ``message``.
+        dict[str, Any]: On success - ``status``, ``store_path``, ``frame_count``, ``tree_keys``, and ``store_attrs``. On failure - ``status`` and ``message``.
     """
     try:
         # Lazy import: heavy optional dependency kept off the startup path.
@@ -89,8 +86,7 @@ def inspect_telemetry_schema(zarr_store_path: str) -> dict[str, Any]:
 def query_telemetry_schema() -> dict[str, Any]:
     """Return the available telemetry metrics for the active simulation.
 
-    Agents can use this to determine which data columns are available to plot or export
-    using the export_telemetry_data tool.
+    Agents can use this to determine which data columns are available to plot or export using the export_telemetry_data tool.
 
     Returns:
         dict[str, Any]: Available columns and structural layout.
@@ -296,8 +292,7 @@ def export_telemetry_data(
 ) -> dict[str, Any]:
     """Export telemetry from the active simulation as an encoded string.
 
-    Generates academic telemetry exports (CSV, PNG, TikZ, LaTeX) mirroring
-    the FastAPI endpoints but returning the payload directly for agent consumption.
+    Generates academic telemetry exports (CSV, PNG, TikZ, LaTeX) mirroring the FastAPI endpoints but returning the payload directly for agent consumption.
 
     Args:
         format: 'csv', 'tex_table', 'tex_tikz', or 'png'.
@@ -315,9 +310,7 @@ def export_telemetry_data(
         y_max: Y-axis scale maximum.
 
     Returns:
-        dict[str, Any]: A dictionary containing ``status``, ``format``, and ``data``.
-            For binary formats (png), ``data`` is a base64 encoded string.
-            For text formats (csv, tex_table, tex_tikz), ``data`` is a UTF-8 string.
+        dict[str, Any]: A dictionary containing ``status``, ``format``, and ``data``. For binary formats (png), ``data`` is a base64 encoded string. For text formats (csv, tex_table, tex_tikz), ``data`` is a UTF-8 string.
     """
     loop = helpers.get_active_sim_loop()
     if loop is None:

@@ -13,8 +13,7 @@ def trigger_rules_template_context(draft: DraftState) -> dict[str, object]:
         draft: Active draft scenario state used as the authoritative builder source.
 
     Returns:
-        Template context dictionary containing species registries, trigger rows, condition summaries,
-        and condition-node editing metadata.
+        Template context dictionary containing species registries, trigger rows, condition summaries, and condition-node editing metadata.
     """
     herbivore_names = {species.species_id: species.name for index, species in enumerate(draft.herbivore_species)}
     substance_names = {definition.substance_id: definition.name for definition in draft.substance_definitions}

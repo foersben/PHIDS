@@ -3,8 +3,7 @@
 
 """DSE background task manager.
 
-Manages running, cancelling, and streaming live progress metrics from the Design Space
-Exploration (DSE) genetic algorithm task in a non-blocking background worker thread.
+Manages running, cancelling, and streaming live progress metrics from the Design Space Exploration (DSE) genetic algorithm task in a non-blocking background worker thread.
 """
 
 from __future__ import annotations

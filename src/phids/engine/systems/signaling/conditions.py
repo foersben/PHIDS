@@ -127,25 +127,15 @@ def _check_activation_condition(
 ) -> bool:
     """Evaluate a nested activation predicate tree for one plant-owned substance.
 
-    Recursively traverses the condition tree rooted at ``activation_condition``, evaluating
-    ``herbivore_presence`` leaves against the per-cell herbivore census index, ``substance_active``
-    leaves against the owner's active substance set, ``environmental_signal`` leaves against
-    the current signal-layer concentration at the plant's coordinates, and ``all_of`` / ``any_of``
-    composites using short-circuit Boolean logic.
+    Recursively traverses the condition tree rooted at ``activation_condition``, evaluating ``herbivore_presence`` leaves against the per-cell herbivore census index, ``substance_active`` leaves against the owner's active substance set, ``environmental_signal`` leaves against the current signal-layer concentration at the plant's coordinates, and ``all_of`` / ``any_of`` composites using short-circuit Boolean logic.
 
     Args:
         plant: The plant entity whose grid coordinates are used for spatial condition checks.
-        owner_plant_id: Entity identifier of the owning plant, used to look up currently active
-            substances in ``active_substance_ids_by_owner``.
-        activation_condition: JSON-serialisable condition node dictionary, or ``None`` for
-            unconditional activation.
-        env: ``GridEnvironment`` providing read access to signal-layer concentrations for
-            ``environmental_signal`` predicates.
-        swarm_population_by_cell_species: Pre-built census index mapping
-            ``(x, y, species_id)`` to aggregate swarm population; used for ``herbivore_presence``
-            evaluations without additional ECS world queries.
-        active_substance_ids_by_owner: Mapping from plant entity id to its set of currently
-            active substance layer indices; used for ``substance_active`` leaf evaluation.
+        owner_plant_id: Entity identifier of the owning plant, used to look up currently active substances in ``active_substance_ids_by_owner``.
+        activation_condition: JSON-serialisable condition node dictionary, or ``None`` for unconditional activation.
+        env: ``GridEnvironment`` providing read access to signal-layer concentrations for ``environmental_signal`` predicates.
+        swarm_population_by_cell_species: Pre-built census index mapping ``(x, y, species_id)`` to aggregate swarm population; used for ``herbivore_presence`` evaluations without additional ECS world queries.
+        active_substance_ids_by_owner: Mapping from plant entity id to its set of currently active substance layer indices; used for ``substance_active`` leaf evaluation.
 
     Returns:
         ``True`` when the condition tree evaluates to true; ``False`` otherwise.

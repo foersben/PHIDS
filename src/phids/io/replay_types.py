@@ -3,8 +3,7 @@
 
 """Type definitions, slice views, and no-op buffers for simulation replay storage.
 
-Provides protocols, typed dictionaries, immutable zero-copy slice abstractions,
-and no-op buffer fallbacks for headless benchmarks and replay operations.
+Provides protocols, typed dictionaries, immutable zero-copy slice abstractions, and no-op buffer fallbacks for headless benchmarks and replay operations.
 """
 
 from __future__ import annotations
@@ -42,8 +41,7 @@ class _MetadataEntry(TypedDict):
 class ReplaySlice:
     """Immutable zero-copy view over a temporal slice of Zarr replay frames.
 
-    Provides high-performance NumPy array access across consecutive simulation ticks
-    without materializing Python list objects or triggering unnecessary copies.
+    Provides high-performance NumPy array access across consecutive simulation ticks without materializing Python list objects or triggering unnecessary copies.
     """
 
     def __init__(

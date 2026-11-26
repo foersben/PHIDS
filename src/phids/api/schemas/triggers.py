@@ -3,11 +3,7 @@
 
 """Trigger action schemas and the TriggerConditionSchema interaction-matrix entry.
 
-``TriggerAction`` is a discriminated union of two concrete action types:
-``SynthesizeSubstanceAction`` (active chemical defense) and
-``ResourceWithdrawalAction`` (apparent nutrition reduction / stress response).
-``TriggerConditionSchema`` maps a (plant, herbivore) species pair to an action
-and an optional compound activation-condition predicate tree.
+``TriggerAction`` is a discriminated union of two concrete action types: ``SynthesizeSubstanceAction`` (active chemical defense) and ``ResourceWithdrawalAction`` (apparent nutrition reduction / stress response). ``TriggerConditionSchema`` maps a (plant, herbivore) species pair to an action and an optional compound activation-condition predicate tree.
 """
 
 from __future__ import annotations
@@ -94,8 +90,7 @@ TriggerInitiator = Annotated[HerbivoreAttackInitiator | EnvironmentalSignalIniti
 class TriggerConditionSchema(StrictBaseModel):
     """Trigger condition for defense actions (Interaction Matrix entry).
 
-    Maps an initiator (e.g. herbivore presence, environmental signal) to an action
-    that should be executed when the trigger conditions are met.
+    Maps an initiator (e.g. herbivore presence, environmental signal) to an action that should be executed when the trigger conditions are met.
     """
 
     model_config = ConfigDict(extra="forbid")

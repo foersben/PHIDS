@@ -3,8 +3,7 @@
 
 """Dashboard presenter for mycorrhizal root network links.
 
-Defines payloads and utility functions to build and filter root communication links
-between Manhattan-adjacent plant entities in both draft and live simulation modes.
+Defines payloads and utility functions to build and filter root communication links between Manhattan-adjacent plant entities in both draft and live simulation modes.
 """
 
 from __future__ import annotations
@@ -88,19 +87,13 @@ def _evaluate_draft_neighbor_pair(
 def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPayload]:
     """Infer potential mycorrhizal root links from adjacent draft plant placements.
 
-    The mycorrhizal network in PHIDS is modelled as a graph of Manhattan-adjacent
-    plant entities. In draft mode, the live ECS world has not yet been instantiated,
-    so adjacency is determined directly from the :attr:`~phids.api.ui_state.DraftState.initial_plants`
-    placement list. Two plants at Manhattan distance 1 are considered candidates for
-    a root link; inter-species links are included only when
-    :attr:`~phids.api.ui_state.DraftState.mycorrhizal_inter_species` is ``True``.
+    The mycorrhizal network in PHIDS is modelled as a graph of Manhattan-adjacent plant entities. In draft mode, the live ECS world has not yet been instantiated, so adjacency is determined directly from the :attr:`~phids.api.ui_state.DraftState.initial_plants` placement list. Two plants at Manhattan distance 1 are considered candidates for a root link; inter-species links are included only when :attr:`~phids.api.ui_state.DraftState.mycorrhizal_inter_species` is ``True``.
 
     Args:
         draft: The current server-side draft configuration.
 
     Returns:
-        A list of link dictionaries, each containing ``plant_index_a``, ``plant_index_b``,
-        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+        A list of link dictionaries, each containing ``plant_index_a``, ``plant_index_b``, ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
     links: list[_MycorrhizalLinkPayload] = []
 
@@ -128,19 +121,13 @@ def build_draft_mycorrhizal_links(draft: DraftState) -> list[_MycorrhizalLinkPay
 def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLinkPayload]:
     """Serialise the unique set of root links currently active in the live ECS world.
 
-    Each plant entity in the :class:`~phids.engine.core.ecs.ECSWorld` maintains a
-    ``mycorrhizal_connections`` set of neighbour entity identifiers. This function
-    iterates over all live :class:`~phids.engine.components.plant.PlantComponent`
-    instances and emits one canonical link record per unordered pair, using a
-    ``seen_pairs`` set to prevent duplicate serialisation. The resulting list is
-    consumed by the canvas overlay renderer to draw the belowground network topology.
+    Each plant entity in the :class:`~phids.engine.core.ecs.ECSWorld` maintains a ``mycorrhizal_connections`` set of neighbour entity identifiers. This function iterates over all live :class:`~phids.engine.components.plant.PlantComponent` instances and emits one canonical link record per unordered pair, using a ``seen_pairs`` set to prevent duplicate serialisation. The resulting list is consumed by the canvas overlay renderer to draw the belowground network topology.
 
     Args:
         loop: The active simulation loop whose ECS world is queried.
 
     Returns:
-        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
-        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``, ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
     world = loop.world
     plant_lookup = {
@@ -176,10 +163,7 @@ def _build_live_mycorrhizal_links(loop: SimulationLoop) -> list[_MycorrhizalLink
 def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int) -> list[_MycorrhizalLinkPayload]:
     """Serialise the set of active root links touching a specific cell in the live ECS world.
 
-    This helper inspects only the plant located at ``(x, y)`` and follows its direct
-    ``mycorrhizal_connections`` set, retrieving only the immediate neighbours to
-    construct the touching link payloads. This reduces time complexity from $O(N)$
-    to $O(1)$ compared to scanning the entire ECS plant population.
+    This helper inspects only the plant located at ``(x, y)`` and follows its direct ``mycorrhizal_connections`` set, retrieving only the immediate neighbours to construct the touching link payloads. This reduces time complexity from $O(N)$ to $O(1)$ compared to scanning the entire ECS plant population.
 
     Args:
         loop: The active simulation loop whose ECS world is queried.
@@ -187,8 +171,7 @@ def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int)
         y: Target row index.
 
     Returns:
-        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
-        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``, ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
     world = loop.world
     entities_at_cell = world.entities_at(x, y)
@@ -243,15 +226,13 @@ def _build_live_mycorrhizal_links_for_cell(loop: SimulationLoop, x: int, y: int)
 def _build_live_mycorrhizal_links_from_snapshot(snapshot: dict[str, Any]) -> list[_MycorrhizalLinkPayload]:
     """Serialise the unique set of root links currently active using an extracted snapshot.
 
-    Operates on a pre-extracted, thread-safe dictionary representation of the live plants
-    to prevent blocking the simulation event loop during JSON serialisation.
+    Operates on a pre-extracted, thread-safe dictionary representation of the live plants to prevent blocking the simulation event loop during JSON serialisation.
 
     Args:
         snapshot: A dictionary representation of the live plants.
 
     Returns:
-        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``,
-        ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
+        A list of link dictionaries containing ``entity_id_a``, ``entity_id_b``, ``x1``, ``y1``, ``x2``, ``y2``, ``inter_species``, and boundary crossing flags.
     """
     plants_data = snapshot["plants"]
     plant_lookup = {p["entity_id"]: p for p in plants_data}
@@ -286,13 +267,10 @@ def _build_live_mycorrhizal_links_from_snapshot(snapshot: dict[str, Any]) -> lis
 def _links_touching_cell(links: list[_MycorrhizalLinkPayload], x: int, y: int) -> list[_MycorrhizalLinkPayload]:
     """Filter a serialised link list to those whose endpoint coordinates include (x, y).
 
-    This filter is applied when assembling the per-cell tooltip payload, ensuring that
-    the mycorrhizal overlay shown for a specific cell reflects only the root links
-    that are anchored at or terminate at that cell.
+    This filter is applied when assembling the per-cell tooltip payload, ensuring that the mycorrhizal overlay shown for a specific cell reflects only the root links that are anchored at or terminate at that cell.
 
     Args:
-        links: Serialised link records as produced by :func:`_build_live_mycorrhizal_links`
-            or :func:`build_draft_mycorrhizal_links`.
+        links: Serialised link records as produced by :func:`_build_live_mycorrhizal_links` or :func:`build_draft_mycorrhizal_links`.
         x: Target column index.
         y: Target row index.
 

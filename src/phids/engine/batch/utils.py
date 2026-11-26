@@ -53,10 +53,7 @@ def _get_int_keys(d: object) -> set[int]:
 def _sanitize_for_json(value: object) -> object:
     """Recursively coerce aggregate values into strict JSON-compatible scalars.
 
-    This sanitiser replaces all non-finite floating-point values (``NaN``,
-    ``+inf``, ``-inf``) with ``None`` so downstream ``json.dump(...,
-    allow_nan=False)`` remains standards-compliant and browser ``JSON.parse``
-    never encounters invalid numeric tokens.
+    This sanitiser replaces all non-finite floating-point values (``NaN``, ``+inf``, ``-inf``) with ``None`` so downstream ``json.dump(..., allow_nan=False)`` remains standards-compliant and browser ``JSON.parse`` never encounters invalid numeric tokens.
 
     Args:
         value: Arbitrary Python/NumPy value.

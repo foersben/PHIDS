@@ -3,13 +3,7 @@
 
 """Scenario and simulation control router for PHIDS.
 
-This module groups the routes that transition validated configuration data into a live
-`SimulationLoop` and then control that runtime through deterministic lifecycle operations. The
-endpoints preserve the draft-versus-live boundary: draft editing occurs in separate builder routes,
-while this surface performs scenario loading, single-loop execution control, wind mutation, and
-serialization import/export. The computational objective is strict reproducibility of ecological
-state trajectories, and the biological objective is controlled experimentation over trophic,
-signaling, and metabolic dynamics without introducing ad hoc client-side state transitions.
+This module groups the routes that transition validated configuration data into a live `SimulationLoop` and then control that runtime through deterministic lifecycle operations. The endpoints preserve the draft-versus-live boundary: draft editing occurs in separate builder routes, while this surface performs scenario loading, single-loop execution control, wind mutation, and serialization import/export. The computational objective is strict reproducibility of ecological state trajectories, and the biological objective is controlled experimentation over trophic, signaling, and metabolic dynamics without introducing ad hoc client-side state transitions.
 """
 
 from __future__ import annotations
@@ -38,9 +32,7 @@ router = APIRouter()
 async def start_simulation(request: Request) -> Response:
     """Start or resume asynchronous simulation advancement for the active loop.
 
-    Before starting the background task, this synchronizes any pending draft parameters
-    (such as tick rate and wind vectors) into the live engine to ensure execution
-    matches the latest UI configurations.
+    Before starting the background task, this synchronizes any pending draft parameters (such as tick rate and wind vectors) into the live engine to ensure execution matches the latest UI configurations.
 
     Args:
         request: Incoming HTTP request used to select JSON or HTMX fragment responses.
@@ -128,8 +120,7 @@ async def pause_simulation(request: Request) -> Response:
 async def step_simulation(request: Request) -> Response:
     """Execute exactly one deterministic tick on the active simulation loop.
 
-    Before stepping, this synchronizes any pending draft parameters (such as tick rate
-    and wind vectors) into the live engine to ensure the step matches the latest UI configurations.
+    Before stepping, this synchronizes any pending draft parameters (such as tick rate and wind vectors) into the live engine to ensure the step matches the latest UI configurations.
 
     Raises:
         HTTPException: If the simulation is currently running or has already terminated.
@@ -228,8 +219,7 @@ async def update_tick_rate(
 ) -> Response:
     """Update the active simulation tick-speed in the live grid view.
 
-    The new tick rate is immediately applied to the active `SimulationLoop` and also
-    synchronized back to the `DraftState` so it persists across scenario reloads.
+    The new tick rate is immediately applied to the active `SimulationLoop` and also synchronized back to the `DraftState` so it persists across scenario reloads.
 
     Args:
         request: Incoming HTTP request used to select JSON or HTMX fragment responses.
@@ -251,8 +241,7 @@ async def update_tick_rate(
 async def update_wind(payload: WindUpdatePayload) -> dict[str, float | str]:
     """Update the uniform wind vector field of the active environment.
 
-    The new wind vector is applied to the active `SimulationLoop` and also
-    synchronized back into the `DraftState` so it persists across scenario reloads.
+    The new wind vector is applied to the active `SimulationLoop` and also synchronized back into the `DraftState` so it persists across scenario reloads.
 
     Args:
         payload: Requested wind components in simulation coordinate space.

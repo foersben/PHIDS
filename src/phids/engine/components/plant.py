@@ -3,22 +3,9 @@
 
 """Plant ECS component dataclass encoding per-entity flora runtime state.
 
-This module defines :class:`PlantComponent`, the data container attached to every flora entity in
-the PHIDS Entity-Component-System world. Each plant entity carries its own independent energy
-reserve, spatial grid coordinates, species-level growth and reproduction parameters, camouflage
-properties, and the set of identifiers of currently connected mycorrhizal partners. The strict
-separation between species-level parameters (which reside in the scenario configuration) and
-per-entity mutable state (which resides in ``PlantComponent``) is central to the data-oriented
-design: the lifecycle and signaling systems iterate over ``PlantComponent`` instances via the ECS
-query interface without requiring access to the configuration layer.
+This module defines :class:`PlantComponent`, the data container attached to every flora entity in the PHIDS Entity-Component-System world. Each plant entity carries its own independent energy reserve, spatial grid coordinates, species-level growth and reproduction parameters, camouflage properties, and the set of identifiers of currently connected mycorrhizal partners. The strict separation between species-level parameters (which reside in the scenario configuration) and per-entity mutable state (which resides in ``PlantComponent``) is central to the data-oriented design: the lifecycle and signaling systems iterate over ``PlantComponent`` instances via the ECS query interface without requiring access to the configuration layer.
 
-The ``energy`` field encodes the biological fitness proxy E_i,j(t); its dynamics are governed by
-the growth term applied each lifecycle tick, the seed dispersal cost deducted at reproduction,
-the connection cost subtracted when a new mycorrhizal link is established, the herbivory loss
-inflicted by co-located swarms in the interaction phase, and the defense maintenance cost imposed
-by active ``SubstanceComponent`` entities in the signaling phase. A plant entity is culled when
-``energy < survival_threshold``, with the cause of terminal energy loss attributed via
-``last_energy_loss_cause`` for per-category death diagnostics.
+The ``energy`` field encodes the biological fitness proxy E_i,j(t); its dynamics are governed by the growth term applied each lifecycle tick, the seed dispersal cost deducted at reproduction, the connection cost subtracted when a new mycorrhizal link is established, the herbivory loss inflicted by co-located swarms in the interaction phase, and the defense maintenance cost imposed by active ``SubstanceComponent`` entities in the signaling phase. A plant entity is culled when ``energy < survival_threshold``, with the cause of terminal energy loss attributed via ``last_energy_loss_cause`` for per-category death diagnostics.
 """
 
 from __future__ import annotations
@@ -34,16 +21,10 @@ if TYPE_CHECKING:
 class PlantComponent:
     """Holds runtime state for a single plant entity.
 
-    Implements the Decoupled Dual-Proxy Architecture, where plant state is split across
-    two orthogonal biological quantities:
+    Implements the Decoupled Dual-Proxy Architecture, where plant state is split across two orthogonal biological quantities:
 
-    - ``energy`` (E_current): Short-term, volatile caloric health (leaves, accessible sugars,
-      phloem). Increased by photosynthesis; reduced by herbivory, mycorrhizal taxes, and
-      defense synthesis. A plant dies when this drops below ``survival_threshold``.
-    - ``structural_mass`` (M_structural): Long-term, permanent structural growth (lignin,
-      woodiness, root depth). Monotonically non-decreasing - it is never reduced by herbivory.
-      Trampling vulnerability and morphological defenses are evaluated against this proxy, not
-      against ``energy``, so a heavily grazed adult plant retains its structural resilience.
+    - ``energy`` (E_current): Short-term, volatile caloric health (leaves, accessible sugars, phloem). Increased by photosynthesis; reduced by herbivory, mycorrhizal taxes, and defense synthesis. A plant dies when this drops below ``survival_threshold``.
+    - ``structural_mass`` (M_structural): Long-term, permanent structural growth (lignin, woodiness, root depth). Monotonically non-decreasing - it is never reduced by herbivory. Trampling vulnerability and morphological defenses are evaluated against this proxy, not against ``energy``, so a heavily grazed adult plant retains its structural resilience.
 
     Attributes:
         entity_id: ECS entity identifier.
@@ -61,16 +42,12 @@ class PlantComponent:
         camouflage: Whether constitutive camouflage is active.
         camouflage_factor: Gradient multiplier when camouflaged.
         last_reproduction_tick: Tick of the most recent reproduction.
-        last_energy_loss_cause: Most recent energetically relevant action label
-            used for death diagnostics attribution.
+        last_energy_loss_cause: Most recent energetically relevant action label used for death diagnostics attribution.
         mycorrhizal_connections: Set of connected plant entity ids.
         apparent_nutrition_factor: Stress-induced nutrient discount modifier.
         withdrawal_ticks_remaining: Ticks until nutrition factor reverts to 1.0.
-        structural_mass: Permanent structural mass accumulation (M_structural proxy).
-            Represents lignin, woodiness, and root depth. Defaults to 0.0 (seed stage).
-            Never reduced by herbivory. Written by the lifecycle system each slow-tick.
-        max_structural_mass: Species-level ceiling for structural mass. Placeholder:
-            defaults to ``max_energy`` until Plan 2 adds a dedicated DB column.
+        structural_mass: Permanent structural mass accumulation (M_structural proxy). Represents lignin, woodiness, and root depth. Defaults to 0.0 (seed stage). Never reduced by herbivory. Written by the lifecycle system each slow-tick.
+        max_structural_mass: Species-level ceiling for structural mass. Placeholder: defaults to ``max_energy`` until Plan 2 adds a dedicated DB column.
 
     """
 
@@ -119,9 +96,7 @@ class PlantComponent:
     ) -> PlantComponent:
         """Construct a PlantComponent instance from species configuration parameters.
 
-        Maps species-level allometric and kinematic parameters into the per-entity
-        runtime state container, applying default fallback logic for structural mass
-        and initial energy if not explicitly specified.
+        Maps species-level allometric and kinematic parameters into the per-entity runtime state container, applying default fallback logic for structural mass and initial energy if not explicitly specified.
 
         Args:
             entity_id: Unique integer identifier assigned by the ECSWorld.

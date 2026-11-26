@@ -110,12 +110,7 @@ def _extract_chart_series_df(
 ) -> tuple[list[int], dict[str, list[float]]]:
     """Extract numerical time series from a Polars DataFrame using vectorized columnar extraction.
 
-    This is the fast path for :func:`_extract_chart_series` when a live Polars DataFrame is
-    available. The four scalar columns (``tick``, ``flora_population``, ``herbivore_population``,
-    ``total_flora_energy``) are extracted in a single vectorized C operation via ``.to_list()``.
-    Per-species nested-dict columns cannot be stored directly in a flat Polars frame without a
-    prior ``telemetry_to_dataframe`` unnest pass, so they are handled via a single compact row
-    iteration over the raw ``_rows`` list passed as ``raw_rows``.
+    This is the fast path for :func:`_extract_chart_series` when a live Polars DataFrame is available. The four scalar columns (``tick``, ``flora_population``, ``herbivore_population``, ``total_flora_energy``) are extracted in a single vectorized C operation via ``.to_list()``. Per-species nested-dict columns cannot be stored directly in a flat Polars frame without a prior ``telemetry_to_dataframe`` unnest pass, so they are handled via a single compact row iteration over the raw ``_rows`` list passed as ``raw_rows``.
 
     Args:
         df: Polars DataFrame with at minimum the four scalar telemetry columns.
@@ -267,8 +262,7 @@ async def telemetry_chartjs_data(
     """Return per-species population and energy time series for browser charts.
 
     Returns:
-        JSONResponse: Chart.js-compatible labels, per-species identifiers, display names, and
-        numeric series extracted from the live telemetry buffer.
+        JSONResponse: Chart.js-compatible labels, per-species identifiers, display names, and numeric series extracted from the live telemetry buffer.
     """
     if api_main._sim_loop is None:
         return JSONResponse({"labels": [], "flora_ids": [], "herbivore_ids": [], "series": {}, "run_id": ""})

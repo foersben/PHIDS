@@ -3,26 +3,11 @@
 
 """High-performance chunked replay storage using Zarr for PHIDS simulation snapshots.
 
-This module implements a Zarr-based replay backend that provides identical ``ReplayBuffer``
-API semantics while achieving superior memory efficiency and I/O performance for large-scale
-simulations. Zarr's chunked columnar storage model naturally maps to PHIDS field layers
-(plant energy per species, signal concentrations, toxin fields, flow-field gradients),
-enabling selective decompression and random access without materializing entire snapshots
-into Python memory.
+This module implements a Zarr-based replay backend that provides identical ``ReplayBuffer`` API semantics while achieving superior memory efficiency and I/O performance for large-scale simulations. Zarr's chunked columnar storage model naturally maps to PHIDS field layers (plant energy per species, signal concentrations, toxin fields, flow-field gradients), enabling selective decompression and random access without materializing entire snapshots into Python memory.
 
-The Zarr schema employs fixed-depth chunking across the spatial and temporal dimensions,
-with metadata groups for tick counters and termination state. Metadata (tick index,
-termination flags) is stored in a separate consolidated JSON array, eliminating the need
-to read field chunks for iteration or seeking. Field chunks are compressed using Zstd,
-offering superior compression ratio and speed compared to default Zarr Blosc profiles
-when applied to dense floating-point arrays. Subnormal tails (values < 1e-4) in signal
-layers are omitted during serialization via a custom codec or post-hoc masking, further
-reducing storage overhead without loss of ecological fidelity.
+The Zarr schema employs fixed-depth chunking across the spatial and temporal dimensions, with metadata groups for tick counters and termination state. Metadata (tick index, termination flags) is stored in a separate consolidated JSON array, eliminating the need to read field chunks for iteration or seeking. Field chunks are compressed using Zstd, offering superior compression ratio and speed compared to default Zarr Blosc profiles when applied to dense floating-point arrays. Subnormal tails (values < 1e-4) in signal layers are omitted during serialization via a custom codec or post-hoc masking, further reducing storage overhead without loss of ecological fidelity.
 
-The design aligns with the project's strict data-oriented paradigm: snapshots are decomposed
-into structured field arrays during checkpoint and reassembled into the dictionary format
-for re-simulation compatibility. All serialization and field codec logic is stateless,
-ensuring deterministic round-trip fidelity.
+The design aligns with the project's strict data-oriented paradigm: snapshots are decomposed into structured field arrays during checkpoint and reassembled into the dictionary format for re-simulation compatibility. All serialization and field codec logic is stateless, ensuring deterministic round-trip fidelity.
 """
 
 from __future__ import annotations
@@ -80,12 +65,8 @@ class ReplayBuffer:
         """Create or open a Zarr replay buffer.
 
         Args:
-            max_frames: Optional upper bound on retained frames. When set and greater
-                than zero, only the most recent ``max_frames`` snapshots are retained
-                in the Zarr store. Older frames are automatically pruned during append.
-                If ``None``, all frames are retained indefinitely.
-            spill_path: Optional explicit path for the Zarr store. If omitted,
-                a temporary directory is allocated lazily.
+            max_frames: Optional upper bound on retained frames. When set and greater than zero, only the most recent ``max_frames`` snapshots are retained in the Zarr store. Older frames are automatically pruned during append. If ``None``, all frames are retained indefinitely.
+            spill_path: Optional explicit path for the Zarr store. If omitted, a temporary directory is allocated lazily.
         """
         self._store_path: Path | None = Path(spill_path) if spill_path is not None else None
         self._owns_store = spill_path is None
@@ -129,9 +110,7 @@ class ReplayBuffer:
     def _decode_metadata_bytes(self, payload: object) -> bytes:
         """Return byte payload for persisted metadata arrays.
 
-        The `_metadata` Zarr node is expected to store a uint8 array containing
-        UTF-8 JSON bytes. This helper performs explicit runtime narrowing before
-        conversion so callers avoid unchecked indexing/type-ignore patterns.
+        The `_metadata` Zarr node is expected to store a uint8 array containing UTF-8 JSON bytes. This helper performs explicit runtime narrowing before conversion so callers avoid unchecked indexing/type-ignore patterns.
 
         Args:
             payload: The payload to decode.
@@ -229,8 +208,7 @@ class ReplayBuffer:
     def append(self, state: ReplayState) -> None:
         """Serialize and append a tick state to the buffer.
 
-        Decomposes the state dict into field arrays, storing each as a
-        chunked Zarr dataset. Metadata (tick, termination) is stored separately.
+        Decomposes the state dict into field arrays, storing each as a chunked Zarr dataset. Metadata (tick, termination) is stored separately.
 
         Args:
             state: Tick state mapping (e.g., from ``SimulationLoop.get_state_snapshot()``).
@@ -515,8 +493,7 @@ class ReplayBuffer:
     def save(self, path: str | Path) -> None:
         """Export the Zarr store to a standalone file for external storage.
 
-        This creates a snapshot of the current Zarr store by consolidating
-        metadata and copying the store directory.
+        This creates a snapshot of the current Zarr store by consolidating metadata and copying the store directory.
 
         Args:
             path: Destination file path (or directory for full export).

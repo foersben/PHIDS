@@ -3,10 +3,7 @@
 
 """Shared helper functions for draft state mutations.
 
-These pure functions provide utility operations for the draft-state services, including
-truthy flag interpretation, substance lookup, diet matrix resizing, and species index
-compaction. They are decoupled from the routing layer to support deterministic scenario
-editing.
+These pure functions provide utility operations for the draft-state services, including truthy flag interpretation, substance lookup, diet matrix resizing, and species index compaction. They are decoupled from the routing layer to support deterministic scenario editing.
 """
 
 from __future__ import annotations

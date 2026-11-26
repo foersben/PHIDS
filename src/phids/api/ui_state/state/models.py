@@ -38,8 +38,7 @@ class DraftState:
         z2_flora_species_extinction: Halt when this flora species goes extinct (-1 disables).
         z4_herbivore_species_extinction: Halt when this herbivore species goes extinct (-1 disables).
         z6_max_total_flora_energy: Halt when total flora energy exceeds this threshold (-1 disables).
-        z7_max_total_herbivore_population: Halt when herbivore population exceeds this threshold
-            (-1 disables).
+        z7_max_total_herbivore_population: Halt when herbivore population exceeds this threshold (-1 disables).
         signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion (0.0-1.0).
         substance_emit_rate: Concentration increment added per tick when an active substance emits.
         mycorrhizal_inter_species: Allow root connections across species.
@@ -49,8 +48,7 @@ class DraftState:
         flora_species: Flora species parameter list (species_id == index).
         herbivore_species: Herbivore species parameter list (species_id == index).
         diet_matrix: Boolean matrix ``[herbivore_idx][flora_idx]`` for edibility.
-        trigger_rules: List of explicit chemical-defense trigger rules.
-            Multiple rules per (flora, herbivore) pair are allowed.
+        trigger_rules: List of explicit chemical-defense trigger rules. Multiple rules per (flora, herbivore) pair are allowed.
         substance_definitions: Named substance registry indexed by substance_id.
         initial_plants: Plants placed on the grid before simulation start.
         initial_swarms: Swarms placed on the grid before simulation start.

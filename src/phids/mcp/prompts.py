@@ -13,8 +13,7 @@ def analyze_simulation_drift() -> str:
     """Pre-configured prompt mapping to guide debugging agents through drift triage.
 
     Returns:
-        str: Structured step-by-step investigation guide for stochastic drift
-            anomalies inside the PHIDS engine.
+        str: Structured step-by-step investigation guide for stochastic drift anomalies inside the PHIDS engine.
     """
     return (
         "You are tasked with evaluating a stochastic drift anomaly inside the PHIDS engine.\n\n"

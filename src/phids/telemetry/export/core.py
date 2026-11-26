@@ -3,8 +3,7 @@
 
 """Telemetry export core helpers.
 
-Provides common data transformation utilities, color palettes, and filtering logic
-for exporting telemetry rows to LaTeX, TikZ, CSV, JSON, and PNG formats.
+Provides common data transformation utilities, color palettes, and filtering logic for exporting telemetry rows to LaTeX, TikZ, CSV, JSON, and PNG formats.
 """
 
 from __future__ import annotations
@@ -221,21 +220,13 @@ def filter_dataframe_columns(df: pd.DataFrame, columns: str | None) -> pd.DataFr
 def telemetry_to_dataframe(rows: TelemetryRows) -> pd.DataFrame:
     """Flatten per-species nested dicts from raw telemetry rows into a pandas DataFrame.
 
-    Converts the list of row dicts accumulated by
-    :class:`~phids.telemetry.analytics.TelemetryRecorder` into a wide-format
-    pandas DataFrame. Each per-species nested dictionary (``plant_pop_by_species``,
-    ``plant_energy_by_species``, ``swarm_pop_by_species``, ``defense_cost_by_species``)
-    is exploded into individual columns named ``plant_{id}_pop``, ``plant_{id}_energy``,
-    ``swarm_{id}_pop``, and ``defense_cost_{id}`` respectively. Missing species in a
-    given tick are filled with zero, ensuring a fully rectangular output suitable for
-    vectorised statistical operations and LaTeX table generation.
+    Converts the list of row dicts accumulated by :class:`~phids.telemetry.analytics.TelemetryRecorder` into a wide-format pandas DataFrame. Each per-species nested dictionary (``plant_pop_by_species``, ``plant_energy_by_species``, ``swarm_pop_by_species``, ``defense_cost_by_species``) is exploded into individual columns named ``plant_{id}_pop``, ``plant_{id}_energy``, ``swarm_{id}_pop``, and ``defense_cost_{id}`` respectively. Missing species in a given tick are filled with zero, ensuring a fully rectangular output suitable for vectorised statistical operations and LaTeX table generation.
 
     Args:
         rows: Raw row list from ``TelemetryRecorder._rows``.
 
     Returns:
-        Wide-format DataFrame with one row per tick and one column per
-        scalar metric or per-species measurement.
+        Wide-format DataFrame with one row per tick and one column per scalar metric or per-species measurement.
     """
     # Lazy import: heavy optional dependency kept off the startup path.
     import pandas as pd
@@ -285,14 +276,10 @@ def aggregate_to_dataframe(
 ) -> pd.DataFrame:
     """Convert a batch aggregate summary dict to a wide pandas DataFrame.
 
-    Constructs a per-tick DataFrame from the mean and standard deviation arrays
-    stored inside the aggregate summary produced by
-    :func:`~phids.engine.batch.aggregation.aggregate_batch_telemetry`.
+    Constructs a per-tick DataFrame from the mean and standard deviation arrays stored inside the aggregate summary produced by :func:`~phids.engine.batch.aggregation.aggregate_batch_telemetry`.
 
     Args:
-        aggregate: Dict with keys ``ticks``, ``flora_population_mean``,
-            ``flora_population_std``, ``herbivore_population_mean``,
-            ``herbivore_population_std``, and optionally per-species series.
+        aggregate: Dict with keys ``ticks``, ``flora_population_mean``, ``flora_population_std``, ``herbivore_population_mean``, ``herbivore_population_std``, and optionally per-species series.
         flora_names: Optional display name mapping for flora species.
         herbivore_names: Optional display name mapping for herbivore species.
 
@@ -338,8 +325,7 @@ def get_phasespace_axis(
 ) -> tuple[list[float], str]:
     """Extract phase-space population values and human-readable axis label.
 
-    Extracts a series of population metrics across telemetry frames for either
-    total ecosystem populations (when ``species_id == 0``) or a specific species.
+    Extracts a series of population metrics across telemetry frames for either total ecosystem populations (when ``species_id == 0``) or a specific species.
 
     Args:
         rows: Sequence of recorded telemetry frame dictionaries.

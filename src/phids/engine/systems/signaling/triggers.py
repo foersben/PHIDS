@@ -5,15 +5,9 @@
 
 Hot-Path Import Resolution & Dynamic Module Overhead:
 ------------------------------------------------------------------
-In interpreted high-level runtimes, dynamic `import` statements executed inside inner loop functions
-incur non-trivial overhead. Each function-local import requires querying Python's global `sys.modules`
-hash dictionary, verifying module locks, and performing frame attribute resolution.
+In interpreted high-level runtimes, dynamic `import` statements executed inside inner loop functions incur non-trivial overhead. Each function-local import requires querying Python's global `sys.modules` hash dictionary, verifying module locks, and performing frame attribute resolution.
 
-In signaling evaluation loops operating across thousands of plant entities per tick
-(O(N_plants * M_triggers)), dynamic import resolution introduces instruction cache churn and
-dictionary lookup latency. Hoisting schema and component imports to module top-level resolves
-symbols once at initial module load, allowing the interpreter to execute inner loops with direct
-global variable access.
+In signaling evaluation loops operating across thousands of plant entities per tick (O(N_plants * M_triggers)), dynamic import resolution introduces instruction cache churn and dictionary lookup latency. Hoisting schema and component imports to module top-level resolves symbols once at initial module load, allowing the interpreter to execute inner loops with direct global variable access.
 """
 
 from __future__ import annotations

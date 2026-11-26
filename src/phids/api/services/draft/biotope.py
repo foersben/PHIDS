@@ -3,8 +3,7 @@
 
 """Draft-state mutation module for biotope parameters.
 
-This module provides pure functions for updating the global biotope settings of a draft
-scenario, including grid dimensions, termination thresholds, and atmospheric factors.
+This module provides pure functions for updating the global biotope settings of a draft scenario, including grid dimensions, termination thresholds, and atmospheric factors.
 """
 
 from __future__ import annotations
@@ -54,8 +53,7 @@ def update_biotope(
         z2_flora_species_extinction: Requested species-specific flora-extinction termination rule.
         z4_herbivore_species_extinction: Requested species-specific herbivore-extinction rule.
         z6_max_total_flora_energy: Requested upper bound for total flora energy termination.
-        z7_max_total_herbivore_population: Requested upper bound for herbivore population
-            termination.
+        z7_max_total_herbivore_population: Requested upper bound for herbivore population termination.
         mycorrhizal_inter_species: Requested root-link species policy.
         mycorrhizal_connection_cost: Requested root-link establishment cost.
         mycorrhizal_growth_interval_ticks: Requested root-growth interval.

@@ -3,13 +3,9 @@
 
 """Numba-accelerated 2D advection and Gaussian convolution diffusion kernels.
 
-This module provides high-performance JIT-compiled kernels implementing the reaction-diffusion
-and semi-Lagrangian advection partial differential equations (PDEs) for environmental signal
-and toxin layers. Both standard modulo wrapping and bitwise power-of-two toroidal boundary
-conditions are supported.
+This module provides high-performance JIT-compiled kernels implementing the reaction-diffusion and semi-Lagrangian advection partial differential equations (PDEs) for environmental signal and toxin layers. Both standard modulo wrapping and bitwise power-of-two toroidal boundary conditions are supported.
 
-Double-buffering and pre-allocation constraints are strictly enforced: no dynamic array
-allocations occur inside JIT loops.
+Double-buffering and pre-allocation constraints are strictly enforced: no dynamic array allocations occur inside JIT loops.
 """
 
 from __future__ import annotations

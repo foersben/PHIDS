@@ -3,17 +3,7 @@
 
 """Simulation loop orchestration for deterministic, double-buffered ecosystem advancement.
 
-This module implements the principal simulation driver for PHIDS, responsible for advancing the
-grid environment and ECS world through a rigorously ordered sequence of systems: flow field,
-lifecycle, interaction, signaling, and telemetry/termination. The simulation loop enforces
-deterministic update ordering via an ``asyncio.Lock``, ensuring reproducibility and scientific
-validity. Double-buffering is employed to maintain a strict separation between read and write
-states, preventing race conditions and guaranteeing the integrity of biological phenomena such as
-systemic acquired resistance, metabolic attrition, and mitosis. Per-tick snapshots are captured
-for replay and telemetry, supporting comprehensive analysis of emergent behaviours and ecological
-dynamics. The architectural design reflects the project's commitment to data-oriented modelling,
-O(1) spatial hash lookups, and the Rule of 16 for memory allocation, thereby simulating complex
-plant-herbivore interactions with maximal computational efficiency and biological fidelity.
+This module implements the principal simulation driver for PHIDS, responsible for advancing the grid environment and ECS world through a rigorously ordered sequence of systems: flow field, lifecycle, interaction, signaling, and telemetry/termination. The simulation loop enforces deterministic update ordering via an ``asyncio.Lock``, ensuring reproducibility and scientific validity. Double-buffering is employed to maintain a strict separation between read and write states, preventing race conditions and guaranteeing the integrity of biological phenomena such as systemic acquired resistance, metabolic attrition, and mitosis. Per-tick snapshots are captured for replay and telemetry, supporting comprehensive analysis of emergent behaviours and ecological dynamics. The architectural design reflects the project's commitment to data-oriented modelling, O(1) spatial hash lookups, and the Rule of 16 for memory allocation, thereby simulating complex plant-herbivore interactions with maximal computational efficiency and biological fidelity.
 """
 
 from __future__ import annotations
@@ -69,10 +59,7 @@ _metric_int = coerce_int
 class SimulationLoop:
     """Orchestrate deterministic, double-buffered simulation ticks.
 
-    Double-buffering is achieved by keeping a read-copy of the grid state
-    while writing results to live objects; these writes become the read
-    state for the next tick. Concurrent access is protected by
-    ``asyncio.Lock``.
+    Double-buffering is achieved by keeping a read-copy of the grid state while writing results to live objects; these writes become the read state for the next tick. Concurrent access is protected by ``asyncio.Lock``.
 
     Args:
         config: Validated :class:`~phids.api.schemas.SimulationConfig`.
@@ -384,10 +371,7 @@ class SimulationLoop:
     async def step(self) -> TerminationResult:
         """Execute one deterministic simulation tick.
 
-        The method performs the ordered phases of the simulation (flow-field
-        update, lifecycle, interaction, signaling, telemetry) while holding
-        an asyncio lock to ensure async-safety. After processing it
-        evaluates termination conditions.
+        The method performs the ordered phases of the simulation (flow-field update, lifecycle, interaction, signaling, telemetry) while holding an asyncio lock to ensure async-safety. After processing it evaluates termination conditions.
 
         Returns:
             TerminationResult: Termination state after the tick.
@@ -566,8 +550,7 @@ class SimulationLoop:
         """Return a serialisable snapshot of the current grid state.
 
         Returns:
-            ReplayState: Snapshot containing tick, termination state and
-                environment dictionary (from :meth:`GridEnvironment.to_dict`).
+            ReplayState: Snapshot containing tick, termination state and environment dictionary (from :meth:`GridEnvironment.to_dict`).
         """
         if self._cached_snapshot_tick == self.tick and self._cached_snapshot is not None:
             return self._cached_snapshot

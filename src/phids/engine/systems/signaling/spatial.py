@@ -69,14 +69,9 @@ class SwarmPopulationIndex:
 
     Dense Spatial Array Indexing & Zero-Allocation Census Buffers:
     ------------------------------------------------------------------
-    Signaling evaluation loops query co-located herbivore swarm populations across thousands of
-    grid cells on every tick. Constructing heap-allocated Python dictionaries (`dict[tuple[int, int, int], int]`)
-    and creating 3-element coordinate tuples `(x, y, species_id)` per tick introduces severe heap allocation
-    churn, memory fragmentation, and garbage collection pauses.
+    Signaling evaluation loops query co-located herbivore swarm populations across thousands of grid cells on every tick. Constructing heap-allocated Python dictionaries (`dict[tuple[int, int, int], int]`) and creating 3-element coordinate tuples `(x, y, species_id)` per tick introduces severe heap allocation churn, memory fragmentation, and garbage collection pauses.
 
-    `SwarmPopulationIndex` encapsulates a pre-allocated 3D NumPy int32 array (`[num_species, width, height]`)
-    zeroed in-place via `.fill(0)`. It exposes an O(1) dictionary-compatible `.get((x, y, species_id), 0)` method,
-    bypassing Python object creation and eliminating heap allocations during hot signaling passes.
+    `SwarmPopulationIndex` encapsulates a pre-allocated 3D NumPy int32 array (`[num_species, width, height]`) zeroed in-place via `.fill(0)`. It exposes an O(1) dictionary-compatible `.get((x, y, species_id), 0)` method, bypassing Python object creation and eliminating heap allocations during hot signaling passes.
     """
 
     __slots__ = ("_dict", "_grid")

@@ -3,13 +3,7 @@
 
 """Telemetry route partition for PHIDS analytical transport.
 
-This module isolates the observation and export endpoints that expose telemetry beyond the core
-simulation loop. The routes preserve the distinction between lightweight operator-facing telemetry
-surfaces and heavier archival export surfaces. HTML fragments remain suitable for HTMX polling,
-whereas CSV, NDJSON, TikZ, and PNG exports support downstream statistical and graphical analysis.
-The extraction is intentionally conservative: `phids.api.main` continues to own the live
-`SimulationLoop`, shared summary helpers, and template environment so that the refactor does not
-perturb deterministic engine advancement or the biological semantics encoded in the telemetry rows.
+This module isolates the observation and export endpoints that expose telemetry beyond the core simulation loop. The routes preserve the distinction between lightweight operator-facing telemetry surfaces and heavier archival export surfaces. HTML fragments remain suitable for HTMX polling, whereas CSV, NDJSON, TikZ, and PNG exports support downstream statistical and graphical analysis. The extraction is intentionally conservative: `phids.api.main` continues to own the live `SimulationLoop`, shared summary helpers, and template environment so that the refactor does not perturb deterministic engine advancement or the biological semantics encoded in the telemetry rows.
 """
 
 from __future__ import annotations

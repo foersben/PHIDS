@@ -33,10 +33,7 @@ def _get_live_substances(
 ) -> list[dict[str, object]]:
     """Helper to collect and serialize visible active substances on a plant.
 
-    This function gathers and serializes all active substances located on a plant, including
-    both those directly owned by the plant entity and those diffused into the environment at
-    the plant's location. It filters out invisible substances (e.g., toxins below threshold)
-    and ensures consistent payload formatting for the UI.
+    This function gathers and serializes all active substances located on a plant, including both those directly owned by the plant entity and those diffused into the environment at the plant's location. It filters out invisible substances (e.g., toxins below threshold) and ensures consistent payload formatting for the UI.
 
     Args:
         plant: The plant component.

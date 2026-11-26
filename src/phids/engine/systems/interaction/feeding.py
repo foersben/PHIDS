@@ -82,11 +82,7 @@ def _feed_on_single_plant(
 ) -> tuple[float, bool]:
     """Feed on a single co-located plant, returning (metabolized_energy, plant_killed).
 
-    This function implements the core feeding logic for a herbivore swarm, handling
-    the transfer of energy from a plant to the swarm. It calculates the potential
-    consumption based on the swarm's parameters and the plant's energy, then applies
-    digestibility and efficiency modifiers to determine the actual amount of consumed
-    energy.
+    This function implements the core feeding logic for a herbivore swarm, handling the transfer of energy from a plant to the swarm. It calculates the potential consumption based on the swarm's parameters and the plant's energy, then applies digestibility and efficiency modifiers to determine the actual amount of consumed energy.
 
     Args:
         swarm: The swarm component.
@@ -215,8 +211,7 @@ def _process_single_entity(
 ) -> tuple[float, bool, bool, bool]:
     """Process feeding interaction for a single co-located entity.
 
-    Handles compatibility checks, zero-energy checks, and calls the primary
-    consumption routine.
+    Handles compatibility checks, zero-energy checks, and calls the primary consumption routine.
 
     Args:
         co_eid: The entity ID of the co-located entity to process.
@@ -267,9 +262,7 @@ def _resolve_swarm_feeding(
 ) -> None:
     """Execute feeding phase on target plants at current position.
 
-    Iterates through all co-located entities, identifies compatible plants, and consumes them.
-    Updates the swarm's energy, triggers plant removal if exhausted, and adjusts swarm behavior
-    (stopping repulsion, becoming repelled) based on the feeding outcome.
+    Iterates through all co-located entities, identifies compatible plants, and consumes them. Updates the swarm's energy, triggers plant removal if exhausted, and adjusts swarm behavior (stopping repulsion, becoming repelled) based on the feeding outcome.
 
     Args:
         swarm: The swarm component.

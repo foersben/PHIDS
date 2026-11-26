@@ -81,7 +81,8 @@ cache-dir = ".cache/ruff"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "ARG", "TCH", "FA", "N", "RUF", "D"]
-ignore = ["ANN401"]
+# Docstrings are soft-wrapped (one line per paragraph); code length is enforced by ruff format.
+ignore = ["ANN401", "E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

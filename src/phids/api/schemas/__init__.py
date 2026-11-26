@@ -6,8 +6,7 @@
 Submodules
 ----------
 base
-    ``StrictBaseModel`` and annotated species-id aliases (``SpeciesId``,
-    ``HerbivoreId``, ``SubstanceId``).
+    ``StrictBaseModel`` and annotated species-id aliases (``SpeciesId``, ``HerbivoreId``, ``SubstanceId``).
 ecs
     ECS component schemata for REST inspection endpoints.
 conditions

@@ -27,8 +27,7 @@ async def ui_biotope(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/biotope_config.html` fragment bound to the current
-        draft.
+        TemplateResponse: Rendered `partials/biotope_config.html` fragment bound to the current draft.
     """
     return api_main.templates.TemplateResponse(
         request,
@@ -45,8 +44,7 @@ async def ui_flora(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/flora_config.html` fragment with all configured flora
-        species rows.
+        TemplateResponse: Rendered `partials/flora_config.html` fragment with all configured flora species rows.
     """
     draft = get_draft()
     return api_main.templates.TemplateResponse(
@@ -64,8 +62,7 @@ async def ui_herbivores(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/herbivore_config.html` fragment with all configured
-        herbivore species rows.
+        TemplateResponse: Rendered `partials/herbivore_config.html` fragment with all configured herbivore species rows.
     """
     draft = get_draft()
     return api_main.templates.TemplateResponse(
@@ -83,8 +80,7 @@ async def ui_substances(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/substance_config.html` fragment describing named
-        signals and toxins in the draft scenario.
+        TemplateResponse: Rendered `partials/substance_config.html` fragment describing named signals and toxins in the draft scenario.
     """
     draft = get_draft()
     return api_main.templates.TemplateResponse(
@@ -102,8 +98,7 @@ async def ui_diet_matrix(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/diet_matrix.html` fragment containing the canonical
-        edibility matrix.
+        TemplateResponse: Rendered `partials/diet_matrix.html` fragment containing the canonical edibility matrix.
     """
     draft = get_draft()
     return api_main.templates.TemplateResponse(
@@ -157,8 +152,7 @@ async def ui_placements(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/placement_editor.html` fragment containing plant and
-        swarm placements for the current draft.
+        TemplateResponse: Rendered `partials/placement_editor.html` fragment containing plant and swarm placements for the current draft.
     """
     draft = get_draft()
     return api_main.templates.TemplateResponse(

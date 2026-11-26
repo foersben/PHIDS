@@ -26,8 +26,7 @@ async def root(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `index.html` page shell seeded with the current draft scenario
-        name.
+        TemplateResponse: Rendered `index.html` page shell seeded with the current draft scenario name.
     """
     draft: DraftState = get_draft()
     max_x: int = api_main._sim_loop.env.width if api_main._sim_loop is not None else draft.grid_width

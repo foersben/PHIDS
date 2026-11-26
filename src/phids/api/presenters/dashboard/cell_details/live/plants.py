@@ -63,9 +63,7 @@ def _build_live_plant_payload(
 ) -> dict[str, object]:
     """Helper to construct the detailed live plant presentation structure.
 
-    This function builds the presentation structure for a live plant, including
-    its energy state, dual-proxy structural mass, fragility level, mycorrhizal connections,
-    and active substances.
+    This function builds the presentation structure for a live plant, including its energy state, dual-proxy structural mass, fragility level, mycorrhizal connections, and active substances.
 
     Args:
         plant: The plant component.

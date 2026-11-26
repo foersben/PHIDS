@@ -3,9 +3,7 @@
 
 """Server-side draft state model for the HTMX scenario-builder UI in PHIDS.
 
-This module exposes the canonical :class:`DraftState` model, along with singleton
-management functions (``get_draft``, ``set_draft``, ``reset_draft``) necessary to
-power the builder UI state across multiple requests and API routers.
+This module exposes the canonical :class:`DraftState` model, along with singleton management functions (``get_draft``, ``set_draft``, ``reset_draft``) necessary to power the builder UI state across multiple requests and API routers.
 
 The internal logic is strictly divided:
 - ``models.py`` holds the core dataclass and field schemas.

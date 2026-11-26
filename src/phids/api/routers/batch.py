@@ -3,12 +3,7 @@
 
 """Batch simulation router for PHIDS Monte Carlo workflows.
 
-This module hosts the asynchronous batch-analysis endpoints that execute repeated headless
-simulations, persist aggregate summaries, and render HTMX fragments for progress and post-run
-inspection. The computation remains deterministic per run, while the batch surface provides
-statistical aggregation over replicate trajectories to study extinction risk, biomass envelopes,
-and survival probabilities. The router keeps a conservative coupling to `phids.api.main` so shared
-application state and templates remain centralized during the ongoing refactor.
+This module hosts the asynchronous batch-analysis endpoints that execute repeated headless simulations, persist aggregate summaries, and render HTMX fragments for progress and post-run inspection. The computation remains deterministic per run, while the batch surface provides statistical aggregation over replicate trajectories to study extinction risk, biomass envelopes, and survival probabilities. The router keeps a conservative coupling to `phids.api.main` so shared application state and templates remain centralized during the ongoing refactor.
 """
 
 from __future__ import annotations

@@ -3,8 +3,7 @@
 
 """DSE orchestrator endpoints.
 
-Defines routes to start, stop, and stream real-time results from the Design Space
-Exploration (DSE) NSGA-II optimization task.
+Defines routes to start, stop, and stream real-time results from the Design Space Exploration (DSE) NSGA-II optimization task.
 """
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect

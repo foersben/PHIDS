@@ -3,17 +3,9 @@
 
 """FastAPI composition root governing live runtime state and API boundary coordination.
 
-This module defines the canonical PHIDS application object and the mutable singleton references that
-bind operator actions to a live ``SimulationLoop`` instance. The implementation mediates the
-transition between draft-state configuration and executable simulation state, and wires router modules
-that partition control, telemetry, and builder responsibilities. WebSocket transport loops are delegated to
-dedicated manager classes, while this module retains ownership of endpoint registration and runtime
-state access.
+This module defines the canonical PHIDS application object and the mutable singleton references that bind operator actions to a live ``SimulationLoop`` instance. The implementation mediates the transition between draft-state configuration and executable simulation state, and wires router modules that partition control, telemetry, and builder responsibilities. WebSocket transport loops are delegated to dedicated manager classes, while this module retains ownership of endpoint registration and runtime state access.
 
-The architecture enforces the central methodological invariant of the PHIDS interface layer:
-editable draft configuration remains distinct from live ecological state until explicit load
-operations occur. This separation preserves deterministic replayability of trophic interaction,
-signal propagation, and metabolic attrition trajectories.
+The architecture enforces the central methodological invariant of the PHIDS interface layer: editable draft configuration remains distinct from live ecological state until explicit load operations occur. This separation preserves deterministic replayability of trophic interaction, signal propagation, and metabolic attrition trajectories.
 """
 
 from __future__ import annotations
@@ -99,10 +91,7 @@ async def log_http_requests(
 ) -> Response:
     """Record request-latency diagnostics for interactive API and UI surfaces.
 
-    The middleware emits lightweight observability events for HTMX and REST traffic so operator
-    workflows can be correlated with backend latency and error rates. The policy is asymmetric by
-    design: client/server failures are elevated to warning level, whereas successful paths are kept
-    at debug level to avoid telemetry inflation under nominal workloads.
+    The middleware emits lightweight observability events for HTMX and REST traffic so operator workflows can be correlated with backend latency and error rates. The policy is asymmetric by design: client/server failures are elevated to warning level, whereas successful paths are kept at debug level to avoid telemetry inflation under nominal workloads.
 
     Args:
         request: Incoming HTTP request object.
@@ -156,9 +145,7 @@ def _set_simulation_substance_names(
 ) -> None:
     """Refresh display labels used by live dashboard and tooltip payload builders.
 
-    The naming map is derived either from explicit draft substance definitions or, when unavailable,
-    from trigger metadata in the validated runtime configuration. This preserves human-readable
-    chemical labels across draft-preview and live-execution contexts without mutating engine state.
+    The naming map is derived either from explicit draft substance definitions or, when unavailable, from trigger metadata in the validated runtime configuration. This preserves human-readable chemical labels across draft-preview and live-execution contexts without mutating engine state.
 
     Args:
         config: Validated simulation configuration currently associated with the live loop.
@@ -260,8 +247,7 @@ async def simulation_stream(websocket: WebSocket) -> None:
         websocket: Connected client socket endpoint.
 
     Notes:
-        The manager enforces json+zlib encoding, tick-synchronous emission, and policy-close
-        semantics when no live scenario is loaded.
+        The manager enforces json+zlib encoding, tick-synchronous emission, and policy-close semantics when no live scenario is loaded.
 
     """
     await _simulation_stream_manager.handle_connection(websocket, _sim_loop)
@@ -280,8 +266,7 @@ async def ui_stream(websocket: WebSocket) -> None:
         websocket: Connected client socket endpoint.
 
     Notes:
-        The manager polls live-loop availability, emits payloads only on state-signature change,
-        and applies tick-rate cadence constraints.
+        The manager polls live-loop availability, emits payloads only on state-signature change, and applies tick-rate cadence constraints.
 
     """
     await _ui_stream_manager.handle_connection(websocket, lambda: _sim_loop)
@@ -332,9 +317,7 @@ _CELL_DETAILS_TICK_TOLERANCE: Final[int] = 8
 async def ui_cell_details(x: int, y: int, expected_tick: int | None = None) -> JSONResponse:
     """Return rich grid-cell details for dashboard tooltips.
 
-    When a live simulation exists, data is sourced from the current ECS world and environment
-    layers. Otherwise the endpoint returns draft-preview payloads so the placement editor can expose
-    deterministic pre-runtime inspection.
+    When a live simulation exists, data is sourced from the current ECS world and environment layers. Otherwise the endpoint returns draft-preview payloads so the placement editor can expose deterministic pre-runtime inspection.
 
     Args:
         x: The X-axis spatial grid coordinate.

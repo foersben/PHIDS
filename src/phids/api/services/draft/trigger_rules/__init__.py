@@ -3,10 +3,7 @@
 
 """Draft-state mutation module for trigger rules and conditions.
 
-Provides pure functions to add, remove, and update trigger rules, as well as complex
-tree-manipulation functions for editing the hierarchical activation condition nodes.
-Also exposes read-only query helpers (e.g. ``get_condition_node``) so callers never
-need to import private ``ui_state`` path-resolution utilities directly.
+Provides pure functions to add, remove, and update trigger rules, as well as complex tree-manipulation functions for editing the hierarchical activation condition nodes. Also exposes read-only query helpers (e.g. ``get_condition_node``) so callers never need to import private ``ui_state`` path-resolution utilities directly.
 """
 
 from __future__ import annotations

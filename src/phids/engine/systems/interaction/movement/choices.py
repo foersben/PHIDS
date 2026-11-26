@@ -3,8 +3,7 @@
 
 """Flow-field directional choice logic.
 
-Provides JIT-compiled kernels and Python fallbacks for making weighted movement choices along
-environmental flow fields, including branchless capacity mask integration.
+Provides JIT-compiled kernels and Python fallbacks for making weighted movement choices along environmental flow fields, including branchless capacity mask integration.
 """
 
 from __future__ import annotations

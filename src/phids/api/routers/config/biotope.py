@@ -54,8 +54,7 @@ async def config_biotope(
         z2_flora_species_extinction: Flora species id for Z2 termination (-1 disables).
         z4_herbivore_species_extinction: Herbivore species id for Z4 termination (-1 disables).
         z6_max_total_flora_energy: Total flora energy threshold for Z6 termination (-1 disables).
-        z7_max_total_herbivore_population: Herbivore population threshold for Z7 termination
-            (-1 disables).
+        z7_max_total_herbivore_population: Herbivore population threshold for Z7 termination (-1 disables).
         mycorrhizal_inter_species: Inter-species root-link toggle.
         mycorrhizal_connection_cost: Root-link energy cost.
         mycorrhizal_growth_interval_ticks: Ticks between root-growth attempts.

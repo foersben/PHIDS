@@ -3,10 +3,7 @@
 
 """Authoritative simulation configuration schema.
 
-``SimulationConfig`` is the single validated ingress container for all data that
-parameterises ``SimulationLoop`` construction. Its ``model_validator`` enforces
-cross-field reference integrity between placement species identifiers and the
-declared species lists before any engine state is allocated.
+``SimulationConfig`` is the single validated ingress container for all data that parameterises ``SimulationLoop`` construction. Its ``model_validator`` enforces cross-field reference integrity between placement species identifiers and the declared species lists before any engine state is allocated.
 """
 
 from __future__ import annotations

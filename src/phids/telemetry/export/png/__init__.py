@@ -3,8 +3,7 @@
 
 """Telemetry export to PNG images.
 
-Renders publication-quality charts (time series, phase space, defense economy, biomass stacks,
-and survival probability) using Matplotlib headless Agg backend to raw PNG bytes.
+Renders publication-quality charts (time series, phase space, defense economy, biomass stacks, and survival probability) using Matplotlib headless Agg backend to raw PNG bytes.
 """
 
 from __future__ import annotations
@@ -49,19 +48,15 @@ def generate_png_bytes(
 
     Supports five ``plot_type`` modes:
 
-    * ``"timeseries"`` - Overlaid line chart with one series per flora and herbivore
-      species, sharing a common tick x-axis and a left y-axis for population counts.
-    * ``"phasespace"`` - Lotka-Volterra phase-space scatter with ``showLine=True``
-      semantics.
-    * ``"defense_economy"`` - Line chart plotting defense cost divided by total energy
-      capacity per flora species.
+    * ``"timeseries"`` - Overlaid line chart with one series per flora and herbivore species, sharing a common tick x-axis and a left y-axis for population counts.
+    * ``"phasespace"`` - Lotka-Volterra phase-space scatter with ``showLine=True`` semantics.
+    * ``"defense_economy"`` - Line chart plotting defense cost divided by total energy capacity per flora species.
     * ``"biomass_stack"`` - Stacked area chart approximating carrying capacity share.
     * ``"survival_probability"`` - Aggregate batch survival probability (requires ensemble rows).
 
     Args:
         rows: A list of recorded telemetry frame dictionaries sequentially captured during the simulation execution.
-        plot_type: Output chart type (``"timeseries"``, ``"phasespace"``,
-            ``"defense_economy"``, ``"biomass_stack"``, or ``"survival_probability"``).
+        plot_type: Output chart type (``"timeseries"``, ``"phasespace"``, ``"defense_economy"``, ``"biomass_stack"``, or ``"survival_probability"``).
         flora_names: Optional dictionary mapping flora species ids to display names.
         herbivore_names: Optional dictionary mapping herbivore ids to display names.
         plant_species_id: Flora species id to use for the x-axis in phasespace mode.

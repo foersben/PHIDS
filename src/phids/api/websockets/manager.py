@@ -3,13 +3,7 @@
 
 """Connection managers for deterministic PHIDS WebSocket transport.
 
-This module isolates asynchronous WebSocket stream orchestration from the FastAPI composition root.
-The managers preserve protocol-specific invariants while reducing route-level control flow in
-``phids.api.main``: the simulation stream emits json+zlib binary snapshots keyed to simulation
-ticks, and the UI stream emits compact JSON payloads keyed to rendered state signatures. By keeping
-loop progression checks, payload encoding, sleep cadence, and disconnect handling in dedicated
-classes, the runtime maintains strict draft-versus-live boundaries while exposing low-latency
-observability of ecological dynamics.
+This module isolates asynchronous WebSocket stream orchestration from the FastAPI composition root. The managers preserve protocol-specific invariants while reducing route-level control flow in ``phids.api.main``: the simulation stream emits json+zlib binary snapshots keyed to simulation ticks, and the UI stream emits compact JSON payloads keyed to rendered state signatures. By keeping loop progression checks, payload encoding, sleep cadence, and disconnect handling in dedicated classes, the runtime maintains strict draft-versus-live boundaries while exposing low-latency observability of ecological dynamics.
 """
 
 from __future__ import annotations
@@ -35,11 +29,7 @@ logger = logging.getLogger(__name__)
 class SimulationStreamManager:
     """Manage binary simulation-state stream connections.
 
-    The manager enforces the machine-facing stream contract for
-    ``/ws/simulation/stream``: payloads are derived from ``SimulationLoop`` snapshots,
-    serialized with json, compressed with zlib, and sent only when the tick changes.
-    A single cached compressed payload is retained per ``(loop identity, tick)`` pair to
-    avoid redundant encoding work under multiple subscribers.
+    The manager enforces the machine-facing stream contract for ``/ws/simulation/stream``: payloads are derived from ``SimulationLoop`` snapshots, serialized with json, compressed with zlib, and sent only when the tick changes. A single cached compressed payload is retained per ``(loop identity, tick)`` pair to avoid redundant encoding work under multiple subscribers.
 
     Attributes:
         _cache_loop_id: Identity of the loop instance used for the current cache entry.
@@ -96,9 +86,7 @@ class SimulationStreamManager:
             loop: Active simulation loop at connection time.
 
         Notes:
-            The stream is intentionally rejected when no live simulation exists. This prevents
-            clients from observing ambiguous placeholder transport states and keeps runtime
-            semantics explicit.
+            The stream is intentionally rejected when no live simulation exists. This prevents clients from observing ambiguous placeholder transport states and keeps runtime semantics explicit.
 
         """
         await websocket.accept()
@@ -131,10 +119,7 @@ class SimulationStreamManager:
 class UIStreamManager:
     """Manage lightweight UI dashboard stream connections.
 
-    The manager enforces rendering-oriented stream behavior for ``/ws/ui/stream``. It polls the
-    active loop provider, emits JSON payloads only when a visible state signature changes, and uses
-    the configured tick rate to regulate cadence. This preserves responsive visual telemetry while
-    avoiding redundant frame emission during static states.
+    The manager enforces rendering-oriented stream behavior for ``/ws/ui/stream``. It polls the active loop provider, emits JSON payloads only when a visible state signature changes, and uses the configured tick rate to regulate cadence. This preserves responsive visual telemetry while avoiding redundant frame emission during static states.
 
     Attributes:
         _payload_builder: Callable that assembles dashboard payload dictionaries.
@@ -241,8 +226,7 @@ class UIStreamManager:
             get_loop: Callable returning the currently active simulation loop.
 
         Notes:
-            The connection remains open while no loop is loaded. This allows browser clients to
-            subscribe once and begin receiving payloads immediately after a scenario is loaded.
+            The connection remains open while no loop is loaded. This allows browser clients to subscribe once and begin receiving payloads immediately after a scenario is loaded.
         """
         await websocket.accept()
         logger.debug("WebSocket connected: /ws/ui/stream")
@@ -271,8 +255,7 @@ class UIStreamManager:
 class DSEStreamManager:
     """Connection manager for real-time Design Space Exploration UI updates.
 
-    Broadcasts NSGA-II Pareto Front generation payloads directly to the active
-    HTMX client connection over ``/ws/dse/stream``.
+    Broadcasts NSGA-II Pareto Front generation payloads directly to the active HTMX client connection over ``/ws/dse/stream``.
     """
 
     def __init__(self) -> None:

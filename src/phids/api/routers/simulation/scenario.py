@@ -3,13 +3,7 @@
 
 """Scenario and simulation control router for PHIDS.
 
-This module groups the routes that transition validated configuration data into a live
-`SimulationLoop` and then control that runtime through deterministic lifecycle operations. The
-endpoints preserve the draft-versus-live boundary: draft editing occurs in separate builder routes,
-while this surface performs scenario loading, single-loop execution control, wind mutation, and
-serialization import/export. The computational objective is strict reproducibility of ecological
-state trajectories, and the biological objective is controlled experimentation over trophic,
-signaling, and metabolic dynamics without introducing ad hoc client-side state transitions.
+This module groups the routes that transition validated configuration data into a live `SimulationLoop` and then control that runtime through deterministic lifecycle operations. The endpoints preserve the draft-versus-live boundary: draft editing occurs in separate builder routes, while this surface performs scenario loading, single-loop execution control, wind mutation, and serialization import/export. The computational objective is strict reproducibility of ecological state trajectories, and the biological objective is controlled experimentation over trophic, signaling, and metabolic dynamics without introducing ad hoc client-side state transitions.
 """
 
 from __future__ import annotations
@@ -37,9 +31,7 @@ router = APIRouter()
 async def load_scenario(config: SimulationConfig) -> dict[str, int | str]:
     """Initialize live runtime state from a validated scenario payload.
 
-    The endpoint is the strict ingress boundary between static configuration and executable
-    ecological dynamics. Existing background execution is cancelled before loop replacement so
-    trophic and signaling trajectories remain single-source and deterministic.
+    The endpoint is the strict ingress boundary between static configuration and executable ecological dynamics. Existing background execution is cancelled before loop replacement so trophic and signaling trajectories remain single-source and deterministic.
 
     Args:
         config: Validated simulation configuration crossing the API boundary.

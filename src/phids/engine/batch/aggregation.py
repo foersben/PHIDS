@@ -182,17 +182,9 @@ def aggregate_batch_telemetry(
 ) -> BatchAggregate:
     """Compute per-tick statistical summaries across an ensemble of simulation runs.
 
-    Aligns all runs to the minimum tick count observed in the ensemble (to handle
-    early-termination runs without padding), then stacks scalar population and
-    energy metrics into NumPy arrays for vectorised mean and standard deviation
-    computation. Per-species populations are similarly aggregated where the union
-    of all species identifiers seen across all runs is used as the index.
+    Aligns all runs to the minimum tick count observed in the ensemble (to handle early-termination runs without padding), then stacks scalar population and energy metrics into NumPy arrays for vectorised mean and standard deviation computation. Per-species populations are similarly aggregated where the union of all species identifiers seen across all runs is used as the index.
 
-    The extinction probability is estimated as the fraction of runs in which the
-    total flora population reached zero at any tick, providing a coarse measure of
-    ecosystem collapse risk under the configured parameter regime.
-    A per-tick survival curve is also computed as the fraction of runs that retain
-    strictly positive flora population at each aligned tick.
+    The extinction probability is estimated as the fraction of runs in which the total flora population reached zero at any tick, providing a coarse measure of ecosystem collapse risk under the configured parameter regime. A per-tick survival curve is also computed as the fraction of runs that retain strictly positive flora population at each aligned tick.
 
     Args:
         per_run: List of per-run row lists, each produced by :func:`_run_single_headless`.

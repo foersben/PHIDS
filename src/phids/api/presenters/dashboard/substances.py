@@ -3,8 +3,7 @@
 
 """Dashboard presenter for substances and chemical defense states.
 
-Serializes active signal and toxin components, manages state mapping (synthesis,
-active, aftereffect, field snapshot), and generates payloads for the UI.
+Serializes active signal and toxin components, manages state mapping (synthesis, active, aftereffect, field snapshot), and generates payloads for the UI.
 """
 
 from __future__ import annotations
@@ -24,8 +23,7 @@ def _is_live_substance_visible(substance: SubstanceComponent) -> bool:
         substance: The live SubstanceComponent to check.
 
     Returns:
-        True if the substance is active, synthesizing, has remaining aftereffect,
-        or was triggered in the current tick.
+        True if the substance is active, synthesizing, has remaining aftereffect, or was triggered in the current tick.
 
     """
     return (

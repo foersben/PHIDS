@@ -3,8 +3,7 @@
 
 """Declarative context resources exposed via FastMCP for PHIDS.
 
-Provides passive read feeds allowing AI agents to inspect configuration drafts
-and live simulation status without consuming tool invocation budgets.
+Provides passive read feeds allowing AI agents to inspect configuration drafts and live simulation status without consuming tool invocation budgets.
 """
 
 from __future__ import annotations
@@ -21,9 +20,7 @@ from phids.mcp.app import mcp
 def active_draft_resource() -> str:
     """Provide the full, untruncated JSON layout of the active configuration draft.
 
-    Agents can read this resource directly to digest species mappings, substance
-    definitions, trigger-rule trees, diet matrices, and termination thresholds
-    without spending a tool-call budget on ``runtime_snapshot``.
+    Agents can read this resource directly to digest species mappings, substance definitions, trigger-rule trees, diet matrices, and termination thresholds without spending a tool-call budget on ``runtime_snapshot``.
 
     Returns:
         str: Indented JSON string of the current DraftState.
@@ -35,8 +32,7 @@ def active_draft_resource() -> str:
 def live_simulation_resource() -> str:
     """Provide real-time JSON snapshot of the active running SimulationLoop.
 
-    Returns live tick count, status flags, active ECS entity counts, total plant
-    energy, total herbivore population, and mycorrhizal connection stats.
+    Returns live tick count, status flags, active ECS entity counts, total plant energy, total herbivore population, and mycorrhizal connection stats.
 
     Returns:
         str: Indented JSON string of the live simulation loop status.

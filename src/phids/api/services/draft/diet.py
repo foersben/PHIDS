@@ -3,8 +3,7 @@
 
 """Draft-state mutation module for diet compatibility matrix.
 
-Provides pure functions to mutate herbivore-flora interaction policies within the
-draft matrix representation.
+Provides pure functions to mutate herbivore-flora interaction policies within the draft matrix representation.
 """
 
 from __future__ import annotations

@@ -3,8 +3,7 @@
 
 """NSGA-II multi-objective optimizer for Design Space Exploration (DSE).
 
-Contains class and methods to run a genetic algorithm over the MINLP genotype
-to find stable, high-biomass, and diverse plant-herbivore configurations.
+Contains class and methods to run a genetic algorithm over the MINLP genotype to find stable, high-biomass, and diverse plant-herbivore configurations.
 """
 
 import asyncio

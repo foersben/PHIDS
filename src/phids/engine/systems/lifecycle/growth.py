@@ -43,9 +43,7 @@ def _grow_structural_mass_jit(
 ) -> float:
     """Numba-compiled structural mass accumulation kernel for M_structural.
 
-    Implements monotonically non-decreasing M_structural growth on the 168-tick
-    slow-loop gate. The result is clamped to ``max_mass`` using a branchless
-    conditional compatible with Numba SIMD vectorization.
+    Implements monotonically non-decreasing M_structural growth on the 168-tick slow-loop gate. The result is clamped to ``max_mass`` using a branchless conditional compatible with Numba SIMD vectorization.
 
     Args:
         mass: Current M_structural value.
@@ -70,8 +68,7 @@ def _calculate_structural_upkeep_jit(
 ) -> float:
     """Numba-compiled M_structural-scaled maintenance cost calculation kernel.
 
-    Calculates the maintenance cost required to maintain lignified structural tissue.
-    Fee scales linearly with structural_mass / max_structural_mass ratio over the stride interval.
+    Calculates the maintenance cost required to maintain lignified structural tissue. Fee scales linearly with structural_mass / max_structural_mass ratio over the stride interval.
 
     Args:
         survival_threshold: Plant survival threshold energy.
@@ -97,9 +94,7 @@ def _grow(
 
     256-Bit AVX2 SIMD Photosynthetic Growth Scaling:
     ------------------------------------------------
-    Uses pre-compiled Numba JIT scalar/vector growth kernel operating on 256-bit AVX2 registers (YMM),
-    scaling photosynthetic biomass increments scaled by 168-hour SLOW_TICK_STRIDE without IEEE 754 subnormal
-    truncation or runtime allocation churn.
+    Uses pre-compiled Numba JIT scalar/vector growth kernel operating on 256-bit AVX2 registers (YMM), scaling photosynthetic biomass increments scaled by 168-hour SLOW_TICK_STRIDE without IEEE 754 subnormal truncation or runtime allocation churn.
 
     Args:
         plant: PlantComponent to update.
@@ -115,9 +110,7 @@ def _grow_structural(
 ) -> None:
     """Apply one slow-loop structural mass accumulation step for M_structural.
 
-    Dispatches to the Numba JIT ``_grow_structural_mass_jit`` kernel, clamps to
-    ``plant.max_structural_mass``, and writes the result to both the PlantComponent
-    and the ``GridEnvironment`` write buffer via ``set_structural_mass``.
+    Dispatches to the Numba JIT ``_grow_structural_mass_jit`` kernel, clamps to ``plant.max_structural_mass``, and writes the result to both the PlantComponent and the ``GridEnvironment`` write buffer via ``set_structural_mass``.
 
     Args:
         plant: PlantComponent whose M_structural should grow.

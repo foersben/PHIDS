@@ -3,8 +3,7 @@
 
 """Dashboard presenter for cell-specific details.
 
-Assembles tooltip and sidebar payloads representing active plants, swarms,
-mycorrhizal links, and diffused concentrations at a specific grid coordinate.
+Assembles tooltip and sidebar payloads representing active plants, swarms, mycorrhizal links, and diffused concentrations at a specific grid coordinate.
 """
 
 from __future__ import annotations
@@ -42,8 +41,7 @@ def _build_preview_plant_payload(
 ) -> dict[str, object]:
     """Helper to construct the detailed draft plant presentation structure.
 
-    The result is computed without reference to live simulation data: it reflects only the initial
-    configuration and neighbor relationships at the moment the draft was created.
+    The result is computed without reference to live simulation data: it reflects only the initial configuration and neighbor relationships at the moment the draft was created.
 
     Args:
         index: The index of the plant.
@@ -121,10 +119,7 @@ def _collect_preview_plants(
 ) -> list[dict[str, object]]:
     """Helper to collect and serialize draft plants at a target cell.
 
-    Filters plants by coordinates and delegates per-plant formatting to
-    `_build_preview_plant_payload`; used by `get_cell_details` to populate the
-    "plants" list in the cell-details payload when the active view is a draft
-    layout rather than a live simulation snapshot.
+    Filters plants by coordinates and delegates per-plant formatting to `_build_preview_plant_payload`; used by `get_cell_details` to populate the "plants" list in the cell-details payload when the active view is a draft layout rather than a live simulation snapshot.
 
     Args:
         x: The x coordinate of the cell.

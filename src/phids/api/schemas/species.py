@@ -3,9 +3,7 @@
 
 """Per-species parameter schemas for flora and herbivore species, plus the diet matrix.
 
-``FloraSpeciesParams`` and ``HerbivoreSpeciesParams`` parameterise ``SimulationLoop``
-construction. ``DietCompatibilityMatrix`` enforces Rule-of-16 shape bounds on both
-dimensions of the herbivore-flora edibility matrix.
+``FloraSpeciesParams`` and ``HerbivoreSpeciesParams`` parameterise ``SimulationLoop`` construction. ``DietCompatibilityMatrix`` enforces Rule-of-16 shape bounds on both dimensions of the herbivore-flora edibility matrix.
 """
 
 from __future__ import annotations

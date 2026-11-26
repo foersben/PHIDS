@@ -89,8 +89,7 @@ async def telemetry_chart(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/telemetry_chart.html` fragment together with current
-        legend and summary context.
+        TemplateResponse: Rendered `partials/telemetry_chart.html` fragment together with current legend and summary context.
     """
     if api_main._sim_loop is None:
         svg = build_telemetry_svg(None)

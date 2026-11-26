@@ -23,8 +23,7 @@ def build_live_dashboard_payload(
 ) -> dict[str, Any]:
     """Assemble the full JSON payload streamed to the browser canvas over the UI WebSocket.
 
-    This function constructs the authoritative rendering payload consumed by
-    ``/ws/ui/stream``.  It collects and serialises data from a pre-extracted snapshot.
+    This function constructs the authoritative rendering payload consumed by ``/ws/ui/stream``.  It collects and serialises data from a pre-extracted snapshot.
 
     Args:
         snapshot: The extracted thread-safe dictionary snapshot of the loop state.

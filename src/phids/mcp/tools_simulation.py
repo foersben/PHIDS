@@ -18,8 +18,7 @@ from phids.mcp.app import mcp
 def query_batch_jobs() -> dict[str, Any]:
     """Return a summary of active and completed batch jobs from the draft state.
 
-    Provides visibility into long-running exploration tasks or evolutionary
-    exploration results.
+    Provides visibility into long-running exploration tasks or evolutionary exploration results.
 
     Returns:
         dict[str, Any]: Dictionary mapping job IDs to their state representations.
@@ -40,14 +39,10 @@ def query_batch_jobs() -> dict[str, Any]:
 def runtime_snapshot() -> dict[str, Any]:
     """Return a compact performance-and-counts summary of the active draft state.
 
-    Useful as a lightweight sanity check before heavier resource reads or batch
-    operations. All counts reflect the in-memory singleton draft; no simulation
-    loop is touched.
+    Useful as a lightweight sanity check before heavier resource reads or batch operations. All counts reflect the in-memory singleton draft; no simulation loop is touched.
 
     Returns:
-        dict[str, Any]: Compact read-only summary including scenario metadata,
-            grid dimensions, entity counts, and active termination thresholds
-            (Z-codes).
+        dict[str, Any]: Compact read-only summary including scenario metadata, grid dimensions, entity counts, and active termination thresholds (Z-codes).
     """
     draft = helpers.get_current_draft()
     return {
@@ -79,8 +74,7 @@ def runtime_snapshot() -> dict[str, Any]:
 def inspect_live_simulation() -> dict[str, Any]:
     """Return compact operational summary of the active running simulation loop.
 
-    Useful for monitoring tick advancement, modulo-stride gates (is_medium_tick,
-    is_slow_tick), and mycorrhizal root network connectivity statistics.
+    Useful for monitoring tick advancement, modulo-stride gates (is_medium_tick, is_slow_tick), and mycorrhizal root network connectivity statistics.
 
     Returns:
         dict[str, Any]: Compact operational breakdown of the live running loop.
@@ -117,15 +111,13 @@ def inspect_live_simulation() -> dict[str, Any]:
 def read_batch_summary(job_id: str) -> dict[str, Any]:
     """Read the aggregated metrics inside a batch job's summary JSON file.
 
-    Allows agents to digest batch job metric summaries without manually
-    loading JSON artifacts.
+    Allows agents to digest batch job metric summaries without manually loading JSON artifacts.
 
     Args:
         job_id: The ID of the batch job to read.
 
     Returns:
-        dict[str, Any]: Dictionary containing the aggregated metrics on success,
-            or an error message on failure.
+        dict[str, Any]: Dictionary containing the aggregated metrics on success, or an error message on failure.
     """
     summary_path = helpers.get_project_root() / "data" / "batches" / f"{job_id}_summary.json"
     if not summary_path.exists():

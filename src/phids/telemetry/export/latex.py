@@ -36,11 +36,7 @@ def export_bytes_tex_table(
 ) -> bytes:
     r"""Render the telemetry rows as a booktabs LaTeX tabular environment.
 
-    Flattens per-species dicts into a wide pandas DataFrame via
-    :func:`telemetry_to_dataframe`, then serialises to LaTeX using
-    ``DataFrame.to_latex(index=False)``, which emits
-    ``\\toprule``, ``\\midrule``, and ``\\bottomrule`` rules consistent with
-    the ``booktabs`` LaTeX package conventions expected in peer-reviewed journals.
+    Flattens per-species dicts into a wide pandas DataFrame via :func:`telemetry_to_dataframe`, then serialises to LaTeX using ``DataFrame.to_latex(index=False)``, which emits ``\\toprule``, ``\\midrule``, and ``\\bottomrule`` rules consistent with the ``booktabs`` LaTeX package conventions expected in peer-reviewed journals.
 
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.

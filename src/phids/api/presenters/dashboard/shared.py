@@ -1,7 +1,6 @@
 """Pure structural utility helpers for the UI dashboard presenters.
 
-Provides deterministic coercion, coordinate validation, and fallback rendering logic
-used across multiple presenter domains (mycorrhizal, substances, cell details).
+Provides deterministic coercion, coordinate validation, and fallback rendering logic used across multiple presenter domains (mycorrhizal, substances, cell details).
 """
 
 from __future__ import annotations
@@ -20,16 +19,11 @@ from phids.shared.coercion import coerce_float, coerce_int
 def _coerce_int(value: object, *, default: int = -1) -> int:
     """Coerce an arbitrary object to ``int``, returning ``default`` on failure or boolean input.
 
-    In Python, ``bool`` is a subclass of ``int`` (e.g. ``isinstance(True, int) == True``).
-    In dashboard presenters, accepting boolean inputs as integers would silently convert UI toggle
-    flags (such as ``active=True``) into numeric entity identifiers (``species_id=1``) or cell
-    coordinates (``x=0``). This function explicitly rejects boolean values, mapping them to
-    ``default``, while safely parsing numbers and numeric strings.
+    In Python, ``bool`` is a subclass of ``int`` (e.g. ``isinstance(True, int) == True``). In dashboard presenters, accepting boolean inputs as integers would silently convert UI toggle flags (such as ``active=True``) into numeric entity identifiers (``species_id=1``) or cell coordinates (``x=0``). This function explicitly rejects boolean values, mapping them to ``default``, while safely parsing numbers and numeric strings.
 
     Args:
         value: The raw input object to convert (e.g. int, float, str, or None).
-        default: Fallback integer returned if conversion fails or value is a boolean.
-            Defaults to -1.
+        default: Fallback integer returned if conversion fails or value is a boolean. Defaults to -1.
 
     Returns:
         int: The successfully coerced integer, or ``default`` if the input is invalid or boolean.
@@ -52,14 +46,11 @@ def _coerce_int(value: object, *, default: int = -1) -> int:
 def _coerce_float(value: object, *, default: float = 0.0) -> float:
     """Coerce an arbitrary object to ``float``, returning ``default`` on failure or boolean input.
 
-    Similar to :func:`_coerce_int`, presenter layers explicitly reject boolean values to prevent
-    UI flags from silently mutating continuous biological measurements (e.g. chemical concentrations
-    or energy levels). Valid floats, integers, and numeric strings are parsed with strict fallbacks.
+    Similar to :func:`_coerce_int`, presenter layers explicitly reject boolean values to prevent UI flags from silently mutating continuous biological measurements (e.g. chemical concentrations or energy levels). Valid floats, integers, and numeric strings are parsed with strict fallbacks.
 
     Args:
         value: The raw input object to convert (e.g. float, int, str, or None).
-        default: Fallback float returned if conversion fails or value is a boolean.
-            Defaults to 0.0.
+        default: Fallback float returned if conversion fails or value is a boolean. Defaults to 0.0.
 
     Returns:
         float: The successfully coerced float, or ``default`` if the input is invalid or boolean.
@@ -85,8 +76,7 @@ def calculate_structural_fragility_and_risk(
 ) -> tuple[float, float, str]:
     """Compute biomass structural fragility and qualitative herbivory risk level.
 
-    Calculates the proportional structural deficit of a plant relative to its maximum
-    allometric structural capacity, translating it into an intuitive risk category:
+    Calculates the proportional structural deficit of a plant relative to its maximum allometric structural capacity, translating it into an intuitive risk category:
     - "Immune": Structural mass has reached or exceeded maximum allometric capacity.
     - "High Risk": Fragility > 0.6 (severe structural deficit, highly vulnerable).
     - "Medium Risk": Fragility > 0.2 (moderate structural deficit).
@@ -121,14 +111,11 @@ def calculate_structural_fragility_and_risk(
 def _default_substance_name(substance_id: int, *, is_toxin: bool) -> str:
     """Return a deterministic fallback display label for a substance identifier.
 
-    The label encodes the biological classification (signal vs. toxin) and the integer
-    identifier, ensuring operator-facing tooltips remain informative even when no explicit
-    substance definition has been registered in the draft or live runtime.
+    The label encodes the biological classification (signal vs. toxin) and the integer identifier, ensuring operator-facing tooltips remain informative even when no explicit substance definition has been registered in the draft or live runtime.
 
     Args:
         substance_id: The integer substance channel index.
-        is_toxin: Whether the substance occupies a toxin layer (``True``) or a signal layer
-            (``False``).
+        is_toxin: Whether the substance occupies a toxin layer (``True``) or a signal layer (``False``).
 
     Returns:
         A human-readable label of the form ``"Toxin N"`` or ``"Signal N"``.
@@ -152,8 +139,7 @@ def _describe_composite_condition(
         s_names: Mapping from substance ID to human-readable display name.
 
     Returns:
-        str: Parenthesized natural-language description combining the child conditions,
-            or a fallback indicator ("invalid condition" / "unconditional").
+        str: Parenthesized natural-language description combining the child conditions, or a fallback indicator ("invalid condition" / "unconditional").
     """
     sub_conditions = condition.get("conditions", [])
     if not isinstance(sub_conditions, list):
@@ -174,19 +160,12 @@ def _describe_activation_condition(
 ) -> str:
     """Render a concise human-readable summary of a nested activation-condition tree.
 
-    Activation conditions follow a recursive tree schema with leaf kinds
-    ``herbivore_presence``, ``substance_active``, and ``environmental_signal``, and
-    combinator kinds ``all_of`` and ``any_of``.  The function traverses the tree
-    depth-first and assembles a parenthesised natural-language description suitable
-    for a UI tooltip or summary label.
+    Activation conditions follow a recursive tree schema with leaf kinds ``herbivore_presence``, ``substance_active``, and ``environmental_signal``, and combinator kinds ``all_of`` and ``any_of``.  The function traverses the tree depth-first and assembles a parenthesised natural-language description suitable for a UI tooltip or summary label.
 
     Args:
-        condition: A dictionary conforming to the activation condition schema, or
-            ``None`` to indicate unconditional activation.
-        herbivore_names: Optional mapping from herbivore species identifier to display name.
-            If omitted, fallback labels (e.g. ``"Herbivore 0"``) are used.
-        substance_names: Optional mapping from substance identifier to display name.
-            If omitted, fallback labels (e.g. ``"Signal 0"``) are used.
+        condition: A dictionary conforming to the activation condition schema, or ``None`` to indicate unconditional activation.
+        herbivore_names: Optional mapping from herbivore species identifier to display name. If omitted, fallback labels (e.g. ``"Herbivore 0"``) are used.
+        substance_names: Optional mapping from substance identifier to display name. If omitted, fallback labels (e.g. ``"Signal 0"``) are used.
 
     Returns:
         A human-readable string summarizing the condition logic.
@@ -234,8 +213,7 @@ def validate_cell_coordinates(x: int, y: int, width: int, height: int) -> None:
         height: Total grid height.
 
     Raises:
-        HTTPException: Raises HTTP 404 with a descriptive detail message if the
-            coordinates are out of bounds.
+        HTTPException: Raises HTTP 404 with a descriptive detail message if the coordinates are out of bounds.
 
     """
     if not (0 <= x < width) or not (0 <= y < height):

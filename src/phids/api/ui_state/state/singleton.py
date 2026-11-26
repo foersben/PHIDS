@@ -19,10 +19,7 @@ _draft: DraftState | None = None
 def get_draft() -> DraftState:
     """Return the current draft state, restoring from autosave or defaulting if needed.
 
-    On first access after a process restart, the function attempts to reload the
-    previously persisted draft from ``data/draft_autosave.json`` before falling
-    back to the built-in default scenario. This makes the draft survive uvicorn
-    hot-reloads triggered by source-file edits.
+    On first access after a process restart, the function attempts to reload the previously persisted draft from ``data/draft_autosave.json`` before falling back to the built-in default scenario. This makes the draft survive uvicorn hot-reloads triggered by source-file edits.
 
     Returns:
         DraftState: The active draft configuration.

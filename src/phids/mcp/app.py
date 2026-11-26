@@ -21,7 +21,6 @@ mcp = FastMCP(
 def run_mcp_server() -> None:
     """Spawn the headless stdio MCP communications loop.
 
-    Launches the FastMCP stdio server process, reading JSON-RPC requests from
-    stdin and streaming responses back over stdout.
+    Launches the FastMCP stdio server process, reading JSON-RPC requests from stdin and streaming responses back over stdout.
     """
     mcp.run()

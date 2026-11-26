@@ -31,10 +31,7 @@ def _apply_branchless_capacity_mask_jit(
 ) -> float:
     """Branchlessly mask weights for candidate neighbours exceeding tile carrying capacity.
 
-    Calculates a floating-point multiplier for each candidate tile using branchless boolean arithmetic:
-    `mask = min(1.0, is_current + is_under_capacity)`. If a candidate cell exceeds maximum capacity
-    and is not the current cell, its weight is branchlessly multiplied by 0.0, preventing CPU
-    branch mispredictions in Numba `@njit` kernels.
+    Calculates a floating-point multiplier for each candidate tile using branchless boolean arithmetic: `mask = min(1.0, is_current + is_under_capacity)`. If a candidate cell exceeds maximum capacity and is not the current cell, its weight is branchlessly multiplied by 0.0, preventing CPU branch mispredictions in Numba `@njit` kernels.
 
     Args:
         count: The number of neighbours.

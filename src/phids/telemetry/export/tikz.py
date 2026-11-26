@@ -3,8 +3,7 @@
 
 """Telemetry export to PGFPlots TikZ code.
 
-Generates self-contained tikzpicture environments containing PGFPlots chart specifications
-for LaTeX papers (time series, phase spaces, defense economy ratio, biomass stack, survival probability).
+Generates self-contained tikzpicture environments containing PGFPlots chart specifications for LaTeX papers (time series, phase spaces, defense economy ratio, biomass stack, survival probability).
 """
 
 from __future__ import annotations
@@ -44,21 +43,13 @@ def generate_tikz_str(
 ) -> str:
     r"""Generate a PGFPlots LaTeX source string for publication-quality figures.
 
-    Produces a self-contained ``tikzpicture`` environment using the ``pgfplots``
-    package. The output does not require the ``tikzplotlib`` library; instead,
-    coordinates are injected directly into ``\\addplot`` commands via a
-    ``\\pgfplotstable``-compatible inline coordinate format. This approach ensures
-    compatibility with any LaTeX installation providing ``pgfplots >= 1.16``.
+    Produces a self-contained ``tikzpicture`` environment using the ``pgfplots`` package. The output does not require the ``tikzplotlib`` library; instead, coordinates are injected directly into ``\\addplot`` commands via a ``\\pgfplotstable``-compatible inline coordinate format. This approach ensures compatibility with any LaTeX installation providing ``pgfplots >= 1.16``.
 
-    The generated code is intended for compilation with ``pdflatex``, ``xelatex``,
-    or ``lualatex`` after pasting into a document preamble that includes
-    ``\\usepackage{pgfplots}`` and ``\\pgfplotsset{compat=1.18}``.
+    The generated code is intended for compilation with ``pdflatex``, ``xelatex``, or ``lualatex`` after pasting into a document preamble that includes ``\\usepackage{pgfplots}`` and ``\\pgfplotsset{compat=1.18}``.
 
     Args:
         rows: Raw telemetry rows from ``TelemetryRecorder._rows``.
-        plot_type: Chart mode - ``"timeseries"``, ``"phasespace"``,
-            ``"defense_economy"``, ``"biomass_stack"``, or
-            ``"survival_probability"``.
+        plot_type: Chart mode - ``"timeseries"``, ``"phasespace"``, ``"defense_economy"``, ``"biomass_stack"``, or ``"survival_probability"``.
         flora_names: Optional display names keyed by flora species id.
         herbivore_names: Optional display names keyed by herbivore species id.
         plant_species_id: Flora species id for phase-space x-axis.

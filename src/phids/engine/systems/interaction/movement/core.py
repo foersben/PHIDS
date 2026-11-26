@@ -3,8 +3,7 @@
 
 """Core swarm movement resolution logic.
 
-Provides the primary orchestrator `_resolve_swarm_movement` which combines anchoring, repulsion,
-and flow field movement for herbivore swarms.
+Provides the primary orchestrator `_resolve_swarm_movement` which combines anchoring, repulsion, and flow field movement for herbivore swarms.
 """
 
 from __future__ import annotations
@@ -90,9 +89,7 @@ def _resolve_swarm_movement(
 ) -> bool:
     """Evaluate and execute movement phase for a single swarm, return has_moved.
 
-    This function implements the core movement logic for a herbivore swarm, handling
-    three distinct priority regimes: **anchoring** (staying put on food), **repulsion** (moving
-    off crowded tiles), and **attraction** (moving along the global flow field).
+    This function implements the core movement logic for a herbivore swarm, handling three distinct priority regimes: **anchoring** (staying put on food), **repulsion** (moving off crowded tiles), and **attraction** (moving along the global flow field).
 
     Args:
         swarm: The swarm component.

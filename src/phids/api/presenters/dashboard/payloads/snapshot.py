@@ -109,9 +109,7 @@ def _extract_substances(world: ECSWorld) -> list[dict[str, Any]]:
 def extract_ui_snapshot(loop: SimulationLoop) -> dict[str, Any]:
     """Extract a fast, thread-safe shallow copy of UI-required state.
 
-    This function runs synchronously while holding the simulation lock. It returns a
-    dictionary containing primitive values, copied NumPy arrays, and lightweight dicts
-    representing the components needed for UI streaming.
+    This function runs synchronously while holding the simulation lock. It returns a dictionary containing primitive values, copied NumPy arrays, and lightweight dicts representing the components needed for UI streaming.
     """
     env = loop.env
     world = loop.world

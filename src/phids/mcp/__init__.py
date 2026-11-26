@@ -3,8 +3,7 @@
 
 """Model Context Protocol (MCP) modular orchestration package for PHIDS.
 
-Provides read-only simulation state resources, validation primitives,
-diagnostic inspection, and telemetry exporters via FastMCP.
+Provides read-only simulation state resources, validation primitives, diagnostic inspection, and telemetry exporters via FastMCP.
 """
 
 from __future__ import annotations

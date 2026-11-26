@@ -134,30 +134,18 @@ def build_live_cell_details(
 ) -> dict[str, object]:
     """Assemble a rich tooltip payload for a single live-simulation grid cell.
 
-    This function traverses the ECS world and double-buffered environmental layers for cell
-    ``(x, y)``, collecting all plant entities (with their owned substance components and
-    mycorrhizal network neighbours), swarm entities (with energy and repellency state), and
-    per-channel signal and toxin concentrations.  The result is a structured dictionary
-    consumed by the HTMX tooltip partial rendered when the operator hovers over a canvas cell.
+    This function traverses the ECS world and double-buffered environmental layers for cell ``(x, y)``, collecting all plant entities (with their owned substance components and mycorrhizal network neighbours), swarm entities (with energy and repellency state), and per-channel signal and toxin concentrations.  The result is a structured dictionary consumed by the HTMX tooltip partial rendered when the operator hovers over a canvas cell.
 
-    Entity lookups are performed via O(1) spatial hash queries (``world.entities_at(x, y)``),
-    preserving the architectural constraint against O(N²) distance scans.  Environmental field
-    values are read directly from the NumPy read buffer of
-    :class:`~phids.engine.core.biotope.GridEnvironment`.
+    Entity lookups are performed via O(1) spatial hash queries (``world.entities_at(x, y)``), preserving the architectural constraint against O(N²) distance scans.  Environmental field values are read directly from the NumPy read buffer of :class:`~phids.engine.core.biotope.GridEnvironment`.
 
     Args:
-        loop: The active :class:`~phids.engine.loop.SimulationLoop` whose ECS world and
-            environment layers are queried.
+        loop: The active :class:`~phids.engine.loop.SimulationLoop` whose ECS world and environment layers are queried.
         x: Column index of the target cell.
         y: Row index of the target cell.
-        substance_names: Mapping from substance identifier to display name.  Injected by the
-            caller to avoid implicit dependency on module-level mutable state.
+        substance_names: Mapping from substance identifier to display name.  Injected by the caller to avoid implicit dependency on module-level mutable state.
 
     Returns:
-        A dictionary with keys ``mode``, ``tick``, ``x``, ``y``, ``grid_width``,
-        ``grid_height``, ``flow_field``, ``wind``, ``signal_peak``, ``toxin_peak``,
-        ``signal_concentrations``, ``toxin_concentrations``, ``mycorrhiza``,
-        ``plants``, and ``swarms``.
+        A dictionary with keys ``mode``, ``tick``, ``x``, ``y``, ``grid_width``, ``grid_height``, ``flow_field``, ``wind``, ``signal_peak``, ``toxin_peak``, ``signal_concentrations``, ``toxin_concentrations``, ``mycorrhiza``, ``plants``, and ``swarms``.
 
     Raises:
         HTTPException: HTTP 404 if ``(x, y)`` lies outside the configured grid bounds.

@@ -3,8 +3,7 @@
 
 """Biological database component for matching traits and parameters.
 
-Provides Pydantic models for flora and herbivore profiles, and the main
-BioDatabase service for Mode A matching and Mode B bounds query logic.
+Provides Pydantic models for flora and herbivore profiles, and the main BioDatabase service for Mode A matching and Mode B bounds query logic.
 """
 
 import json

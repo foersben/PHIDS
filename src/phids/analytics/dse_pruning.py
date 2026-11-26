@@ -3,8 +3,7 @@
 
 """Analytical pre-pruning system for Design Space Exploration (DSE).
 
-Contains validators to filter out structurally and thermodynamically unviable
-genotypes before running computationally expensive simulations.
+Contains validators to filter out structurally and thermodynamically unviable genotypes before running computationally expensive simulations.
 """
 
 import logging

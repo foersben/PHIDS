@@ -3,9 +3,7 @@
 
 """Initial placement and procedural placement strategy schemas.
 
-``InitialPlantPlacement`` and ``InitialSwarmPlacement`` define manually positioned
-entities at simulation start. ``PlacementStrategy`` is a discriminated union of
-three procedural seeding algorithms used when ``placement_mode = "procedural"``.
+``InitialPlantPlacement`` and ``InitialSwarmPlacement`` define manually positioned entities at simulation start. ``PlacementStrategy`` is a discriminated union of three procedural seeding algorithms used when ``placement_mode = "procedural"``.
 """
 
 from __future__ import annotations

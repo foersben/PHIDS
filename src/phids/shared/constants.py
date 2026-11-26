@@ -3,22 +3,11 @@
 
 """Shared compile-time constants for the PHIDS simulation engine.
 
-This module centralises all numeric sentinels, hard upper limits, and physical simulation
-parameters that must remain consistent across the engine core, API schemas, and telemetry
-sub-packages. The Rule-of-16 caps (``MAX_FLORA_SPECIES``, ``MAX_HERBIVORE_SPECIES``,
-``MAX_SUBSTANCE_TYPES``) govern the maximum cardinality of pre-allocated NumPy matrices in the
-``GridEnvironment`` and ECS world; exceeding these limits during scenario construction is
-intercepted by Pydantic validation at the API ingress boundary and is never permitted to reach
-the engine simulation loop. Grid dimension bounds (``GRID_W_MAX``, ``GRID_H_MAX``) define the
-maximum spatial extent of the biotope, constraining convolution and Jacobi propagation cost.
+This module centralises all numeric sentinels, hard upper limits, and physical simulation parameters that must remain consistent across the engine core, API schemas, and telemetry sub-packages. The Rule-of-16 caps (``MAX_FLORA_SPECIES``, ``MAX_HERBIVORE_SPECIES``, ``MAX_SUBSTANCE_TYPES``) govern the maximum cardinality of pre-allocated NumPy matrices in the ``GridEnvironment`` and ECS world; exceeding these limits during scenario construction is intercepted by Pydantic validation at the API ingress boundary and is never permitted to reach the engine simulation loop. Grid dimension bounds (``GRID_W_MAX``, ``GRID_H_MAX``) define the maximum spatial extent of the biotope, constraining convolution and Jacobi propagation cost.
 
-The diffusion constant ``SIGNAL_EPSILON`` is a performance invariant: after each
-Gaussian diffusion step, values below ``SIGNAL_EPSILON`` are zeroed to maintain
-matrix sparsity and avoid accumulation of subnormal floating-point values that would
-degrade Numba JIT-compiled kernel throughput.
+The diffusion constant ``SIGNAL_EPSILON`` is a performance invariant: after each Gaussian diffusion step, values below ``SIGNAL_EPSILON`` are zeroed to maintain matrix sparsity and avoid accumulation of subnormal floating-point values that would degrade Numba JIT-compiled kernel throughput.
 
-Note: ``SIGNAL_DECAY_FACTOR`` and ``SUBSTANCE_EMIT_RATE`` were intentionally moved to
-``SimulationConfig`` to allow dynamic parameter tuning during Design Space Exploration.
+Note: ``SIGNAL_DECAY_FACTOR`` and ``SUBSTANCE_EMIT_RATE`` were intentionally moved to ``SimulationConfig`` to allow dynamic parameter tuning during Design Space Exploration.
 """
 
 from __future__ import annotations

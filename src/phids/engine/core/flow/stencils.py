@@ -3,8 +3,7 @@
 
 """Finite difference stencils and initialization kernels for flow fields.
 
-Provides Numba @njit kernels for base attraction/repulsion matrix initialization,
-4-point toroidal neighbour summation, and subnormal float zeroing.
+Provides Numba @njit kernels for base attraction/repulsion matrix initialization, 4-point toroidal neighbour summation, and subnormal float zeroing.
 """
 
 from __future__ import annotations

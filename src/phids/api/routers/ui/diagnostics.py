@@ -28,8 +28,7 @@ async def ui_diagnostics_model(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/diagnostics_model.html` fragment populated from live
-        telemetry and draft metadata.
+        TemplateResponse: Rendered `partials/diagnostics_model.html` fragment populated from live telemetry and draft metadata.
     """
     return api_main.templates.TemplateResponse(
         request,
@@ -72,8 +71,7 @@ async def ui_diagnostics_backend(request: Request) -> Response:
         request: FastAPI request object used by the template renderer.
 
     Returns:
-        TemplateResponse: Rendered `partials/diagnostics_backend.html` fragment with bounded recent
-        log context.
+        TemplateResponse: Rendered `partials/diagnostics_backend.html` fragment with bounded recent log context.
     """
     return api_main.templates.TemplateResponse(
         request,

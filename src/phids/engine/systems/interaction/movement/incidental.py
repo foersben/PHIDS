@@ -34,9 +34,7 @@ def _compute_trample_probability_jit(
 ) -> float:
     """Numba-compiled single FMA branchless trampling vulnerability probability gate.
 
-    Calculates the probability P(destroy) of a seedling or low-structural-mass plant entity
-    being trampled or incidentally destroyed by a moving herbivore swarm. Bounded by p_max
-    (default 0.50) per coordinate transition to maintain realistic stochastic chance.
+    Calculates the probability P(destroy) of a seedling or low-structural-mass plant entity being trampled or incidentally destroyed by a moving herbivore swarm. Bounded by p_max (default 0.50) per coordinate transition to maintain realistic stochastic chance.
 
     Args:
         swarm_population: Population count of the entering herbivore swarm.
@@ -100,10 +98,7 @@ def _resolve_incidental_mortality(
 ) -> None:
     """Evaluate probabilistic incidental seedling mortality when a swarm enters cell (nx, ny).
 
-    For each co-located PlantComponent entity at (nx, ny), calculates the destruction probability
-    P(destroy) via _compute_trample_probability_jit. If stochastic check succeeds (rng.random() < P),
-    the plant is culled from GridEnvironment write layers, unregistered from the spatial hash, and
-    queued for entity cleanup.
+    For each co-located PlantComponent entity at (nx, ny), calculates the destruction probability P(destroy) via _compute_trample_probability_jit. If stochastic check succeeds (rng.random() < P), the plant is culled from GridEnvironment write layers, unregistered from the spatial hash, and queued for entity cleanup.
 
     Args:
         swarm: SwarmComponent entering the target cell.

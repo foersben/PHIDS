@@ -3,8 +3,7 @@
 
 """Spatial placement generation helpers.
 
-Provides functions to compute coordinate vectors for uniform, clustered,
-and banded initial entity distributions on the biotope grid.
+Provides functions to compute coordinate vectors for uniform, clustered, and banded initial entity distributions on the biotope grid.
 """
 
 import random

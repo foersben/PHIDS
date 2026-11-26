@@ -32,9 +32,7 @@ def get_condition_node(
 ) -> ActivationConditionNode:
     """Resolve one condition node by a dotted path string.
 
-    This is the public surface for condition-tree reads so that callers never
-    need to import the private ``_condition_node_at_path`` / ``_parse_condition_path``
-    helpers from ``ui_state`` directly.
+    This is the public surface for condition-tree reads so that callers never need to import the private ``_condition_node_at_path`` / ``_parse_condition_path`` helpers from ``ui_state`` directly.
 
     Args:
         rule_condition: Root condition node of a trigger rule.
@@ -166,9 +164,7 @@ def delete_trigger_rule_condition_node(
 ) -> None:
     """Delete one condition node addressed by a dotted path.
 
-    If deleting this node leaves a parent group condition empty, the group is
-    pruned recursively. If the root node is deleted or pruned away, the rule's
-    ``activation_condition`` is set to ``None``.
+    If deleting this node leaves a parent group condition empty, the group is pruned recursively. If the root node is deleted or pruned away, the rule's ``activation_condition`` is set to ``None``.
 
     Args:
         draft: Draft state mutated in place.

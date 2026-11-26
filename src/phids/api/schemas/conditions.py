@@ -3,13 +3,7 @@
 
 """Activation condition schemas for the compound chemical-defense trigger tree.
 
-This module defines a recursive algebraic type tree composed of five node types,
-discriminated by their ``kind`` literal field. The ``ConditionNode`` union is a
-PEP 695 ``type`` alias that references both ``AllOfConditionSchema`` and
-``AnyOfConditionSchema`` - both of which in turn reference ``ConditionNode`` in
-their ``conditions`` fields. This forward-reference cycle requires all five schemas
-and the alias to live in the same module, and the two composite schemas must call
-``model_rebuild()`` after the alias is defined.
+This module defines a recursive algebraic type tree composed of five node types, discriminated by their ``kind`` literal field. The ``ConditionNode`` union is a PEP 695 ``type`` alias that references both ``AllOfConditionSchema`` and ``AnyOfConditionSchema`` - both of which in turn reference ``ConditionNode`` in their ``conditions`` fields. This forward-reference cycle requires all five schemas and the alias to live in the same module, and the two composite schemas must call ``model_rebuild()`` after the alias is defined.
 """
 
 from __future__ import annotations

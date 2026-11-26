@@ -3,20 +3,9 @@
 
 """Tick-level ECS aggregation structures for shared telemetry and termination evaluation.
 
-This module defines the :class:`TickMetrics` dataclass and the corresponding
-:func:`collect_tick_metrics` helper, which execute a single deterministic pass
-over live ECS components to materialize scalar and per-species aggregates used by
-both telemetry recording and termination-condition evaluation. The explicit
-shared-aggregation contract eliminates duplicated component scans in the hot
-simulation loop while preserving strict data-oriented semantics.
+This module defines the :class:`TickMetrics` dataclass and the corresponding :func:`collect_tick_metrics` helper, which execute a single deterministic pass over live ECS components to materialize scalar and per-species aggregates used by both telemetry recording and termination-condition evaluation. The explicit shared-aggregation contract eliminates duplicated component scans in the hot simulation loop while preserving strict data-oriented semantics.
 
-The collector accumulates flora and herbivore populations, aggregate energies,
-species-presence sets, and active defense-maintenance costs attributed to flora
-species through owner-linked substance components. These metrics encode both the
-biological observables (population size, energetic state, active chemical
-maintenance burden) and the computational invariants required by PHIDS phase
-ordering, thereby allowing telemetry and termination logic to observe an
-identical post-system world snapshot without divergent sampling artifacts.
+The collector accumulates flora and herbivore populations, aggregate energies, species-presence sets, and active defense-maintenance costs attributed to flora species through owner-linked substance components. These metrics encode both the biological observables (population size, energetic state, active chemical maintenance burden) and the computational invariants required by PHIDS phase ordering, thereby allowing telemetry and termination logic to observe an identical post-system world snapshot without divergent sampling artifacts.
 """
 
 from __future__ import annotations

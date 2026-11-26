@@ -3,9 +3,7 @@
 
 """Draft-state mutation module for substance definitions.
 
-Provides pure functions to add, update, and remove substance definitions within the draft.
-Removing a substance correctly updates remaining definitions and purges associated trigger rules
-to maintain state integrity.
+Provides pure functions to add, update, and remove substance definitions within the draft. Removing a substance correctly updates remaining definitions and purges associated trigger rules to maintain state integrity.
 """
 
 from __future__ import annotations

@@ -3,13 +3,7 @@
 
 """Scenario and simulation control router for PHIDS.
 
-This module groups the routes that transition validated configuration data into a live
-`SimulationLoop` and then control that runtime through deterministic lifecycle operations. The
-endpoints preserve the draft-versus-live boundary: draft editing occurs in separate builder routes,
-while this surface performs scenario loading, single-loop execution control, wind mutation, and
-serialization import/export. The computational objective is strict reproducibility of ecological
-state trajectories, and the biological objective is controlled experimentation over trophic,
-signaling, and metabolic dynamics without introducing ad hoc client-side state transitions.
+This module groups the routes that transition validated configuration data into a live `SimulationLoop` and then control that runtime through deterministic lifecycle operations. The endpoints preserve the draft-versus-live boundary: draft editing occurs in separate builder routes, while this surface performs scenario loading, single-loop execution control, wind mutation, and serialization import/export. The computational objective is strict reproducibility of ecological state trajectories, and the biological objective is controlled experimentation over trophic, signaling, and metabolic dynamics without introducing ad hoc client-side state transitions.
 """
 
 from __future__ import annotations
@@ -28,9 +22,7 @@ if TYPE_CHECKING:
 def _status_badge_fragment() -> Response:
     """Return a 204 No Content response that triggers UI updates.
 
-    Instead of rendering OOB swaps (which can cause DOM duplication if interrupted),
-    this canonical helper simply tells HTMX to trigger 'updateStatusBadge' and
-    'updateMainActionBtn' events on the client.
+    Instead of rendering OOB swaps (which can cause DOM duplication if interrupted), this canonical helper simply tells HTMX to trigger 'updateStatusBadge' and 'updateMainActionBtn' events on the client.
     """
     return Response(
         status_code=204,
@@ -95,9 +87,7 @@ def _apply_optional_biotope_overrides(
 ) -> None:
     """Persist optional biotope form fields into draft state when present.
 
-    This helper enables simulation-control actions to commit pending builder edits
-    in the same request, avoiding stale draft state when users type and click a
-    control button without waiting for autosave round-trips.
+    This helper enables simulation-control actions to commit pending builder edits in the same request, avoiding stale draft state when users type and click a control button without waiting for autosave round-trips.
     """
     provided = any(
         value is not None

@@ -3,28 +3,9 @@
 
 """Signaling system: substance synthesis, activation, emission, diffusion, and toxin effects.
 
-This module implements the third and final per-tick simulation phase of the PHIDS engine,
-governing the full lifecycle of volatile organic compound (VOC) signals and defensive toxins.
-The signaling phase is executed after both the lifecycle and interaction phases have committed
-their energy mutations, ensuring that plant survival status and herbivore co-location data reflect
-the current tick's resolved state before chemical-defense decisions are made.
+This module implements the third and final per-tick simulation phase of the PHIDS engine, governing the full lifecycle of volatile organic compound (VOC) signals and defensive toxins. The signaling phase is executed after both the lifecycle and interaction phases have committed their energy mutations, ensuring that plant survival status and herbivore co-location data reflect the current tick's resolved state before chemical-defense decisions are made.
 
-The phase proceeds through six ordered sub-steps. First, orphaned substance entities whose owner
-plants were destroyed in earlier phases are garbage-collected. Second, trigger-condition trees are
-evaluated for each living plant against the per-cell herbivore census index
-(``_build_swarm_population_index``): direct herbivore co-presence (``herbivore_presence`` nodes) or
-indirect conditions (``substance_active``, ``environmental_signal``, ``all_of``, ``any_of``
-composites) can independently satisfy a trigger. Third, synthesis countdown timers are decremented
-for triggered substances; substances with zero remaining countdown and satisfied activation
-conditions are transitioned to ``active`` state. Fourth, active substances emit concentration
-increments (``SUBSTANCE_EMIT_RATE``) into signal or toxin environment layers, deduct
-``energy_cost_per_tick`` from the owner plant, relay VOC signals through mycorrhizal root
-networks, and record toxin property aggregates for batch application. Fifth, toxin effects
-(lethality and repellency) are applied to all co-located swarms via ``_apply_toxin_to_swarms``,
-with immediate spatial-hash deregistration and garbage collection of swarms annihilated by
-chemical defense. Sixth, Gaussian diffusion is delegated to ``GridEnvironment.diffuse_signals``,
-which convolves each airborne signal layer with the pre-computed kernel and applies the
-``SIGNAL_EPSILON`` sparsity threshold to eliminate subnormal tail values.
+The phase proceeds through six ordered sub-steps. First, orphaned substance entities whose owner plants were destroyed in earlier phases are garbage-collected. Second, trigger-condition trees are evaluated for each living plant against the per-cell herbivore census index (``_build_swarm_population_index``): direct herbivore co-presence (``herbivore_presence`` nodes) or indirect conditions (``substance_active``, ``environmental_signal``, ``all_of``, ``any_of`` composites) can independently satisfy a trigger. Third, synthesis countdown timers are decremented for triggered substances; substances with zero remaining countdown and satisfied activation conditions are transitioned to ``active`` state. Fourth, active substances emit concentration increments (``SUBSTANCE_EMIT_RATE``) into signal or toxin environment layers, deduct ``energy_cost_per_tick`` from the owner plant, relay VOC signals through mycorrhizal root networks, and record toxin property aggregates for batch application. Fifth, toxin effects (lethality and repellency) are applied to all co-located swarms via ``_apply_toxin_to_swarms``, with immediate spatial-hash deregistration and garbage collection of swarms annihilated by chemical defense. Sixth, Gaussian diffusion is delegated to ``GridEnvironment.diffuse_signals``, which convolves each airborne signal layer with the pre-computed kernel and applies the ``SIGNAL_EPSILON`` sparsity threshold to eliminate subnormal tail values.
 """
 
 from __future__ import annotations
@@ -64,15 +45,12 @@ def run_signaling(
         world: The central ECSWorld instance containing all entity component mappings and active systems.
         env: Grid environment holding signal/toxin layers.
         trigger_conditions: Mapping of flora species_id to trigger schemas.
-        mycorrhizal_inter_species: Whether inter-species mycorrhizal signaling
-            is permitted.
+        mycorrhizal_inter_species: Whether inter-species mycorrhizal signaling is permitted.
         signal_velocity: Ticks per hop for root-network relays.
         tick: Current simulation tick.
         plant_death_causes: Mapping of death causes to their respective counts.
-        substance_emit_rate: Concentration increment added per tick when an active
-            SubstanceComponent emits. Defaults to 0.1 (module-level constant value).
-        signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion
-            (0.0-1.0). Defaults to 0.85 (module-level constant value).
+        substance_emit_rate: Concentration increment added per tick when an active SubstanceComponent emits. Defaults to 0.1 (module-level constant value).
+        signal_decay_factor: Per-tick airborne signal retention after Gaussian diffusion (0.0-1.0). Defaults to 0.85 (module-level constant value).
 
     """
     dead_substances: list[int] = []

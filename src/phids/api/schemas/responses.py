@@ -3,8 +3,7 @@
 
 """REST API response and request payload schemas.
 
-These models are used exclusively at the HTTP boundary and carry no engine-internal
-state. They are never passed into ``SimulationLoop`` construction.
+These models are used exclusively at the HTTP boundary and carry no engine-internal state. They are never passed into ``SimulationLoop`` construction.
 """
 
 from __future__ import annotations
@@ -43,10 +42,7 @@ class TickRateUpdatePayload(StrictBaseModel):
 class BatchJobState(StrictBaseModel):
     """Runtime state record for a single Monte Carlo batch simulation job.
 
-    Each batch job corresponds to ``N`` independent simulation runs dispatched
-    to a :class:`concurrent.futures.ProcessPoolExecutor`. Progress is tracked as
-    completed run count relative to the total, and the final aggregate summary is
-    persisted to disk for retrieval via the ledger and view endpoints.
+    Each batch job corresponds to ``N`` independent simulation runs dispatched to a :class:`concurrent.futures.ProcessPoolExecutor`. Progress is tracked as completed run count relative to the total, and the final aggregate summary is persisted to disk for retrieval via the ledger and view endpoints.
 
     Attributes:
         job_id: Universally unique identifier assigned at job creation.
@@ -73,10 +69,7 @@ class BatchJobState(StrictBaseModel):
 class BatchStartPayload(StrictBaseModel):
     """HTTP request payload for initiating a Monte Carlo batch simulation job.
 
-    Encapsulates the simulation scenario and batch execution parameters
-    submitted via ``POST /api/batch/start``. The ``scenario`` field accepts a
-    complete :class:`SimulationConfig` that overrides the current server-side
-    draft, enabling fully reproducible parameterized batch studies.
+    Encapsulates the simulation scenario and batch execution parameters submitted via ``POST /api/batch/start``. The ``scenario`` field accepts a complete :class:`SimulationConfig` that overrides the current server-side draft, enabling fully reproducible parameterized batch studies.
 
     Attributes:
         runs: Number of independent simulation runs to execute in parallel.

@@ -172,28 +172,18 @@ def _establish_mycorrhizal_connections(
 ) -> tuple[bool, list[int]]:
     """Establish bidirectional root connections between adjacent plants.
 
-    Plants located at Manhattan distance 1 may form symbiotic root
-    connections. Each new connection costs ``connection_cost`` energy
-    deducted from both participants. Inter-species links are only created
-    when ``inter_species`` is True. During one growth invocation, each plant
-    upkeep evaluates connection feasibility. Each plant can establish at most
-    one new connection so disjoint pairs can grow in parallel without a single
-    global bottleneck.
+    Plants located at Manhattan distance 1 may form symbiotic root connections. Each new connection costs ``connection_cost`` energy deducted from both participants. Inter-species links are only created when ``inter_species`` is True. During one growth invocation, each plant upkeep evaluates connection feasibility. Each plant can establish at most one new connection so disjoint pairs can grow in parallel without a single global bottleneck.
 
     Args:
         world: The central ECSWorld instance containing all entity component mappings and active systems.
         env: GridEnvironment (used to update plant energy buffers).
         connection_cost: Energy cost per connection establishment.
         inter_species: Allow connections between different species.
-        excluded_entity_ids: Plants to ignore (for example, plants already
-            marked for removal in the current lifecycle pass).
+        excluded_entity_ids: Plants to ignore (for example, plants already marked for removal in the current lifecycle pass).
         plant_death_causes: Optional dictionary tracking causes of plant death.
 
     Returns:
-        ``(made_connection, dead_entity_ids)`` where
-        ``dead_entity_ids`` contains plants that crossed the survival threshold
-        due to connection costs and were removed from spatial registration and
-        energy layers in this same lifecycle pass.
+        ``(made_connection, dead_entity_ids)`` where ``dead_entity_ids`` contains plants that crossed the survival threshold due to connection costs and were removed from spatial registration and energy layers in this same lifecycle pass.
     """
     excluded = excluded_entity_ids or set()
     plants: list[PlantComponent] = [
@@ -232,8 +222,7 @@ def _establish_mycorrhizal_connections(
 def _should_attempt_mycorrhizal_growth(tick: int, growth_interval_ticks: int) -> bool:
     """Return whether this lifecycle tick may grow new root links.
 
-    Supports both continuous per-tick interval gating (for direct unit calls)
-    and weekly slow-loop stride gating (for full simulation runs).
+    Supports both continuous per-tick interval gating (for direct unit calls) and weekly slow-loop stride gating (for full simulation runs).
 
     Args:
         tick: The current tick.

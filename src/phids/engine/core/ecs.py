@@ -3,9 +3,7 @@
 
 """Entity-Component-System (ECS) registry with O(1) spatial hash support for deterministic ecosystem simulation.
 
-components and pre-allocated buffers (Rule of 16). The spatial hash is central to the
-simulation's ability to model emergent ecological phenomena with deterministic reproducibility
-and scientific rigour.
+components and pre-allocated buffers (Rule of 16). The spatial hash is central to the simulation's ability to model emergent ecological phenomena with deterministic reproducibility and scientific rigour.
 """
 
 from __future__ import annotations
@@ -78,19 +76,14 @@ class Entity:
 class ECSWorld:
     """Central ECS registry managing entities, components and spatial hash.
 
-    The world provides helpers for entity lifecycle, component indexing and
-    a spatial hash grid for efficient cell membership queries.
+    The world provides helpers for entity lifecycle, component indexing and a spatial hash grid for efficient cell membership queries.
     """
 
     def __init__(self) -> None:
         """Initialise the ECS world and its internal indices.
 
         Attributes initialized:
-            _next_id: Next entity id to allocate.
-            _entities: Mapping of entity id to Entity.
-            _component_index: Index mapping component types to entity id sets.
-            _spatial_hash: Grid cell roster mapping (x, y) to entity id sets.
-            _entity_positions: Reverse index mapping entity ids to their current cell.
+            _next_id: Next entity id to allocate. _entities: Mapping of entity id to Entity. _component_index: Index mapping component types to entity id sets. _spatial_hash: Grid cell roster mapping (x, y) to entity id sets. _entity_positions: Reverse index mapping entity ids to their current cell.
         """
         self._next_id: int = 0
         self._entities: dict[int, Entity] = {}

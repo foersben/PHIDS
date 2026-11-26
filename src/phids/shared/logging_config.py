@@ -3,10 +3,7 @@
 
 """Central logging configuration for PHIDS.
 
-The package uses a single idempotent logging bootstrap so API, UI, engine,
-telemetry, and I/O modules share consistent formatting and levels.
-Configuration is environment-driven to keep detailed debugging available
-without paying for verbose logs by default.
+The package uses a single idempotent logging bootstrap so API, UI, engine, telemetry, and I/O modules share consistent formatting and levels. Configuration is environment-driven to keep detailed debugging available without paying for verbose logs by default.
 """
 
 from __future__ import annotations
@@ -127,10 +124,7 @@ def configure_logging(*, force: bool = False) -> None:
     """Configure PHIDS package logging.
 
     Environment variables:
-        ``PHIDS_LOG_LEVEL``: Package log level (default ``INFO``).
-        ``PHIDS_LOG_FILE``: Optional file path for a rotating debug log.
-        ``PHIDS_LOG_FILE_LEVEL``: File handler level (default ``DEBUG``).
-        ``PHIDS_LOG_SIM_DEBUG_INTERVAL``: Tick interval for engine summaries.
+        ``PHIDS_LOG_LEVEL``: Package log level (default ``INFO``). ``PHIDS_LOG_FILE``: Optional file path for a rotating debug log. ``PHIDS_LOG_FILE_LEVEL``: File handler level (default ``DEBUG``). ``PHIDS_LOG_SIM_DEBUG_INTERVAL``: Tick interval for engine summaries.
 
     Args:
         force: Reconfigure logging even if already configured.

@@ -3,8 +3,7 @@
 
 """Initial entity placement and biotope allocation for the simulation engine.
 
-Spawns initial botanical specimens and herbivore swarms based on scenario
-configuration specifications and registers spatial positions in the ECS world.
+Spawns initial botanical specimens and herbivore swarms based on scenario configuration specifications and registers spatial positions in the ECS world.
 """
 
 from __future__ import annotations
@@ -41,9 +40,7 @@ def spawn_initial_entities(
 ) -> tuple[int, int]:
     """Place initial plants and swarms from scenario configuration into the ECS world.
 
-    Instantiates PlantComponent and SwarmComponent entities, registers spatial
-    indices in the ECS world, sets initial energy layers in GridEnvironment,
-    and rebuilds aggregate energy matrices.
+    Instantiates PlantComponent and SwarmComponent entities, registers spatial indices in the ECS world, sets initial energy layers in GridEnvironment, and rebuilds aggregate energy matrices.
 
     Args:
         config: Validated SimulationConfig instance.

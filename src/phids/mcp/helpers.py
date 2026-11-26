@@ -3,9 +3,7 @@
 
 """Internal serialization helpers and dynamic dispatchers for MCP tools.
 
-Provides draft serialization to JSON, dynamic lookup for active simulation loops,
-recent log ring buffers, project root paths, and external command execution with
-built-in support for test monkeypatching.
+Provides draft serialization to JSON, dynamic lookup for active simulation loops, recent log ring buffers, project root paths, and external command execution with built-in support for test monkeypatching.
 """
 
 from __future__ import annotations
@@ -86,11 +84,7 @@ def run_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any
 def _draft_to_json(draft: DraftState) -> str:
     """Serialize a mixed dataclass/Pydantic DraftState tree to JSON.
 
-    ``DraftState`` is a stdlib dataclass whose list fields contain a mix of
-    further stdlib dataclasses (``TriggerRule``, ``PlacedPlant``, ...) and Pydantic
-    models (``FloraSpeciesParams``, ``HerbivoreSpeciesParams``, ``BatchJobState``).
-    ``dataclasses.asdict`` handles the dataclass hierarchy but copies Pydantic
-    models verbatim; the ``_default`` hook converts those during JSON encoding.
+    ``DraftState`` is a stdlib dataclass whose list fields contain a mix of further stdlib dataclasses (``TriggerRule``, ``PlacedPlant``, ...) and Pydantic models (``FloraSpeciesParams``, ``HerbivoreSpeciesParams``, ``BatchJobState``). ``dataclasses.asdict`` handles the dataclass hierarchy but copies Pydantic models verbatim; the ``_default`` hook converts those during JSON encoding.
 
     Args:
         draft: The active :class:`~phids.api.ui_state.state.DraftState` instance.

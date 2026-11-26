@@ -29,35 +29,17 @@ def _perform_mitosis(
 ) -> SwarmComponent:
     """Split an oversized swarm into two equal daughter colonies via binary fission.
 
-    Colony fission - the division of a supercolony that has exceeded its reproductive threshold
-    into two independent daughter swarms - is a fundamental demographic event in social insect
-    biology and clonal arthropod populations. This function implements the discrete analogue of
-    that process within the ECS framework: the parent swarm retains ⌊n/2⌋ individuals and half
-    the accumulated energy, while a new entity carrying a ``SwarmComponent`` with the complementary
-    moiety is allocated, registered in the ECS world, and inserted into the spatial hash at a
-    stochastically sampled adjacent cell. All heritable phenotypic parameters - ``energy_min``,
-    ``velocity``, ``consumption_rate``, ``reproduction_energy_divisor``,
-    ``energy_upkeep_per_individual``, and ``split_population_threshold`` - are copied verbatim to
-    the offspring, reflecting the clonal genetic identity of the daughter colony. The energy
-    partition is strictly symmetric (each colony receives exactly half of the parent pool) to
-    conserve total simulated biomass across the fission event. Offspring placement via
-    ``_random_walk_step`` ensures daughters are not deposited on top of the parent, reducing
-    immediate re-coalescence and modelling the active dispersal phase observed following natural
-    colony fission events.
+    Colony fission - the division of a supercolony that has exceeded its reproductive threshold into two independent daughter swarms - is a fundamental demographic event in social insect biology and clonal arthropod populations. This function implements the discrete analogue of that process within the ECS framework: the parent swarm retains ⌊n/2⌋ individuals and half the accumulated energy, while a new entity carrying a ``SwarmComponent`` with the complementary moiety is allocated, registered in the ECS world, and inserted into the spatial hash at a stochastically sampled adjacent cell. All heritable phenotypic parameters - ``energy_min``, ``velocity``, ``consumption_rate``, ``reproduction_energy_divisor``, ``energy_upkeep_per_individual``, and ``split_population_threshold`` - are copied verbatim to the offspring, reflecting the clonal genetic identity of the daughter colony. The energy partition is strictly symmetric (each colony receives exactly half of the parent pool) to conserve total simulated biomass across the fission event. Offspring placement via ``_random_walk_step`` ensures daughters are not deposited on top of the parent, reducing immediate re-coalescence and modelling the active dispersal phase observed following natural colony fission events.
 
     Args:
-        swarm: Parent swarm component to be bisected; its ``population``, ``initial_population``,
-            and ``energy`` fields are mutated in-place to reflect the retained half.
-        world: ECSWorld registry used to allocate the new entity identifier and attach the
-            offspring ``SwarmComponent``.
-        env: Grid environment supplying the spatial dimensions required by ``_random_walk_step``
-            to sample a valid dispersal cell adjacent to the parent's current position.
+        swarm: Parent swarm component to be bisected; its ``population``, ``initial_population``, and ``energy`` fields are mutated in-place to reflect the retained half.
+        world: ECSWorld registry used to allocate the new entity identifier and attach the offspring ``SwarmComponent``.
+        env: Grid environment supplying the spatial dimensions required by ``_random_walk_step`` to sample a valid dispersal cell adjacent to the parent's current position.
         scratch_cx: Pre-allocated buffer for random walk X offsets.
         scratch_cy: Pre-allocated buffer for random walk Y offsets.
 
     Returns:
-        The ``SwarmComponent`` instance attached to the newly spawned offspring entity,
-        containing its assigned population count, energy allocation, and grid coordinates.
+        The ``SwarmComponent`` instance attached to the newly spawned offspring entity, containing its assigned population count, energy allocation, and grid coordinates.
 
     See Also:
         _random_walk_step
@@ -104,13 +86,9 @@ def _resolve_swarm_metabolism_and_reproduction(
 ) -> bool:
     """Apply metabolic upkeep, casualty liquidation, reproduction, and mitosis.
 
-    Called on the Daily Loop (is_medium_tick). Per-tick parameter values
-    (``energy_upkeep_per_individual``) are multiplied by 24 to represent the
-    accumulated metabolic cost over the 24-hour stride.
+    Called on the Daily Loop (is_medium_tick). Per-tick parameter values (``energy_upkeep_per_individual``) are multiplied by 24 to represent the accumulated metabolic cost over the 24-hour stride.
 
-    Mitosis (colony fission) is additionally gated to ``is_slow_tick`` (weekly,
-    168-tick stride) since demographic splits are macroscopic population events
-    that should not fire multiple times per day.
+    Mitosis (colony fission) is additionally gated to ``is_slow_tick`` (weekly, 168-tick stride) since demographic splits are macroscopic population events that should not fire multiple times per day.
 
     Returns False if the swarm's population drops to zero.
 

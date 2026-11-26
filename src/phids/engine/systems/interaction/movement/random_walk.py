@@ -34,9 +34,7 @@ def _random_walk_step_jit(
 ) -> tuple[int, int]:
     """JIT-accelerated uniform random coordinate selector for undirected dispersal.
 
-    Dispatches to the bitwise power-of-two fast path when both grid dimensions are powers of two,
-    eliminating integer modulo division `%` from the hot movement loop. Falls back to the modulo
-    path for arbitrary grid sizes.
+    Dispatches to the bitwise power-of-two fast path when both grid dimensions are powers of two, eliminating integer modulo division `%` from the hot movement loop. Falls back to the modulo path for arbitrary grid sizes.
 
     Args:
         x: The x coordinate of the cell.

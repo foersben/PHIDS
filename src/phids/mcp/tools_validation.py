@@ -55,9 +55,7 @@ def _validate_swarm_invariants(swarms: list[Any], violations: list[str]) -> None
 def validate_simulation_config(config_json: str) -> dict[str, Any]:
     """Validate a JSON string against the strict PHIDS SimulationConfig schema.
 
-    Allows autonomous agents to verify that AI-generated configuration files
-    comply with all engine requirements (e.g., power-of-two grid bounds,
-    matching species IDs) before attempting to launch a simulation.
+    Allows autonomous agents to verify that AI-generated configuration files comply with all engine requirements (e.g., power-of-two grid bounds, matching species IDs) before attempting to launch a simulation.
 
     Args:
         config_json: The JSON string payload to validate.
@@ -109,14 +107,10 @@ def validate_biological_invariants() -> dict[str, Any]:
 def validate_okf_compliance() -> dict[str, Any]:
     """Run the OKF knowledge-graph validation suite against the docs/ and .agents/ trees.
 
-    Invokes ``scripts/validate_okf.py`` via ``uv run`` from the project root,
-    mirroring the pre-commit hook execution environment exactly. Essential for
-    self-evolving agent loops to verify that documentation mutations remain
-    structurally valid before opening a PR.
+    Invokes ``scripts/validate_okf.py`` via ``uv run`` from the project root, mirroring the pre-commit hook execution environment exactly. Essential for self-evolving agent loops to verify that documentation mutations remain structurally valid before opening a PR.
 
     Returns:
-        dict[str, Any]: ``compliant`` (bool), ``violations`` (list of extracted
-            error lines), and ``output`` (full captured stdout+stderr).
+        dict[str, Any]: ``compliant`` (bool), ``violations`` (list of extracted error lines), and ``output`` (full captured stdout+stderr).
     """
     uv_bin = shutil.which("uv") or "uv"
 
@@ -157,15 +151,12 @@ def validate_okf_compliance() -> dict[str, Any]:
 def query_diagnostic_logs(limit: int = 80) -> list[dict[str, str]]:
     """Return the newest structured diagnostic entries recorded by PHIDS.
 
-    Entries are emitted by all engine, API, and telemetry loggers via the
-    :class:`~phids.shared.logging_config.InMemoryLogHandler` ring buffer.
-    Ordered most-recent-first.
+    Entries are emitted by all engine, API, and telemetry loggers via the :class:`~phids.shared.logging_config.InMemoryLogHandler` ring buffer. Ordered most-recent-first.
 
     Args:
         limit: Maximum number of log rows to return (clamped to >= 1 internally).
 
     Returns:
-        list[dict[str, str]]: Structured entries with ``timestamp``, ``level``,
-            ``logger``, ``module``, and ``message`` keys.
+        list[dict[str, str]]: Structured entries with ``timestamp``, ``level``, ``logger``, ``module``, and ``message`` keys.
     """
     return helpers.get_logs(limit=limit)

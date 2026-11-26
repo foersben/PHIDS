@@ -3,8 +3,7 @@
 
 """Draft-state mutation module for initial spatial placements.
 
-Provides pure functions to add, remove, and clear initial plant and swarm placements
-within the draft scenario grid.
+Provides pure functions to add, remove, and clear initial plant and swarm placements within the draft scenario grid.
 """
 
 from __future__ import annotations

@@ -42,8 +42,7 @@ async def export_telemetry_csv() -> Response:
     """Stream the live telemetry table as CSV.
 
     Returns:
-        Response: Download-oriented response containing the current telemetry dataframe encoded as
-        CSV.
+        Response: Download-oriented response containing the current telemetry dataframe encoded as CSV.
 
     Raises:
         HTTPException: Propagated when no live simulation is loaded.
@@ -248,12 +247,10 @@ async def export_telemetry_format(
         tick_interval: Positive decimation factor applied before export.
 
     Returns:
-        Response: File download response with a media type and filename aligned to the requested
-        analytical view.
+        Response: File download response with a media type and filename aligned to the requested analytical view.
 
     Raises:
-        HTTPException: If no live simulation is loaded, the analytical view is unknown, the
-        decimation factor is invalid, or a plot generator rejects the requested parameters.
+        HTTPException: If no live simulation is loaded, the analytical view is unknown, the decimation factor is invalid, or a plot generator rejects the requested parameters.
     """
     if api_main._sim_loop is None:
         raise HTTPException(status_code=404, detail="No simulation loaded.")

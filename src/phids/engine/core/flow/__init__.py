@@ -3,8 +3,7 @@
 
 """Modular flow-field solver and stencil kernels for the PHIDS engine.
 
-Provides finite difference stencils, toroidal boundary propagators, and parallel
-Jacobi relaxation solvers for botanical attraction and toxin repellent gradients.
+Provides finite difference stencils, toroidal boundary propagators, and parallel Jacobi relaxation solvers for botanical attraction and toxin repellent gradients.
 """
 
 from __future__ import annotations

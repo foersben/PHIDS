@@ -3,8 +3,7 @@
 
 """Toroidal boundary update kernels and inner grid propagation for flow fields.
 
-Provides boundary relaxations for standard modulo arithmetic as well as bitwise
-power-of-2 fast paths.
+Provides boundary relaxations for standard modulo arithmetic as well as bitwise power-of-2 fast paths.
 """
 
 from __future__ import annotations
