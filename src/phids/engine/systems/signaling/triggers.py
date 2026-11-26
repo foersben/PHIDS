@@ -255,7 +255,11 @@ def _evaluate_trigger_mask(
     curve_map: dict[str, int],
 ) -> bool:
     """Evaluate initiator condition using Numba JIT kernels if applicable."""
-    if isinstance(initiator, HerbivoreAttackInitiator) and swarm_grid is not None:
+    if (
+        isinstance(initiator, HerbivoreAttackInitiator)
+        and swarm_grid is not None
+        and (0 <= initiator.herbivore_species_id < swarm_grid.shape[0])
+    ):
         _evaluate_herbivore_initiator_njit(
             xs,
             ys,

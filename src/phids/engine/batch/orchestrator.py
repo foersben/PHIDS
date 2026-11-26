@@ -73,6 +73,8 @@ class BatchRunner:
         output_dir: Path | None = None,
         on_progress: Callable[[int], None] | None = None,
         scenario_name: str | None = None,
+        *,
+        seed_offset: int = 0,
     ) -> BatchResult:
         """Execute ``runs`` independent simulation trajectories in parallel.
 
@@ -91,6 +93,7 @@ class BatchRunner:
                 future resolves.
             scenario_name: Optional display label persisted into the summary so
                 restored ledgers can retain operator-selected names.
+            seed_offset: Starting PRNG seed index for independent run seeds.
 
         Returns:
             Completed result with all per-run telemetry and aggregate.
@@ -112,7 +115,8 @@ class BatchRunner:
         )
 
         args_list = [
-            (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir)) for idx, seed in enumerate(range(runs))
+            (scenario_dict, max_ticks, seed, job_id, idx, str(save_dir))
+            for idx, seed in enumerate(range(seed_offset, seed_offset + runs))
         ]
 
         with concurrent.futures.ProcessPoolExecutor(

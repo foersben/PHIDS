@@ -11,9 +11,13 @@ state, preserving deterministic behavior in downstream ECS and double-buffered e
 
 from __future__ import annotations
 
+import json
+import uuid
 from collections.abc import Sequence  # noqa: TC003
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import Annotated
+from pathlib import Path
+from typing import Annotated, Any
 
 import typer
 
@@ -154,6 +158,255 @@ def tune(
         json.dump(best_config, fp, indent=2)
 
     typer.echo(f"Success! Optimized configuration written to {out_path.absolute()}")
+
+
+class TelemetryExportFormat(StrEnum):
+    """Supported telemetry export formats for headless batch runs."""
+
+    NONE = "none"
+    CSV = "csv"
+    LATEX = "latex"
+    BOTH = "both"
+
+
+@dataclass(slots=True, frozen=True)
+class _BatchExecutionConfig:
+    """Validated parameter bundle for headless CLI batch execution."""
+
+    scenario_path: Path
+    runs: int
+    max_ticks: int
+    job_id: str
+    label: str
+    output_dir: Path
+    seed_offset: int
+    export_format: TelemetryExportFormat
+
+
+@dataclass(slots=True, frozen=True)
+class _ExportRequest:
+    """Parameter bundle describing aggregate telemetry file export targets."""
+
+    aggregate: dict[str, Any]
+    export_format: TelemetryExportFormat
+    output_dir: Path
+    stem: str
+    flora_names: dict[int, str]
+    herbivore_names: dict[int, str]
+
+
+def _load_validated_scenario(scenario_path: Path) -> tuple[dict[str, object], dict[int, str], dict[int, str]]:
+    """Load, validate, and extract species metadata from a scenario JSON file."""
+    from pydantic import ValidationError
+
+    from phids.api.schemas.simulation import SimulationConfig
+
+    if not scenario_path.exists():
+        typer.echo(f"Error: Scenario file '{scenario_path}' not found.", err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        raw_payload = json.loads(scenario_path.read_text(encoding="utf-8"))
+        validated = SimulationConfig.model_validate(raw_payload)
+    except (OSError, json.JSONDecodeError, ValidationError) as exc:
+        typer.echo(f"Error: Invalid scenario configuration '{scenario_path}': {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    flora_names = {sp.species_id: sp.name for sp in validated.flora_species}
+    herbivore_names = {sp.species_id: sp.name for sp in validated.herbivore_species}
+    scenario_dict: dict[str, object] = validated.model_dump(mode="json")
+    return scenario_dict, flora_names, herbivore_names
+
+
+def _write_batch_exports(req: _ExportRequest) -> list[Path]:
+    """Export batch aggregate series as CSV and/or LaTeX booktabs tables."""
+    if req.export_format == TelemetryExportFormat.NONE:
+        return []
+
+    from phids.telemetry.export.core import aggregate_to_dataframe
+
+    df = aggregate_to_dataframe(
+        req.aggregate,
+        flora_names=req.flora_names or None,
+        herbivore_names=req.herbivore_names or None,
+    )
+    if df.empty:
+        return []
+
+    req.output_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    if req.export_format in (TelemetryExportFormat.CSV, TelemetryExportFormat.BOTH):
+        csv_path = req.output_dir / f"{req.stem}.csv"
+        csv_path.write_text(df.to_csv(index=False), encoding="utf-8")
+        written.append(csv_path)
+    if req.export_format in (TelemetryExportFormat.LATEX, TelemetryExportFormat.BOTH):
+        tex_path = req.output_dir / f"{req.stem}_table.tex"
+        tex_path.write_text(df.to_latex(index=False, float_format="%.2f"), encoding="utf-8")
+        written.append(tex_path)
+    return written
+
+
+def _last_numeric(series: object, default: float = 0.0) -> float:
+    """Return the final float element of a sequence, or ``default`` when empty."""
+    if isinstance(series, list) and series:
+        last = series[-1]
+        if isinstance(last, (int, float)):
+            return float(last)
+    return default
+
+
+def _format_batch_summary_lines(aggregate: dict[str, Any], job_id: str) -> list[str]:
+    """Format concise human-readable telemetry summary lines for stdout."""
+    ticks = aggregate.get("ticks", [])
+    n_ticks = len(ticks) if isinstance(ticks, list) else 0
+    runs_completed = aggregate.get("runs_completed", 0)
+    ext_prob = float(aggregate.get("extinction_probability", 0.0))
+    f_mean = _last_numeric(aggregate.get("flora_population_mean"))
+    f_std = _last_numeric(aggregate.get("flora_population_std"))
+    h_mean = _last_numeric(aggregate.get("herbivore_population_mean"))
+    h_std = _last_numeric(aggregate.get("herbivore_population_std"))
+    return [
+        f"Job ID: {job_id} | Scenario: {aggregate.get('scenario_name', 'unnamed')}",
+        f"Runs: {runs_completed} | Aligned ticks: {n_ticks} | Extinction P: {ext_prob:.4f}",
+        f"Final flora population: {f_mean:.2f} +/- {f_std:.2f}",
+        f"Final herbivore population: {h_mean:.2f} +/- {h_std:.2f}",
+    ]
+
+
+def _execute_batch_cli(cfg: _BatchExecutionConfig) -> None:
+    """Run BatchRunner headlessly from a validated CLI configuration bundle."""
+    from phids.engine.batch.orchestrator import BatchRunner
+
+    scenario_dict, flora_names, herbivore_names = _load_validated_scenario(cfg.scenario_path)
+    resolved_label = cfg.label.strip() or cfg.scenario_path.stem
+    runner = BatchRunner()
+    result = runner.execute_batch(
+        scenario_dict=scenario_dict,
+        runs=cfg.runs,
+        max_ticks=cfg.max_ticks,
+        job_id=cfg.job_id,
+        output_dir=cfg.output_dir,
+        scenario_name=resolved_label,
+        seed_offset=cfg.seed_offset,
+    )
+    aggregate = dict(result.aggregate)
+    summary_path = cfg.output_dir / f"{cfg.job_id}_summary.json"
+    for line in _format_batch_summary_lines(aggregate, cfg.job_id):
+        typer.echo(line)
+    typer.echo(f"Summary JSON: {summary_path}")
+
+    written = _write_batch_exports(
+        _ExportRequest(
+            aggregate=aggregate,
+            export_format=cfg.export_format,
+            output_dir=cfg.output_dir,
+            stem=cfg.job_id,
+            flora_names=flora_names,
+            herbivore_names=herbivore_names,
+        )
+    )
+    for export_path in written:
+        typer.echo(f"Exported: {export_path}")
+
+
+def _resolve_summary_path(job_or_path: str, output_dir: Path) -> tuple[Path, str]:
+    """Resolve a job identifier or explicit JSON file path to a summary JSON file."""
+    candidate = Path(job_or_path)
+    if candidate.exists() and candidate.is_file():
+        stem = candidate.stem.removesuffix("_summary")
+        return candidate, stem
+    resolved = output_dir / f"{job_or_path}_summary.json"
+    return resolved, job_or_path
+
+
+@app.command()
+def batch(
+    scenario: Annotated[str, typer.Argument(help="Path to the validated SimulationConfig JSON file.")],
+    runs: Annotated[int, typer.Option("--runs", "-r", min=1, max=256, help="Number of Monte Carlo runs.")] = 10,
+    max_ticks: Annotated[int, typer.Option("--max-ticks", "-t", min=1, help="Maximum ticks per run.")] = 500,
+    *,
+    label: Annotated[str, typer.Option("--label", "-l", help="Optional scenario label for job summary.")] = "",
+    output_dir: Annotated[str, typer.Option("--output-dir", "-o", help="Batch summary directory.")] = "data/batches",
+    export_format: Annotated[
+        TelemetryExportFormat,
+        typer.Option("--export", "-e", help="Optional aggregate export format (none, csv, latex, both)."),
+    ] = TelemetryExportFormat.NONE,
+    seed_offset: Annotated[int, typer.Option("--seed-offset", min=0, help="Starting PRNG seed offset.")] = 0,
+    job_id: Annotated[str, typer.Option("--job-id", help="Optional explicit job ID (auto-generated if empty).")] = "",
+) -> None:
+    """Execute headless Monte Carlo batch simulations and write UI-compatible summaries.
+
+    Args:
+        scenario: Path to the scenario JSON file.
+        runs: Number of independent stochastic runs in ``[1, 256]``.
+        max_ticks: Maximum simulation ticks per run.
+        label: Optional scenario display label persisted into the summary JSON.
+        output_dir: Directory where ``{job_id}_summary.json`` and exports are saved.
+        export_format: Aggregate telemetry export format.
+        seed_offset: Initial PRNG seed offset for reproducible ensembles.
+        job_id: Optional explicit batch job identifier.
+    """
+    cfg = _BatchExecutionConfig(
+        scenario_path=Path(scenario),
+        runs=runs,
+        max_ticks=max_ticks,
+        job_id=job_id.strip() or uuid.uuid4().hex[:8],
+        label=label,
+        output_dir=Path(output_dir),
+        seed_offset=seed_offset,
+        export_format=export_format,
+    )
+    _execute_batch_cli(cfg)
+
+
+@app.command("batch-inspect")
+def batch_inspect(
+    job_or_path: Annotated[str, typer.Argument(help="Batch job_id or direct path to a *_summary.json file.")],
+    *,
+    output_dir: Annotated[str, typer.Option("--output-dir", "-o", help="Batch summary directory.")] = "data/batches",
+    export_format: Annotated[
+        TelemetryExportFormat,
+        typer.Option("--export", "-e", help="Optional aggregate export format (none, csv, latex, both)."),
+    ] = TelemetryExportFormat.NONE,
+    scenario: Annotated[str, typer.Option("--scenario", "-s", help="Optional scenario JSON for species names.")] = "",
+    export_dir: Annotated[str, typer.Option("--export-dir", help="Directory for exported telemetry files.")] = "",
+) -> None:
+    """Inspect a completed batch summary JSON and optionally export CSV/LaTeX telemetry.
+
+    Args:
+        job_or_path: Batch job identifier or path to a ``*_summary.json`` file.
+        output_dir: Directory searched when ``job_or_path`` is a job identifier.
+        export_format: Optional telemetry export format.
+        scenario: Optional scenario JSON path to label species columns cleanly.
+        export_dir: Optional directory for CSV/LaTeX exports (defaults to summary directory).
+    """
+    summary_path, resolved_job_id = _resolve_summary_path(job_or_path, Path(output_dir))
+    if not summary_path.exists():
+        typer.echo(f"Error: Batch summary '{summary_path}' not found.", err=True)
+        raise typer.Exit(code=1)
+
+    aggregate = dict(json.loads(summary_path.read_text(encoding="utf-8")))
+    flora_names: dict[int, str] = {}
+    herbivore_names: dict[int, str] = {}
+    if scenario.strip():
+        _, flora_names, herbivore_names = _load_validated_scenario(Path(scenario))
+
+    for line in _format_batch_summary_lines(aggregate, resolved_job_id):
+        typer.echo(line)
+
+    target_dir = Path(export_dir) if export_dir.strip() else summary_path.parent
+    written = _write_batch_exports(
+        _ExportRequest(
+            aggregate=aggregate,
+            export_format=export_format,
+            output_dir=target_dir,
+            stem=resolved_job_id,
+            flora_names=flora_names,
+            herbivore_names=herbivore_names,
+        )
+    )
+    for export_path in written:
+        typer.echo(f"Exported: {export_path}")
 
 
 def main(argv: Sequence[str] | None = None) -> None:

@@ -1,0 +1,2 @@
+# Exclude internal agent orchestration workspaces from peer-review archival tarballs
+/.agents/ export-ignore

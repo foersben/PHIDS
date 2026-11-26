@@ -158,6 +158,16 @@ complexity-ci:
 run:
     uv run phids --reload
 
+# Run headless Monte Carlo batch simulation and write UI-compatible summary JSON
+[group("simulation-and-docs")]
+batch scenario="docs/latex/scientific_report/data/ecotone_256x256/riparian_meadow_ecotone_128x64_twin.json" runs="5" max_ticks="500" label="" export="none":
+    uv run phids batch "{{scenario}}" --runs "{{runs}}" --max-ticks "{{max_ticks}}" --label "{{label}}" --export "{{export}}"
+
+# Inspect and optionally export aggregate telemetry from a completed batch summary
+[group("simulation-and-docs")]
+batch-telemetry job export="none":
+    uv run phids batch-inspect "{{job}}" --export "{{export}}"
+
 # Build static scientific and architectural documentation with Zensical
 [group("simulation-and-docs")]
 docs:

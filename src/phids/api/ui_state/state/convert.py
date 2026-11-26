@@ -47,6 +47,9 @@ def _build_triggers_by_flora(
             initiator = EnvironmentalSignalInitiator(
                 signal_id=rule.initiator_signal_id,
                 min_concentration=rule.initiator_min_concentration,
+                response_curve=rule.initiator_response_curve,
+                hill_cooperativity=rule.initiator_hill_cooperativity,
+                half_saturation=rule.initiator_half_saturation,
             )
         else:
             initiator = HerbivoreAttackInitiator(
@@ -66,7 +69,9 @@ def _build_triggers_by_flora(
                 continue
             action = SynthesizeSubstanceAction(
                 substance_id=rule.substance_id,
-                synthesis_duration=sd.synthesis_duration,
+                synthesis_duration=(
+                    rule.synthesis_duration if rule.synthesis_duration is not None else sd.synthesis_duration
+                ),
                 is_toxin=sd.is_toxin,
                 lethal=sd.lethal,
                 lethality_rate=sd.lethality_rate,
@@ -75,7 +80,9 @@ def _build_triggers_by_flora(
                 energy_cost_per_tick=sd.energy_cost_per_tick,
                 irreversible=sd.irreversible,
             )
-            aftereffect = sd.aftereffect_ticks
+            aftereffect = (
+                rule.aftereffect_ticks_override if rule.aftereffect_ticks_override is not None else sd.aftereffect_ticks
+            )
         triggers_by_flora.setdefault(rule.flora_species_id, []).append(
             TriggerConditionSchema(
                 initiator=initiator,
@@ -208,12 +215,31 @@ def _extract_triggers(
                 min_pop = trig.initiator.min_herbivore_population
                 sig_id = -1
                 min_conc = 0.0
+                resp_curve: Literal["step", "hill", "logarithmic"] = "step"
+                hill_n = 2.0
+                hill_k = 0.05
             else:
                 i_type = "environmental_signal"
                 h_id = -1
                 min_pop = 0
                 sig_id = trig.initiator.signal_id
                 min_conc = trig.initiator.min_concentration
+                resp_curve = trig.initiator.response_curve
+                hill_n = trig.initiator.hill_cooperativity
+                hill_k = trig.initiator.half_saturation
+
+            if isinstance(trig.action, SynthesizeSubstanceAction):
+                a_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
+                sub_id = trig.action.substance_id
+                synth_dur: int | None = trig.action.synthesis_duration
+                app_nut = 0.2
+                wd_dur = 10
+            else:
+                a_type = "resource_withdrawal"
+                sub_id = -1
+                synth_dur = None
+                app_nut = trig.action.apparent_nutrition_factor
+                wd_dur = trig.action.withdrawal_duration
 
             imported_trigger_rules.append(
                 TriggerRule(
@@ -223,9 +249,16 @@ def _extract_triggers(
                     min_herbivore_population=min_pop,
                     initiator_signal_id=sig_id,
                     initiator_min_concentration=min_conc,
-                    substance_id=(
-                        trig.action.substance_id if isinstance(trig.action, SynthesizeSubstanceAction) else -1
-                    ),
+                    initiator_response_curve=resp_curve,
+                    initiator_hill_cooperativity=hill_n,
+                    initiator_half_saturation=hill_k,
+                    substance_id=sub_id,
+                    action_type=a_type,
+                    synthesis_duration=synth_dur,
+                    apparent_nutrition_factor=app_nut,
+                    withdrawal_duration=wd_dur,
+                    aftereffect_ticks=trig.aftereffect_ticks,
+                    aftereffect_ticks_override=trig.aftereffect_ticks,
                     activation_condition=(
                         trig.activation_condition.model_dump(mode="json")
                         if trig.activation_condition is not None

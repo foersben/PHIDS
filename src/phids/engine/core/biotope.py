@@ -41,6 +41,7 @@ from phids.shared.constants import (
     GRID_H_MAX,
     GRID_W_MAX,
     MAX_FLORA_SPECIES,
+    MAX_HERBIVORE_SPECIES,
     MAX_SUBSTANCE_TYPES,
     SIGNAL_EPSILON,
 )
@@ -174,8 +175,8 @@ class GridEnvironment:
         # Pre-allocated flat scratch buffer for interaction phase tile population census
         self.tile_populations: npt.NDArray[np.int32] = np.zeros(width * height, dtype=np.int32)
 
-        # Pre-allocated 3D scratch buffer for per-species swarm population census [num_species, W, H]
-        self.swarm_populations: npt.NDArray[np.int32] = np.zeros((num_signals, width, height), dtype=np.int32)
+        # Pre-allocated 3D scratch buffer for per-species swarm population census [MAX_HERBIVORE_SPECIES, W, H]
+        self.swarm_populations: npt.NDArray[np.int32] = np.zeros((MAX_HERBIVORE_SPECIES, width, height), dtype=np.int32)
 
         # Active chemical signaling channel set for sparse layer diffusion gating
         self.active_signal_channels: set[int] = set()

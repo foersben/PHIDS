@@ -59,11 +59,16 @@ class TriggerRule:
     min_herbivore_population: int = 5
     initiator_signal_id: int = 0
     initiator_min_concentration: float = 0.01
+    initiator_response_curve: Literal["step", "hill", "logarithmic"] = "step"
+    initiator_hill_cooperativity: float = 2.0
+    initiator_half_saturation: float = 0.05
     substance_id: int = 0
     action_type: Literal["synthesize_substance", "resource_withdrawal"] = "synthesize_substance"
+    synthesis_duration: int | None = None
     apparent_nutrition_factor: float = 0.2
     withdrawal_duration: int = 10
     aftereffect_ticks: int = 10
+    aftereffect_ticks_override: int | None = None
     activation_condition: ActivationConditionNode | None = None
 
 
