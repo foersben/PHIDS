@@ -252,3 +252,7 @@ docs/latex/scientific_report/data/**/ablation_cache/
 docs/latex/scientific_report/data/**/*.journal
 docs/latex/scientific_report/data/**/*_cache.jsonl
 *.zip
+
+# Local AI / OpenWiki runtime state
+.serena/
+openwiki/.run.json
