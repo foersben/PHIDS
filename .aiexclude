@@ -1,0 +1,26 @@
+# AI & IDE Context Exclusions
+.venv/
+.cache/
+.complexipy_cache/
+.agents/receipts/
+.archive/
+mutants/
+site/
+docs/viz.html
+docs/architecture_visualizer.html
+docs/latex/scientific_report/data/
+docs/latex/**/*.pdf
+examples/*.json
+examples/scenarios/*.json
+data/
+openwiki/.run.json
+uv.lock
+complexipy-snapshot.json
+src/phids/api/static/js/htmx.min.js
+src/phids/api/static/vendor/
+*.parquet
+*.zarr/
+*.duckdb
+*.duckdb.wal
+htmlcov/
+coverage.xml

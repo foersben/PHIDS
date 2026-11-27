@@ -39,19 +39,25 @@ Detailed runbooks reside in `.agents/skills/<name>/SKILL.md`:
 * `/doc-synchronization-pipeline`: Synchronization of workspace READMEs and docs.
 * `/jules-session-triage`: Autonomous audit, unblocking, PR evaluation, and lifecycle cleanup for Jules sessions.
 
+## Token-Optimal Discovery
+
+* Survey unfamiliar Python modules with `ctags -x --languages=Python <file>` (or `serena` symbol tools once active) before calling `read_file` on targeted line ranges.
+* Use `ast-grep` (`/usr/bin/ast-grep`) for structural Python and Numba `@njit` pattern searches instead of multi-line regexes.
+* Never scan `docs/latex/scientific_report/data/`, `examples/*.json`, `examples/scenarios/*.json`, `uv.lock`, or `*.duckdb`.
+
 <!-- OPENWIKI:START -->
 
 ## OpenWiki
 
-This repository maintains a generated `openwiki/` evidence index under `openwiki/INSTRUCTIONS.md`. It is optional just-in-time context, not required startup reading.
+This repository has a generated `openwiki/` evidence index. It is optional just-in-time context, not required startup reading.
 
-* Do not enumerate, preload, or search wikis at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behaviour materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
+* Do not enumerate, preload, or search wikis at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
 * When those conditions apply and OpenWiki retrieval tools are available, use `openwiki_search` for just-in-time context and `openwiki_read` for the relevant complete sections. If search returns `workspace_required`, ask which listed workspace to use and retry with its ID.
 * Use `openwiki_list_workspaces` or `openwiki_list_wikis` when workspace membership itself needs to be discovered.
-* If the retrieval tools are unavailable, read `openwiki/quickstart.md` when present and follow its links to the relevant pages.
+* If the retrieval tools are unavailable, read `openwiki/quickstart.md` and follow its links to the relevant pages.
 * Treat source code and tests as authoritative. A brief's unknowns and review items are verification gaps, not automatic requirements.
-* Prefer the narrowest quiet validation that proves the changed behaviour. Preserve complete failure output.
+* Prefer the narrowest quiet validation that proves the changed behavior. Preserve complete failure output.
 
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki weekly against `develop`. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+Use the repository's documented maintenance process to refresh generated pages after source changes. Check its configuration and completed runs before relying on automatic updates. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
 
 <!-- OPENWIKI:END -->
