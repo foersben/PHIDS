@@ -244,9 +244,8 @@ All agents (local or cloud) must strictly adhere to the rules located in `.agent
 
 Skills in `.agents/skills/` coordinate multi-phase tasks:
 
-| Slash Command | Skill / Workflow Document | Primary Roles | Description |
+| Slash Command | Skill Document | Primary Roles | Description |
 | :--- | :--- | :--- | :--- |
-| `/jules-session-triage` | [jules-session-triage](skills/jules-session-triage/SKILL.md) | `01`, `04`, `06` | Discovers live Jules sessions, unblocks paused agents, evaluates PRs against develop, generates HITL reviews, and enforces session lifecycle cleanup (deletion upon merge/discard). |
 | `/epistemic-soundness-audit` | [epistemic-soundness-audit](skills/epistemic-soundness-audit/SKILL.md) | `02`, `09`, `10` | 10-slice relational audit verifying biological fidelity, mathematical rigor, and HPC invariants across docs and code. |
 | `/matrix-tdd-refactor` | [matrix-tdd-refactor](skills/matrix-tdd-refactor/SKILL.md) | `03`, `04`, `09` | Translates conceptual behavior to Data-Flow Matrix tables, Pytest traces, branchless Numba kernels, and verified OKF links. |
 | `/validate-full-stack` | [validate-full-stack](skills/validate-full-stack/SKILL.md) | All | Coordinated pipeline running all pre-commit gates, OKF compliance, matrix trace parity, and Zensical build. |
@@ -255,19 +254,15 @@ Skills in `.agents/skills/` coordinate multi-phase tasks:
 | `/vertical-slice-development` | [vertical-slice-development](skills/vertical-slice-development/SKILL.md) | `01` + All | Coordinated pipeline for building full-stack simulation features across models, kernels, telemetry, and UI. |
 | `/delegation-protocol` | [delegation-protocol](skills/delegation-protocol/SKILL.md) | `01` | Structured markdown escalation checklist for human operators when agents encounter manual confirmation gates. |
 | `/ecs-refactor-pipeline` | [ecs-refactor-pipeline](skills/ecs-refactor-pipeline/SKILL.md) | `03`, `04` | Safely refactors cold-path control plane modules while preserving DOD/JIT hot-path immutability. |
-| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline](skills/doc-synchronization-pipeline/SKILL.md) | `01`, `05`, `09`, `10` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical docs with optional triple Jules dispatch. |
+| `/doc-synchronization-pipeline` | [doc-synchronization-pipeline](skills/doc-synchronization-pipeline/SKILL.md) | `01`, `05`, `09`, `10` | Multi-phase audit and sync pipeline for workspace READMEs and Zensical documentation across code changes. |
 
-### Highlighted Workflow: Documentation Synchronization (`/doc-synchronization-pipeline`)
+### Highlighted Skill: Documentation Synchronization (`/doc-synchronization-pipeline`)
 
 Keeping track of which README files and Zensical concept documents require updates after code changes is automated via `/doc-synchronization-pipeline`:
 
 * **Documentation Impact Mapping:** Automatically maps modified files to target READMEs (root `README.md`, `.agents/README.md`, `scripts/README.md`, `src/data_pipeline/README.md`) and Zensical pages (`docs/scientific_model/`, `docs/technical_architecture/`).
-* **Interactive Modular Gate:** Asks the user which audit tracks to run and recommends whether to execute locally or outsource to Jules in the cloud based on change volume.
-* **Optional Triple Parallel Jules Dispatch:** Dispatches 3 parallel cloud background bots to preserve local context tokens:
-  * **Canon 📜:** Audits Zensical scientific documents against engine math and preserves narrative prose.
-  * **Sentinel 🛡️:** Audits and syncs workspace READMEs, CLI commands, and directory trees.
-  * **Vigil 👁️:** Asserts OKF frontmatter validity, matrix coverage, and table-to-trace numerical parity.
-* **Composable Workflow Execution:** Can trigger or delegate to `/validate-full-stack`, `/auto-reconcile-matrix-drift`, `/epistemic-soundness-audit`, or `/jules-session-triage`.
+* **Modular Execution Tracks:** Audits workspace READMEs, Zensical concept docs, and Data-Flow Matrix parity checks (`audit_matrix_coverage.py`, `verify_matrix_trace_parity.py --all`).
+* **Composable Skill Execution:** Can trigger or delegate to `/validate-full-stack`, `/auto-reconcile-matrix-drift`, or `/epistemic-soundness-audit`.
 * **Static Verification Gate:** Concludes with `uv run zensical build -f zensical.toml -s` to guarantee zero broken links or markdown syntax errors.
 
 ---
@@ -319,7 +314,7 @@ graph TD
 
 * **Specialist Roles (`.agents/roles/*.md`):** Establish jurisdiction and mental models (e.g., `@engine-developer`, `@matrix-auditor`).
 * **Architectural Rules (`.agents/rules/*.md`):** Hard invariants enforced by pre-commit and CI (e.g., Rule 00 `uv run`, Rule 02 float masks, Rule 05 parity).
-* **Specialist Skills (`.agents/skills/*/SKILL.md`):** Unified, discoverable playbooks that combine multi-step agent pipelines (e.g. `/matrix-tdd-refactor`, `/jules-session-triage`) and deterministic verification runners into standardised execution units.
+* **Specialist Skills (`.agents/skills/*/SKILL.md`):** Unified, discoverable playbooks that combine multi-step agent pipelines (e.g. `/matrix-tdd-refactor`) and deterministic verification runners into standardised execution units.
 
 ### 6.3. Dynamic Discovery & Agent Registration
 

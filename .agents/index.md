@@ -1,6 +1,6 @@
 # PHIDS Agent Ecosystem - Algorithmic Decision Matrix
 
-* **For MCP agents (Jules):** Use the decision matrix to select your role.
+* **For MCP agents:** Use the decision matrix to select your role.
   Sub-directory `AGENTS.md` files load automatically with domain detail.
 * **For human readers:** Full annotated directory index follows the matrix.
 
@@ -37,7 +37,6 @@
 | `/vertical-slice-development` | [vertical-slice-development](skills/vertical-slice-development/SKILL.md) | `01` + all |
 | `/delegation-protocol` | [delegation-protocol](skills/delegation-protocol/SKILL.md) | `01` |
 | `/ecs-refactor-pipeline` | [ecs-refactor-pipeline](skills/ecs-refactor-pipeline/SKILL.md) | `03`, `04` |
-| `/jules-session-triage` | [jules-session-triage](skills/jules-session-triage/SKILL.md) | `01`, `04`, `06` |
 | `/doc-synchronization-pipeline` | [doc-synchronization-pipeline](skills/doc-synchronization-pipeline/SKILL.md) | `01`, `05`, `09`, `10` |
 
 ---
@@ -134,7 +133,6 @@ This directory houses the autonomous agent architecture, role specializations, h
 * [Documentation & README Synchronization Pipeline](skills/doc-synchronization-pipeline/SKILL.md) - Multi-phase audit and synchronization pipeline for detecting, triaging, and updating workspace READMEs and Zensical documentation across code changes.
 * [ECS Code-Smell Refactoring Pipeline](skills/ecs-refactor-pipeline/SKILL.md) - Autonomous, performance-safe workflow for eliminating code smells from cold-path modules while respecting DOD/JIT constraints.
 * [Epistemic Soundness Audit](skills/epistemic-soundness-audit/SKILL.md) - 10-slice relational audit workflow verifying biological fidelity, mathematical rigor, and computational constraints.
-* [Jules Session Triage](skills/jules-session-triage/SKILL.md) - Autonomous protocol for evaluating and unblocking Jules sessions (including session lifecycle cleanup).
 
 ---
 

@@ -2,6 +2,10 @@
 
 This document records the chronological history of updates to autonomous agent roles, behavioral rules, operational workflows, and collective memory, adhering to OKF v0.2 §9.
 
+## 2026-11-27
+
+* **Deprecation**: Removed deprecated `.agents/skills/jules-session-triage/` skill and cleaned up `/jules-session-triage` and Jules dispatch references across `AGENTS.md`, `.agents/index.md`, `.agents/README.md`, and `.agents/memory/architecture_state_map.md`.
+
 ## 2026-11-26
 
 * **Migration**: Migrated legacy `.agents/workflows/jules-session-triage.md` to `.agents/skills/jules-session-triage/SKILL.md` with OKF v0.2 frontmatter and retired `.agents/workflows/`.

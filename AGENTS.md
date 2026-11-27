@@ -37,7 +37,6 @@ Detailed runbooks reside in `.agents/skills/<name>/SKILL.md`:
 * `/ecs-refactor-pipeline`: Safe refactoring of cold-path modules without hot-path regressions.
 * `/delegation-protocol`: Structured escalation checklist for human confirmation gates.
 * `/doc-synchronization-pipeline`: Synchronization of workspace READMEs and docs.
-* `/jules-session-triage`: Autonomous audit, unblocking, PR evaluation, and lifecycle cleanup for Jules sessions.
 
 ## Token-Optimal Discovery
 
